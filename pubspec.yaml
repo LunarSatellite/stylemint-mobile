@@ -83,6 +83,9 @@ dependencies:
   local_auth: ^3.0.1
   app_links: ^7.0.0
 
+  # ── Country & Phone ────────────────────────────────────────────────────────
+  country_picker: ^2.0.23
+
   # ── Network awareness ─────────────────────────────────────────────────────
   connectivity_plus: ^7.1.1
 
@@ -123,6 +126,8 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/auth/
+    - assets/icons/
     - assets/fonts/
     - assets/animations/
 
