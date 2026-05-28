@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/onboarding/presentation/scree
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/onboarding_carousel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/pick_interests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_creators_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'route_names.dart';
 
@@ -97,6 +98,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.home,
         builder: (ctx, state) => const _Placeholder('Home'),
+      ),
+      GoRoute(
+        path: RouteNames.reelsFeed,
+        builder: (ctx, state) => const ReelsFeedScreen(),
       ),
       // TODO: wire remaining routes as screens are built per feature
     ],
