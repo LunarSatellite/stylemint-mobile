@@ -181,6 +181,16 @@ class _DiscoverBody extends StatelessWidget {
             DiscoverCreatorCard(creator: creator),
             const SizedBox(height: DesignTokens.s12),
           ],
+          Center(
+            child: TextButton(
+              onPressed: () => context.push(RouteNames.discoverCreators),
+              child: Text(
+                'Discover more creators',
+                style: DesignTokens.mediumSemibold
+                    .copyWith(color: DesignTokens.primaryGreen),
+              ),
+            ),
+          ),
         ],
       ],
     );

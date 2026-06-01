@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -28,3 +29,8 @@ final orderDetailNotifierProvider =
     StateNotifierProvider<OrderDetailNotifier, OrderDetailState>(
       (ref) => OrderDetailNotifier(ref.watch(ordersRepositoryProvider)),
     );
+
+final cancelOrderControllerProvider = StateNotifierProvider.autoDispose<
+    CancelOrderController, CancelOrderUiState>(
+  (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
+);

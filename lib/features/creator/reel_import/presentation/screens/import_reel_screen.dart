@@ -184,7 +184,10 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen>
           child: ListView.builder(
             padding: const EdgeInsets.all(DesignTokens.s16),
             itemCount: reels.length,
-            itemBuilder: (_, i) => ImportedReelTile(reel: reels[i]),
+            itemBuilder: (ctx, i) => GestureDetector(
+              onTap: () => ctx.push('/creator/reels/${reels[i].id}'),
+              child: ImportedReelTile(reel: reels[i]),
+            ),
           ),
         );
       },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_stat_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -60,7 +61,19 @@ class _DashboardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Vendor Dashboard', style: DesignTokens.titleLarge),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Vendor Dashboard', style: DesignTokens.titleLarge),
+                  Consumer(
+                    builder: (ctx, ref, _) => IconButton(
+                      icon: const Icon(Icons.more_horiz,
+                          color: DesignTokens.textWhite),
+                      onPressed: () => showVendorMoreMenu(ctx, ref),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: DesignTokens.s20),
 
               // --- Stats 2x2 Grid ---

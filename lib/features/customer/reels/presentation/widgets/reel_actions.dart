@@ -143,7 +143,8 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
         _ActionButton(
           icon: Icons.chat_bubble_outline,
           label: _formatCount(reel.commentCount),
-          onTap: () => _requireAuth(() {}),
+          onTap: () =>
+              _requireAuth(() => context.push('/reels/${reel.id}/comments')),
         ),
         const SizedBox(height: DesignTokens.s16),
         _ActionButton(

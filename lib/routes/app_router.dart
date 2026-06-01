@@ -19,13 +19,19 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pau
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
+import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
+import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/track_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/add_card_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/presentation/screens/customer_shell_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_comments_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/screens/product_reviews_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/screens/saved_items_screen.dart';
@@ -36,8 +42,10 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/create_draft_screen.dart';
@@ -49,6 +57,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_payout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_performance_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/screens/vendor_inquiries_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/screens/matchmaking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
@@ -82,6 +92,7 @@ import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/language_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/notification_prefs_screen.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/about_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/privacy_policy_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
@@ -282,6 +293,31 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => OrderDetailScreen(
           orderId: state.pathParameters['orderId']!,
         ),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.orderDetail, RouteNames.orderCancel),
+            builder: (ctx, state) => CancelOrderScreen(
+              orderId: state.pathParameters['orderId']!,
+              order: state.extra is OrderDetail
+                  ? state.extra! as OrderDetail
+                  : null,
+            ),
+          ),
+        ],
+      ),
+
+      // Discover creators (follow)
+      GoRoute(
+        path: RouteNames.discoverCreators,
+        builder: (ctx, state) => const FollowCreatorsDiscoveryScreen(),
+      ),
+
+      // Reel comments
+      GoRoute(
+        path: RouteNames.reelComments,
+        builder: (ctx, state) => ReelCommentsScreen(
+          reelId: state.pathParameters['reelId']!,
+        ),
       ),
 
       // Saved Items
@@ -357,8 +393,27 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const PayoutScreen(),
       ),
       GoRoute(
+        path: RouteNames.creatorPaymentMethods,
+        builder: (ctx, state) =>
+            const PaymentMethodsScreen(role: PayeeKind.creator),
+      ),
+      GoRoute(
+        path: RouteNames.creatorReelDetail,
+        builder: (ctx, state) => ReelDetailsScreen(
+          reelId: state.pathParameters['reelId']!,
+        ),
+      ),
+      GoRoute(
         path: RouteNames.partnerships,
         builder: (ctx, state) => const PartnershipsScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.partnerships, RouteNames.brandDetail),
+            builder: (ctx, state) => BrandDetailScreen(
+              partnershipId: state.pathParameters['partnershipId']!,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.reach,
@@ -421,6 +476,19 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorEarningsPayout,
         builder: (ctx, state) => const VendorPayoutScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPaymentMethods,
+        builder: (ctx, state) =>
+            const PaymentMethodsScreen(role: PayeeKind.vendor),
+      ),
+      GoRoute(
+        path: RouteNames.vendorInquiries,
+        builder: (ctx, state) => const VendorInquiriesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreatorPerformance,
+        builder: (ctx, state) => const CreatorPerformanceScreen(),
       ),
 
       // Social
@@ -540,6 +608,10 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.settings, RouteNames.settingsTerms),
             builder: (ctx, state) => const TermsConditionsScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.settings, RouteNames.settingsAbout),
+            builder: (ctx, state) => const AboutScreen(),
           ),
         ],
       ),

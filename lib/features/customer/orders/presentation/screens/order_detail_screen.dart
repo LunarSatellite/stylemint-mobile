@@ -175,7 +175,8 @@ class _OrderDetailBody extends StatelessWidget {
               icon: Icons.cancel_outlined,
               color: DesignTokens.colorError,
               loading: actionPending,
-              onPressed: () => _handleCancelOrder(),
+              onPressed: () =>
+                  context.push('/orders/${order.id}/cancel', extra: order),
             ),
           if (order.canCancel && order.canReturn)
             const SizedBox(height: DesignTokens.s12),
@@ -192,8 +193,6 @@ class _OrderDetailBody extends StatelessWidget {
       ),
     );
   }
-
-  void _handleCancelOrder() => notifier.cancelOrder();
 
   void _handleRequestReturn(BuildContext context) {
     showDialog<String>(

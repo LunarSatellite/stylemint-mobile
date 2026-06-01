@@ -64,8 +64,8 @@ class SettingsScreen extends ConsumerWidget {
           ),
           _MenuTile(
             icon: Icons.info_outline,
-            label: 'App Version',
-            trailing: const Text('1.0.0', style: DesignTokens.smallRegular),
+            label: 'About ReelCommerce',
+            onTap: () => context.push(RouteNames.settingsAbout),
           ),
 
           const SizedBox(height: DesignTokens.s24),

@@ -29,12 +29,15 @@ abstract class RouteNames {
   static const search = '/search';
   static const reelsFeed = '/reels';
   static const reelDetail = '/reels/:reelId';
+  static const reelComments = '/reels/:reelId/comments';
+  static const discoverCreators = '/discover/creators';
   static const productDetail = '/product/:productId';
   static const cart = '/cart';
   static const checkout = '/checkout';
   static const checkoutPayment = '/checkout/payment';
   static const orders = '/orders';
   static const orderDetail = '/orders/:orderId';
+  static const orderCancel = '/orders/:orderId/cancel';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';
@@ -54,10 +57,13 @@ abstract class RouteNames {
   static const reelImportTagProducts = '/creator/import/tag/:postId';
   static const earnings = '/creator/earnings';
   static const earningsPayout = '/creator/earnings/payout';
+  static const creatorPaymentMethods = '/creator/payment-methods';
+  static const creatorReelDetail = '/creator/reels/:reelId';
   static const socialConnect = '/creator/social-connect';
   static const reelStudio = '/creator/reel-studio';
   static const reelStudioCreateDraft = '/creator/reel-studio/create';
   static const partnerships = '/creator/partnerships';
+  static const brandDetail = '/creator/partnerships/:partnershipId';
   static const reach = '/creator/reach';
 
   // Vendor
@@ -74,6 +80,9 @@ abstract class RouteNames {
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';
   static const vendorEarningsPayout = '/vendor/earnings/payout';
+  static const vendorPaymentMethods = '/vendor/payment-methods';
+  static const vendorInquiries = '/vendor/inquiries';
+  static const vendorCreatorPerformance = '/vendor/creator-performance';
 
   // Social
   static const feed = '/feed';
@@ -101,6 +110,7 @@ abstract class RouteNames {
   static const settingsLanguage = '/settings/language';
   static const settingsPrivacy = '/settings/privacy';
   static const settingsTerms = '/settings/terms';
+  static const settingsAbout = '/settings/about';
   static const settingsChangePassword = '/settings/change-password';
   static const accountSettings = '/account';
   static const sessions = '/account/sessions';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/notifiers/vendor_earnings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/shared/providers.dart';
@@ -61,6 +62,14 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Request Payout', style: DesignTokens.titleMedium),
+        actions: [
+          IconButton(
+            tooltip: 'Payment methods',
+            icon: const Icon(Icons.account_balance_wallet_outlined,
+                color: DesignTokens.textWhite),
+            onPressed: () => context.push(RouteNames.vendorPaymentMethods),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(DesignTokens.s16),
