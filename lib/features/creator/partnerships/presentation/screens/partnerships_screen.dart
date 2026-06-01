@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/widgets/invite_card.dart';
@@ -112,9 +113,11 @@ class _PartnershipsScreenState extends ConsumerState<PartnershipsScreen>
       child: ListView.builder(
         padding: const EdgeInsets.all(DesignTokens.s16),
         itemCount: active.length,
-        itemBuilder: (_, i) {
+        itemBuilder: (ctx, i) {
           final p = active[i];
-          return Container(
+          return GestureDetector(
+            onTap: () => ctx.push('/creator/partnerships/${p.id}'),
+            child: Container(
             margin: const EdgeInsets.only(bottom: DesignTokens.s8),
             padding: const EdgeInsets.all(DesignTokens.s16),
             decoration: BoxDecoration(
@@ -158,7 +161,7 @@ class _PartnershipsScreenState extends ConsumerState<PartnershipsScreen>
                 ),
               ],
             ),
-          );
+          ));
         },
       ),
     );
