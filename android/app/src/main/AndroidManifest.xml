@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for all API calls in release/profile builds. The Flutter tool
+         only auto-injects INTERNET into the debug manifest, so release APKs
+         have no network access without this. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="stylemint_mobile_frontend"
         android:name="${applicationName}"
