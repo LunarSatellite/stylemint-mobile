@@ -61,12 +61,17 @@ class RegistrationNotifier extends StateNotifier<RegistrationState> {
   String? _accountId;
   String? _email;
   String? _phoneE164;
+  String? _password;
   RegistrationStartResponseDto? _startResponse;
   RegistrationCompletionDto? _completion;
 
   String? get accountId => _accountId;
   String? get email => _email;
   String? get phoneE164 => _phoneE164;
+
+  /// Retained so onboarding can auto-login right after `accept-terms`
+  /// (device becomes authenticated without a separate sign-in step).
+  String? get password => _password;
   RegistrationStartResponseDto? get startResponse => _startResponse;
   RegistrationCompletionDto? get completion => _completion;
 
@@ -134,6 +139,7 @@ class RegistrationNotifier extends StateNotifier<RegistrationState> {
   Future<void> setPassword(String password) async {
     final accountId = _accountId;
     if (accountId == null) return;
+    _password = password;
     state = const RegistrationState.step4Sending();
     final result = await authRepository.setRegistrationPassword(
       accountId,
@@ -166,6 +172,7 @@ class RegistrationNotifier extends StateNotifier<RegistrationState> {
     _accountId = null;
     _email = null;
     _phoneE164 = null;
+    _password = null;
     _startResponse = null;
     _completion = null;
     state = const RegistrationState.initial();

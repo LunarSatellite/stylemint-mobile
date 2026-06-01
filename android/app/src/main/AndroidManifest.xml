@@ -3,6 +3,8 @@
          only auto-injects INTERNET into the debug manifest, so release APKs
          have no network access without this. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Biometric / device-credential unlock (local_auth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
     <application
         android:label="stylemint_mobile_frontend"

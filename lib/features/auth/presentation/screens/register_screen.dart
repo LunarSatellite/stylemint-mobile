@@ -12,6 +12,7 @@ import '../../../../theme/design_tokens.dart';
 import '../../data/models/registration_dto.dart';
 import '../../shared/providers.dart';
 import '../notifiers/registration_notifier.dart';
+import '../providers/auth_state_provider.dart';
 import '../widgets/auth_code_field.dart';
 import '../widgets/registration_step_indicator.dart';
 
@@ -138,6 +139,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .acceptTerms(consentVersion);
   }
 
+  /// After registration completes, silently log in with the just-created
+  /// credentials so the device is authenticated and lands in the app.
+  Future<void> _finishOnboarding() async {
+    final reg = ref.read(registrationNotifierProvider.notifier);
+    final email = reg.email;
+    final password = reg.password;
+    if (email == null || password == null) {
+      if (mounted) context.go(RouteNames.signInMethod);
+      return;
+    }
+    await ref.read(loginProvider.notifier).loginWithPassword(
+          identifierType: 'email',
+          identifier: email,
+          password: password,
+        );
+    if (!mounted) return;
+    ref.read(loginProvider).maybeWhen(
+          loadSuccess: (_) {
+            SmSnackbar.success(context, 'Welcome to Style Mint!');
+            context.go(RouteNames.home);
+          },
+          orElse: () {
+            SmSnackbar.success(context, 'Account created! Please log in.');
+            context.go(RouteNames.signInMethod);
+          },
+        );
+  }
+
   void _goToStep(int step) {
     setState(() {
       _completedSteps.add(_currentStep);
@@ -157,8 +186,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         step3Success: () => _goToStep(3),
         step4Success: () => _goToStep(4),
         step5Success: (_) {
-          SmSnackbar.success(context, 'Account created! Please log in.');
-          context.go(RouteNames.signInMethod);
+          // Device-auth: log in immediately so the user lands in the app
+          // (no separate sign-in step). Falls back to the sign-in screen if
+          // the auto-login can't complete.
+          _finishOnboarding();
         },
         step1LoadNetworkExceptions: (failure) {
           SmSnackbar.error(
