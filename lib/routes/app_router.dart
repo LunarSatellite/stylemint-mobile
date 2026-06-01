@@ -395,7 +395,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.creatorPaymentMethods,
         builder: (ctx, state) =>
-            const PaymentMethodsScreen(role: PayeeKind.creator),
+            const PayoutMethodsScreen(role: PayeeKind.creator),
       ),
       GoRoute(
         path: RouteNames.creatorReelDetail,
@@ -480,7 +480,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorPaymentMethods,
         builder: (ctx, state) =>
-            const PaymentMethodsScreen(role: PayeeKind.vendor),
+            const PayoutMethodsScreen(role: PayeeKind.vendor),
       ),
       GoRoute(
         path: RouteNames.vendorInquiries,

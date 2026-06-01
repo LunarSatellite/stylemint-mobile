@@ -279,7 +279,7 @@ class _SuccessView extends StatelessWidget {
                   borderRadius: DesignTokens.buttonRadius,
                   color: DesignTokens.primaryGreen,
                   labelColor: DesignTokens.buttonPrimaryText,
-                  onPressed: () => context.go(RouteNames.orders),
+                  onPressed: () async => context.go(RouteNames.orders),
                 ),
               ),
             ],
