@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/data/models/payout_destination_dto.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
@@ -12,8 +13,8 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Pixel-matched to Creator/Brand 'Payment Methods' / 'Add Payment Method' /
 /// 'Add Bank Method' PDFs. Shared by creators and vendors via [role].
 /// Backend: `/v1/payout-destinations` (list / create / {id}/default / DELETE).
-class PaymentMethodsScreen extends ConsumerWidget {
-  const PaymentMethodsScreen({super.key, this.role = PayeeKind.creator});
+class PayoutMethodsScreen extends ConsumerWidget {
+  const PayoutMethodsScreen({super.key, this.role = PayeeKind.creator});
 
   final PayeeKind role;
 
@@ -86,7 +87,7 @@ class PaymentMethodsScreen extends ConsumerWidget {
             color: DesignTokens.primaryGreen,
             labelColor: DesignTokens.buttonPrimaryText,
             disabled: state.isMutating,
-            onPressed: () => _showAddSheet(context, ref, provider),
+            onPressed: () async => _showAddSheet(context, ref, provider),
           ),
         ),
       ),
