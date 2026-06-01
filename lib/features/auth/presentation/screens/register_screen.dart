@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,8 +33,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _timezoneController = TextEditingController(text: 'Asia/Kathmandu');
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
 
   final _phoneFieldKey = GlobalKey<SmPhoneNumberFieldState>();
   final _emailOtpFieldKey = GlobalKey<AuthCodeFieldState>();
@@ -55,8 +55,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _timezoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -113,23 +111,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     await ref.read(registrationNotifierProvider.notifier).verifyPhone(code);
   }
 
-  Future<void> _handleStep4() async {
-    final password = _passwordController.text;
-    final confirm = _confirmPasswordController.text;
+  /// Auth is passkey/device-first — the user never sets a password. We
+  /// generate a strong one and set it silently (the backend still requires a
+  /// password to complete registration; it's stored as a recovery credential).
+  Future<void> _autoSetPassword() async {
+    await ref
+        .read(registrationNotifierProvider.notifier)
+        .setPassword(_generateStrongPassword());
+  }
 
-    if (password.isEmpty || confirm.isEmpty) {
-      SmSnackbar.error(context, 'Please enter a password');
-      return;
+  String _generateStrongPassword() {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lower = 'abcdefghijkmnpqrstuvwxyz';
+    const digits = '23456789';
+    const symbols = r'!@#\$%^&*-_=+';
+    const all = upper + lower + digits + symbols;
+    final rng = Random.secure();
+    String pick(String set) => set[rng.nextInt(set.length)];
+    // Guarantee one of each class, then fill to 24 chars.
+    final chars = <String>[pick(upper), pick(lower), pick(digits), pick(symbols)];
+    while (chars.length < 24) {
+      chars.add(pick(all));
     }
-    if (password.length < 8) {
-      SmSnackbar.error(context, 'Password must be at least 8 characters');
-      return;
-    }
-    if (password != confirm) {
-      SmSnackbar.error(context, 'Passwords do not match');
-      return;
-    }
-    await ref.read(registrationNotifierProvider.notifier).setPassword(password);
+    chars.shuffle(rng);
+    return chars.join();
   }
 
   Future<void> _handleStep5() async {
@@ -183,8 +188,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       next.maybeWhen(
         step1LoadSuccess: (_) => _goToStep(1),
         step2Success: () => _goToStep(2),
-        step3Success: () => _goToStep(3),
-        step4Success: () => _goToStep(4),
+        // Password is auto-generated + set silently after phone verification —
+        // no password step is shown (passkey-first / device-auth model).
+        step3Success: _autoSetPassword,
+        step4Success: () => _goToStep(3),
         step5Success: (_) {
           // Device-auth: log in immediately so the user lands in the app
           // (no separate sign-in step). Falls back to the sign-in screen if
@@ -251,7 +258,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         child: Column(
           children: [
             RegistrationStepIndicator(
-              totalSteps: 5,
+              totalSteps: 4,
               currentStep: _currentStep,
               completedSteps: _completedSteps,
             ),
@@ -280,8 +287,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       case 2:
         return _buildStep3(isLoading);
       case 3:
-        return _buildStep4(isLoading);
-      case 4:
         return _buildStep5();
       default:
         return const SizedBox.shrink();
@@ -465,40 +470,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildStep4(bool isLoading) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Set Your Password', style: DesignTokens.titleLarge),
-        const SizedBox(height: DesignTokens.s8),
-        Text(
-          'Choose a strong password to secure your account',
-          style: DesignTokens.bodyText,
-        ),
-        const SizedBox(height: DesignTokens.s24),
-
-        _buildLabel('Password'),
-        const SizedBox(height: DesignTokens.s4),
-        _buildTextField(
-          controller: _passwordController,
-          hintText: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
-          enabled: !isLoading,
-          isPassword: true,
-        ),
-        const SizedBox(height: DesignTokens.s16),
-
-        _buildLabel('Confirm Password'),
-        const SizedBox(height: DesignTokens.s4),
-        _buildTextField(
-          controller: _confirmPasswordController,
-          hintText: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
-          enabled: !isLoading,
-          isPassword: true,
-        ),
-      ],
-    );
-  }
-
   Widget _buildStep5() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -589,10 +560,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         onPressed = isLoading ? null : _handleStep3;
         break;
       case 3:
-        label = 'Set Password';
-        onPressed = isLoading ? null : _handleStep4;
-        break;
-      case 4:
         label = 'Accept & Create Account';
         onPressed = isLoading ? null : _handleStep5;
         break;
