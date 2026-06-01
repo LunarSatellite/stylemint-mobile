@@ -1,201 +1,119 @@
-import 'package:dio/dio.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
-import '../models/reel_dto.dart';
+import 'package:dio/dio.dart' show Options;
+import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_dto.dart';
 
-/// Remote data source for reels
-/// Handles all API calls related to reels
-abstract class ReelsRemoteDatasource {
-  Future<List<ReelDTO>> getReelsFeed({
-    required int limit,
-    String? cursor,
-  });
+/// Remote datasource for the reels feature.
+/// Talks to the backend reels endpoints via [ApiClient]; throws on failure
+/// (exceptions are mapped to a Failure in the repository layer).
+class ReelsRemoteDataSource {
+  ReelsRemoteDataSource({required this.apiClient});
 
-  Future<ReelDTO> getReelDetail(String reelId);
+  final ApiClient apiClient;
 
-  Future<bool> likeReel(String reelId, String idempotencyKey);
-
-  Future<bool> unlikeReel(String reelId, String idempotencyKey);
-
-  Future<bool> addToWishlist(String reelId, String idempotencyKey);
-
-  Future<bool> removeFromWishlist(String reelId, String idempotencyKey);
-
-  Future<bool> followCreator(String creatorId, String idempotencyKey);
-
-  Future<bool> unfollowCreator(String creatorId, String idempotencyKey);
-
-  Future<bool> commentOnReel(
-    String reelId,
-    String commentText,
-    String idempotencyKey,
-  );
-
-  Future<bool> shareReel(String reelId, String idempotencyKey);
-}
-
-/// Implementation of ReelsRemoteDatasource
-class ReelsRemoteDatasourceImpl implements ReelsRemoteDatasource {
-  const ReelsRemoteDatasourceImpl(this._dioClient);
-
-  final DioClient _dioClient;
-
-  @override
-  Future<List<ReelDTO>> getReelsFeed({
+  /// GET `/v1/feed` — cursor-paginated reels feed.
+  Future<List<ReelDto>> getReelsFeed({
     required int limit,
     String? cursor,
   }) async {
-    try {
-      final response = await _dioClient.get(
-        '/v1/reels/feed',
-        queryParameters: {
-          'limit': limit,
-          if (cursor != null) 'cursor': cursor,
-        },
-      );
+    final response = await apiClient.get(
+      '/v1/feed',
+      queryParameters: {
+        'take': limit,
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
 
-      final data = response.data as Map<String, dynamic>;
-      final reels = (data['reels'] as List)
-          .map((e) => ReelDTO.fromJson(e as Map<String, dynamic>))
-          .toList();
-
-      return reels;
-    } on DioException {
-      rethrow;
-    }
+    final data = response as Map<String, dynamic>;
+    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map((e) => ReelDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+    return items;
   }
 
-  @override
-  Future<ReelDTO> getReelDetail(String reelId) async {
-    try {
-      final response = await _dioClient.get('/v1/reels/$reelId');
-      return ReelDTO.fromJson(response.data as Map<String, dynamic>);
-    } on DioException {
-      rethrow;
-    }
+  /// GET `/v1/public/reels/{id}` — single reel detail.
+  Future<ReelDto> getReelDetail(String reelId) async {
+    final response = await apiClient.get('/v1/public/reels/$reelId');
+    return ReelDto.fromJson(response as Map<String, dynamic>);
   }
 
-  @override
-  Future<bool> likeReel(String reelId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/reels/$reelId/like',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// POST `/v1/reactions/posts/{postId}` — like a reel (reels are posts).
+  Future<void> likeReel(String reelId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/reactions/posts/$reelId',
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> unlikeReel(String reelId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/reels/$reelId/unlike',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// DELETE `/v1/reactions/posts/{postId}` — unlike a reel (reels are posts).
+  Future<void> unlikeReel(String reelId, String idempotencyKey) async {
+    await apiClient.authDelete(
+      '/v1/reactions/posts/$reelId',
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> addToWishlist(String reelId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/reels/$reelId/wishlist',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// POST `/v1/cart/saved-for-later` — add to saved-for-later (wishlist).
+  Future<void> addToWishlist(String reelId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/cart/saved-for-later',
+      data: {'productId': reelId},
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> removeFromWishlist(String reelId, String idempotencyKey) async {
-    try {
-      await _dioClient.delete(
-        '/v1/reels/$reelId/wishlist',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// DELETE `/v1/cart/saved-for-later/{savedItemId}` — remove from wishlist.
+  Future<void> removeFromWishlist(String reelId, String idempotencyKey) async {
+    await apiClient.authDelete(
+      '/v1/cart/saved-for-later/$reelId',
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> followCreator(String creatorId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/creators/$creatorId/follow',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// POST `/v1/connection-requests` — follow a creator.
+  Future<void> followCreator(String creatorId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/connection-requests',
+      data: {'targetAccountId': creatorId},
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> unfollowCreator(String creatorId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/creators/$creatorId/unfollow',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// DELETE `/v1/connections/{otherAccountId}` — unfollow a creator.
+  Future<void> unfollowCreator(String creatorId, String idempotencyKey) async {
+    await apiClient.authDelete(
+      '/v1/connections/$creatorId',
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> commentOnReel(
+  /// POST `/v1/customer/reels/{reelId}/comments`
+  Future<void> commentOnReel(
     String reelId,
-    String commentText,
+    String text,
     String idempotencyKey,
   ) async {
-    try {
-      await _dioClient.post(
-        '/v1/reels/$reelId/comments',
-        data: {'text': commentText},
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+    await apiClient.post(
+      '/v1/customer/reels/$reelId/comments',
+      data: {'text': text},
+      options: _idempotent(idempotencyKey),
+    );
   }
 
-  @override
-  Future<bool> shareReel(String reelId, String idempotencyKey) async {
-    try {
-      await _dioClient.post(
-        '/v1/reels/$reelId/share',
-        options: Options(
-          headers: {'Idempotency-Key': idempotencyKey},
-        ),
-      );
-      return true;
-    } on DioException {
-      rethrow;
-    }
+  /// POST `/v1/reels/{reelId}/views` — share/view tracking.
+  Future<void> shareReel(String reelId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/reels/$reelId/views',
+      options: _idempotent(idempotencyKey),
+    );
   }
+
+  /// Builds request options carrying the caller-supplied Idempotency-Key.
+  /// `requiresToken: true` keeps the auth interceptor behaviour from
+  /// [ApiClient.post]/[ApiClient.authDelete].
+  Options _idempotent(String idempotencyKey) => Options(
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': idempotencyKey,
+    },
+  );
 }

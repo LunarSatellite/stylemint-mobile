@@ -16,7 +16,7 @@ class _Slide {
 ///
 /// Swipeable illustration + title (22px) + subtitle (14px) + 4-dot indicator,
 /// with a sticky Next / Skip bottom bar. Last slide's primary action reads
-/// "Get Started". Both Skip and finishing route to the sign-in entry.
+/// "Get Started". Both Skip and finishing route to the home screen (reels feed).
 class OnboardingCarouselScreen extends StatefulWidget {
   const OnboardingCarouselScreen({super.key});
 
@@ -54,7 +54,7 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
 
   bool get _isLast => _page == _slides.length - 1;
 
-  void _finish() => context.go(RouteNames.signInMethod);
+  void _finish() => context.go(RouteNames.home);
 
   void _next() {
     if (_isLast) {

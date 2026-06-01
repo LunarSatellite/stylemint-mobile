@@ -229,21 +229,9 @@ sealed class Failure with _$Failure {
 }
 ```
 
-### `lib/core/usecase/usecase.dart`
-
-```dart
-import 'package:fpdart/fpdart.dart';
-import '../error/failure.dart';
-
-abstract interface class UseCase<Type, Params> {
-  Future<Either<Failure, Type>> call(Params params);
-}
-
-/// Pass when the use case takes no parameters.
-class NoParams {
-  const NoParams();
-}
-```
+> **No `lib/core/usecase/` file.** This project has **no UseCase layer** —
+> presentation `StateNotifier`s call repositories directly. Do not scaffold
+> a `UseCase` base class.
 
 ### `lib/core/network/dio_client.dart`
 
@@ -676,15 +664,15 @@ Before submitting to App Store / Play Store:
 - **Domain importing Dio/Flutter** — the linter won't catch this for
   you; run `grep -r "package:dio" lib/features/*/domain/` in CI and
   fail the build if it finds anything.
-- **Calling a repository directly from a Riverpod provider** — always
-  go through a UseCase. The presenter doesn't know about network
-  details.
-- **Forgetting to fold `Either` in the provider** — unhandled `Left`
-  means a silent no-op. Always `.fold(AsyncError.new, AsyncData.new)`.
-- **Idempotency-Key inside the datasource** — it must be generated at
-  the presentation layer (one per user tap) and passed down as a
-  param, not auto-generated in the datasource (which may be called
-  by retry logic).
+- **Adding a UseCase layer** — don't. The `StateNotifier` calls the
+  repository directly. There is no `domain/usecases/`.
+- **Forgetting to fold `Either` in the notifier** — unhandled `Left`
+  means a silent no-op. Always
+  `state = either.fold(MyState.loadFailure, MyState.loadSuccess)`.
+- **Idempotency-Key inside the datasource as a constant** — it must be
+  minted per user action (one per tap), passed to the repository method
+  or minted inside the repository per call — never reused across the
+  retry logic in the datasource.
 - **`build_runner` stale output** — if your codegen seems out of
   sync, always pass `--delete-conflicting-outputs`. The error
   messages can be misleading.
@@ -730,4 +718,4 @@ Before submitting to App Store / Play Store:
 | `mockito` | `mocktail` is null-safe and ergonomic. |
 | `freezed_lints` | Not needed; freezed's own analyzer is enough. |
 | `dartz` | Use `fpdart` instead — same Either semantics, better Dart 3 null-safety support and active maintenance. |
-| Direct Dio in providers | Violates Clean Architecture dependency rule. Always DataSource → Repository → UseCase → Provider. |
+| Direct Dio in providers | Violates Clean Architecture dependency rule. Always DataSource → Repository → Notifier. |

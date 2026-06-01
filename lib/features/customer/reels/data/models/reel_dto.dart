@@ -1,15 +1,15 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
-import '../../domain/entities/reel.dart';
 
 part 'reel_dto.freezed.dart';
 part 'reel_dto.g.dart';
 
-/// DTO for Reel - handles JSON serialization/deserialization
-/// Converts between API responses and domain entities
+/// DTO for a reel returned by `/v1/reels/feed`.
+/// JSON (de)serialization lives here; [toDomain] maps to the pure-Dart entity.
 @freezed
-class ReelDTO with _$ReelDTO {
-  const factory ReelDTO({
+abstract class ReelDto with _$ReelDto {
+  const factory ReelDto({
     required String id,
     required String sourceUrl,
     required String thumbnailUrl,
@@ -17,72 +17,68 @@ class ReelDTO with _$ReelDTO {
     required String creatorName,
     required String creatorAvatarUrl,
     required String caption,
-    required String musicTitle,
-    required String musicArtist,
-    @Default([]) List<TaggedProductDTO> taggedProducts,
+    required DateTime createdAt,
+    @Default('') String musicTitle,
+    @Default('') String musicArtist,
+    @Default(<TaggedProductDto>[]) List<TaggedProductDto> taggedProducts,
     @Default(0) int likeCount,
     @Default(0) int commentCount,
     @Default(0) int shareCount,
-    @JsonKey(name: 'isLikedByUser') bool? isLikedByUser,
-    @JsonKey(name: 'isWishlistedByUser') bool? isWishlistedByUser,
-    @JsonKey(name: 'isCreatorFollowed') bool? isCreatorFollowed,
-    required DateTime createdAt,
-  }) = _ReelDTO;
+    bool? isLikedByUser,
+    bool? isWishlistedByUser,
+    bool? isCreatorFollowed,
+  }) = _ReelDto;
 
-  factory ReelDTO.fromJson(Map<String, dynamic> json) =>
-      _$ReelDTOFromJson(json);
+  const ReelDto._();
 
-  const ReelDTO._();
+  factory ReelDto.fromJson(Map<String, dynamic> json) =>
+      _$ReelDtoFromJson(json);
 
-  /// Converts DTO to domain entity
-  Reel toDomain() {
-    return Reel(
-      id: id,
-      sourceUrl: sourceUrl,
-      thumbnailUrl: thumbnailUrl,
-      creatorId: creatorId,
-      creatorName: creatorName,
-      creatorAvatarUrl: creatorAvatarUrl,
-      caption: caption,
-      musicTitle: musicTitle,
-      musicArtist: musicArtist,
-      taggedProducts: taggedProducts.map((dto) => dto.toDomain()).toList(),
-      likeCount: likeCount,
-      commentCount: commentCount,
-      shareCount: shareCount,
-      isLikedByUser: isLikedByUser,
-      isWishlistedByUser: isWishlistedByUser,
-      isCreatorFollowed: isCreatorFollowed,
-      createdAt: createdAt,
-    );
-  }
+  Reel toDomain() => Reel(
+    id: id,
+    sourceUrl: sourceUrl,
+    thumbnailUrl: thumbnailUrl,
+    creatorId: creatorId,
+    creatorName: creatorName,
+    creatorAvatarUrl: creatorAvatarUrl,
+    caption: caption,
+    musicTitle: musicTitle,
+    musicArtist: musicArtist,
+    taggedProducts: taggedProducts
+        .map((dto) => dto.toDomain())
+        .toList(growable: false),
+    likeCount: likeCount,
+    commentCount: commentCount,
+    shareCount: shareCount,
+    isLikedByUser: isLikedByUser,
+    isWishlistedByUser: isWishlistedByUser,
+    isCreatorFollowed: isCreatorFollowed,
+    createdAt: createdAt,
+  );
 }
 
-/// DTO for tagged product
+/// DTO for a product tagged on a reel.
 @freezed
-class TaggedProductDTO with _$TaggedProductDTO {
-  const factory TaggedProductDTO({
+abstract class TaggedProductDto with _$TaggedProductDto {
+  const factory TaggedProductDto({
     required String id,
     required String name,
     required String imageUrl,
     required double amount,
     @Default('NPR') String currency,
     @Default(1) int quantity,
-  }) = _TaggedProductDTO;
+  }) = _TaggedProductDto;
 
-  factory TaggedProductDTO.fromJson(Map<String, dynamic> json) =>
-      _$TaggedProductDTOFromJson(json);
+  const TaggedProductDto._();
 
-  const TaggedProductDTO._();
+  factory TaggedProductDto.fromJson(Map<String, dynamic> json) =>
+      _$TaggedProductDtoFromJson(json);
 
-  /// Converts DTO to domain entity
-  TaggedProductEntity toDomain() {
-    return TaggedProductEntity(
-      id: id,
-      name: name,
-      imageUrl: imageUrl,
-      price: Money(amount: amount, currency: currency),
-      quantity: quantity,
-    );
-  }
+  TaggedProductEntity toDomain() => TaggedProductEntity(
+    id: id,
+    name: name,
+    imageUrl: imageUrl,
+    price: Money(amount: amount, currency: currency),
+    quantity: quantity,
+  );
 }

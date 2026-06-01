@@ -1,5 +1,20 @@
 // Auth DTOs and Models
 export 'account_dto.dart';
+export 'account_pause_dto.dart';
 export 'auth_response_dto.dart';
-export 'otp_dto.dart';
+export 'blocked_user_dto.dart';
+export 'device_dto.dart';
 export 'error_response_dto.dart';
+export 'external_id_dto.dart';
+export 'handle_dto.dart';
+export 'interest_dto.dart';
+export 'magic_link_dto.dart';
+export 'marketing_consent_dto.dart';
+export 'mfa_method_dto.dart';
+export 'oauth_dto.dart';
+export 'otp_dto.dart';
+export 'passkey_dto.dart';
+export 'password_reset_dto.dart';
+export 'registration_dto.dart';
+export 'totp_enrollment_dto.dart';
+export 'user_session_dto.dart';

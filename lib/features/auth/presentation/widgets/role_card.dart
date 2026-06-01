@@ -30,9 +30,10 @@ class RoleCard extends StatelessWidget {
           color: DesignTokens.bgAppBody,
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           border: Border.all(
-            color: isSelected
-                ? DesignTokens.primaryGreen
-                : DesignTokens.borderDefault,
+            color:
+                isSelected
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.borderDefault,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -45,16 +46,18 @@ class RoleCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? DesignTokens.primaryGreenDark
-                    : DesignTokens.bgAppBodyLight,
+                color:
+                    isSelected
+                        ? DesignTokens.primaryGreenDark
+                        : DesignTokens.bgAppBodyLight,
                 borderRadius: BorderRadius.circular(DesignTokens.s12),
               ),
               child: Icon(
                 icon,
-                color: isSelected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.textMuted,
+                color:
+                    isSelected
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.textMuted,
                 size: 28,
               ),
             ),

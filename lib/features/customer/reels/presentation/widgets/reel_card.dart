@@ -1,124 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
-import 'package:stylemint_mobile_frontend/theme/app_theme.dart';
-import 'creator_info.dart';
-import 'reel_actions.dart';
-import 'tagged_products_section.dart';
-import 'reel_player.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_player.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Individual reel card displaying video, creator info, caption, actions, and products
+/// A single full-screen reel: video pointer background with a gradient
+/// scrim, creator info + caption, right-rail actions and tagged products.
 class ReelCard extends StatelessWidget {
-  final Reel reel;
+  const ReelCard({required this.reel, super.key});
 
-  const ReelCard({
-    Key? key,
-    required this.reel,
-  }) : super(key: key);
+  final Reel reel;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Video background / image
+        // Tap-to-open external video (IG / TikTok / YouTube / FB).
         ReelPlayer(reel: reel),
 
-        // Overlay with content
-        Positioned.fill(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Status bar (top)
-              SafeArea(
-                bottom: false,
-                child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Reels',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      Icon(Icons.more_vert, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Bottom section with creator info, caption, products, actions, and navbar
-              SafeArea(
-                top: false,
-                child: Container(
-                  color: Colors.black54,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Creator info + caption
-                      CreatorInfo(reel: reel),
-
-                      const SizedBox(height: 16),
-
-                      // Tagged products
-                      if (reel.taggedProducts.isNotEmpty)
-                        TaggedProductsSection(products: reel.taggedProducts),
-
-                      const SizedBox(height: 16),
-
-                      // Bottom navbar
-                      _buildBottomNavbar(context),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+        // Bottom scrim so overlaid text stays legible over any thumbnail.
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black87],
+              stops: [0.45, 1.0],
+            ),
           ),
         ),
 
-        // Right side action buttons
+        // Right-rail actions (like / comment / share / wishlist / cart).
         Positioned(
-          right: 12,
-          bottom: 200, // Adjust based on navbar height
+          right: DesignTokens.s12,
+          bottom: 220,
           child: ReelActions(reel: reel),
         ),
-      ],
-    );
-  }
 
-  Widget _buildBottomNavbar(BuildContext context) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
-        border: Border(
-          top: BorderSide(color: Colors.white10),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _navItem(Icons.home, 'Home', true),
-          _navItem(Icons.explore, 'Explore', false),
-          _navItem(Icons.add_circle, 'Post', false),
-          _navItem(Icons.notifications, 'Notifications', false),
-          _navItem(Icons.person, 'Profile', false),
-        ],
-      ),
-    );
-  }
-
-  Widget _navItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.white : Colors.grey,
-          size: 24,
+        // Creator info, caption and tagged products pinned to the bottom.
+        SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 72),
+                child: CreatorInfo(reel: reel),
+              ),
+              if (reel.taggedProducts.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s12),
+                TaggedProductsSection(products: reel.taggedProducts),
+              ],
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
         ),
       ],
     );

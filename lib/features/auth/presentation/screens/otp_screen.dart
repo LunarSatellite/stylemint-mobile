@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/auth_code_field.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/auth_code_field.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 
 /// OTP Verification screen — pixel-matched to Figma frame `9684:20916`.
 ///
@@ -32,30 +33,23 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final GlobalKey<AuthCodeFieldState> _codeFieldKey =
       GlobalKey<AuthCodeFieldState>();
 
+  /// Validate + fire. Navigation/error handled by the `ref.listen` in [build].
   Future<void> _handleVerifyOtp(String code) async {
     if (code.length != 5) {
       SmSnackbar.error(context, 'Please enter all 5 digits');
       return;
     }
-
-    await ref.read(otpVerificationProvider.notifier).verifyOtp(
+    await ref
+        .read(otpVerificationProvider.notifier)
+        .verifyOtp(
           identifierType: widget.identifierType,
           identifier: widget.phone,
           code: code,
         );
-
-    if (!mounted) return;
-    final verifyState = ref.read(otpVerificationProvider);
-    if (verifyState.isSuccess && verifyState.authData != null) {
-      context.push(RouteNames.userTypeSelection, extra: verifyState.authData!);
-    } else if (verifyState.hasError) {
-      SmSnackbar.error(context, _getErrorMessage(verifyState.error));
-      _codeFieldKey.currentState?.clearCode();
-    }
   }
 
-  String _getErrorMessage(dynamic error) {
-    final s = error.toString();
+  String _getErrorMessage(NetworkExceptions failure) {
+    final s = failure.toString();
     if (s.contains('INVALID_OTP')) return 'Invalid OTP code. Please try again';
     if (s.contains('EXPIRED')) return 'OTP code has expired. Request a new one';
     if (s.contains('network')) {
@@ -68,14 +62,30 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Widget build(BuildContext context) {
     final isLoading = ref.watch(otpVerificationProvider).isLoading;
 
+    // Side-effects react to the verification outcome (see SKILL §3.8).
+    ref.listen<OtpVerificationState>(otpVerificationProvider, (previous, next) {
+      next.maybeWhen(
+        loadSuccess:
+            (auth) => context.push(RouteNames.userTypeSelection, extra: auth),
+        loadFailure: (failure) {
+          SmSnackbar.error(context, _getErrorMessage(failure));
+          _codeFieldKey.currentState?.clearCode();
+        },
+        orElse: () {},
+      );
+    });
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => context.canPop() ? context.pop() : null,
         ),
       ),
@@ -86,7 +96,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.appHorizontalPadding),
+                    horizontal: DesignTokens.appHorizontalPadding,
+                  ),
                   child: Column(
                     children: [
                       // Checkmark illustration (Figma image 1, node 9684:20919)
@@ -103,9 +114,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       // Header
                       Column(
                         children: [
-                          Text('OTP Verification',
-                              textAlign: TextAlign.center,
-                              style: DesignTokens.titleLarge),
+                          Text(
+                            'OTP Verification',
+                            textAlign: TextAlign.center,
+                            style: DesignTokens.titleLarge,
+                          ),
                           const SizedBox(height: DesignTokens.s8),
                           Text(
                             'Please enter the OTP code we sent you in the phone number',
@@ -127,22 +140,27 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
                       // Resend line
                       GestureDetector(
-                        onTap: isLoading
-                            ? null
-                            : () => SmSnackbar.info(
-                                context, 'Resend OTP coming soon'),
+                        onTap:
+                            isLoading
+                                ? null
+                                : () => SmSnackbar.info(
+                                  context,
+                                  'Resend OTP coming soon',
+                                ),
                         child: Text.rich(
                           TextSpan(
                             children: [
                               TextSpan(
                                 text: 'Did not receive code? ',
-                                style: DesignTokens.mediumRegular
-                                    .copyWith(color: DesignTokens.textLight),
+                                style: DesignTokens.mediumRegular.copyWith(
+                                  color: DesignTokens.textLight,
+                                ),
                               ),
                               TextSpan(
                                 text: 'Resend Code',
-                                style: DesignTokens.mediumSemibold
-                                    .copyWith(color: DesignTokens.primaryGreen),
+                                style: DesignTokens.mediumSemibold.copyWith(
+                                  color: DesignTokens.primaryGreen,
+                                ),
                               ),
                             ],
                           ),
@@ -172,9 +190,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   labelColor: DesignTokens.buttonPrimaryText,
                   disabled: isLoading,
                   isLoadingInitially: isLoading,
-                  suffixIcon: const Icon(Icons.arrow_forward_rounded,
-                      size: DesignTokens.iconSmall,
-                      color: DesignTokens.buttonPrimaryText),
+                  suffixIcon: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: DesignTokens.iconSmall,
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                   onPressed: () async {
                     final code = _codeFieldKey.currentState?.getCode() ?? '';
                     await _handleVerifyOtp(code);

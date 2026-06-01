@@ -1,26 +1,8 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-/// Reel entity - represents a reel/video in the feed
-/// Pure Dart entity with no JSON serialization (that's for DTOs in data layer)
+/// A reel in the feed. Pure-Dart domain entity — no JSON, no Dio.
+/// Reels are pointer records: [sourceUrl] deep-links to the external platform.
 class Reel {
-  final String id;
-  final String sourceUrl; // Deep link to IG/TikTok/YouTube/FB
-  final String thumbnailUrl; // Preview image
-  final String creatorId;
-  final String creatorName;
-  final String creatorAvatarUrl;
-  final String caption;
-  final String musicTitle;
-  final String musicArtist;
-  final List<TaggedProductEntity> taggedProducts;
-  final int likeCount;
-  final int commentCount;
-  final int shareCount;
-  final bool? isLikedByUser;
-  final bool? isWishlistedByUser;
-  final bool? isCreatorFollowed;
-  final DateTime createdAt;
-
   const Reel({
     required this.id,
     required this.sourceUrl,
@@ -35,11 +17,29 @@ class Reel {
     required this.likeCount,
     required this.commentCount,
     required this.shareCount,
+    required this.createdAt,
     this.isLikedByUser,
     this.isWishlistedByUser,
     this.isCreatorFollowed,
-    required this.createdAt,
   });
+
+  final String id;
+  final String sourceUrl; // Deep link to IG / TikTok / YouTube / FB
+  final String thumbnailUrl; // Preview image
+  final String creatorId;
+  final String creatorName;
+  final String creatorAvatarUrl;
+  final String caption;
+  final String musicTitle;
+  final String musicArtist;
+  final List<TaggedProductEntity> taggedProducts;
+  final int likeCount;
+  final int commentCount;
+  final int shareCount;
+  final DateTime createdAt;
+  final bool? isLikedByUser;
+  final bool? isWishlistedByUser;
+  final bool? isCreatorFollowed;
 
   Reel copyWith({
     String? id,
@@ -55,10 +55,10 @@ class Reel {
     int? likeCount,
     int? commentCount,
     int? shareCount,
+    DateTime? createdAt,
     bool? isLikedByUser,
     bool? isWishlistedByUser,
     bool? isCreatorFollowed,
-    DateTime? createdAt,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -74,22 +74,16 @@ class Reel {
       likeCount: likeCount ?? this.likeCount,
       commentCount: commentCount ?? this.commentCount,
       shareCount: shareCount ?? this.shareCount,
+      createdAt: createdAt ?? this.createdAt,
       isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       isWishlistedByUser: isWishlistedByUser ?? this.isWishlistedByUser,
       isCreatorFollowed: isCreatorFollowed ?? this.isCreatorFollowed,
-      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
 
-/// Tagged product entity - product shown in a reel
+/// A product tagged on a reel.
 class TaggedProductEntity {
-  final String id;
-  final String name;
-  final String imageUrl;
-  final Money price;
-  final int quantity;
-
   const TaggedProductEntity({
     required this.id,
     required this.name,
@@ -97,4 +91,10 @@ class TaggedProductEntity {
     required this.price,
     required this.quantity,
   });
+
+  final String id;
+  final String name;
+  final String imageUrl;
+  final Money price;
+  final int quantity;
 }

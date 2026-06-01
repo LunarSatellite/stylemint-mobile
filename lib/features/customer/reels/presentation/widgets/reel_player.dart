@@ -1,72 +1,63 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Reel player widget - displays reel background image and opens external app on tap
-/// Never embeds video player. Tapping opens the reel in IG/TikTok/YouTube/FB native apps
+/// Renders the reel thumbnail and, on tap, opens the source in the external
+/// app (Instagram / TikTok / YouTube / Facebook). The app never embeds a
+/// player — reels are pointer records only.
 class ReelPlayer extends StatelessWidget {
+  const ReelPlayer({required this.reel, super.key});
+
   final Reel reel;
 
-  const ReelPlayer({
-    Key? key,
-    required this.reel,
-  }) : super(key: key);
-
-  Future<void> _openReelExternal() async {
-    final url = reel.sourceUrl; // Deep link to IG/TikTok/YouTube/FB
-    if (url.isNotEmpty) {
-      try {
-        if (await canLaunchUrl(Uri.parse(url))) {
-          await launchUrl(
-            Uri.parse(url),
-            mode: LaunchMode.externalApplication,
-          );
-        }
-      } catch (e) {
-        debugPrint('Failed to open reel: $e');
-      }
+  Future<void> _openExternal() async {
+    final uri = Uri.tryParse(reel.sourceUrl);
+    if (uri == null) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _openReelExternal,
-      child: Container(
-        color: Colors.black,
+      onTap: _openExternal,
+      child: ColoredBox(
+        color: DesignTokens.baseBlack,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video background (placeholder image from reel)
             if (reel.thumbnailUrl.isNotEmpty)
-              Image.network(
-                reel.thumbnailUrl,
+              CachedNetworkImage(
+                imageUrl: reel.thumbnailUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[900],
-                    child: Center(
+                placeholder:
+                    (_, _) => const ColoredBox(
+                      color: DesignTokens.bgAppBodyLight,
+                    ),
+                errorWidget:
+                    (_, _, _) => const ColoredBox(
+                      color: DesignTokens.bgAppBodyLight,
                       child: Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey[600],
+                        Icons.image_not_supported_outlined,
+                        color: DesignTokens.iconLight,
                       ),
                     ),
-                  );
-                },
               ),
-
-            // Play indicator overlay
+            // Play affordance — taps open the external app.
             Center(
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.8),
+                  color: DesignTokens.baseBlack.withValues(alpha: 0.35),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Icon(
-                  Icons.play_arrow,
-                  size: 40,
-                  color: Colors.black,
+                padding: const EdgeInsets.all(DesignTokens.s16),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  size: DesignTokens.iconLarge,
+                  color: DesignTokens.iconWhite,
                 ),
               ),
             ),

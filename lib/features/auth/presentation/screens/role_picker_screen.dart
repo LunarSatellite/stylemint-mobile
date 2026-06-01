@@ -55,119 +55,123 @@ class _RolePickerScreenState extends ConsumerState<RolePickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BaseWidget(builder: (_, sizeConfig, theme) {
-      return Scaffold(
-        backgroundColor: DesignTokens.bgAppFoundation,
-        appBar: const SmAppBar(
-          title: 'Choose Your Role',
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.appHorizontalPadding,
-            vertical: DesignTokens.appVerticalPadding,
+    return BaseWidget(
+      builder: (_, sizeConfig, theme) {
+        return Scaffold(
+          backgroundColor: DesignTokens.bgAppFoundation,
+          appBar: const SmAppBar(
+            title: 'Choose Your Role',
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Text(
-                'Select Your Role',
-                style: DesignTokens.h2,
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Text(
-                'You can change this later in your profile settings',
-                style: DesignTokens.body,
-              ),
-              const SizedBox(height: DesignTokens.s32),
-
-              // Role Cards Grid
-              GridView.count(
-                crossAxisCount: 1,
-                mainAxisSpacing: DesignTokens.s16,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  // Customer Role
-                  RoleCard(
-                    role: 'customer',
-                    title: 'Customer',
-                    description: 'Shop products through engaging reels',
-                    icon: Icons.shopping_bag_outlined,
-                    isSelected: selectedRole == 'customer',
-                    onTap: () => _handleRoleSelection('customer'),
-                  ),
-
-                  // Creator Role
-                  RoleCard(
-                    role: 'creator',
-                    title: 'Creator',
-                    description: 'Create content and earn commissions',
-                    icon: Icons.videocam_outlined,
-                    isSelected: selectedRole == 'creator',
-                    onTap: () => _handleRoleSelection('creator'),
-                  ),
-
-                  // Vendor Role
-                  RoleCard(
-                    role: 'vendor',
-                    title: 'Vendor',
-                    description: 'Sell your products to the community',
-                    icon: Icons.storefront_outlined,
-                    isSelected: selectedRole == 'vendor',
-                    onTap: () => _handleRoleSelection('vendor'),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: DesignTokens.s32),
-
-              // Continue Button
-              SizedBox(
-                width: double.infinity,
-                child: SmPrimaryButton(
-                  label: 'Continue',
-                  onPressed: () async => _handleContinue(),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.appHorizontalPadding,
+              vertical: DesignTokens.appVerticalPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Text(
+                  'Select Your Role',
+                  style: DesignTokens.h2,
                 ),
-              ),
-
-              const SizedBox(height: DesignTokens.s16),
-
-              // Info Box
-              Container(
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBody,
-                  borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-                  border: Border.all(
-                    color: DesignTokens.borderDefault,
-                    width: 1,
-                  ),
+                const SizedBox(height: DesignTokens.s12),
+                Text(
+                  'You can change this later in your profile settings',
+                  style: DesignTokens.body,
                 ),
-                padding: const EdgeInsets.all(DesignTokens.s16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: DesignTokens.s32),
+
+                // Role Cards Grid
+                GridView.count(
+                  crossAxisCount: 1,
+                  mainAxisSpacing: DesignTokens.s16,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    Text(
-                      '💡 Did you know?',
-                      style: DesignTokens.small.copyWith(
-                        color: DesignTokens.colorInfo,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    // Customer Role
+                    RoleCard(
+                      role: 'customer',
+                      title: 'Customer',
+                      description: 'Shop products through engaging reels',
+                      icon: Icons.shopping_bag_outlined,
+                      isSelected: selectedRole == 'customer',
+                      onTap: () => _handleRoleSelection('customer'),
                     ),
-                    const SizedBox(height: DesignTokens.s8),
-                    Text(
-                      'You can switch between roles anytime. The more roles you enable, the more earning opportunities you unlock!',
-                      style: DesignTokens.tiny.copyWith(
-                        color: DesignTokens.textMuted,
-                      ),
+
+                    // Creator Role
+                    RoleCard(
+                      role: 'creator',
+                      title: 'Creator',
+                      description: 'Create content and earn commissions',
+                      icon: Icons.videocam_outlined,
+                      isSelected: selectedRole == 'creator',
+                      onTap: () => _handleRoleSelection('creator'),
+                    ),
+
+                    // Vendor Role
+                    RoleCard(
+                      role: 'vendor',
+                      title: 'Vendor',
+                      description: 'Sell your products to the community',
+                      icon: Icons.storefront_outlined,
+                      isSelected: selectedRole == 'vendor',
+                      onTap: () => _handleRoleSelection('vendor'),
                     ),
                   ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: DesignTokens.s32),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  child: SmPrimaryButton(
+                    label: 'Continue',
+                    onPressed: () async => _handleContinue(),
+                  ),
+                ),
+
+                const SizedBox(height: DesignTokens.s16),
+
+                // Info Box
+                Container(
+                  decoration: BoxDecoration(
+                    color: DesignTokens.bgAppBody,
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.cardRadius,
+                    ),
+                    border: Border.all(
+                      color: DesignTokens.borderDefault,
+                      width: 1,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(DesignTokens.s16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '💡 Did you know?',
+                        style: DesignTokens.small.copyWith(
+                          color: DesignTokens.colorInfo,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s8),
+                      Text(
+                        'You can switch between roles anytime. The more roles you enable, the more earning opportunities you unlock!',
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }

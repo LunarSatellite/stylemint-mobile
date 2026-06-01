@@ -1,48 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/providers/reels_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_card.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/error_view.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/empty_state.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Reels feed screen - displays vertical scroll feed of reels
-/// Each reel shows video placeholder, creator info, caption, actions, and tagged products
+/// Home Page Reel — vertical, full-screen reels feed (Figma node 9386-5224).
+///
+/// State comes from [reelsFeedNotifierProvider]; the notifier talks to the
+/// reels repository directly (no UseCase layer).
 class ReelsFeedScreen extends ConsumerWidget {
-  const ReelsFeedScreen({Key? key}) : super(key: key);
+  const ReelsFeedScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reelsAsync = ref.watch(reelsFeedProvider);
+    final state = ref.watch(reelsFeedNotifierProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: reelsAsync.when(
-        data: (reels) {
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: state.when(
+        initial: _loader,
+        loadInProgress: _loader,
+        loadSuccess: (reels) {
           if (reels.isEmpty) {
-            return EmptyState(
-              title: 'No reels yet',
-              message: 'Check back soon for new content',
+            return const SmEmptyState(
+              message: 'No reels yet. Check back soon for new content.',
+              icon: Icons.video_library_outlined,
             );
           }
-
           return PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: reels.length,
-            itemBuilder: (context, index) {
-              final reel = reels[index];
-              return ReelCard(reel: reel);
-            },
+            itemBuilder: (_, index) => ReelCard(reel: reels[index]),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stackTrace) => ErrorView(
-          title: 'Failed to load reels',
-          message: error.toString(),
-          onRetry: () => ref.refresh(reelsFeedProvider),
-        ),
+        loadFailure:
+            (failure) => SmErrorView(
+              message: 'Failed to load reels.',
+              onRetry:
+                  () =>
+                      ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
+            ),
       ),
     );
   }
+
+  Widget _loader() => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }

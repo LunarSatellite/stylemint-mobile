@@ -7,9 +7,45 @@ flutter_secure_storage, role-switching, deep-link consumers, and
 edge cases. All code in Dart 3.7 / Flutter 3.41.9.
 
 **Architecture note:** Auth follows Feature-First Clean Architecture.
-`auth/domain/` is pure Dart. `auth/data/` holds the Dio datasource
-and repository impl. `auth/presentation/providers/` calls UseCases
-only — `Either<Failure, AuthState>` returned from every UseCase.
+`auth/domain/` is pure Dart (entities + repository interface — **no
+usecases**). `auth/data/` holds the Dio datasource and repository
+impl. `auth/presentation/notifiers/` holds `StateNotifier`s that call
+`AuthRepository` directly; DI lives in `auth/shared/providers.dart`.
+Every repository method returns `Either<Failure, T>`. Notifier state is
+a **Freezed union** (`initial / loadInProgress / loadSuccess / loadFailure`).
+
+**Side-effects (navigation + snackbars) use `ref.listen`, never
+await-then-read** (see SKILL §3.8). The OTP screens are the reference:
+
+```dart
+// login_screen / email_login_screen — request OTP, then navigate on success
+ref.listen<OtpRequestState>(otpRequestProvider, (previous, next) {
+  next.maybeWhen(
+    loadSuccess: (otp) => context.push(RouteNames.otp, extra: {
+      'phone': _submittedPhone, 'otpId': otp.otpId, 'identifierType': 'phone',
+    }),
+    loadFailure: (_) =>
+        SmSnackbar.error(context, 'Failed to send OTP. Please try again'),
+    orElse: () {},
+  );
+});
+
+// otp_screen — verify, then go to user-type selection on success
+ref.listen<OtpVerificationState>(otpVerificationProvider, (previous, next) {
+  next.maybeWhen(
+    loadSuccess: (auth) =>
+        context.push(RouteNames.userTypeSelection, extra: auth),
+    loadFailure: (failure) {
+      SmSnackbar.error(context, _getErrorMessage(failure));
+      _codeFieldKey.currentState?.clearCode();
+    },
+    orElse: () {},
+  );
+});
+```
+
+The button handler only **validates + fires** the notifier (`requestOtp` /
+`verifyOtp`); it does not await and then read state back.
 
 ## 1. Token storage rules
 

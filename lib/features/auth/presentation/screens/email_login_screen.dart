@@ -27,8 +27,10 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   EmailVerificationType _verificationType = EmailVerificationType.otp;
 
-  static final RegExp _emailRegex =
-      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  /// Stashed so the listener can pass it to the OTP route on success.
+  String _submittedEmail = '';
 
   @override
   void dispose() {
@@ -36,6 +38,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
     super.dispose();
   }
 
+  /// Validate + fire. Navigation/error handled by the `ref.listen` in [build].
   Future<void> _handleSubmit() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -47,37 +50,67 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
       return;
     }
 
+    _submittedEmail = email;
+
     if (_verificationType == EmailVerificationType.magicLink) {
-      // TODO(Task 21): wire RequestMagicLinkUseCase + MagicLinkVerificationScreen
-      SmSnackbar.info(context, 'Magic Link sign-in coming soon');
+      // Magic-link path — server emails a link; consumption is handled by
+      // MagicLinkScreen via the /auth/magic deep link.
+      await ref.read(magicLinkProvider.notifier).requestLink(email);
       return;
     }
 
     // OTP path — reuse the shared OTP request flow with identifierType "email".
-    await ref.read(otpRequestProvider.notifier).requestOtp(
+    await ref
+        .read(otpRequestProvider.notifier)
+        .requestOtp(
           identifierType: 'email',
           identifier: email,
         );
-
-    if (!mounted) return;
-    final otpState = ref.read(otpRequestProvider);
-    if (otpState.isSuccess && otpState.otpData != null) {
-      context.push(
-        RouteNames.otp,
-        extra: {
-          'phone': email, // OtpScreen uses this as the identifier
-          'otpId': otpState.otpData!.otpId,
-          'identifierType': 'email',
-        },
-      );
-    } else if (otpState.hasError) {
-      SmSnackbar.error(context, 'Failed to send OTP. Please try again');
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(otpRequestProvider).isLoading;
+    final isLoading = ref.watch(otpRequestProvider).isLoading ||
+        ref.watch(magicLinkProvider).isLoading;
+
+    // Side-effects react to the request outcome (see SKILL §3.8).
+    ref..listen<OtpRequestState>(otpRequestProvider, (previous, next) {
+      next.maybeWhen(
+        loadSuccess:
+            (otp) => context.push(
+              RouteNames.otp,
+              extra: {
+                'phone':
+                    _submittedEmail, // OtpScreen uses this as the identifier
+                'otpId': otp.otpId,
+                'identifierType': 'email',
+              },
+            ),
+        loadFailure:
+            (_) => SmSnackbar.error(
+              context,
+              'Failed to send OTP. Please try again',
+            ),
+        orElse: () {},
+      );
+    })
+
+    ..listen<MagicLinkRequestState>(magicLinkProvider, (previous, next) {
+      next.maybeWhen(
+        loadSuccess:
+            (_) => SmSnackbar.success(
+              context,
+              'Magic link sent to $_submittedEmail. '
+              'Open it on this device to sign in.',
+            ),
+        loadFailure:
+            (_) => SmSnackbar.error(
+              context,
+              'Failed to send magic link. Please try again',
+            ),
+        orElse: () {},
+      );
+    });
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -85,8 +118,11 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => context.canPop() ? context.pop() : null,
         ),
       ),
@@ -97,7 +133,8 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.appHorizontalPadding),
+                    horizontal: DesignTokens.appHorizontalPadding,
+                  ),
                   child: Column(
                     children: [
                       // Email illustration (Figma image 49, node 9684:21749)
@@ -114,9 +151,11 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       // Header
                       Column(
                         children: [
-                          Text('Enter your Email',
-                              textAlign: TextAlign.center,
-                              style: DesignTokens.titleLarge),
+                          Text(
+                            'Enter your Email',
+                            textAlign: TextAlign.center,
+                            style: DesignTokens.titleLarge,
+                          ),
                           const SizedBox(height: DesignTokens.s8),
                           Text(
                             'Sign in with your email. Password-less and easy',
@@ -139,8 +178,9 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                           color: DesignTokens.inputFieldData,
                         ),
                         cursorColor: DesignTokens.primaryGreen,
-                        decoration:
-                            DesignTokens.inputDecoration(hintText: 'Email Address'),
+                        decoration: DesignTokens.inputDecoration(
+                          hintText: 'Email Address',
+                        ),
                         onFieldSubmitted: (_) => _handleSubmit(),
                       ),
                       const SizedBox(height: DesignTokens.s24),
@@ -148,25 +188,36 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       // Verification type
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text('Email Verification Type',
-                            style: DesignTokens.mediumSemibold),
+                        child: Text(
+                          'Email Verification Type',
+                          style: DesignTokens.mediumSemibold,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.s16),
                       _RadioListItem(
                         title: 'OTP Verification',
                         description: 'We will send you an OTP for verification',
-                        selected: _verificationType == EmailVerificationType.otp,
-                        onTap: () => setState(
-                            () => _verificationType = EmailVerificationType.otp),
+                        selected:
+                            _verificationType == EmailVerificationType.otp,
+                        onTap:
+                            () => setState(
+                              () =>
+                                  _verificationType = EmailVerificationType.otp,
+                            ),
                       ),
                       const SizedBox(height: DesignTokens.s12),
                       _RadioListItem(
                         title: 'Magic Link Verification',
                         description: 'We will send you a link to sign in',
                         selected:
-                            _verificationType == EmailVerificationType.magicLink,
-                        onTap: () => setState(() =>
-                            _verificationType = EmailVerificationType.magicLink),
+                            _verificationType ==
+                            EmailVerificationType.magicLink,
+                        onTap:
+                            () => setState(
+                              () =>
+                                  _verificationType =
+                                      EmailVerificationType.magicLink,
+                            ),
                       ),
                     ],
                   ),
@@ -227,7 +278,9 @@ class _RadioListItem extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s8,
+        ),
         decoration: BoxDecoration(
           color: DesignTokens.radioFill,
           borderRadius: BorderRadius.circular(DesignTokens.s8),
@@ -241,8 +294,9 @@ class _RadioListItem extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: DesignTokens.mediumRegular
-                        .copyWith(color: DesignTokens.radioTitle),
+                    style: DesignTokens.mediumRegular.copyWith(
+                      color: DesignTokens.radioTitle,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(description, style: DesignTokens.smallRegular),
@@ -255,9 +309,10 @@ class _RadioListItem extends StatelessWidget {
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
               size: 20,
-              color: selected
-                  ? DesignTokens.radioIconChecked
-                  : DesignTokens.radioIconDefault,
+              color:
+                  selected
+                      ? DesignTokens.radioIconChecked
+                      : DesignTokens.radioIconDefault,
             ),
           ],
         ),

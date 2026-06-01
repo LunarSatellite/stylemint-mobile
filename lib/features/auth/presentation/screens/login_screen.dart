@@ -25,40 +25,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<SmPhoneNumberFieldState> _phoneFieldKey =
       GlobalKey<SmPhoneNumberFieldState>();
 
+  /// Stashed so the listener can pass it to the OTP route on success.
+  String _submittedPhone = '';
+
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
   }
 
+  /// Validate + fire the request. Navigation/error are handled by the
+  /// `ref.listen` in [build] — NOT here. We never await-then-read state.
   Future<void> _handleSubmit() async {
     final number = _phoneController.text.trim();
     if (number.isEmpty || number.length < 10) {
       SmSnackbar.error(context, 'Please enter a valid phone number');
       return;
     }
-    final fullPhoneNumber =
-        _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
+    _submittedPhone = _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
 
-    await ref.read(otpRequestProvider.notifier).requestOtp(
+    await ref
+        .read(otpRequestProvider.notifier)
+        .requestOtp(
           identifierType: 'phone',
-          identifier: fullPhoneNumber,
+          identifier: _submittedPhone,
         );
-
-    if (!mounted) return;
-    final otpState = ref.read(otpRequestProvider);
-    if (otpState.isSuccess && otpState.otpData != null) {
-      context.push(
-        RouteNames.otp,
-        extra: {
-          'phone': fullPhoneNumber,
-          'otpId': otpState.otpData!.otpId,
-          'identifierType': 'phone',
-        },
-      );
-    } else if (otpState.hasError) {
-      SmSnackbar.error(context, 'Failed to send OTP. Please try again');
-    }
   }
 
   Country get _defaultCountry => CountryParser.parseCountryCode('NP');
@@ -67,14 +58,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final isLoading = ref.watch(otpRequestProvider).isLoading;
 
+    // Side-effects (navigate / snackbar) react to the state transition.
+    // `ref.listen` fires only when the state changes, so this runs once
+    // per request outcome — never on a plain rebuild.
+    ref.listen<OtpRequestState>(otpRequestProvider, (previous, next) {
+      next.maybeWhen(
+        loadSuccess:
+            (otp) => context.push(
+              RouteNames.otp,
+              extra: {
+                'phone': _submittedPhone,
+                'otpId': otp.otpId,
+                'identifierType': 'phone',
+              },
+            ),
+        loadFailure:
+            (_) => SmSnackbar.error(
+              context,
+              'Failed to send OTP. Please try again',
+            ),
+        orElse: () {},
+      );
+    });
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded,
-              color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+          icon: const Icon(
+            Icons.chevron_left_rounded,
+            color: DesignTokens.textWhite,
+            size: DesignTokens.iconMedium,
+          ),
           onPressed: () => context.canPop() ? context.pop() : null,
         ),
       ),
@@ -85,7 +102,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.appHorizontalPadding),
+                    horizontal: DesignTokens.appHorizontalPadding,
+                  ),
                   child: Column(
                     children: [
                       // Phone illustration (Figma image 50, node 9688:21904)
@@ -102,9 +120,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       // Header
                       Column(
                         children: [
-                          Text('Enter your Phone No.',
-                              textAlign: TextAlign.center,
-                              style: DesignTokens.titleLarge),
+                          Text(
+                            'Enter your Phone No.',
+                            textAlign: TextAlign.center,
+                            style: DesignTokens.titleLarge,
+                          ),
                           const SizedBox(height: DesignTokens.s8),
                           Text(
                             'Sign in with your phone number. Password-less and easy',

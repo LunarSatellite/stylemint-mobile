@@ -1,37 +1,44 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Splash screen — pixel-matched to Figma frame `9365:7950`.
 ///
-/// Centered brand logo + tagline "Shop, Create, Sell, All in Reels" + pulse
-/// spinner. After a short delay it advances to the onboarding carousel.
-class SplashScreen extends StatefulWidget {
+/// Calls [SessionController.bootstrap] to read persisted tokens, then lets
+/// the go_router redirect guard decide the next screen:
+/// - authenticated → [RouteNames.home]
+/// - unauthenticated → [RouteNames.onboarding]
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  Timer? _timer;
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: gate on a "seen onboarding" flag + auth session once token
-    // persistence (Tasks 10–13) lands; for now always show onboarding.
-    _timer = Timer(const Duration(milliseconds: 2000), () {
-      if (mounted) context.go(RouteNames.onboarding);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _bootstrap() async {
+    // Reads persisted tokens; transitions session from unknown →
+    // authenticated / unauthenticated. The router's redirect guard will
+    // forward to the right screen automatically.
+    await ref.read(sessionControllerProvider.notifier).bootstrap();
+
+    // If still on splash after bootstrap (unauthenticated), go to onboarding.
+    if (mounted) {
+      final session = ref.read(sessionControllerProvider);
+      if (!session.isAuthenticated) {
+        context.go(RouteNames.onboarding);
+      }
+      // Authenticated case: router redirect handles it (→ home).
+    }
   }
 
   @override
@@ -42,14 +49,18 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Brand logo (placeholder — TODO: real Figma logo asset)
-            const Icon(Icons.shopping_bag_outlined,
-                size: 72, color: DesignTokens.primaryGreen),
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 72,
+              color: DesignTokens.primaryGreen,
+            ),
             const SizedBox(height: DesignTokens.s8),
             Text(
               'STYLE MINT',
-              style: DesignTokens.sectionInnerTitle
-                  .copyWith(color: DesignTokens.primaryGreen, letterSpacing: 3),
+              style: DesignTokens.sectionInnerTitle.copyWith(
+                color: DesignTokens.primaryGreen,
+                letterSpacing: 3,
+              ),
             ),
             const SizedBox(height: DesignTokens.s24),
             Text(
@@ -63,8 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 32,
               child: CircularProgressIndicator(
                 strokeWidth: 3,
-                valueColor:
-                    AlwaysStoppedAnimation(DesignTokens.primaryGreen),
+                valueColor: AlwaysStoppedAnimation(DesignTokens.primaryGreen),
               ),
             ),
           ],

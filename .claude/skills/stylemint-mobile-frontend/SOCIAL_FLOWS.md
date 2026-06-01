@@ -7,7 +7,11 @@ cross-reference Identity, Catalog, Reels, Orders.
 
 **Stack:** Flutter 3.41.9 · Dart 3.7 · Feature-First Clean Architecture.
 All screens live in `lib/features/social/<feature>/presentation/`.
-All business rules live in `lib/features/social/<feature>/domain/usecases/`.
+Business rules live in the repository (`domain/repositories/` interface +
+`data/repositories/` impl); presentation `StateNotifier`s call the repository
+directly — **no `domain/usecases/`**. Notifier state is a Freezed union;
+side-effects (navigation, snackbars) use **`ref.listen` + `maybeWhen`**,
+never await-then-read (SKILL §3.8).
 
 Read the backend skill named in each section for endpoint details.
 

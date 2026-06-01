@@ -8,14 +8,16 @@ conventions — learn them once, apply everywhere.
 The call chain for every API call is:
 
 ```
-Presentation (Riverpod provider)
-  → domain/usecases/         # Either<Failure, T>; pure Dart
-    → domain/repositories/   # abstract interface
+Presentation (StateNotifier, Freezed union state)
+  → domain/repositories/   # abstract interface; returns Either<Failure, T>
       ← data/repositories/   # impl — converts Failure; calls datasource
         → data/datasources/  # raw Dio call; throws DioException
           → Dio client       # interceptors: auth, idempotency, correlation, retry
             → backend /v1/*
 ```
+
+(There is **no `domain/usecases/`** layer — the notifier calls the
+repository directly.)
 
 Dio and freezed DTOs are **data-layer only**. The domain and
 presentation layers never import `package:dio`. The Failure sealed

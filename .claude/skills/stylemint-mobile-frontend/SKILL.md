@@ -18,8 +18,9 @@ description: |
   Pillars B (delivery) + E (reach) at surface depth only.
   Architecture: Feature-First Clean Architecture — domain layer is
   pure Dart with no Flutter/Dio deps; data layer implements domain
-  repositories; presentation (Riverpod AsyncNotifier/FutureProvider)
-  calls domain UseCases only. Dependency rule enforced strictly:
+  repositories; presentation (Riverpod StateNotifier + Freezed union
+  state) calls domain Repositories directly — there is NO UseCase
+  layer. Dependency rule enforced strictly:
   Presentation → Domain ← Data.
   Use when scaffolding the stylemint-mobile-frontend repo, adding a
   new mobile screen, debugging an auth/OTP failure, wiring an API
@@ -82,7 +83,7 @@ YouTube / Spotify / TikTok native apps via `url_launcher`.
 | Runtime | **Flutter 3.41.9 stable** | Single codebase iOS + Android, mature widget tree. |
 | Language | **Dart 3.7+** | Sound null safety, sealed classes, pattern matching, records, exhaustive switch. |
 | Architecture | **Feature-First Clean Architecture** | Presentation → Domain ← Data. Domain is pure Dart — no Flutter, no Dio. |
-| Error handling | **fpdart `Either<Failure, T>`** | Explicit error paths in every UseCase. No hidden throws across layer boundaries. |
+| Error handling | **fpdart `Either<Failure, T>`** | Explicit error paths returned by every repository method. No hidden throws across layer boundaries. |
 | Routing | **go_router 15+** | Declarative, deep-link native, recommended by the Flutter team, plays nicely with Riverpod redirects. |
 | State (server + client) | **riverpod 2.6+** + **riverpod_generator** | Compile-safe, codegen reduces boilerplate, async caching matches our needs. **No Provider, no BLoC, no GetX.** |
 | HTTP | **dio 5.7+** + interceptors | Best interceptor ecosystem (auth, refresh, idempotency, logging). Lives in data layer only. |
@@ -101,7 +102,7 @@ YouTube / Spotify / TikTok native apps via `url_launcher`.
 | Date/time | **intl** + **timezone** | Asia/Kathmandu (NPT, UTC+5:45) for ops display. |
 | Logging | **logger** | Console + file; pluggable formatter. |
 | Linter | **very_good_analysis 7+** | Stricter than `flutter_lints`; catches more bugs. |
-| Tests (unit + widget) | **flutter_test** + **mocktail** | Built-in test runner + null-safe mocking. Domain UseCases: pure Dart unit tests, zero Flutter deps. |
+| Tests (unit + widget) | **flutter_test** + **mocktail** | Built-in test runner + null-safe mocking. Notifiers: unit-test with a mocked repository; domain entities are pure Dart. |
 | Tests (integration) | **patrol** | Better than `integration_test` for cross-platform e2e; native UI interaction support. |
 | Crash reporting | **sentry_flutter** | Pluggable; install PII scrubber in `beforeSend`. |
 | UUID | **uuid** package | For Idempotency-Key generation. |
@@ -110,7 +111,7 @@ YouTube / Spotify / TikTok native apps via `url_launcher`.
 Do not introduce: BLoC / Cubit / GetX / Provider (Riverpod owns
 state), http (use dio), hive (use shared_preferences + secure_storage),
 flutter_riverpod 1.x (must be 2.x with generator), direct Dio calls
-from presentation layer (always go through UseCase → Repository).
+from presentation layer (always go through Notifier → Repository).
 
 ## 3. Folder layout — Feature-First Clean Architecture
 
@@ -123,17 +124,20 @@ Domain is pure Dart — zero Flutter, zero Dio imports.
 ```
 ┌─────────────────────────────────────────────────────┐
 │  PRESENTATION (Flutter + Riverpod)                  │
-│  screens/, widgets/, providers/                     │
-│  — calls UseCases only                              │
-│  — renders Either<Failure,T> via AsyncValue         │
+│  screens/, widgets/, notifiers/, shared/providers   │
+│  — StateNotifier calls the Repository DIRECTLY       │
+│  — state is a Freezed union                          │
+│    (initial / loadInProgress / loadSuccess /         │
+│     loadFailure(Failure)) consumed via when()        │
 └────────────────────┬────────────────────────────────┘
                      │ depends on
                      ▼
 ┌─────────────────────────────────────────────────────┐
 │  DOMAIN (pure Dart — no Flutter, no Dio)            │
-│  entities/, repositories/ (abstract), usecases/    │
+│  entities/, repositories/ (abstract interface)      │
+│  — NO usecases/ layer                                │
 │  — defines Failure sealed class                     │
-│  — returns Either<Failure, T>                       │
+│  — repository returns Either<Failure, T>            │
 └──────────┬──────────────────────────────────────────┘
            │ implements
            ▼
@@ -147,6 +151,14 @@ Domain is pure Dart — zero Flutter, zero Dio imports.
 
 ### 3.2 Full folder tree
 
+> **⚠️ Architecture note (read before trusting the tree below):** there is
+> **NO `domain/usecases/` layer**. Presentation `StateNotifier`s call the
+> repository directly, and per-feature DI lives in `shared/providers.dart`.
+> Some feature subtrees below still show a `usecases/` folder and a
+> `presentation/providers/` file — that is **obsolete**; ignore it. The
+> canonical, current layout is the **auth** and **customer/reels** subtrees
+> (`presentation/notifiers/` + `shared/providers.dart`, no `usecases/`).
+
 ```
 stylemint-mobile-frontend/
 ├── lib/
@@ -157,8 +169,6 @@ stylemint-mobile-frontend/
 │   │   ├── error/
 │   │   │   ├── failure.dart             # sealed class Failure { network, auth, validation, server, unknown }
 │   │   │   └── exceptions.dart          # raw exceptions thrown before mapping to Failure
-│   │   ├── usecase/
-│   │   │   └── usecase.dart             # abstract UseCase<Type, Params> + NoParams
 │   │   ├── network/
 │   │   │   ├── dio_client.dart          # Dio instance — lives in core; injected into data datasources
 │   │   │   ├── auth_interceptor.dart    # attach Bearer token
@@ -232,31 +242,21 @@ stylemint-mobile-frontend/
 │       │   │   ├── entities/
 │       │   │   │   ├── auth_state.dart                  # pure Dart, no JSON
 │       │   │   │   └── account.dart
-│       │   │   ├── repositories/
-│       │   │   │   └── auth_repository.dart             # abstract interface
-│       │   │   └── usecases/
-│       │   │       ├── login_password.dart               # Either<Failure, AuthState>
-│       │   │       ├── request_otp.dart
-│       │   │       ├── verify_otp.dart                  # 5-digit code enforced
-│       │   │       ├── request_magic_link.dart
-│       │   │       ├── verify_magic_link.dart
-│       │   │       ├── register_passkey.dart
-│       │   │       ├── assert_passkey.dart
-│       │   │       ├── refresh_token.dart
-│       │   │       ├── logout.dart
-│       │   │       └── switch_role.dart
-│       │   └── presentation/
-│       │       ├── providers/
-│       │       │   ├── auth_provider.dart               # AsyncNotifier<AuthState> — root provider
-│       │       │   └── secure_storage_provider.dart     # flutter_secure_storage wrapper
-│       │       ├── screens/
-│       │       │   ├── login_screen.dart
-│       │       │   ├── otp_screen.dart                  # 5-digit input; no 6-digit ever
-│       │       │   ├── magic_link_screen.dart
-│       │       │   └── role_picker_screen.dart
-│       │       └── widgets/
-│       │           ├── otp_input.dart
-│       │           └── social_login_buttons.dart
+│       │   │   └── repositories/
+│       │   │       └── auth_repository.dart             # abstract interface — NO usecases/
+│       │   ├── presentation/
+│       │   │   ├── notifiers/                           # StateNotifier + Freezed union state
+│       │   │   │   └── auth_state_provider.dart         # Otp{Request,Verification}Notifier → AuthRepository
+│       │   │   ├── screens/
+│       │   │   │   ├── login_screen.dart
+│       │   │   │   ├── otp_screen.dart                  # 5-digit input; no 6-digit ever
+│       │   │   │   ├── magic_link_screen.dart
+│       │   │   │   └── role_picker_screen.dart
+│       │   │   └── widgets/
+│       │   │       ├── otp_input.dart
+│       │   │       └── social_login_buttons.dart
+│       │   └── shared/
+│       │       └── providers.dart                       # DI: datasource → repository → StateNotifierProviders
 │       │
 │       ├── customer/                    # ── CUSTOMER ──────────────────────────────────
 │       │   │
@@ -707,41 +707,56 @@ stylemint-mobile-frontend/
 └── README.md
 ```
 
-### 3.3 Canonical file template — UseCase
+### 3.3 Canonical file template — StateNotifier + Freezed union state
+
+There is **no UseCase layer**. A presentation `StateNotifier` holds a Freezed
+union state and calls the repository directly.
 
 ```dart
-// lib/features/customer/cart/domain/usecases/add_to_cart.dart
-import 'package:fpdart/fpdart.dart';
-import '../../../../shared/domain/entities/money.dart';
-import '../../../core/error/failure.dart';
-import '../../../core/usecase/usecase.dart';
-import '../entities/cart.dart';
-import '../repositories/cart_repository.dart';
+// lib/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart
+import 'dart:async';
 
-class AddToCart implements UseCase<Cart, AddToCartParams> {
-  const AddToCart(this._repository);
-  final CartRepository _repository;
+import 'package:flutter_riverpod/legacy.dart'; // StateNotifier (Riverpod 3 legacy)
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/error/failure.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 
-  @override
-  Future<Either<Failure, Cart>> call(AddToCartParams params) =>
-      _repository.addItem(
-        productId: params.productId,
-        qty: params.qty,
-        idempotencyKey: params.idempotencyKey,
-      );
+part 'reels_feed_notifier.freezed.dart';
+
+/// State = Freezed union. Declare it `abstract` (NOT `sealed`) so Freezed
+/// generates when()/maybeWhen()/map() for the UI to consume.
+@freezed
+abstract class ReelsFeedState with _$ReelsFeedState {
+  const ReelsFeedState._();
+
+  const factory ReelsFeedState.initial() = _Initial;
+  const factory ReelsFeedState.loadInProgress() = _LoadInProgress;
+  const factory ReelsFeedState.loadSuccess(List<Reel> reels) = _LoadSuccess;
+  const factory ReelsFeedState.loadFailure(Failure failure) = _LoadFailure;
 }
 
-class AddToCartParams {
-  const AddToCartParams({
-    required this.productId,
-    required this.qty,
-    required this.idempotencyKey,   // generated at presentation layer, passed down
-  });
-  final String productId;
-  final int qty;
-  final String idempotencyKey;
+/// Notifier talks to the repository DIRECTLY — no UseCase, no Params class.
+class ReelsFeedNotifier extends StateNotifier<ReelsFeedState> {
+  ReelsFeedNotifier(this._repository)
+      : super(const ReelsFeedState.initial()) {
+    unawaited(fetchFeed());
+  }
+
+  final ReelsRepository _repository;
+
+  Future<void> fetchFeed({int limit = 20, String? cursor}) async {
+    state = const ReelsFeedState.loadInProgress();
+    final either = await _repository.getReelsFeed(limit: limit, cursor: cursor);
+    state = either.fold(
+      ReelsFeedState.loadFailure,   // (Failure) → loadFailure
+      ReelsFeedState.loadSuccess,   // (List<Reel>) → loadSuccess
+    );
+  }
 }
 ```
+
+UI consumes the union with `when` (see §3.6).
 
 ### 3.4 Canonical file template — Repository impl
 
@@ -784,45 +799,208 @@ class CartRepositoryImpl implements CartRepository {
 }
 ```
 
-### 3.5 Canonical file template — Riverpod provider (presentation)
+### 3.5 Canonical file template — feature DI (`shared/providers.dart`)
+
+All wiring for a feature lives in one `shared/providers.dart`: datasource →
+repository → `StateNotifierProvider`(s). Manual providers (no `@riverpod`
+codegen for the feature layer).
 
 ```dart
-// lib/features/customer/cart/presentation/providers/cart_provider.dart
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:uuid/uuid.dart';
-import '../../domain/entities/cart.dart';
-import '../../domain/usecases/add_to_cart.dart';
-import '../../domain/usecases/get_cart.dart';
+// lib/features/customer/reels/shared/providers.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'; // StateNotifierProvider
+import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasources/reels_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/repositories/reels_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
 
-part 'cart_provider.g.dart';
+const _baseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'http://localhost:5020',
+);
 
-@riverpod
-class CartNotifier extends _$CartNotifier {
+final reelsRemoteDataSourceProvider = Provider<ReelsRemoteDataSource>(
+  (ref) => ReelsRemoteDataSource(
+    apiClient: ApiClient(baseUrl: _baseUrl, dio: ref.watch(dioClientProvider)),
+  ),
+);
+
+final reelsRepositoryProvider = Provider<ReelsRepository>(
+  (ref) => ReelsRepositoryImpl(
+    remoteDataSource: ref.watch(reelsRemoteDataSourceProvider),
+  ),
+);
+
+/// The screen watches this. Notifier → repository directly (no UseCase).
+final reelsFeedNotifierProvider =
+    StateNotifierProvider<ReelsFeedNotifier, ReelsFeedState>(
+  (ref) => ReelsFeedNotifier(ref.watch(reelsRepositoryProvider)),
+);
+```
+
+### 3.6 Canonical file template — screen consuming the union
+
+```dart
+// lib/features/customer/reels/presentation/screens/reels_feed_screen.dart
+class ReelsFeedScreen extends ConsumerWidget {
+  const ReelsFeedScreen({super.key});
+
   @override
-  Future<Cart> build() async {
-    final result = await ref.read(getCartUseCaseProvider).call(NoParams());
-    return result.fold(
-      (failure) => throw failure,     // AsyncValue.error via AsyncValue.guard
-      (cart)    => cart,
-    );
-  }
-
-  Future<void> addItem(String productId, int qty) async {
-    state = const AsyncLoading();
-    final result = await ref.read(addToCartUseCaseProvider).call(
-      AddToCartParams(
-        productId: productId,
-        qty: qty,
-        idempotencyKey: const Uuid().v4(),   // one key per tap
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(reelsFeedNotifierProvider);
+    return Scaffold(
+      body: state.when(
+        initial: _loader,
+        loadInProgress: _loader,
+        loadSuccess: (reels) => /* list / PageView */ ...,
+        loadFailure: (failure) => SmErrorView(
+          message: 'Failed to load reels.',
+          onRetry: () =>
+              ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
+        ),
       ),
     );
-    state = result.fold(
-      AsyncError.new,
-      AsyncData.new,
-    );
   }
+
+  Widget _loader() => const Center(child: CircularProgressIndicator());
 }
 ```
+
+### 3.7 Freezed 3 conventions (DTOs, models, union state)
+
+We are on **freezed `^3.2.3`** + **freezed_annotation `^3.1.0`** +
+**json_serializable `^6.8.0`**. Freezed 3 changed the class syntax — get it
+right or codegen silently does the wrong thing.
+
+**The rules that bite (memorize):**
+
+1. **Always declare the class `abstract` (or `sealed`).** Freezed 3 requires
+   the `abstract`/`sealed` keyword on the class — `@freezed class X` (the
+   Freezed-2 style) **does not work**.
+2. **Use `abstract`, NOT `sealed`, for state unions** if you want
+   `when`/`map`/`maybeWhen`. With `abstract`, Freezed generates those as an
+   `extension … on X`. With `sealed`, it only generates the subclasses and
+   you must use a native Dart `switch` instead. We standardize on
+   **`abstract` + `.when()`**.
+3. **Add a private constructor `const X._();`** whenever the class has any
+   method or getter you wrote by hand (e.g. a DTO's `toDomain()`). Without
+   it the generated code won't compile.
+4. **`part` directives:** every freezed file needs `part 'x.freezed.dart';`.
+   Add `part 'x.g.dart';` **only** when the class also does JSON
+   (`fromJson`/`toJson`).
+
+**DTO with JSON (data layer — `data/models/`):**
+
+```dart
+// lib/features/customer/reels/data/models/reel_dto.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+
+part 'reel_dto.freezed.dart';
+part 'reel_dto.g.dart';            // because we have fromJson
+
+@freezed
+abstract class ReelDto with _$ReelDto {        // <-- `abstract` is mandatory
+  const factory ReelDto({
+    required String id,
+    required String caption,
+    required DateTime createdAt,             // required params come first
+    @Default('') String musicTitle,          // @Default for optional fields
+    @JsonKey(name: 'is_liked') bool? isLiked, // @JsonKey to map server names
+  }) = _ReelDto;
+
+  const ReelDto._();                          // <-- needed for toDomain()
+
+  factory ReelDto.fromJson(Map<String, dynamic> json) =>
+      _$ReelDtoFromJson(json);
+
+  /// DTO → pure-Dart domain entity (mapping lives here, in the data layer).
+  Reel toDomain() => Reel(id: id, caption: caption, createdAt: createdAt /*…*/);
+}
+```
+
+**Union / state (presentation — see §3.3):** same `@freezed abstract class`
+shape, multiple `const factory` redirects, a `const X._();`, and **no**
+`part '*.g.dart'` (no JSON).
+
+**Domain entities are NOT freezed.** `domain/entities/` are hand-written
+plain Dart classes (own constructor + `copyWith`) — no `@freezed`, no
+`fromJson`, no JSON annotations. JSON belongs to DTOs only.
+
+**`@JsonKey` warning:** json_serializable emits
+`invalid_annotation_target` when `@JsonKey` sits on a factory parameter
+(harmless — codegen still works). To silence it repo-wide, add to
+`analysis_options.yaml`:
+
+```yaml
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+```
+
+**Run codegen:** `dart run build_runner build`. In this repo's build_runner
+the `--delete-conflicting-outputs` flag has been **removed** (it's ignored
+with a warning) — don't pass it; the build overwrites outputs anyway. Use
+`dart run build_runner watch` while iterating.
+
+### 3.8 Side-effects (navigate / snackbar) — use `ref.listen`, never await-then-read
+
+One-shot side-effects (navigation, snackbars, dialogs) **react to a state
+transition** via `ref.listen` inside `build`. The button/action handler only
+**validates + fires** the notifier — it does **not** await and then read the
+state back.
+
+**❌ Don't** (fragile — couples the handler to one call, ignores any other
+source of the state change, and races with `mounted`):
+
+```dart
+Future<void> _handleSubmit() async {
+  await ref.read(otpRequestProvider.notifier).requestOtp(/*…*/);
+  if (!mounted) return;
+  final s = ref.read(otpRequestProvider);     // <-- imperative read-after-await
+  s.maybeWhen(loadSuccess: (otp) => context.push(...), orElse: () {});
+}
+```
+
+**✅ Do** — handler just fires; a `ref.listen` pattern-matches the union and
+reacts to the outcome:
+
+```dart
+@override
+Widget build(BuildContext context) {
+  // Fires only when the state CHANGES → runs once per outcome, never on a
+  // plain rebuild. Place it at the top of build(), unconditionally.
+  ref.listen<OtpRequestState>(otpRequestProvider, (previous, next) {
+    next.maybeWhen(
+      loadSuccess: (otp) => context.push(RouteNames.otp, extra: {
+        'phone': _submittedPhone,           // stash inputs you need on a field
+        'otpId': otp.otpId,
+      }),
+      loadFailure: (_) =>
+          SmSnackbar.error(context, 'Failed to send OTP. Please try again'),
+      orElse: () {},
+    );
+  });
+  // …
+}
+
+Future<void> _handleSubmit() async {
+  // validate, stash inputs, then fire — NO read-after-await here
+  _submittedPhone = _phoneFieldKey.currentState?.getFullPhoneNumber() ?? '';
+  await ref.read(otpRequestProvider.notifier)
+      .requestOtp(identifierType: 'phone', identifier: _submittedPhone);
+}
+```
+
+Notes:
+- `ref.listen` lives in `build` (it's a no-op until the state changes); never
+  call it inside a callback or conditionally.
+- `ref.watch` is still used for **rendering** (e.g. `isLoading`, the union
+  itself); `ref.listen` is only for **side-effects**.
+- Stash any handler-local input the listener needs (e.g. the phone number) on
+  a `State` field, since the listener only receives `(previous, next)` state.
 
 ## 4. Account + role model
 
@@ -1070,13 +1248,31 @@ but pick up the same dispatch row when they next call the inbox.
   imports from data (no direct Dio calls from a provider or widget).
 - **Domain is pure Dart.** No `import 'package:flutter/...';`, no
   `import 'package:dio/...';` in any `domain/` file.
-- **Presentation calls UseCases only**, never repositories directly.
+- **No UseCase layer — ever.** Do NOT create `domain/usecases/` or a
+  `core/usecase/` base. A presentation `StateNotifier` calls the
+  repository **directly**. (This replaced an earlier UseCase-based
+  design; if you see a `usecases/` folder, it is legacy — delete it.)
+- **Presentation state is a Freezed union** (`initial` /
+  `loadInProgress` / `loadSuccess(data)` / `loadFailure(Failure)`),
+  declared `abstract` (not `sealed`) so `when`/`map` generate. The UI
+  consumes it via `when`/`maybeWhen`. **Never** hand-roll a state class
+  with `isLoading`/`error`/`data` fields + `copyWith` + `isSuccess`/
+  `hasError` getters — that pattern is banned. (A small convenience
+  getter like `bool get isLoading => maybeWhen(...)` on the union is fine.)
+- **Side-effects (navigate/snackbar/dialog) go through `ref.listen`** in
+  `build`, pattern-matching the union with `maybeWhen` — never
+  `await notifier.x()` then `ref.read(provider)` to branch (see §3.8).
+- **Per-feature DI lives in `shared/providers.dart`**: a `Provider` for
+  the datasource, a `Provider` for the repository impl (typed as the
+  interface), and a `StateNotifierProvider` per notifier.
 - **DTOs live in `data/models/` only.** Domain entities are plain
   Dart classes — no `fromJson`, no freezed JSON annotation.
-- **Every UseCase returns `Either<Failure, T>`** (fpdart). No raw
-  exceptions crossing layer boundaries.
-- **Idempotency-Key is generated in the presentation layer** (one per
-  tap) and passed as a UseCase param — never inside the datasource.
+- **Every repository method returns `Either<Failure, T>`** (fpdart).
+  No raw exceptions crossing layer boundaries; the repository maps
+  `DioException` → `Failure`.
+- **Idempotency-Key is minted per user action** (one per tap) — pass it
+  to the repository method, or mint it inside the repository per call;
+  never reuse one across retries, and never bake it into the datasource.
 
 **Auth + security:**
 - **Refresh token in flutter_secure_storage. Access token in

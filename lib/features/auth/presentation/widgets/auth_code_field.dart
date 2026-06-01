@@ -89,7 +89,8 @@ class AuthCodeFieldState extends State<AuthCodeField> {
       children: List.generate(widget.codeLength, (index) {
         return Padding(
           padding: EdgeInsets.only(
-              right: index == widget.codeLength - 1 ? 0 : DesignTokens.s8),
+            right: index == widget.codeLength - 1 ? 0 : DesignTokens.s8,
+          ),
           child: SizedBox(
             width: 48,
             height: 48,
@@ -121,23 +122,28 @@ class AuthCodeFieldState extends State<AuthCodeField> {
                 fillColor: DesignTokens.inputFieldFill,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.inputFieldBorder),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.inputFieldBorder,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.inputFieldBorder),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.inputFieldBorder,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                   borderSide: const BorderSide(
-                      color: DesignTokens.primaryGreen, width: 1.5),
+                    color: DesignTokens.primaryGreen,
+                    width: 1.5,
+                  ),
                 ),
                 disabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.inputFieldBorder),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.inputFieldBorder,
+                  ),
                 ),
                 contentPadding: EdgeInsets.zero,
               ),

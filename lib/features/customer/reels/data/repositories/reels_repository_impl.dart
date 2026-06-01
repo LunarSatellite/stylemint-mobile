@@ -1,196 +1,229 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:stylemint_mobile_frontend/core/error/failure.dart';
-import '../../domain/entities/reel.dart';
-import '../../domain/repositories/reels_repository.dart';
-import '../datasources/reels_remote_datasource.dart';
+import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasources/reels_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 
-/// Implementation of ReelsRepository
-/// Handles error mapping and DTO to entity conversion
 class ReelsRepositoryImpl implements ReelsRepository {
-  const ReelsRepositoryImpl(this._datasource);
+  ReelsRepositoryImpl({
+    required this.remoteDataSource,
+    required this.networkInfo,
+  });
 
-  final ReelsRemoteDatasource _datasource;
+  final ReelsRemoteDataSource remoteDataSource;
+  final NetworkInfoConnectivity networkInfo;
+
+  static const _uuid = Uuid();
 
   @override
-  Future<Either<Failure, List<Reel>>> getReelsFeed({
-    required int limit,
+  Future<Either<NetworkExceptions, List<Reel>>> getReelsFeed({
+    int limit = 20,
     String? cursor,
   }) async {
-    try {
-      final dtos = await _datasource.getReelsFeed(
-        limit: limit,
-        cursor: cursor,
-      );
-      return right(dtos.map((dto) => dto.toDomain()).toList());
-    } on DioException catch (e) {
-      return left(_mapError(e));
+    if (await networkInfo.isConnected) {
+      try {
+        final dtos = await remoteDataSource.getReelsFeed(
+          limit: limit,
+          cursor: cursor,
+        );
+        return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, Reel>> getReelDetail(String reelId) async {
-    try {
-      final dto = await _datasource.getReelDetail(reelId);
-      return right(dto.toDomain());
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Reel>> getReelDetail(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.getReelDetail(reelId);
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> likeReel(String reelId) async {
-    try {
-      final result = await _datasource.likeReel(
-        reelId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> likeReel(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.likeReel(reelId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> unlikeReel(String reelId) async {
-    try {
-      final result = await _datasource.unlikeReel(
-        reelId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> unlikeReel(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.unlikeReel(reelId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> addToWishlist(String reelId) async {
-    try {
-      final result = await _datasource.addToWishlist(
-        reelId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> addToWishlist(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.addToWishlist(reelId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> removeFromWishlist(String reelId) async {
-    try {
-      final result = await _datasource.removeFromWishlist(
-        reelId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> removeFromWishlist(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.removeFromWishlist(reelId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> followCreator(String creatorId) async {
-    try {
-      final result = await _datasource.followCreator(
-        creatorId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> followCreator(String creatorId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.followCreator(creatorId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> unfollowCreator(String creatorId) async {
-    try {
-      final result = await _datasource.unfollowCreator(
-        creatorId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> unfollowCreator(String creatorId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.unfollowCreator(creatorId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> commentOnReel(
+  Future<Either<NetworkExceptions, Unit>> commentOnReel(
     String reelId,
     String commentText,
   ) async {
-    try {
-      final result = await _datasource.commentOnReel(
-        reelId,
-        commentText,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.commentOnReel(reelId, commentText, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> shareReel(String reelId) async {
-    try {
-      final result = await _datasource.shareReel(
-        reelId,
-        _generateIdempotencyKey(),
-      );
-      return right(result);
-    } on DioException catch (e) {
-      return left(_mapError(e));
+  Future<Either<NetworkExceptions, Unit>> shareReel(String reelId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.shareReel(reelId, _uuid.v4());
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
     }
   }
-
-  /// Maps DioException to Failure
-  Failure _mapError(DioException e) {
-    final status = e.response?.statusCode;
-    final code = e.response?.data?['errorCode'] as String?;
-
-    if (status == 401) {
-      return const AuthFailure();
-    } else if (status == 403) {
-      return const PermissionFailure();
-    } else if (status == 404) {
-      return const NotFoundFailure();
-    } else if (status == 409 && code == 'concurrency.conflict') {
-      return const ConflictFailure();
-    } else if (status != null && status >= 500) {
-      return const ServerFailure();
-    } else if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.unknown) {
-      return const NetworkFailure();
-    }
-
-    return const UnknownFailure();
-  }
-
-  /// Generates idempotency key for mutations
-  String _generateIdempotencyKey() {
-    // TODO: Use uuid package to generate v4 UUID
-    // For now, use timestamp-based key
-    return DateTime.now().millisecondsSinceEpoch.toString();
-  }
-}
-
-/// Additional failure types
-class PermissionFailure extends Failure {
-  const PermissionFailure();
-}
-
-class NotFoundFailure extends Failure {
-  const NotFoundFailure();
-}
-
-class ConflictFailure extends Failure {
-  const ConflictFailure();
-}
-
-class UnknownFailure extends Failure {
-  const UnknownFailure();
 }

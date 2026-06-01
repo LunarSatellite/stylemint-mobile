@@ -1,178 +1,289 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/interests_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// A selectable interest category.
-class _Interest {
-  final String label;
-  final IconData icon;
-  const _Interest(this.label, this.icon);
-}
-
 /// Pick Your Interests — pixel-matched to Figma frame `9615:45821`.
 ///
-/// Title + subtitle → "X/3 Picked" progress bar → search field → 4-column grid
-/// of glassmorphic "Radio Card" chips → sticky "Proceed" button (enabled once
-/// at least 3 are selected).
-class PickInterestsScreen extends StatefulWidget {
+/// API-backed: loads available interests from `GET /v1/public/interests` and
+/// current user interests from `GET /v1/accounts/{id}/interests`. Toggles
+/// persist via POST/DELETE immediately.
+class PickInterestsScreen extends ConsumerStatefulWidget {
   const PickInterestsScreen({super.key});
 
   @override
-  State<PickInterestsScreen> createState() => _PickInterestsScreenState();
+  ConsumerState<PickInterestsScreen> createState() =>
+      _PickInterestsScreenState();
 }
 
-class _PickInterestsScreenState extends State<PickInterestsScreen> {
-  // TODO: source categories from the API; placeholder set for now.
-  static const List<_Interest> _interests = [
-    _Interest('Fashion', Icons.checkroom),
-    _Interest('Beauty', Icons.brush),
-    _Interest('Fitness', Icons.fitness_center),
-    _Interest('Tech', Icons.devices),
-    _Interest('Food', Icons.restaurant),
-    _Interest('Travel', Icons.flight),
-    _Interest('Music', Icons.music_note),
-    _Interest('Gaming', Icons.sports_esports),
-    _Interest('Art', Icons.palette),
-    _Interest('Home', Icons.chair),
-    _Interest('Sports', Icons.sports_basketball),
-    _Interest('Books', Icons.menu_book),
-    _Interest('Movies', Icons.movie),
-    _Interest('Photography', Icons.camera_alt),
-    _Interest('Lifestyle', Icons.spa),
-  ];
-
+class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
   static const int _minPicks = 3;
 
-  final Set<String> _selected = {};
   String _query = '';
 
-  List<_Interest> get _filtered => _query.isEmpty
-      ? _interests
-      : _interests
-          .where((i) => i.label.toLowerCase().contains(_query.toLowerCase()))
-          .toList();
+  @override
+  void initState() {
+    super.initState();
+    final accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => null,
+    );
+    if (accountId != null) {
+      Future.microtask(() =>
+          ref.read(interestsProvider.notifier).load(accountId: accountId),
+      );
+    }
+  }
 
-  bool get _canProceed => _selected.length >= _minPicks;
+  void _toggleInterest(String categoryId, bool isSelected) {
+    final accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => null,
+    );
+    if (accountId == null) return;
 
-  void _toggle(String label) {
-    setState(() {
-      if (_selected.contains(label)) {
-        _selected.remove(label);
-      } else {
-        _selected.add(label);
-      }
-    });
+    ref.read(interestsProvider.notifier).toggleInterest(
+      accountId: accountId,
+      categoryId: categoryId,
+      isSelected: isSelected,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        (_selected.length / _minPicks).clamp(0.0, 1.0).toDouble();
+    final state = ref.watch(interestsProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-                  DesignTokens.s16, DesignTokens.s16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Text('Pick Your Interests', style: DesignTokens.titleMedium),
-                  const SizedBox(height: DesignTokens.s8),
-                  Text(
-                    "Select at least 3 interests — we'll use it to personalize your feed",
-                    style: DesignTokens.bodyText,
-                  ),
-                  const SizedBox(height: DesignTokens.s24),
+        child: state.when(
+          initial: _loader,
+          loadInProgress: _loader,
+          loadSuccess: (available, selectedIds) {
+            final filtered = _query.isEmpty
+                ? available
+                : available
+                    .where(
+                        (i) => i.name.toLowerCase().contains(_query.toLowerCase()))
+                    .toList();
 
-                  // Progress
-                  Text('${_selected.length}/$_minPicks Picked',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight)),
-                  const SizedBox(height: DesignTokens.s8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 4,
-                      backgroundColor: DesignTokens.bgAppBodyLight,
-                      valueColor: const AlwaysStoppedAnimation(
-                          DesignTokens.primaryGreen),
+            final progress =
+                (selectedIds.length / _minPicks).clamp(0.0, 1.0).toDouble();
+            final canProceed = selectedIds.length >= _minPicks;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Pick Your Interests',
+                          style: DesignTokens.titleMedium),
+                      const SizedBox(height: DesignTokens.s8),
+                      Text(
+                        "Select at least $_minPicks interests — we'll use it to personalize your feed",
+                        style: DesignTokens.bodyText,
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
+                      Text(
+                          '${selectedIds.length}/$_minPicks Picked',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textLight)),
+                      const SizedBox(height: DesignTokens.s8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          backgroundColor: DesignTokens.bgAppBodyLight,
+                          valueColor: const AlwaysStoppedAnimation(
+                              DesignTokens.primaryGreen),
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
+                      TextField(
+                        onChanged: (v) => setState(() => _query = v),
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          color: DesignTokens.inputFieldData,
+                        ),
+                        cursorColor: DesignTokens.primaryGreen,
+                        decoration: DesignTokens.inputDecoration(
+                          hintText: 'Search',
+                          prefixIcon: const Icon(Icons.search,
+                              color: DesignTokens.inputFieldPlaceholder,
+                              size: 20),
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: GridView.count(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16),
+                    crossAxisCount: 4,
+                    crossAxisSpacing: DesignTokens.s12,
+                    mainAxisSpacing: DesignTokens.s12,
+                    childAspectRatio: 83.5 / 84,
+                    children: filtered.map((interest) {
+                      final selected =
+                          selectedIds.contains(interest.categoryId);
+                      return _RadioCard(
+                        label: interest.name,
+                        icon: _iconForInterest(interest.name),
+                        selected: selected,
+                        onTap: () =>
+                            _toggleInterest(interest.categoryId, selected),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: DesignTokens.bgAppFoundation,
+                    border: Border(
+                      top: BorderSide(
+                          color: DesignTokens.borderDefault, width: 1),
                     ),
                   ),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  // Search
-                  TextField(
-                    onChanged: (v) => setState(() => _query = v),
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    cursorColor: DesignTokens.primaryGreen,
-                    decoration: DesignTokens.inputDecoration(
-                      hintText: 'Search',
-                      prefixIcon: const Icon(Icons.search,
-                          color: DesignTokens.inputFieldPlaceholder, size: 20),
+                  padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.s16,
+                      DesignTokens.s24,
+                      DesignTokens.s16,
+                      DesignTokens.s24),
+                  child: Opacity(
+                    opacity: canProceed ? 1 : 0.5,
+                    child: Material(
+                      color: DesignTokens.primaryGreen,
+                      borderRadius:
+                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      child: InkWell(
+                        onTap:
+                            canProceed
+                                ? () => context.go(RouteNames.followCreators)
+                                : null,
+                        borderRadius:
+                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: DesignTokens.s32,
+                              vertical: DesignTokens.s16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Proceed',
+                                  style: DesignTokens.oneLinerSemibold
+                                      .copyWith(
+                                          color:
+                                              DesignTokens.buttonPrimaryText)),
+                              const SizedBox(width: DesignTokens.s8),
+                              const Icon(Icons.arrow_forward_rounded,
+                                  size: DesignTokens.iconSmall,
+                                  color: DesignTokens.buttonPrimaryText),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: DesignTokens.s24),
-                ],
-              ),
+                ),
+              ],
+            );
+          },
+          loadFailure: (failure) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline,
+                    color: DesignTokens.colorError, size: 48),
+                const SizedBox(height: DesignTokens.s16),
+                Text('Failed to load interests',
+                    style: DesignTokens.bodyText),
+                const SizedBox(height: DesignTokens.s16),
+                GestureDetector(
+                  onTap: () {
+                    final accountId = ref
+                        .read(sessionControllerProvider)
+                        .maybeWhen(
+                            authenticated: (id) => id, orElse: () => null);
+                    if (accountId != null) {
+                      ref.read(interestsProvider.notifier).load(
+                          accountId: accountId);
+                    }
+                  },
+                  child: Text('Retry',
+                      style: TextStyle(color: DesignTokens.primaryGreen)),
+                ),
+              ],
             ),
-
-            // Interest grid
-            Expanded(
-              child: GridView.count(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16),
-                crossAxisCount: 4,
-                crossAxisSpacing: DesignTokens.s12,
-                mainAxisSpacing: DesignTokens.s12,
-                childAspectRatio: 83.5 / 84,
-                children: _filtered.map((interest) {
-                  final selected = _selected.contains(interest.label);
-                  return _RadioCard(
-                    interest: interest,
-                    selected: selected,
-                    onTap: () => _toggle(interest.label),
-                  );
-                }).toList(),
-              ),
-            ),
-
-            // Sticky "Proceed" button
-            _StickyButton(
-              label: 'Proceed',
-              enabled: _canProceed,
-              onTap: () {
-                // TODO: persist selected interests.
-                context.go(RouteNames.followCreators);
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _loader() => const Center(
+      child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
 }
 
-/// Glassmorphic interest chip (Figma "Radio Card"): white@6% fill, white@22%
-/// border (green when selected), 32px icon + 12px centered label.
+IconData _iconForInterest(String name) {
+  switch (name.toLowerCase()) {
+    case 'fashion':
+      return Icons.checkroom;
+    case 'beauty':
+      return Icons.brush;
+    case 'fitness':
+      return Icons.fitness_center;
+    case 'tech':
+    case 'technology':
+      return Icons.devices;
+    case 'food':
+      return Icons.restaurant;
+    case 'travel':
+      return Icons.flight;
+    case 'music':
+      return Icons.music_note;
+    case 'gaming':
+      return Icons.sports_esports;
+    case 'art':
+      return Icons.palette;
+    case 'home':
+      return Icons.chair;
+    case 'sports':
+      return Icons.sports_basketball;
+    case 'books':
+      return Icons.menu_book;
+    case 'movies':
+      return Icons.movie;
+    case 'photography':
+      return Icons.camera_alt;
+    case 'lifestyle':
+      return Icons.spa;
+    default:
+      return Icons.category;
+  }
+}
+
+/// Glassmorphic interest chip (Figma "Radio Card").
 class _RadioCard extends StatelessWidget {
-  final _Interest interest;
+  final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   const _RadioCard({
-    required this.interest,
+    required this.label,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
@@ -200,7 +311,7 @@ class _RadioCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              interest.icon,
+              icon,
               size: 32,
               color: selected
                   ? DesignTokens.primaryGreen
@@ -208,7 +319,7 @@ class _RadioCard extends StatelessWidget {
             ),
             const SizedBox(height: DesignTokens.s4),
             Text(
-              interest.label,
+              label,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -219,62 +330,6 @@ class _RadioCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Reusable bottom action bar (Figma "Sticky Button"): top divider + full-width
-/// primary pill with a trailing arrow.
-class _StickyButton extends StatelessWidget {
-  final String label;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _StickyButton({
-    required this.label,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        border: Border(
-          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
-      child: Opacity(
-        opacity: enabled ? 1 : 0.5,
-        child: Material(
-          color: DesignTokens.primaryGreen,
-          borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-          child: InkWell(
-            onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s32, vertical: DesignTokens.s16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(label,
-                      style: DesignTokens.oneLinerSemibold
-                          .copyWith(color: DesignTokens.buttonPrimaryText)),
-                  const SizedBox(width: DesignTokens.s8),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: DesignTokens.iconSmall,
-                      color: DesignTokens.buttonPrimaryText),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );

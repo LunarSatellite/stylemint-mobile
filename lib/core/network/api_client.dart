@@ -4,25 +4,13 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 
+/// Thin wrapper around a fully-configured [Dio] (base URL, timeouts,
+/// interceptors all come from `dioClient`). Construct it through
+/// `apiClientProvider` so the whole app shares one instance.
 class ApiClient {
+  ApiClient({required Dio dio}) : _dio = dio;
 
-  ApiClient({required this.baseUrl, required Dio dio, this.interceptor}) {
-    _dio = dio;
-
-    _dio
-      ..options.baseUrl = baseUrl
-      ..options.connectTimeout = const Duration(minutes: 5)
-      ..options.receiveTimeout = const Duration(minutes: 5)
-      ..options.headers = {'Accept': 'application/json'};
-
-    if (interceptor != null) {
-      _dio.interceptors.clear();
-      _dio.interceptors.add(interceptor!);
-    }
-  }
-  final String baseUrl;
-  late Dio _dio;
-  final Interceptor? interceptor;
+  final Dio _dio;
 
   /// GET request with token required
   Future<dynamic> get(
@@ -209,6 +197,30 @@ class ApiClient {
               "requiresToken": false,
               if (token != null) 'Authorization': 'Bearer $token',
             }),
+      );
+      return response.data;
+    } on SocketException catch (e) {
+      throw SocketException(e.toString());
+    } on FormatException catch (_) {
+      throw const FormatException("Unable to process the data");
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// PATCH request with token required
+  Future<dynamic> patch(
+    String uri, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(
+        uri,
+        data: data,
+        queryParameters: queryParameters,
+        options: options ?? Options(headers: {"requiresToken": true}),
       );
       return response.data;
     } on SocketException catch (e) {

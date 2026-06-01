@@ -84,15 +84,29 @@ class SignInMethodSelectionScreen extends StatelessWidget {
                     // ---- Divider ----
                     Row(
                       children: [
-                        const Expanded(child: Divider(color: DesignTokens.borderDefault, height: 1)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
-                          child: Text(
-                            'Or Continue With',
-                            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+                        const Expanded(
+                          child: Divider(
+                            color: DesignTokens.borderDefault,
+                            height: 1,
                           ),
                         ),
-                        const Expanded(child: Divider(color: DesignTokens.borderDefault, height: 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s12,
+                          ),
+                          child: Text(
+                            'Or Continue With',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
+                          ),
+                        ),
+                        const Expanded(
+                          child: Divider(
+                            color: DesignTokens.borderDefault,
+                            height: 1,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: DesignTokens.s24),
@@ -129,9 +143,10 @@ class SignInMethodSelectionScreen extends StatelessWidget {
   }
 
   static void _comingSoon(BuildContext context, String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$provider Sign-In coming soon')),
-    );
+    context.go(RouteNames.home);
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(content: Text('$provider Sign-In coming soon')),
+    // );
   }
 }
 
@@ -146,7 +161,11 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
       alignment: Alignment.centerLeft,
       child: IconButton(
-        icon: const Icon(Icons.chevron_left_rounded, color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
+        icon: const Icon(
+          Icons.chevron_left_rounded,
+          color: DesignTokens.textWhite,
+          size: DesignTokens.iconMedium,
+        ),
         onPressed: () {
           if (context.canPop()) context.pop();
         },
@@ -195,7 +214,11 @@ class _MethodRow extends StatelessWidget {
                 color: iconTileColor,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: Icon(icon, color: iconColor, size: DesignTokens.iconMedium),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: DesignTokens.iconMedium,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             // Title + description
@@ -205,7 +228,9 @@ class _MethodRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(description, style: DesignTokens.smallDescription),
@@ -268,8 +293,12 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final regular = DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite);
-    final link = DesignTokens.mediumSemibold.copyWith(color: DesignTokens.primaryGreen);
+    final regular = DesignTokens.mediumRegular.copyWith(
+      color: DesignTokens.textWhite,
+    );
+    final link = DesignTokens.mediumSemibold.copyWith(
+      color: DesignTokens.primaryGreen,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s16,
@@ -280,7 +309,10 @@ class _Footer extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: 'By Continuing you acknowledge that you read & agree our ', style: regular),
+            TextSpan(
+              text: 'By Continuing you acknowledge that you read & agree our ',
+              style: regular,
+            ),
             TextSpan(text: 'Terms & Conditions', style: link),
             TextSpan(text: ' and ', style: regular),
             TextSpan(text: 'Privacy Policy', style: link),

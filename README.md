@@ -66,15 +66,20 @@ This project follows **Feature-First Clean Architecture**. Every feature contain
 ```
 ┌─────────────────────────────────────────┐
 │  PRESENTATION  (Flutter + Riverpod)     │
-│  screens/ · widgets/ · providers/       │
-│  — calls UseCases only                  │
+│  screens/ · widgets/ · notifiers/        │
+│  + shared/providers.dart (DI)           │
+│  — StateNotifier calls the Repository    │
+│    DIRECTLY (no UseCase layer)           │
+│  — state is a Freezed union, consumed    │
+│    via when(); side-effects via listen   │
 └──────────────┬──────────────────────────┘
                │ depends on
                ▼
 ┌─────────────────────────────────────────┐
 │  DOMAIN  (pure Dart — no Flutter/Dio)   │
-│  entities/ · repositories/ · usecases/ │
-│  — returns Either<Failure, T>           │
+│  entities/ · repositories/ (interface)  │
+│  — NO usecases/                          │
+│  — repository returns Either<Failure,T> │
 └──────────┬──────────────────────────────┘
            │ implements
            ▼
@@ -88,10 +93,15 @@ This project follows **Feature-First Clean Architecture**. Every feature contain
 
 **Key rules:**
 - Domain never imports Flutter or Dio
-- Presentation never calls repositories directly — always through a UseCase
+- **No UseCase layer** — a presentation `StateNotifier` calls the repository directly
+- Presentation never calls Dio directly — always through the repository
+- Notifier state is a **Freezed union** (`initial / loadInProgress / loadSuccess / loadFailure`); the UI renders it with `when()` and runs side-effects (navigation, snackbars) via **`ref.listen` + `maybeWhen`** — never await-then-`ref.read`
+- Per-feature DI lives in `shared/providers.dart`
 - DTOs (with `fromJson`) live in `data/models/` only
-- Every UseCase returns `Either<Failure, T>` — never throws across layer boundaries
-- `Idempotency-Key` is generated in the presentation layer (one per user tap)
+- Every repository method returns `Either<Failure, T>` — never throws across layer boundaries
+- `Idempotency-Key` is minted per user action (one per tap)
+
+> Full detail: see `.claude/skills/stylemint-mobile-frontend/SKILL.md` §3.3 (StateNotifier), §3.5 (DI), §3.7 (Freezed 3), §3.8 (`ref.listen`).
 
 ---
 
@@ -104,10 +114,9 @@ lib/
 ├── core/
 │   ├── error/
 │   │   └── failure.dart        # Sealed Failure class (network/auth/server/...)
-│   ├── usecase/
-│   │   └── usecase.dart        # Abstract UseCase<Type, Params> interface
 │   ├── network/
-│   │   └── dio_client.dart     # Dio Riverpod provider + interceptors
+│   │   ├── dio_client.dart     # Dio Riverpod provider + interceptors
+│   │   └── api_client.dart     # Thin Dio wrapper used by datasources
 │   └── utils/
 │       ├── size_config.dart    # Tablet-responsive sizing
 │       ├── format_money.dart   # "Rs 1,234.56"
@@ -161,6 +170,25 @@ lib/
     │   └── tips/
     ├── settings/
     └── support/
+```
+
+Each feature follows the same internal layout (no `usecases/`):
+
+```
+features/<feature>/
+├── data/
+│   ├── datasources/        # <x>_remote_datasource.dart (ApiClient)
+│   ├── models/             # <x>_dto.dart (freezed + JSON) + toDomain()
+│   └── repositories/       # <x>_repository_impl.dart (maps errors → Failure)
+├── domain/
+│   ├── entities/           # pure Dart (no freezed, no JSON)
+│   └── repositories/       # abstract interface — returns Either<Failure, T>
+├── presentation/
+│   ├── notifiers/          # StateNotifier + Freezed union state
+│   ├── screens/
+│   └── widgets/
+└── shared/
+    └── providers.dart      # DI: datasource → repository → StateNotifierProvider
 ```
 
 ---
@@ -265,14 +293,31 @@ Format `NK{year}-{5 digits}` (e.g. `NK2026-00123`) — emitted by the server, ne
 - **Refresh token** → `flutter_secure_storage` (persisted)
 - **Access token** → Riverpod state only (in-memory, never written to disk)
 
-### Error handling
-All UseCases return `Either<Failure, T>`. In the presentation layer, fold on the result:
+### State, repositories & side-effects (no UseCases)
+There is **no UseCase layer**. A presentation `StateNotifier` calls the repository directly; its state is a **Freezed union** (`abstract`, not `sealed`, so `when`/`maybeWhen` generate). Per-feature DI lives in `shared/providers.dart`.
+
 ```dart
-result.fold(
-  (failure) => state = AsyncError(failure, StackTrace.current),
-  (data)    => state = AsyncData(data),
-);
+// notifier folds the repository result into the union
+state = const ReelsFeedState.loadInProgress();
+final either = await _repository.getReelsFeed();
+state = either.fold(ReelsFeedState.loadFailure, ReelsFeedState.loadSuccess);
 ```
+
+**Side-effects (navigation, snackbars) use `ref.listen` in `build` — never `await notifier.x()` then `ref.read(provider)`:**
+```dart
+ref.listen<ReelsFeedState>(reelsFeedProvider, (previous, next) {
+  next.maybeWhen(
+    loadSuccess: (reels) => /* navigate */,
+    loadFailure: (failure) => SmSnackbar.error(context, '...'),
+    orElse: () {},
+  );
+});
+```
+
+> Banned: hand-rolled state classes with `isLoading`/`error`/`data` + `copyWith` + `isSuccess`/`hasError`. See `.claude/skills/stylemint-mobile-frontend/SKILL.md` §3.3, §3.7, §3.8.
+
+### Error handling
+Every **repository method** returns `Either<Failure, T>` (fpdart) — never throws across layer boundaries. The repository maps `DioException` → `Failure`.
 
 ### Linting
 ```bash
