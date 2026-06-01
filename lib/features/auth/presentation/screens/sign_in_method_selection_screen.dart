@@ -79,6 +79,33 @@ class SignInMethodSelectionScreen extends StatelessWidget {
                       description: 'Use your phone No. to sign-in',
                       onTap: () => context.push(RouteNames.login),
                     ),
+                    const SizedBox(height: DesignTokens.s16),
+
+                    // ---- Create account CTA ----
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => context.push(RouteNames.register),
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'New to Style Mint? ',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textLight,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Create account',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.primaryGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: DesignTokens.s24),
 
                     // ---- Divider ----

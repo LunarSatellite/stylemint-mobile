@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mag
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/oauth_callback_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/passkey_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/register_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/otp_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart';
@@ -107,6 +108,7 @@ const _publicPaths = {
   RouteNames.splash,
   RouteNames.onboarding,
   RouteNames.signInMethod,
+  RouteNames.register,
   RouteNames.login,
   RouteNames.email,
   RouteNames.passkey,
@@ -206,6 +208,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.login,
         builder: (ctx, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.register,
+        builder: (ctx, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: RouteNames.otp,
