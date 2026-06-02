@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
@@ -33,6 +34,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
       connectivity: Connectivity(),
     ),
     tokenStorage: ref.watch(tokenStorageProvider),
+    deviceIdentity: ref.watch(deviceIdentityProvider),
   );
 });
 
@@ -393,12 +395,57 @@ class PasskeyAuthNotifier extends StateNotifier<LoginState> {
     }
   }
 
+  /// Usernameless sign-in — no account id; the OS picks the discoverable
+  /// credential and the server resolves the account.
+  Future<void> authenticateUsernameless() async {
+    state = const LoginState.loadInProgress();
+    final result = await passkeyService.authenticateUsernameless();
+    state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
+    if (state is _LoginSuccess) {
+      await ref.read(sessionControllerProvider.notifier).recheck();
+    }
+  }
+
   void reset() => state = const LoginState.initial();
 }
 
 final passkeyAuthProvider =
     StateNotifierProvider<PasskeyAuthNotifier, LoginState>((ref) {
   return PasskeyAuthNotifier(
+    ref: ref,
+    passkeyService: ref.watch(passkeyServiceProvider),
+  );
+});
+
+// ============================================================================
+// PASSKEY — bootstrap signup (passkey-first: bare account + passkey + session)
+// ============================================================================
+
+/// Drives passkey-first signup. Reuses [LoginState] since success yields an
+/// [AuthResponseDto]; on success triggers a session recheck so routing flips to
+/// authenticated.
+class PasskeyBootstrapNotifier extends StateNotifier<LoginState> {
+  PasskeyBootstrapNotifier({required this.ref, required this.passkeyService})
+      : super(const LoginState.initial());
+
+  final Ref ref;
+  final PasskeyService passkeyService;
+
+  Future<void> signup({required String displayName}) async {
+    state = const LoginState.loadInProgress();
+    final result = await passkeyService.bootstrapSignup(displayName: displayName);
+    state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
+    if (state is _LoginSuccess) {
+      await ref.read(sessionControllerProvider.notifier).recheck();
+    }
+  }
+
+  void reset() => state = const LoginState.initial();
+}
+
+final passkeyBootstrapProvider =
+    StateNotifierProvider<PasskeyBootstrapNotifier, LoginState>((ref) {
+  return PasskeyBootstrapNotifier(
     ref: ref,
     passkeyService: ref.watch(passkeyServiceProvider),
   );

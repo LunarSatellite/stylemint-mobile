@@ -58,6 +58,12 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   shared_preferences: ^2.3.5
 
+  # ── Device identity ───────────────────────────────────────────────────────
+  # Stable per-device id that survives reinstall, as far as each OS permits:
+  # Android = Settings.Secure.ANDROID_ID (android_id); iOS = Keychain-persisted
+  # UUID (flutter_secure_storage). MAC/IMEI/serial are unavailable to apps.
+  android_id: ^0.4.0
+
   # ── Push + realtime ──────────────────────────────────────────────────────
   firebase_core: ^4.9.0
   firebase_messaging: ^16.2.2

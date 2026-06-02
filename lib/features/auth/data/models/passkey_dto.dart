@@ -19,6 +19,24 @@ abstract class PasskeyChallengeDto with _$PasskeyChallengeDto {
       _$PasskeyChallengeDtoFromJson(json);
 }
 
+/// Returned by `POST /v1/auth/passkeys/register/bootstrap/options` — a bare
+/// account is created (display name only) and a WebAuthn registration challenge
+/// issued in one round-trip. [accountId] is echoed back so the client can post
+/// it to the matching `bootstrap/complete` call.
+@freezed
+abstract class PasskeyBootstrapDto with _$PasskeyBootstrapDto {
+  const factory PasskeyBootstrapDto({
+    required String accountId, // UUID
+    required String challengeId, // UUID
+    required String challengeBase64Url,
+    required String optionsJson,
+    @JsonKey(name: 'expiresUtc') required DateTime expiresUtc,
+  }) = _PasskeyBootstrapDto;
+
+  factory PasskeyBootstrapDto.fromJson(Map<String, dynamic> json) =>
+      _$PasskeyBootstrapDtoFromJson(json);
+}
+
 /// A registered passkey credential. Returned by the passkey list/register
 /// endpoints.
 @freezed

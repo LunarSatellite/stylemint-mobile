@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
@@ -13,11 +14,13 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.remoteDataSource,
     required this.networkInfo,
     required this.tokenStorage,
+    required this.deviceIdentity,
   });
 
   final AuthRemoteDataSource remoteDataSource;
   final NetworkInfoConnectivity networkInfo;
   final TokenStorage tokenStorage;
+  final DeviceIdentity deviceIdentity;
 
   Future<void> _persist(AuthResponseDto auth) {
     return tokenStorage.saveSession(
@@ -74,6 +77,9 @@ class AuthRepositoryImpl implements AuthRepository {
           identifier: identifier,
           code: code,
           deviceId: deviceId,
+          deviceFingerprint: await deviceIdentity.fingerprint(),
+          devicePlatform: deviceIdentity.platformCode,
+          deviceOsVersion: deviceIdentity.osVersion,
         );
         await _persist(auth);
         return right(auth);
@@ -109,6 +115,9 @@ class AuthRepositoryImpl implements AuthRepository {
           identifier: identifier,
           password: password,
           deviceId: deviceId,
+          deviceFingerprint: await deviceIdentity.fingerprint(),
+          devicePlatform: deviceIdentity.platformCode,
+          deviceOsVersion: deviceIdentity.osVersion,
         );
         await _persist(auth);
         return right(auth);
@@ -164,6 +173,9 @@ class AuthRepositoryImpl implements AuthRepository {
         final auth = await remoteDataSource.consumeMagicLogin(
           token: token,
           deviceId: deviceId,
+          deviceFingerprint: await deviceIdentity.fingerprint(),
+          devicePlatform: deviceIdentity.platformCode,
+          deviceOsVersion: deviceIdentity.osVersion,
         );
         await _persist(auth);
         return right(auth);
@@ -1017,6 +1029,136 @@ class AuthRepositoryImpl implements AuthRepository {
           credentialId: credentialId,
         );
         return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  // ==========================================================================
+  // Usernameless passkey login + bootstrap signup
+  // ==========================================================================
+
+  @override
+  Future<Either<NetworkExceptions, PasskeyChallengeDto>>
+      beginUsernamelessPasskeyAuthentication() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final response =
+            await remoteDataSource.beginUsernamelessPasskeyAuthentication();
+        return right(response);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, AuthResponseDto>>
+      completeUsernamelessPasskeyAuthentication({
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final body =
+            await remoteDataSource.completeUsernamelessPasskeyAuthentication(
+          challengeBase64Url: challengeBase64Url,
+          clientResponseJson: clientResponseJson,
+          deviceFingerprint: deviceFingerprint,
+          devicePlatform: devicePlatform,
+          deviceOsVersion: deviceOsVersion,
+        );
+        if (body == null) return left(NetworkExceptions.formatException());
+        final auth = AuthResponseDto.fromJson(body);
+        await _persist(auth);
+        return right(auth);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PasskeyBootstrapDto>> beginPasskeyBootstrap({
+    required String displayName,
+    String locale = 'en-US',
+    String timezone = 'Asia/Kathmandu',
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final response = await remoteDataSource.beginPasskeyBootstrap(
+          displayName: displayName,
+          locale: locale,
+          timezone: timezone,
+        );
+        return right(response);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, AuthResponseDto>> completePasskeyBootstrap({
+    required String accountId,
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+    String? nickname,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final body = await remoteDataSource.completePasskeyBootstrap(
+          accountId: accountId,
+          challengeBase64Url: challengeBase64Url,
+          clientResponseJson: clientResponseJson,
+          deviceFingerprint: deviceFingerprint,
+          devicePlatform: devicePlatform,
+          deviceOsVersion: deviceOsVersion,
+          nickname: nickname,
+        );
+        if (body == null) return left(NetworkExceptions.formatException());
+        final auth = AuthResponseDto.fromJson(body);
+        await _persist(auth);
+        return right(auth);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

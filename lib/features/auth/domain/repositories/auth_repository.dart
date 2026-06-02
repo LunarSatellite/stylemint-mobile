@@ -140,6 +140,36 @@ abstract interface class AuthRepository {
     required String credentialId,
   });
 
+  // --- Usernameless passkey login (discoverable credential, no accountId) ---
+  Future<Either<NetworkExceptions, PasskeyChallengeDto>>
+      beginUsernamelessPasskeyAuthentication();
+
+  Future<Either<NetworkExceptions, AuthResponseDto>>
+      completeUsernamelessPasskeyAuthentication({
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+  });
+
+  // --- Passkey-first signup (bootstrap: bare account + passkey + session) ---
+  Future<Either<NetworkExceptions, PasskeyBootstrapDto>> beginPasskeyBootstrap({
+    required String displayName,
+    String locale,
+    String timezone,
+  });
+
+  Future<Either<NetworkExceptions, AuthResponseDto>> completePasskeyBootstrap({
+    required String accountId,
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+    String? nickname,
+  });
+
   // --- Registration ---
   Future<Either<NetworkExceptions, RegistrationStartResponseDto>> startRegistration({
     required String displayName,

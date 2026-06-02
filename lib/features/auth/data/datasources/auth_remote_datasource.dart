@@ -39,6 +39,9 @@ class AuthRemoteDataSource {
     required String identifier,
     required String code,
     String? deviceId,
+    String? deviceFingerprint,
+    int? devicePlatform,
+    String? deviceOsVersion,
   }) async {
     final response = await apiClient.authPost(
       '/v1/auth/login-otp/verify',
@@ -47,6 +50,9 @@ class AuthRemoteDataSource {
         'identifier': identifier,
         'code': code,
         if (deviceId != null) 'deviceId': deviceId,
+        if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
+        if (devicePlatform != null) 'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
       },
     );
     return AuthResponseDto.fromJson(response as Map<String, dynamic>);
@@ -62,6 +68,9 @@ class AuthRemoteDataSource {
     required String identifier,
     required String password,
     String? deviceId,
+    String? deviceFingerprint,
+    int? devicePlatform,
+    String? deviceOsVersion,
   }) async {
     final response = await apiClient.authPost(
       '/v1/auth/login',
@@ -70,6 +79,9 @@ class AuthRemoteDataSource {
         'identifier': identifier,
         'password': password,
         if (deviceId != null) 'deviceId': deviceId,
+        if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
+        if (devicePlatform != null) 'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
       },
     );
     return AuthResponseDto.fromJson(response as Map<String, dynamic>);
@@ -93,10 +105,19 @@ class AuthRemoteDataSource {
   Future<AuthResponseDto> consumeMagicLogin({
     required String token,
     String? deviceId,
+    String? deviceFingerprint,
+    int? devicePlatform,
+    String? deviceOsVersion,
   }) async {
     final response = await apiClient.authPost(
       '/v1/auth/login-magic/consume',
-      data: {'token': token, if (deviceId != null) 'deviceId': deviceId},
+      data: {
+        'token': token,
+        if (deviceId != null) 'deviceId': deviceId,
+        if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
+        if (devicePlatform != null) 'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+      },
     );
     return AuthResponseDto.fromJson(response as Map<String, dynamic>);
   }
@@ -386,6 +407,74 @@ class AuthRemoteDataSource {
   }) async {
     await apiClient.authDelete(
         '/v1/accounts/$accountId/passkeys/$credentialId');
+  }
+
+  // ── Usernameless passkey login (no accountId — discoverable credential) ────
+
+  /// POST `/v1/auth/passkeys/authenticate/options` (anonymous)
+  Future<PasskeyChallengeDto> beginUsernamelessPasskeyAuthentication() async {
+    final response =
+        await apiClient.authPost('/v1/auth/passkeys/authenticate/options');
+    return PasskeyChallengeDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// POST `/v1/auth/passkeys/authenticate/complete` (anonymous) → AuthResponse.
+  Future<Map<String, dynamic>?> completeUsernamelessPasskeyAuthentication({
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+  }) async {
+    final response =
+        await apiClient.authPost('/v1/auth/passkeys/authenticate/complete', data: {
+      'challengeBase64Url': challengeBase64Url,
+      'clientResponseJson': clientResponseJson,
+      'deviceFingerprint': deviceFingerprint,
+      'devicePlatform': devicePlatform,
+      if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+    });
+    return response is Map<String, dynamic> ? response : null;
+  }
+
+  // ── Passkey-first signup (bootstrap) ───────────────────────────────────────
+
+  /// POST `/v1/auth/passkeys/register/bootstrap/options` (anonymous)
+  Future<PasskeyBootstrapDto> beginPasskeyBootstrap({
+    required String displayName,
+    String locale = 'en-US',
+    String timezone = 'Asia/Kathmandu',
+  }) async {
+    final response = await apiClient
+        .authPost('/v1/auth/passkeys/register/bootstrap/options', data: {
+      'displayName': displayName,
+      'locale': locale,
+      'timezone': timezone,
+    });
+    return PasskeyBootstrapDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// POST `/v1/auth/passkeys/register/bootstrap/complete` (anonymous) → AuthResponse.
+  Future<Map<String, dynamic>?> completePasskeyBootstrap({
+    required String accountId,
+    required String challengeBase64Url,
+    required String clientResponseJson,
+    required String deviceFingerprint,
+    required int devicePlatform,
+    String? deviceOsVersion,
+    String? nickname,
+  }) async {
+    final response = await apiClient
+        .authPost('/v1/auth/passkeys/register/bootstrap/complete', data: {
+      'accountId': accountId,
+      'challengeBase64Url': challengeBase64Url,
+      'clientResponseJson': clientResponseJson,
+      'deviceFingerprint': deviceFingerprint,
+      'devicePlatform': devicePlatform,
+      if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+      if (nickname != null) 'nickname': nickname,
+    });
+    return response is Map<String, dynamic> ? response : null;
   }
 
   // ==========================================================================
