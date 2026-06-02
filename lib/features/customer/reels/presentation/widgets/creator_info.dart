@@ -1,14 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Creator row (avatar, name, track) with a Follow toggle, plus the caption.
-/// Follow action requires authentication — tapping prompts sign-in if logged out.
+/// Follow is gated through the shared [ensureAuth] for guests.
 class CreatorInfo extends ConsumerStatefulWidget {
   const CreatorInfo({required this.reel, super.key});
 
@@ -21,69 +19,8 @@ class CreatorInfo extends ConsumerStatefulWidget {
 class _CreatorInfoState extends ConsumerState<CreatorInfo> {
   late bool _isFollowing = widget.reel.isCreatorFollowed ?? false;
 
-  bool get _isAuthenticated {
-    final session = ref.read(sessionControllerProvider);
-    return session.maybeWhen(
-      authenticated: (_) => true,
-      orElse: () => false,
-    );
-  }
-
-  void _toggleFollow() {
-    if (!_isAuthenticated) {
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: DesignTokens.bgAppBody,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(DesignTokens.s24),
-          ),
-        ),
-        builder: (_) => Padding(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s24, DesignTokens.s24,
-            DesignTokens.s24, DesignTokens.s32,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBodyLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s24),
-              Text('Sign in to follow creators',
-                  style: DesignTokens.titleMedium.copyWith(
-                      color: DesignTokens.textWhite)),
-              const SizedBox(height: DesignTokens.s8),
-              Text('Follow your favorite creators to see their content.',
-                  textAlign: TextAlign.center,
-                  style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.textMuted)),
-              const SizedBox(height: DesignTokens.s24),
-              SizedBox(
-                width: double.infinity,
-                height: DesignTokens.buttonHeight,
-                child: ElevatedButton(
-                  style: DesignTokens.primaryButtonStyle(),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.push(RouteNames.signInMethod);
-                  },
-                  child: const Text('Sign In',
-                      style: TextStyle(fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14, fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-      return;
-    }
+  Future<void> _toggleFollow() async {
+    if (!await ensureAuth(context, ref, reason: AuthReason.follow)) return;
     setState(() => _isFollowing = !_isFollowing);
   }
 

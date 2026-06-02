@@ -1,15 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Horizontal strip of products tagged on a reel. Each tile shows the
-/// product image, name, price and an "Add to Cart" button that requires auth.
+/// product image, name, price and an "Add to Cart" button gated through the
+/// shared [ensureAuth].
 class TaggedProductsSection extends ConsumerWidget {
   const TaggedProductsSection({required this.products, super.key});
 
@@ -37,70 +36,9 @@ class _ProductTile extends StatelessWidget {
   final TaggedProductEntity product;
   final WidgetRef ref;
 
-  bool get _isAuthenticated {
-    final session = ref.read(sessionControllerProvider);
-    return session.maybeWhen(
-      authenticated: (_) => true,
-      orElse: () => false,
-    );
-  }
-
-  void _requireAuth(BuildContext context, VoidCallback action) {
-    if (_isAuthenticated) {
-      action();
-      return;
-    }
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(DesignTokens.s24),
-        ),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s24, DesignTokens.s24,
-          DesignTokens.s24, DesignTokens.s32,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.bgAppBodyLight,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s24),
-            Text('Sign in to add to cart',
-                style: DesignTokens.titleMedium.copyWith(
-                    color: DesignTokens.textWhite)),
-            const SizedBox(height: DesignTokens.s8),
-            Text('Create an account or sign in to start shopping.',
-                textAlign: TextAlign.center,
-                style: DesignTokens.mediumRegular.copyWith(
-                    color: DesignTokens.textMuted)),
-            const SizedBox(height: DesignTokens.s24),
-            SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                style: DesignTokens.primaryButtonStyle(),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.push(RouteNames.signInMethod);
-                },
-                child: const Text('Sign In',
-                    style: TextStyle(fontFamily: DesignTokens.fontFamily,
-                        fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _addToCart(BuildContext context) async {
+    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
+    // TODO(cart): add [product] to the cart once authenticated.
   }
 
   @override
@@ -151,7 +89,7 @@ class _ProductTile extends StatelessWidget {
           ),
           const SizedBox(width: DesignTokens.s8),
           GestureDetector(
-            onTap: () => _requireAuth(context, () {}),
+            onTap: () => _addToCart(context),
             child: Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s12,
