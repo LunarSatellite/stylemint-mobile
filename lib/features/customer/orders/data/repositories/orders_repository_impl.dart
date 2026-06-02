@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
@@ -66,10 +67,19 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> cancelOrder(String orderId) async {
+  Future<Either<NetworkExceptions, Unit>> cancelOrder(
+    String orderId, {
+    required OrderCancellationReason reason,
+    String? note,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.cancelOrder(orderId, _uuid.v4());
+        await remoteDataSource.cancelOrder(
+          orderId,
+          _uuid.v4(),
+          reason: reason.value,
+          note: note,
+        );
         return right(unit);
       } catch (e) {
         if (e is DioException) {

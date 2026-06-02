@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 
 /// UI state for the cancel-order flow. Plain (non-freezed) so it compiles
@@ -35,14 +36,14 @@ class CancelOrderController extends StateNotifier<CancelOrderUiState> {
 
   /// Cancels [orderId]. [reason]/[comment] are collected per the design spec
   /// but the backend cancel endpoint currently accepts no reason body.
-  /// TODO(cancel-reason): forward reason+comment once the API exposes a field.
   Future<void> cancel(
     String orderId, {
-    String? reason,
-    String? comment,
+    required OrderCancellationReason reason,
+    String? note,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
-    final either = await _repository.cancelOrder(orderId);
+    final either =
+        await _repository.cancelOrder(orderId, reason: reason, note: note);
     state = either.fold(
       (_) => state.copyWith(
         isSubmitting: false,
