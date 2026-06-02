@@ -4,10 +4,10 @@ import 'package:stylemint_mobile_frontend/core/auth_gate/auth_reason.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Inline, fingerprint-first auth prompt shown when a guest takes a protected
+/// Inline, passkey-first auth prompt shown when a guest takes a protected
 /// action. Contextual to [reason].
 ///
-/// INTERIM: the fingerprint CTA routes to the full fingerprint-first entry
+/// INTERIM: the passkey CTA routes to the full passkey-first entry
 /// (`signInMethod`) because token-issuing / usernameless passkey login isn't
 /// available yet (backend #20/#21/#23). When it lands, this CTA runs the passkey
 /// ceremony inline and pops `true` — `ensureAuth` and all call sites stay as-is.
@@ -45,7 +45,7 @@ class AuthPromptSheet extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: DesignTokens.chipsSelectedFill,
               ),
-              child: const Icon(Icons.fingerprint,
+              child: const Icon(Icons.key_rounded,
                   color: DesignTokens.primaryGreen, size: 40),
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -53,7 +53,7 @@ class AuthPromptSheet extends StatelessWidget {
                 textAlign: TextAlign.center, style: DesignTokens.titleMedium),
             const SizedBox(height: DesignTokens.s8),
             Text(
-              'Fast & secure with your fingerprint — no passwords.',
+              'Use your device passkey — Face, fingerprint or PIN. No passwords.',
               textAlign: TextAlign.center,
               style: DesignTokens.mediumRegular
                   .copyWith(color: DesignTokens.textMuted),
@@ -74,11 +74,11 @@ class AuthPromptSheet extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.fingerprint,
+                      const Icon(Icons.key_rounded,
                           color: DesignTokens.buttonPrimaryText,
                           size: DesignTokens.iconMedium),
                       const SizedBox(width: DesignTokens.s8),
-                      Text('Continue with Fingerprint',
+                      Text('Continue with Passkey',
                           style: DesignTokens.oneLinerSemibold.copyWith(
                               color: DesignTokens.buttonPrimaryText)),
                     ],

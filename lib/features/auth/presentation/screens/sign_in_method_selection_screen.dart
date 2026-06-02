@@ -4,16 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
-/// Auth entry — **fingerprint / passkey first**.
+/// Auth entry — **passkey first**.
 ///
-/// The default screen is intentionally just the fingerprint CTA (no method
-/// buttons). Passkey is the highest-priority path; email / phone / social and
-/// "Create account" (Plan B) are collapsed behind "More ways to continue" and
-/// shown only on demand or when passkey isn't viable.
+/// The default screen is intentionally just the passkey CTA (no method
+/// buttons). Passkey is the highest-priority path — the device decides the
+/// actual factor (Face / fingerprint / PIN). Email / phone / social and
+/// "Create account" (Plan B) replace it when the user taps "More ways to
+/// continue".
 ///
 /// NOTE: true passkey login (token-issuing, usernameless) + passkey-only
 /// account creation are pending backend issues #20/#21/#22/#23. Until then the
-/// fingerprint CTA routes to the passkey screen and new users fall back to
+/// passkey CTA routes to the passkey screen and new users fall back to
 /// Plan B (Create account).
 class SignInMethodSelectionScreen extends StatefulWidget {
   const SignInMethodSelectionScreen({super.key});
@@ -59,25 +60,24 @@ class _SignInMethodSelectionScreenState
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     Text(
-                      'Sign in with your fingerprint — fast, secure, '
-                      'no passwords.',
+                      'Sign in with your device passkey — Face, fingerprint or '
+                      'PIN, no passwords.',
                       textAlign: TextAlign.center,
                       style: DesignTokens.bodyText,
                     ),
                     const SizedBox(height: DesignTokens.s40),
 
-                    // ---- Fingerprint hero (the primary CTA) ----
-                    _FingerprintHero(onTap: _continueWithPasskey),
-                    const SizedBox(height: DesignTokens.s24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: SmFingerprintButton(onPressed: _continueWithPasskey),
-                    ),
-                    const SizedBox(height: DesignTokens.s16),
-
-                    // ---- Plan B: collapsed by default ----
-                    if (!_showMore)
+                    // Default view = just the passkey CTA. Tapping "More ways"
+                    // swaps it out for Plan B (no reason to keep the passkey
+                    // hero once the user has chosen another method).
+                    if (!_showMore) ...[
+                      _PasskeyHero(onTap: _continueWithPasskey),
+                      const SizedBox(height: DesignTokens.s24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SmPasskeyButton(onPressed: _continueWithPasskey),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
                       TextButton(
                         onPressed: () => setState(() => _showMore = true),
                         child: Text(
@@ -85,9 +85,19 @@ class _SignInMethodSelectionScreenState
                           style: DesignTokens.mediumSemibold
                               .copyWith(color: DesignTokens.primaryGreen),
                         ),
-                      )
-                    else
+                      ),
+                    ] else ...[
                       _PlanB(onComingSoon: (p) => _comingSoon(context, p)),
+                      const SizedBox(height: DesignTokens.s8),
+                      TextButton(
+                        onPressed: () => setState(() => _showMore = false),
+                        child: Text(
+                          'Use passkey instead',
+                          style: DesignTokens.mediumSemibold
+                              .copyWith(color: DesignTokens.primaryGreen),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -100,9 +110,10 @@ class _SignInMethodSelectionScreenState
   }
 }
 
-/// Large tappable fingerprint disc — the focal point of the entry screen.
-class _FingerprintHero extends StatelessWidget {
-  const _FingerprintHero({required this.onTap});
+/// Large tappable passkey disc — the focal point of the entry screen. The OS
+/// uses whatever the user enrolled (Face / fingerprint / device PIN) on tap.
+class _PasskeyHero extends StatelessWidget {
+  const _PasskeyHero({required this.onTap});
 
   final VoidCallback onTap;
 
@@ -119,8 +130,8 @@ class _FingerprintHero extends StatelessWidget {
           border: Border.all(color: DesignTokens.primaryGreen, width: 2),
         ),
         child: const Icon(
-          Icons.fingerprint,
-          size: 72,
+          Icons.key_rounded,
+          size: 64,
           color: DesignTokens.primaryGreen,
         ),
       ),
@@ -128,9 +139,9 @@ class _FingerprintHero extends StatelessWidget {
   }
 }
 
-/// Primary "Continue with Fingerprint" button.
-class SmFingerprintButton extends StatelessWidget {
-  const SmFingerprintButton({required this.onPressed, super.key});
+/// Primary "Continue with Passkey" button.
+class SmPasskeyButton extends StatelessWidget {
+  const SmPasskeyButton({required this.onPressed, super.key});
 
   final VoidCallback onPressed;
 
@@ -147,11 +158,11 @@ class SmFingerprintButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.fingerprint,
+              const Icon(Icons.key_rounded,
                   color: DesignTokens.buttonPrimaryText, size: DesignTokens.iconMedium),
               const SizedBox(width: DesignTokens.s8),
               Text(
-                'Continue with Fingerprint',
+                'Continue with Passkey',
                 style: DesignTokens.oneLinerSemibold
                     .copyWith(color: DesignTokens.buttonPrimaryText),
               ),
