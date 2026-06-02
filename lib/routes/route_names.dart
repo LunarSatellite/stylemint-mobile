@@ -85,6 +85,7 @@ abstract class RouteNames {
   static const vendorCreatorPerformance = '/vendor/creator-performance';
 
   // Social
+  static const creatorProfile = '/creator-profile/:accountId';
   static const feed = '/feed';
   static const feedCreatePost = '/feed/create';
   static const stories = '/stories';

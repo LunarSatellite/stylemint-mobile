@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/creator_chip_dto.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -81,12 +82,21 @@ class _FollowCreatorsDiscoveryScreenState
                 itemCount: creators.length,
                 separatorBuilder: (_, __) =>
                     const SizedBox(height: DesignTokens.s12),
-                itemBuilder: (_, i) {
+                itemBuilder: (context, i) {
                   final c = creators[i];
                   return _CreatorRow(
                     creator: c,
                     following: followed.contains(c.creatorProfileId),
                     onToggle: () => _toggle(c.creatorProfileId),
+                    onOpen: () => context.push(
+                      '/creator-profile/${c.creatorProfileId}',
+                      extra: CreatorProfileArgs(
+                        accountId: c.creatorProfileId,
+                        displayName: c.displayName,
+                        handle: c.handle,
+                        avatarUrl: c.avatarUrl,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -100,53 +110,62 @@ class _CreatorRow extends StatelessWidget {
     required this.creator,
     required this.following,
     required this.onToggle,
+    required this.onOpen,
   });
 
   final CreatorChipDto creator;
   final bool following;
   final VoidCallback onToggle;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final avatar = creator.avatarUrl;
     return Row(
       children: [
-        ClipOval(
-          child: SizedBox(
-            width: DesignTokens.avatarLarge,
-            height: DesignTokens.avatarLarge,
-            child: (avatar == null || avatar.isEmpty)
-                ? Container(
-                    color: DesignTokens.bgAppBodyLight,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.person,
-                        color: DesignTokens.iconLight))
-                : Image.network(avatar,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                          color: DesignTokens.bgAppBodyLight,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.person,
-                              color: DesignTokens.iconLight),
-                        )),
+        GestureDetector(
+          onTap: onOpen,
+          child: ClipOval(
+            child: SizedBox(
+              width: DesignTokens.avatarLarge,
+              height: DesignTokens.avatarLarge,
+              child: (avatar == null || avatar.isEmpty)
+                  ? Container(
+                      color: DesignTokens.bgAppBodyLight,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.person,
+                          color: DesignTokens.iconLight))
+                  : Image.network(avatar,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                            color: DesignTokens.bgAppBodyLight,
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.person,
+                                color: DesignTokens.iconLight),
+                          )),
+            ),
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(creator.displayName.isEmpty ? '@${creator.handle}' : creator.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.mediumSemibold),
-              const SizedBox(height: 2),
-              Text(
-                '${_compact(creator.followerCount)} followers • ${creator.reelCount} reels',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted),
-              ),
-            ],
+          child: GestureDetector(
+            onTap: onOpen,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(creator.displayName.isEmpty ? '@${creator.handle}' : creator.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.mediumSemibold),
+                const SizedBox(height: 2),
+                Text(
+                  '${_compact(creator.followerCount)} followers • ${creator.reelCount} reels',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.textMuted),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: DesignTokens.s8),
