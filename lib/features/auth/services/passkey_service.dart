@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:passkeys/authenticator.dart';
 import 'package:passkeys/types.dart';
 
+import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/index.dart';
 import 'package:stylemint_mobile_frontend/features/auth/domain/repositories/auth_repository.dart';
@@ -12,10 +13,11 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 /// StyleMint backend repository, converting between the package's types and
 /// our [PasskeyChallengeDto] / [PasskeyCredentialDto] / [AuthResponseDto].
 class PasskeyService {
-  PasskeyService({required this.authRepository})
+  PasskeyService({required this.authRepository, required this.deviceIdentity})
       : _authenticator = PasskeyAuthenticator();
 
   final AuthRepository authRepository;
+  final DeviceIdentity deviceIdentity;
   final PasskeyAuthenticator _authenticator;
 
   // ---------------------------------------------------------------------------
@@ -113,6 +115,95 @@ class PasskeyService {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Usernameless authentication (sign in — no account id, discoverable cred)
+  // ---------------------------------------------------------------------------
+
+  /// Passkey-first sign-in. The server issues a discoverable-credential
+  /// challenge, the OS presents whatever the user enrolled (Face / fingerprint /
+  /// PIN), and the server resolves the account from the credential and issues a
+  /// session — binding it to this device's stable fingerprint.
+  Future<Either<NetworkExceptions, AuthResponseDto>>
+      authenticateUsernameless() async {
+    final challengeResult =
+        await authRepository.beginUsernamelessPasskeyAuthentication();
+    if (challengeResult.isLeft()) {
+      return Left<NetworkExceptions, AuthResponseDto>(
+        challengeResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+      );
+    }
+    final challenge = challengeResult.getOrElse((_) => throw StateError(''));
+
+    final AuthenticateRequestType platformRequest;
+    try {
+      platformRequest =
+          AuthenticateRequestType.fromJsonString(challenge.optionsJson);
+    } catch (_) {
+      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+    }
+
+    final AuthenticateResponseType platformResponse;
+    try {
+      platformResponse = await _authenticator.authenticate(platformRequest);
+    } catch (e) {
+      return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
+    }
+
+    final fingerprint = await deviceIdentity.fingerprint();
+    return authRepository.completeUsernamelessPasskeyAuthentication(
+      challengeBase64Url: challenge.challengeBase64Url,
+      clientResponseJson: platformResponse.toJsonString(),
+      deviceFingerprint: fingerprint,
+      devicePlatform: deviceIdentity.platformCode,
+      deviceOsVersion: deviceIdentity.osVersion,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bootstrap signup (passkey-first: bare account + passkey + session)
+  // ---------------------------------------------------------------------------
+
+  /// Passkey-first signup. Creates a bare account (display name only), registers
+  /// a passkey, and returns a session — all without email/password. Email/phone
+  /// are collected later (progressive onboarding).
+  Future<Either<NetworkExceptions, AuthResponseDto>> bootstrapSignup({
+    required String displayName,
+  }) async {
+    final bootstrapResult =
+        await authRepository.beginPasskeyBootstrap(displayName: displayName);
+    if (bootstrapResult.isLeft()) {
+      return Left<NetworkExceptions, AuthResponseDto>(
+        bootstrapResult.fold((l) => l, (_) => const NetworkExceptions.unexpectedError()),
+      );
+    }
+    final bootstrap = bootstrapResult.getOrElse((_) => throw StateError(''));
+
+    final RegisterRequestType platformRequest;
+    try {
+      platformRequest =
+          RegisterRequestType.fromJsonString(bootstrap.optionsJson);
+    } catch (_) {
+      return const Left(NetworkExceptions.validation(code: 'PASSKEY_OPTIONS_INVALID'));
+    }
+
+    final RegisterResponseType platformResponse;
+    try {
+      platformResponse = await _authenticator.register(platformRequest);
+    } catch (e) {
+      return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
+    }
+
+    final fingerprint = await deviceIdentity.fingerprint();
+    return authRepository.completePasskeyBootstrap(
+      accountId: bootstrap.accountId,
+      challengeBase64Url: bootstrap.challengeBase64Url,
+      clientResponseJson: platformResponse.toJsonString(),
+      deviceFingerprint: fingerprint,
+      devicePlatform: deviceIdentity.platformCode,
+      deviceOsVersion: deviceIdentity.osVersion,
+    );
+  }
+
   NetworkExceptions _mapPasskeyError(Object e) {
     final msg = e.toString().toLowerCase();
     if (msg.contains('cancel')) return const NetworkExceptions.auth();
@@ -127,5 +218,8 @@ class PasskeyService {
 }
 
 final passkeyServiceProvider = Provider<PasskeyService>((ref) {
-  return PasskeyService(authRepository: ref.watch(authRepositoryProvider));
+  return PasskeyService(
+    authRepository: ref.watch(authRepositoryProvider),
+    deviceIdentity: ref.watch(deviceIdentityProvider),
+  );
 });

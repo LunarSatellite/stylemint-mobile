@@ -52,7 +52,17 @@ class TokenStorage {
     return expiry.isAfter(DateTime.now().toUtc());
   }
 
-  Future<void> clear() => _storage.deleteAll();
+  /// Clears the session — but deliberately preserves the device identity
+  /// (`device.*`) so the same device is recognised after logout. We delete the
+  /// known auth keys rather than `deleteAll()` for that reason.
+  Future<void> clear() => Future.wait([
+        _storage.delete(key: _kAccessToken),
+        _storage.delete(key: _kRefreshToken),
+        _storage.delete(key: _kAccessExpiry),
+        _storage.delete(key: _kRefreshExpiry),
+        _storage.delete(key: _kAccountId),
+        _storage.delete(key: _kSessionId),
+      ]);
 
   Future<void> _write(String key, String? value) =>
       value == null ? _storage.delete(key: key) : _storage.write(key: key, value: value);

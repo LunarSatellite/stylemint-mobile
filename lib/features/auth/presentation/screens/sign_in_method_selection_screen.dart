@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
@@ -12,29 +15,81 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 /// "Create account" (Plan B) replace it when the user taps "More ways to
 /// continue".
 ///
-/// NOTE: true passkey login (token-issuing, usernameless) + passkey-only
-/// account creation are pending backend issues #20/#21/#22/#23. Until then the
-/// passkey CTA routes to the passkey screen and new users fall back to
-/// Plan B (Create account).
-class SignInMethodSelectionScreen extends StatefulWidget {
+/// "Continue with Passkey" runs a real usernameless WebAuthn sign-in: the OS
+/// presents whatever credential the device has, the server resolves the account
+/// and issues a session (router redirects to home). If this device has no
+/// passkey yet — a new user — we route to signup to create one.
+class SignInMethodSelectionScreen extends ConsumerStatefulWidget {
   const SignInMethodSelectionScreen({super.key});
 
   @override
-  State<SignInMethodSelectionScreen> createState() =>
+  ConsumerState<SignInMethodSelectionScreen> createState() =>
       _SignInMethodSelectionScreenState();
 }
 
 class _SignInMethodSelectionScreenState
-    extends State<SignInMethodSelectionScreen> {
+    extends ConsumerState<SignInMethodSelectionScreen> {
   bool _showMore = false;
+  bool _busy = false;
 
-  // INTERIM: a guest can't create a passkey-only account yet (backend
-  // #20/#21/#23), and the passkey-setup screen requires an existing login.
-  // So "Continue with Passkey" sends new users through onboarding (which
-  // auto-logs them in / makes the device authenticated); the WebAuthn passkey
-  // is enrolled post-login. When the backend lands, this points at the real
-  // inline passkey ceremony instead.
-  void _continueWithPasskey() => context.push(RouteNames.register);
+  Future<void> _continueWithPasskey() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await ref.read(passkeyAuthProvider.notifier).authenticateUsernameless();
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    final state = ref.read(passkeyAuthProvider);
+    state.maybeWhen(
+      // Success: the session recheck flips routing to home — nothing to do.
+      loadSuccess: (_) {},
+      loadFailure: (failure) {
+        // No credential on this device → this is a new user; offer the
+        // passkey-first quick signup (display name only).
+        if (failure.validationCode == 'PASSKEY_NO_CREDENTIALS') {
+          _startBootstrapSignup();
+          return;
+        }
+        // User cancelled the OS sheet — stay put, no error noise.
+        if (failure.isAuth) return;
+        SmSnackbar.error(context, 'Could not sign in with passkey. Try again.');
+      },
+      orElse: () {},
+    );
+  }
+
+  /// Passkey-first signup: ask only for a display name, then create the account
+  /// + register a passkey + issue a session in one go (email/phone come later).
+  Future<void> _startBootstrapSignup() async {
+    final displayName = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.s16)),
+      ),
+      builder: (_) => const _DisplayNameSheet(),
+    );
+    if (displayName == null || displayName.trim().isEmpty || !mounted) return;
+
+    setState(() => _busy = true);
+    await ref
+        .read(passkeyBootstrapProvider.notifier)
+        .signup(displayName: displayName.trim());
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    ref.read(passkeyBootstrapProvider).maybeWhen(
+          // Success: session recheck flips routing to home.
+          loadSuccess: (_) {},
+          loadFailure: (failure) {
+            if (failure.isAuth) return;
+            SmSnackbar.error(
+                context, 'Could not create your account. Please try again.');
+          },
+          orElse: () {},
+        );
+  }
 
   static void _comingSoon(BuildContext context, String provider) {
     context.go(RouteNames.home);
@@ -403,6 +458,85 @@ class _SocialButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet that collects just a display name for passkey-first signup.
+/// Pops with the entered name (or null on cancel).
+class _DisplayNameSheet extends StatefulWidget {
+  const _DisplayNameSheet();
+
+  @override
+  State<_DisplayNameSheet> createState() => _DisplayNameSheetState();
+}
+
+class _DisplayNameSheetState extends State<_DisplayNameSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    Navigator.of(context).pop(name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s24,
+        DesignTokens.s16,
+        DesignTokens.s24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('What should we call you?', style: DesignTokens.titleMedium),
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            "Pick a display name to get started. You'll add your email and phone "
+            'later — your device passkey is all you need to sign in.',
+            style: DesignTokens.bodyText,
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLength: 64,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(),
+            cursorColor: DesignTokens.primaryGreen,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Sarah',
+              filled: true,
+              fillColor: DesignTokens.inputFieldFill,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          SizedBox(
+            width: double.infinity,
+            child: SmPasskeyButton(onPressed: _submit),
+          ),
+        ],
       ),
     );
   }

@@ -16,6 +16,33 @@ abstract class NetworkExceptions with _$NetworkExceptions {
   const factory NetworkExceptions.notFound() = _NotFound;
   const factory NetworkExceptions.conflict() = _Conflict;
 
+  /// The error code when this is a `.validation(code:)`, else null.
+  String? get validationCode => when(
+        server: (_) => null,
+        noInternetConnection: () => null,
+        unexpectedError: () => null,
+        formatException: () => null,
+        emptyData: () => null,
+        validation: (code) => code,
+        auth: () => null,
+        notFound: () => null,
+        conflict: () => null,
+      );
+
+  /// True for `.auth()` — used to treat a user-cancelled passkey ceremony as a
+  /// no-op rather than an error.
+  bool get isAuth => when(
+        server: (_) => false,
+        noInternetConnection: () => false,
+        unexpectedError: () => false,
+        formatException: () => false,
+        emptyData: () => false,
+        validation: (_) => false,
+        auth: () => true,
+        notFound: () => false,
+        conflict: () => false,
+      );
+
   static String getMessage(NetworkExceptions exception) {
     return exception.when(
       server: (msg) => msg,
