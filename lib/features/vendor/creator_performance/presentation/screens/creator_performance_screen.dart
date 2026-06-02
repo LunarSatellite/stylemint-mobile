@@ -3,21 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/data/models/creator_match_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/data/models/creator_performance_dto.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Creator Performance (vendor). Pixel-matched to Brand
-/// 'Creator Performance-Actions.pdf'. Backed by `GET /v1/vendor/matches`
-/// (match score + reason) — the available vendor-facing creator signal.
-final _vendorMatchesProvider =
-    FutureProvider.autoDispose<List<CreatorMatchDto>>((ref) async {
+/// 'Creator Performance-Actions.pdf'. Backed by the real
+/// `GET /v1/vendor/creator-performance` endpoint — per-creator units sold,
+/// attributed revenue, commission paid, and distinct reels of the vendor's
+/// products over the last 30 days (default window). Ordered by revenue desc.
+final _creatorPerformanceProvider =
+    FutureProvider.autoDispose<List<CreatorPerformanceDto>>((ref) async {
   final ApiClient api = ref.watch(apiClientProvider);
-  final res = await api.get('/v1/vendor/matches', queryParameters: {'pageSize': 25});
-  final map = res as Map<String, dynamic>;
-  final items = (map['items'] as List<dynamic>? ?? const <dynamic>[]);
+  final res = await api.get(
+    '/v1/vendor/creator-performance',
+    queryParameters: {'limit': 25},
+  );
+  final items = (res as List<dynamic>? ?? const <dynamic>[]);
   return items
       .whereType<Map<String, dynamic>>()
-      .map(CreatorMatchDto.fromJson)
+      .map(CreatorPerformanceDto.fromJson)
       .toList(growable: false);
 });
 
@@ -26,7 +30,7 @@ class CreatorPerformanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(_vendorMatchesProvider);
+    final async = ref.watch(_creatorPerformanceProvider);
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -44,26 +48,29 @@ class CreatorPerformanceScreen extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
         error: (_, __) => Center(
-            child: Text("Couldn't load creators.", style: DesignTokens.bodyText)),
-        data: (matches) => matches.isEmpty
+            child: Text("Couldn't load performance.", style: DesignTokens.bodyText)),
+        data: (rows) => rows.isEmpty
             ? Center(
-                child: Text('No matched creators yet.',
+                child: Text('No creator sales in the last 30 days.',
                     style: DesignTokens.bodyText))
             : ListView.separated(
                 padding: const EdgeInsets.all(DesignTokens.s16),
-                itemCount: matches.length,
+                itemCount: rows.length,
                 separatorBuilder: (_, __) =>
                     const SizedBox(height: DesignTokens.s12),
-                itemBuilder: (_, i) => _MatchCard(match: matches[i]),
+                itemBuilder: (_, i) => _PerformanceCard(row: rows[i]),
               ),
       ),
     );
   }
 }
 
-class _MatchCard extends StatelessWidget {
-  const _MatchCard({required this.match});
-  final CreatorMatchDto match;
+class _PerformanceCard extends StatelessWidget {
+  const _PerformanceCard({required this.row});
+  final CreatorPerformanceDto row;
+
+  String _money(double v) => '${row.currency} ${v.toStringAsFixed(0)}';
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -72,51 +79,69 @@ class _MatchCard extends StatelessWidget {
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: DesignTokens.avatarMedium,
-            height: DesignTokens.avatarMedium,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: DesignTokens.bgAppFoundation,
-            ),
-            alignment: Alignment.center,
-            child: const Icon(Icons.person, color: DesignTokens.iconLight),
-          ),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('@${match.creatorHandle}',
+          Row(
+            children: [
+              Container(
+                width: DesignTokens.avatarMedium,
+                height: DesignTokens.avatarMedium,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: DesignTokens.bgAppFoundation,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.person, color: DesignTokens.iconLight),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Text(row.shortLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DesignTokens.mediumSemibold),
-                if (match.reasonSummary.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(match.reasonSummary,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.smallRegular
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(_money(row.attributedRevenue),
+                      style: DesignTokens.mediumSemibold
+                          .copyWith(color: DesignTokens.primaryGreen)),
+                  Text('revenue',
+                      style: DesignTokens.tiny
                           .copyWith(color: DesignTokens.textMuted)),
                 ],
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: DesignTokens.s8),
-          Column(
+          const SizedBox(height: DesignTokens.s12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${match.scorePercent.toStringAsFixed(0)}%',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.primaryGreen)),
-              Text('match',
-                  style: DesignTokens.tiny
-                      .copyWith(color: DesignTokens.textMuted)),
+              _Stat(label: 'Units sold', value: '${row.unitsSold}'),
+              _Stat(label: 'Commission', value: _money(row.commissionPaid)),
+              _Stat(label: 'Reels', value: '${row.distinctReelCount}'),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value});
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(value, style: DesignTokens.mediumSemibold),
+        Text(label,
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted)),
+      ],
     );
   }
 }
