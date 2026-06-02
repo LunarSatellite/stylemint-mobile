@@ -47,6 +47,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/create_draft_screen.dart';
@@ -408,6 +409,17 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => ReelDetailsScreen(
           reelId: state.pathParameters['reelId']!,
         ),
+      ),
+      GoRoute(
+        path: RouteNames.creatorProfile,
+        builder: (ctx, state) {
+          final accountId = state.pathParameters['accountId']!;
+          final extra = state.extra is CreatorProfileArgs
+              ? state.extra! as CreatorProfileArgs
+              : CreatorProfileArgs(
+                  accountId: accountId, displayName: '', handle: '');
+          return CreatorProfileScreen(args: extra);
+        },
       ),
       GoRoute(
         path: RouteNames.partnerships,
