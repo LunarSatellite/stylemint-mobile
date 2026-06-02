@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/creator_chip_dto.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Follow Creators (customer discovery). Pixel-matched to the Customer
 /// follow-creator screen. Lists suggested creators from
 /// `GET /api/v1/customer/feed/creators-you-may-like`.
 ///
-/// NOTE: the backend currently has NO follow/unfollow endpoint, so the Follow
-/// toggle is local-only. TODO(follow-api): POST/DELETE follow once it exists.
+/// The Follow toggle calls the real follow graph (POST/DELETE /v1/follows/{id})
+/// via [followNotifierProvider]. The chip's `creatorProfileId` holds the
+/// creator's account id server-side, so it is the correct follow target.
 final _suggestedCreatorsProvider =
     FutureProvider.autoDispose<List<CreatorChipDto>>((ref) async {
   final ApiClient api = ref.watch(apiClientProvider);
@@ -37,11 +40,20 @@ class FollowCreatorsDiscoveryScreen extends ConsumerStatefulWidget {
 
 class _FollowCreatorsDiscoveryScreenState
     extends ConsumerState<FollowCreatorsDiscoveryScreen> {
-  final _followed = <String>{};
+  Future<void> _toggle(String accountId) async {
+    try {
+      await ref.read(followNotifierProvider.notifier).toggle(accountId);
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(context, "Couldn't update follow. Please try again.");
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(_suggestedCreatorsProvider);
+    final followed = ref.watch(followNotifierProvider);
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -71,17 +83,10 @@ class _FollowCreatorsDiscoveryScreenState
                     const SizedBox(height: DesignTokens.s12),
                 itemBuilder: (_, i) {
                   final c = creators[i];
-                  final following = _followed.contains(c.creatorProfileId);
                   return _CreatorRow(
                     creator: c,
-                    following: following,
-                    onToggle: () => setState(() {
-                      if (following) {
-                        _followed.remove(c.creatorProfileId);
-                      } else {
-                        _followed.add(c.creatorProfileId);
-                      }
-                    }),
+                    following: followed.contains(c.creatorProfileId),
+                    onToggle: () => _toggle(c.creatorProfileId),
                   );
                 },
               ),
