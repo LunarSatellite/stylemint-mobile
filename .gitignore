@@ -83,3 +83,6 @@ ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 # ── Asset placeholders (committed as empty dirs via .gitkeep) ────────────────
 assets/fonts/*.ttf
 assets/animations/*.json
+
+# FVM (per-machine Flutter SDK symlink; .fvmrc is the committed pin)
+.fvm/
