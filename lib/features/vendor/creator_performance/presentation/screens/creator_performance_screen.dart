@@ -84,19 +84,30 @@ class _PerformanceCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: DesignTokens.avatarMedium,
-                height: DesignTokens.avatarMedium,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: DesignTokens.bgAppFoundation,
+              ClipOval(
+                child: SizedBox(
+                  width: DesignTokens.avatarMedium,
+                  height: DesignTokens.avatarMedium,
+                  child: (row.creatorAvatarUrl == null ||
+                          row.creatorAvatarUrl!.isEmpty)
+                      ? Container(
+                          color: DesignTokens.bgAppFoundation,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.person,
+                              color: DesignTokens.iconLight))
+                      : Image.network(row.creatorAvatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                                color: DesignTokens.bgAppFoundation,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.person,
+                                    color: DesignTokens.iconLight),
+                              )),
                 ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.person, color: DesignTokens.iconLight),
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
-                child: Text(row.shortLabel,
+                child: Text(row.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DesignTokens.mediumSemibold),
