@@ -36,9 +36,21 @@ class OrdersRemoteDataSource {
   }
 
   /// POST `/v1/orders/{orderNumber}/cancel` — cancel an order.
-  Future<void> cancelOrder(String orderId, String idempotencyKey) async {
+  /// [reason] is the backend OrderCancellationReason int; [note] is required
+  /// when reason == Other. The 5-7 day refund acknowledgement is mandatory.
+  Future<void> cancelOrder(
+    String orderId,
+    String idempotencyKey, {
+    required int reason,
+    String? note,
+  }) async {
     await apiClient.post(
       '/v1/orders/$orderId/cancel',
+      data: <String, dynamic>{
+        'reason': reason,
+        if (note != null && note.isNotEmpty) 'note': note,
+        'acknowledgedFiveToSevenDayRefund': true,
+      },
       options: _idempotent(idempotencyKey),
     );
   }

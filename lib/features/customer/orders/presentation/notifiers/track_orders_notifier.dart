@@ -68,30 +68,9 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     );
   }
 
-  Future<void> cancelOrder() async {
-    state.maybeWhen(
-      loadSuccess: (order) async {
-        state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.cancelOrder(order.id);
-        state = either.fold(
-          (failure) {
-            _onActionFailure(order, failure);
-            return OrderDetailState.actionFailure(failure);
-          },
-          (_) {
-            return OrderDetailState.loadSuccess(
-              order.copyWith(
-                status: OrderTrackStatus.cancelled,
-                canCancel: false,
-                canReturn: false,
-              ),
-            );
-          },
-        );
-      },
-      orElse: () {},
-    );
-  }
+  // Order cancellation moved to the dedicated cancel flow
+  // (CancelOrderScreen + cancelOrderControllerProvider), which collects the
+  // reason / note / refund acknowledgement the backend requires.
 
   Future<void> requestReturn(String reason) async {
     state.maybeWhen(

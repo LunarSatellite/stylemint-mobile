@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
@@ -23,15 +24,14 @@ class CancelOrderScreen extends ConsumerStatefulWidget {
 }
 
 class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
-  static const _reasons = [
-    'Found better price',
-    'Changed my mind',
-    'Ordered by mistake',
-    'Other reason',
-  ];
-
-  String? _reason;
+  OrderCancellationReason? _reason;
+  bool _acknowledged = false;
   final _commentCtrl = TextEditingController();
+
+  bool get _canSubmit =>
+      _reason != null &&
+      _acknowledged &&
+      (!_reason!.requiresNote || _commentCtrl.text.trim().isNotEmpty);
 
   @override
   void dispose() {
@@ -77,21 +77,26 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
 
           Text('Why are you cancelling?', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s8),
-          for (final r in _reasons)
+          for (final r in OrderCancellationReason.values)
             _ReasonTile(
-              label: r,
+              label: r.label,
               selected: _reason == r,
               onTap: () => setState(() => _reason = r),
             ),
           const SizedBox(height: DesignTokens.s16),
 
-          Text('Additional comment (optional)',
-              style: DesignTokens.mediumSemibold),
+          Text(
+            _reason?.requiresNote ?? false
+                ? 'Tell us more (required)'
+                : 'Additional comment (optional)',
+            style: DesignTokens.mediumSemibold,
+          ),
           const SizedBox(height: DesignTokens.s8),
           TextField(
             controller: _commentCtrl,
+            onChanged: (_) => setState(() {}),
             maxLines: 3,
-            maxLength: 300,
+            maxLength: 500,
             style: DesignTokens.bodyText,
             cursorColor: DesignTokens.primaryGreen,
             decoration: InputDecoration(
@@ -153,7 +158,21 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
               ],
             ),
           ),
-          const SizedBox(height: DesignTokens.s32),
+          const SizedBox(height: DesignTokens.s16),
+
+          // Mandatory: the backend rejects a cancel without this acknowledgement.
+          CheckboxListTile(
+            value: _acknowledged,
+            onChanged: (v) => setState(() => _acknowledged = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: DesignTokens.primaryGreen,
+            title: Text(
+              'I understand my refund will be issued in 5–7 business days.',
+              style: DesignTokens.smallRegular,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
 
           SmPrimaryButton(
             label: 'Confirm Cancellation',
@@ -161,12 +180,12 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
             borderRadius: DesignTokens.buttonRadius,
             color: DesignTokens.colorError,
             labelColor: DesignTokens.textWhite,
-            disabled: _reason == null || state.isSubmitting,
+            disabled: !_canSubmit || state.isSubmitting,
             isLoadingInitially: state.isSubmitting,
             onPressed: () => ref
                 .read(cancelOrderControllerProvider.notifier)
                 .cancel(widget.orderId,
-                    reason: _reason, comment: _commentCtrl.text.trim()),
+                    reason: _reason!, note: _commentCtrl.text.trim()),
           ),
         ],
       ),
