@@ -28,7 +28,13 @@ class _SignInMethodSelectionScreenState
     extends State<SignInMethodSelectionScreen> {
   bool _showMore = false;
 
-  void _continueWithPasskey() => context.push(RouteNames.passkey);
+  // INTERIM: a guest can't create a passkey-only account yet (backend
+  // #20/#21/#23), and the passkey-setup screen requires an existing login.
+  // So "Continue with Passkey" sends new users through onboarding (which
+  // auto-logs them in / makes the device authenticated); the WebAuthn passkey
+  // is enrolled post-login. When the backend lands, this points at the real
+  // inline passkey ceremony instead.
+  void _continueWithPasskey() => context.push(RouteNames.register);
 
   static void _comingSoon(BuildContext context, String provider) {
     context.go(RouteNames.home);
