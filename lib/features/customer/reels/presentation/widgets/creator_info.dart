@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Creator row (avatar, name, track) with a Follow toggle, plus the caption.
-/// Follow is gated through the shared [ensureAuth] for guests.
+/// Follow is gated through the shared [ensureAuth] for guests and persists via
+/// the one-way follow graph ([followNotifierProvider] → POST/DELETE
+/// /v1/follows/{creatorId}). Initial state is seeded from the reel's
+/// isCreatorFollowed flag.
 class CreatorInfo extends ConsumerStatefulWidget {
   const CreatorInfo({required this.reel, super.key});
 
@@ -17,16 +22,53 @@ class CreatorInfo extends ConsumerStatefulWidget {
 }
 
 class _CreatorInfoState extends ConsumerState<CreatorInfo> {
-  late bool _isFollowing = widget.reel.isCreatorFollowed ?? false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final reel = widget.reel;
+    final seed = reel.isCreatorFollowed;
+    if (reel.creatorId.isNotEmpty && seed != null) {
+      // Seed shared follow state after first frame (don't mutate a provider
+      // during init/build).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(followNotifierProvider.notifier)
+              .seed(reel.creatorId, following: seed);
+        }
+      });
+    }
+  }
 
   Future<void> _toggleFollow() async {
     if (!await ensureAuth(context, ref, reason: AuthReason.follow)) return;
-    setState(() => _isFollowing = !_isFollowing);
+    final id = widget.reel.creatorId;
+    if (id.isEmpty) {
+      if (mounted) {
+        SmSnackbar.error(context, "This creator can't be followed right now.");
+      }
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(followNotifierProvider.notifier).toggle(id);
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(context, "Couldn't update follow. Please try again.");
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
+    final isFollowing =
+        ref.watch(followNotifierProvider).contains(reel.creatorId);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
       child: Column(
@@ -76,7 +118,8 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
-              _FollowButton(isFollowing: _isFollowing, onTap: _toggleFollow),
+              _FollowButton(
+                  isFollowing: isFollowing, busy: _busy, onTap: _toggleFollow),
             ],
           ),
           if (reel.caption.isNotEmpty) ...[
@@ -93,15 +136,20 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
 }
 
 class _FollowButton extends StatelessWidget {
-  const _FollowButton({required this.isFollowing, required this.onTap});
+  const _FollowButton({
+    required this.isFollowing,
+    required this.busy,
+    required this.onTap,
+  });
 
   final bool isFollowing;
+  final bool busy;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: busy ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s16,
@@ -116,15 +164,21 @@ class _FollowButton extends StatelessWidget {
                 : DesignTokens.primaryGreen,
           ),
         ),
-        child: Text(
-          isFollowing ? 'Following' : 'Follow',
-          style: DesignTokens.smallRegular.copyWith(
-            color: isFollowing
-                ? DesignTokens.textWhite
-                : DesignTokens.buttonPrimaryText,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: busy
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: DesignTokens.textWhite))
+            : Text(
+                isFollowing ? 'Following' : 'Follow',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: isFollowing
+                      ? DesignTokens.textWhite
+                      : DesignTokens.buttonPrimaryText,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
