@@ -90,7 +90,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: const Text('Add Card'),
+        title: const Text('Add Card Details'),
         backgroundColor: DesignTokens.bgAppFoundation,
       ),
       body: Form(
@@ -146,7 +146,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                       color: DesignTokens.inputFieldData,
                     ),
                     decoration: DesignTokens.inputDecoration(
-                      labelText: 'Expiry (MM/YY)',
+                      labelText: 'Expiry Date',
                     ),
                     validator: (v) {
                       final digits = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
@@ -206,7 +206,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                       ),
                     )
                   : Text(
-                      'Save Card',
+                      'Add Card',
                       style: DesignTokens.mediumSemibold.copyWith(
                         color: DesignTokens.buttonPrimaryText,
                       ),

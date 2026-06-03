@@ -48,7 +48,7 @@ class ProductReviewsScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Reviews',
+          'Customer Reviews',
           style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
         ),
         centerTitle: true,

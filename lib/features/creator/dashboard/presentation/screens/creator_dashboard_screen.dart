@@ -86,7 +86,7 @@ class _DashboardContent extends StatelessWidget {
                   ),
                   DashboardStatCard(
                     icon: Icons.visibility_outlined,
-                    label: 'Views',
+                    label: 'Total Views',
                     value: _compactCount(dashboard.totalViews),
                     color: DesignTokens.secondaryYellow,
                   ),
@@ -132,11 +132,11 @@ class _DashboardContent extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Recent Reels', style: DesignTokens.sectionInnerTitle),
+                  Text('Top Performing Reels', style: DesignTokens.sectionInnerTitle),
                   GestureDetector(
                     onTap: () => context.push(RouteNames.reelImport),
                     child: Text(
-                      'See All',
+                      'View All',
                       style: DesignTokens.mediumSemibold.copyWith(
                         color: DesignTokens.primaryGreen,
                       ),

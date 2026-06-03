@@ -22,7 +22,7 @@ class EarningsScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Earnings', style: DesignTokens.titleMedium),
+        title: const Text('Earnings & Payments', style: DesignTokens.titleMedium),
       ),
       body: state.when(
         initial: _loader,
@@ -49,7 +49,7 @@ class EarningsScreen extends ConsumerWidget {
                     Text('Ledger', style: DesignTokens.h3),
                     TextButton(
                       onPressed: () => context.push('/creator/earnings/payout'),
-                      child: const Text('Request Payout'),
+                      child: const Text('Request Payout Withdrawal'),
                     ),
                   ],
                 ),
@@ -89,12 +89,12 @@ class _SummaryGrid extends StatelessWidget {
       childAspectRatio: 1.6,
       children: [
         _SummaryCard(
-          label: 'Available',
+          label: 'Available Balance (In NPR)',
           value: summary.availableBalance,
           color: DesignTokens.primaryGreen,
         ),
         _SummaryCard(
-          label: 'Pending',
+          label: 'Pending Balance (In NPR)',
           value: summary.pendingBalance,
           color: DesignTokens.warning500,
         ),

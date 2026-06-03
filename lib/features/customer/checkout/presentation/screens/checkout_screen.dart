@@ -407,14 +407,14 @@ class _PriceSummary extends StatelessWidget {
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         children: [
-          _PriceRow(label: 'Subtotal', amount: summary.subtotal),
+          _PriceRow(label: 'Sub Total', amount: summary.subtotal),
           const SizedBox(height: DesignTokens.s8),
           _PriceRow(label: 'Shipping', amount: summary.shipping),
           const SizedBox(height: DesignTokens.s8),
-          _PriceRow(label: 'Tax', amount: summary.tax),
+          _PriceRow(label: 'Tax (Estimated 13%)', amount: summary.tax),
           if (summary.discount.amount > 0) ...[
             const SizedBox(height: DesignTokens.s8),
-            _PriceRow(label: 'Discount', amount: summary.discount),
+            _PriceRow(label: 'Promo Code Discount', amount: summary.discount),
           ],
           const Divider(
             color: DesignTokens.borderDefault,
@@ -424,7 +424,7 @@ class _PriceSummary extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total',
+                'Grand Total',
                 style: DesignTokens.h3.copyWith(
                   color: DesignTokens.textWhite,
                 ),
@@ -501,7 +501,7 @@ class _PlaceOrderBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Total',
+                    'Grand Total',
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textMuted,
                     ),
