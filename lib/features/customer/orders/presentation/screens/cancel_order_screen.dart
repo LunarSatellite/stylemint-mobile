@@ -71,7 +71,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
         padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s8,
             DesignTokens.s16, DesignTokens.s32),
         children: [
-          Text('We need you to fill the details below to cancel your order.',
+          Text('We need you to fill the details below to cancel your order',
               style: DesignTokens.bodyText),
           const SizedBox(height: DesignTokens.s24),
 
@@ -136,22 +136,23 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.info_outline,
-                    color: DesignTokens.infoIconLight, size: 20),
+                    color: Color(0xFFF1C40F), size: 20),
                 const SizedBox(width: DesignTokens.s8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Cancellation is final',
+                      Text('Important',
                           style: DesignTokens.mediumSemibold
                               .copyWith(color: DesignTokens.infoTextLight)),
                       const SizedBox(height: DesignTokens.s4),
-                      Text(
-                        'You cannot undo the cancellation after this. A full '
-                        'refund will be issued to your original payment method.',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.infoTextLight),
-                      ),
+                      // Spec: two bullets.
+                      Text('• Full refund to original payment',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.infoTextLight)),
+                      Text('• Cancellation is final',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.infoTextLight)),
                     ],
                   ),
                 ),
@@ -175,11 +176,11 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
           const SizedBox(height: DesignTokens.s16),
 
           SmPrimaryButton(
-            label: 'Confirm Cancellation',
+            label: 'Proceed',
             height: DesignTokens.buttonHeight,
             borderRadius: DesignTokens.buttonRadius,
-            color: DesignTokens.colorError,
-            labelColor: DesignTokens.textWhite,
+            color: DesignTokens.primaryGreen,
+            labelColor: DesignTokens.buttonPrimaryText,
             disabled: !_canSubmit || state.isSubmitting,
             isLoadingInitially: state.isSubmitting,
             onPressed: () => ref
