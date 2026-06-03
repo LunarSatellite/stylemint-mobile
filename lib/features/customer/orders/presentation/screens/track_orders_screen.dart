@@ -40,7 +40,8 @@ class TrackOrdersScreen extends ConsumerWidget {
                 DesignTokens.s16,
                 DesignTokens.s8,
               ),
-              child: Text('Track Your Orders', style: DesignTokens.titleLarge),
+              child: Text('Track Your Orders',
+                  style: DesignTokens.sectionInnerTitle),
             ),
             Expanded(
               child: state.when(

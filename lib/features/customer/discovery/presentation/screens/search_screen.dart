@@ -206,7 +206,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-      child: Text(title, style: DesignTokens.sectionInnerTitle),
+      child: Text(title, style: DesignTokens.mediumRegular),
     );
   }
 }
@@ -220,17 +220,19 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s12,
-        vertical: DesignTokens.s8,
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
       ),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
+        color: DesignTokens.buttonGrayFill,
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       ),
       child: Text(
         label,
+        textAlign: TextAlign.center,
         style: DesignTokens.smallRegular.copyWith(
-          color: DesignTokens.textLight,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFF4F4F5),
         ),
       ),
     );

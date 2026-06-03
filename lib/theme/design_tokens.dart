@@ -88,6 +88,8 @@ class DesignTokens {
   static const Color infoFillDark = Color(0xFF052F4A); // Fill/Info/Dark
   static const Color infoIconLight = Color(0xFFB8E6FE); // Icon/Info/Light
   static const Color infoTextLight = Color(0xFFB8E6FE); // Text/Info/Light
+  static const Color warningFillDark = Color(0xFF3A2F03); // Fill/Warning/Dark
+  static const Color warningTextLight = Color(0xFFFDF6D8); // Text/Warning/Light
 
   // --- Buttons -------------------------------------------------------------
   static const Color buttonPrimaryFill = Color(0xFF2ECC71); // Button/Primary/Solid/Default/Fill

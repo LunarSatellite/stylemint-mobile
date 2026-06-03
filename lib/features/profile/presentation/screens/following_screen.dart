@@ -96,15 +96,15 @@ class _UserTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
+      padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.s12),
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 24,
+            radius: 20,
             backgroundColor: DesignTokens.bgAppBodyLight,
             backgroundImage: user.avatarUrl.isNotEmpty
                 ? CachedNetworkImageProvider(user.avatarUrl)
@@ -127,13 +127,27 @@ class _UserTile extends ConsumerWidget {
               ],
             ),
           ),
-          TextButton(
-            onPressed: () => ref.read(followingNotifierProvider.notifier).unfollow(user.id),
-            style: TextButton.styleFrom(
-              foregroundColor: DesignTokens.colorError,
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+          // Spec: filled gray pill (#3F3F46), white text, 16/8 padding, fully rounded.
+          GestureDetector(
+            onTap: () =>
+                ref.read(followingNotifierProvider.notifier).unfollow(user.id),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s8,
+              ),
+              decoration: BoxDecoration(
+                color: DesignTokens.buttonGrayFill,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                'Unfollow',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            child: const Text('Unfollow'),
           ),
         ],
       ),

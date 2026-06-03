@@ -39,6 +39,7 @@ class OrderTrackTile extends StatelessWidget {
               child: const Icon(
                 Icons.inventory_2_rounded,
                 color: DesignTokens.secondaryYellow,
+                size: 32,
               ),
             ),
             const SizedBox(width: DesignTokens.s12),
@@ -84,7 +85,7 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s12,
+        horizontal: DesignTokens.s8,
         vertical: DesignTokens.s4,
       ),
       decoration: BoxDecoration(
@@ -96,6 +97,7 @@ class _StatusPill extends StatelessWidget {
         style: DesignTokens.smallRegular.copyWith(
           color: DesignTokens.tagInfoText,
           fontWeight: FontWeight.w600,
+          height: 1.0,
         ),
       ),
     );
