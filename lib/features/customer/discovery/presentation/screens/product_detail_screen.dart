@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/related_products_notifier.dart';
@@ -84,6 +85,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Future<void> _handleAddToCart(ProductDetail product) async {
+    // Progressive auth gate (design §2): auth + required profile fields
+    // resolve just-in-time before the real action runs.
+    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
+    if (!mounted) return;
+    if (!await ensureProfile(context, ref, [ProfileField.shippingAddress])) {
+      return;
+    }
+    if (!mounted) return;
     final success = await ref
         .read(productDetailNotifierProvider(widget.productId).notifier)
         .addToCart(
