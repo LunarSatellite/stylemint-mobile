@@ -90,7 +90,8 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: const Text('Add Card Details'),
+        title: const Text('Add Card Details',
+            style: DesignTokens.sectionInnerTitle),
         backgroundColor: DesignTokens.bgAppFoundation,
       ),
       body: Form(
@@ -130,7 +131,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
               },
               onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: DesignTokens.s16),
+            const SizedBox(height: DesignTokens.s20),
             Row(
               children: [
                 Expanded(
@@ -147,6 +148,8 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                     ),
                     decoration: DesignTokens.inputDecoration(
                       labelText: 'Expiry Date',
+                      suffixIcon: const Icon(Icons.calendar_today_outlined,
+                          size: 16, color: Color(0xFF71717B)),
                     ),
                     validator: (v) {
                       final digits = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
@@ -176,7 +179,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: DesignTokens.s16),
+            const SizedBox(height: DesignTokens.s20),
             TextFormField(
               controller: _cardholderCtl,
               textCapitalization: TextCapitalization.words,
@@ -207,7 +210,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                     )
                   : Text(
                       'Add Card',
-                      style: DesignTokens.mediumSemibold.copyWith(
+                      style: DesignTokens.oneLinerSemibold.copyWith(
                         color: DesignTokens.buttonPrimaryText,
                       ),
                     ),
