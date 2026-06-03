@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -116,10 +118,9 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                         ),
                         cursorColor: DesignTokens.primaryGreen,
                         decoration: DesignTokens.inputDecoration(
-                          hintText: 'Search',
+                          hintText: 'Search Interest',
                           prefixIcon: const Icon(Icons.search,
-                              color: DesignTokens.inputFieldPlaceholder,
-                              size: 20),
+                              color: Color(0xFF71717B), size: 16),
                         ),
                       ),
                       const SizedBox(height: DesignTokens.s24),
@@ -178,19 +179,10 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: DesignTokens.s32,
                               vertical: DesignTokens.s16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Proceed',
-                                  style: DesignTokens.oneLinerSemibold
-                                      .copyWith(
-                                          color:
-                                              DesignTokens.buttonPrimaryText)),
-                              const SizedBox(width: DesignTokens.s8),
-                              const Icon(Icons.arrow_forward_rounded,
-                                  size: DesignTokens.iconSmall,
-                                  color: DesignTokens.buttonPrimaryText),
-                            ],
+                          child: Center(
+                            child: Text('Proceed',
+                                style: DesignTokens.oneLinerSemibold.copyWith(
+                                    color: DesignTokens.buttonPrimaryText)),
                           ),
                         ),
                       ),
@@ -293,7 +285,12 @@ class _RadioCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      // Spec: glassmorphism — backdrop blur(5.7) behind the ~6% white fill.
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.7, sigmaY: 5.7),
+        child: Container(
         padding: const EdgeInsets.all(DesignTokens.s12),
         decoration: BoxDecoration(
           color: selected
@@ -330,6 +327,8 @@ class _RadioCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

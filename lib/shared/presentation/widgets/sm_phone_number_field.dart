@@ -194,9 +194,10 @@ class SmPhoneNumberFieldState extends State<SmPhoneNumberField> {
                 width: 1.5,
               ),
             ),
+            // Spec: 14px vertical padding → ~48px field height.
             contentPadding: const EdgeInsets.symmetric(
               horizontal: DesignTokens.s12,
-              vertical: DesignTokens.s12,
+              vertical: 14,
             ),
             fillColor: DesignTokens.inputFieldFill,
             filled: true,

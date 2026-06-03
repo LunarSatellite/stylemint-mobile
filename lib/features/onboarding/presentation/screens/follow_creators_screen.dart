@@ -87,7 +87,12 @@ class _FollowCreatorsScreenState extends State<FollowCreatorsScreen> {
               ),
             ),
             SmStickyBottomBar(
-              primaryLabel: 'Continue',
+              primaryLabel: 'Proceed',
+              primaryTrailing: const Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: DesignTokens.buttonPrimaryText, // #06190E
+              ),
               onPrimary: () => context.go(RouteNames.home),
               secondaryLabel: 'Skip',
               onSecondary: () => context.go(RouteNames.home),
@@ -106,12 +111,17 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('Follow Creators You Love', style: DesignTokens.titleMedium),
+        Text(
+          'Follow Creators You Love',
+          textAlign: TextAlign.center,
+          style: DesignTokens.titleMedium,
+        ),
         const SizedBox(height: DesignTokens.s8),
         Text(
           'Get Personalized recommendations from creators in Fashion, Beauty, and Fitness',
+          textAlign: TextAlign.center,
           style: DesignTokens.bodyText,
         ),
       ],
@@ -187,11 +197,13 @@ class _CreatorCard extends StatelessWidget {
             children: [
               _Stat(
                   icon: Icons.star_rounded,
+                  iconColor: const Color(0xFFF1C40F), // Icon-Secondary (gold)
                   value: creator.rating,
                   label: 'Stars'),
               const SizedBox(width: DesignTokens.s16),
               _Stat(
                   icon: Icons.person,
+                  iconColor: const Color(0xFF9F9FA9), // Icon-Light
                   value: creator.followers,
                   label: 'Followers'),
             ],
@@ -235,15 +247,21 @@ class _FollowButton extends StatelessWidget {
 
 class _Stat extends StatelessWidget {
   final IconData icon;
+  final Color iconColor;
   final String value;
   final String label;
-  const _Stat({required this.icon, required this.value, required this.label});
+  const _Stat({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: DesignTokens.iconSmall, color: DesignTokens.textLight),
+        Icon(icon, size: DesignTokens.iconSmall, color: iconColor),
         const SizedBox(width: DesignTokens.s4),
         Text.rich(
           TextSpan(
