@@ -48,7 +48,16 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
               size: 18, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Comments', style: DesignTokens.sectionInnerTitle),
+        centerTitle: true,
+        // Spec: header title 16/600/lh1.0 white, centered.
+        title: const Text('Comments',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+              color: DesignTokens.textWhite,
+            )),
       ),
       body: Column(
         children: [
@@ -66,7 +75,7 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
                         padding: const EdgeInsets.all(DesignTokens.s16),
                         itemCount: state.comments.length,
                         separatorBuilder: (_, __) =>
-                            const SizedBox(height: DesignTokens.s16),
+                            const SizedBox(height: DesignTokens.s32),
                         itemBuilder: (_, i) =>
                             _CommentTile(comment: state.comments[i]),
                       ),
@@ -91,6 +100,14 @@ class _CommentTile extends StatelessWidget {
 
   final ReelCommentDto comment;
 
+  static const TextStyle _metaStyle = TextStyle(
+    fontFamily: DesignTokens.fontFamily,
+    fontSize: 10,
+    fontWeight: FontWeight.w600,
+    height: 1.0,
+    color: DesignTokens.textMuted,
+  );
+
   @override
   Widget build(BuildContext context) {
     final avatar = comment.authorAvatarUrl;
@@ -99,8 +116,9 @@ class _CommentTile extends StatelessWidget {
       children: [
         ClipOval(
           child: SizedBox(
-            width: DesignTokens.avatarMedium,
-            height: DesignTokens.avatarMedium,
+            // Spec: 32px comment avatar.
+            width: 32,
+            height: 32,
             child: (avatar == null || avatar.isEmpty)
                 ? Container(
                     color: DesignTokens.bgAppBodyLight,
@@ -125,16 +143,23 @@ class _CommentTile extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  // Spec: handle + time meta line 10/600/lh1.0 #9F9FA9.
                   Text(comment.authorDisplayName ?? 'User',
-                      style: DesignTokens.mediumSemibold),
+                      style: _metaStyle),
                   const SizedBox(width: DesignTokens.s8),
-                  Text(_relative(comment.createdUtc),
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textMuted)),
+                  Text(_relative(comment.createdUtc), style: _metaStyle),
                 ],
               ),
               const SizedBox(height: DesignTokens.s4),
-              Text(comment.body, style: DesignTokens.bodyText),
+              // Spec: comment body 12/400/lh1.5 #FFFFFF.
+              Text(comment.body,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    color: DesignTokens.textWhite,
+                  )),
             ],
           ),
         ),
@@ -168,11 +193,13 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(DesignTokens.s12),
+        // Spec: composer padding 16/16/16/0, 1px top border, 12px gap.
+        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s16,
+            DesignTokens.s16, 0),
         decoration: const BoxDecoration(
           color: DesignTokens.bgAppFoundation,
           border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 0.5),
+            top: BorderSide(color: DesignTokens.borderDefault, width: 1),
           ),
         ),
         child: Row(
@@ -186,21 +213,39 @@ class _Composer extends StatelessWidget {
                 maxLines: 4,
                 decoration: InputDecoration(
                   hintText: 'Add a comment…',
-                  hintStyle: DesignTokens.bodyText
-                      .copyWith(color: DesignTokens.textMuted),
+                  // Spec: placeholder 14/400/lh1.5 #9F9FA9.
+                  hintStyle: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    color: DesignTokens.textMuted,
+                  ),
                   filled: true,
                   fillColor: DesignTokens.inputFieldFill,
+                  isDense: true,
+                  // Spec: radius 8, 1px #52525C border, padding 12/10.
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s12),
+                      horizontal: DesignTokens.s12, vertical: 10),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                    borderSide:
+                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                    borderSide:
+                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                    borderSide:
+                        const BorderSide(color: DesignTokens.primaryGreen),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: DesignTokens.s8),
+            const SizedBox(width: DesignTokens.s12),
             sending
                 ? const Padding(
                     padding: EdgeInsets.all(DesignTokens.s8),
