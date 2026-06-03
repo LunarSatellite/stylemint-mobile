@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:passkeys/authenticator.dart';
+import 'package:passkeys/exceptions.dart';
 import 'package:passkeys/types.dart';
 
 import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
@@ -204,14 +205,28 @@ class PasskeyService {
     );
   }
 
+  /// Maps the passkeys package's TYPED exceptions to our NetworkExceptions.
+  /// (String matching on toString() doesn't work — e.g.
+  /// NoCredentialsAvailableException stringifies to "Instance of '…'".)
   NetworkExceptions _mapPasskeyError(Object e) {
-    final msg = e.toString().toLowerCase();
-    if (msg.contains('cancel')) return const NetworkExceptions.auth();
-    if (msg.contains('not supported') || msg.contains('device')) {
+    if (e is PasskeyAuthCancelledException) {
+      return const NetworkExceptions.auth(); // user cancelled — treat as no-op
+    }
+    if (e is NoCredentialsAvailableException) {
+      // No passkey on this device yet → caller routes to signup.
+      return const NetworkExceptions.validation(code: 'PASSKEY_NO_CREDENTIALS');
+    }
+    if (e is MissingGoogleSignInException) {
+      return const NetworkExceptions.validation(code: 'PASSKEY_NO_GOOGLE_ACCOUNT');
+    }
+    if (e is SyncAccountNotAvailableException) {
+      return const NetworkExceptions.validation(code: 'PASSKEY_SYNC_UNAVAILABLE');
+    }
+    if (e is DeviceNotSupportedException || e is NoCreateOptionException) {
       return const NetworkExceptions.validation(code: 'PASSKEY_DEVICE_NOT_SUPPORTED');
     }
-    if (msg.contains('no credentials')) {
-      return const NetworkExceptions.validation(code: 'PASSKEY_NO_CREDENTIALS');
+    if (e is DomainNotAssociatedException) {
+      return const NetworkExceptions.validation(code: 'PASSKEY_DOMAIN_NOT_ASSOCIATED');
     }
     return const NetworkExceptions.unexpectedError();
   }

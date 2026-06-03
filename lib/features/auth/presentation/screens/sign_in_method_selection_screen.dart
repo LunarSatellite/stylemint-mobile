@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/passkey_how_it_works.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -113,36 +115,46 @@ class _SignInMethodSelectionScreenState
                 ),
                 child: Column(
                   children: [
-                    // ---- Header ----
-                    Text(
-                      'Welcome to StyleMint',
-                      textAlign: TextAlign.center,
-                      style: DesignTokens.titleMedium,
-                    ),
-                    const SizedBox(height: DesignTokens.s8),
-                    Text(
-                      'No passwords. No codes. Just your device.',
-                      textAlign: TextAlign.center,
-                      style: DesignTokens.bodyText,
-                    ),
-                    const SizedBox(height: DesignTokens.s40),
-
-                    // Default view = the passkey CTA *is* the hero. Tapping
-                    // "More ways" swaps it out for Plan B.
+                    // Default view = the "Login - Passkey" spec page, verbatim:
+                    // icon → title → subtitle → How it works → Setup button.
                     if (!_showMore) ...[
+                      const SizedBox(height: DesignTokens.s8),
                       SizedBox(
-                        width: double.infinity,
-                        child: SmPasskeyButton(
-                          onPressed: _continueWithPasskey,
-                          busy: _busy,
+                        width: 100,
+                        height: 100,
+                        child: Image.asset(
+                          'assets/images/auth/auth_passkey_fingerprint.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: DesignTokens.s12),
+                      const SizedBox(height: DesignTokens.s24),
                       Text(
-                        'Face · Fingerprint · PIN — your device decides',
+                        'Setup a Passkey',
                         textAlign: TextAlign.center,
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textLight),
+                        style: DesignTokens.titleLarge,
+                      ),
+                      const SizedBox(height: DesignTokens.s8),
+                      Text(
+                        'Sign in with just your finger print. Password-less, '
+                        'secure and works across all devices',
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.bodyText,
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
+                      const PasskeyHowItWorks(),
+                      const SizedBox(height: DesignTokens.s24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SmPrimaryButton(
+                          label: 'Setup Passkey',
+                          height: DesignTokens.buttonHeight,
+                          borderRadius: DesignTokens.buttonRadius,
+                          color: DesignTokens.primaryGreen,
+                          labelColor: DesignTokens.buttonPrimaryText,
+                          disabled: _busy,
+                          isLoadingInitially: _busy,
+                          onPressed: _continueWithPasskey,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.s16),
                       TextButton(
@@ -154,6 +166,19 @@ class _SignInMethodSelectionScreenState
                         ),
                       ),
                     ] else ...[
+                      const SizedBox(height: DesignTokens.s24),
+                      Text(
+                        'Welcome to StyleMint',
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.titleMedium,
+                      ),
+                      const SizedBox(height: DesignTokens.s8),
+                      Text(
+                        'Choose how you want to continue',
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.bodyText,
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
                       _PlanB(onComingSoon: (p) => _comingSoon(context, p)),
                       const SizedBox(height: DesignTokens.s8),
                       TextButton(
@@ -171,73 +196,6 @@ class _SignInMethodSelectionScreenState
             ),
             const _Footer(),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Large tappable passkey disc — the focal point of the entry screen. The OS
-/// uses whatever the user enrolled (Face / fingerprint / device PIN) on tap.
-/// Primary passkey CTA — the hero of the sign-in screen. A premium gradient
-/// pill with a soft green glow and the passkey glyph. Shows a spinner while a
-/// ceremony is in flight.
-class SmPasskeyButton extends StatelessWidget {
-  const SmPasskeyButton({
-    required this.onPressed,
-    this.busy = false,
-    super.key,
-  });
-
-  final VoidCallback onPressed;
-  final bool busy;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(DesignTokens.buttonRadius);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3BE07F), Color(0xFF1FA85C)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: DesignTokens.primaryGreen.withValues(alpha: 0.38),
-            blurRadius: 28,
-            spreadRadius: -2,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: busy ? null : onPressed,
-          borderRadius: radius,
-          child: SizedBox(
-            height: DesignTokens.buttonHeight + 4,
-            child: Center(
-              child: busy
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : Text(
-                      'Continue with Passkey',
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.buttonPrimaryText,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-            ),
-          ),
         ),
       ),
     );
@@ -543,7 +501,14 @@ class _DisplayNameSheetState extends State<_DisplayNameSheet> {
           const SizedBox(height: DesignTokens.s8),
           SizedBox(
             width: double.infinity,
-            child: SmPasskeyButton(onPressed: _submit),
+            child: SmPrimaryButton(
+              label: 'Continue with Passkey',
+              height: DesignTokens.buttonHeight,
+              borderRadius: DesignTokens.buttonRadius,
+              color: DesignTokens.primaryGreen,
+              labelColor: DesignTokens.buttonPrimaryText,
+              onPressed: () async => _submit(),
+            ),
           ),
         ],
       ),

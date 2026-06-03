@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/passkey_how_it_works.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -37,13 +38,6 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
       widget.type == PasskeyType.face
           ? 'assets/images/auth/auth_passkey_face.png'
           : 'assets/images/auth/auth_passkey_fingerprint.png';
-
-  static const List<String> _howItWorks = [
-    "We'll ask you to verify with Face ID/Touch ID",
-    'Your device creates a secure passkey',
-    'Next time, just use biometrics to sign in!',
-    'Your privacy is protected. Passkeys never leave your device',
-  ];
 
   Future<void> _onSetup() async {
     final accountId = await ref.read(tokenStorageProvider).accountId;
@@ -139,7 +133,7 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
                         ],
                       ),
                       const SizedBox(height: DesignTokens.s24),
-                      const _HowItWorksBox(items: _howItWorks),
+                      const PasskeyHowItWorks(),
                     ],
                   ),
                 ),
@@ -173,82 +167,6 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _HowItWorksBox extends StatelessWidget {
-  const _HowItWorksBox({required this.items});
-
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.infoFillDark,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.help_rounded,
-            size: DesignTokens.iconMedium,
-            color: DesignTokens.infoIconLight,
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          Text(
-            'How it works:',
-            style: DesignTokens.mediumSemibold.copyWith(
-              color: DesignTokens.infoTextLight,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          ...List.generate(items.length, (i) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: i == items.length - 1 ? 0 : 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(
-                    width: DesignTokens.iconSmall,
-                    height: 18,
-                    child: Center(child: _Dot()),
-                  ),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    child: Text(
-                      items[i],
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.infoTextLight,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 4,
-      height: 4,
-      decoration: const BoxDecoration(
-        color: DesignTokens.infoIconLight,
-        shape: BoxShape.circle,
       ),
     );
   }
