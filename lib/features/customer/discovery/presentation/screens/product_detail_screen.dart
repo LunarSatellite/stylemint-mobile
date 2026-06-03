@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/gate/auth_gate.dart';
+import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/related_products_notifier.dart';
