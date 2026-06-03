@@ -40,7 +40,7 @@ class OrderDetailScreen extends ConsumerWidget {
         ),
         title: Text(
           'Track Order',
-          style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.sectionInnerTitle,
         ),
         centerTitle: true,
       ),

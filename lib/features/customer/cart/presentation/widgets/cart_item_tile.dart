@@ -40,15 +40,15 @@ class CartItemTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(DesignTokens.s8),
+                borderRadius: BorderRadius.circular(DesignTokens.s12),
                 child: Image.network(
                   item.productImageUrl,
-                  width: 72,
-                  height: 72,
+                  width: 64,
+                  height: 64,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
-                    width: 72,
-                    height: 72,
+                    width: 64,
+                    height: 64,
                     color: DesignTokens.bgAppBodyLight,
                     child: const Icon(
                       Icons.image_not_supported_outlined,
@@ -66,7 +66,7 @@ class CartItemTile extends StatelessWidget {
                       item.productName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.mediumSemibold.copyWith(
+                      style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textWhite,
                       ),
                     ),
@@ -74,14 +74,15 @@ class CartItemTile extends StatelessWidget {
                     Text(
                       item.variantName,
                       style: DesignTokens.smallRegular.copyWith(
+                        fontSize: 11,
                         color: DesignTokens.textMuted,
                       ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
                     Text(
                       formatMoney(item.unitPrice),
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.primaryGreen,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
                       ),
                     ),
                     if (!item.isInStock)
@@ -124,9 +125,11 @@ class _QuantityStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Spec: filled gray stepper (#3F3F46), fully rounded, ~28px tall, no outline.
+      height: 28,
       decoration: BoxDecoration(
-        border: Border.all(color: DesignTokens.borderDefault),
-        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        color: DesignTokens.buttonGrayFill,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -167,7 +170,7 @@ class _StepperButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: BorderRadius.circular(DesignTokens.s4),
       child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s8),
+        padding: const EdgeInsets.all(6),
         child: Icon(
           icon,
           size: 16,

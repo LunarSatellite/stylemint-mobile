@@ -49,7 +49,7 @@ class ProductReviewsScreen extends ConsumerWidget {
         ),
         title: Text(
           'Customer Reviews',
-          style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.sectionInnerTitle,
         ),
         centerTitle: true,
       ),
