@@ -125,11 +125,11 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
           ),
           const SizedBox(height: DesignTokens.s16),
 
-          // Important notice (Fill/Info/Dark).
+          // Important notice (Fill/Warning/Dark per spec).
           Container(
             padding: const EdgeInsets.all(DesignTokens.s16),
             decoration: BoxDecoration(
-              color: DesignTokens.infoFillDark,
+              color: DesignTokens.warningFillDark,
               borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
             ),
             child: Row(
@@ -144,15 +144,15 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
                     children: [
                       Text('Important',
                           style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.infoTextLight)),
+                              .copyWith(color: DesignTokens.warningTextLight)),
                       const SizedBox(height: DesignTokens.s4),
                       // Spec: two bullets.
                       Text('• Full refund to original payment',
                           style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.infoTextLight)),
+                              .copyWith(color: DesignTokens.warningTextLight)),
                       Text('• Cancellation is final',
                           style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.infoTextLight)),
+                              .copyWith(color: DesignTokens.warningTextLight)),
                     ],
                   ),
                 ),
