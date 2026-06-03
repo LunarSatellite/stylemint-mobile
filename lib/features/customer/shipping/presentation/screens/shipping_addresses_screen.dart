@@ -19,7 +19,9 @@ class ShippingAddressesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: const Text('Shipping Addresses'),
+        title: const Text('Shipping Addresses',
+            style: DesignTokens.sectionInnerTitle,
+            maxLines: 1, overflow: TextOverflow.ellipsis),
         backgroundColor: DesignTokens.bgAppFoundation,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -152,19 +154,20 @@ class _AddressCard extends StatelessWidget {
                     vertical: DesignTokens.s4,
                   ),
                   decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreen.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(
-                      DesignTokens.buttonRadius,
-                    ),
+                    color: DesignTokens.tagInfoFill,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'Default',
-                    style: DesignTokens.tiny.copyWith(
-                      color: DesignTokens.primaryGreen,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.tagInfoText,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 20, color: DesignTokens.textMuted),
+                padding: const EdgeInsets.all(DesignTokens.s4),
                 color: DesignTokens.bgAppBodyLight,
                 onSelected: (v) {
                   switch (v) {

@@ -39,7 +39,7 @@ class CartScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Your Cart', style: DesignTokens.titleLarge),
+        title: const Text('Your Cart', style: DesignTokens.sectionInnerTitle),
         centerTitle: false,
       ),
       body: state.when(
@@ -168,7 +168,7 @@ class _CheckoutBar extends StatelessWidget {
                   'Proceed to checkout',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

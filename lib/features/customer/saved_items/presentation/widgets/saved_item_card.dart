@@ -53,9 +53,9 @@ class SavedItemCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.favorite,
+                        Icons.delete_outline,
                         size: 18,
-                        color: DesignTokens.colorError,
+                        color: DesignTokens.iconLight,
                       ),
                     ),
                   ),
@@ -70,8 +70,8 @@ class SavedItemCard extends StatelessWidget {
                   Text(
                     item.productName,
                     style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontWeight: FontWeight.w500,
+                      color: DesignTokens.textLight,
+                      fontWeight: FontWeight.w400,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -80,7 +80,7 @@ class SavedItemCard extends StatelessWidget {
                   Text(
                     formatMoney(item.price),
                     style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.primaryGreen,
+                      color: DesignTokens.textWhite,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
