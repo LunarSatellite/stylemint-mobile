@@ -115,28 +115,34 @@ class _SignInMethodSelectionScreenState
                   children: [
                     // ---- Header ----
                     Text(
-                      'Welcome to Stylemint',
+                      'Welcome to StyleMint',
                       textAlign: TextAlign.center,
                       style: DesignTokens.titleMedium,
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     Text(
-                      'Sign in with your device passkey — Face, fingerprint or '
-                      'PIN, no passwords.',
+                      'No passwords. No codes. Just your device.',
                       textAlign: TextAlign.center,
                       style: DesignTokens.bodyText,
                     ),
                     const SizedBox(height: DesignTokens.s40),
 
-                    // Default view = just the passkey CTA. Tapping "More ways"
-                    // swaps it out for Plan B (no reason to keep the passkey
-                    // hero once the user has chosen another method).
+                    // Default view = the passkey CTA *is* the hero. Tapping
+                    // "More ways" swaps it out for Plan B.
                     if (!_showMore) ...[
-                      _PasskeyHero(onTap: _continueWithPasskey),
-                      const SizedBox(height: DesignTokens.s24),
                       SizedBox(
                         width: double.infinity,
-                        child: SmPasskeyButton(onPressed: _continueWithPasskey),
+                        child: SmPasskeyButton(
+                          onPressed: _continueWithPasskey,
+                          busy: _busy,
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s12),
+                      Text(
+                        'Face · Fingerprint · PIN — your device decides',
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.smallRegular
+                            .copyWith(color: DesignTokens.textLight),
                       ),
                       const SizedBox(height: DesignTokens.s16),
                       TextButton(
@@ -173,61 +179,77 @@ class _SignInMethodSelectionScreenState
 
 /// Large tappable passkey disc — the focal point of the entry screen. The OS
 /// uses whatever the user enrolled (Face / fingerprint / device PIN) on tap.
-class _PasskeyHero extends StatelessWidget {
-  const _PasskeyHero({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 132,
-        height: 132,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: DesignTokens.chipsSelectedFill,
-          border: Border.all(color: DesignTokens.primaryGreen, width: 2),
-        ),
-        child: const Icon(
-          Icons.key_rounded,
-          size: 64,
-          color: DesignTokens.primaryGreen,
-        ),
-      ),
-    );
-  }
-}
-
-/// Primary "Continue with Passkey" button.
+/// Primary passkey CTA — the hero of the sign-in screen. A premium gradient
+/// pill with a soft green glow and the passkey glyph. Shows a spinner while a
+/// ceremony is in flight.
 class SmPasskeyButton extends StatelessWidget {
-  const SmPasskeyButton({required this.onPressed, super.key});
+  const SmPasskeyButton({
+    required this.onPressed,
+    this.busy = false,
+    super.key,
+  });
 
   final VoidCallback onPressed;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: DesignTokens.buttonHeight,
+    final radius = BorderRadius.circular(DesignTokens.buttonRadius);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3BE07F), Color(0xFF1FA85C)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: DesignTokens.primaryGreen.withValues(alpha: 0.38),
+            blurRadius: 28,
+            spreadRadius: -2,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Material(
-        color: DesignTokens.primaryGreen,
-        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-        clipBehavior: Clip.antiAlias,
+        color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.key_rounded,
-                  color: DesignTokens.buttonPrimaryText, size: DesignTokens.iconMedium),
-              const SizedBox(width: DesignTokens.s8),
-              Text(
-                'Continue with Passkey',
-                style: DesignTokens.oneLinerSemibold
-                    .copyWith(color: DesignTokens.buttonPrimaryText),
-              ),
-            ],
+          onTap: busy ? null : onPressed,
+          borderRadius: radius,
+          child: SizedBox(
+            height: DesignTokens.buttonHeight + 4,
+            child: Center(
+              child: busy
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icons/passkey.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: const ColorFilter.mode(
+                            DesignTokens.buttonPrimaryText,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: DesignTokens.s8),
+                        Text(
+                          'Continue with Passkey',
+                          style: DesignTokens.oneLinerSemibold
+                              .copyWith(color: DesignTokens.buttonPrimaryText),
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
