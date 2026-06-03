@@ -157,14 +157,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             TextFormField(
               controller: _nameCtrl,
               style: const TextStyle(color: DesignTokens.textWhite),
-              decoration: DesignTokens.inputDecoration(labelText: 'Display Name'),
+              decoration: DesignTokens.inputDecoration(labelText: 'Full Name'),
             ),
             const SizedBox(height: DesignTokens.s16),
             TextFormField(
               controller: _bioCtrl,
               maxLines: 3,
               style: const TextStyle(color: DesignTokens.textWhite),
-              decoration: DesignTokens.inputDecoration(labelText: 'Bio'),
+              decoration: DesignTokens.inputDecoration(labelText: 'Bio/About Me'),
             ),
             const SizedBox(height: DesignTokens.s16),
             TextFormField(

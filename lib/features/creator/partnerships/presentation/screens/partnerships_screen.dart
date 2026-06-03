@@ -43,7 +43,7 @@ class _PartnershipsScreenState extends ConsumerState<PartnershipsScreen>
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Partnerships', style: DesignTokens.titleMedium),
+        title: const Text('Brand Partnerships', style: DesignTokens.titleMedium),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: DesignTokens.primaryGreen,

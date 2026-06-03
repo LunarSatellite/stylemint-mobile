@@ -45,7 +45,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen>
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Import Reels', style: DesignTokens.titleMedium),
+        title: const Text('Import Reel', style: DesignTokens.titleMedium),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: DesignTokens.primaryGreen,

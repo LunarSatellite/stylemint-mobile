@@ -30,7 +30,7 @@ class ShippingAddressesScreen extends ConsumerWidget {
           }
         },
         backgroundColor: DesignTokens.primaryGreen,
-        label: const Text('Add New Address'),
+        label: const Text('Add New Shipping Address'),
         icon: const Icon(Icons.add_rounded),
       ),
       body: state.when(
