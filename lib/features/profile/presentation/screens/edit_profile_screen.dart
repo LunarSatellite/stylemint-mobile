@@ -128,26 +128,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               },
               child: Stack(
                 children: [
+                  // Spec: 72x72 avatar (radius 36).
                   CircleAvatar(
-                    radius: 44,
+                    radius: 36,
                     backgroundColor: DesignTokens.bgAppBodyLight,
                     backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
                         ? CachedNetworkImageProvider(avatarUrl)
                         : null,
                     child: (avatarUrl == null || avatarUrl.isEmpty)
-                        ? const Icon(Icons.person, color: DesignTokens.iconLight, size: 40)
+                        ? const Icon(Icons.person, color: DesignTokens.iconLight, size: 32)
                         : null,
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
+                    // Spec: 20x20 chip, #F4F4F5 fill, 1px #D4D4D8 border, 12px
+                    // radius, 14x14 #52525C icon.
                     child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: DesignTokens.primaryGreen,
-                        shape: BoxShape.circle,
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F4F5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD4D4D8)),
                       ),
-                      child: const Icon(Icons.camera_alt, size: 16, color: DesignTokens.textDark),
+                      child: const Icon(Icons.camera_alt,
+                          size: 14, color: Color(0xFF52525C)),
                     ),
                   ),
                 ],

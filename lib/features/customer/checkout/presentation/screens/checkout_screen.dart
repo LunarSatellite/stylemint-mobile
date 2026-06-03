@@ -414,7 +414,10 @@ class _PriceSummary extends StatelessWidget {
           _PriceRow(label: 'Tax (Estimated 13%)', amount: summary.tax),
           if (summary.discount.amount > 0) ...[
             const SizedBox(height: DesignTokens.s8),
-            _PriceRow(label: 'Promo Code Discount', amount: summary.discount),
+            _PriceRow(
+                label: 'Promo Code Discount',
+                amount: summary.discount,
+                isCredit: true),
           ],
           const Divider(
             color: DesignTokens.borderDefault,
@@ -444,10 +447,13 @@ class _PriceSummary extends StatelessWidget {
 }
 
 class _PriceRow extends StatelessWidget {
-  const _PriceRow({required this.label, required this.amount});
+  const _PriceRow(
+      {required this.label, required this.amount, this.isCredit = false});
 
   final String label;
   final Money amount;
+  // Spec: credit/discount amounts render in Text-Error (#FF6467) with a '-'.
+  final bool isCredit;
 
   @override
   Widget build(BuildContext context) {
@@ -461,9 +467,9 @@ class _PriceRow extends StatelessWidget {
           ),
         ),
         Text(
-          formatMoney(amount),
+          isCredit ? "-" + formatMoney(amount) : formatMoney(amount),
           style: DesignTokens.mediumRegular.copyWith(
-            color: DesignTokens.textLight,
+            color: isCredit ? const Color(0xFFFF6467) : DesignTokens.textLight,
           ),
         ),
       ],
