@@ -11,23 +11,52 @@ class ReelsRemoteDataSource {
   final ApiClient apiClient;
 
   /// GET `/v1/feed` — cursor-paginated reels feed.
+  /// GET `/api/v1/customer/feed` — the customer "For You" reel feed
+  /// (Discovery). Returns `{ items: [{ kind, reel: {...}, ... }], nextCursor }`;
+  /// we keep the reel-bearing items and map each card to [ReelDto]. Caption +
+  /// tagged products aren't on the card — they're hydrated lazily via
+  /// [getReelDetail].
   Future<List<ReelDto>> getReelsFeed({
     required int limit,
     String? cursor,
   }) async {
     final response = await apiClient.get(
-      '/v1/feed',
+      '/api/v1/customer/feed',
       queryParameters: {
-        'take': limit,
+        'limit': limit,
         if (cursor != null) 'cursor': cursor,
       },
     );
 
     final data = response as Map<String, dynamic>;
-    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => ReelDto.fromJson(e as Map<String, dynamic>))
+    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[]);
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map((e) => e['reel'])
+        .whereType<Map<String, dynamic>>()
+        .map(_reelCardToDto)
         .toList(growable: false);
-    return items;
+  }
+
+  /// Maps a Discovery feed `ReelCardDto` (the card shape) onto the reels
+  /// feature's [ReelDto]. `creatorProfileId` is the creator's account id
+  /// (the follow target). Caption/createdAt/tagged-products aren't on the card.
+  ReelDto _reelCardToDto(Map<String, dynamic> r) {
+    return ReelDto(
+      id: (r['reelId'] as String?) ?? '',
+      sourceUrl: (r['externalUrl'] as String?) ?? '',
+      thumbnailUrl: (r['thumbnailUrl'] as String?) ?? '',
+      creatorId: (r['creatorProfileId'] as String?) ?? '',
+      creatorName: (r['creatorHandle'] as String?) ?? '',
+      creatorAvatarUrl: (r['creatorAvatarUrl'] as String?) ?? '',
+      caption: '',
+      createdAt: DateTime.now(),
+      musicTitle: (r['audioTrackName'] as String?) ?? '',
+      musicArtist: (r['audioArtistName'] as String?) ?? '',
+      likeCount: (r['likeCount'] as num?)?.toInt() ?? 0,
+      commentCount: (r['commentCount'] as num?)?.toInt() ?? 0,
+      isCreatorFollowed: r['isCreatorFollowed'] as bool?,
+    );
   }
 
   /// GET `/v1/public/reels/{id}` — single reel detail.
