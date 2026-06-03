@@ -5,6 +5,8 @@ part 'network_exceptions.freezed.dart';
 
 @freezed
 abstract class NetworkExceptions with _$NetworkExceptions {
+  const NetworkExceptions._();
+
   const factory NetworkExceptions.server(String message) = _Server;
   const factory NetworkExceptions.noInternetConnection() = _NoInternet;
   const factory NetworkExceptions.unexpectedError() = _Unexpected;
