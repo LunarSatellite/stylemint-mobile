@@ -190,11 +190,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   labelColor: DesignTokens.buttonPrimaryText,
                   disabled: isLoading,
                   isLoadingInitially: isLoading,
-                  suffixIcon: const Icon(
-                    Icons.arrow_forward_rounded,
-                    size: DesignTokens.iconSmall,
-                    color: DesignTokens.buttonPrimaryText,
-                  ),
                   onPressed: () async {
                     final code = _codeFieldKey.currentState?.getCode() ?? '';
                     await _handleVerifyOtp(code);
