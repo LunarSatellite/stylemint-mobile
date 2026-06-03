@@ -39,7 +39,7 @@ class OrderDetailScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Order Details',
+          'Track Order',
           style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
         ),
         centerTitle: true,
