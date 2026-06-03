@@ -126,8 +126,14 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
             const SizedBox(height: DesignTokens.s12),
             Text(reel.caption, maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: DesignTokens.mediumRegular.copyWith(
-                    color: DesignTokens.textWhite)),
+                // Spec: caption 12/400/130% white.
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.3,
+                  color: DesignTokens.textWhite,
+                )),
           ],
         ],
       ),
@@ -151,17 +157,18 @@ class _FollowButton extends StatelessWidget {
     return GestureDetector(
       onTap: busy ? null : onTap,
       child: Container(
+        // Spec: white solid fill, #52525C text, 8px/16px padding (default state).
         padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s6,
+          vertical: DesignTokens.s8,
         ),
         decoration: BoxDecoration(
-          color: isFollowing ? Colors.transparent : DesignTokens.primaryGreen,
+          color: isFollowing ? Colors.transparent : DesignTokens.textWhite,
           borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
           border: Border.all(
             color: isFollowing
                 ? DesignTokens.textWhite
-                : DesignTokens.primaryGreen,
+                : DesignTokens.textWhite,
           ),
         ),
         child: busy
@@ -172,11 +179,16 @@ class _FollowButton extends StatelessWidget {
                     strokeWidth: 2, color: DesignTokens.textWhite))
             : Text(
                 isFollowing ? 'Following' : 'Follow',
-                style: DesignTokens.smallRegular.copyWith(
+                // Spec: 12/600/130%, #52525C (Button-White-Text).
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ).copyWith(
                   color: isFollowing
                       ? DesignTokens.textWhite
-                      : DesignTokens.buttonPrimaryText,
-                  fontWeight: FontWeight.w600,
+                      : const Color(0xFF52525C),
                 ),
               ),
       ),

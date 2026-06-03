@@ -1,0 +1,2258 @@
+{
+  "summary": "Audit customer-core screens against their PDF design specs; report exact deviations",
+  "agentCount": 19,
+  "logs": [],
+  "result": [
+    {
+      "screen": "Home Page Reel (Customer reels feed)",
+      "overallMatch": "major",
+      "summary": "The reel feed structure (creator row, caption, right-rail actions, tagged product card) is all present and top-to-bottom order is correct, but several elements deviate hard from spec. Biggest issues: the Follow button uses a green fill instead of the spec's WHITE solid fill with #52525C text; the right-rail action buttons are individual semi-opaque black circles instead of the single glassmorphic rounded-pill container (radius 20, rgba(51,51,51,0.60), blur 20, padding 16) the PDF shows; the tagged-product \"Add to Cart\" is rendered as a green filled button labeled \"Add\" instead of an underlined green TEXT LINK reading \"Add to Cart\"; and the product card / thumbnail dimensions, radii, background and price styling are all off. Caption typography (size/line-height) and action count typography are also wrong. Empty-state and error copy are app-authored (no spec equivalent) and left as-is.",
+      "deviations": [
+        {
+          "element": "Tagged product Add-to-Cart control (tagged_products_section.dart _ProductTile)",
+          "kind": "copy",
+          "spec": "Underlined text link reading \"Add to Cart\"",
+          "actual": "Button labeled 'Add'",
+          "fix": "Change the label string from 'Add' to 'Add to Cart'."
+        },
+        {
+          "element": "Tagged product Add-to-Cart control",
+          "kind": "layout",
+          "spec": "Plain underlined TEXT action (not a filled button): color Primary-400 #2ECC71, Poppins 11/400/120%, text-decoration: underline solid",
+          "actual": "Filled green pill Container (color primaryGreen, buttonRadius 999) with dark buttonPrimaryText, smallRegular 12/600 text",
+          "fix": "Replace the filled Container with a Text/InkWell rendering 'Add to Cart' in primaryGreen, fontSize 11, weight w400, height 1.2, with TextDecoration.underline; remove the green background pill."
+        },
+        {
+          "element": "Follow button background (creator_info.dart _FollowButton, not-following state)",
+          "kind": "color",
+          "spec": "background #FFF (Button-White-Solid-Default-Fill), border none/white",
+          "actual": "color: DesignTokens.primaryGreen with primaryGreen border",
+          "fix": "Set fill to white (textWhite/#FFF) for the default (not-following) state instead of primaryGreen."
+        },
+        {
+          "element": "Follow button text (default state)",
+          "kind": "color",
+          "spec": "color #52525C (Button-White-Text), Poppins 12/600/130%",
+          "actual": "color: buttonPrimaryText (#06190E)",
+          "fix": "Set follow label color to #52525C when not following."
+        },
+        {
+          "element": "Follow button padding",
+          "kind": "spacing",
+          "spec": "padding 8px 16px (vertical 8, horizontal 16)",
+          "actual": "horizontal s16=16, vertical s6=6",
+          "fix": "Change vertical padding from s6 (6) to s8 (8)."
+        },
+        {
+          "element": "Right-rail interaction container (reel_actions.dart)",
+          "kind": "layout",
+          "spec": "Single Reel Interaction Container: border-radius 20px, background rgba(51,51,51,0.60), backdrop-filter blur(20px), padding 16, gap 4, icons+counts stacked inside one pill",
+          "actual": "Each action is a separate 40px circle with baseBlack @ alpha 0.3, no blur, spaced by s16; no wrapping container",
+          "fix": "Wrap the action column in a single rounded container (BorderRadius 20) with a BackdropFilter blur 20 and color Color(0xFF333333).withValues(alpha:0.60), padding 16, inter-item gap 4; remove the per-button black circle backgrounds."
+        },
+        {
+          "element": "Action icon background circles",
+          "kind": "color",
+          "spec": "No per-icon background fill; icons are white 24x24 inside the shared glass pill",
+          "actual": "Each icon sits on baseBlack.withValues(alpha:0.3) circle",
+          "fix": "Remove the per-icon circular DecoratedBox background; render bare 24px white icons inside the glass container."
+        },
+        {
+          "element": "Action count label typography (reel_actions.dart _ActionButton label)",
+          "kind": "typography",
+          "spec": "Count Data: white #FFF, Poppins 10/600/100%, center-aligned",
+          "actual": "DesignTokens.tiny = 11/400/1.2, color textWhite",
+          "fix": "Use fontSize 10, fontWeight w600, height 1.0 for the count label (add a dedicated style); keep color white."
+        },
+        {
+          "element": "Caption typography (creator_info.dart caption Text)",
+          "kind": "typography",
+          "spec": "Caption: white #FFF, Poppins 12/400/130% (15.6px)",
+          "actual": "DesignTokens.mediumRegular = 14/400/150%",
+          "fix": "Use a 12px/400/1.3 style for the caption instead of mediumRegular (14/1.5)."
+        },
+        {
+          "element": "Tagged product card width (tagged_products_section.dart _ProductTile)",
+          "kind": "spacing",
+          "spec": "Card Container width: 310px",
+          "actual": "width: 280",
+          "fix": "Change tile width from 280 to 310."
+        },
+        {
+          "element": "Tagged product card background",
+          "kind": "color",
+          "spec": "background rgba(51,51,51,0.60) with backdrop-filter blur(20px)",
+          "actual": "bgAppBody (#18181B) withValues(alpha:0.92), no blur",
+          "fix": "Set fill to Color(0xFF333333).withValues(alpha:0.60) and wrap in a BackdropFilter blur 20."
+        },
+        {
+          "element": "Tagged product card radius",
+          "kind": "spacing",
+          "spec": "border-radius var(--Card-Radius, 16px)",
+          "actual": "BorderRadius.circular(DesignTokens.s12) = 12",
+          "fix": "Use cardRadius (16) instead of s12 for the card corner radius."
+        },
+        {
+          "element": "Tagged product card padding/gap",
+          "kind": "spacing",
+          "spec": "padding 8px, gap 8px",
+          "actual": "padding s8=8 (OK), inner Row gaps use s12=12 between thumbnail/text and s8 before button",
+          "fix": "Set the thumbnail→text gap to 8 (s8) to match the spec gap of 8 (currently s12)."
+        },
+        {
+          "element": "Product thumbnail size (tagged_products_section.dart image SizedBox)",
+          "kind": "spacing",
+          "spec": "Product Thumbnail width 72px, height 72px",
+          "actual": "width: 64, height: 64",
+          "fix": "Change thumbnail dimensions from 64 to 72."
+        },
+        {
+          "element": "Product thumbnail radius",
+          "kind": "spacing",
+          "spec": "border-radius 12px",
+          "actual": "BorderRadius.circular(DesignTokens.s8) = 8",
+          "fix": "Use s12 (12) for the thumbnail ClipRRect radius instead of s8."
+        },
+        {
+          "element": "Product price styling (tagged_products_section.dart MoneyText)",
+          "kind": "typography",
+          "spec": "Product Price: Gray-300 #D4D4D8, right-aligned, Poppins 14/600/130%",
+          "actual": "smallRegular = 12/400/1.3, color textLight, left-aligned",
+          "fix": "Use 14px/600/1.3 with color textLight (#D4D4D8) and TextAlign.right for the price."
+        },
+        {
+          "element": "Right-rail action set (reel_actions.dart)",
+          "kind": "extra",
+          "spec": "PDF shows 4 numbered interaction icons (like, comment, share, wishlist) in the interaction container",
+          "actual": "5 actions — adds a shopping-cart action with tagged-product count",
+          "fix": "Confirm against design whether the cart icon belongs in the interaction rail; the spec's numbered set (1-4) excludes it. Remove or relocate the cart action if it is not in the spec rail."
+        }
+      ],
+      "_pair": {
+        "name": "Home Page Reel",
+        "screen": "lib/features/customer/reels/presentation/screens/reels_feed_screen.dart",
+        "pdf": "Design Specification Doc - Home Page Reel.pdf"
+      }
+    },
+    {
+      "screen": "Reel Comments",
+      "overallMatch": "major",
+      "summary": "The code captures the basic structure (header \"Comments\", scrollable comment list, sticky composer) but diverges heavily from the spec. Major omissions: the entire per-comment like affordance (like icon + likes count column) is absent, the @handle username styling is wrong (code shows display name at 14px/600 instead of @handle at 10px/600 muted), the dot separator between handle and time is missing, and nearly every typography token (sizes, weights, colors, line-heights) is off. The composer differs in avatar (missing), shape (pill radius 999 vs 8px), placeholder ellipsis character, fill/border, and padding. The screen is also presented as a full Scaffold rather than the spec's rounded (28px) bottom sheet.",
+      "deviations": [
+        {
+          "element": "Comment like icon + likes count",
+          "kind": "missing",
+          "spec": "Each comment row has a trailing like column: heart Like Icon 20x20, fill #9F9FA9 (Icon-Light), liked state #FB2C36 (Icon-Error-Default), with Likes Count below it 10px/600 Poppins muted #9F9FA9 center (e.g. 234, 2.1k, 456). Tappable like toggle.",
+          "actual": "No like icon and no likes count rendered anywhere in _CommentTile.",
+          "fix": "Add a trailing Column at end of the comment Row: an IconButton/GestureDetector with a 20x20 heart icon (Icons.favorite_border / Icons.favorite) colored DesignTokens.iconLight (#9F9FA9) or #FB2C36 when liked, and a Text below it for the like count styled 10px/w600/Poppins/#9F9FA9 centered."
+        },
+        {
+          "element": "Comment author username",
+          "kind": "copy",
+          "spec": "Username is the @handle, e.g. '@Shree Teen', '@lucasSins', '@steviewonders', '@madmax', '@robinsparkles'. Always prefixed with @.",
+          "actual": "Text(comment.authorDisplayName ?? 'User') — renders raw display name with no '@' prefix and falls back to 'User'.",
+          "fix": "Render '@${comment.authorHandle}' (use the handle field). If only display name is available, prefix with '@'. Change fallback if needed to match a handle, not 'User'."
+        },
+        {
+          "element": "Username typography",
+          "kind": "typography",
+          "spec": "User Handle: Poppins 10px, weight 600, line-height 100% (10px), color #9F9FA9 (Text-Muted).",
+          "actual": "DesignTokens.mediumSemibold = Poppins 14px, weight 600, height 1.3, color textWhite (#FFF).",
+          "fix": "Use a 10px/w600/lh1.0 style colored #9F9FA9 for the handle instead of mediumSemibold."
+        },
+        {
+          "element": "Dot separator between handle and time",
+          "kind": "missing",
+          "spec": "A 3x3px dot, fill #71717B (Fill-Dot-Separator), sits between the User Handle and the Time.",
+          "actual": "No separator; code places handle and time directly with an 8px SizedBox gap.",
+          "fix": "Insert a 3x3 circular dot (Container with BoxDecoration shape circle color Color(0xFF71717B)) between handle and time, with small horizontal gaps."
+        },
+        {
+          "element": "Time typography",
+          "kind": "typography",
+          "spec": "Time: Poppins 10px, weight 600, line-height 100%, color #9F9FA9.",
+          "actual": "DesignTokens.smallRegular.copyWith(color: textMuted) = Poppins 12px, weight 400, height 1.3.",
+          "fix": "Use 10px/w600/lh1.0/#9F9FA9 for the time text."
+        },
+        {
+          "element": "Comment body text typography",
+          "kind": "typography",
+          "spec": "Comment Text: Poppins 12px, weight 400, line-height 150% (18px), color #FFF (Text-White).",
+          "actual": "DesignTokens.bodyText = Poppins 16px, weight 400, height 1.5, color textLight (not white).",
+          "fix": "Use a 12px/w400/lh1.5 style colored #FFFFFF for the comment body instead of bodyText."
+        },
+        {
+          "element": "Avatar size",
+          "kind": "spacing",
+          "spec": "Avatar width/height 32px, border-radius 50px (circle).",
+          "actual": "DesignTokens.avatarMedium = 40px.",
+          "fix": "Use a 32px width/height for the comment avatar (and the composer avatar)."
+        },
+        {
+          "element": "Spacing between comments",
+          "kind": "spacing",
+          "spec": "Vertical gap between comment rows is 32px (spacing guide shows 32 between items; 16 is the internal handle/body block, 44/24 are sub-gaps).",
+          "actual": "separatorBuilder uses SizedBox(height: DesignTokens.s16) = 16px.",
+          "fix": "Set the ListView.separated separator height to 32px."
+        },
+        {
+          "element": "Handle/time-to-body internal gap",
+          "kind": "spacing",
+          "spec": "Gap between the handle+time line and the comment text is small (spec internal block ~ tight, body line block); avatar-to-text horizontal gap shown as part of 16px body padding.",
+          "actual": "SizedBox(height: DesignTokens.s4) = 4px between handle row and body.",
+          "fix": "Verify against spec block; the spacing guide indicates the handle-to-body gap and 12px avatar gap — keep avatar gap 12px (matches) but confirm the 4px vertical is intended (spec shows a tighter handle/body grouping)."
+        },
+        {
+          "element": "Composer avatar",
+          "kind": "missing",
+          "spec": "Sticky Comment Input Container includes the current user's Avatar (32x32, radius 50px) to the left of the input field, gap 12px.",
+          "actual": "_Composer has only a TextField and a send IconButton — no leading avatar.",
+          "fix": "Add a leading 32x32 circular avatar in the composer Row before the input field, with 12px gap."
+        },
+        {
+          "element": "Composer container padding/gap",
+          "kind": "spacing",
+          "spec": "Container padding: 16px 16px 0 16px; gap: 12px; border-top 1px solid #3F3F46.",
+          "actual": "padding: EdgeInsets.all(s12)=12px all sides; border top width 0.5 (#3F3F46).",
+          "fix": "Change padding to EdgeInsets.fromLTRB(16,16,16,0), use 12px gap between avatar/field/send, and set the top border width to 1px."
+        },
+        {
+          "element": "Input field shape & border",
+          "kind": "typography",
+          "spec": "Input Field: height 40px, padding 10px 12px, border-radius 8px, border 1px solid #52525C (Input-Field-Border-Default), background #27272A.",
+          "actual": "OutlineInputBorder radius 999 (pill), borderSide none, contentPadding horizontal s16/vertical s12, fillColor inputFieldFill (#27272A correct).",
+          "fix": "Set border-radius to 8px, add a 1px BorderSide color Color(0xFF52525C), set contentPadding to horizontal 12 / vertical 10, and constrain field height to ~40px (single line)."
+        },
+        {
+          "element": "Placeholder text character",
+          "kind": "copy",
+          "spec": "Placeholder Text: 'Add a comment...' (three ASCII dots).",
+          "actual": "hintText: 'Add a comment…' (single ellipsis character U+2026).",
+          "fix": "Change hint to 'Add a comment...' using three period characters to match the spec exactly."
+        },
+        {
+          "element": "Placeholder typography",
+          "kind": "typography",
+          "spec": "Placeholder: Poppins 14px, weight 400, line-height 150% (21px), color #9F9FA9.",
+          "actual": "DesignTokens.bodyText.copyWith(color: textMuted) = 16px/w400/1.5.",
+          "fix": "Use a 14px/w400/lh1.5/#9F9FA9 style for the hint text."
+        },
+        {
+          "element": "Send affordance",
+          "kind": "extra",
+          "spec": "Spec shows only the input field with placeholder; no explicit send/paper-plane icon is documented in the input container (submit is via keyboard return on the field).",
+          "actual": "_Composer renders a send_rounded IconButton (and a spinner while sending) to the right of the field.",
+          "fix": "If matching spec strictly, remove the trailing send icon and submit on field onSubmitted; otherwise confirm with design whether a send button is intended."
+        },
+        {
+          "element": "Empty-state text",
+          "kind": "copy",
+          "spec": "PDF documents no empty-state copy for comments (only populated list and 'Add a comment...' placeholder).",
+          "actual": "Center Text 'No comments yet. Be the first!' shown when comments empty.",
+          "fix": "This string is not in the spec; confirm intended copy with design or remove. Flagged as unverified copy."
+        },
+        {
+          "element": "Header title typography",
+          "kind": "typography",
+          "spec": "Title 'Comments': Poppins 16px, weight 600, line-height 100% (16px), color #FFF, text-align center.",
+          "actual": "DesignTokens.sectionInnerTitle = Poppins 18px, weight 600, height 1.3, color textWhite.",
+          "fix": "Use a 16px/w600/lh1.0 white centered style for the header title instead of sectionInnerTitle (18px)."
+        },
+        {
+          "element": "Container / surface treatment",
+          "kind": "layout",
+          "spec": "This is a bottom sheet: Body background #18181B (Fill-App-Body), border-radius 28px 28px 0 0, left/right body spacing 16px, with a header bar above the body.",
+          "actual": "Rendered as a full-screen Scaffold with backgroundColor bgAppFoundation (#09090B), AppBar with back-arrow leading, no rounded top corners.",
+          "fix": "Present as a bottom sheet/rounded container: body bg #18181B, top corners rounded 28px, 16px horizontal body padding. Reconcile the #09090B vs #18181B background and the back-arrow (spec header shows centered title, not a back button)."
+        },
+        {
+          "element": "Comments header count",
+          "kind": "missing",
+          "spec": "Header/title region reads 'Comments' (the populated mock shows a count column of like values but the title is just 'Comments').",
+          "actual": "Title is 'Comments' (matches).",
+          "fix": "No change to the word; included only to confirm no comment-count number is required next to the title per spec."
+        }
+      ],
+      "_pair": {
+        "name": "Reel Comments",
+        "screen": "lib/features/customer/reels/presentation/screens/reel_comments_screen.dart",
+        "pdf": "Design Specification Doc - Reel Comments.pdf"
+      }
+    },
+    {
+      "screen": "Search (Discover) — Customer",
+      "overallMatch": "major",
+      "summary": "The screen's structure and section order (Title → Search field → Popular Searches → Browse by Category → Trending Now → Top Creators) match the spec, and the search field copy/placeholder are exact. But there are several real deviations: the Section Titles use the wrong typography token (18px/600/white instead of the spec's 14px/400/#D4D4D8), the pills use the wrong fill color, text weight, text color, padding, and radius, and the screen header uses a tune/filter icon that the spec does not document. The \"Trending Now\" header emoji and the \"Discover more creators\" CTA also deviate from the spec wording. Copy on static labels is otherwise close, but the pill and section-title styling and the undocumented header icon are the load-bearing mismatches.",
+      "deviations": [
+        {
+          "element": "Section Title (Popular Searches / Browse by Category / Trending Now / Top Creators)",
+          "kind": "typography",
+          "spec": "Section Title 'Title Text': color var(--Text-Light, #D4D4D8); Poppins; font-size 14px; font-weight 400; line-height 150% (21px)",
+          "actual": "Uses DesignTokens.sectionInnerTitle = Poppins 18px / weight 600 / color textWhite (#FFF), line-height 130%",
+          "fix": "Create/use a section-title style of 14px, w400, height 1.5, color #D4D4D8 and apply it in _SectionHeader instead of sectionInnerTitle."
+        },
+        {
+          "element": "Tag/Pill fill color (Popular Searches + Browse by Category pills)",
+          "kind": "color",
+          "spec": "background: var(--Tag-Gray-Fill, #3F3F46) (Info variant: var(--Tag-Info-Fill, #B8E6FE))",
+          "actual": "_Pill uses DesignTokens.bgAppBodyLight = #27272A",
+          "fix": "Change _Pill background to #3F3F46 (Tag-Gray-Fill). Optionally support the Info variant (#B8E6FE fill / #024A70 text) shown in the spec."
+        },
+        {
+          "element": "Tag/Pill text style",
+          "kind": "typography",
+          "spec": "Tag Text: color var(--Tag-Gray-Text, #F4F4F5); Poppins; font-size 12px; font-weight 600; line-height 130% (15.6px); text-align center",
+          "actual": "_Pill uses DesignTokens.smallRegular (12px / weight 400) with color DesignTokens.textLight (#D4D4D8)",
+          "fix": "Use a 12px / w600 style with color #F4F4F5 and centered text for pill labels."
+        },
+        {
+          "element": "Tag/Pill padding",
+          "kind": "spacing",
+          "spec": "padding: var(--S4,4px) var(--S8,8px) → 4px vertical, 8px horizontal",
+          "actual": "_Pill padding is horizontal s12 / vertical s8 (12px horizontal, 8px vertical)",
+          "fix": "Set _Pill padding to EdgeInsets.symmetric(horizontal: 8, vertical: 4)."
+        },
+        {
+          "element": "Tag/Pill border-radius",
+          "kind": "spacing",
+          "spec": "border-radius: 99px",
+          "actual": "_Pill uses DesignTokens.buttonRadius = 999",
+          "fix": "Cosmetically equivalent (both fully rounded); change to 99 to match spec value exactly if strict token parity is required."
+        },
+        {
+          "element": "Screen header trailing icon",
+          "kind": "extra",
+          "spec": "Spec header (element 1) shows only the title 'Search'; no trailing filter/tune icon is documented for this screen header.",
+          "actual": "Header Row renders Icon(Icons.tune_rounded) next to the 'Search' title",
+          "fix": "Remove the trailing tune icon from the header Row, or confirm against the screen image; the spec text documents no header action icon here."
+        },
+        {
+          "element": "'Trending Now' section title",
+          "kind": "copy",
+          "spec": "Section title text is 'Trending Now' (followed by a fire/flame icon as a separate icon element)",
+          "actual": "Hard-codes the string 'Trending Now 🔥' with an inline emoji inside the title text",
+          "fix": "Use 'Trending Now' as text and render the flame as a separate Icon/SVG element rather than embedding an emoji in the title string."
+        },
+        {
+          "element": "Top Creators bottom CTA",
+          "kind": "copy",
+          "spec": "Spec lists the Top Creators section as a list of creator cards with no documented 'see more' link text for this section (the documented trending CTA is 'View All Trending').",
+          "actual": "Renders a TextButton labeled 'Discover more creators' under the Top Creators list",
+          "fix": "Confirm against the screen image; if the spec has no such CTA, remove it, or match the exact documented label if one exists."
+        },
+        {
+          "element": "'View All Trending' button",
+          "kind": "copy",
+          "spec": "Button label 'View All Trending'",
+          "actual": "Label is 'View All Trending  →' (two trailing spaces + arrow glyph in the text)",
+          "fix": "Set label to 'View All Trending' and render any arrow as a trailing Icon widget rather than inline text characters."
+        }
+      ],
+      "_pair": {
+        "name": "Search",
+        "screen": "lib/features/customer/discovery/presentation/screens/search_screen.dart",
+        "pdf": "Design Specification Doc - Search.pdf"
+      }
+    },
+    {
+      "screen": "Product Detail — Customer Reviews",
+      "overallMatch": "major",
+      "summary": "The PDF specifies a standalone full-screen \"Customer Reviews\" page: a screen header titled \"Customer Reviews\" with a back icon, two tabs (\"Reel Reviews\" / \"Written Reviews\") with an active-tab green underline, a grid of video-review thumbnails (107x133, 12px radius) each with a blurred view-count pill (eye icon + compact count like 12.3m), and a sticky bottom \"Add Review\" button. None of this exists. The audited Dart file is product_detail_screen.dart, which only renders a tiny inline \"Reviews (n)\" section with a \"See All\" link (non-functional onTap) and a \"No reviews yet\" empty state — it does not navigate to or implement the spec'd Customer Reviews screen, and no such screen file exists anywhere in the discovery feature. This is a major gap: the entire spec'd screen is unbuilt. Everything below is reported against the spec; nearly all are missing-element findings. Note the inline preview's own copy (\"Reviews (n)\", \"See All\", \"No reviews yet\") is NOT in the spec and cannot be validated against it — but the dead \"See All\" onTap should route to the (to-be-built) Customer Reviews screen.",
+      "deviations": [
+        {
+          "element": "Customer Reviews screen (whole page)",
+          "kind": "missing",
+          "spec": "A dedicated full-screen page with header, tabs, video-review grid, and sticky Add Review button",
+          "actual": "No such screen exists; only an inline _ReviewsPreview widget on the product detail page that shows nothing for n>0 and 'No reviews yet' for n=0",
+          "fix": "Create a new CustomerReviewsScreen in lib/features/customer/discovery/presentation/screens/ implementing the spec, and route the product detail 'See All' tap to it"
+        },
+        {
+          "element": "Screen header title",
+          "kind": "missing",
+          "spec": "Title text 'Customer Reviews', Poppins 18px, weight 600, line-height 130% (23.4px), color Text-White #FFF, ellipsis overflow",
+          "actual": "Not present (no screen header for reviews)",
+          "fix": "Add an app bar / header with 'Customer Reviews' title using Poppins 18/600/130% white"
+        },
+        {
+          "element": "Header back icon",
+          "kind": "missing",
+          "spec": "24x24 icon, fill Button-White-Ghost-Icon #FFF",
+          "actual": "Not present",
+          "fix": "Add a 24x24 white back icon to the reviews screen header"
+        },
+        {
+          "element": "Header wrapper styling",
+          "kind": "missing",
+          "spec": "padding 24px 16px 0 16px; background Fill-App-Foundation #09090B; border-top 1px solid Border-Default #3F3F46",
+          "actual": "Not present",
+          "fix": "Apply the spec'd header wrapper padding, background, and 1px #3F3F46 top border"
+        },
+        {
+          "element": "Tabs container",
+          "kind": "missing",
+          "spec": "Tab row with two tabs, padding 0 12px, gap 16px, border-bottom 1px solid Border-Default #3F3F46",
+          "actual": "Not present",
+          "fix": "Add a tab bar container with 0 12px padding, 16px gap, 1px #3F3F46 bottom border"
+        },
+        {
+          "element": "Tab labels",
+          "kind": "missing",
+          "spec": "Exact tab labels 'Reel Reviews' and 'Written Reviews'",
+          "actual": "Not present",
+          "fix": "Add two tabs labeled exactly 'Reel Reviews' and 'Written Reviews'"
+        },
+        {
+          "element": "Tab typography (inactive)",
+          "kind": "missing",
+          "spec": "Poppins 14px, weight 400, line-height 150% (21px), color Text-Muted #9F9FA9, tab padding 10px 8px",
+          "actual": "Not present",
+          "fix": "Style inactive tabs Poppins 14/400/150% #9F9FA9 with 10px 8px padding"
+        },
+        {
+          "element": "Tab typography (active)",
+          "kind": "missing",
+          "spec": "Active tab: 3px solid bottom border Border-Primary-Default #2ECC71; text color Text-Primary #2ECC71",
+          "actual": "Not present",
+          "fix": "Style the active tab with a 3px #2ECC71 underline and #2ECC71 text"
+        },
+        {
+          "element": "Video review thumbnails grid",
+          "kind": "missing",
+          "spec": "Grid of video thumbnails, each 107px wide x 133px tall, border-radius 12px",
+          "actual": "Not present (no thumbnails rendered; preview is empty for n>0)",
+          "fix": "Render a grid of 107x133 video-review thumbnails with 12px radius"
+        },
+        {
+          "element": "View-count pill on thumbnail",
+          "kind": "missing",
+          "spec": "Views container: padding 6px 8px, gap 4px, border-radius 20px, background rgba(51,51,51,0.60), backdrop-filter blur(20px)",
+          "actual": "Not present",
+          "fix": "Add a blurred (blur 20) semi-transparent #333 60% pill with 6px 8px padding, 4px gap, 20px radius on each thumbnail"
+        },
+        {
+          "element": "View-count text",
+          "kind": "missing",
+          "spec": "Compact count (e.g. 12.3m, 408k, 1.5m, 989k), Poppins 10px, weight 600, line-height 100%, color Base-White #FFF, text-align center",
+          "actual": "Not present",
+          "fix": "Render compact view counts in Poppins 10/600/100% white centered"
+        },
+        {
+          "element": "View-count icon",
+          "kind": "missing",
+          "spec": "Eye/views icon 12x12, fill Base-White #FFF",
+          "actual": "Not present",
+          "fix": "Add a 12x12 white views (eye) icon before the count"
+        },
+        {
+          "element": "Sticky Add Review button",
+          "kind": "missing",
+          "spec": "Sticky bottom button labeled 'Add Review'",
+          "actual": "Not present on the reviews screen (product detail has no such button)",
+          "fix": "Add a sticky bottom 'Add Review' button"
+        },
+        {
+          "element": "Add Review button wrapper",
+          "kind": "missing",
+          "spec": "Wrapper padding 24px 16px 0 16px; background Fill-App-Foundation #09090B; border-top 1px solid Border-Default #3F3F46",
+          "actual": "Not present",
+          "fix": "Wrap the sticky button per spec: 24px 16px 0 16px padding, #09090B bg, 1px #3F3F46 top border"
+        },
+        {
+          "element": "Add Review button container",
+          "kind": "missing",
+          "spec": "padding 16px 32px; centered; border-radius 999px (pill); background Button-Primary-Solid-Default-Fill #2ECC71",
+          "actual": "Not present",
+          "fix": "Style button container 16px 32px padding, fully centered, 999px radius, #2ECC71 fill"
+        },
+        {
+          "element": "Add Review button text",
+          "kind": "missing",
+          "spec": "Text 'Add Review', color Button-Primary-Text #06190E, Poppins 16px, weight 600, line-height 16px (100%)",
+          "actual": "Not present",
+          "fix": "Label the button 'Add Review' in Poppins 16/600/100% with text color #06190E"
+        },
+        {
+          "element": "App body left/right spacing",
+          "kind": "missing",
+          "spec": "App body left & right spacing 16px",
+          "actual": "N/A — screen not built",
+          "fix": "Apply 16px horizontal body spacing on the new screen"
+        }
+      ],
+      "_pair": {
+        "name": "Product Detail - Reviews",
+        "screen": "lib/features/customer/discovery/presentation/screens/product_detail_screen.dart",
+        "pdf": "Design Specification Doc - Product Detail - Customer Reviews.pdf"
+      }
+    },
+    {
+      "screen": "Your Cart (Customer)",
+      "overallMatch": "major",
+      "summary": "The cart screen is missing nearly the entire lower half of the spec: the spec defines a full \"Bill Details\" breakdown card (Sub Total, Shipping, Tax, Grand Total), the \"You are appreciated\" creator-thank-you card, a \"Have a Promo Code?\" promo button, and a two-line \"Total Order\" sticky checkout bar — none of which exist in code. The implemented sticky bar uses a single total + item count instead of the spec's \"Total Order\" label/amount layout, and the button label is \"Proceed to Checkout\" vs spec \"Proceed to checkout\". Per-item rows omit the \"From: @handle (XX% Commission)\" creator-affiliate line and the \"Save for later\" action. Screen title is \"My Cart\" vs spec \"Your Cart\". Many copy and styling values deviate. Treated as major because multiple documented sections are entirely absent.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "Your Cart",
+          "actual": "My Cart",
+          "fix": "Change AppBar title Text from 'My Cart' to 'Your Cart'."
+        },
+        {
+          "element": "Screen header title typography",
+          "kind": "typography",
+          "spec": "Poppins, 18px, weight 600, line-height 130% (23.4px), color #FFF",
+          "actual": "DesignTokens.titleLarge (unverified size/weight)",
+          "fix": "Ensure title style is Poppins 18px/600/130% white to match spec Title block."
+        },
+        {
+          "element": "Bill Details card (Sub Total / Shipping / Tax / Grand Total)",
+          "kind": "missing",
+          "spec": "A 'Bill Details' card with label 'Bill Details', rows 'Sub Total (5 items)', 'Shipping', 'Tax (Estimated 13%)', and 'Grand Total' with amounts (e.g. Rs 42,600); card padding 16px 12px, border-radius 16px, fill #18181B; divider #3F3F46 1px before Grand Total",
+          "actual": "Not present anywhere in cart_screen.dart",
+          "fix": "Add a Bill Details summary card above the checkout bar with the four labeled rows, divider, and Grand Total per spec copy and tokens."
+        },
+        {
+          "element": "'You are appreciated' card",
+          "kind": "missing",
+          "spec": "Appreciated container (fill #27272A), heart icon (error red #FB2C36 in #460809 container), heading 'You are appreciated', description 'Thank you so much ! you are supporting 2 creators with this order'",
+          "actual": "Not present",
+          "fix": "Add the appreciation card with heading 'You are appreciated' and the exact description string including the space before '!'."
+        },
+        {
+          "element": "'Have a Promo Code?' button",
+          "kind": "missing",
+          "spec": "Promo Code button: pill (border-radius 999px), 1px outline #2ECC71, padding 8px 16px, text 'Have a Promo Code?' Poppins 12px/600 color #2ECC71",
+          "actual": "Not present",
+          "fix": "Add an outlined pill button labeled 'Have a Promo Code?' above Bill Details."
+        },
+        {
+          "element": "Sticky checkout bar - total label/layout",
+          "kind": "missing",
+          "spec": "Two-part 'Total Order' label with amount 'Rs 42,600' (label Poppins 14px/600 #FFF; amount 18px/600 #FFF), plus a wallet/total icon 20px",
+          "actual": "Shows formatMoney(total) + ' (N items)' in muted text; no 'Total Order' label, no icon",
+          "fix": "Replace the inline total+item-count row with a 'Total Order' label and the grand total amount per spec; add the 20px icon."
+        },
+        {
+          "element": "Checkout button label",
+          "kind": "copy",
+          "spec": "Proceed to checkout",
+          "actual": "Proceed to Checkout",
+          "fix": "Change button text to lowercase 'Proceed to checkout' to match spec capitalization."
+        },
+        {
+          "element": "Checkout button typography",
+          "kind": "typography",
+          "spec": "Poppins 16px, weight 600, line-height 16px, text color #06190E",
+          "actual": "fontSize 14, weight 600 (color from primaryButtonStyle)",
+          "fix": "Set button text fontSize to 16 and ensure text color #06190E per Button-Primary-Text token."
+        },
+        {
+          "element": "'incl. shipping' subtext",
+          "kind": "extra",
+          "spec": "No such line; shipping is a row inside Bill Details",
+          "actual": "'incl. ${shipping} shipping' subtext under total",
+          "fix": "Remove the 'incl. X shipping' line; surface shipping inside the Bill Details card instead."
+        },
+        {
+          "element": "Item: creator affiliate line",
+          "kind": "missing",
+          "spec": "'From: @alieen.ace43 (15% Commission)' line per item, Poppins 11px/400 color #D4D4D8",
+          "actual": "CartItemTile shows productName, variantName, unitPrice only — no creator/commission line",
+          "fix": "Add a 'From: @{handle} ({commission}% Commission)' line in CartItemTile."
+        },
+        {
+          "element": "Item: 'Save for later' action",
+          "kind": "missing",
+          "spec": "'Save for later' link per item, Poppins 11px/400 color #2ECC71, underlined",
+          "actual": "Not present",
+          "fix": "Add an underlined 'Save for later' action to each cart item tile."
+        },
+        {
+          "element": "Item: dot separator before info",
+          "kind": "missing",
+          "spec": "3px dot separator (#71717B) in product info row",
+          "actual": "variantName shown plain, no dot separator",
+          "fix": "Add the 3px dot separator between product info segments per spec."
+        },
+        {
+          "element": "Product thumbnail size & radius",
+          "kind": "spacing",
+          "spec": "width 64px, height 64px, border-radius 12px",
+          "actual": "width 72, height 72, borderRadius s8",
+          "fix": "Change thumbnail to 64x64 with 12px border-radius."
+        },
+        {
+          "element": "Product title typography",
+          "kind": "typography",
+          "spec": "Poppins 12px/400, line-height 130% (15.6px), color #FFF",
+          "actual": "DesignTokens.mediumSemibold (likely 14px/600)",
+          "fix": "Set product title to 12px weight 400 to match spec (note: spec title is regular, not semibold)."
+        },
+        {
+          "element": "Product info typography",
+          "kind": "typography",
+          "spec": "Poppins 11px/400, line-height 120% (13.2px), color Text-Muted #9F9FA9",
+          "actual": "smallRegular muted (size unverified)",
+          "fix": "Ensure variant/info text is 11px/400 color #9F9FA9."
+        },
+        {
+          "element": "Item price color",
+          "kind": "color",
+          "spec": "Price color Text-Light #D4D4D8, Poppins 12px/400",
+          "actual": "unitPrice rendered in primaryGreen (#2ECC71) with oneLinerSemibold",
+          "fix": "Change item price to #D4D4D8, 12px weight 400 (not green/semibold)."
+        },
+        {
+          "element": "Quantity stepper styling",
+          "kind": "color",
+          "spec": "Qty button height 28px, border-radius 99px, background Cart-Qty-Button-Fill #3F3F46; plus/minus icons 16px white",
+          "actual": "Bordered (Border.all borderDefault) with borderRadius s8, no fill background",
+          "fix": "Give stepper a filled #3F3F46 background, 99px radius, 28px height (remove outline)."
+        },
+        {
+          "element": "Out-of-stock copy",
+          "kind": "copy",
+          "spec": "Spec shows no per-item 'Out of stock' label; uses 'Free'/'Save for later' patterns",
+          "actual": "'Out of stock' text shown when !isInStock",
+          "fix": "Confirm against spec; spec does not document an 'Out of stock' item label — retain only if product requirement, otherwise align with spec."
+        },
+        {
+          "element": "Empty-state copy",
+          "kind": "copy",
+          "spec": "Not documented in this spec PDF",
+          "actual": "'Your cart is empty. Start shopping!'",
+          "fix": "No spec value to match; flag for design confirmation of empty-state copy."
+        },
+        {
+          "element": "Item rows divider",
+          "kind": "missing",
+          "spec": "1px divider #3F3F46 full-width between items",
+          "actual": "ListView.builder with no dividers between tiles",
+          "fix": "Add a 1px #3F3F46 divider between cart item rows."
+        }
+      ],
+      "_pair": {
+        "name": "Your Cart",
+        "screen": "lib/features/customer/cart/presentation/screens/cart_screen.dart",
+        "pdf": "Design Specification Doc - Your Cart.pdf"
+      }
+    },
+    {
+      "screen": "Checkout — Shipping Address & Payment Method (Empty)",
+      "overallMatch": "major",
+      "summary": "The Dart screen implements a generic \"filled\" checkout (saved address card, payment card, order-items list, simple price summary, \"Place Order\" CTA). The PDF specifies the EMPTY-state checkout with a different element set and order: Shipping Address empty-prompt block, a styled \"Bill Details\" card with a \"You are appreciated\" sub-card, a Payment Method option LIST (Visa Card / Paypal / eSewa / Cash on Delivery), and a primary CTA labeled \"Add Shipping Address\" (NOT \"Place Order\"). Multiple required sections and the entire copy set are missing or wrong. This needs a layout rebuild, not minor tweaks.",
+      "deviations": [
+        {
+          "element": "Shipping Address empty-state prompt",
+          "kind": "missing",
+          "spec": "Section shows a card/row with title \"Shipping Address\", description \"You're almost there! Add a shipping address to continue.\" (Description: Poppins 11px, weight 400, line-height 120%/13.2px, color Text-Light #D4D4D8), a Delivery/Truck icon (32x32, fill Icon-Secondary #F1C40F, on Fill-Secondary-Dark #3A2F03 rounded 8px / padding 4px), and a trailing Plus icon (20x20, fill Icon-Light #9F9FA9). Card: radius 16px, border 1px Border-Default #3F3F46, bg Fill-App-Body #18181B, padding 12px 16px, gap 12px.",
+          "actual": "Code renders _AddressCard bound to summary.shippingAddress (a populated address with label/name/phone/lines, location_on_outlined icon, chevron_right). No empty-state prompt, no truck icon, no plus icon, no \"You're almost there...\" copy.",
+          "fix": "Add an empty-state variant: when no address is selected, render the truck-icon prompt card with title \"Shipping Address\" and description \"You're almost there! Add a shipping address to continue.\" plus trailing plus icon, per the spec tokens."
+        },
+        {
+          "element": "Section header copy \"Shipping Address\"",
+          "kind": "copy",
+          "spec": "\"Shipping Address\"",
+          "actual": "\"Shipping Address\" (matches as a string) but rendered as a standalone _SectionHeader above a populated card rather than inside the empty-state prompt block.",
+          "fix": "Keep the string; relocate into the empty-state card layout described above. (Copy itself OK.)"
+        },
+        {
+          "element": "Bill Details card",
+          "kind": "missing",
+          "spec": "A styled card titled \"Bill Details\" (Title: Poppins 16px weight 600 line-height 16px, color Text-White #FFF). Card container: padding 16px 12px, border-radius 16px, bg Fill-App-Body #18181B, small drop shadow (0 4px 12px rgba(16,16,16,0.06)). Row labels are clickable-underlined (border-bottom 1px #9F9FA9).",
+          "actual": "Code has _PriceSummary titled by nothing (no \"Bill Details\" title) using cardDecoration(), no shadow spec, no underlined labels.",
+          "fix": "Rename/retitle the price card to \"Bill Details\" with a 16px/600 title row, apply the shadow and clickable-underline label styling per spec."
+        },
+        {
+          "element": "Bill Details row labels",
+          "kind": "copy",
+          "spec": "Rows in order: \"Sub Total (5 items)\", \"Shipping\", \"Tax (Estimated 13%)\", \"Promo Code Discount\", then divider, then \"Grand Total\".",
+          "actual": "Rows are \"Subtotal\", \"Shipping\", \"Tax\", optional \"Discount\", divider, \"Total\".",
+          "fix": "Change labels to exact spec strings: \"Sub Total (5 items)\" (with dynamic item count), \"Tax (Estimated 13%)\", \"Promo Code Discount\", and \"Grand Total\". Replace \"Subtotal\"→\"Sub Total\", \"Discount\"→\"Promo Code Discount\", \"Total\"→\"Grand Total\"."
+        },
+        {
+          "element": "Shipping value formatting",
+          "kind": "copy",
+          "spec": "Shipping shows \"Free\" when zero (spec shows \"Free\").",
+          "actual": "Shipping always rendered via formatMoney(summary.shipping) — would show \"Rs 0\" not \"Free\".",
+          "fix": "Render \"Free\" when shipping amount is 0, else formatMoney."
+        },
+        {
+          "element": "Negative amounts (Shipping / Promo Code Discount)",
+          "kind": "color",
+          "spec": "Negative Data color Text-Error #FF6467 (spec shows \"-Rs 1,600\" / \"-Rs 800\" in error red).",
+          "actual": "_PriceRow uses DesignTokens.textLight for all amounts; no negative/red styling.",
+          "fix": "Color negative (discount/credit) amounts with Text-Error #FF6467 and prefix with \"-\"."
+        },
+        {
+          "element": "Grand Total label & styling",
+          "kind": "copy",
+          "spec": "Label \"Grand Total\" (Poppins 14px weight 600 line-height 130%, Text-White #FFF); total amount Poppins 18px weight 600 line-height 130% Text-White #FFF.",
+          "actual": "Label \"Total\" using DesignTokens.h3; amount colored primaryGreen.",
+          "fix": "Rename \"Total\"→\"Grand Total\"; total amount color should be Text-White #FFF (not green) at 18px/600 per spec."
+        },
+        {
+          "element": "\"You are appreciated\" card",
+          "kind": "missing",
+          "spec": "Card inside/under Bill Details: bg Fill-App-Body-Light #27272A, padding 0 12px, a heart icon (16x16, fill Icon-Error-Default #FB2C36, container padding 6px, radius 8px, bg Fill-Error-Dark #460809), heading \"You are appreciated\" (Poppins 12px weight 400 line-height 130%, Text-White #FFF), description \"Thank you so much ! you are supporting 2 creators with this order\" (Poppins 11px weight 400 line-height 120%, Text-Light #D4D4D8).",
+          "actual": "Completely absent from code.",
+          "fix": "Add an \"You are appreciated\" sub-card with heart icon and exact copy \"You are appreciated\" + \"Thank you so much ! you are supporting {n} creators with this order\" (note the space before \"!\" and the dynamic creator count)."
+        },
+        {
+          "element": "Payment Method as an option LIST",
+          "kind": "missing",
+          "spec": "Payment Method section lists multiple radio-list options top-to-bottom: \"Visa Card\" (description \"Visa ending in 4532\"), \"Paypal\" (\"@shreeteen123\"), \"eSewa\" (\"9840098522\"), \"Cash on Delivery\". Each row: payment-method logo (48x40 white-bg box radius 8px, logo 36x28), name (Poppins 14px/400 #FFF), id/description (Poppins 12px/400 #9F9FA9), trailing radio input icon (20x20, fill #71717B). Section gap 16px between rows.",
+          "actual": "Code shows a single _PaymentCard for summary.paymentMethod (one selected method) with credit_card/wallet/money Icon and chevron, no list of all four options, no radio inputs, no per-method logos.",
+          "fix": "Replace single payment card with a selectable radio list of the four methods using the exact names/descriptions and radio-icon styling from spec."
+        },
+        {
+          "element": "Payment method names/descriptions",
+          "kind": "copy",
+          "spec": "\"Visa Card\" / \"Visa ending in 4532\"; \"Paypal\" / \"@shreeteen123\"; \"eSewa\" / \"9840098522\"; \"Cash on Delivery\".",
+          "actual": "_PaymentCard uses dynamic method.label and \"•••• {lastFour}\"; static option names absent.",
+          "fix": "Use spec strings \"Visa Card\", \"Paypal\" (note: not \"PayPal\"), \"eSewa\", \"Cash on Delivery\"; card description \"Visa ending in 4532\" format; show account id (e.g. @handle / phone) as description."
+        },
+        {
+          "element": "Primary CTA button label",
+          "kind": "copy",
+          "spec": "Button text \"Add Shipping Address\" (Poppins 16px weight 600 line-height 100%, color Button-Primary-Text #06190E on Button-Primary-Solid #2ECC71, radius 999px, with a 16x16 icon fill #06190E).",
+          "actual": "Button labeled \"Place Order\" (14px), inside a _PlaceOrderBar that also shows a \"Total\"/amount column on the left.",
+          "fix": "In the empty state, the CTA must read \"Add Shipping Address\" at 16px/600 and route to add-address. The \"Place Order\" bar belongs to the filled state, not this spec."
+        },
+        {
+          "element": "CTA bar layout",
+          "kind": "layout",
+          "spec": "Bottom wrapper: padding 24px 16px 0 16px, bg Fill-App-Foundation #09090B, border-top 1px #3F3F46. Button container full-width style: padding 16px 32px, centered, radius 999px. No left-side Total column in this empty-state spec.",
+          "actual": "_PlaceOrderBar has a left Total label+amount column and a fixed 180px-wide button on the right; padding s16 all sides; bg bgAppBody.",
+          "fix": "For empty state, use a single full-width \"Add Shipping Address\" button with wrapper padding 24/16/0/16 and bg Fill-App-Foundation #09090B; remove the Total column."
+        },
+        {
+          "element": "\"Order Items\" section",
+          "kind": "extra",
+          "spec": "No \"Order Items\" section or per-item tiles appear in this PDF spec.",
+          "actual": "Code renders _SectionHeader('Order Items') and a list of _CheckoutItemTile rows.",
+          "fix": "This section is not part of the empty-state spec; confirm against design whether to hide it in this state (item count is instead surfaced as \"Sub Total (5 items)\")."
+        },
+        {
+          "element": "Delivery/Truck icon (shipping prompt)",
+          "kind": "icon",
+          "spec": "Truck/Delivery icon, 32x32, fill Icon-Secondary #F1C40F, on Fill-Secondary-Dark #3A2F03 box (radius 8px, padding 4px).",
+          "actual": "Icons.location_on_outlined in primaryGreen on primaryGreenLight box.",
+          "fix": "Use a truck/delivery icon at 32x32 with yellow fill #F1C40F on #3A2F03 background per spec."
+        },
+        {
+          "element": "Trailing icon on shipping prompt",
+          "kind": "icon",
+          "spec": "Plus icon, 20x20, fill Icon-Light #9F9FA9.",
+          "actual": "Icons.chevron_right_rounded in iconLight.",
+          "fix": "Replace chevron with a plus (add) icon, 20x20, color #9F9FA9, for the empty add-address affordance."
+        }
+      ],
+      "_pair": {
+        "name": "Checkout",
+        "screen": "lib/features/customer/checkout/presentation/screens/checkout_screen.dart",
+        "pdf": "Design Specification Doc - Checkout - Shipping Address & Payment Method Empty.pdf"
+      }
+    },
+    {
+      "screen": "Payment Methods (Customer)",
+      "overallMatch": "major",
+      "summary": "The implementation is a generic payment-method list (card / eSewa / COD with \"Add New\" buttons) that does not follow the spec's structure. The spec defines a screen titled \"Payment Methods (4)\" with three documented sections in order: (1) a \"Secure & Encrypted\" info banner, (2) a \"Cards\" section with an \"Add Card\" action and per-card list items showing brand/name/expiry/last-four plus status tags (Default / Expiring), and (3) a \"Digital Wallets\" section listing Paypal, Google Pay, Apple Pay with link status and a \"Link\" button. Major deviations: wrong screen title, the entire Secure banner is missing, the Cards/Digital Wallets section structure is missing, the card-tile copy/status-tag elements are missing, and the \"Add New / Add New Card / Add eSewa / Cash on Delivery\" buttons are not in the spec at all (extra). Card list items use radio buttons and last-four masking instead of the spec's \"ending in\" copy and More-Actions icon button.",
+      "deviations": [
+        {
+          "element": "Screen title",
+          "kind": "copy",
+          "spec": "\"Payment Methods (4)\" (Poppins 18px, weight 600, line-height 130%/23.4px, color #FFF; count reflects number of methods)",
+          "actual": "'Payment Method' (DesignTokens.titleLarge), singular, no count",
+          "fix": "Change title text to 'Payment Methods (N)' where N is the live method count, e.g. Text('Payment Methods (${methods.length})')."
+        },
+        {
+          "element": "Secure & Encrypted banner (spec section 2)",
+          "kind": "missing",
+          "spec": "Container border-radius 16px, border 1px #3F3F46, bg #18181B, padding 12px 16px, gap 12px. Shield icon 32x32 fill #F1C40F in a #3A2F03 rounded (8px) box padding 4px. Title 'Secure & Encrypted' (Poppins 14px/600, #FFF). Description 'Don't worry about your payment details, they are protected with high level encryption' (Poppins 12px/400, line-height 130%, #D4D4D8).",
+          "actual": "Not present anywhere in the screen",
+          "fix": "Add a top banner widget above the lists with shield icon, title 'Secure & Encrypted', and the exact description string."
+        },
+        {
+          "element": "\"Cards\" section header (spec 3 / 3.1)",
+          "kind": "missing",
+          "spec": "Section title 'Cards' (Poppins 14px/400, line-height 150%/21px, color #D4D4D8) with an 'Add Card' action on the right (Poppins 12px/600, color #2ECC71, with 12x12 #2ECC71 add icon)",
+          "actual": "No 'Cards' section header; only a generic '_SectionHeader' with title 'Add New' lower down",
+          "fix": "Add a 'Cards' section header row with trailing 'Add Card' green action button + icon, wrapping the card list items."
+        },
+        {
+          "element": "Card list item copy (spec 3.3 / 3.4)",
+          "kind": "copy",
+          "spec": "Two-line: line 1 brand + name (e.g. 'Visa  Default' / 'Mastercard Expiring' with name 'Shree Teen Expires 12/27'), line 2 'Visa ending in 4532' / 'Mastercard ending in 8910' (Poppins 12px/400, #D4D4D8). Card logo in white 56x40 rounded-8 box.",
+          "actual": "Single label from method.label + masked '•••• {lastFour}' line (smallRegular, textMuted). Uses bullet masking, not 'ending in' copy; no card logo box.",
+          "fix": "Render card secondary line as 'Visa ending in 4532' style using 'ending in {lastFour}', and show the card brand logo in a 56x40 white rounded box."
+        },
+        {
+          "element": "Card status tag (spec Card Info Tag)",
+          "kind": "missing",
+          "spec": "Pill tag, padding 4px 8px, radius 99px. Default status: bg #B8E6FE text #024A70 ('Default'). Expiring status: bg #FFF085 text #733E0A with 12x12 warning icon, 'Expiring'. Text Poppins 12px/600.",
+          "actual": "Only a 'Default' chip with bg primaryGreenLight / text primaryGreen and DesignTokens.tiny; no 'Expiring' tag and wrong colors/typography.",
+          "fix": "Replace chip with spec tag: Default = #B8E6FE/#024A70; add Expiring variant = #FFF085/#733E0A + warning icon. Use 12px/600 Poppins."
+        },
+        {
+          "element": "More Actions icon button on card/wallet items",
+          "kind": "missing",
+          "spec": "32x32 button, padding 4px, 20x20 icon fill #9F9FA9 (Button-Gray-Ghost-Icon) on the trailing edge of each card list item",
+          "actual": "No more-actions (overflow) button on tiles; card tile uses a leading Radio instead",
+          "fix": "Add a trailing 20x20 ellipsis/more-actions ghost icon button (color #9F9FA9) to each card and wallet list item."
+        },
+        {
+          "element": "Leading control on card tile",
+          "kind": "extra",
+          "spec": "Spec card list items have no leading radio selector; selection is not shown via radio",
+          "actual": "Each _PaymentMethodTile has a leading Radio<PaymentMethodType> widget",
+          "fix": "Remove the Radio; follow spec layout (logo box leading, info, status tag, more-actions trailing)."
+        },
+        {
+          "element": "\"Digital Wallets\" section (spec 4 / 4.1)",
+          "kind": "missing",
+          "spec": "Section title 'Digital Wallets' with wallet list items: 'Paypal' (sub 'Link your paypal wallet', with a white 'Link' button), 'Google Pay' (sub 'Linked shreeteen@nimb'), 'Apple Pay' (sub 'Linked Visa ending in 3499'). Wallet logo white 56x40 rounded box; company name Poppins 14px/600 #FFF.",
+          "actual": "No Digital Wallets section. Only generic 'Add eSewa' option exists.",
+          "fix": "Add a 'Digital Wallets' section listing Paypal / Google Pay / Apple Pay with logos, linked-status subtext, and a 'Link' button for unlinked wallets."
+        },
+        {
+          "element": "Wallet linked status + 'Link' button copy",
+          "kind": "missing",
+          "spec": "Linked status text (Poppins 10px/600, #2ECC71) with 12x12 green check icon; unlinked shows 'Link your paypal wallet' (Poppins 11px/400, #9F9FA9) and a 'Link Wallet' button (white bg #FFF, text #52525C Poppins 12px/600, padding 8px 16px, radius 999px)",
+          "actual": "None present",
+          "fix": "Implement wallet item states: linked (green check + 'Linked …' text) vs unlinked ('Link your … wallet' + white 'Link' button)."
+        },
+        {
+          "element": "Dot separator between card info fields",
+          "kind": "missing",
+          "spec": "3x3 dot, fill #71717B (Fill-Dot-Separator), separating card/wallet info fields",
+          "actual": "Not present",
+          "fix": "Add 3x3 #71717B dot separators between info segments where spec shows them."
+        },
+        {
+          "element": "'Add New' section + Add buttons",
+          "kind": "extra",
+          "spec": "Spec has no 'Add New' section, no 'Add New Card', no 'Add eSewa', no 'Cash on Delivery' list buttons. Card-adding is the inline 'Add Card' action in the Cards header only.",
+          "actual": "_SectionHeader('Add New') followed by three _AddPaymentOption rows: 'Add New Card', 'Add eSewa', 'Cash on Delivery'",
+          "fix": "Remove the 'Add New' section and the three add buttons; move card-adding into the 'Add Card' header action per spec."
+        },
+        {
+          "element": "App body horizontal spacing",
+          "kind": "spacing",
+          "spec": "App body left & right spacing 16px (matches), card list item padding 12px 16px",
+          "actual": "Screen padding all 16 (ok); but tile inner padding is EdgeInsets.all(16) instead of 12px vertical / 16px horizontal",
+          "fix": "Set card/wallet list-item padding to 12px vertical, 16px horizontal (EdgeInsets.symmetric(vertical:12,horizontal:16))."
+        }
+      ],
+      "_pair": {
+        "name": "Checkout Payment Method",
+        "screen": "lib/features/customer/checkout/presentation/screens/payment_method_screen.dart",
+        "pdf": "Design Specification Doc - Payment Methods.pdf"
+      }
+    },
+    {
+      "screen": "Order Details / Track Order",
+      "overallMatch": "major",
+      "summary": "The PDF spec documents a \"Track Order\" screen whose core content is an Order Details summary card plus a 4-stage Tracking Timeline (Shipped / In Transit / Out for Delivery / Delivered) with a \"View Other Details\" expander. The Dart implementation is a different, generic order screen: it shows price breakdown, shipping/payment, and Cancel/Return action buttons — none of which the spec shows — and entirely omits the Tracking Timeline (the spec's central section #3) and the \"View Other Details\" action (#4). Screen title, header copy, label wording, date/amount layout, the info tag, and tracking-ID styling all diverge. Treat this as a major rewrite to match the spec.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "Track Order",
+          "actual": "Order Details",
+          "fix": "Change AppBar title Text from 'Order Details' to 'Track Order'."
+        },
+        {
+          "element": "Screen header title typography",
+          "kind": "typography",
+          "spec": "Poppins 18px, weight 600, line-height 130% (23.4px), color #FFF",
+          "actual": "DesignTokens.mediumSemibold (likely 14px)",
+          "fix": "Apply an 18px/600/130% white style to the AppBar title to match the spec header (Title block: font-size 18px, font-weight 600)."
+        },
+        {
+          "element": "Order number",
+          "kind": "copy",
+          "spec": "Order #RC20230124 (format Order #RC{...})",
+          "actual": "'Order #${order.orderNumber}' (live data)",
+          "fix": "Keep dynamic binding but verify prefix/format. Spec sample uses 'RC' prefix, not the NK{year}-{5 digits} format; confirm which order-number scheme this screen renders and that the literal 'Order #' prefix matches."
+        },
+        {
+          "element": "Order number typography",
+          "kind": "typography",
+          "spec": "Poppins 14px, weight 600, line-height 130% (18.2px), color #FFF",
+          "actual": "DesignTokens.titleMedium",
+          "fix": "Set order-number text to 14px/600/130% white to match spec Title block."
+        },
+        {
+          "element": "Placed-on + amount line",
+          "kind": "layout",
+          "spec": "Single combined line: 'Placed on 13:52 Dec 10, 2024' with amount 'Rs 41,000' on the same row; helper text style Poppins 12px/400/130% color #D4D4D8 (Text-Light)",
+          "actual": "Separate _DetailRow with label 'Placed On' (left) and datetime value (right); amount is not shown here, only in a separate Total row",
+          "fix": "Replace the label/value row with a single secondary line 'Placed on {time} {date}' and show the order amount (Rs) on the same line, styled 12px/400 #D4D4D8."
+        },
+        {
+          "element": "Placed-on label copy",
+          "kind": "copy",
+          "spec": "'Placed on' (lowercase 'on', inline prefix to the datetime)",
+          "actual": "'Placed On' (title-case, used as a separate left-column label)",
+          "fix": "Use inline copy 'Placed on 13:52 Dec 10, 2024' rather than a 'Placed On' label/value pair."
+        },
+        {
+          "element": "Placed-on datetime format",
+          "kind": "copy",
+          "spec": "'13:52 Dec 10, 2024' (HH:mm then 'MMM d, yyyy')",
+          "actual": "DateFormat('MMM d, yyyy - HH:mm') => 'Dec 10, 2024 - 13:52'",
+          "fix": "Change format to put time first: 'HH:mm MMM d, yyyy' to match spec ordering and drop the ' - ' separator."
+        },
+        {
+          "element": "Expected delivery line",
+          "kind": "copy",
+          "spec": "'Expected Delivery: Jan 01-03 2025' (label 'Expected Delivery:' with a date range, rendered as an info tag pill)",
+          "actual": "_DetailRow label 'Estimated Delivery' with single date value dateFmt.format(order.estimatedDelivery)",
+          "fix": "Change label copy from 'Estimated Delivery' to 'Expected Delivery:' and render a date RANGE (e.g. 'Jan 01-03 2025'), not a single date. Present it as the Expected Delivery Info Tag pill (see info-tag deviation)."
+        },
+        {
+          "element": "Expected Delivery info tag",
+          "kind": "missing",
+          "spec": "Pill tag: padding 4px 8px, border-radius 99px, background #B8E6FE (Tag-Info-Fill), text color #024A70 (Tag-Info-Text) Poppins 12px/600/100%, with a 12x12 icon filled #024A70",
+          "actual": "Rendered as plain right-aligned text in a _DetailRow; no pill, no background, no icon",
+          "fix": "Wrap the expected-delivery value in a rounded (99px) pill with #B8E6FE background, #024A70 12px/600 text, and a 12px leading info icon."
+        },
+        {
+          "element": "Tracking ID line",
+          "kind": "copy",
+          "spec": "'Tracking ID: FDX12358947'",
+          "actual": "_DetailRow label 'Tracking Number' with value order.trackingNumber, shown only if non-null",
+          "fix": "Change label copy from 'Tracking Number' to 'Tracking ID:' and render inline as 'Tracking ID: {value}'."
+        },
+        {
+          "element": "Tracking ID typography/color",
+          "kind": "color",
+          "spec": "Order Tracking ID text color #00BCFF (Text-Info-Default), Poppins 14px/400/150% (21px)",
+          "actual": "valueColor DesignTokens.primaryGreen (#2ECC71), mediumSemibold weight",
+          "fix": "Set tracking-ID value color to #00BCFF and weight 400 (not green, not semibold)."
+        },
+        {
+          "element": "Order Details card",
+          "kind": "spacing",
+          "spec": "Container border-radius 16px, border 1px solid #3F3F46, background #18181B, padding 16px 12px",
+          "actual": "_DetailCard uses EdgeInsets.all(s16) (16px all sides) via DesignTokens.cardDecoration()",
+          "fix": "Set card padding to 16px vertical / 12px horizontal and verify radius 16px + 1px #3F3F46 border + #18181B background."
+        },
+        {
+          "element": "Order Box Illustration",
+          "kind": "missing",
+          "spec": "48x48 order-box illustration shown inside the Order Details card (leading the Order No.)",
+          "actual": "No illustration rendered",
+          "fix": "Add a 48x48 order-box illustration/icon as the leading element of the order-details card."
+        },
+        {
+          "element": "Dot separator",
+          "kind": "missing",
+          "spec": "3x3 dot separator color #71717B (Fill-Dot-Separator) used between the date and amount on the placed-on line",
+          "actual": "Not present",
+          "fix": "Add a 3x3 round dot separator (#71717B) between the placed-on datetime and the amount."
+        },
+        {
+          "element": "Tracking Timeline section",
+          "kind": "missing",
+          "spec": "Section titled 'Tracking Timeline' with 4 horizontal stages — 'Shipped', 'In Transit', 'Out for Delivery', 'Delivered' — each with a 40x40 indicator (Completed: bg #092A17, icon #2ECC71; Ongoing: bg #052F4A, icon #00A6F4 with animated ripple #024A70/#00BCFF; Remaining: bg #27272A, icon #9F9FA9), a 273x1 divider #3F3F46 between stages, and status text Poppins 11px/400/120% #FFF",
+          "actual": "Entirely absent — code shows price breakdown instead",
+          "fix": "Build the Tracking Timeline widget with the four named stages, the three indicator states, connecting 1px #3F3F46 dividers, and 11px white status labels. This is the spec's primary content section."
+        },
+        {
+          "element": "Tracking stage labels",
+          "kind": "copy",
+          "spec": "'Shipped', 'In Transit', 'Out for Delivery', 'Delivered'",
+          "actual": "Not present",
+          "fix": "Use exactly these four stage labels in this order."
+        },
+        {
+          "element": "View Other Details action",
+          "kind": "missing",
+          "spec": "Action row 'View Other Details' — title color #2ECC71 (Text-Primary) Poppins 12px/600/130%, with a 12x12 chevron/icon filled #2ECC71; tappable area padding 16px 0 12px 0",
+          "actual": "Not present",
+          "fix": "Add a 'View Other Details' tappable action (green 12px/600 label + 12px green chevron) that expands/navigates to the extended details."
+        },
+        {
+          "element": "Chevron icon on card",
+          "kind": "icon",
+          "spec": "16x16 chevron icon fill #9F9FA9 (Icon-Light) within the order-details card tappable area (padding 16px 0 12px 0)",
+          "actual": "Not present",
+          "fix": "Add the 16x16 #9F9FA9 chevron to the order-details card to indicate it is tappable/expandable."
+        },
+        {
+          "element": "Price breakdown card (Subtotal/Shipping/Tax/Total)",
+          "kind": "extra",
+          "spec": "Not present in this spec",
+          "actual": "_DetailCard with Subtotal, Shipping, Tax, Total rows",
+          "fix": "This section is not part of the Track Order spec — remove it from this screen (or move it behind 'View Other Details' if product intends it there). Confirm with design before deleting."
+        },
+        {
+          "element": "Shipping Address / Payment Method card",
+          "kind": "extra",
+          "spec": "Not present in this spec",
+          "actual": "_DetailCard with 'Shipping Address' and 'Payment Method' rows",
+          "fix": "Not in the Track Order spec — remove or relocate behind 'View Other Details'; confirm with design."
+        },
+        {
+          "element": "Items section",
+          "kind": "extra",
+          "spec": "Not present in this spec",
+          "actual": "'Items (N)' header + _OrderItemTile list",
+          "fix": "Not in the Track Order spec — remove or relocate; confirm with design."
+        },
+        {
+          "element": "Cancel Order button",
+          "kind": "extra",
+          "spec": "Not present in this spec; the only action is 'View Other Details'",
+          "actual": "_ActionButton label 'Cancel Order' (red, cancel icon)",
+          "fix": "Remove from this screen — cancel belongs to the dedicated cancel flow, not the Track Order spec."
+        },
+        {
+          "element": "Request Return button",
+          "kind": "extra",
+          "spec": "Not present in this spec",
+          "actual": "_ActionButton label 'Request Return' (warning, return icon) + return-reason dialog",
+          "fix": "Remove from this screen — not part of the Track Order spec."
+        },
+        {
+          "element": "App body horizontal spacing",
+          "kind": "spacing",
+          "spec": "App Body Left & Right Spacing: 16px",
+          "actual": "EdgeInsets.all(s16) — matches horizontally",
+          "fix": "Matches; retain 16px left/right padding."
+        }
+      ],
+      "_pair": {
+        "name": "Order Details",
+        "screen": "lib/features/customer/orders/presentation/screens/order_detail_screen.dart",
+        "pdf": "Design Specification Doc - Order Details.pdf"
+      }
+    },
+    {
+      "screen": "Track Orders — Order List",
+      "overallMatch": "minor",
+      "summary": "Copy strings on the list item all match the spec exactly (title \"Track Your Orders\", \"Order #...\", meta line \"Rs amount • time date • N items\", status tags). Colors and the row layout (top-to-bottom: icon 48x48, order number, meta line, status tag, chevron) match. The deviations are all typographic/spacing: the screen title uses 24px instead of the spec's 18px header size, the status pill uses 12px horizontal padding instead of the spec's 4px and the wrong line-height, and the package icon is rendered at the default 24px instead of the spec's 32px with 4px container padding. Note the PDF documents no empty-state or unauthenticated copy, so those code strings cannot be verified against the spec.",
+      "deviations": [
+        {
+          "element": "Screen title 'Track Your Orders'",
+          "kind": "typography",
+          "spec": "font-family Poppins, font-size 18px, font-weight 600, line-height 130% (23.4px), color #FFF (Text-White)",
+          "actual": "Uses DesignTokens.titleLarge = 24px / weight 600 / 1.3",
+          "fix": "Apply an 18px/600/1.3 white style instead of titleLarge for the header Text on line 43 (e.g. DesignTokens.titleMedium-equivalent at 18px, or a copyWith(fontSize: 18))."
+        },
+        {
+          "element": "Order Status Tag pill padding",
+          "kind": "spacing",
+          "spec": "padding: 4px 8px (var(--S4) var(--S8))",
+          "actual": "EdgeInsets.symmetric(horizontal: s12 = 12px, vertical: s4 = 4px)",
+          "fix": "In _StatusPill (order_track_tile.dart line 86-89) change horizontal padding from DesignTokens.s12 to DesignTokens.s8."
+        },
+        {
+          "element": "Order Status Tag text line-height",
+          "kind": "typography",
+          "spec": "font-size 12px, weight 600, line-height 100% (12px), color #024A70",
+          "actual": "smallRegular (12px) copyWith weight w600 — but smallRegular has height 1.3, not 1.0",
+          "fix": "In _StatusPill (line 96-99) add height: 1.0 to the text style so line-height matches the spec's 100%."
+        },
+        {
+          "element": "Package icon size",
+          "kind": "icon",
+          "spec": "Icon width/height 32px, fill #F1C40F (Icon-Secondary), inside 48x48 container with 4px padding and radius 8px",
+          "actual": "Icon(Icons.inventory_2_rounded, color secondaryYellow) with no size set → default 24px; no internal padding on the 48x48 container",
+          "fix": "In OrderTrackTile (line 39-42) set size: 32 on the Icon and wrap/pad the container by 4px (or center the 32px icon) to match the spec's 32px icon in a 48px padded box."
+        }
+      ],
+      "_pair": {
+        "name": "Track Orders",
+        "screen": "lib/features/customer/orders/presentation/screens/track_orders_screen.dart",
+        "pdf": "Design Specification Doc - Track Orders - Order List.pdf"
+      }
+    },
+    {
+      "screen": "Cancel Order - Step 2 (Cancellation Reason / Confirmation)",
+      "overallMatch": "major",
+      "summary": "The Dart screen implements the cancel flow but diverges substantially from the Step-2 spec. The spec is a single card-wrapped form containing five labeled subsections (3.1 Order Details with a status tag + \"View Order Summary\" link, 3.2 Important notice with title \"Important\" and two specific bullets, 3.3 reason radios, 3.4 Comments textarea, 3.5 Refund Info block with Method/Amount/Time rows) and a sticky \"Proceed\" button. The code instead renders a flat (non-card) layout, omits the Order Details header/status-tag/View-Order-Summary link entirely, omits the Refund Info (Method/Amount/Time) block, omits the step progress bar, renames the Important notice and its bullets, replaces the spec's \"Proceed\" button with a red \"Confirm Cancellation\" button, adds an extra acknowledgement checkbox not in the spec, and rewords nearly every static label and reason option. Many copy strings differ in wording, casing, and punctuation.",
+      "deviations": [
+        {
+          "element": "Primary button label",
+          "kind": "copy",
+          "spec": "Proceed",
+          "actual": "Confirm Cancellation",
+          "fix": "Change SmPrimaryButton label from 'Confirm Cancellation' to 'Proceed'."
+        },
+        {
+          "element": "Primary button color",
+          "kind": "color",
+          "spec": "Button-Primary-Solid-Default-Fill #2ECC71 (green), text #0610E? ",
+          "actual": "color: DesignTokens.colorError (red), labelColor textWhite",
+          "fix": "Use DesignTokens.primaryGreen for the button fill and buttonPrimaryText for the label, per spec (button is green 'Proceed', not red)."
+        },
+        {
+          "element": "Order Details section (3.1)",
+          "kind": "missing",
+          "spec": "Card section showing Order number heading 'Order #NK2024-89126' (20px/600), an order-status tag pill 'Preparing for Shipping' (Tag-Info-Fill #B8E6FE / text #024A70, radius 99px), and a 'View Order Summary' link (Text-Primary #2ECC71, 11px/400, underlined)",
+          "actual": "Not present on the form screen (no order header, no status tag, no View Order Summary link)",
+          "fix": "Add a 3.1 Order Details block at top of the card: order-number Text (20px/600 #FFF), an info-tag pill with order status, and an underlined 'View Order Summary' green link."
+        },
+        {
+          "element": "Card container",
+          "kind": "layout",
+          "spec": "All form content wrapped in a Card: border-radius 12px, background Fill-App-Body #18181B, padding 24px 16px",
+          "actual": "Content placed directly in a ListView with no card wrapper",
+          "fix": "Wrap the Order Details / Important / Reason / Comments / Refund Info content in a Container with radius 12, bg #18181B (bgAppBody), padding EdgeInsets.symmetric(vertical:24, horizontal:16)."
+        },
+        {
+          "element": "Step progress bar",
+          "kind": "missing",
+          "spec": "'Steps Progress / 2 Cancel Order Steps' segmented bar: height 4px, radius 99px, background Fill-App-Body-Light #27272A",
+          "actual": "No step progress indicator rendered",
+          "fix": "Add a 2-segment progress bar (4px tall, radius 99, track #27272A) below the app bar indicating step 2."
+        },
+        {
+          "element": "Refund Info section (3.5)",
+          "kind": "missing",
+          "spec": "Container radius 16px, bg Fill-App-Body-Light #27272A, padding 16px, Title 'Refund Info' (14px/600 #FFF), rows Method=Visa ***4532, Amount=Rs 41,000, Time=5-7 business days",
+          "actual": "No Refund Info / Method / Amount / Time block on the form (only appears as a different 'Refund Details' block on the separate success view)",
+          "fix": "Add a 3.5 Refund Info card to the Step-2 form with title 'Refund Info' and three labeled rows: Method (payment method), Amount, Time '5-7 business days'."
+        },
+        {
+          "element": "Important notice title (3.2)",
+          "kind": "copy",
+          "spec": "Important",
+          "actual": "Cancellation is final",
+          "fix": "Set the notice title text to 'Important' (the code currently uses one of the bullet strings as the title)."
+        },
+        {
+          "element": "Important notice content (3.2)",
+          "kind": "copy",
+          "spec": "Two bullet points: 'Full refund to original payment' and 'Cancellation is final'",
+          "actual": "Single paragraph: 'You cannot undo the cancellation after this. A full refund will be issued to your original payment method.'",
+          "fix": "Replace the paragraph with two bullet items reading exactly 'Full refund to original payment' and 'Cancellation is final'."
+        },
+        {
+          "element": "Important notice background",
+          "kind": "color",
+          "spec": "Fill-Secondary-Dark #3A2F03 (amber/dark-gold)",
+          "actual": "DesignTokens.infoFillDark",
+          "fix": "Verify infoFillDark equals #3A2F03; if not, use a token mapped to #3A2F03 per spec."
+        },
+        {
+          "element": "Important notice icon color",
+          "kind": "color",
+          "spec": "Icon-Secondary #F1C40F (yellow/warning)",
+          "actual": "DesignTokens.infoIconLight",
+          "fix": "Use the warning/secondary icon color #F1C40F instead of infoIconLight."
+        },
+        {
+          "element": "Important notice text color",
+          "kind": "color",
+          "spec": "Text-Secondary-Light #FDF6D8",
+          "actual": "DesignTokens.infoTextLight",
+          "fix": "Verify infoTextLight equals #FDF6D8; map to #FDF6D8 per spec for title and bullets."
+        },
+        {
+          "element": "Comments label (3.4)",
+          "kind": "copy",
+          "spec": "Comments (Optional)",
+          "actual": "Conditional: 'Tell us more (required)' or 'Additional comment (optional)'",
+          "fix": "Use the spec label 'Comments (Optional)' (Step-2 spec shows a single static label, not the conditional required/optional variants)."
+        },
+        {
+          "element": "Reason option 2",
+          "kind": "copy",
+          "spec": "Found better price",
+          "actual": "Found a better price",
+          "fix": "Change label to 'Found better price' (remove 'a')."
+        },
+        {
+          "element": "Reason option 4",
+          "kind": "copy",
+          "spec": "Delivery too long",
+          "actual": "Delivery taking too long",
+          "fix": "Change label to 'Delivery too long'."
+        },
+        {
+          "element": "Reason option 5",
+          "kind": "copy",
+          "spec": "Need different size / color",
+          "actual": "Need a different size or colour",
+          "fix": "Change label to 'Need different size / color' (remove 'a', use '/', American spelling 'color')."
+        },
+        {
+          "element": "Reason heading",
+          "kind": "copy",
+          "spec": "Why are you cancelling?",
+          "actual": "Why are you cancelling?",
+          "fix": "Matches — no change (verify trailing punctuation)."
+        },
+        {
+          "element": "Instruction text",
+          "kind": "copy",
+          "spec": "We need you to fill the details below to cancel your order",
+          "actual": "We need you to fill the details below to cancel your order.",
+          "fix": "Spec shows no trailing period; remove the '.' to match exactly."
+        },
+        {
+          "element": "Acknowledgement checkbox",
+          "kind": "extra",
+          "spec": "No acknowledgement checkbox in Step 2 spec (refund window appears as the Refund Info 'Time' row, not a required checkbox)",
+          "actual": "CheckboxListTile 'I understand my refund will be issued in 5–7 business days.' gating submission",
+          "fix": "Remove the checkbox from the Step-2 UI (or move acknowledgement to a later confirmation step); surface '5-7 business days' via the Refund Info Time row instead."
+        },
+        {
+          "element": "Comment textarea placeholder",
+          "kind": "copy",
+          "spec": "Placeholder text present (Input-Field-Text-Placeholder #F9F9FA?), spec label area",
+          "actual": "hintText 'Tell us more…'",
+          "fix": "Confirm placeholder copy against spec; spec textarea uses a placeholder — align wording if spec specifies one (Step-2 doc references placeholder color but verify exact string)."
+        },
+        {
+          "element": "Textarea padding",
+          "kind": "spacing",
+          "spec": "padding 14px 16px, border-radius 8px, border #52525C",
+          "actual": "contentPadding EdgeInsets.all(12), radius inputRadius, border inputFieldBorder",
+          "fix": "Set contentPadding to vertical 14 / horizontal 16, radius 8, border color #52525C per spec."
+        },
+        {
+          "element": "Order number heading size",
+          "kind": "typography",
+          "spec": "Order number 20px / weight 600 / line-height 130%",
+          "actual": "Only shown on success view ('Order #...') with bodyText style; absent on form",
+          "fix": "When adding 3.1, style the order number at 20px/600."
+        }
+      ],
+      "_pair": {
+        "name": "Cancel Order",
+        "screen": "lib/features/customer/orders/presentation/screens/cancel_order_screen.dart",
+        "pdf": "Design Specification Doc - Cancel Order - Step 2.pdf"
+      }
+    },
+    {
+      "screen": "Payment Methods (Customer)",
+      "overallMatch": "major",
+      "summary": "The implementation is a generic single ListView of payment-method cards with a FAB. The spec defines a structured screen: a title with a dynamic count \"Payment Methods (4)\", a \"Secure & Encrypted\" info banner with shield icon and copy, a \"Cards\" section (header + \"Add Card\" inline action), card rows with status tags (Default/Expiring), and an entire \"Digital Wallets\" section (PayPal / Google Pay / Apple Pay) with link/linked states and \"Link\" buttons. The banner, the Digital Wallets section, the section headers, the inline \"Add Card\" action, the count in the title, and the status tags are all completely missing. Numerous copy, typography, color, and spacing values also differ.",
+      "deviations": [
+        {
+          "element": "Screen title",
+          "kind": "copy",
+          "spec": "Payment Methods (4)  — title includes a live count of total methods in parentheses",
+          "actual": "'Payment Methods' (no count)",
+          "fix": "Append the count: Text('Payment Methods (${methods.length})')"
+        },
+        {
+          "element": "Screen title typography",
+          "kind": "typography",
+          "spec": "Poppins, 18px, weight 600, line-height 130% (23.4px), color #FFF (Text-White), ellipsis/no-wrap",
+          "actual": "Default AppBar title style (inherits theme, not spec'd here)",
+          "fix": "Apply Poppins 18px/600, color #FFFFFF, maxLines 1 + TextOverflow.ellipsis to the title text"
+        },
+        {
+          "element": "Secure & Encrypted info banner",
+          "kind": "missing",
+          "spec": "A container at top: border-radius 16px, border 1px #3F3F46, background #18181B (Fill-App-Body), padding 12px 16px, gap 12px. Contains a Secure Icon (border-radius 8px, background #3A2F03 Fill-Secondary-Dark, padding 4px, shield icon 32x32 fill #F1C40F Icon-Secondary), a Title 'Secure & Encrypted' (#FFF, 14px, 600, 130%), and a Description 'Don’t worry about your payment details, they are protected with high level encryption' (#D4D4D8 Text-Light, 12px, 400, 130%)",
+          "actual": "Not present at all",
+          "fix": "Add the secure banner widget above the list with the shield icon, title, and exact description copy"
+        },
+        {
+          "element": "'Cards' section header",
+          "kind": "missing",
+          "spec": "Section title 'Cards' — color #D4D4D8 (Text-Light), Poppins 14px, weight 400, line-height 150% (21px)",
+          "actual": "No section headers; cards rendered in a flat list",
+          "fix": "Add a 'Cards' section header above the card rows with the specified style"
+        },
+        {
+          "element": "'Add Card' inline action",
+          "kind": "copy",
+          "spec": "Inline action in the Cards section header row labeled 'Add Card' — text color #2ECC71 (Text-Primary), Poppins 12px, weight 600, 130%, with a 12x12 #2ECC71 icon",
+          "actual": "Implemented as a FloatingActionButton.extended labeled 'Add Card' with an add icon, green background, white label",
+          "fix": "Replace the FAB with an inline 'Add Card' text+icon action in the Cards section header per spec (green text, 12px/600, 12px icon)"
+        },
+        {
+          "element": "Card status tag (Default)",
+          "kind": "typography",
+          "spec": "Tag: padding 4px 8px, border-radius 99px, background #B8E6FE (Tag-Info-Fill), text color #024A70 (Tag-Info-Text), Poppins 12px, weight 600, line-height 100%",
+          "actual": "'Default' pill uses primaryGreen at 20% alpha background with green text via DesignTokens.tiny",
+          "fix": "Restyle the Default tag to background #B8E6FE, text #024A70, 12px/600, radius 99px, padding 4px 8px"
+        },
+        {
+          "element": "Card status tag (Expiring)",
+          "kind": "missing",
+          "spec": "An 'Expiring' state tag: background #FFF085 (Warning-200), text color #733E0A (Warning-900), plus a 12x12 warning icon fill #733E0A, same 12px/600/100% tag styling",
+          "actual": "No expiring/expired state tag exists",
+          "fix": "Add an 'Expiring' tag variant driven by card expiry proximity, styled with Warning-200/Warning-900 and warning icon"
+        },
+        {
+          "element": "Card subtitle / info line",
+          "kind": "copy",
+          "spec": "Card info shown as 'Shree Teen Expires 12/27' and a secondary line 'Visa ending in 4532' (cardholder name + Expires MM/YY, with brand + 'ending in' last4), separated by a 3x3 dot separator #71717B",
+          "actual": "Shows '•••• {lastFour}' on one line and 'Expires {expiryDate}' on another; no cardholder name, no 'ending in' wording, no dot separator",
+          "fix": "Render cardholder name + 'Expires MM/YY', and a line like 'Visa ending in 4532'; use a 3px dot separator #71717B between segments per spec"
+        },
+        {
+          "element": "Card brand logo",
+          "kind": "icon",
+          "spec": "Card Logo container 56x40, border-radius 8px, background #FFF (Fill-White), padding 4px, with brand logo image 32x32 (Visa/Mastercard artwork)",
+          "actual": "Uses a generic Material icon (Icons.credit_card_rounded) in primaryGreen, size 28",
+          "fix": "Replace the generic icon with a 56x40 white rounded logo container showing the actual card-brand logo asset at 32x32"
+        },
+        {
+          "element": "Digital Wallets section",
+          "kind": "missing",
+          "spec": "Entire section with header 'Digital Wallets' (#D4D4D8, 14px/400/150%) and wallet rows: PayPal, Google Pay, Apple Pay",
+          "actual": "Completely absent; the screen only renders card-type methods",
+          "fix": "Add a 'Digital Wallets' section listing PayPal / Google Pay / Apple Pay rows"
+        },
+        {
+          "element": "Wallet row layout",
+          "kind": "missing",
+          "spec": "Each wallet row: padding 12px 16px; Wallet Logo container 56x40 (radius 8px, bg #FFF, padding 4px, logo 32x32); Wallet Company Name (#FFF, 14px/600/130%); Wallet Information/User ID (#D4D4D8, 11px/400/120%, centered); Wallet Linked Status (#2ECC71, 10px/600/100%) with 12x12 check icon fill #2ECC71",
+          "actual": "Not present",
+          "fix": "Build a wallet row widget matching this structure and typography"
+        },
+        {
+          "element": "Wallet unlinked copy + Link button",
+          "kind": "missing",
+          "spec": "PayPal unlinked shows description 'Link your paypal wallet' (#9F9FA9 Text-Muted, 11px/400/120%) and a 'Link' button (padding 8px 16px, gap 8px, border-radius 999px, background #FFF, button text Poppins 12px/600/16px, color #52525C)",
+          "actual": "Not present",
+          "fix": "Add unlinked-state copy 'Link your paypal wallet' and a white pill 'Link' button per spec"
+        },
+        {
+          "element": "Wallet linked copy",
+          "kind": "missing",
+          "spec": "Google Pay linked shows 'Linked shreeteen@nimb'; Apple Pay linked shows 'Linked Visa ending in 3499' (linked status style)",
+          "actual": "Not present",
+          "fix": "Render linked-state text 'Linked <identifier>' for wallets that are linked"
+        },
+        {
+          "element": "Cards container styling",
+          "kind": "spacing",
+          "spec": "Cards Container: border-radius 16px (Card-Radius), background #18181B (Fill-App-Body), padding 16px 0 4px 0",
+          "actual": "Individual cards use DesignTokens.cardDecoration with margin bottom 12 and padding all 16; no enclosing section container with 16/0/4/0 padding",
+          "fix": "Wrap card rows in a section container with the spec'd 16/0/4/0 padding and 16px radius"
+        },
+        {
+          "element": "Card row padding",
+          "kind": "spacing",
+          "spec": "Card's List Item Container padding: 12px 16px",
+          "actual": "padding: EdgeInsets.all(s16) (16px all sides)",
+          "fix": "Change card row padding to 12px vertical / 16px horizontal"
+        },
+        {
+          "element": "More actions button",
+          "kind": "icon",
+          "spec": "More Actions Icon Button: 32x32 container, padding 4px, icon 20x20 fill #9F9FA9 (Button-Gray-Ghost-Icon) — a ghost overflow/more icon",
+          "actual": "PopupMenuButton with default Material more_vert icon and theme color",
+          "fix": "Style the overflow trigger as a 32x32 / padding 4 / 20x20 icon at #9F9FA9"
+        },
+        {
+          "element": "Empty-state copy",
+          "kind": "copy",
+          "spec": "No empty-state string defined in spec (screen always shows secure banner + sections); spec shows populated sections",
+          "actual": "'No payment methods yet' centered text",
+          "fix": "Verify against design; if an empty state is needed, confirm exact copy. Spec does not document 'No payment methods yet' — likely should still show the Secure banner + section headers with empty section bodies"
+        },
+        {
+          "element": "Remove dialog copy",
+          "kind": "copy",
+          "spec": "Not documented in this PDF (action is via the more-actions menu)",
+          "actual": "Dialog title 'Remove Payment Method', body 'Are you sure you want to remove this payment method?', actions 'Cancel' / 'Remove'",
+          "fix": "No spec value to match; leave as-is unless a separate spec defines this confirmation"
+        },
+        {
+          "element": "Font family (global)",
+          "kind": "typography",
+          "spec": "Poppins across all text elements",
+          "actual": "No font family set on the screen's text styles (relies on DesignTokens / theme default)",
+          "fix": "Ensure DesignTokens text styles resolve to Poppins for all elements on this screen"
+        }
+      ],
+      "_pair": {
+        "name": "Payment Methods",
+        "screen": "lib/features/customer/payment/presentation/screens/payment_methods_screen.dart",
+        "pdf": "Design Specification Doc - Payment Methods.pdf"
+      }
+    },
+    {
+      "screen": "Payment Method - Add Card",
+      "overallMatch": "major",
+      "summary": "The implemented Add Card screen diverges substantially from the spec. The spec defines a screen titled \"Add Card Details\" with a Secure & Encrypted banner at top, a vertical stack of input fields (Card Number, Expiry Date, CVV, Cardholder Name), a Billing Address checkbox section, a Set as Default Payment checkbox section, a Secure & Encrypted reassurance block, and a sticky bottom \"Add Card\" button. The code instead shows screen title \"Add Card\", a decorative gradient card-preview widget (NOT in spec), no security banner, no billing-address checkbox, no set-as-default checkbox, no security reassurance block, an inline scrolling button labeled \"Save Card\" (spec says \"Add Card\", and it must be a sticky footer button). Several copy strings and field labels differ.",
+      "deviations": [
+        {
+          "element": "Screen title / AppBar",
+          "kind": "copy",
+          "spec": "Add Card Details",
+          "actual": "Add Card",
+          "fix": "Change AppBar title Text from 'Add Card' to 'Add Card Details'."
+        },
+        {
+          "element": "Secure & Encrypted top banner",
+          "kind": "missing",
+          "spec": "Container at top: border-radius 24px 24px 0 0, background #27272A (Fill-App-Body-Light), padding 12px 16px, with 36x36 Shield Icon, Title 'Secure & Encrypted Information' (Poppins 14px/600, #FFF, line-height 130%) and a Description line (Poppins 12px/400, #FFF, line-height 130%)",
+          "actual": "No security banner exists at the top of the screen",
+          "fix": "Add a top banner Container (radius 24/24/0/0, bg #27272A, padding 12/16) with a 36x36 shield icon, title 'Secure & Encrypted Information' and the descriptive subtitle."
+        },
+        {
+          "element": "Expiry field label",
+          "kind": "copy",
+          "spec": "Expiry Date",
+          "actual": "Expiry (MM/YY)",
+          "fix": "Change input labelText from 'Expiry (MM/YY)' to 'Expiry Date'."
+        },
+        {
+          "element": "Card preview widget",
+          "kind": "extra",
+          "spec": "Spec shows no decorative gradient card preview; layout goes banner -> input fields directly",
+          "actual": "_CardPreview gradient card (200px tall, green gradient, masked number, CARD HOLDER / EXPIRES) rendered above inputs",
+          "fix": "Remove the _CardPreview widget; it is not in the spec."
+        },
+        {
+          "element": "Billing Address section",
+          "kind": "missing",
+          "spec": "Section #6 'Billing Address' with subtitle \"Set your card's billing address same as your shipping address\" and a 20x20 checkbox (Checkbox-Default-Icon #9F9FA9; checked title #FFF 14px/600; checked description #D4D4D8 14px/400)",
+          "actual": "No billing address section/checkbox present",
+          "fix": "Add a Billing Address checkbox row: title 'Billing Address', description \"Set your card's billing address same as your shipping address\", 20x20 checkbox."
+        },
+        {
+          "element": "Set as Default Payment section",
+          "kind": "missing",
+          "spec": "Section #7 'Set as Default Payment' with subtitle 'Set this card as your default payment option' and a 20x20 checkbox",
+          "actual": "No set-as-default toggle present",
+          "fix": "Add a 'Set as Default Payment' checkbox row with description 'Set this card as your default payment option'."
+        },
+        {
+          "element": "Secure & Encrypted reassurance block",
+          "kind": "missing",
+          "spec": "Section #8 'Secure & Encrypted' with body \"Don't worry about your card details, they are protected with high level encryption\"",
+          "actual": "Absent",
+          "fix": "Add a 'Secure & Encrypted' block with the reassurance copy below the checkboxes."
+        },
+        {
+          "element": "Primary submit button label",
+          "kind": "copy",
+          "spec": "Add Card",
+          "actual": "Save Card",
+          "fix": "Change button Text from 'Save Card' to 'Add Card'."
+        },
+        {
+          "element": "Primary button placement",
+          "kind": "layout",
+          "spec": "Sticky bottom button: Wrapper padding 24px 16px 0 16px, background #09090B (Fill-App-Foundation), border-top 1px #3F3F46; Button Container padding 16px 32px, border-radius 999px, background #2ECC71",
+          "actual": "ElevatedButton sits inline at the end of a scrolling ListView (not sticky), no top-border wrapper",
+          "fix": "Move the button into a sticky bottomNavigationBar/footer wrapper (bg #09090B, top border #3F3F46, wrapper padding 24/16/0/16, button padding 16/32, radius 999)."
+        },
+        {
+          "element": "Button text color",
+          "kind": "color",
+          "spec": "#06190E (Button-Primary-Text), Poppins 16px/600 line-height 16px",
+          "actual": "DesignTokens.buttonPrimaryText (verify equals #06190E)",
+          "fix": "Confirm buttonPrimaryText token = #06190E and font is Poppins 16/600 line-height 16px."
+        },
+        {
+          "element": "Input field styling",
+          "kind": "spacing",
+          "spec": "Input Field: padding 14px 16px, border-radius 8px, 1px border #52525C (Input-Field-Border-Default), background #27272A; placeholder/label #9F9FA9 Poppins 14px/400 line-height 150%",
+          "actual": "Uses DesignTokens.inputDecoration — values not verified against spec",
+          "fix": "Confirm inputDecoration matches padding 14/16, radius 8, border #52525C, fill #27272A, label #9F9FA9 14/400/150%."
+        },
+        {
+          "element": "Inter-field vertical spacing",
+          "kind": "spacing",
+          "spec": "20px gap between each input field/section (spacing guide shows 20)",
+          "actual": "SizedBox height s16 between fields",
+          "fix": "Change inter-field SizedBox spacing from s16 (16px) to 20px per spacing guide."
+        },
+        {
+          "element": "Expiry date trailing icon",
+          "kind": "icon",
+          "spec": "Date Calendar Icon 16x16, fill #71717B (input-field-icon-head-trail) on the Expiry Date field",
+          "actual": "No calendar icon on the expiry field",
+          "fix": "Add a 16x16 calendar trailing icon (fill #71717B) to the Expiry Date field decoration."
+        },
+        {
+          "element": "CVV field label/order",
+          "kind": "layout",
+          "spec": "Fields are a vertical stack in order: Card Number, Expiry Date, CVV, Cardholder Name",
+          "actual": "Expiry and CVV are placed side-by-side in a Row, not a vertical stack",
+          "fix": "Lay Card Number, Expiry Date, CVV, Cardholder Name as a single-column vertical stack to match the spec order/layout."
+        }
+      ],
+      "_pair": {
+        "name": "Add Card",
+        "screen": "lib/features/customer/payment/presentation/screens/add_card_screen.dart",
+        "pdf": "Design Specification Doc - Payment Method- Add Card.pdf"
+      }
+    },
+    {
+      "screen": "Saved Items (Customer)",
+      "overallMatch": "major",
+      "summary": "The implementation diverges fundamentally from the spec in layout and content. The spec defines a single-column vertical LIST of rich product rows (64px thumbnail + product name + variant info + price/old-price + a colored stock tag + perks/benefits + price-drop/notify link actions + a per-row \"Add to Cart\" button), followed by a \"Pro Tip\" card and a sticky bottom bar with \"Add All to Cart\" and \"Clear All Saved Items\" buttons. The code instead renders a 2-column GRID of minimal cards (image + name + green price + optional star rating) with a heart-remove icon, no stock tags, no variant line, no old price, no perks, no per-row Add to Cart, no Pro Tip card, no sticky bottom action bar, and no Filter/Sort By/stock filter chips. Most spec sections are entirely missing. The screen title matches; nearly everything else needs to be rebuilt to spec.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "\"Saved Items\" (Poppins 18px, weight 600, line-height 130%, color #FFF, centered)",
+          "actual": "'Saved Items' centerTitle true, DesignTokens.mediumSemibold",
+          "fix": "Title text matches; verify style maps to Poppins 18px/600/130% #FFF."
+        },
+        {
+          "element": "Filter / Sort By / stock filter chips row",
+          "kind": "missing",
+          "spec": "Section 2: a row with \"Filter\", \"Sort By\" and stock filter chips labeled \"In Stock\", \"Low Stock\", \"Out of Stock\" (Input Filter Chips: border-radius 32px, 1px border #52525C, padding 6px 12px, text #D4D4D8 Poppins 12px/400/130%, icon 16x16 #9F9FA9)",
+          "actual": "No filter bar, no Sort By, no filter chips rendered at all",
+          "fix": "Add the filter/sort chip row beneath the header with chips \"Filter\", \"Sort By\", \"In Stock\", \"Low Stock\", \"Out of Stock\" using the chip styling above."
+        },
+        {
+          "element": "Item layout",
+          "kind": "layout",
+          "spec": "Single-column vertical list of rich product rows, each padding 12px 16px",
+          "actual": "GridView 2-column (crossAxisCount: 2, childAspectRatio 0.62, 12px gaps)",
+          "fix": "Replace GridView with a ListView of full-width row cards matching the spec row layout (thumbnail left, content right, Add to Cart bottom)."
+        },
+        {
+          "element": "Product thumbnail",
+          "kind": "spacing",
+          "spec": "64x64px, border-radius 12px",
+          "actual": "AspectRatio 1 full-card-width image, no fixed 64px size",
+          "fix": "Render a 64x64px thumbnail with 12px border radius at the left of each row."
+        },
+        {
+          "element": "Product name typography",
+          "kind": "typography",
+          "spec": "color #D4D4D8 (Text-Light), Poppins 12px, weight 400, line-height 130% (15.6px)",
+          "actual": "DesignTokens.smallRegular with color textWhite (#FFF) and fontWeight w500",
+          "fix": "Set product name color to #D4D4D8, font-weight 400, size 12px/130%."
+        },
+        {
+          "element": "Product info / variant line",
+          "kind": "missing",
+          "spec": "\"Product Info (Color, Size, Weight, etc)\" line e.g. \"1 Pound\", \"Coffee Brown Color 42 Size\", \"500ml\" — color #9F9FA9 (Text-Muted), Poppins 11px/400/120% (13.2px), centered, with 3x3px dot separators fill #71717B",
+          "actual": "No variant/info line rendered",
+          "fix": "Add a variant line under the product name showing color/size/weight with 3px dot separators in #9F9FA9 11px."
+        },
+        {
+          "element": "Price typography",
+          "kind": "typography",
+          "spec": "color #FFF (Text-White), Poppins 12px, weight 600, line-height 130%, text-align right; format may include unit e.g. \"Rs 5,000/Pound\"",
+          "actual": "formatMoney(item.price) colored primaryGreen (#2ECC71), weight 600",
+          "fix": "Change price color to #FFF and right-align; support per-unit suffix where applicable."
+        },
+        {
+          "element": "Old / strikethrough price",
+          "kind": "missing",
+          "spec": "Old Price: color #FF6467 (Text-Error), Poppins 11px/400/120%, text-decoration line-through, e.g. \"Rs 6,250/Pound\", \"Rs 3,000\"",
+          "actual": "No old price shown",
+          "fix": "Add a strikethrough old-price element in #FF6467 11px next to the current price when a discount exists."
+        },
+        {
+          "element": "Stock information tag",
+          "kind": "missing",
+          "spec": "Pill tag (padding 4px 8px, radius 99px, icon 12x12) with 3 states: In Stock (bg #CDF4DD, text/icon #092A17), \"Only 3 Left !\" (bg #FFF085, text/icon #733E0A), Out of Stock (bg #FFC9C9, text/icon #82181A); text Poppins 12px/600/100% centered",
+          "actual": "No stock tag rendered",
+          "fix": "Add the colored stock pill per item using the three state styles; note exact copy \"Only 3 Left !\" (with trailing space + exclamation) and \"In Stock\" / \"Out of Stock\"."
+        },
+        {
+          "element": "Perks & Benefits",
+          "kind": "missing",
+          "spec": "Line e.g. \"Free Shipping\" — color #FFF, Poppins 11px/400/120%, with 16x16 icons",
+          "actual": "Not rendered",
+          "fix": "Add a perks/benefits line (e.g. \"Free Shipping\") with 16x16 icon in #FFF 11px."
+        },
+        {
+          "element": "Price-drop / link actions",
+          "kind": "missing",
+          "spec": "Link actions e.g. \"Price Dropped Rs 500\" (with price-drop icon #F1C40F / #00A6F4 16x16) and \"Notify Me when available\" — Link Actions color #2ECC71 (Text-Primary), Poppins 11px/400/120%, underline",
+          "actual": "Not rendered",
+          "fix": "Add link actions \"Price Dropped Rs {amount}\" and \"Notify Me when available\" in #2ECC71 11px underlined, with the price-drop icon."
+        },
+        {
+          "element": "Per-item Add to Cart button",
+          "kind": "missing",
+          "spec": "Each in-stock/low-stock row has an \"Add to Cart\" button; out-of-stock rows show \"Notify Me when available\" instead",
+          "actual": "No per-item Add to Cart or Notify button",
+          "fix": "Add a per-row \"Add to Cart\" button (and \"Notify Me when available\" for out-of-stock items)."
+        },
+        {
+          "element": "Remove / delete action",
+          "kind": "icon",
+          "spec": "Delete Action Icon Button: 32x32 container, padding 4px, 20x20 icon, fill #9F9FA9 (Button-Gray-Ghost-Icon) — a gray ghost trash/delete icon",
+          "actual": "Heart icon (Icons.favorite) 18px in red #colorError on a 32x32 circle overlaid on the image",
+          "fix": "Replace the red heart with a 20x20 gray (#9F9FA9) delete/trash ghost icon in a 32x32 / 4px-padding button positioned per spec."
+        },
+        {
+          "element": "Pro Tip card",
+          "kind": "missing",
+          "spec": "Section 6: card radius 24px 24px 0 0, bg #27272A (Fill-App-Body-Light), padding 12px 16px, 36x36 bulb icon, title \"Pro Tip\" (#FFF Poppins 14px/600/130%), description \"Enable price drop alerts in notification settings to get the best deals on your saved items!\" (#FFF Poppins 12px/400/130%), 16x16 chevron icon fill #9F9FA9",
+          "actual": "Not rendered",
+          "fix": "Add the Pro Tip card with exact title \"Pro Tip\" and description \"Enable price drop alerts in notification settings to get the best deals on your saved items!\""
+        },
+        {
+          "element": "Sticky bottom action bar",
+          "kind": "missing",
+          "spec": "Section 7: sticky wrapper padding 24px 16px 0 16px, bg #09090B, top border 1px #3F3F46; primary button \"Add All to Cart\" (bg #2ECC71, text #06190E, Poppins 16px/600, radius 999px, padding 16px 32px) and gray button \"Clear All Saved Items\" (bg #3F3F46, text #FFF)",
+          "actual": "No bottom action bar; no Add All to Cart / Clear All Saved Items buttons",
+          "fix": "Add a sticky bottom bar with \"Add All to Cart\" (primary green) and \"Clear All Saved Items\" (gray) buttons using the exact labels and styles."
+        },
+        {
+          "element": "Empty state copy",
+          "kind": "copy",
+          "spec": "PDF does not document an empty-state string for this screen",
+          "actual": "\"You haven't saved any items yet. Tap the heart on products you love.\"",
+          "fix": "No spec value to match; flagged for confirmation. If kept, note the spec uses a gray delete icon (not a heart), so \"Tap the heart\" copy may be inconsistent with the row's delete affordance."
+        },
+        {
+          "element": "Error state copy",
+          "kind": "copy",
+          "spec": "Not documented in PDF",
+          "actual": "\"Failed to load saved items.\"",
+          "fix": "No spec value; leave as-is or confirm with design."
+        },
+        {
+          "element": "Star rating row",
+          "kind": "extra",
+          "spec": "Spec does not show a star rating on saved item rows",
+          "actual": "Optional star + rating value shown when item.rating > 0",
+          "fix": "Remove the star rating element to match spec (spec rows show stock tag/perks/price-drop instead, not a rating)."
+        }
+      ],
+      "_pair": {
+        "name": "Saved Items",
+        "screen": "lib/features/customer/saved_items/presentation/screens/saved_items_screen.dart",
+        "pdf": "Design Specification Doc - Saved Items.pdf"
+      }
+    },
+    {
+      "screen": "Shipping Addresses (Customer)",
+      "overallMatch": "major",
+      "summary": "The screen renders an address list with cards, default tag, and an add button, but it diverges materially from the spec. The screen title is wrong (\"Shipping Addresses\" vs spec \"Shipping Address (N)\" with a live count). The Pro Tip card (\"You can save upto 10 shipping addresses\") that the spec shows above the sticky button is entirely missing. The Add button label is wrong (\"Add New Address\" vs \"Add New Shipping Address\") and it is a FAB rather than the spec's sticky bottom button. The per-item leading location icon container is missing, the default tag uses the wrong colors (green tint vs spec info-blue), and the empty-state copy is not from spec. Copy and missing-section issues dominate.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "\"Shipping Address (3)\" — singular \"Address\" with a parenthesized live count of saved addresses",
+          "actual": "'Shipping Addresses' (plural, no count)",
+          "fix": "Change AppBar title to 'Shipping Address (${addresses.length})'; compute count from loadSuccess state. Use singular 'Address'."
+        },
+        {
+          "element": "Screen header title typography",
+          "kind": "typography",
+          "spec": "Poppins, 18px, weight 600, line-height 130% (23.4px), color Text-White #FFF, ellipsis overflow",
+          "actual": "Default AppBar TextTheme (not verified to be Poppins 18/600)",
+          "fix": "Apply an explicit title TextStyle: Poppins 18px w600 height 1.3 color #FFF with overflow ellipsis."
+        },
+        {
+          "element": "Pro Tip card",
+          "kind": "missing",
+          "spec": "A Pro Tip container shown above the sticky button: rounded container (border-radius 24px 24px 0 0), background Fill-App-Body-Light #27272A, padding 12px 16px; bulb icon 36x36; title 'Pro Tip' (Poppins 14px w600 #FFF line-height 130%); description 'You can save upto 10 shipping addresses' (Poppins 12px w400 #FFF line-height 130%)",
+          "actual": "No Pro Tip card anywhere in the screen",
+          "fix": "Add a Pro Tip card above the bottom Add button: container bg #27272A, top corners radius 24, padding 12/16, bulb icon 36x36, title 'Pro Tip', description text 'You can save upto 10 shipping addresses'."
+        },
+        {
+          "element": "Pro Tip description copy",
+          "kind": "copy",
+          "spec": "\"You can save upto 10 shipping addresses\" (note spelling 'upto', no period)",
+          "actual": "Absent",
+          "fix": "Use the exact string 'You can save upto 10 shipping addresses' verbatim."
+        },
+        {
+          "element": "Add address button label",
+          "kind": "copy",
+          "spec": "\"Add New Shipping Address\"",
+          "actual": "'Add New Address'",
+          "fix": "Change button label text to 'Add New Shipping Address'."
+        },
+        {
+          "element": "Add address button placement/style",
+          "kind": "layout",
+          "spec": "Sticky bottom button. Wrapper padding 24px 16px 0 16px, background Fill-App-Foundation #09090B, border-top 1px solid Border-Default #3F3F46. Button container padding 16px 32px, centered, border-radius 999px (pill), background Button-Primary-Solid-Default-Fill #2ECC71, text Poppins 16px w600 color Button-Primary-Text #06190E",
+          "actual": "FloatingActionButton.extended with add_rounded icon, label 'Add New Address', primaryGreen background",
+          "fix": "Replace the FAB with a sticky bottom bar: wrapper with top border #3F3F46 and bg #09090B, padding 24/16/0/16; pill button (radius 999) bg #2ECC71, padding 16/32, label 'Add New Shipping Address' in Poppins 16 w600 #06190E. Remove the leading add icon (spec shows text-only button)."
+        },
+        {
+          "element": "Address list item leading icon",
+          "kind": "missing",
+          "spec": "Each list item has a leading location-icon container: 48x48, border-radius 8px, background Fill-App-Body #18181B, padding 4px, centered, containing a 24x24 location icon filled Icon-White #FFF",
+          "actual": "No leading icon container; card starts directly with the label text row",
+          "fix": "Add a 48x48 rounded (radius 8) container bg #18181B with a centered 24px white location icon at the start of each address card, with the name/details column to its right."
+        },
+        {
+          "element": "Address list item name typography",
+          "kind": "typography",
+          "spec": "Name (e.g. 'Home'): Poppins 14px w600 #FFF line-height 130% (18.2px)",
+          "actual": "address.label with DesignTokens.mediumSemibold (not verified Poppins 14/600/130%)",
+          "fix": "Ensure label style is Poppins 14px w600 height 1.3 color #FFF."
+        },
+        {
+          "element": "Default tag colors",
+          "kind": "color",
+          "spec": "Default tag: background Tag-Info-Fill #B8E6FE (light blue), text Tag-Info-Text #024A70 (dark blue), padding 4px 8px, border-radius 99px, text Poppins 12px w600 line-height 100%, text-align center",
+          "actual": "background primaryGreen @20% alpha; text DesignTokens.tiny colored primaryGreen",
+          "fix": "Change the Default tag to background #B8E6FE and text color #024A70; keep padding 4/8 and radius 99; text Poppins 12 w600 centered."
+        },
+        {
+          "element": "Default tag label",
+          "kind": "copy",
+          "spec": "Tag text 'Default' (spec shows label 'Home Default' meaning name + Default tag). Tag word is 'Default'",
+          "actual": "'Default'",
+          "fix": "No copy change needed for tag; matches. (Listed for completeness — already matches.)"
+        },
+        {
+          "element": "Address details typography",
+          "kind": "typography",
+          "spec": "Address details: color Text-Light #D4D4D8, Poppins 12px w400, line-height 150% (18px)",
+          "actual": "DesignTokens.smallRegular colored DesignTokens.textMuted",
+          "fix": "Confirm details style resolves to Poppins 12px w400 height 1.5 color #D4D4D8; adjust if textMuted != #D4D4D8."
+        },
+        {
+          "element": "Address detail line format",
+          "kind": "copy",
+          "spec": "Single combined line: '{street/area}, {city}, Nepal - {Recipient Name} ({phone})' e.g. 'Bramatole-12, Kathmandu, Nepal - Shree Teen (9876655432)'",
+          "actual": "Two separate lines: name • phone on one line, then 'line1, line2, city, state, zip' on another",
+          "fix": "Render the spec single-line format combining address area + city + 'Nepal' then ' - {fullName} ({phone})', matching the spec composition rather than the two-row name/phone + address layout."
+        },
+        {
+          "element": "More-actions icon button",
+          "kind": "icon",
+          "spec": "Trailing more-actions icon button 32x32, padding 4px, icon 20x20 filled Button-Gray-Ghost-Icon #9F9FA9",
+          "actual": "PopupMenuButton<String> with default vertical-dots icon and default sizing/color",
+          "fix": "Size the more-actions button to 32x32 with 20px icon colored #9F9FA9; keep popup menu behavior."
+        },
+        {
+          "element": "Empty state copy",
+          "kind": "copy",
+          "spec": "Spec shows no empty-list state copy; the Pro Tip 'You can save upto 10 shipping addresses' is the persistent helper. No 'No addresses yet' string is specified",
+          "actual": "'No addresses yet' centered text",
+          "fix": "Replace/remove the ad-hoc 'No addresses yet' copy; show the Pro Tip card + Add button per spec even when the list is empty (or use approved empty-state copy if added to spec)."
+        },
+        {
+          "element": "Delete confirmation dialog",
+          "kind": "extra",
+          "spec": "Spec shows a more-actions menu but does not document a Delete confirmation dialog with title 'Delete Address' / body 'Are you sure you want to delete this address?'",
+          "actual": "AlertDialog 'Delete Address' / 'Are you sure you want to delete this address?' with Cancel/Delete",
+          "fix": "Verify this dialog copy against the actions/edit-delete spec doc; if not specified there, flag for design confirmation. Not in this PDF."
+        }
+      ],
+      "_pair": {
+        "name": "Shipping Addresses",
+        "screen": "lib/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart",
+        "pdf": "Design Specification Doc - Shipping Address.pdf"
+      }
+    },
+    {
+      "screen": "Shipping Address - Edit Details (add_edit_address_screen.dart)",
+      "overallMatch": "major",
+      "summary": "The screen diverges substantially from the spec. The header title, nearly every field label, the field order, and the primary button label are all wrong; the spec's Country, State/Province, and Zip/Postal \"Save Address As\" labels and the \"Nearest Landmark (Optional)\" field do not match the code's free-text City/State/Zip + chip-based label selector. The spec uses static labeled input fields in a fixed top-to-bottom order with a sticky bottom button reading \"Update Address Details\"; the code uses a scrolling form with different labels, a chip selector for the address label, a switch row not in the spec, and an inline button with conditional text. Copy, layout, and field set all need correction. Note: code labels appear to come from static strings (not API), so all copy below is correctable directly.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "\"Edit Shipping Address\"",
+          "actual": "AppBar title = isEdit ? 'Edit Address' : 'Add Address'",
+          "fix": "Set the header title to exactly \"Edit Shipping Address\" (edit mode). Match Poppins 18px / weight 600 / line-height 130% / color #FFF per spec."
+        },
+        {
+          "element": "Full Name field label",
+          "kind": "copy",
+          "spec": "\"Full Name\"",
+          "actual": "'Full Name'",
+          "fix": "Matches — no change. (Listed for completeness; skip.)"
+        },
+        {
+          "element": "Phone field label",
+          "kind": "copy",
+          "spec": "\"Receiver's Phone No.\"",
+          "actual": "'Phone Number'",
+          "fix": "Change label string from 'Phone Number' to \"Receiver's Phone No.\" (note apostrophe and trailing period)."
+        },
+        {
+          "element": "Address Line 1 field label",
+          "kind": "copy",
+          "spec": "\"Address Line 1\"",
+          "actual": "'Address Line 1'",
+          "fix": "Matches — no change."
+        },
+        {
+          "element": "Nearest Landmark field",
+          "kind": "missing",
+          "spec": "Field labeled \"Nearest Landmark (Optional)\" positioned directly after Address Line 1",
+          "actual": "Code has 'Address Line 2' (no Landmark field)",
+          "fix": "Rename/repurpose the Address Line 2 field to \"Nearest Landmark (Optional)\" and place it directly after Address Line 1, OR add a dedicated optional Landmark field with that exact label."
+        },
+        {
+          "element": "Country field",
+          "kind": "missing",
+          "spec": "Field labeled \"Country\" with value e.g. \"Nepal\"",
+          "actual": "No Country field in code",
+          "fix": "Add a \"Country\" input/dropdown field after the Landmark field, per spec order."
+        },
+        {
+          "element": "State field label",
+          "kind": "copy",
+          "spec": "\"State/Province\"",
+          "actual": "'State'",
+          "fix": "Change label from 'State' to \"State/Province\"."
+        },
+        {
+          "element": "Zip field label",
+          "kind": "copy",
+          "spec": "\"Zip/Postal Cde\" (as printed in spec; likely \"Zip/Postal Code\")",
+          "actual": "'Zip Code'",
+          "fix": "Change label to match spec wording \"Zip/Postal Code\" (spec PDF shows \"Cde\" — confirm intended spelling, use \"Zip/Postal Code\")."
+        },
+        {
+          "element": "Field order",
+          "kind": "layout",
+          "spec": "Top-to-bottom: Full Name -> Receiver's Phone No. -> Address Line 1 -> Nearest Landmark (Optional) -> Country -> State/Province -> Zip/Postal Code -> City -> Save Address As",
+          "actual": "Code order: [label chips] -> Full Name -> Phone -> Address Line 1 -> Address Line 2 -> City -> State -> Zip Code -> default switch",
+          "fix": "Reorder fields to match spec exactly. In spec City comes AFTER Zip (Country/State/Zip precede City); code has City before State/Zip. Move the address-label selector to the bottom as \"Save Address As\"."
+        },
+        {
+          "element": "Save Address As selector",
+          "kind": "copy",
+          "spec": "Field labeled \"Save Address As\" with value \"Home\", positioned last before the button",
+          "actual": "Section labeled 'Address Label' rendered as chips (Home/Work/Other) placed at the TOP of the form",
+          "fix": "Relabel to \"Save Address As\" and move to the bottom (after City) per spec order. Verify whether spec intends an input/dropdown vs chips."
+        },
+        {
+          "element": "Primary button label",
+          "kind": "copy",
+          "spec": "\"Update Address Details\"",
+          "actual": "isEdit ? 'Update Address' : 'Save Address'",
+          "fix": "Change edit-mode button text to exactly \"Update Address Details\"."
+        },
+        {
+          "element": "Primary button placement",
+          "kind": "layout",
+          "spec": "Sticky bottom button in a wrapper: padding 24px 16px 0 16px, top border 1px #3F3F46, button container padding 16px 32px, border-radius 999px, fill #2ECC71",
+          "actual": "ElevatedButton inline at end of scrolling ListView (not sticky, no top divider wrapper)",
+          "fix": "Move the button into a sticky bottom bar (bottomNavigationBar/persistent footer) with wrapper padding 24/16/0/16, top border 1px #3F3F46, inner padding 16px 32px, pill radius 999px, fill #2ECC71."
+        },
+        {
+          "element": "Button text style",
+          "kind": "typography",
+          "spec": "Poppins 16px, weight 600, line-height 16px (100%), color #06190E (Button-Primary-Text)",
+          "actual": "DesignTokens.mediumSemibold + buttonPrimaryText color",
+          "fix": "Verify mediumSemibold resolves to Poppins 16px/600/lh16; ensure color is #06190E."
+        },
+        {
+          "element": "Set-as-default switch",
+          "kind": "extra",
+          "spec": "No default-address toggle shown in spec",
+          "actual": "SwitchListTile 'Set as default address'",
+          "fix": "Remove the switch row, or confirm with design whether it belongs on this screen (spec does not show it)."
+        },
+        {
+          "element": "Input field label/placeholder color",
+          "kind": "color",
+          "spec": "Label color #9F9FA9 (Input-Field-Text-Placeholder), Poppins 14px/400/lh150%; input data color #9F9FA9 too per spec; field padding 14px 16px, radius 8px, border 1px #52525C, fill #27272A",
+          "actual": "Uses DesignTokens.inputDecoration / mediumRegular; data color = inputFieldData",
+          "fix": "Verify inputDecoration matches: padding 14x16, radius 8, border #52525C, fill #27272A, label #9F9FA9 Poppins 14/400/150%. Adjust tokens if they differ."
+        },
+        {
+          "element": "Dropdown trailing icon",
+          "kind": "icon",
+          "spec": "Select dropdown icon 16x16, fill #71717B for Country / State/Province / Save Address As (dropdown fields)",
+          "actual": "All fields are plain TextFormField; no dropdown icon",
+          "fix": "For Country, State/Province, and Save Address As, render as dropdowns with a 16x16 trailing chevron icon filled #71717B."
+        }
+      ],
+      "_pair": {
+        "name": "Add/Edit Address",
+        "screen": "lib/features/customer/shipping/presentation/screens/add_edit_address_screen.dart",
+        "pdf": "Design Specification Doc - Shipping Address - Edit Details.pdf"
+      }
+    },
+    {
+      "screen": "Product Detail — Customer Reviews",
+      "overallMatch": "major",
+      "summary": "The spec and the implemented screen are structurally different. The spec (\"Customer Reviews\") is a tabbed gallery: a header titled \"Customer Reviews\", a two-tab switcher (\"Reel Reviews\" / \"Written Reviews\"), a grid of video-review thumbnails (107x133, 12px radius) each with a blurred views pill (icon + count), and a sticky bottom pill \"Add Review\" button. The code instead renders a title \"Reviews\", a star-rating summary card with a 1-5 distribution histogram, a vertical list of written ReviewCards, a \"Load More\" text button, and a floating \"Write a Review\" FAB that opens a write-review bottom sheet. Almost every documented element (tabs, video grid, views pills, sticky button, header copy) is missing or wrong; many code elements (summary histogram, FAB, load-more) are not in the spec. Copy mismatches on the header and the primary button are the highest-priority fixes.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "Customer Reviews",
+          "actual": "Reviews (AppBar title Text 'Reviews')",
+          "fix": "Change AppBar title text from 'Reviews' to 'Customer Reviews'."
+        },
+        {
+          "element": "Screen header typography",
+          "kind": "typography",
+          "spec": "Poppins, 18px, weight 600, line-height 130% (23.4px), color #FFF, ellipsis overflow",
+          "actual": "DesignTokens.mediumSemibold with textWhite (size/line-height unverified against spec)",
+          "fix": "Ensure title style is Poppins 18px/600, line-height 23.4px, color #FFF, with overflow ellipsis + single line."
+        },
+        {
+          "element": "Header back icon",
+          "kind": "icon",
+          "spec": "24x24 icon, fill #FFF (Button-White-Ghost-Icon)",
+          "actual": "Icons.arrow_back_ios_new, color textWhite (no explicit 24x24 size)",
+          "fix": "Set icon size to 24x24 and confirm fill #FFF; spec icon is a generic back chevron at 24px."
+        },
+        {
+          "element": "Tabs (Reel Reviews / Written Reviews)",
+          "kind": "missing",
+          "spec": "Tab container padding 0 12px, gap 16px, bottom border 1px #3F3F46; tabs padding 10px 8px, Poppins 14px/400 line-height 150% (21px), inactive color #9F9FA9; active tab bottom-border 3px #2ECC71 + text color #2ECC71",
+          "actual": "No tabs rendered at all",
+          "fix": "Add a two-tab switcher 'Reel Reviews' and 'Written Reviews' with the specified container/tab styling and active-state underline + green text."
+        },
+        {
+          "element": "Video review grid",
+          "kind": "missing",
+          "spec": "Grid of video thumbnails, each 107px x 133px, border-radius 12px, with content laid out in rows/columns per spacing guide",
+          "actual": "Vertical SliverList of written ReviewCards only; no video thumbnail grid",
+          "fix": "Add the video-review thumbnail grid (107x133, 12px radius) for the 'Reel Reviews' tab content."
+        },
+        {
+          "element": "Views pill on thumbnails",
+          "kind": "missing",
+          "spec": "Views container: padding 6px 8px, gap 4px, border-radius 20px, background rgba(51,51,51,0.60), backdrop-filter blur(20px); count text Poppins 10px/600 line-height 100% #FFF; icon 12x12 fill #FFF",
+          "actual": "Not present",
+          "fix": "Add a blurred views pill (icon 12x12 + count) overlaid on each video thumbnail with the specified styling."
+        },
+        {
+          "element": "Sticky bottom Add Review button",
+          "kind": "copy",
+          "spec": "Sticky bottom button labeled 'Add Review'",
+          "actual": "FloatingActionButton.extended labeled 'Write a Review' with Icons.edit",
+          "fix": "Replace the FAB with a sticky bottom button labeled 'Add Review' (no edit icon), per spec layout."
+        },
+        {
+          "element": "Add Review button container/typography",
+          "kind": "typography",
+          "spec": "Wrapper padding 24px 16px 0 16px, bg #09090B, top border 1px #3F3F46; button container padding 16px 32px, centered, border-radius 999px, fill #2ECC71; text color #06190E, Poppins 16px/600 line-height 16px (100%)",
+          "actual": "FAB backgroundColor primaryGreen, foreground buttonPrimaryText, default FAB shape/size",
+          "fix": "Implement as a full-width sticky pill (radius 999px, fill #2ECC71, padding 16px 32px) inside a wrapper with top border #3F3F46; text 'Add Review' Poppins 16px/600 line-height 16px color #06190E."
+        },
+        {
+          "element": "Body left/right spacing",
+          "kind": "spacing",
+          "spec": "App Body Left & Right Spacing: 16px",
+          "actual": "Horizontal padding s16 on list (matches) but other sections differ structurally",
+          "fix": "Keep 16px horizontal app-body spacing consistent across all sections per spec."
+        },
+        {
+          "element": "Rating summary histogram card",
+          "kind": "extra",
+          "spec": "Not present in spec (spec uses tabbed gallery, no average-rating summary card or 1-5 distribution bars)",
+          "actual": "_ReviewSummaryHeader with averageRating, star row, and 5-row LinearProgressIndicator distribution",
+          "fix": "Remove the summary/histogram header to match the spec, or confirm with design if it belongs elsewhere."
+        },
+        {
+          "element": "Write-a-Review bottom sheet",
+          "kind": "extra",
+          "spec": "Spec shows only an 'Add Review' action; no inline write-review sheet copy is documented on this screen",
+          "actual": "_WriteReviewSheet with 'Write a Review' title, star picker, hint 'Share your experience with this product...', 'Submit Review' button",
+          "fix": "Either route 'Add Review' to the documented Add Review flow/screen, or align this sheet's copy/title with spec; spec does not document this sheet on the Customer Reviews screen."
+        },
+        {
+          "element": "Load More button",
+          "kind": "extra",
+          "spec": "Not in spec (no load-more control documented)",
+          "actual": "TextButton 'Load More' in green",
+          "fix": "Confirm pagination affordance with design; spec shows a scrollable grid, not a load-more button."
+        },
+        {
+          "element": "Empty-state copy",
+          "kind": "copy",
+          "spec": "No empty-state copy documented in spec",
+          "actual": "'No reviews yet. Be the first to review this product!'",
+          "fix": "Verify empty-state copy with design; not specified in this PDF."
+        }
+      ],
+      "_pair": {
+        "name": "Product Reviews",
+        "screen": "lib/features/customer/reviews/presentation/screens/product_reviews_screen.dart",
+        "pdf": "Design Specification Doc - Product Detail - Customer Reviews.pdf"
+      }
+    },
+    {
+      "screen": "Customer Profile / Settings",
+      "overallMatch": "major",
+      "summary": "The Profile screen largely matches the spec's structure (header with avatar/name/email, 3-stat quick-stats row, grouped settings list, version footer), and copy on most labels is exact. However there are real deviations: the spec's \"Push Notifications\" menu row is MISSING from the code, the code ADDS a \"Delete Account\" row the spec does not show, and the spec's flat single settings container is split into multiple grouped sections. The first settings group's row order also diverges from the spec (spec: Shipping Addresses, Push Notifications, Payment Methods, Appearance, Notification Settings, Language). Stat labels, order, and badge match. Header copy is data-driven and consistent with spec sample values.",
+      "deviations": [
+        {
+          "element": "Settings list — 'Push Notifications' row",
+          "kind": "missing",
+          "spec": "Row 'Push Notifications' appears as the 2nd item in the settings container (between 'Shipping Addresses' and 'Payment Methods').",
+          "actual": "No 'Push Notifications' menu item exists anywhere in profile_screen.dart. First section is: Shipping Addresses, Payment Methods, Appearance, Notification Settings, Language.",
+          "fix": "Add a ProfileMenuItem with label 'Push Notifications' as the 2nd item in the first ProfileMenuSection (after 'Shipping Addresses', before 'Payment Methods')."
+        },
+        {
+          "element": "Settings list — 'Delete Account' row",
+          "kind": "extra",
+          "spec": "Spec's final action group shows only 'Log Out'. There is no 'Delete Account' row in the spec.",
+          "actual": "Code adds a second destructive ProfileMenuItem labeled 'Delete Account' alongside 'Log Out' (lines 238-243).",
+          "fix": "Remove the 'Delete Account' ProfileMenuItem so the final group contains only 'Log Out', matching the spec. (Confirm with product before deleting if delete-account is an intentional newer requirement.)"
+        },
+        {
+          "element": "Settings container grouping",
+          "kind": "layout",
+          "spec": "Spec shows a SINGLE settings Container (border-radius 16px, bg #18181B) holding all rows from 'Shipping Addresses' through 'Log Out', separated only by 1px dividers (#3F3F46). 'Log Out' sits inside the same container.",
+          "actual": "Code splits the rows into 4 separate ProfileMenuSection blocks (Account/preferences, Support, Legal, Logout) each separated by 16px gaps.",
+          "fix": "Either consolidate into one ProfileMenuSection with internal dividers to match the single-container spec, or confirm the multi-card grouping is an approved design update. Per spec, use one container."
+        },
+        {
+          "element": "First settings group — row order",
+          "kind": "layout",
+          "spec": "Spec order: Shipping Addresses → Push Notifications → Payment Methods → Appearance → Notification Settings → Language.",
+          "actual": "Code order: Shipping Addresses → Payment Methods → Appearance → Notification Settings → Language (Push Notifications absent).",
+          "fix": "Insert 'Push Notifications' as the 2nd row so the order matches the spec exactly."
+        },
+        {
+          "element": "About row label",
+          "kind": "copy",
+          "spec": "'About ReelCommerce'",
+          "actual": "'About ReelCommerce'",
+          "fix": "No change — matches. (Note: product name 'ReelCommerce' vs 'Style Mint' is a spec-level naming question, not a code deviation.)"
+        }
+      ],
+      "_pair": {
+        "name": "Profile",
+        "screen": "lib/features/profile/presentation/screens/profile_screen.dart",
+        "pdf": "Design Specification Doc - Profile.pdf"
+      }
+    },
+    {
+      "screen": "Edit Profile",
+      "overallMatch": "major",
+      "summary": "The implemented screen is a heavily simplified version of the spec. Spec defines three labeled sections (Personal Information, Optional Information, Preferences) inside a Gray-900 form container with ~14 fields, a Social Links subsection, a sticky bottom Save Changes button, and an avatar with a bordered action chip. The code renders only 4 fields (Display Name, Bio, Website, Gender) with no section grouping, no form container, wrong field labels, missing Personal/Optional/Preferences content, missing Social Links, missing bio char counter and helper texts, and an inline (non-sticky) button. Numerous copy labels do not match.",
+      "deviations": [
+        {
+          "element": "Full Name field label",
+          "kind": "copy",
+          "spec": "Full Name",
+          "actual": "Display Name",
+          "fix": "Change labelText from 'Display Name' to 'Full Name'."
+        },
+        {
+          "element": "Personal Information section",
+          "kind": "missing",
+          "spec": "Section titled 'Personal Information' (Poppins 14px/600, #FFF) grouping Full Name, Receiver's Phone No., Email Address, Phone No.",
+          "actual": "No section header or grouping exists.",
+          "fix": "Add a 'Personal Information' section title and group the four personal fields under it."
+        },
+        {
+          "element": "Receiver's Phone No. field",
+          "kind": "missing",
+          "spec": "Field label 'Receiver's Phone No.' with value e.g. 9879976579",
+          "actual": "Field absent.",
+          "fix": "Add a 'Receiver's Phone No.' text field."
+        },
+        {
+          "element": "Email Address field",
+          "kind": "missing",
+          "spec": "Field label 'Email Address', value e.g. shreeteen123@gmail.com",
+          "actual": "Field absent.",
+          "fix": "Add an 'Email Address' field."
+        },
+        {
+          "element": "Phone No. field",
+          "kind": "missing",
+          "spec": "Field label 'Phone No.', value e.g. 9840098623",
+          "actual": "Field absent.",
+          "fix": "Add a 'Phone No.' field."
+        },
+        {
+          "element": "Optional Information section",
+          "kind": "missing",
+          "spec": "Section titled 'Optional Information' grouping Date of Birth, Gender, Bio/About Me",
+          "actual": "No section header.",
+          "fix": "Add an 'Optional Information' section title grouping those fields."
+        },
+        {
+          "element": "Date of Birth field",
+          "kind": "missing",
+          "spec": "Field 'Date of Birth' with calendar icon, value e.g. 12/23/2002, helper text 'For personalized birthday offers' (#D4D4D8, 12px/400, line-height 130%)",
+          "actual": "Field and helper text absent.",
+          "fix": "Add a 'Date of Birth' date-picker field with calendar trail icon and helper text 'For personalized birthday offers'."
+        },
+        {
+          "element": "Bio field label",
+          "kind": "copy",
+          "spec": "Bio/About Me",
+          "actual": "Bio",
+          "fix": "Change labelText from 'Bio' to 'Bio/About Me'."
+        },
+        {
+          "element": "Bio character counter",
+          "kind": "missing",
+          "spec": "Counter 'NN/500 Characters' (e.g. '88/500 Characters') shown under the bio field",
+          "actual": "No character counter; no maxLength.",
+          "fix": "Add maxLength 500 and a 'NN/500 Characters' counter beneath the bio field."
+        },
+        {
+          "element": "Social Links section",
+          "kind": "missing",
+          "spec": "Section 'Social Links' with Instagram field (placeholder 'instagram.com/username') and Tiktok field (placeholder 'tiktok.com/@username'), each with a 16x16 platform logo",
+          "actual": "Only a generic 'Website' field exists; no Social Links section, no Instagram/Tiktok fields or logos.",
+          "fix": "Replace generic Website field with a 'Social Links' section containing Instagram and Tiktok fields with the specified placeholders and platform logos."
+        },
+        {
+          "element": "Website field",
+          "kind": "extra",
+          "spec": "Spec has no generic 'Website' field; social links are Instagram + Tiktok.",
+          "actual": "A 'Website' field is present.",
+          "fix": "Remove the 'Website' field (replace with Social Links section)."
+        },
+        {
+          "element": "Preferences section",
+          "kind": "missing",
+          "spec": "Section 'Preferences' with three checkboxes (20x20, #9F9FA9): 'Send me personalized product recommendations', 'Share my activity with creators I follow', 'Include me in beta testing programs' — label #D4D4D8, Poppins 14px/400/150%",
+          "actual": "Entirely absent.",
+          "fix": "Add a 'Preferences' section with the three labeled checkboxes using exact copy."
+        },
+        {
+          "element": "Form container",
+          "kind": "missing",
+          "spec": "Form Container: border-radius 12px, background Gray-900 #18181B, padding 24px 16px",
+          "actual": "Fields sit directly on scaffold background with no container.",
+          "fix": "Wrap form fields in a Container with #18181B background, 12px radius, 24/16 padding."
+        },
+        {
+          "element": "Section dividers",
+          "kind": "missing",
+          "spec": "Divider lines (#3F3F46, height 1px, width 100%) between sections",
+          "actual": "No dividers.",
+          "fix": "Add 1px #3F3F46 dividers between sections."
+        },
+        {
+          "element": "Save Changes button placement",
+          "kind": "layout",
+          "spec": "Sticky bottom button in a wrapper: padding 24px 16px 0, background #09090B, border-top 1px #3F3F46; button container padding 16px 32px, border-radius 999px, fill #2ECC71, text Poppins 16px/600 #06190E",
+          "actual": "Inline ElevatedButton at the bottom of the scroll view; not sticky and no top-border wrapper.",
+          "fix": "Move 'Save Changes' into a sticky bottomNavigationBar/wrapper with the specified padding, background, top border, and pill radius 999px."
+        },
+        {
+          "element": "Gender field value example",
+          "kind": "copy",
+          "spec": "Displayed value 'Female' (capitalized)",
+          "actual": "Dropdown items use 'Female'/'Male'/'Other'/'Prefer not to say' — acceptable, but underlying values lowercase; ensure displayed text matches capitalization.",
+          "fix": "Confirm displayed gender text is capitalized per spec; values mapping is fine."
+        },
+        {
+          "element": "Input field radius",
+          "kind": "spacing",
+          "spec": "Input fields border-radius 8px, border 1px #52525C, fill #27272A, floating-label padding 14px 16px",
+          "actual": "Uses DesignTokens.inputDecoration / inputRadius — verify equals 8px radius, #52525C border, #27272A fill, 14/16 padding.",
+          "fix": "Ensure inputRadius=8, inputFieldBorder=#52525C, inputFieldFill=#27272A, content padding 14x16."
+        },
+        {
+          "element": "Avatar size & action chip",
+          "kind": "spacing",
+          "spec": "Avatar 72x72 (radius ~36) round; action container is a bordered chip (1px #D4D4D8, fill #F4F4F5, radius 12px, 20x20, padding 4px) with a 14x14 icon (#52525C)",
+          "actual": "CircleAvatar radius 44 (88px); action is a green-filled circle with a 16px white camera icon.",
+          "fix": "Set avatar to 72x72 (radius 36); change action to a #F4F4F5 fill, 1px #D4D4D8 border, 12px radius, 20x20 chip with a 14x14 #52525C icon."
+        },
+        {
+          "element": "Screen title typography",
+          "kind": "typography",
+          "spec": "Title 'Edit Profile' Poppins 18px/600, line-height 130%, #FFF",
+          "actual": "Uses DesignTokens.sectionInnerTitle — verify it is 18px/600.",
+          "fix": "Ensure the app bar title style is Poppins 18px weight 600 #FFF."
+        }
+      ],
+      "_pair": {
+        "name": "Edit Profile",
+        "screen": "lib/features/profile/presentation/screens/edit_profile_screen.dart",
+        "pdf": "Design Specification Doc - Edit Profile.pdf"
+      }
+    },
+    {
+      "screen": "Following (Customer User)",
+      "overallMatch": "major",
+      "summary": "The card layout is heavily simplified versus the spec. The spec shows a rich Following Creator Card with avatar, creator name, a content-category line (e.g. \"Travel & Skincare\"), handle, a star-rating element, and a follower count rendered as separate rating + follower groups with icons. The code collapses all of this into name + a single \"@handle · N followers\" line and omits the content category and star rating entirely. The screen title also omits the count \"(230)\", the Unfollow button styling/color is wrong (spec is a gray solid pill #3F3F46 white text; code is a borderless red text button), avatar size is wrong (40px spec vs 48px code), and the empty-state copy doesn't match any spec string but the spec implies different content. Title count, content category section, and star rating are the highest-impact misses.",
+      "deviations": [
+        {
+          "element": "Screen title / header",
+          "kind": "copy",
+          "spec": "Following (230)",
+          "actual": "Following",
+          "fix": "Render the title as 'Following ($count)' where count is the total following count, e.g. 'Following (230)'."
+        },
+        {
+          "element": "Creator content category line",
+          "kind": "missing",
+          "spec": "A 'Content Category' text element under the creator name, e.g. 'Travel & Skincare', 'Beauty, Skincare, Fashion & Wellness', 'Fashion & Fitness', 'Fitness', 'Sports'. Style: Poppins, 12px, weight 600, line-height 130% (15.6px), color #FFF.",
+          "actual": "Not rendered anywhere in the card.",
+          "fix": "Add a category Text widget between displayName and handle: Text(user.contentCategory, style: Poppins 12px w600 lineHeight 1.3 color #FFFFFF)."
+        },
+        {
+          "element": "Star rating element",
+          "kind": "missing",
+          "spec": "A 'Ratings' group: 16x16 star icon (fill #F1C40F / Icon-Secondary) + count text (Poppins 12px w600 #FFF) + 'Stars' label text (Poppins 12px w400 #D4D4D8), e.g. '4.9 Stars'.",
+          "actual": "No rating, star icon, or 'Stars' text is rendered.",
+          "fix": "Add a Row with a 16px star icon (color #F1C40F), the rating value (12px w600 #FFF), and the word 'Stars' (12px w400 #D4D4D8)."
+        },
+        {
+          "element": "Followers display",
+          "kind": "layout",
+          "spec": "A 'Followers' group on the same row as Ratings: 16x16 follower icon (fill #9F9FA9 / Icon-Light) + count text (Poppins 12px w600 #FFF) + 'Followers' label (Poppins 12px w400 #D4D4D8), e.g. '52.3k Followers'. Sits beside the star rating, NOT merged with the handle.",
+          "actual": "Rendered as part of a single combined line '@{handle} · {followerCount} followers' with no icon and lowercase 'followers'.",
+          "fix": "Separate followers from the handle line. Render its own group with a 16px follower icon (#9F9FA9), count (12px w600 #FFF), and the label 'Followers' (capital F, 12px w400 #D4D4D8)."
+        },
+        {
+          "element": "Followers label casing",
+          "kind": "copy",
+          "spec": "Followers",
+          "actual": "followers (lowercase, in '@handle · N followers')",
+          "fix": "Use capitalized 'Followers' as a standalone label."
+        },
+        {
+          "element": "Creator handle line",
+          "kind": "layout",
+          "spec": "Handle is its own element, e.g. '@alieen.ace43'. Style: Poppins 12px w400 line-height 130% (15.6px) color #9F9FA9 (Text-Secondary). Shown on its own line, not concatenated with follower count.",
+          "actual": "Handle is concatenated with follower count: '@{handle} · {followerCount} followers'.",
+          "fix": "Render the handle alone as Text('@${user.handle}') with Poppins 12px w400 color #9F9FA9; move followers to its own group per the followers fix."
+        },
+        {
+          "element": "Unfollow button",
+          "kind": "color",
+          "spec": "Gray solid pill: background #3F3F46 (Button-Gray-Solid-Default-Fill), padding 8px 16px, border-radius 999px (--Border-Radius), gap 8px, text color #FFF (Button-Gray-Text) Poppins 12px w600 line-height 16px.",
+          "actual": "TextButton with no background, foregroundColor DesignTokens.colorError (red), horizontal padding 12px only, default text style.",
+          "fix": "Replace with a filled pill button: background #3F3F46, foreground/text #FFF, padding EdgeInsets.symmetric(horizontal:16, vertical:8), borderRadius 999, text style Poppins 12px w600. Remove the red error color."
+        },
+        {
+          "element": "Avatar size",
+          "kind": "spacing",
+          "spec": "width 40px, height 40px, border-radius 50px (CircleAvatar radius 20).",
+          "actual": "CircleAvatar radius: 24 (48px diameter).",
+          "fix": "Set CircleAvatar radius to 20 to match the 40px spec; person fallback icon size 24 is fine but center within 40px."
+        },
+        {
+          "element": "Creator name typography",
+          "kind": "typography",
+          "spec": "Poppins 16px weight 600 line-height 16px (100%) color #FFF.",
+          "actual": "DesignTokens.mediumSemibold (verify it is 16px/600/lineHeight 16px #FFF).",
+          "fix": "Confirm mediumSemibold maps to Poppins 16px w600 lineHeight 1.0 #FFFFFF; otherwise apply an explicit TextStyle."
+        },
+        {
+          "element": "Card container",
+          "kind": "spacing",
+          "spec": "border-radius 16px (Card-Radius), background #18181B (Fill-App-Body), padding 16px, internal gap 12px, app body left & right spacing 16px.",
+          "actual": "padding EdgeInsets.all(s12) [12px], borderRadius s12 [12px], list horizontal padding s16 [16px], inter-row gap s8 [8px].",
+          "fix": "Set card padding to 16px and borderRadius to 16px (Card-Radius). The 12px internal gap is the avatar-to-content gap (already s12, correct); keep list horizontal padding at 16px."
+        },
+        {
+          "element": "Empty state copy",
+          "kind": "copy",
+          "spec": "PDF documents a populated list only; no empty-state string is specified. Code introduces 'You are not following anyone yet.'",
+          "actual": "'You are not following anyone yet.'",
+          "fix": "No spec source for this string — leave as-is or confirm intended copy with design; flagged for verification, not a confirmed mismatch."
+        },
+        {
+          "element": "Search field",
+          "kind": "extra",
+          "spec": "PDF does not document a search input on the Following screen.",
+          "actual": "A 'Search following...' TextFormField is rendered at the top.",
+          "fix": "Confirm with design whether the search field belongs here; the spec shows no search element. Flagged for verification."
+        }
+      ],
+      "_pair": {
+        "name": "Following",
+        "screen": "lib/features/profile/presentation/screens/following_screen.dart",
+        "pdf": "Design Specification Doc - Following.pdf"
+      }
+    }
+  ]
+}

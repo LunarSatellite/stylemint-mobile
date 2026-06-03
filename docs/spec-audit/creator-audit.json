@@ -1,0 +1,604 @@
+{
+  "summary": "Audit creator screens against their PDF design specs; report exact deviations",
+  "agentCount": 10,
+  "logs": [],
+  "result": [
+    {
+      "screen": "Creator Dashboard",
+      "pdfUsed": "Design Specification Doc -Creator Dashboard.pdf",
+      "overallMatch": "major",
+      "summary": "The implemented screen diverges heavily from the spec. The spec shows a personalized welcome header, a green earnings/payout hero card with a Request Payout CTA, a 3-up quick-stats row (Sales/Reels/Clicks + Total Views), a Top Performing Reels list with detailed metric rows, and a chronological Recent Activity feed. The code instead renders a generic \"Creator Dashboard\" title, a 2x2 stat grid (Earnings/Reels/Views/Engagement), a Quick Actions chip row, a horizontal Recent Reels carousel, and a Reel Studio button. Nearly every copy string, section, and layout element is wrong or missing.",
+      "deviations": [
+        {
+          "element": "Header title",
+          "kind": "copy",
+          "spec": "\"Welcome Back Ritesh\" (personalized welcome, font-size 18px, weight 600, color #FFF) with sub-title \"Quick insights to your progress and earnings\" (12px, 400, #D4D4D8)",
+          "actual": "Static text \"Creator Dashboard\" via titleLarge; no sub-title",
+          "fix": "Replace the title with a personalized \"Welcome Back {firstName}\" header and add the sub-title line \"Quick insights to your progress and earnings\" beneath it."
+        },
+        {
+          "element": "Avatar / button container in header",
+          "kind": "missing",
+          "spec": "Header includes an avatar (132x100) and a 32x32 circular button container (radius 999px, bg #3F3F46, 20px white icon)",
+          "actual": "No avatar or header action button rendered",
+          "fix": "Add the avatar and the circular header action button to the top header row."
+        },
+        {
+          "element": "Earnings hero card",
+          "kind": "missing",
+          "spec": "Green (#2ECC71) card with label \"Total Earned (+23% vs last)\", value \"Rs. 12,589.98\" (20px/600), \"Pending from 12 sales\" line, secondary \"Rs. 12,589.98\", a yellow (#F1C40F) bottom half with \"Request Payout Withdrawal\", helper \"Payouts are processed weekly on fridays.\" and \"The minimum withdraw amount is Rs 5,000.00\"",
+          "actual": "No hero earnings/payout card; earnings only appear as one tile in the 2x2 grid",
+          "fix": "Add the two-tone earnings+payout hero card with Total Earned, increment %, Pending-from-sales, and the Request Payout block with both helper copy lines."
+        },
+        {
+          "element": "Request Payout CTA",
+          "kind": "missing",
+          "spec": "\"Request Payout Withdrawal\" button inside the yellow bottom-half of the hero card",
+          "actual": "No Request Payout action anywhere on screen",
+          "fix": "Add a \"Request Payout Withdrawal\" CTA wired to the payout flow."
+        },
+        {
+          "element": "Payout helper copy",
+          "kind": "missing",
+          "spec": "\"Payouts are processed weekly on fridays.\" and \"The minimum withdraw amount is Rs 5,000.00\"",
+          "actual": "Absent",
+          "fix": "Add both helper strings under the Request Payout CTA, matching wording exactly (note lowercase \"fridays\")."
+        },
+        {
+          "element": "Quick stats row",
+          "kind": "layout",
+          "spec": "A single horizontal row of three stat blocks: Sales (\"20\"), Reels (\"230\"), Clicks (\"105\"), plus a separate \"Total Views\" (\"33,981\") block",
+          "actual": "A 2x2 GridView with tiles labeled Earnings, Reels, Views, Engagement",
+          "fix": "Replace the 2x2 grid with the spec's 3-up Sales/Reels/Clicks row and the Total Views block; drop Engagement and the Earnings tile (earnings belongs in the hero card)."
+        },
+        {
+          "element": "Stat label \"Sales\"",
+          "kind": "missing",
+          "spec": "\"Sales\" stat shown with value 20",
+          "actual": "No Sales stat",
+          "fix": "Add a Sales stat."
+        },
+        {
+          "element": "Stat label \"Clicks\"",
+          "kind": "missing",
+          "spec": "\"Clicks\" stat shown with value 105",
+          "actual": "No Clicks stat",
+          "fix": "Add a Clicks stat."
+        },
+        {
+          "element": "Stat label \"Total Views\"",
+          "kind": "copy",
+          "spec": "\"Total Views\" (value e.g. 33,981, comma-formatted full number)",
+          "actual": "\"Views\" with compact K/M formatting",
+          "fix": "Rename to \"Total Views\" and show the full comma-formatted number, not compact."
+        },
+        {
+          "element": "Engagement stat",
+          "kind": "extra",
+          "spec": "No Engagement stat in the dashboard stats",
+          "actual": "\"Engagement\" tile present in 2x2 grid",
+          "fix": "Remove the Engagement tile."
+        },
+        {
+          "element": "Quick Actions section",
+          "kind": "extra",
+          "spec": "No Quick Actions chip row in spec",
+          "actual": "\"Quick Actions\" heading + Import Reel / Partnerships / Earnings chips",
+          "fix": "Remove the Quick Actions section; it is not in the spec."
+        },
+        {
+          "element": "Top Performing Reels section",
+          "kind": "missing",
+          "spec": "Section titled \"Top Performing Reels\" with a \"View All\" action; vertical reel cards each showing thumbnail (64x64), reel title (e.g. \"Mheecha: The Bag that Matches Your Aesthetics\", \"Nike Structure 26 - Be the Trail Blazzer Runner\"), \"Posted on: 7 Aug, 2025 09:57 PM\", and a metrics row (25.76k 23.8k 465k 127 13.67k 976)",
+          "actual": "Section titled \"Recent Reels\" with \"See All\"; horizontal carousel of 120px cards showing only a play icon, views, and likes",
+          "fix": "Rename section to \"Top Performing Reels\", change \"See All\" to \"View All\", switch to vertical detail cards with thumbnail, reel title, \"Posted on:\" date, and the full multi-metric row."
+        },
+        {
+          "element": "Reels section heading",
+          "kind": "copy",
+          "spec": "\"Top Performing Reels\"",
+          "actual": "\"Recent Reels\"",
+          "fix": "Rename heading to \"Top Performing Reels\"."
+        },
+        {
+          "element": "See All link copy",
+          "kind": "copy",
+          "spec": "\"View All\"",
+          "actual": "\"See All\"",
+          "fix": "Change link text to \"View All\"."
+        },
+        {
+          "element": "Reel card posted date",
+          "kind": "missing",
+          "spec": "Each reel card shows \"Posted on: 7 Aug, 2025 09:57 PM\" (12px/400 #D4D4D8) and the reel title (14px/600 #FFF)",
+          "actual": "Card shows only play icon, views, and likes — no title or posted date",
+          "fix": "Add reel title and \"Posted on: {date}\" to each reel card."
+        },
+        {
+          "element": "Recent Activity section",
+          "kind": "missing",
+          "spec": "Section titled \"Recent Activity\" grouped by day headers (\"Thu 23 Jan 2026\", \"Wed 22 Jan 2026\") with activity rows like \"Your reel \\\"Winter Haul\\\" earned Rs 5,567.00 today!\", \"Your commission of Rs 24,575.00 was paid\", \"A new brand partnership request from Puma\", each with a circular icon and a time-ago label (2h ago, 8h ago, 22h ago, 1d ago)",
+          "actual": "No Recent Activity section at all",
+          "fix": "Add the Recent Activity feed: day-grouped headers, activity text rows with circular icons and time-ago labels."
+        },
+        {
+          "element": "Reel Studio button",
+          "kind": "extra",
+          "spec": "No full-width \"Reel Studio\" button in spec",
+          "actual": "Full-width ElevatedButton labeled \"Reel Studio\"",
+          "fix": "Remove the Reel Studio button; not part of this screen's spec."
+        },
+        {
+          "element": "Total Earned increment label",
+          "kind": "copy",
+          "spec": "\"(+23% vs last)\" appended to Total Earned label, color #2ECC71, 12px/600",
+          "actual": "No increment percentage shown",
+          "fix": "Add the \"+{pct}% vs last\" increment indicator to the Total Earned label."
+        }
+      ],
+      "_pair": {
+        "name": "Creator Dashboard",
+        "screen": "lib/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart",
+        "pat": "Creator Dashboard"
+      }
+    },
+    {
+      "screen": "Creator — Earnings & Payments",
+      "pdfUsed": "Design Specification Doc -Earnings & Payments.pdf",
+      "overallMatch": "major",
+      "summary": "The implemented earnings_screen.dart is a heavily simplified placeholder versus the spec. The spec defines 9 ordered sections: (1) Screen Header titled \"Earnings & Payments\", (2) Total Balance card with Available/Pending balances and icons, (3) Quick Metrics / Request Payout container with the \"Request Payout Withdrawal\" CTA + Friday/Rs 5,000 helper copy, (4) Earnings Breakdown This Month section, (5) the breakdown line items (No. of sales / Average / Highest Earned / Total Earned / Platform Fee (0%) / Net Earnings), (6) Payout History with \"View All\", (7) payout history rows with Completed status tags, (8) Payment Methods with \"Add Method\", (9) Payment Methods cards (Bank A/C Default, Bank A/C, Wallet). The code instead shows: a header titled \"Earnings\" (wrong copy), a generic 2x2 summary grid (Available/Pending/This Month/Total Payouts), a \"Ledger\" header with a \"Request Payout\" button, and a raw ledger entry list. Most spec sections (earnings breakdown, payout history with status tags, payment methods, the request-payout helper copy) are entirely missing, and several labels/copy strings are wrong. This requires a major rebuild to be spec-exact.",
+      "deviations": [
+        {
+          "element": "Screen header / AppBar title",
+          "kind": "copy",
+          "spec": "Earnings & Payments",
+          "actual": "Earnings",
+          "fix": "Change AppBar title Text from 'Earnings' to 'Earnings & Payments'."
+        },
+        {
+          "element": "Section 2 — Total Balance card heading",
+          "kind": "missing",
+          "spec": "A 'Total Balance' titled card section containing Available Balance and Pending Balance",
+          "actual": "No 'Total Balance' section title; balances are loose cells in a generic 2x2 grid",
+          "fix": "Add a 'Total Balance' titled container holding the Available + Pending balance cells with their icons."
+        },
+        {
+          "element": "Available Balance label",
+          "kind": "copy",
+          "spec": "Available Balance (In NPR)",
+          "actual": "Available",
+          "fix": "Change summary card label from 'Available' to 'Available Balance (In NPR)'."
+        },
+        {
+          "element": "Pending Balance label",
+          "kind": "copy",
+          "spec": "Pending Balance (In NPR)",
+          "actual": "Pending",
+          "fix": "Change summary card label from 'Pending' to 'Pending Balance (In NPR)'."
+        },
+        {
+          "element": "Balance cell icons / colors",
+          "kind": "missing",
+          "spec": "Each balance has a 48x48 rounded-8px icon container with a 28x28 icon; Available uses Primary-900 #092A17 bg + Primary-400 #2ECC71 icon, Pending uses Secondary-950 #3A2F03 bg + Secondary-700 #F1C40F icon",
+          "actual": "No icon containers; balances are plain label+value cards with colored text only",
+          "fix": "Add per-balance 48x48 icon containers with the specified background and icon fill colors."
+        },
+        {
+          "element": "Section 3 — Request Payout container (top-half/bottom-half)",
+          "kind": "missing",
+          "spec": "A 'Quick Metrics View & Payout Request' container with a yellow (Secondary-700 #F1C40F) bottom-half holding the Request Payout block",
+          "actual": "Only a plain 'Request Payout' TextButton in a Row next to a 'Ledger' header",
+          "fix": "Build the two-tone container; place the Request Payout CTA in the yellow bottom-half per spec."
+        },
+        {
+          "element": "Request Payout CTA label",
+          "kind": "copy",
+          "spec": "Request Payout Withdrawal",
+          "actual": "Request Payout",
+          "fix": "Change button text from 'Request Payout' to 'Request Payout Withdrawal'."
+        },
+        {
+          "element": "Request Payout helper copy",
+          "kind": "missing",
+          "spec": "Payouts are processed weekly on fridays. The minimum withdraw amount is Rs 5,000.00",
+          "actual": "Not present",
+          "fix": "Add the two-line helper/description text under the Request Payout CTA exactly as worded."
+        },
+        {
+          "element": "Section 4/5 — Earnings Breakdown This Month",
+          "kind": "missing",
+          "spec": "An 'Earnings Breakdown This Month' card listing: No. of sales across 23 reels (89); Average (Rs 2,335.88 per sale); Highest Earned from a Reel (Rs 18,909.22); Total Earned (Rs 42,334.56); Platform Fee (0%) (-0.00); Net Earnings (Rs 42,334.56), with a dashed divider before Net Earnings",
+          "actual": "Entire section absent; code has a generic 'This Month' and 'Total Payouts' grid cell instead",
+          "fix": "Add the Earnings Breakdown card with all six labeled rows, the dashed divider, and the negative-value styling (Text-Error #FF6467) for Platform Fee."
+        },
+        {
+          "element": "Section 6 — Payout History header + View All",
+          "kind": "missing",
+          "spec": "'Payout History' section title with a 'View All' action link (green #2ECC71)",
+          "actual": "Replaced by a 'Ledger' header (wrong copy) with no 'View All' link",
+          "fix": "Rename 'Ledger' to 'Payout History' and add a 'View All' action link."
+        },
+        {
+          "element": "Section title 'Ledger'",
+          "kind": "extra",
+          "spec": "No 'Ledger' label exists in the spec",
+          "actual": "Text('Ledger') section header present",
+          "fix": "Remove 'Ledger'; replace with 'Payout History' per spec."
+        },
+        {
+          "element": "Section 7 — Payout history rows + status tag",
+          "kind": "missing",
+          "spec": "Rows like 'Rs 12,500 Payout to Bank A/C', masked account '********1268', timestamp '12:35, Jan 20 2026', dot separator (3x3 #71717B), and a pill 'Completed' status tag (radius 99px, bg Success-200 #B9F8CF, text Success-900 #0D542B)",
+          "actual": "Generic LedgerEntryTile list with no Completed status tag, no masked account/dot-separator layout per spec",
+          "fix": "Render payout history rows with masked account number, timestamp with dot separator, and the 'Completed' pill status tag styled per spec."
+        },
+        {
+          "element": "Section 8 — Payment Methods header + Add Method",
+          "kind": "missing",
+          "spec": "'Payment Methods' section title with an 'Add Method' action link",
+          "actual": "Not present",
+          "fix": "Add the 'Payment Methods' section header with an 'Add Method' action link."
+        },
+        {
+          "element": "Section 9 — Payment Methods cards",
+          "kind": "missing",
+          "spec": "Cards: 'Bank A/C' with 'Default' tag (Tag-Info-Fill #B8E6FE / text #024A70) showing '********4566 Chase Bank'; 'Bank A/C' '********3586 Nabil Bank'; 'Wallet' '********22 Esewa'; each with 48x48 icon container and a more-actions (32x32) icon button",
+          "actual": "Not present",
+          "fix": "Add Payment Methods cards listing bank/wallet entries with masked numbers, partner name, 'Default' info tag, and more-actions icon button."
+        },
+        {
+          "element": "Summary cells 'This Month' / 'Total Payouts'",
+          "kind": "extra",
+          "spec": "Spec has no standalone 'This Month' or 'Total Payouts' summary tiles; those values belong inside the Earnings Breakdown section",
+          "actual": "_SummaryGrid renders 'This Month' and 'Total Payouts' as 3rd/4th grid tiles",
+          "fix": "Remove these tiles; move month earnings into the Earnings Breakdown card per spec layout."
+        },
+        {
+          "element": "Empty state copy",
+          "kind": "copy",
+          "spec": "Spec shows a populated screen; no empty-state copy 'No earnings yet. Start creating content to earn!' is defined",
+          "actual": "SmEmptyState with 'No earnings yet.\\nStart creating content to earn!'",
+          "fix": "Verify empty-state copy with design; spec defines no such string — confirm or remove."
+        }
+      ],
+      "_pair": {
+        "name": "Earnings & Payments",
+        "screen": "lib/features/creator/earnings/presentation/screens/earnings_screen.dart",
+        "pat": "Earnings & Payments"
+      }
+    },
+    {
+      "screen": "Creator — Brand Details (brand_detail_screen.dart)",
+      "pdfUsed": "Design Specification Doc - Brand Details.pdf",
+      "overallMatch": "major",
+      "summary": "The base \"Brand Details\" PDF specifies a rich brand-profile screen: a Brand Overview header (64px round avatar, brand name, star rating + category with dot separator, a \"12-20% Commissions\" info tag), a Description/Brand Details block with \"Read More\", two stat rows (Avg Order Value, Success Rate with Creators), a 4-tab bar (Top Products / Sample Campaigns / Partnership Terms / Description), a numbered \"Top Earning Products\" list, and a sticky primary \"Apply for Partnership\" button. The current Dart screen implements an entirely different, minimal layout: a state chip, a star+rating, a single \"Commission\" card, an optional request message, a \"Partnership Terms\" heading, and two terms section cards. Almost every section the PDF shows is missing, and the screen has no Apply CTA, no tabs, no brand overview, and no products list. This is a major structural mismatch.",
+      "deviations": [
+        {
+          "element": "Brand Overview header (avatar + name + rating + category)",
+          "kind": "missing",
+          "spec": "Top section: round Brand Avatar (border-radius 50px, 64x64), Brand Name e.g. 'Nike Official Store' (Poppins 16px/600, #FFF), star icon (#F1C40F 16px) + Brand Rating '4.8' (12px/600), dot separator (#71717B, 3px), category 'Athletic & Sportswear' (12px/400, #9F9FA9)",
+          "actual": "No brand avatar, no brand name, no category. Only a state Chip + a bare star + numeric rating Row at top.",
+          "fix": "Add a Brand Overview header widget rendering circular avatar (64), brand display name (mediumSemibold white), then a row of star + rating + dot separator + category label."
+        },
+        {
+          "element": "Commission info tag",
+          "kind": "copy",
+          "spec": "Pill info tag reading '12-20% Commissions' (padding 4px 8px, radius 99px, background Tag-Info-Fill #B8E6FE, text Tag-Info-Text #024A70, Poppins 12px/600)",
+          "actual": "A 'Commission' card with label 'Commission' on the left and the range value (e.g. '12–20%') in green on the right — no 'Commissions' word, different layout/colors.",
+          "fix": "Render the commission as a blue info pill with text '{min}-{max}% Commissions' using Tag-Info-Fill/Tag-Info-Text colors, not a left/right card row."
+        },
+        {
+          "element": "Brand Description / 'Read More'",
+          "kind": "missing",
+          "spec": "Description block: 'Nike is one of the world's most recognizable and iconic sportswear brands, founded in 1964 by Bill Bowerman and Phil Knight, originally..' followed by 'Read More' action (Text-Primary #2ECC71, 12px/600)",
+          "actual": "No description text and no 'Read More' affordance. Code shows an optional p.requestMessage instead.",
+          "fix": "Add a brand description paragraph (bodyText) with a truncation + 'Read More' green action toggle."
+        },
+        {
+          "element": "Avg Order Value stat",
+          "kind": "missing",
+          "spec": "Stat row: label 'Avg Order Value' with value e.g. 'Rs 12,899.98'",
+          "actual": "Not present.",
+          "fix": "Add a stat row 'Avg Order Value' with the formatted Rs value."
+        },
+        {
+          "element": "Success Rate with Creators stat",
+          "kind": "missing",
+          "spec": "Stat row: label 'Success Rate with Creators' with value e.g. '97%'",
+          "actual": "Not present.",
+          "fix": "Add a stat row 'Success Rate with Creators' with the percent value."
+        },
+        {
+          "element": "4-tab bar",
+          "kind": "missing",
+          "spec": "4 Tabs (Poppins 14px/400, muted #9F9FA9; active 3px underline #2ECC71, text #2ECC71): 'Top Products', 'Sample Campaigns', 'Partnership Terms', 'Description'",
+          "actual": "No tab bar at all; 'Partnership Terms' is rendered as a static section heading only.",
+          "fix": "Add a TabBar/segmented control with exactly these four tabs and the active-underline styling; route 'Partnership Terms' content into its tab."
+        },
+        {
+          "element": "Top Earning Products list",
+          "kind": "missing",
+          "spec": "Numbered list (1-5) of top products: 56x56 thumbnail (radius 12px), position number (#9F9FA9 18px/600), Product Name (14px/400 #FFF), Product Price (11px #FFF), dot separator, Sales count (11px #D4D4D8). Sample rows: 'Nike Air Jordan Travis Scott Limited Edition' Rs 25,000 · 245 sales; 'Nike Air Max Reds 2025' Rs 18,000 · 233 sales; 'Nike Air Jordan Autumn Bloom Ultra Light Sneakers' Rs 32,500 · 208 sales; 'Nike Tech Fleece Jacket' Rs 12,000 · 178 sales; 'Nike Omi Multi Court Sneakers' Rs 16,000 · 148 sales",
+          "actual": "Not present.",
+          "fix": "Add a Top Products list section (numbered rows with thumbnail, name, price · sales) under the Top Products tab."
+        },
+        {
+          "element": "Sticky 'Apply for Partnership' button",
+          "kind": "missing",
+          "spec": "Sticky bottom CTA: wrapper padding 24px 16px 0, background #09090B, top border #3F3F46; pill button (radius 999px, padding 16px 32px, background Button-Primary-Solid #2ECC71) with Button Text 'Apply for Partnership' (Poppins 16px/600, color #06190E) + leading icon (#06190E, 16x16)",
+          "actual": "No Apply button anywhere on the screen.",
+          "fix": "Add a sticky bottomNavigationBar / bottom-pinned primary pill button labeled 'Apply for Partnership' with leading icon and the specified colors."
+        },
+        {
+          "element": "State chip",
+          "kind": "extra",
+          "spec": "No state/status chip appears in the base Brand Details PDF.",
+          "actual": "A green _Chip rendering p.stateLabel is shown at top-left.",
+          "fix": "Remove the state chip (or move to a status-specific variant screen); the base brand-detail screen does not show it."
+        },
+        {
+          "element": "Partnership Terms section cards",
+          "kind": "layout",
+          "spec": "Partnership Terms is one of four tabs; the base PDF does not detail standalone 'Who Can Join' / 'Reel Content Rules' cards on this screen (those belong to the separate Partnership Terms spec).",
+          "actual": "Screen statically renders a 'Partnership Terms' heading plus two _TermsSectionCard widgets (whoCanJoin, reelContentRules) inline.",
+          "fix": "Move terms cards into the 'Partnership Terms' tab rather than rendering them inline as the screen body."
+        },
+        {
+          "element": "Header title",
+          "kind": "copy",
+          "spec": "Screen Header title text: 'Brand Details' (Poppins 18px/600, #FFF)",
+          "actual": "Title 'Brand Details' — matches.",
+          "fix": "No change (title copy matches)."
+        }
+      ],
+      "_pair": {
+        "name": "Brand Details",
+        "screen": "lib/features/creator/partnerships/presentation/screens/brand_detail_screen.dart",
+        "pat": "Brand Details"
+      }
+    },
+    {
+      "screen": "Creator — Brand Partnerships (Brands)",
+      "pdfUsed": "Design Specification Doc - Brands.pdf",
+      "overallMatch": "major",
+      "summary": "The Dart screen is an entirely different design from the spec. The spec \"Brand Partnerships\" is a single scrolling screen with two stat cards (Active Partnerships / Pending Requests), a \"Recommended Brands for You\" section with rich recommendation cards (rating, category, AI reason, commission range, products available, creators active), a horizontal category filter chip row, a \"Browse all Brands\" link, a full compact brands list, and a bottom nav bar (Home/Analytics/Brands/Profile). The code instead implements a two-tab (Invites/Active) layout with simple metric cards and no recommended-brands, no stat cards, no filter chips, no browse link, no bottom nav. This requires a near-complete rebuild to be spec-exact. Title copy is wrong, tabs are wrong/extra, and nearly every documented section is missing.",
+      "deviations": [
+        {
+          "element": "App header title",
+          "kind": "copy",
+          "spec": "\"Brand Partnerships\"",
+          "actual": "\"Partnerships\"",
+          "fix": "Change AppBar title Text to 'Brand Partnerships'."
+        },
+        {
+          "element": "Tab bar (Invites/Active)",
+          "kind": "extra",
+          "spec": "No TabBar in spec. Screen is a single vertical scroll with stat cards + sections.",
+          "actual": "TabBar with tabs 'Invites' and 'Active'; TabBarView with two tabs.",
+          "fix": "Remove the TabController/TabBar/TabBarView. Replace with a single scrolling CustomScrollView/ListView matching spec sections."
+        },
+        {
+          "element": "Tab label 'Invites'",
+          "kind": "copy",
+          "spec": "No such tab. Spec has stat card labeled \"Pending Requests\".",
+          "actual": "Tab(text: 'Invites')",
+          "fix": "Remove tab; surface pending requests as the \"Pending Requests\" stat card instead."
+        },
+        {
+          "element": "Tab label 'Active'",
+          "kind": "copy",
+          "spec": "No such tab. Spec has stat card labeled \"Active Partnerships\".",
+          "actual": "Tab(text: 'Active')",
+          "fix": "Remove tab; surface active partnerships as the \"Active Partnerships\" stat card."
+        },
+        {
+          "element": "Stat cards row",
+          "kind": "missing",
+          "spec": "Two top stat cards: \"Active Partnerships\" (count e.g. 3) and \"Pending Requests\" (count e.g. 2). Pending card highlighted green (background Primary-400 #2ECC71); Active card has border 1px #3F3F46 on Gray-900 #18181B. Card radius 16px, padding 16px. Each has an icon container (48px, radius 32px) and stat label (12px/400 #06190E for green / #FFF) + stat data (20px/600).",
+          "actual": "No stat cards anywhere.",
+          "fix": "Add a Row of two stat cards above the recommended section per the spec styling and counts."
+        },
+        {
+          "element": "Section title \"Recommended Brands for You\"",
+          "kind": "missing",
+          "spec": "Section title text \"Recommended Brands for You\", color Text-Light #D4D4D8, Poppins 14px/400, line-height 150%.",
+          "actual": "Absent.",
+          "fix": "Add this section header above the recommended-brands list."
+        },
+        {
+          "element": "Recommended brand cards",
+          "kind": "missing",
+          "spec": "Rich cards: container radius 16px, bg Fill-App-Body #18181B, padding 16px. Contents: brand avatar (40px round), brand name (16px/600 #FFF), rating row \"4.9 Stars\" with star icon (#F1C40F) + category (e.g. \"Athletic & Sportswear\"), recommended reason \"We recommended this because it matches your fashion category\" (#D4D4D8, 12px/400), then detail rows: \"Commission Range\" -> \"12-20%\", \"Products\" -> \"234 available\", \"Creators\" -> \"1,235 active\".",
+          "actual": "Absent entirely.",
+          "fix": "Build a recommended-brand card widget with avatar, name, rating+category line, AI reason text, and the three labeled detail rows."
+        },
+        {
+          "element": "Recommended reason copy",
+          "kind": "copy",
+          "spec": "Exact strings: \"We recommended this because it matches your fashion category\" and \"We recommended this because there is high conversion in Beauty Products\".",
+          "actual": "Absent.",
+          "fix": "Render the recommendation reason string verbatim from data; match label \"We recommended this because...\"."
+        },
+        {
+          "element": "Detail row labels",
+          "kind": "copy",
+          "spec": "Labels \"Commission Range\", \"Products\", \"Creators\" with values like \"12-20%\", \"234 available\", \"1,235 active\".",
+          "actual": "Active card uses labels \"Earned\", \"Sales\", \"Products\" instead.",
+          "fix": "Use spec labels and value formats; note \"available\"/\"active\" suffixes on counts."
+        },
+        {
+          "element": "Rating display format",
+          "kind": "copy",
+          "spec": "Rating shown as \"4.9 Stars\" / \"5.0 Stars\" with star icon #F1C40F.",
+          "actual": "No rating shown on cards.",
+          "fix": "Add rating text in \"X.X Stars\" format with a star icon."
+        },
+        {
+          "element": "Commission label format",
+          "kind": "copy",
+          "spec": "On compact list items commission shown as \"12-20%\" under \"Commission Range\"; on full brands list as \"10-20% Commissions\", \"8-12% Commissions\" etc. (Info-400 #00BCFF, 14px/400).",
+          "actual": "Active card shows \"{n}% commission\" (single rate, lowercase).",
+          "fix": "Use ranges and the \"N-N% Commissions\" / \"Commission Range  N-N%\" wording exactly; color Info-400 #00BCFF."
+        },
+        {
+          "element": "Category filter chips",
+          "kind": "missing",
+          "spec": "Horizontal chip row: \"All Fashion\", \"Accessories\", \"Sports\", \"Fitness\", \"Travel\", \"Tech\". Selected chip: border #26A65C, fill #0F4325, text #FFF; default chip: border #52525C, text #D4D4D8. radius 32px, padding 6px 12px, gap 8px, row padding 16px 0.",
+          "actual": "Absent.",
+          "fix": "Add a horizontal scrollable chip filter row with these labels and chip styles."
+        },
+        {
+          "element": "\"Browse all Brands\" link",
+          "kind": "missing",
+          "spec": "Link/section labeled \"Browse all Brands\" introducing the full brands list.",
+          "actual": "Absent.",
+          "fix": "Add \"Browse all Brands\" header/link above the full list."
+        },
+        {
+          "element": "Full brands list",
+          "kind": "missing",
+          "spec": "Compact list items: container padding 12px 16px, avatar 48px round, brand name 16px/600, rating+category line \"4.7 Stars Fashion\", commission \"20-25% Commissions\" (#00BCFF), chevron icon 16px #9F9FA9. Example brands: Nike Official Store, Sephora Beauty, Puma, Kharayo Bakes, Ultimate Lifestyle, Zara Clothing.",
+          "actual": "Absent — code only has active-partnership cards.",
+          "fix": "Build a compact brand list-item widget with avatar/name/rating/category/commission/chevron and render the full brand list."
+        },
+        {
+          "element": "Bottom navigation bar",
+          "kind": "missing",
+          "spec": "Bottom nav with items: Home, Analytics, Brands, Profile.",
+          "actual": "No bottom nav in this screen.",
+          "fix": "Ensure the screen sits within / shows the creator bottom nav (Home, Analytics, Brands, Profile) with Brands active."
+        },
+        {
+          "element": "Invites empty state copy",
+          "kind": "copy",
+          "spec": "No \"Invites\" concept; pending shown via \"Pending Requests\" stat card.",
+          "actual": "SmEmptyState message 'No pending invites.'",
+          "fix": "Remove invites tab/empty state; reframe as pending requests count."
+        },
+        {
+          "element": "Active empty state copy",
+          "kind": "copy",
+          "spec": "No standalone active tab empty state in base spec.",
+          "actual": "SmEmptyState message 'No active partnerships.'",
+          "fix": "Remove; integrate into the single-screen layout."
+        },
+        {
+          "element": "Error message copy",
+          "kind": "copy",
+          "spec": "Spec does not document an error string for this screen.",
+          "actual": "SmErrorView message 'Failed to load partnerships.'",
+          "fix": "Acceptable as generic, but verify against any documented error copy; otherwise leave."
+        },
+        {
+          "element": "Card background token",
+          "kind": "color",
+          "spec": "Recommended/list card bg Fill-App-Body #18181B (Gray-900).",
+          "actual": "Active card uses DesignTokens.bgAppBody (verify it equals #18181B).",
+          "fix": "Confirm bgAppBody maps to #18181B; the green Pending stat card must use Primary-400 #2ECC71."
+        }
+      ],
+      "_pair": {
+        "name": "Brands (partnerships list)",
+        "screen": "lib/features/creator/partnerships/presentation/screens/partnerships_screen.dart",
+        "pat": "Brands"
+      }
+    },
+    {
+      "screen": "Import Reel (Creator)",
+      "pdfUsed": "Design Specification Doc -Import Reel.pdf",
+      "overallMatch": "major",
+      "summary": "The PDF specifies a single-reel \"paste a URL\" import flow: header \"Import Reel\" with a description, a 4-option Select Platform radio-card row (Instagram / Youtube Shorts / TikTok / Facebook), a \"Paste Reel URL\" input field, a \"How to get the link?\" info card, a \"Supported URL Formats\" info card, and two sticky bottom buttons (\"Save as Draft\" + \"Import Reel\"). The Dart code implements an entirely different design: a tabbed (Import / History) screen with horizontally-scrolling platform ChoiceChips and a 2-column grid of importable reels. Nearly every documented element is missing or wrong. This is a major layout mismatch requiring a near-complete rebuild to match spec.",
+      "deviations": [
+        {
+          "element": "Screen header title",
+          "kind": "copy",
+          "spec": "\"Import Reel\" (singular), 18px Poppins weight 600, color #FFF",
+          "actual": "Text 'Import Reels' (plural) using DesignTokens.titleMedium",
+          "fix": "Change AppBar title text from 'Import Reels' to 'Import Reel'"
+        },
+        {
+          "element": "Screen description",
+          "kind": "missing",
+          "spec": "Description text under title: \"Paste the link to your post from Instagram, TikTok or Youtube Shorts. We'll import it automatically\" — 16px Poppins weight 400, #FFF, line-height 150%",
+          "actual": "No description text rendered anywhere",
+          "fix": "Add a description subtitle below the header with the exact spec copy"
+        },
+        {
+          "element": "Tabs (Import / History)",
+          "kind": "extra",
+          "spec": "PDF shows NO tabs — single-purpose import screen",
+          "actual": "TabBar with two tabs: Tab(text:'Import'), Tab(text:'History')",
+          "fix": "Remove the TabBar/TabBarView; History is not part of this screen per the spec"
+        },
+        {
+          "element": "Select Platform section label",
+          "kind": "missing",
+          "spec": "Section label \"Select Platform\" 14px Poppins weight 600 #FFF above the platform options",
+          "actual": "No 'Select Platform' label; platforms shown as bare scrolling chips",
+          "fix": "Add a 'Select Platform' section label above the platform selector"
+        },
+        {
+          "element": "Platform options",
+          "kind": "layout",
+          "spec": "Four radio-cards (83.5x84px each, 12px radius, icon 32px + name) in a row: Instagram, Youtube Shorts, TikTok, Facebook — checked card has green border #2ECC71 + check icon",
+          "actual": "Horizontal scrolling ChoiceChip row generated from SocialPlatform.values",
+          "fix": "Replace ChoiceChips with the four fixed radio-card tiles (icon + platform name, green-bordered selected state) matching spec dimensions"
+        },
+        {
+          "element": "Platform label wording",
+          "kind": "copy",
+          "spec": "Labels: \"Instagram\", \"Youtube Shorts\", \"TikTok\", \"Facebook\"",
+          "actual": "Uses platform.displayName from enum (not verified to match spec wording, notably 'Youtube Shorts')",
+          "fix": "Ensure displayed labels read exactly 'Instagram', 'Youtube Shorts', 'TikTok', 'Facebook'"
+        },
+        {
+          "element": "Paste Reel URL input field",
+          "kind": "missing",
+          "spec": "Input field labelled \"Paste Reel URL\" with placeholder, link icon (16x16, #71717B), 14px 16px padding, 8px radius, border #52525C, fill #27272A",
+          "actual": "No URL input field exists; screen browses reels instead of accepting a pasted link",
+          "fix": "Add the 'Paste Reel URL' labeled text input with link icon per spec"
+        },
+        {
+          "element": "How to get the link? info card",
+          "kind": "missing",
+          "spec": "Info card titled \"How to get the link ?\" (#B8E6FE on #052F4A, 16px radius, 12px padding) with bullets: \"Open your reel on Instagram\", \"Tap the share button\", \"Select \\\"Copy Link\\\"\", \"Paste it above\"",
+          "actual": "Not present",
+          "fix": "Add the 'How to get the link ?' info card with the four exact bullet strings"
+        },
+        {
+          "element": "Supported URL Formats info card",
+          "kind": "missing",
+          "spec": "Info card titled \"Supported URL Formats\" (#FCF1C5 title on #052F4A) with lines: instagram.com/reel/[ID], instagram.com/p/[ID], tiktok.com/@user/video/[ID], youtube.com/shorts/[ID]",
+          "actual": "Not present",
+          "fix": "Add the 'Supported URL Formats' info card listing the four exact URL format strings"
+        },
+        {
+          "element": "Sticky bottom buttons",
+          "kind": "missing",
+          "spec": "Sticky footer (24px 16px 0 padding, top border #3F3F46) with two pill buttons (999px radius): \"Save as Draft\" (gray #3F3F46 fill, #FFF text) and \"Import Reel\" (primary green #2ECC71 fill, #06190E text + icon)",
+          "actual": "No bottom action buttons; navigation happens by tapping a grid card",
+          "fix": "Add the sticky footer with 'Save as Draft' and 'Import Reel' pill buttons per spec colors/wording"
+        },
+        {
+          "element": "Reel grid / browse list",
+          "kind": "extra",
+          "spec": "No grid of selectable reels in the spec — import is by pasted URL",
+          "actual": "2-column GridView of ImportableReelCard plus a History ListView",
+          "fix": "Remove the reel grid/history browsing UI; not part of the spec'd paste-URL flow"
+        },
+        {
+          "element": "Empty-state copy",
+          "kind": "extra",
+          "spec": "No empty-state defined (no list to be empty)",
+          "actual": "SmEmptyState 'No reels found on this platform.' and 'No imported reels yet.'",
+          "fix": "Remove these empty states along with the grid/list they belong to"
+        }
+      ],
+      "_pair": {
+        "name": "Import Reel",
+        "screen": "lib/features/creator/reel_import/presentation/screens/import_reel_screen.dart",
+        "pat": "Import Reel"
+      }
+    }
+  ]
+}
