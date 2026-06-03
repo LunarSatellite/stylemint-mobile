@@ -86,3 +86,6 @@ assets/animations/*.json
 
 # FVM (per-machine Flutter SDK symlink; .fvmrc is the committed pin)
 .fvm/
+
+# local dev logs
+logs/
