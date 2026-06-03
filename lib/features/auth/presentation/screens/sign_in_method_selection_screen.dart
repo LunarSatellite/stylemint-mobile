@@ -229,25 +229,12 @@ class SmPasskeyButton extends StatelessWidget {
                         color: DesignTokens.buttonPrimaryText,
                       ),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/icons/passkey.svg',
-                          width: 22,
-                          height: 22,
-                          colorFilter: const ColorFilter.mode(
-                            DesignTokens.buttonPrimaryText,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: DesignTokens.s8),
-                        Text(
-                          'Continue with Passkey',
-                          style: DesignTokens.oneLinerSemibold
-                              .copyWith(color: DesignTokens.buttonPrimaryText),
-                        ),
-                      ],
+                  : Text(
+                      'Continue with Passkey',
+                      style: DesignTokens.oneLinerSemibold.copyWith(
+                        color: DesignTokens.buttonPrimaryText,
+                        letterSpacing: 0.2,
+                      ),
                     ),
             ),
           ),
