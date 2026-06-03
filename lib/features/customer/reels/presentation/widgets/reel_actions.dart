@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,47 +48,56 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ActionButton(
-          icon: _isLiked ? Icons.favorite : Icons.favorite_outline,
-          label: _formatCount(_likeCount),
-          color: _isLiked ? DesignTokens.colorError : DesignTokens.iconWhite,
-          onTap: _toggleLike,
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _ActionButton(
-          icon: Icons.chat_bubble_outline,
-          label: _formatCount(reel.commentCount),
-          onTap: () => _requireAuth(
-            AuthReason.comment,
-            () => context.push('/reels/${reel.id}/comments'),
+    // Spec: single glassmorphic interaction pill (radius 20, rgba(51,51,51,0.6),
+    // blur 20, padding 16, gap 4) — not separate per-icon circles.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF333333).withValues(alpha: 0.60),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ActionButton(
+                icon: _isLiked ? Icons.favorite : Icons.favorite_outline,
+                label: _formatCount(_likeCount),
+                color: _isLiked
+                    ? DesignTokens.colorError
+                    : DesignTokens.iconWhite,
+                onTap: _toggleLike,
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              _ActionButton(
+                icon: Icons.chat_bubble_outline,
+                label: _formatCount(reel.commentCount),
+                onTap: () => _requireAuth(
+                  AuthReason.comment,
+                  () => context.push('/reels/${reel.id}/comments'),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              _ActionButton(
+                icon: Icons.share_outlined,
+                label: _formatCount(reel.shareCount),
+                onTap: () => _requireAuth(AuthReason.share, () {}),
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              _ActionButton(
+                icon: _isWishlisted ? Icons.bookmark : Icons.bookmark_outline,
+                color: _isWishlisted
+                    ? DesignTokens.secondaryYellow
+                    : DesignTokens.iconWhite,
+                onTap: _toggleWishlist,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: DesignTokens.s16),
-        _ActionButton(
-          icon: Icons.share_outlined,
-          label: _formatCount(reel.shareCount),
-          onTap: () => _requireAuth(AuthReason.share, () {}),
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _ActionButton(
-          icon: _isWishlisted ? Icons.bookmark : Icons.bookmark_outline,
-          color: _isWishlisted
-              ? DesignTokens.secondaryYellow
-              : DesignTokens.iconWhite,
-          onTap: _toggleWishlist,
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _ActionButton(
-          icon: Icons.shopping_cart_outlined,
-          label: reel.taggedProducts.isEmpty
-              ? null
-              : '${reel.taggedProducts.length}',
-          onTap: () => _requireAuth(AuthReason.addToCart, () {}),
-        ),
-      ],
+      ),
     );
   }
 
@@ -118,20 +129,19 @@ class _ActionButton extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: DesignTokens.avatarMedium,
-            height: DesignTokens.avatarMedium,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: DesignTokens.baseBlack.withValues(alpha: 0.3),
-            ),
-            child: Icon(icon, color: color, size: DesignTokens.iconMedium),
-          ),
+          Icon(icon, color: color, size: 24),
           if (label != null && label!.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s4),
             Text(
               label!,
-              style: DesignTokens.tiny.copyWith(color: DesignTokens.textWhite),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
+                color: DesignTokens.textWhite,
+              ),
             ),
           ],
         ],

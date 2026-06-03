@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,19 +45,24 @@ class _ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
+    // Spec: 310px card, rgba(51,51,51,0.6) + backdrop blur(20), 16px radius.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+      width: 310,
       padding: const EdgeInsets.all(DesignTokens.s8),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(DesignTokens.s12),
+        color: const Color(0xFF333333).withValues(alpha: 0.60),
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.s8),
+            borderRadius: BorderRadius.circular(DesignTokens.s12),
             child: SizedBox(
-              width: 64, height: 64,
+              width: 72, height: 72,
               child: product.imageUrl.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: product.imageUrl,
@@ -70,7 +77,7 @@ class _ProductTile extends StatelessWidget {
                   : const ColoredBox(color: DesignTokens.bgAppBodyLight),
             ),
           ),
-          const SizedBox(width: DesignTokens.s12),
+          const SizedBox(width: DesignTokens.s8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -81,30 +88,38 @@ class _ProductTile extends StatelessWidget {
                     style: DesignTokens.mediumSemibold.copyWith(
                         color: DesignTokens.textWhite)),
                 const SizedBox(height: DesignTokens.s4),
+                // Spec: price 14/600/130%, #D4D4D8, right-aligned.
                 MoneyText(product.price,
-                    style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textLight)),
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                      color: DesignTokens.textLight,
+                    )),
               ],
             ),
           ),
           const SizedBox(width: DesignTokens.s8),
+          // Spec: "Add to Cart" underlined green text link (not a filled pill).
           GestureDetector(
             onTap: () => _addToCart(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s12,
-                  vertical: DesignTokens.s6),
-              decoration: BoxDecoration(
+            child: const Text(
+              'Add to Cart',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
                 color: DesignTokens.primaryGreen,
-                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                decoration: TextDecoration.underline,
+                decorationColor: DesignTokens.primaryGreen,
               ),
-              child: Text('Add',
-                  style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.buttonPrimaryText,
-                      fontWeight: FontWeight.w600)),
             ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }
