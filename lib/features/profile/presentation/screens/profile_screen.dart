@@ -164,6 +164,11 @@ class _ProfileBody extends StatelessWidget {
               },
             ),
             ProfileMenuItem(
+              icon: Icons.qr_code_scanner_rounded,
+              label: 'Log in on web',
+              onTap: () => context.push(RouteNames.qrScan),
+            ),
+            ProfileMenuItem(
               icon: Icons.notifications_outlined,
               label: 'Notification Settings',
               onTap: () => context.push(RouteNames.settings),
