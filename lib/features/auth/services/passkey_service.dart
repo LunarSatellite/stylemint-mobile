@@ -4,6 +4,7 @@ import 'package:passkeys/authenticator.dart';
 import 'package:passkeys/exceptions.dart';
 import 'package:passkeys/types.dart';
 
+import 'package:stylemint_mobile_frontend/core/busy/busy_controller.dart';
 import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/index.dart';
@@ -14,11 +15,20 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 /// StyleMint backend repository, converting between the package's types and
 /// our [PasskeyChallengeDto] / [PasskeyCredentialDto] / [AuthResponseDto].
 class PasskeyService {
-  PasskeyService({required this.authRepository, required this.deviceIdentity})
-      : _authenticator = PasskeyAuthenticator();
+  PasskeyService({
+    required this.authRepository,
+    required this.deviceIdentity,
+    required this.busy,
+  }) : _authenticator = PasskeyAuthenticator();
 
   final AuthRepository authRepository;
   final DeviceIdentity deviceIdentity;
+
+  /// Drives the global busy indicator around the platform-authenticator step
+  /// (the biometric / security-key prompt), which isn't a network call so the
+  /// Dio interceptor wouldn't otherwise cover it.
+  final BusyController busy;
+
   final PasskeyAuthenticator _authenticator;
 
   // ---------------------------------------------------------------------------
@@ -56,7 +66,8 @@ class PasskeyService {
     // Step 3 — platform authenticator
     final RegisterResponseType platformResponse;
     try {
-      platformResponse = await _authenticator.register(platformRequest);
+      platformResponse =
+          await busy.run(() => _authenticator.register(platformRequest));
     } catch (e) {
       return Left<NetworkExceptions, PasskeyCredentialDto>(_mapPasskeyError(e));
     }
@@ -103,7 +114,8 @@ class PasskeyService {
     // Step 3 — platform authenticator
     final AuthenticateResponseType platformResponse;
     try {
-      platformResponse = await _authenticator.authenticate(platformRequest);
+      platformResponse =
+          await busy.run(() => _authenticator.authenticate(platformRequest));
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -145,7 +157,8 @@ class PasskeyService {
 
     final AuthenticateResponseType platformResponse;
     try {
-      platformResponse = await _authenticator.authenticate(platformRequest);
+      platformResponse =
+          await busy.run(() => _authenticator.authenticate(platformRequest));
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -189,7 +202,8 @@ class PasskeyService {
 
     final RegisterResponseType platformResponse;
     try {
-      platformResponse = await _authenticator.register(platformRequest);
+      platformResponse =
+          await busy.run(() => _authenticator.register(platformRequest));
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -236,5 +250,6 @@ final passkeyServiceProvider = Provider<PasskeyService>((ref) {
   return PasskeyService(
     authRepository: ref.watch(authRepositoryProvider),
     deviceIdentity: ref.watch(deviceIdentityProvider),
+    busy: ref.read(busyControllerProvider.notifier),
   );
 });
