@@ -7,6 +7,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:stylemint_mobile_frontend/core/busy/busy_controller.dart';
 import 'package:stylemint_mobile_frontend/core/config/api_config.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
@@ -16,6 +17,7 @@ part 'dio_client.g.dart';
 @Riverpod(keepAlive: true)
 Dio dioClient(Ref ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
+  final busy = ref.read(busyControllerProvider.notifier);
 
   final dio = Dio(BaseOptions(
     baseUrl: ApiConfig.baseUrl,
@@ -26,6 +28,10 @@ Dio dioClient(Ref ref) {
   ));
 
   dio.interceptors.addAll([
+    // Outermost: drives the global busy indicator. begin() on request, end()
+    // on the single terminal (response OR error) — balanced even through the
+    // auth 401-refresh-retry path (which resolves via the response chain).
+    _BusyInterceptor(onBegin: busy.begin, onEnd: busy.end),
     _IdempotencyInterceptor(),
     _CorrelationInterceptor(),
     _AuthInterceptor(tokenStorage: tokenStorage, baseUrl: ApiConfig.baseUrl),
@@ -50,6 +56,33 @@ Dio dioClient(Ref ref) {
 final apiClientProvider = Provider<ApiClient>(
   (ref) => ApiClient(dio: ref.watch(dioClientProvider)),
 );
+
+/// Increments/decrements the global busy count around every request so the
+/// app shows a "please wait" indicator while the network is in flight.
+class _BusyInterceptor extends Interceptor {
+  _BusyInterceptor({required this.onBegin, required this.onEnd});
+
+  final void Function() onBegin;
+  final void Function() onEnd;
+
+  @override
+  void onRequest(RequestOptions opts, RequestInterceptorHandler handler) {
+    onBegin();
+    handler.next(opts);
+  }
+
+  @override
+  void onResponse(Response<dynamic> res, ResponseInterceptorHandler handler) {
+    onEnd();
+    handler.next(res);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    onEnd();
+    handler.next(err);
+  }
+}
 
 /// Attaches Idempotency-Key to every non-safe mutation.
 /// NOTE: The key is set here only as a fallback; callers should pass it

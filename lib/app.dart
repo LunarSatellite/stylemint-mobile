@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/busy/busy_overlay.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -18,6 +19,9 @@ class StyleMintApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       routerConfig: router,
+      // Global, non-blocking "please wait" bar shown while any API call runs.
+      builder: (context, child) =>
+          BusyOverlay(child: child ?? const SizedBox.shrink()),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
