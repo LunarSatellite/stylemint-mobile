@@ -46,6 +46,7 @@ abstract class RouteNames {
   static const paymentAddCard = '/payment/add-card';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
+  static const qrScan = '/qr-login/scan';
   static const profileFollowing = '/profile/following';
   static const profileSavedItems = '/profile/saved-items';
 

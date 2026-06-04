@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pas
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/register_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/otp_screen.dart';
+import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mfa_setup_screen.dart';
@@ -604,6 +605,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.profileFollowing,
         builder: (ctx, state) => const FollowingScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.qrScan,
+        builder: (ctx, state) => const QrScanScreen(),
       ),
 
       // Settings
