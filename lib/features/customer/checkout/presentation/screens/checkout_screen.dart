@@ -63,7 +63,14 @@ class CheckoutScreen extends ConsumerWidget {
                   children: [
                     const _SectionHeader(title: 'Shipping Address'),
                     const SizedBox(height: DesignTokens.s8),
-                    _AddressCard(address: summary.shippingAddress),
+                    // Spec: when no address is set yet, show the empty prompt
+                    // (truck icon + Add Shipping Address) instead of the card.
+                    if (summary.shippingAddress.addressLine1.trim().isEmpty)
+                      _EmptyAddressPrompt(
+                        onAdd: () => context.push(RouteNames.shippingAddEdit),
+                      )
+                    else
+                      _AddressCard(address: summary.shippingAddress),
                     const SizedBox(height: DesignTokens.s24),
                     const _SectionHeader(title: 'Payment Method'),
                     const SizedBox(height: DesignTokens.s8),
@@ -144,6 +151,66 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(title, style: DesignTokens.sectionInnerTitle);
+  }
+}
+
+// Empty shipping-address state (spec "Checkout — …Empty"): truck icon +
+// prompt + Add Shipping Address action.
+class _EmptyAddressPrompt extends StatelessWidget {
+  const _EmptyAddressPrompt({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+          vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Row(
+        children: [
+          // Delivery icon tile — #3A2F03 bg, #F1C40F 32px truck.
+          Container(
+            padding: const EdgeInsets.all(DesignTokens.s4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3A2F03),
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+            ),
+            child: const Icon(Icons.local_shipping_outlined,
+                size: 32, color: DesignTokens.secondaryYellow),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Text(
+              "You're almost there! Add a shipping address to continue.",
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textLight, height: 1.4),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s8),
+          GestureDetector(
+            onTap: onAdd,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: DesignTokens.buttonGrayFill,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.add_rounded,
+                  size: 20, color: DesignTokens.textWhite),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
