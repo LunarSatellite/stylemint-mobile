@@ -57,9 +57,9 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
     );
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: source);
     if (picked == null) return;
 
     setState(() => _uploading = true);
@@ -105,57 +105,83 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Product Images', style: DesignTokens.sectionInnerTitle),
+          Text('Product Images & Media',
+              style: DesignTokens.sectionInnerTitle),
           const SizedBox(height: DesignTokens.s4),
           Text(
-            'Add up to 8 images. Tap an image to set it as primary.',
-            style: DesignTokens.smallRegular,
+            'Upload 5-10 images (max 5mb each in JPG/PNG)',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight),
           ),
-          const SizedBox(height: DesignTokens.s20),
-          Wrap(
-            spacing: DesignTokens.s12,
-            runSpacing: DesignTokens.s12,
+          const SizedBox(height: DesignTokens.s16),
+          // Spec: Upload Image + Capture Image (white solid, #52525C text).
+          Row(
             children: [
-              ..._images.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final url = entry.value;
-                return _ImageTile(
-                  imageUrl: url,
-                  isPrimary: idx == _primaryIndex,
-                  onSetPrimary: () => _setPrimary(idx),
-                  onRemove: () => _removeImage(idx),
-                );
-              }),
-              if (_images.length < 8)
-                GestureDetector(
-                  onTap: _uploading ? null : _pickImage,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: DesignTokens.bgAppBodyLight,
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.cardRadius),
-                      border: Border.all(
-                        color: DesignTokens.borderDefault,
-                        width: 1,
-                      ),
-                    ),
-                    child: _uploading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: DesignTokens.primaryGreen,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.add_photo_alternate_outlined,
-                            color: DesignTokens.textMuted,
-                            size: 32,
-                          ),
-                  ),
+              Expanded(
+                child: _MediaButton(
+                  icon: Icons.upload_outlined,
+                  label: 'Upload Image',
+                  onTap: _uploading ? null : () => _pickImage(ImageSource.gallery),
                 ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: _MediaButton(
+                  icon: Icons.photo_camera_outlined,
+                  label: 'Capture Image',
+                  onTap: _uploading ? null : () => _pickImage(ImageSource.camera),
+                ),
+              ),
             ],
+          ),
+          if (_images.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s16),
+            Wrap(
+              spacing: DesignTokens.s12,
+              runSpacing: DesignTokens.s12,
+              children: _images.asMap().entries.map((entry) {
+                return _ImageTile(
+                  imageUrl: entry.value,
+                  isPrimary: entry.key == _primaryIndex,
+                  onSetPrimary: () => _setPrimary(entry.key),
+                  onRemove: () => _removeImage(entry.key),
+                );
+              }).toList(),
+            ),
+          ],
+          if (_uploading) ...[
+            const SizedBox(height: DesignTokens.s12),
+            const Center(
+              child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen, strokeWidth: 2),
+            ),
+          ],
+          const SizedBox(height: DesignTokens.s24),
+          // Optional product video (local/MOCK — ImagesInfo has no video field).
+          Text('Optional', style: DesignTokens.sectionInnerTitle),
+          const SizedBox(height: DesignTokens.s8),
+          GestureDetector(
+            onTap: () {/* TODO(vendor): video upload (no video field yet). */},
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBody,
+                borderRadius: BorderRadius.circular(DesignTokens.s12),
+                border: Border.all(color: DesignTokens.borderDefault),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.videocam_outlined,
+                      size: 24, color: DesignTokens.iconLight),
+                  const SizedBox(width: DesignTokens.s12),
+                  Text('Upload product video (max 60 sec)',
+                      style: DesignTokens.smallRegular
+                          .copyWith(color: DesignTokens.textLight)),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: DesignTokens.s32),
           SizedBox(
@@ -173,6 +199,49 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Spec: white solid button, #52525C text, 999 radius, 16px leading icon.
+class _MediaButton extends StatelessWidget {
+  const _MediaButton(
+      {required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Opacity(
+        opacity: onTap == null ? 0.6 : 1,
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: DesignTokens.textWhite,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: const Color(0xFF52525C)),
+              const SizedBox(width: DesignTokens.s8),
+              Text(label,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF52525C),
+                  )),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -199,7 +268,7 @@ class _ImageTile extends StatelessWidget {
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          borderRadius: BorderRadius.circular(DesignTokens.s12),
           border: Border.all(
             color:
                 isPrimary ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
