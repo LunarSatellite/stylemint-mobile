@@ -5,7 +5,6 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/notifiers/saved_items_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -72,7 +71,6 @@ class SavedItemsScreen extends ConsumerWidget {
                   ...List.generate(items.length, (i) {
                     return _SavedItemRow(
                       item: items[i],
-                      index: i,
                       onRemove: () => notifier.removeItem(items[i].id),
                       onAction: () => SmSnackbar.success(
                           context, 'Added to cart (coming soon).'),
@@ -184,26 +182,22 @@ enum _Stock { inStock, lowStock, outOfStock }
 class _SavedItemRow extends StatelessWidget {
   const _SavedItemRow({
     required this.item,
-    required this.index,
     required this.onRemove,
     required this.onAction,
   });
 
   final SavedItem item;
-  final int index;
   final VoidCallback onRemove;
   final VoidCallback onAction;
 
-  // MOCK — variant + stock aren't on SavedItem yet; derive deterministically.
-  static const _variants = ['1 Pound', 'Coffee Brown · 42 Size', '500ml'];
-
-  _Stock get _stock => _Stock.values[index % 3];
-
   @override
   Widget build(BuildContext context) {
-    final stock = _stock;
-    final oldPrice =
-        Money(amount: item.price.amount * 1.2, currency: item.price.currency);
+    // SavedForLaterItemDto carries no stock or compare-at price, so the row
+    // shows real data only: stock defaults to in-stock (a saved item that
+    // lists is available) and there is no strikethrough old price.
+    // BACKEND GAP: add per-variant stock + original price to the saved DTO to
+    // restore the low/out-of-stock tags and discount strikethrough.
+    const stock = _Stock.inStock;
 
     return Container(
       margin: const EdgeInsets.only(bottom: DesignTokens.s12),
@@ -256,32 +250,21 @@ class _SavedItemRow extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: DesignTokens.s4),
-                Text(_variants[index % _variants.length],
-                    style: DesignTokens.smallRegular.copyWith(
-                      fontSize: 11,
-                      color: DesignTokens.textMuted,
-                    )),
+                if (item.variantLabel != null &&
+                    item.variantLabel!.isNotEmpty) ...[
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(item.variantLabel!,
+                      style: DesignTokens.smallRegular.copyWith(
+                        fontSize: 11,
+                        color: DesignTokens.textMuted,
+                      )),
+                ],
                 const SizedBox(height: DesignTokens.s8),
-                Row(
-                  children: [
-                    Text(formatMoney(item.price),
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
-                          fontWeight: FontWeight.w600,
-                        )),
-                    const SizedBox(width: DesignTokens.s8),
-                    Text(formatMoney(oldPrice),
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFFFF6467),
-                          decoration: TextDecoration.lineThrough,
-                          decorationColor: Color(0xFFFF6467),
-                        )),
-                  ],
-                ),
+                Text(formatMoney(item.price),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                      fontWeight: FontWeight.w600,
+                    )),
                 const SizedBox(height: DesignTokens.s8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
