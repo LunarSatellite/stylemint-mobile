@@ -21,6 +21,13 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
   double _taxRate = 13.0;
   bool _discountEnabled = false;
   late TextEditingController _discountController;
+  // MOCK/local — PricingInfo has no inventory/creator-rate fields yet, so these
+  // are collected but not persisted (TODO: add to the entity + DTO).
+  late TextEditingController _skuController;
+  late TextEditingController _quantityController;
+  late TextEditingController _creatorRateController;
+  bool _trackInventory = true;
+  bool _allowOverselling = false;
 
   @override
   void initState() {
@@ -29,6 +36,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
     _compareAtPriceController = TextEditingController();
     _costPerItemController = TextEditingController();
     _discountController = TextEditingController();
+    _skuController = TextEditingController();
+    _quantityController = TextEditingController();
+    _creatorRateController = TextEditingController();
   }
 
   @override
@@ -37,6 +47,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
     _compareAtPriceController.dispose();
     _costPerItemController.dispose();
     _discountController.dispose();
+    _skuController.dispose();
+    _quantityController.dispose();
+    _creatorRateController.dispose();
     super.dispose();
   }
 
@@ -176,6 +189,69 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
               ],
             ),
           ),
+          const SizedBox(height: DesignTokens.s24),
+
+          // --- Inventory (local/MOCK — not on PricingInfo yet) ---
+          Text('Inventory', style: DesignTokens.sectionInnerTitle),
+          const SizedBox(height: DesignTokens.s12),
+          TextField(
+            controller: _skuController,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              labelText: 'SKU',
+              hintText: 'e.g. SM-CAKE-001',
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          TextField(
+            controller: _quantityController,
+            keyboardType: TextInputType.number,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              labelText: 'Quantity',
+              hintText: 'Available stock',
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          SwitchListTile(
+            title: Text('Track Inventory', style: DesignTokens.mediumSemibold),
+            subtitle: Text('Notify you when you need to restock inventory',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted)),
+            value: _trackInventory,
+            activeColor: DesignTokens.primaryGreen,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (v) => setState(() => _trackInventory = v),
+          ),
+          SwitchListTile(
+            title: Text('Allow Overselling', style: DesignTokens.mediumSemibold),
+            subtitle: Text('Sell product above the inventory stock',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted)),
+            value: _allowOverselling,
+            activeColor: DesignTokens.primaryGreen,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (v) => setState(() => _allowOverselling = v),
+          ),
+          const SizedBox(height: DesignTokens.s20),
+
+          // --- Creator commission (local/MOCK) ---
+          Text('Creator', style: DesignTokens.sectionInnerTitle),
+          const SizedBox(height: DesignTokens.s4),
+          Text('Recommended Rate: 10-20%',
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textLight)),
+          const SizedBox(height: DesignTokens.s12),
+          TextField(
+            controller: _creatorRateController,
+            keyboardType: TextInputType.number,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              labelText: 'Creators Earn (%)',
+              hintText: 'e.g. 15',
+            ),
+          ),
+
           const SizedBox(height: DesignTokens.s32),
           SizedBox(
             width: double.infinity,
