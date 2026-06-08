@@ -14,14 +14,16 @@ class Step1BasicInfoScreen extends ConsumerStatefulWidget {
 
 class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   late TextEditingController _nameController;
-  // MOCK/local — BasicInfo has no `sku` / `shortDescription` field yet, so
-  // these are collected but not persisted (TODO: add to the entity + DTO).
+  // SKU is collected/persisted on Step 3 (backend models it at step-3); this
+  // field is a cosmetic preview only — not wired.
   late TextEditingController _skuController;
-  late TextEditingController _shortDescController;
+  late TextEditingController _shortDescController; // -> BasicInfo.shortDescription
   late TextEditingController _descriptionController; // Full Description
   late TextEditingController _brandController;
   late TextEditingController _tagController;
-  final List<String> _selectedCategories = [];
+  // Backend takes a single categoryId; the picker is single-select.
+  String? _selectedCategoryId;
+  String? _selectedCategoryName;
   final List<String> _tags = [];
 
   // Spec counter: "n/max Characters".
@@ -30,17 +32,6 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
     return Text('$currentLength/$maxLength Characters',
         style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight));
   }
-
-  static const _categories = [
-    'Electronics',
-    'Fashion',
-    'Home',
-    'Beauty',
-    'Sports',
-    'Food',
-    'Books',
-    'Toys',
-  ];
 
   @override
   void initState() {
@@ -75,8 +66,11 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   void _onNext() {
     final info = BasicInfo(
       productName: _nameController.text.trim(),
+      shortDescription: _shortDescController.text.trim(),
       description: _descriptionController.text.trim(),
-      categories: List.from(_selectedCategories),
+      categoryId: _selectedCategoryId ?? '',
+      categories:
+          _selectedCategoryName != null ? [_selectedCategoryName!] : const [],
       brand: _brandController.text.trim().isEmpty
           ? null
           : _brandController.text.trim(),
@@ -142,43 +136,54 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
             ),
           ),
           const SizedBox(height: DesignTokens.s20),
-          Text('Categories', style: DesignTokens.mediumSemibold),
+          Text('Category', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s8),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
-            children: _categories.map((cat) {
-              final selected = _selectedCategories.contains(cat);
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (selected) {
-                      _selectedCategories.remove(cat);
-                    } else {
-                      _selectedCategories.add(cat);
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
-                    vertical: DesignTokens.s8,
-                  ),
-                  decoration: selected
-                      ? DesignTokens.chipDecorationSelected()
-                      : DesignTokens.chipDecorationDefault(),
-                  child: Text(
-                    cat,
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: selected
-                          ? DesignTokens.primaryGreen
-                          : DesignTokens.chipsDefaultText,
-                    ),
+          ref.watch(productCategoriesProvider).when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: DesignTokens.s12),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: DesignTokens.primaryGreen),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
+                error: (_, __) => Text('Could not load categories.',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.colorError)),
+                data: (categories) => Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s8,
+                  children: categories.map((cat) {
+                    final selected = _selectedCategoryId == cat.id;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedCategoryId = cat.id;
+                          _selectedCategoryName = cat.name;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s16,
+                          vertical: DesignTokens.s8,
+                        ),
+                        decoration: selected
+                            ? DesignTokens.chipDecorationSelected()
+                            : DesignTokens.chipDecorationDefault(),
+                        child: Text(
+                          cat.name,
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: selected
+                                ? DesignTokens.primaryGreen
+                                : DesignTokens.chipsDefaultText,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
           const SizedBox(height: DesignTokens.s20),
           TextField(
             controller: _brandController,
@@ -238,8 +243,9 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
             child: ElevatedButton(
               onPressed: () {
                 if (_nameController.text.trim().isEmpty ||
+                    _shortDescController.text.trim().isEmpty ||
                     _descriptionController.text.trim().isEmpty ||
-                    _selectedCategories.isEmpty) return;
+                    _selectedCategoryId == null) return;
                 _onNext();
               },
               style: DesignTokens.primaryButtonStyle(),

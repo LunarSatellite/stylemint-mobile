@@ -21,10 +21,11 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
   double _taxRate = 13.0;
   bool _discountEnabled = false;
   late TextEditingController _discountController;
-  // MOCK/local — PricingInfo has no inventory/creator-rate fields yet, so these
-  // are collected but not persisted (TODO: add to the entity + DTO).
+  // SKU + quantity now persist via PricingInfo -> backend step-3.
   late TextEditingController _skuController;
   late TextEditingController _quantityController;
+  // Creator rate is set at reel-tag time, not on the product (backend step-3
+  // has no creator-rate field); this stays local/cosmetic.
   late TextEditingController _creatorRateController;
   bool _trackInventory = true;
   bool _allowOverselling = false;
@@ -70,6 +71,10 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
       taxRate: _taxRate,
       discountEnabled: _discountEnabled,
       discountPercent: _discountEnabled ? discount : null,
+      sku: _skuController.text.trim(),
+      quantityOnHand: int.tryParse(_quantityController.text.trim()) ?? 0,
+      trackInventory: _trackInventory,
+      allowOverselling: _allowOverselling,
     );
   }
 
@@ -191,7 +196,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
           ),
           const SizedBox(height: DesignTokens.s24),
 
-          // --- Inventory (local/MOCK — not on PricingInfo yet) ---
+          // --- Inventory (persists via PricingInfo -> backend step-3) ---
           Text('Inventory', style: DesignTokens.sectionInnerTitle),
           const SizedBox(height: DesignTokens.s12),
           TextField(
