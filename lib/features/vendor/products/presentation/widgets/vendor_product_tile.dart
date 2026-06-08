@@ -7,17 +7,15 @@ class VendorProductTile extends StatelessWidget {
   const VendorProductTile({
     required this.product,
     required this.onTap,
-    this.onEdit,
-    this.onDuplicate,
-    this.onDelete,
+    this.onMore,
     super.key,
   });
 
   final VendorProduct product;
   final VoidCallback onTap;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDuplicate;
-  final VoidCallback? onDelete;
+
+  /// Opens the spec action sheet (Edit Details / Update Stock / Deactivate).
+  final VoidCallback? onMore;
 
   Color _statusColor() {
     return switch (product.status) {
@@ -101,36 +99,15 @@ class VendorProductTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (onEdit != null || onDelete != null)
-              PopupMenuButton<String>(
-                color: DesignTokens.bgAppBody,
-                icon: const Icon(Icons.more_vert,
-                    color: DesignTokens.iconLight),
-                onSelected: (action) {
-                  switch (action) {
-                    case 'edit':
-                      onEdit?.call();
-                    case 'duplicate':
-                      onDuplicate?.call();
-                    case 'delete':
-                      onDelete?.call();
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (onEdit != null)
-                    const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit')),
-                  if (onDuplicate != null)
-                    const PopupMenuItem(
-                        value: 'duplicate',
-                        child: Text('Duplicate')),
-                  if (onDelete != null)
-                    const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete',
-                            style: TextStyle(color: DesignTokens.colorError))),
-                ],
+            if (onMore != null)
+              GestureDetector(
+                onTap: onMore,
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.all(DesignTokens.s4),
+                  child: Icon(Icons.more_vert,
+                      size: 20, color: DesignTokens.iconLight),
+                ),
               ),
           ],
         ),
