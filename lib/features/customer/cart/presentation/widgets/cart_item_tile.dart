@@ -78,6 +78,17 @@ class CartItemTile extends StatelessWidget {
                         color: DesignTokens.textMuted,
                       ),
                     ),
+                    if (item.creatorHandle != null) ...[
+                      const SizedBox(height: DesignTokens.s4),
+                      Text(
+                        'From: @${item.creatorHandle}'
+                        '${item.commissionRate != null ? ' (${(item.commissionRate! * 100).round()}% Commission)' : ''}',
+                        style: DesignTokens.smallRegular.copyWith(
+                          fontSize: 11,
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: DesignTokens.s4),
                     Text(
                       formatMoney(item.unitPrice),

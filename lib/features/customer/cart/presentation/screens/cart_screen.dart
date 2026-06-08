@@ -100,13 +100,17 @@ class CartScreen extends ConsumerWidget {
                             horizontal: DesignTokens.s16),
                         child: _BillDetailsCard(cart: cart),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-                            DesignTokens.s12, DesignTokens.s16, DesignTokens.s16),
-                        child: _AppreciatedContainer(
-                          creatorCount: cart.items.isEmpty ? 0 : 2,
+                      if (cart.supportedCreatorsCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                              DesignTokens.s16,
+                              DesignTokens.s12,
+                              DesignTokens.s16,
+                              DesignTokens.s16),
+                          child: _AppreciatedContainer(
+                            creatorCount: cart.supportedCreatorsCount,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -238,8 +242,8 @@ class _BillRow extends StatelessWidget {
 }
 
 // "You are appreciated" container.
-// MOCK — creatorCount isn't derivable from the cart payload (no creator field
-// on CartItem yet); the caller passes a placeholder.
+// creatorCount = cart.supportedCreatorsCount (backend
+// CartAppreciationSummaryDto.supportedCreatorsCount).
 class _AppreciatedContainer extends StatelessWidget {
   const _AppreciatedContainer({required this.creatorCount});
 

@@ -10,6 +10,8 @@ class CartItem {
     required this.quantity,
     required this.unitPrice,
     required this.isInStock,
+    this.creatorHandle,
+    this.commissionRate,
   });
 
   final String id;
@@ -21,6 +23,14 @@ class CartItem {
   final Money unitPrice;
   final bool isInStock;
 
+  /// Creator attribution from the reel that drove this add-to-cart (backend
+  /// CartLineDto.creatorHandleSnapshot / commissionRateSnapshot). Null when the
+  /// line had no creator attribution (catalog/PDP add).
+  final String? creatorHandle;
+
+  /// Commission rate as a fraction 0.0–1.0 (e.g. 0.15 = 15%).
+  final double? commissionRate;
+
   CartItem copyWith({
     String? id,
     String? productId,
@@ -30,6 +40,8 @@ class CartItem {
     int? quantity,
     Money? unitPrice,
     bool? isInStock,
+    String? creatorHandle,
+    double? commissionRate,
   }) {
     return CartItem(
       id: id ?? this.id,
@@ -40,6 +52,8 @@ class CartItem {
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       isInStock: isInStock ?? this.isInStock,
+      creatorHandle: creatorHandle ?? this.creatorHandle,
+      commissionRate: commissionRate ?? this.commissionRate,
     );
   }
 
@@ -53,7 +67,9 @@ class CartItem {
       other.variantName == variantName &&
       other.quantity == quantity &&
       other.unitPrice == unitPrice &&
-      other.isInStock == isInStock;
+      other.isInStock == isInStock &&
+      other.creatorHandle == creatorHandle &&
+      other.commissionRate == commissionRate;
 
   @override
   int get hashCode => Object.hash(
@@ -65,6 +81,8 @@ class CartItem {
         quantity,
         unitPrice,
         isInStock,
+        creatorHandle,
+        commissionRate,
       );
 }
 
@@ -76,6 +94,7 @@ class Cart {
     required this.shippingTotal,
     required this.taxTotal,
     required this.total,
+    this.supportedCreatorsCount = 0,
   });
 
   final String id;
@@ -85,6 +104,10 @@ class Cart {
   final Money taxTotal;
   final Money total;
 
+  /// "You are appreciated" — number of distinct creators this order supports
+  /// (backend CartAppreciationSummaryDto.supportedCreatorsCount).
+  final int supportedCreatorsCount;
+
   Cart copyWith({
     String? id,
     List<CartItem>? items,
@@ -92,6 +115,7 @@ class Cart {
     Money? shippingTotal,
     Money? taxTotal,
     Money? total,
+    int? supportedCreatorsCount,
   }) {
     return Cart(
       id: id ?? this.id,
@@ -100,6 +124,8 @@ class Cart {
       shippingTotal: shippingTotal ?? this.shippingTotal,
       taxTotal: taxTotal ?? this.taxTotal,
       total: total ?? this.total,
+      supportedCreatorsCount:
+          supportedCreatorsCount ?? this.supportedCreatorsCount,
     );
   }
 
@@ -111,7 +137,8 @@ class Cart {
       other.subtotal == subtotal &&
       other.shippingTotal == shippingTotal &&
       other.taxTotal == taxTotal &&
-      other.total == total;
+      other.total == total &&
+      other.supportedCreatorsCount == supportedCreatorsCount;
 
   @override
   int get hashCode => Object.hash(
@@ -121,6 +148,7 @@ class Cart {
         shippingTotal,
         taxTotal,
         total,
+        supportedCreatorsCount,
       );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
