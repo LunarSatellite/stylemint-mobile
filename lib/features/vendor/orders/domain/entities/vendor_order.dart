@@ -68,42 +68,77 @@ class VendorOrder {
   const VendorOrder({
     required this.id,
     required this.orderNumber,
-    required this.customerName,
-    required this.items,
+    required this.itemCount,
     required this.total,
     required this.status,
-    required this.placedAt,
-    required this.shippingAddress,
+    this.placedAt,
+    this.shippingMethod,
+    this.trackingNumber,
+    this.shippedAt,
+    this.deliveredAt,
+    this.customerName,
+    this.shippingAddress,
+    this.items = const [],
   });
 
   final String id;
   final String orderNumber;
-  final String customerName;
-  final List<VendorOrderItem> items;
+
+  /// Number of line items (backend list `itemCount`). The list endpoint does
+  /// not return the lines themselves; [items] stays empty until a vendor
+  /// detail endpoint ships.
+  final int itemCount;
   final Money total;
   final VendorOrderStatus status;
-  final DateTime placedAt;
-  final String shippingAddress;
+
+  /// Backend `placedUtc`.
+  final DateTime? placedAt;
+
+  /// Real carrier (backend `carrier`) once the vendor marks the order shipped;
+  /// null pre-shipment.
+  final String? shippingMethod;
+
+  /// Backend `trackingNumber` (null until shipped).
+  final String? trackingNumber;
+
+  /// Backend `shippedUtc` / `deliveredUtc`.
+  final DateTime? shippedAt;
+  final DateTime? deliveredAt;
+
+  /// BACKEND GAP: not on /v1/vendor/sub-orders (deferred to a detail endpoint).
+  final String? customerName;
+  final String? shippingAddress;
+  final List<VendorOrderItem> items;
 
   VendorOrder copyWith({
     String? id,
     String? orderNumber,
-    String? customerName,
-    List<VendorOrderItem>? items,
+    int? itemCount,
     Money? total,
     VendorOrderStatus? status,
     DateTime? placedAt,
+    String? shippingMethod,
+    String? trackingNumber,
+    DateTime? shippedAt,
+    DateTime? deliveredAt,
+    String? customerName,
     String? shippingAddress,
+    List<VendorOrderItem>? items,
   }) {
     return VendorOrder(
       id: id ?? this.id,
       orderNumber: orderNumber ?? this.orderNumber,
-      customerName: customerName ?? this.customerName,
-      items: items ?? this.items,
+      itemCount: itemCount ?? this.itemCount,
       total: total ?? this.total,
       status: status ?? this.status,
       placedAt: placedAt ?? this.placedAt,
+      shippingMethod: shippingMethod ?? this.shippingMethod,
+      trackingNumber: trackingNumber ?? this.trackingNumber,
+      shippedAt: shippedAt ?? this.shippedAt,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      customerName: customerName ?? this.customerName,
       shippingAddress: shippingAddress ?? this.shippingAddress,
+      items: items ?? this.items,
     );
   }
 
@@ -112,22 +147,32 @@ class VendorOrder {
       other is VendorOrder &&
       other.id == id &&
       other.orderNumber == orderNumber &&
-      other.customerName == customerName &&
+      other.itemCount == itemCount &&
       _listEquals(other.items, items) &&
       other.total == total &&
       other.status == status &&
       other.placedAt == placedAt &&
+      other.shippingMethod == shippingMethod &&
+      other.trackingNumber == trackingNumber &&
+      other.shippedAt == shippedAt &&
+      other.deliveredAt == deliveredAt &&
+      other.customerName == customerName &&
       other.shippingAddress == shippingAddress;
 
   @override
   int get hashCode => Object.hash(
         id,
         orderNumber,
-        customerName,
+        itemCount,
         Object.hashAll(items),
         total,
         status,
         placedAt,
+        shippingMethod,
+        trackingNumber,
+        shippedAt,
+        deliveredAt,
+        customerName,
         shippingAddress,
       );
 

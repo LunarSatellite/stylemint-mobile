@@ -137,13 +137,22 @@ class _OrderDetailBody extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s16),
           _SectionCard(children: [
-            _DetailRow(label: 'Customer', value: order.customerName),
-            const SizedBox(height: DesignTokens.s8),
+            if (order.customerName != null) ...[
+              _DetailRow(label: 'Customer', value: order.customerName!),
+              const SizedBox(height: DesignTokens.s8),
+            ],
             _DetailRow(
-                label: 'Placed On', value: dateFmt.format(order.placedAt)),
+                label: 'Placed On',
+                value: order.placedAt != null
+                    ? dateFmt.format(order.placedAt!)
+                    : '—'),
+            if (order.trackingNumber != null) ...[
+              const SizedBox(height: DesignTokens.s8),
+              _DetailRow(label: 'Tracking', value: order.trackingNumber!),
+            ],
           ]),
           const SizedBox(height: DesignTokens.s16),
-          Text('Items (${order.items.length})',
+          Text('Items (${order.itemCount})',
               style: DesignTokens.sectionInnerTitle),
           const SizedBox(height: DesignTokens.s12),
           ...order.items.map((item) => _OrderItemTile(item: item)),
@@ -151,11 +160,13 @@ class _OrderDetailBody extends StatelessWidget {
           _SectionCard(children: [
             _DetailRow(label: 'Total', value: formatMoney(order.total)),
           ]),
-          const SizedBox(height: DesignTokens.s16),
-          _SectionCard(children: [
-            _DetailRow(
-                label: 'Shipping Address', value: order.shippingAddress),
-          ]),
+          if (order.shippingAddress != null) ...[
+            const SizedBox(height: DesignTokens.s16),
+            _SectionCard(children: [
+              _DetailRow(
+                  label: 'Shipping Address', value: order.shippingAddress!),
+            ]),
+          ],
           const SizedBox(height: DesignTokens.s24),
           ..._buildActions(context),
           const SizedBox(height: DesignTokens.s32),
