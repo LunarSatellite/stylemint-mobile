@@ -25,9 +25,7 @@ class VendorOrdersScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: Text('Orders',
-            style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.textWhite)),
+        title: const Text('Orders', style: DesignTokens.sectionInnerTitle),
       ),
       body: Column(
         children: [
