@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/models/earnings_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class EarningsRemoteDataSource {
   EarningsRemoteDataSource({required this.apiClient});
@@ -10,6 +12,46 @@ class EarningsRemoteDataSource {
   Future<EarningsSummaryDto> getSummary() async {
     final response = await apiClient.get('/v1/earnings/balance');
     return EarningsSummaryDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Derives the per-reel earnings breakdown from the creator analytics
+  /// dashboard. Parsed manually — the payload nests generic KPI tiles
+  /// (`{current, previous, deltaPercent}`) and Money (`{amount, currency}`),
+  /// which don't map cleanly to a flat freezed DTO.
+  Future<EarningsBreakdown> getDashboardBreakdown() async {
+    final r = await apiClient.get('/v1/creator/analytics/dashboard')
+        as Map<String, dynamic>;
+
+    final salesCount =
+        ((r['totalSales'] as Map<String, dynamic>?)?['current'] as num? ?? 0)
+            .toInt();
+
+    final totalEarnings =
+        (r['totalEarnings'] as Map<String, dynamic>?)?['current']
+            as Map<String, dynamic>?;
+    final currency = totalEarnings?['currency'] as String? ?? 'NPR';
+    final totalEarningsAmount =
+        (totalEarnings?['amount'] as num? ?? 0).toDouble();
+
+    final reels = (r['topReels'] as List<dynamic>? ?? const <dynamic>[])
+        .cast<Map<String, dynamic>>();
+    var highest = 0.0;
+    for (final reel in reels) {
+      final amount = (reel['earnings'] as Map<String, dynamic>?)?['amount'];
+      if (amount is num && amount.toDouble() > highest) {
+        highest = amount.toDouble();
+      }
+    }
+
+    return EarningsBreakdown(
+      salesCount: salesCount,
+      reelCount: reels.length,
+      avgPerSale: Money(
+        amount: salesCount > 0 ? totalEarningsAmount / salesCount : 0,
+        currency: currency,
+      ),
+      highestReelEarnings: Money(amount: highest, currency: currency),
+    );
   }
 
   Future<Map<String, dynamic>> getLedger({
