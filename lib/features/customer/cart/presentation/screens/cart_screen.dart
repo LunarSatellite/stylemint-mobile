@@ -59,35 +59,55 @@ class CartScreen extends ConsumerWidget {
                   color: DesignTokens.primaryGreen,
                   onRefresh: () =>
                       ref.read(cartNotifierProvider.notifier).fetchCart(),
-                  child: ListView.builder(
-                    itemCount: cart.items.length,
-                    itemBuilder: (_, i) => CartItemTile(
-                      item: cart.items[i],
-                      onIncrement: () {
-                        ref.read(cartNotifierProvider.notifier).updateItem(
-                              itemId: cart.items[i].id,
-                              quantity: cart.items[i].quantity + 1,
-                            );
-                      },
-                      onDecrement: () {
-                        final newQty = cart.items[i].quantity - 1;
-                        if (newQty <= 0) {
-                          ref
-                              .read(cartNotifierProvider.notifier)
-                              .removeItem(cart.items[i].id);
-                        } else {
-                          ref.read(cartNotifierProvider.notifier).updateItem(
-                                itemId: cart.items[i].id,
-                                quantity: newQty,
-                              );
-                        }
-                      },
-                      onDelete: () {
-                        ref
-                            .read(cartNotifierProvider.notifier)
-                            .removeItem(cart.items[i].id);
-                      },
-                    ),
+                  child: ListView(
+                    children: [
+                      ...List.generate(cart.items.length, (i) {
+                        return CartItemTile(
+                          item: cart.items[i],
+                          onIncrement: () {
+                            ref.read(cartNotifierProvider.notifier).updateItem(
+                                  itemId: cart.items[i].id,
+                                  quantity: cart.items[i].quantity + 1,
+                                );
+                          },
+                          onDecrement: () {
+                            final newQty = cart.items[i].quantity - 1;
+                            if (newQty <= 0) {
+                              ref
+                                  .read(cartNotifierProvider.notifier)
+                                  .removeItem(cart.items[i].id);
+                            } else {
+                              ref.read(cartNotifierProvider.notifier).updateItem(
+                                    itemId: cart.items[i].id,
+                                    quantity: newQty,
+                                  );
+                            }
+                          },
+                          onDelete: () {
+                            ref
+                                .read(cartNotifierProvider.notifier)
+                                .removeItem(cart.items[i].id);
+                          },
+                        );
+                      }),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(DesignTokens.s16, 0,
+                            DesignTokens.s16, DesignTokens.s8),
+                        child: _PromoRow(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s16),
+                        child: _BillDetailsCard(cart: cart),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
+                            DesignTokens.s12, DesignTokens.s16, DesignTokens.s16),
+                        child: _AppreciatedContainer(
+                          creatorCount: cart.items.isEmpty ? 0 : 2,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -107,6 +127,154 @@ class CartScreen extends ConsumerWidget {
   Widget _loader() => const Center(
         child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
       );
+}
+
+// "Have a Promo Code?" row.
+class _PromoRow extends StatelessWidget {
+  const _PromoRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // TODO(cart): open the promo-code entry sheet (Apply Promo Code spec).
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
+        decoration: DesignTokens.cardDecoration(),
+        child: Row(
+          children: [
+            const Icon(Icons.local_offer_outlined,
+                size: 16, color: DesignTokens.iconLight),
+            const SizedBox(width: DesignTokens.s8),
+            Expanded(
+              child: Text('Have a Promo Code?',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.textWhite)),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 16, color: DesignTokens.iconLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Bill Details card — Sub Total / Shipping / Tax / Grand Total.
+class _BillDetailsCard extends StatelessWidget {
+  const _BillDetailsCard({required this.cart});
+
+  final Cart cart;
+
+  @override
+  Widget build(BuildContext context) {
+    final shipping = cart.shippingTotal.amount <= 0
+        ? 'Free'
+        : formatMoney(cart.shippingTotal);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          vertical: DesignTokens.s16, horizontal: DesignTokens.s12),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Bill Details', style: DesignTokens.mediumSemibold),
+          const SizedBox(height: DesignTokens.s12),
+          _BillRow(
+              label: 'Sub Total (${cart.items.length} items)',
+              value: formatMoney(cart.subtotal)),
+          const SizedBox(height: DesignTokens.s8),
+          _BillRow(label: 'Shipping', value: shipping),
+          const SizedBox(height: DesignTokens.s8),
+          _BillRow(
+              label: 'Tax (Estimated 13%)', value: formatMoney(cart.taxTotal)),
+          const Divider(
+              color: DesignTokens.borderDefault, height: DesignTokens.s24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Grand Total',
+                  style: DesignTokens.mediumSemibold
+                      .copyWith(color: DesignTokens.textWhite)),
+              Text(formatMoney(cart.total),
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                    color: DesignTokens.textWhite,
+                  )),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillRow extends StatelessWidget {
+  const _BillRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight)),
+        Text(value,
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight)),
+      ],
+    );
+  }
+}
+
+// "You are appreciated" container.
+// MOCK — creatorCount isn't derivable from the cart payload (no creator field
+// on CartItem yet); the caller passes a placeholder.
+class _AppreciatedContainer extends StatelessWidget {
+  const _AppreciatedContainer({required this.creatorCount});
+
+  final int creatorCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.favorite, size: 16, color: DesignTokens.primaryGreen),
+              const SizedBox(width: DesignTokens.s8),
+              Text('You are appreciated',
+                  style: DesignTokens.mediumSemibold
+                      .copyWith(color: DesignTokens.textWhite)),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Thank you so much! you are supporting $creatorCount creators with this order',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CheckoutBar extends StatelessWidget {
