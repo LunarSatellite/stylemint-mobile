@@ -14,11 +14,22 @@ class Step1BasicInfoScreen extends ConsumerStatefulWidget {
 
 class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
+  // MOCK/local — BasicInfo has no `sku` / `shortDescription` field yet, so
+  // these are collected but not persisted (TODO: add to the entity + DTO).
+  late TextEditingController _skuController;
+  late TextEditingController _shortDescController;
+  late TextEditingController _descriptionController; // Full Description
   late TextEditingController _brandController;
   late TextEditingController _tagController;
   final List<String> _selectedCategories = [];
   final List<String> _tags = [];
+
+  // Spec counter: "n/max Characters".
+  static Widget? _counter(BuildContext context,
+      {required int currentLength, required int? maxLength, required bool isFocused}) {
+    return Text('$currentLength/$maxLength Characters',
+        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight));
+  }
 
   static const _categories = [
     'Electronics',
@@ -35,6 +46,8 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController();
+    _skuController = TextEditingController();
+    _shortDescController = TextEditingController();
     _descriptionController = TextEditingController();
     _brandController = TextEditingController();
     _tagController = TextEditingController();
@@ -43,6 +56,8 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _skuController.dispose();
+    _shortDescController.dispose();
     _descriptionController.dispose();
     _brandController.dispose();
     _tagController.dispose();
@@ -85,6 +100,8 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
           const SizedBox(height: DesignTokens.s20),
           TextField(
             controller: _nameController,
+            maxLength: 100,
+            buildCounter: _counter,
             style: DesignTokens.bodyText,
             decoration: DesignTokens.inputDecoration(
               labelText: 'Product Name',
@@ -93,11 +110,34 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
           ),
           const SizedBox(height: DesignTokens.s16),
           TextField(
-            controller: _descriptionController,
-            maxLines: 4,
+            controller: _skuController,
             style: DesignTokens.bodyText,
             decoration: DesignTokens.inputDecoration(
-              labelText: 'Description',
+              labelText: 'SKU (Stock Keeping Unit)',
+              hintText: 'e.g. SM-CAKE-001',
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          TextField(
+            controller: _shortDescController,
+            maxLines: 2,
+            maxLength: 200,
+            buildCounter: _counter,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              labelText: 'Short Description',
+              hintText: 'A one-line summary',
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          TextField(
+            controller: _descriptionController,
+            maxLines: 4,
+            maxLength: 2000,
+            buildCounter: _counter,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              labelText: 'Full Description',
               hintText: 'Describe your product',
             ),
           ),
