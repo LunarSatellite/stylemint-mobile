@@ -5,17 +5,19 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'saved_item_dto.freezed.dart';
 part 'saved_item_dto.g.dart';
 
+/// Maps the backend SavedForLaterItemDto (CartCheckout module). Amounts are
+/// `num` because System.Text.Json serializes whole `decimal`s as ints.
 @freezed
 abstract class SavedItemDto with _$SavedItemDto {
   const factory SavedItemDto({
-    required String id,
+    @JsonKey(name: 'id') required String id,
     required String productId,
-    required String productName,
-    required String productImageUrl,
-    required double priceAmount,
-    @Default('NPR') String currency,
-    @Default(0) double rating,
-    required DateTime savedAt,
+    @JsonKey(name: 'productTitleSnapshot') required String productName,
+    @JsonKey(name: 'thumbnailUrlSnapshot') String? productImageUrl,
+    @JsonKey(name: 'variantLabelSnapshot') String? variantLabel,
+    @JsonKey(name: 'unitPriceAmount') required num priceAmount,
+    @JsonKey(name: 'unitPriceCurrency') @Default('NPR') String currency,
+    @JsonKey(name: 'createdUtc') required DateTime savedAt,
   }) = _SavedItemDto;
 
   const SavedItemDto._();
@@ -24,12 +26,14 @@ abstract class SavedItemDto with _$SavedItemDto {
       _$SavedItemDtoFromJson(json);
 
   SavedItem toDomain() => SavedItem(
-    id: id,
-    productId: productId,
-    productName: productName,
-    productImageUrl: productImageUrl,
-    price: Money(amount: priceAmount, currency: currency),
-    rating: rating,
-    savedAt: savedAt,
-  );
+        id: id,
+        productId: productId,
+        productName: productName,
+        productImageUrl: productImageUrl ?? '',
+        variantLabel: variantLabel,
+        price: Money(amount: priceAmount.toDouble(), currency: currency),
+        // SavedForLaterItemDto carries no rating; the card hides it when 0.
+        rating: 0,
+        savedAt: savedAt,
+      );
 }

@@ -27,20 +27,19 @@ class SavedItemsRepositoryImpl implements SavedItemsRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final data = await remoteDataSource.getSavedItems(
-          limit: limit,
-          cursor: cursor,
-        );
-        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map((e) => SavedItemDto.fromJson(e as Map<String, dynamic>).toDomain())
+        final list = await remoteDataSource.getSavedItems();
+        final items = list
+            .map((e) =>
+                SavedItemDto.fromJson(e as Map<String, dynamic>).toDomain())
             .toList(growable: false);
+        // The endpoint returns the full per-account list in one shot.
         return right(PagedResult<SavedItem>(
           items: items,
-          totalCount: data['totalCount'] as int? ?? 0,
-          pageSize: data['pageSize'] as int? ?? limit,
-          nextCursor: data['nextCursor'] as String?,
-          previousCursor: data['previousCursor'] as String?,
-          hasMore: data['hasMore'] as bool? ?? false,
+          totalCount: items.length,
+          pageSize: items.length,
+          nextCursor: null,
+          previousCursor: null,
+          hasMore: false,
         ));
       } catch (e) {
         if (e is DioException) {

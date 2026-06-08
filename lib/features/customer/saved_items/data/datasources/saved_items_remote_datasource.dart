@@ -6,19 +6,11 @@ class SavedItemsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// GET `/v1/cart/saved-for-later`
-  Future<Map<String, dynamic>> getSavedItems({
-    required int limit,
-    String? cursor,
-  }) async {
-    final response = await apiClient.get(
-      '/v1/cart/saved-for-later',
-      queryParameters: {
-        'limit': limit,
-        if (cursor != null) 'cursor': cursor,
-      },
-    );
-    return response as Map<String, dynamic>;
+  /// GET `/v1/cart/saved-for-later` — returns a bare list of saved items
+  /// (the backend serves the whole list per account; no pagination).
+  Future<List<dynamic>> getSavedItems() async {
+    final response = await apiClient.get('/v1/cart/saved-for-later');
+    return response as List<dynamic>;
   }
 
   /// POST `/v1/cart/saved-for-later`
