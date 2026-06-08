@@ -191,20 +191,31 @@ class _BalanceMetric extends StatelessWidget {
 }
 
 // ── Earnings breakdown (this month) ───────────────────────────────────────────
-class _EarningsBreakdown extends StatelessWidget {
+class _EarningsBreakdown extends ConsumerWidget {
   const _EarningsBreakdown({required this.summary});
 
   final EarningsSummary summary;
 
-  // MOCK — per-reel breakdown metrics aren't on the summary payload yet.
-  static const _salesCount = '89';
-  static const _reelCount = '23';
-  static const _avgPerSale = 'Rs 2,335.88 per sale';
-  static const _highestReel = 'Rs 18,909.22';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final total = formatMoney(summary.thisMonthEarnings);
+    final breakdown = ref.watch(earningsBreakdownProvider);
+
+    // Real per-reel metrics come from the analytics dashboard; show a dash
+    // while loading or if the dashboard call fails.
+    final (salesLabel, avg, highest) = breakdown.maybeWhen(
+      data: (b) => (
+        'No. of sales across ${b.reelCount} reels',
+        '${formatMoney(b.avgPerSale)} per sale',
+        formatMoney(b.highestReelEarnings),
+      ),
+      orElse: () => ('No. of sales', '—', '—'),
+    );
+    final salesValue = breakdown.maybeWhen(
+      data: (b) => '${b.salesCount}',
+      orElse: () => '—',
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,18 +227,19 @@ class _EarningsBreakdown extends StatelessWidget {
           decoration: DesignTokens.cardDecoration(),
           child: Column(
             children: [
-              _BreakdownRow(
-                  label: 'No. of sales across $_reelCount reels',
-                  value: _salesCount),
+              _BreakdownRow(label: salesLabel, value: salesValue),
               const SizedBox(height: DesignTokens.s8),
-              _BreakdownRow(label: 'Average', value: _avgPerSale),
+              _BreakdownRow(label: 'Average', value: avg),
               const SizedBox(height: DesignTokens.s8),
               _BreakdownRow(
-                  label: 'Highest Earned from a Reel', value: _highestReel),
+                  label: 'Highest Earned from a Reel', value: highest),
               const Divider(
                   color: DesignTokens.borderDefault, height: DesignTokens.s24),
               _BreakdownRow(label: 'Total Earned', value: total),
               const SizedBox(height: DesignTokens.s8),
+              // Creators receive commission net of platform fees (the platform
+              // fee is charged on the vendor side), so there is no creator-side
+              // deduction here.
               _BreakdownRow(label: 'Platform Fee (0%)', value: '-0.00'),
               const Divider(
                   color: DesignTokens.borderDefault, height: DesignTokens.s24),
