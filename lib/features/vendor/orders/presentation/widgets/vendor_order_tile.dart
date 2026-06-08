@@ -1,111 +1,123 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Vendor order list row — matches "Design Specification Doc - Orders Ready to
+/// Ship": 48px icon tile, Order #, "{customer} • {N} items", a Shipping-Method
+/// info pill, and "Ship By" (green) + "Order Date" lines.
+///
+/// `shippingMethod` and `shipBy` aren't on [VendorOrder] yet, so they're
+/// deterministic `MOCK` values (method by order-number hash; shipBy = placedAt
+/// + 4 days) until the API provides them.
 class VendorOrderTile extends StatelessWidget {
   const VendorOrderTile({required this.order, required this.onTap, super.key});
 
   final VendorOrder order;
   final VoidCallback onTap;
 
-  Color _statusColor() {
-    return switch (order.status) {
-      VendorOrderStatus.pending => DesignTokens.colorWarning,
-      VendorOrderStatus.confirmed => DesignTokens.colorInfo,
-      VendorOrderStatus.processing => const Color(0xFFFF9800),
-      VendorOrderStatus.shipped => const Color(0xFF9C27B0),
-      VendorOrderStatus.delivered => DesignTokens.primaryGreen,
-      VendorOrderStatus.cancelled => DesignTokens.colorError,
-      VendorOrderStatus.returned => DesignTokens.textMuted,
-    };
-  }
+  static const _methods = ['FedEx', 'DHL Express', 'UPS'];
+
+  String get _shippingMethod =>
+      _methods[order.orderNumber.hashCode.abs() % _methods.length];
 
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('MMM d, yyyy');
+    final shipBy = order.placedAt.add(const Duration(days: 4));
 
     return InkWell(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s6,
-        ),
+            horizontal: DesignTokens.s16, vertical: DesignTokens.s6),
         padding: const EdgeInsets.all(DesignTokens.s16),
         decoration: DesignTokens.cardDecoration(),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Order #${order.orderNumber}',
-                    style: DesignTokens.mediumSemibold,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            // 48x48 icon tile.
+            Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(DesignTokens.s4),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.inventory_2_outlined,
+                  size: 32, color: DesignTokens.secondaryYellow),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Order #${order.orderNumber}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.mediumSemibold
+                          .copyWith(color: DesignTokens.textWhite)),
+                  const SizedBox(height: DesignTokens.s4),
+                  // {customer} • {N} items
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(order.customerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.smallRegular
+                                .copyWith(color: DesignTokens.textWhite)),
+                      ),
+                      Container(
+                        width: 3,
+                        height: 3,
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF71717B),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text('${order.items.length} items',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textMuted)),
+                    ],
                   ),
-                ),
-                _StatusBadge(label: order.status.label, color: _statusColor()),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              order.customerName,
-              style: DesignTokens.mediumRegular.copyWith(
-                  color: DesignTokens.textLight),
-            ),
-            const SizedBox(height: DesignTokens.s4),
-            Row(
-              children: [
-                Text(
-                  '${order.items.length} item(s)',
-                  style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Text(
-                  formatMoney(order.total),
-                  style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.primaryGreen),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s4),
-            Text(
-              dateFmt.format(order.placedAt),
-              style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted),
+                  const SizedBox(height: DesignTokens.s8),
+                  // Shipping-method info pill.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+                    decoration: BoxDecoration(
+                      color: DesignTokens.tagInfoFill,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text('Shipping Method: $_shippingMethod',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.tagInfoText,
+                          fontWeight: FontWeight.w600,
+                          height: 1.0,
+                        )),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  Wrap(
+                    spacing: DesignTokens.s12,
+                    children: [
+                      Text('Ship By: ${dateFmt.format(shipBy)}',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.primaryGreen)),
+                      Text('Order Date: ${dateFmt.format(order.placedAt)}',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textMuted)),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-      ),
-      child: Text(
-        label,
-        style: DesignTokens.tiny.copyWith(
-            color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
