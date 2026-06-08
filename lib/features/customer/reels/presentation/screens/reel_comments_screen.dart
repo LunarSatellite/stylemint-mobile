@@ -95,10 +95,20 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
   }
 }
 
-class _CommentTile extends StatelessWidget {
+class _CommentTile extends StatefulWidget {
   const _CommentTile({required this.comment});
 
   final ReelCommentDto comment;
+
+  @override
+  State<_CommentTile> createState() => _CommentTileState();
+}
+
+class _CommentTileState extends State<_CommentTile> {
+  // MOCK — the comment DTO has no `isLiked` flag and there's no like endpoint
+  // yet, so the like toggle is local/optimistic only (not persisted).
+  bool _liked = false;
+  late int _likeCount = widget.comment.likeCount;
 
   static const TextStyle _metaStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -108,9 +118,16 @@ class _CommentTile extends StatelessWidget {
     color: DesignTokens.textMuted,
   );
 
+  void _toggleLike() => setState(() {
+        _liked = !_liked;
+        _likeCount += _liked ? 1 : -1;
+      });
+
   @override
   Widget build(BuildContext context) {
+    final comment = widget.comment;
     final avatar = comment.authorAvatarUrl;
+    final handle = '@${comment.authorDisplayName ?? 'User'}';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -141,12 +158,25 @@ class _CommentTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Spec: @handle • time meta line 10/600/lh1.0 #9F9FA9, dot sep.
               Row(
                 children: [
-                  // Spec: handle + time meta line 10/600/lh1.0 #9F9FA9.
-                  Text(comment.authorDisplayName ?? 'User',
-                      style: _metaStyle),
-                  const SizedBox(width: DesignTokens.s8),
+                  Flexible(
+                    child: Text(handle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _metaStyle),
+                  ),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF71717B),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   Text(_relative(comment.createdUtc), style: _metaStyle),
                 ],
               ),
@@ -163,8 +193,33 @@ class _CommentTile extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: DesignTokens.s12),
+        // Spec: trailing like column — 20px icon (#9F9FA9 / liked #FB2C36) +
+        // count 10/600 #9F9FA9 below.
+        GestureDetector(
+          onTap: _toggleLike,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _liked ? Icons.favorite : Icons.favorite_border,
+                size: 20,
+                color: _liked ? const Color(0xFFFB2C36) : DesignTokens.iconLight,
+              ),
+              const SizedBox(height: 2),
+              Text(_compact(_likeCount), style: _metaStyle),
+            ],
+          ),
+        ),
       ],
     );
+  }
+
+  static String _compact(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
   }
 
   String _relative(DateTime? dt) {
