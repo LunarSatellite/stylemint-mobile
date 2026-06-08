@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/notifiers/vendor_products_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_actions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_tile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -36,9 +37,7 @@ class VendorProductsScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: Text('My Products',
-            style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.textWhite)),
+        title: const Text('My Products', style: DesignTokens.sectionInnerTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.search,
@@ -92,12 +91,8 @@ class VendorProductsScreen extends ConsumerWidget {
                       return VendorProductTile(
                         product: products[i],
                         onTap: () {},
-                        onEdit: () {},
-                        onDelete: () {
-                          ref
-                              .read(vendorProductsNotifierProvider.notifier)
-                              .deleteProduct(products[i].id);
-                        },
+                        onMore: () =>
+                            showVendorProductActions(context, ref, products[i]),
                       );
                     },
                   ),
@@ -108,8 +103,8 @@ class VendorProductsScreen extends ConsumerWidget {
                 onRetry: () =>
                     ref.read(vendorProductsNotifierProvider.notifier).loadProducts(),
               ),
-              actionInProgress: (products) => _productsList(products, ref),
-              actionFailure: (products, _) => _productsList(products, ref),
+              actionInProgress: (products) => _productsList(context, products, ref),
+              actionFailure: (products, _) => _productsList(context, products, ref),
             ),
           ),
         ],
@@ -122,7 +117,8 @@ class VendorProductsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _productsList(List<VendorProduct> products, WidgetRef ref) {
+  Widget _productsList(
+      BuildContext context, List<VendorProduct> products, WidgetRef ref) {
     return RefreshIndicator(
       color: DesignTokens.primaryGreen,
       onRefresh: () =>
@@ -132,11 +128,7 @@ class VendorProductsScreen extends ConsumerWidget {
         itemBuilder: (_, i) => VendorProductTile(
           product: products[i],
           onTap: () {},
-          onDelete: () {
-            ref
-                .read(vendorProductsNotifierProvider.notifier)
-                .deleteProduct(products[i].id);
-          },
+          onMore: () => showVendorProductActions(context, ref, products[i]),
         ),
       ),
     );
