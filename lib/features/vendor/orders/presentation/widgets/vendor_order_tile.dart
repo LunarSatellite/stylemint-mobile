@@ -5,26 +5,20 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Vendor order list row — matches "Design Specification Doc - Orders Ready to
 /// Ship": 48px icon tile, Order #, "{customer} • {N} items", a Shipping-Method
-/// info pill, and "Ship By" (green) + "Order Date" lines.
+/// info pill, and the order date.
 ///
-/// `shippingMethod` and `shipBy` aren't on [VendorOrder] yet, so they're
-/// deterministic `MOCK` values (method by order-number hash; shipBy = placedAt
-/// + 4 days) until the API provides them.
+/// Shipping method (carrier) appears once the order is shipped. Customer name
+/// and a "Ship By" deadline aren't on /v1/vendor/sub-orders yet (BACKEND GAP),
+/// so the row falls back to the item count and the real order date.
 class VendorOrderTile extends StatelessWidget {
   const VendorOrderTile({required this.order, required this.onTap, super.key});
 
   final VendorOrder order;
   final VoidCallback onTap;
 
-  static const _methods = ['FedEx', 'DHL Express', 'UPS'];
-
-  String get _shippingMethod =>
-      _methods[order.orderNumber.hashCode.abs() % _methods.length];
-
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('MMM d, yyyy');
-    final shipBy = order.placedAt.add(const Duration(days: 4));
 
     return InkWell(
       onTap: onTap,
@@ -60,59 +54,59 @@ class VendorOrderTile extends StatelessWidget {
                       style: DesignTokens.mediumSemibold
                           .copyWith(color: DesignTokens.textWhite)),
                   const SizedBox(height: DesignTokens.s4),
-                  // {customer} • {N} items
+                  // {customer} • {N} items  (customer hidden until backend adds it)
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(order.customerName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textWhite)),
-                      ),
-                      Container(
-                        width: 3,
-                        height: 3,
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF71717B),
-                          shape: BoxShape.circle,
+                      if (order.customerName != null) ...[
+                        Flexible(
+                          child: Text(order.customerName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: DesignTokens.smallRegular
+                                  .copyWith(color: DesignTokens.textWhite)),
                         ),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: DesignTokens.s8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF71717B),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                      Text('${order.itemCount} items',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textMuted)),
+                    ],
+                  ),
+                  // Shipping-method info pill — only once a carrier is set.
+                  if (order.shippingMethod != null &&
+                      order.shippingMethod!.isNotEmpty) ...[
+                    const SizedBox(height: DesignTokens.s8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s8,
+                          vertical: DesignTokens.s4),
+                      decoration: BoxDecoration(
+                        color: DesignTokens.tagInfoFill,
+                        borderRadius: BorderRadius.circular(99),
                       ),
-                      Text('${order.items.length} items',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted)),
-                    ],
-                  ),
-                  const SizedBox(height: DesignTokens.s8),
-                  // Shipping-method info pill.
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
-                    decoration: BoxDecoration(
-                      color: DesignTokens.tagInfoFill,
-                      borderRadius: BorderRadius.circular(99),
+                      child: Text('Shipping Method: ${order.shippingMethod}',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.tagInfoText,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                          )),
                     ),
-                    child: Text('Shipping Method: $_shippingMethod',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.tagInfoText,
-                          fontWeight: FontWeight.w600,
-                          height: 1.0,
-                        )),
-                  ),
-                  const SizedBox(height: DesignTokens.s8),
-                  Wrap(
-                    spacing: DesignTokens.s12,
-                    children: [
-                      Text('Ship By: ${dateFmt.format(shipBy)}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.primaryGreen)),
-                      Text('Order Date: ${dateFmt.format(order.placedAt)}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted)),
-                    ],
-                  ),
+                  ],
+                  if (order.placedAt != null) ...[
+                    const SizedBox(height: DesignTokens.s8),
+                    Text('Order Date: ${dateFmt.format(order.placedAt!)}',
+                        style: DesignTokens.smallRegular
+                            .copyWith(color: DesignTokens.textMuted)),
+                  ],
                 ],
               ),
             ),

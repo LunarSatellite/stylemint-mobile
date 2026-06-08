@@ -30,18 +30,24 @@ abstract class VendorOrderItemDto with _$VendorOrderItemDto {
       );
 }
 
+/// Maps the backend VendorSubOrderListItemDto (Orders module,
+/// GET /v1/vendor/sub-orders). `state` is the integer SubOrderState enum
+/// (no string-enum converter is configured server-side). Amounts are `num`
+/// because System.Text.Json serializes whole `decimal`s as ints.
 @freezed
 abstract class VendorOrderDto with _$VendorOrderDto {
   const factory VendorOrderDto({
     required String id,
     required String orderNumber,
-    required String customerName,
-    required List<VendorOrderItemDto> items,
-    required double totalAmount,
-    required String status,
-    required DateTime placedAt,
-    required String shippingAddress,
-    @Default('NPR') String currency,
+    @JsonKey(name: 'state') @Default(1) int stateCode,
+    @JsonKey(name: 'subtotalAmount') required num totalAmount,
+    @JsonKey(name: 'subtotalCurrency') @Default('NPR') String currency,
+    @Default(0) int itemCount,
+    @JsonKey(name: 'carrier') String? shippingMethod,
+    String? trackingNumber,
+    @JsonKey(name: 'placedUtc') DateTime? placedAt,
+    @JsonKey(name: 'shippedUtc') DateTime? shippedAt,
+    @JsonKey(name: 'deliveredUtc') DateTime? deliveredAt,
   }) = _VendorOrderDto;
 
   const VendorOrderDto._();
@@ -52,30 +58,38 @@ abstract class VendorOrderDto with _$VendorOrderDto {
   VendorOrder toDomain() => VendorOrder(
         id: id,
         orderNumber: orderNumber,
-        customerName: customerName,
-        items: items.map((dto) => dto.toDomain()).toList(growable: false),
-        total: Money(amount: totalAmount, currency: currency),
-        status: _statusFromCode(status),
+        itemCount: itemCount,
+        total: Money(amount: totalAmount.toDouble(), currency: currency),
+        status: _statusFromState(stateCode),
         placedAt: placedAt,
-        shippingAddress: shippingAddress,
+        shippingMethod: shippingMethod,
+        trackingNumber: trackingNumber,
+        shippedAt: shippedAt,
+        deliveredAt: deliveredAt,
       );
 
-  static VendorOrderStatus _statusFromCode(String code) {
-    switch (code.toLowerCase()) {
-      case 'pending':
+  /// SubOrderState enum int -> UI status. The internal vendor-workflow states
+  /// (Paid/AwaitingFulfillment/ReadyToShip/AwaitingTracking) collapse to
+  /// Confirmed/Processing; transit states map to Shipped.
+  static VendorOrderStatus _statusFromState(int state) {
+    switch (state) {
+      case 1: // Pending
         return VendorOrderStatus.pending;
-      case 'confirmed':
+      case 2: // Paid
         return VendorOrderStatus.confirmed;
-      case 'processing':
+      case 3: // AwaitingFulfillment
+      case 4: // ReadyToShip
+      case 5: // AwaitingTracking
         return VendorOrderStatus.processing;
-      case 'shipped':
+      case 6: // Shipped
+      case 10: // InTransit
+      case 11: // OutForDelivery
         return VendorOrderStatus.shipped;
-      case 'delivered':
+      case 7: // Delivered
         return VendorOrderStatus.delivered;
-      case 'cancelled':
-      case 'canceled':
+      case 8: // Cancelled
         return VendorOrderStatus.cancelled;
-      case 'returned':
+      case 9: // Returned
         return VendorOrderStatus.returned;
       default:
         return VendorOrderStatus.pending;
