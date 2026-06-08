@@ -99,27 +99,26 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = AddProductState.loadSuccess(_formState);
   }
 
+  ProductDraft _draftFrom({String id = ''}) => ProductDraft(
+        id: id,
+        basicInfo: _formState.step1!,
+        imagesInfo: _formState.step2!,
+        pricingInfo: _formState.step3!,
+        shippingInfo: _formState.step4!,
+        status: 'draft',
+      );
+
   Future<void> saveDraft({String? draftId}) async {
     if (!_formState.isValid) return;
     state = AddProductState.saveInProgress(_formState);
 
-    final draft = ProductDraft(
-      id: draftId ?? '',
-      basicInfo: _formState.step1!,
-      imagesInfo: _formState.step2!,
-      pricingInfo: _formState.step3!,
-      shippingInfo: _formState.step4!,
-      status: 'draft',
-    );
-
-    final either =
-        draftId != null && draftId.isNotEmpty
-            ? await _repository.updateDraft(draftId, draft)
-            : await _repository.saveDraft(draft);
+    final draft = _draftFrom(id: draftId ?? '');
+    final either = await _repository.submitDraft(draft);
 
     state = either.fold(
       (failure) => AddProductState.saveFailure(_formState, failure),
-      (saved) => AddProductState.saveSuccess(_formState, saved),
+      (productId) => AddProductState.saveSuccess(
+          _formState, draft.copyWith(id: productId)),
     );
   }
 
@@ -147,36 +146,21 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     if (!_formState.isValid) return;
     state = AddProductState.publishing(_formState);
 
-    if (draftId != null && draftId.isNotEmpty) {
-      final draft = ProductDraft(
-        id: draftId,
-        basicInfo: _formState.step1!,
-        imagesInfo: _formState.step2!,
-        pricingInfo: _formState.step3!,
-        shippingInfo: _formState.step4!,
-        status: 'draft',
-      );
-      final saveEither = await _repository.updateDraft(draftId, draft);
-      final saved = saveEither.fold(
-        (failure) {
-          state = AddProductState.publishFailure(_formState, failure);
-          return null;
-        },
-        (d) => d,
-      );
-      if (saved == null) return;
+    // Create + fill the draft (start -> step 2-4), then publish the new id.
+    final submitEither = await _repository.submitDraft(_draftFrom(id: draftId ?? ''));
+    final productId = submitEither.fold(
+      (failure) {
+        state = AddProductState.publishFailure(_formState, failure);
+        return null;
+      },
+      (id) => id,
+    );
+    if (productId == null) return;
 
-      final publishEither = await _repository.publishProduct(saved.id);
-      state = publishEither.fold(
-        (failure) => AddProductState.publishFailure(_formState, failure),
-        AddProductState.publishSuccess,
-      );
-    } else {
-      final publishEither = await _repository.publishProduct(draftId ?? '');
-      state = publishEither.fold(
-        (failure) => AddProductState.publishFailure(_formState, failure),
-        AddProductState.publishSuccess,
-      );
-    }
+    final publishEither = await _repository.publishProduct(productId);
+    state = publishEither.fold(
+      (failure) => AddProductState.publishFailure(_formState, failure),
+      AddProductState.publishSuccess,
+    );
   }
 }

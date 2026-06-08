@@ -1,30 +1,63 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// A selectable catalog category (real backend taxonomy).
+class CategoryOption {
+  const CategoryOption({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CategoryOption && other.id == id && other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, name);
+}
+
 class BasicInfo {
   const BasicInfo({
     required this.productName,
+    required this.shortDescription,
     required this.description,
+    required this.categoryId,
     required this.categories,
     this.brand,
     required this.tags,
   });
 
   final String productName;
+
+  /// One-line summary -> backend StartDraft/Step-1 `shortDescription`.
+  final String shortDescription;
+
+  /// Full description -> backend `longDescriptionMarkdown`.
   final String description;
+
+  /// Real catalog category Guid (from GET /v1/public/categories) -> backend
+  /// `categoryId`. The backend models a single category per product.
+  final String categoryId;
+
+  /// Display labels of the picked category/categories (UI-only; backend takes
+  /// the single [categoryId]). Kept for chip rendering.
   final List<String> categories;
   final String? brand;
   final List<String> tags;
 
   BasicInfo copyWith({
     String? productName,
+    String? shortDescription,
     String? description,
+    String? categoryId,
     List<String>? categories,
     String? brand,
     List<String>? tags,
   }) {
     return BasicInfo(
       productName: productName ?? this.productName,
+      shortDescription: shortDescription ?? this.shortDescription,
       description: description ?? this.description,
+      categoryId: categoryId ?? this.categoryId,
       categories: categories ?? this.categories,
       brand: brand ?? this.brand,
       tags: tags ?? this.tags,
@@ -35,7 +68,9 @@ class BasicInfo {
   bool operator ==(Object other) =>
       other is BasicInfo &&
       other.productName == productName &&
+      other.shortDescription == shortDescription &&
       other.description == description &&
+      other.categoryId == categoryId &&
       _listEquals(other.categories, categories) &&
       other.brand == brand &&
       _listEquals(other.tags, tags);
@@ -43,7 +78,9 @@ class BasicInfo {
   @override
   int get hashCode => Object.hash(
         productName,
+        shortDescription,
         description,
+        categoryId,
         Object.hashAll(categories),
         brand,
         Object.hashAll(tags),
@@ -105,6 +142,12 @@ class PricingInfo {
     required this.taxRate,
     required this.discountEnabled,
     this.discountPercent,
+    this.sku = '',
+    this.quantityOnHand = 0,
+    this.trackInventory = true,
+    this.allowOverselling = false,
+    this.productKind = 1,
+    this.billingCadence = 1,
   });
 
   final Money basePrice;
@@ -114,6 +157,27 @@ class PricingInfo {
   final bool discountEnabled;
   final double? discountPercent;
 
+  // --- Backend Step-3 fields (catalog PatchStep3Vm) ---
+  /// Stock keeping unit -> backend `sku`.
+  final String sku;
+
+  /// Available stock -> backend `quantityOnHand`.
+  final int quantityOnHand;
+
+  /// -> backend `trackInventory`.
+  final bool trackInventory;
+
+  /// -> backend `allowOverselling`.
+  final bool allowOverselling;
+
+  /// catalog ProductKind enum int (1=Physical,2=Digital,3=Service,
+  /// 4=Subscription,5=Bundle) -> backend `productKind`.
+  final int productKind;
+
+  /// catalog BillingCadence enum int (1=OneTime,2=Weekly,3=Monthly,
+  /// 4=Quarterly,5=Annual) -> backend `billingCadence`.
+  final int billingCadence;
+
   PricingInfo copyWith({
     Money? basePrice,
     Money? compareAtPrice,
@@ -121,6 +185,12 @@ class PricingInfo {
     double? taxRate,
     bool? discountEnabled,
     double? discountPercent,
+    String? sku,
+    int? quantityOnHand,
+    bool? trackInventory,
+    bool? allowOverselling,
+    int? productKind,
+    int? billingCadence,
   }) {
     return PricingInfo(
       basePrice: basePrice ?? this.basePrice,
@@ -129,6 +199,12 @@ class PricingInfo {
       taxRate: taxRate ?? this.taxRate,
       discountEnabled: discountEnabled ?? this.discountEnabled,
       discountPercent: discountPercent ?? this.discountPercent,
+      sku: sku ?? this.sku,
+      quantityOnHand: quantityOnHand ?? this.quantityOnHand,
+      trackInventory: trackInventory ?? this.trackInventory,
+      allowOverselling: allowOverselling ?? this.allowOverselling,
+      productKind: productKind ?? this.productKind,
+      billingCadence: billingCadence ?? this.billingCadence,
     );
   }
 
@@ -140,7 +216,13 @@ class PricingInfo {
       other.costPerItem == costPerItem &&
       other.taxRate == taxRate &&
       other.discountEnabled == discountEnabled &&
-      other.discountPercent == discountPercent;
+      other.discountPercent == discountPercent &&
+      other.sku == sku &&
+      other.quantityOnHand == quantityOnHand &&
+      other.trackInventory == trackInventory &&
+      other.allowOverselling == allowOverselling &&
+      other.productKind == productKind &&
+      other.billingCadence == billingCadence;
 
   @override
   int get hashCode => Object.hash(
@@ -150,6 +232,12 @@ class PricingInfo {
         taxRate,
         discountEnabled,
         discountPercent,
+        sku,
+        quantityOnHand,
+        trackInventory,
+        allowOverselling,
+        productKind,
+        billingCadence,
       );
 }
 
