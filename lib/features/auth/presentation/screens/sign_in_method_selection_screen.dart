@@ -129,7 +129,7 @@ class _SignInMethodSelectionScreenState
                       ),
                       const SizedBox(height: DesignTokens.s24),
                       Text(
-                        'Setup a Passkey',
+                        'Continue with Passkey',
                         textAlign: TextAlign.center,
                         style: DesignTokens.titleLarge,
                       ),
@@ -146,7 +146,7 @@ class _SignInMethodSelectionScreenState
                       SizedBox(
                         width: double.infinity,
                         child: SmPrimaryButton(
-                          label: 'Setup Passkey',
+                          label: 'Continue with Passkey',
                           height: DesignTokens.buttonHeight,
                           borderRadius: DesignTokens.buttonRadius,
                           color: DesignTokens.primaryGreen,

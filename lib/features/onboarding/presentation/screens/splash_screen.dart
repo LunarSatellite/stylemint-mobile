@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Splash — bootstraps the persisted session, then routes:
-/// - authenticated   → [RouteNames.home]
-/// - unauthenticated → [RouteNames.onboarding]
+/// Splash — only kicks off session bootstrap. The router's redirect owns the
+/// navigation: while the session is `unknown` the user stays here (spinner);
+/// once it resolves, the redirect sends them to home (authenticated) or
+/// onboarding (unauthenticated). Splash does NOT call `context.go` itself —
+/// doing so raced with the redirect and could strand the user on splash.
 ///
-/// Authentication is the session/passkey (WebAuthn) login. There is no
-/// separate local-biometric "app unlock" gate here: it was redundant with the
-/// passkey login and, with `persistAcrossBackgrounding`, re-fired in a loop on
-/// some devices (the biometric sheet backgrounds the app → splash re-runs →
-/// prompts again). Removed so entry is deterministic.
+/// There is no local-biometric "app unlock" gate here: it was redundant with
+/// the passkey/session login and re-fired in a loop on some devices.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -29,13 +26,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _bootstrap() async {
+    // Sets the session to authenticated/unauthenticated; the router redirect
+    // (driven by its refreshListenable) then routes off splash.
     await ref.read(sessionControllerProvider.notifier).bootstrap();
-    if (!mounted) return;
-    if (ref.read(sessionControllerProvider).isAuthenticated) {
-      context.go(RouteNames.home);
-    } else {
-      context.go(RouteNames.onboarding);
-    }
   }
 
   @override
