@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -159,20 +160,38 @@ const _authOnlyPaths = {
 
 @riverpod
 GoRouter appRouter(Ref ref) {
-  final session = ref.watch(sessionControllerProvider);
+  // The router is built ONCE. We do NOT `ref.watch` the session here — that
+  // would recreate the whole GoRouter on every login/logout and reset it to
+  // `initialLocation` (splash), stranding the user there after sign-in. Instead
+  // a refreshListenable re-runs `redirect` on session changes, and the redirect
+  // reads the current session via `ref.read`.
+  final refresh = ValueNotifier<int>(0);
+  ref.onDispose(refresh.dispose);
+  ref.listen<AuthSessionState>(
+    sessionControllerProvider,
+    (_, __) => refresh.value++,
+  );
 
   return GoRouter(
     initialLocation: RouteNames.splash,
     debugLogDiagnostics: true,
+    refreshListenable: refresh,
     redirect: (ctx, state) {
+      final session = ref.read(sessionControllerProvider);
       final path = state.matchedLocation;
       final isPublic = _publicPaths.any((p) => path.startsWith(p));
       final isAuthOnly = _authOnlyPaths.any((p) => path.startsWith(p));
+      final atSplash = path == RouteNames.splash;
 
+      // The redirect OWNS splash routing: once the session resolves, send the
+      // user off splash. Splash itself only kicks off bootstrap().
       return session.when(
-        unknown: () => path == RouteNames.splash ? null : RouteNames.splash,
-        authenticated: (_) => isAuthOnly ? RouteNames.home : null,
-        unauthenticated: () => isPublic ? null : RouteNames.signInMethod,
+        unknown: () => atSplash ? null : RouteNames.splash,
+        authenticated: (_) =>
+            (atSplash || isAuthOnly) ? RouteNames.home : null,
+        unauthenticated: () => atSplash
+            ? RouteNames.onboarding
+            : (isPublic ? null : RouteNames.signInMethod),
       );
     },
     routes: [
