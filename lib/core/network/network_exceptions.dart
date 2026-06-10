@@ -45,6 +45,32 @@ abstract class NetworkExceptions with _$NetworkExceptions {
         conflict: () => false,
       );
 
+  /// True for `.noInternetConnection()`.
+  bool get isNoInternet => when(
+        server: (_) => false,
+        noInternetConnection: () => true,
+        unexpectedError: () => false,
+        formatException: () => false,
+        emptyData: () => false,
+        validation: (_) => false,
+        auth: () => false,
+        notFound: () => false,
+        conflict: () => false,
+      );
+
+  /// True for `.conflict()` — e.g. a duplicate-account (409) on registration.
+  bool get isConflict => when(
+        server: (_) => false,
+        noInternetConnection: () => false,
+        unexpectedError: () => false,
+        formatException: () => false,
+        emptyData: () => false,
+        validation: (_) => false,
+        auth: () => false,
+        notFound: () => false,
+        conflict: () => true,
+      );
+
   static String getMessage(NetworkExceptions exception) {
     return exception.when(
       server: (msg) => msg,
