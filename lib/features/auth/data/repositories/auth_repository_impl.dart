@@ -55,11 +55,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -89,11 +89,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -127,11 +127,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -155,11 +155,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -185,11 +185,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -214,11 +214,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -240,11 +240,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -269,11 +269,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -299,12 +299,12 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
       await tokenStorage.clear();
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -320,11 +320,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -350,11 +350,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -376,11 +376,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -402,11 +402,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -430,11 +430,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -470,11 +470,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -515,11 +515,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -543,11 +543,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -571,11 +571,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -597,11 +597,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -628,11 +628,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -654,11 +654,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -682,11 +682,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -704,11 +704,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -730,11 +730,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -766,11 +766,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -792,11 +792,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -818,11 +818,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -844,11 +844,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -872,11 +872,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -898,11 +898,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -925,11 +925,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -956,11 +956,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -981,11 +981,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1004,7 +1004,7 @@ class AuthRepositoryImpl implements AuthRepository {
           clientResponseJson: clientResponseJson,
         );
         if (body == null) {
-          return left(NetworkExceptions.formatException());
+          return left(const NetworkExceptions.formatException());
         }
         final auth = AuthResponseDto.fromJson(body);
         await _persist(auth);
@@ -1015,11 +1015,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1041,11 +1041,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1067,11 +1067,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1094,7 +1094,7 @@ class AuthRepositoryImpl implements AuthRepository {
           devicePlatform: devicePlatform,
           deviceOsVersion: deviceOsVersion,
         );
-        if (body == null) return left(NetworkExceptions.formatException());
+        if (body == null) return left(const NetworkExceptions.formatException());
         final auth = AuthResponseDto.fromJson(body);
         await _persist(auth);
         return right(auth);
@@ -1104,11 +1104,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1132,11 +1132,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1161,7 +1161,7 @@ class AuthRepositoryImpl implements AuthRepository {
           deviceOsVersion: deviceOsVersion,
           nickname: nickname,
         );
-        if (body == null) return left(NetworkExceptions.formatException());
+        if (body == null) return left(const NetworkExceptions.formatException());
         final auth = AuthResponseDto.fromJson(body);
         await _persist(auth);
         return right(auth);
@@ -1171,11 +1171,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1197,11 +1197,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1219,11 +1219,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1247,11 +1247,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1273,11 +1273,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1299,11 +1299,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1327,11 +1327,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1353,11 +1353,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1379,11 +1379,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1405,11 +1405,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1431,11 +1431,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1457,11 +1457,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1477,11 +1477,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1503,11 +1503,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1529,11 +1529,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1555,11 +1555,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1581,11 +1581,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1607,11 +1607,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1633,11 +1633,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1661,11 +1661,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1687,11 +1687,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1716,11 +1716,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1741,11 +1741,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1769,11 +1769,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1793,11 +1793,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1813,11 +1813,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1833,11 +1833,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1859,11 +1859,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1882,11 +1882,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1905,11 +1905,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1937,11 +1937,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1963,11 +1963,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
@@ -1993,11 +1993,11 @@ class AuthRepositoryImpl implements AuthRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          return left(const NetworkExceptions.unexpectedError());
         }
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 }

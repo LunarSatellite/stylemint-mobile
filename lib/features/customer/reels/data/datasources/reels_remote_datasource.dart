@@ -24,7 +24,7 @@ class ReelsRemoteDataSource {
       '/api/v1/customer/feed',
       queryParameters: {
         'limit': limit,
-        if (cursor != null) 'cursor': cursor,
+        'cursor': ?cursor,
       },
     );
 

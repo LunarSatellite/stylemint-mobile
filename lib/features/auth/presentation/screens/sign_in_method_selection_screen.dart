@@ -43,8 +43,9 @@ class _SignInMethodSelectionScreenState
 
     final state = ref.read(passkeyAuthProvider);
     state.maybeWhen(
-      // Success: the session recheck flips routing to home — nothing to do.
-      loadSuccess: (_) {},
+      // Success: session is persisted + rechecked. Navigate explicitly (the
+      // router redirect alone doesn't reliably move us off this screen).
+      loadSuccess: (_) => context.go(RouteNames.home),
       loadFailure: (failure) {
         // No credential on this device → this is a new user; offer the
         // passkey-first quick signup (display name only).
@@ -82,8 +83,8 @@ class _SignInMethodSelectionScreenState
     setState(() => _busy = false);
 
     ref.read(passkeyBootstrapProvider).maybeWhen(
-          // Success: session recheck flips routing to home.
-          loadSuccess: (_) {},
+          // Success: session is persisted + rechecked. Navigate explicitly.
+          loadSuccess: (_) => context.go(RouteNames.home),
           loadFailure: (failure) {
             if (failure.isAuth) return;
             SmSnackbar.error(

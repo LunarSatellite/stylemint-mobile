@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -43,7 +44,13 @@ Dio dioClient(Ref ref) {
     dio.interceptors.add(PrettyDioLogger(
       requestHeader: true,
       requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
       maxWidth: 120,
+      // Route through dart:developer so long JSON bodies aren't truncated or
+      // dropped the way raw print() lines are on Android/iOS.
+      logPrint: (obj) => developer.log(obj.toString(),name: ''),
     ));
   }
 

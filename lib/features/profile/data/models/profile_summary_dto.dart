@@ -4,18 +4,17 @@ import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profi
 part 'profile_summary_dto.freezed.dart';
 part 'profile_summary_dto.g.dart';
 
-/// DTO for the profile summary from `/v1/profile/summary`.
+/// DTO for the profile header, sourced from `GET /v1/accounts/{accountId}`.
+///
+/// The account endpoint supplies identity fields only — `email`, the counters
+/// (saved / following / orders) and `pushEnabled` are NOT part of this
+/// response, so they default until wired to their own endpoints.
 @freezed
 abstract class ProfileSummaryDto with _$ProfileSummaryDto {
   const factory ProfileSummaryDto({
     required String displayName,
-    required String email,
-    @Default('') String avatarUrl,
-    @Default(0) int savedItemsCount,
-    @Default(0) int followingCount,
-    @Default(0) int ordersCount,
-    @Default('English') String language,
-    @Default(true) bool pushEnabled,
+    String? avatarUrl,
+    @Default('en-US') String locale,
   }) = _ProfileSummaryDto;
 
   const ProfileSummaryDto._();
@@ -25,12 +24,12 @@ abstract class ProfileSummaryDto with _$ProfileSummaryDto {
 
   ProfileSummary toDomain() => ProfileSummary(
     displayName: displayName,
-    email: email,
-    avatarUrl: avatarUrl,
-    savedItemsCount: savedItemsCount,
-    followingCount: followingCount,
-    ordersCount: ordersCount,
-    language: language,
-    pushEnabled: pushEnabled,
+    email: '',
+    avatarUrl: avatarUrl ?? '',
+    savedItemsCount: 0,
+    followingCount: 0,
+    ordersCount: 0,
+    language: locale,
+    pushEnabled: true,
   );
 }

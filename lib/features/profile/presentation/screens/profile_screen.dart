@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
@@ -120,13 +121,13 @@ class _UnauthenticatedView extends StatelessWidget {
   }
 }
 
-class _ProfileBody extends StatelessWidget {
+class _ProfileBody extends ConsumerWidget {
   const _ProfileBody({required this.summary});
 
   final ProfileSummary summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.only(bottom: DesignTokens.s24),
       children: [
@@ -238,7 +239,7 @@ class _ProfileBody extends StatelessWidget {
               icon: Icons.logout_rounded,
               label: 'Log Out',
               isDestructive: true,
-              onTap: () => context.push('${RouteNames.settings}/logout'),
+              onTap: () => confirmAndLogout(context, ref),
             ),
             ProfileMenuItem(
               icon: Icons.delete_forever_outlined,
@@ -255,4 +256,5 @@ class _ProfileBody extends StatelessWidget {
       ],
     );
   }
+  
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -74,40 +75,13 @@ class SettingsScreen extends ConsumerWidget {
             icon: Icons.logout_rounded,
             label: 'Log Out',
             isDestructive: true,
-            onTap: () => _confirmLogout(context),
+            onTap: () => confirmAndLogout(context, ref),
           ),
           _MenuTile(
             icon: Icons.delete_forever_outlined,
             label: 'Delete Account',
             isDestructive: true,
             onTap: () => _confirmDelete(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmLogout(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Log Out', style: TextStyle(color: DesignTokens.textWhite)),
-        content: const Text('Are you sure you want to log out?', style: TextStyle(color: DesignTokens.textLight)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logged out')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: DesignTokens.colorError),
-            child: const Text('Log Out'),
           ),
         ],
       ),

@@ -22,7 +22,7 @@ class ApiClient {
       final response = await _dio.get<dynamic>(
         uri,
         queryParameters: queryParameters,
-        options: options ?? Options(headers: {"requiresToken": true}),
+        options: options ?? Options(headers: {'requiresToken': true}),
       );
       return response.data;
     } on SocketException catch (e) {

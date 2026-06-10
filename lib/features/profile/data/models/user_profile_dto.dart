@@ -5,20 +5,22 @@ import 'package:stylemint_mobile_frontend/features/profile/domain/entities/user_
 part 'user_profile_dto.freezed.dart';
 part 'user_profile_dto.g.dart';
 
+/// DTO for the account entity from `GET /v1/accounts/{accountId}`.
+///
+/// Only the fields the endpoint actually returns are declared; unknown JSON
+/// keys (status, timezone, countryCode, verified timestamps, rowVersion, audit
+/// ids…) are ignored by json_serializable. `email`, `phone`, `bio`, and
+/// `website` are NOT part of this response, so the domain defaults them.
 @freezed
 abstract class UserProfileDto with _$UserProfileDto {
   const factory UserProfileDto({
     required String id,
     required String displayName,
-    required String email,
-    required String phone,
-    @Default('') String avatarUrl,
-    @Default('') String bio,
-    @Default('') String website,
+    String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
-    required DateTime dateJoined,
-    @Default('en') String language,
+    @Default('en-US') String locale,
+    DateTime? createdUtc,
   }) = _UserProfileDto;
 
   const UserProfileDto._();
@@ -29,15 +31,15 @@ abstract class UserProfileDto with _$UserProfileDto {
   UserProfile toDomain() => UserProfile(
     id: id,
     displayName: displayName,
-    email: email,
-    phone: phone,
-    avatarUrl: avatarUrl,
-    bio: bio,
-    website: website,
+    email: '',
+    phone: '',
+    avatarUrl: avatarUrl ?? '',
+    bio: '',
+    website: '',
     gender: gender,
     dateOfBirth: dateOfBirth,
-    language: language,
-    dateJoined: dateJoined,
+    language: locale,
+    dateJoined: createdUtc ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
   );
 }
 
