@@ -36,13 +36,27 @@ class ReelsFeedScreen extends ConsumerWidget {
             itemBuilder: (_, index) => ReelCard(reel: reels[index]),
           );
         },
-        loadFailure:
-            (failure) => SmErrorView(
-              message: 'Failed to load reels.',
-              onRetry:
-                  () =>
-                      ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
-            ),
+        loadFailure: (failure) {
+          // Only a genuine connectivity problem deserves an error screen.
+          final noInternet = failure.maybeWhen(
+            noInternetConnection: () => true,
+            orElse: () => false,
+          );
+          if (noInternet) {
+            return SmErrorView(
+              message: 'No internet connection.',
+              onRetry: () =>
+                  ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
+            );
+          }
+          // Logged-out (feed needs auth) or no data yet → show the friendly
+          // empty state, not a scary "failed to load" error. The home should
+          // always look intentional, even before there's content / sign-in.
+          return const SmEmptyState(
+            message: 'No reels yet. Check back soon for new content.',
+            icon: Icons.video_library_outlined,
+          );
+        },
       ),
     );
   }
