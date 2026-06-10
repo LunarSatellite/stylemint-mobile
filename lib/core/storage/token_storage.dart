@@ -33,13 +33,24 @@ class TokenStorage {
     ]);
   }
 
-  Future<String?> get accessToken => _storage.read(key: _kAccessToken);
-  Future<String?> get refreshToken => _storage.read(key: _kRefreshToken);
-  Future<String?> get accountId => _storage.read(key: _kAccountId);
-  Future<String?> get sessionId => _storage.read(key: _kSessionId);
+  /// Reads never throw — a secure-storage failure (e.g. Android keystore
+  /// decryption error after a rebuild) returns null so callers treat it as
+  /// "no session" instead of crashing / freezing on splash.
+  Future<String?> _safeRead(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> get accessToken => _safeRead(_kAccessToken);
+  Future<String?> get refreshToken => _safeRead(_kRefreshToken);
+  Future<String?> get accountId => _safeRead(_kAccountId);
+  Future<String?> get sessionId => _safeRead(_kSessionId);
 
   Future<DateTime?> get refreshExpiresUtc async {
-    final raw = await _storage.read(key: _kRefreshExpiry);
+    final raw = await _safeRead(_kRefreshExpiry);
     return raw == null ? null : DateTime.tryParse(raw);
   }
 
@@ -69,5 +80,13 @@ class TokenStorage {
 }
 
 final tokenStorageProvider = Provider<TokenStorage>((ref) {
-  return TokenStorage(const FlutterSecureStorage());
+  // resetOnError: a corrupt/undecryptable Android keystore entry is wiped and
+  // treated as empty instead of throwing on every read (which would otherwise
+  // freeze the app on splash). EncryptedSharedPreferences is the modern store.
+  return TokenStorage(const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      resetOnError: true,
+      encryptedSharedPreferences: true,
+    ),
+  ));
 });
