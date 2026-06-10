@@ -38,11 +38,7 @@ class ReelsFeedScreen extends ConsumerWidget {
         },
         loadFailure: (failure) {
           // Only a genuine connectivity problem deserves an error screen.
-          final noInternet = failure.maybeWhen(
-            noInternetConnection: () => true,
-            orElse: () => false,
-          );
-          if (noInternet) {
+          if (failure.isNoInternet) {
             return SmErrorView(
               message: 'No internet connection.',
               onRetry: () =>

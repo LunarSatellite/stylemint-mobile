@@ -201,9 +201,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         step1LoadNetworkExceptions: (failure) {
           // Account already exists → don't strand the user on the signup form;
           // tell them and send them to sign-in.
-          final isDuplicate =
-              failure.maybeWhen(conflict: () => true, orElse: () => false);
-          if (isDuplicate) {
+          if (failure.isConflict) {
             SmSnackbar.error(
               context,
               'This email or phone is already registered. Please sign in.',

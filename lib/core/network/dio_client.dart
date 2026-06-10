@@ -180,11 +180,7 @@ class _AuthInterceptor extends Interceptor {
         ..extra[_retriedKey] = true
         ..headers['Authorization'] = 'Bearer $newToken';
       final retried = await _refreshDio.fetch<dynamic>(opts);
-      // `true` = run the FOLLOWING response interceptors (incl. _BusyInterceptor
-      // .onResponse). Without it, resolve() skips them and the busy counter that
-      // was incremented on request never gets decremented → the global loader
-      // sticks on screen forever after a 401-refresh-retry.
-      return handler.resolve(retried, true);
+      return handler.resolve(retried);
     } on DioException catch (e) {
       return handler.next(e);
     }
