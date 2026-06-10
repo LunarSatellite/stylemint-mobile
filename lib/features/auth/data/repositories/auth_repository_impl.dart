@@ -505,6 +505,12 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
+          // 409 = account already exists (email or phone). Surface it as a
+          // conflict so the screen can route the user to sign-in instead of
+          // showing a generic "failed" message.
+          if (e.response?.statusCode == 409) {
+            return left(const NetworkExceptions.conflict());
+          }
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
           return left(e);
