@@ -193,12 +193,26 @@ class SessionController extends StateNotifier<AuthSessionState> {
   Future<void> bootstrap() => recheck();
 
   /// Re-reads storage; call after any login flow persists new tokens.
+  ///
+  /// MUST always resolve to a definitive state (authenticated/unauthenticated)
+  /// and never throw or hang — otherwise the session stays `unknown` and the
+  /// splash screen sticks forever. Secure-storage reads can throw (e.g. Android
+  /// keystore decryption failures across rebuilds) or stall, so they are
+  /// guarded with a try/catch + timeout that falls back to unauthenticated.
   Future<void> recheck() async {
-    final accountId = await tokenStorage.accountId;
-    final hasRefresh = await tokenStorage.hasValidRefreshToken;
-    state = (accountId != null && accountId.isNotEmpty && hasRefresh)
-        ? AuthSessionState.authenticated(accountId)
-        : const AuthSessionState.unauthenticated();
+    try {
+      final accountId =
+          await tokenStorage.accountId.timeout(const Duration(seconds: 6));
+      final hasRefresh = await tokenStorage.hasValidRefreshToken
+          .timeout(const Duration(seconds: 6));
+      state = (accountId != null && accountId.isNotEmpty && hasRefresh)
+          ? AuthSessionState.authenticated(accountId)
+          : const AuthSessionState.unauthenticated();
+    } catch (_) {
+      // Any storage failure → treat as logged out so the app proceeds to
+      // onboarding instead of freezing on splash.
+      state = const AuthSessionState.unauthenticated();
+    }
   }
 
   /// Revokes the session server-side (best effort) and clears local tokens.
