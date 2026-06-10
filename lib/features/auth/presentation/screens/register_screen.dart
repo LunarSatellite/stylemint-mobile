@@ -199,6 +199,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _finishOnboarding();
         },
         step1LoadNetworkExceptions: (failure) {
+          // Account already exists → don't strand the user on the signup form;
+          // tell them and send them to sign-in.
+          final isDuplicate =
+              failure.maybeWhen(conflict: () => true, orElse: () => false);
+          if (isDuplicate) {
+            SmSnackbar.error(
+              context,
+              'This email or phone is already registered. Please sign in.',
+            );
+            context.go(RouteNames.signInMethod);
+            return;
+          }
           SmSnackbar.error(
             context,
             _failureMessage(failure, 'Failed to create account'),
