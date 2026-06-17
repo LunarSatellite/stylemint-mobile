@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
@@ -51,7 +52,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -85,7 +86,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -123,7 +124,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -151,7 +152,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -181,7 +182,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -210,7 +211,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -236,7 +237,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -265,7 +266,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -295,7 +296,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -316,7 +317,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -346,7 +347,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -372,7 +373,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -398,7 +399,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -426,7 +427,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -466,7 +467,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -511,7 +512,7 @@ class AuthRepositoryImpl implements AuthRepository {
           if (e.response?.statusCode == 409) {
             return left(const NetworkExceptions.conflict());
           }
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -539,7 +540,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -567,7 +568,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -593,7 +594,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -624,7 +625,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -650,7 +651,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -678,7 +679,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -700,7 +701,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -726,7 +727,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -762,7 +763,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -788,7 +789,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -814,7 +815,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -840,7 +841,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -868,7 +869,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -894,7 +895,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -921,7 +922,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -952,7 +953,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -977,7 +978,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1011,7 +1012,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1037,7 +1038,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1063,7 +1064,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1100,7 +1101,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1128,7 +1129,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1167,7 +1168,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(auth);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1193,7 +1194,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1215,7 +1216,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1243,7 +1244,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1269,7 +1270,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1295,7 +1296,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1323,7 +1324,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1349,7 +1350,30 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(const NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<String>>> listCreatorSpecializations(
+    String accountId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final response =
+            await remoteDataSource.getCreatorSpecializations(accountId);
+        return right(response);
+      } catch (e) {
+        if (e is DioException) {
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1375,7 +1399,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1401,7 +1425,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1427,7 +1451,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1453,7 +1477,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1473,7 +1497,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1499,7 +1523,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1525,7 +1549,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1551,7 +1575,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1577,7 +1601,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1603,7 +1627,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1629,7 +1653,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1657,7 +1681,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1683,7 +1707,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1712,7 +1736,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1737,7 +1761,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1765,7 +1789,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1789,7 +1813,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1809,7 +1833,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1829,7 +1853,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1855,7 +1879,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1878,7 +1902,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1901,7 +1925,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1933,7 +1957,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1959,7 +1983,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(response);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -1989,7 +2013,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return right(unit);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

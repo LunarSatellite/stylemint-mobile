@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/widgets/kyc_document_tile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
@@ -131,11 +132,6 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     if (mounted) setState(() => _isSubmitting = false);
   }
 
-  Future<void> _uploadKycDoc(KYCDocumentType type) async {
-    // Placeholder — real implementation would use image_picker / file_picker
-    _showError('File picker integration pending.');
-  }
-
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -154,7 +150,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       next.whenOrNull(
         loadSuccess: (app) {
           if (app.status == VendorApplicationStatus.approved) {
-            context.go(RouteNames.vendorDash);
+            context.pushReplacement(RouteNames.vendorDash);
           }
         },
       );
@@ -172,13 +168,16 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           initial: () => _buildForm(),
           loadInProgress: _loader,
           loadSuccess: _buildStatusOrForm,
-          loadFailure: (failure) => SmErrorView(
-            message: 'Could not load application status.',
-            onRetry: () {
-              _hasCheckedStatus = false;
-              _checkStatus();
-            },
-          ),
+          // No application on file yet (404) → first-time applicant: show form.
+          loadFailure: (failure) => failure.isNotFound
+              ? _buildForm()
+              : SmErrorView(
+                  message: 'Could not load application status.',
+                  onRetry: () {
+                    _hasCheckedStatus = false;
+                    _checkStatus();
+                  },
+                ),
         ),
       ),
     );
@@ -194,7 +193,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         return _buildForm();
       case VendorApplicationStatus.approved:
         Future.microtask(() {
-          if (context.mounted) context.go(RouteNames.vendorDash);
+          if (context.mounted) context.pushReplacement(RouteNames.vendorDash);
         });
         return _loader();
     }
@@ -359,32 +358,35 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
-            children: _categories.map((category) {
-              final isSelected = _selectedCategories.contains(category);
-              return GestureDetector(
-                onTap: () => _toggleCategory(category),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
-                    vertical: DesignTokens.s8,
-                  ),
-                  decoration: isSelected
-                      ? DesignTokens.chipDecorationSelected()
-                      : DesignTokens.chipDecorationDefault(),
-                  child: Text(
-                    category,
-                    style: (isSelected
-                            ? DesignTokens.mediumSemibold
-                            : DesignTokens.mediumRegular)
-                        .copyWith(
-                      color: isSelected
-                          ? DesignTokens.primaryGreen
-                          : DesignTokens.chipsDefaultText,
+            children: _categories
+                .map((category) {
+                  final isSelected = _selectedCategories.contains(category);
+                  return GestureDetector(
+                    onTap: () => _toggleCategory(category),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s8,
+                      ),
+                      decoration: isSelected
+                          ? DesignTokens.chipDecorationSelected()
+                          : DesignTokens.chipDecorationDefault(),
+                      child: Text(
+                        category,
+                        style:
+                            (isSelected
+                                    ? DesignTokens.mediumSemibold
+                                    : DesignTokens.mediumRegular)
+                                .copyWith(
+                                  color: isSelected
+                                      ? DesignTokens.primaryGreen
+                                      : DesignTokens.chipsDefaultText,
+                                ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+                  );
+                })
+                .toList(growable: false),
           ),
           const SizedBox(height: DesignTokens.s24),
 
@@ -397,25 +399,13 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           ),
           const SizedBox(height: DesignTokens.s12),
 
-          KycDocumentTile(
-            document: null,
-            onUpload: () => _uploadKycDoc(KYCDocumentType.pan),
-          ),
+          const _KycUploadTile(type: KYCDocumentType.pan),
           const SizedBox(height: DesignTokens.s8),
-          KycDocumentTile(
-            document: null,
-            onUpload: () => _uploadKycDoc(KYCDocumentType.citizenship),
-          ),
+          const _KycUploadTile(type: KYCDocumentType.citizenship),
           const SizedBox(height: DesignTokens.s8),
-          KycDocumentTile(
-            document: null,
-            onUpload: () => _uploadKycDoc(KYCDocumentType.businessReg),
-          ),
+          const _KycUploadTile(type: KYCDocumentType.businessReg),
           const SizedBox(height: DesignTokens.s8),
-          KycDocumentTile(
-            document: null,
-            onUpload: () => _uploadKycDoc(KYCDocumentType.taxDoc),
-          ),
+          const _KycUploadTile(type: KYCDocumentType.taxDoc),
 
           const SizedBox(height: DesignTokens.s28),
 
@@ -463,20 +453,20 @@ class _ApplicationStatusCard extends ConsumerWidget {
     final statusColor = isPending
         ? DesignTokens.secondaryYellow
         : isKyc
-            ? DesignTokens.colorInfo
-            : DesignTokens.colorInfo;
+        ? DesignTokens.colorInfo
+        : DesignTokens.colorInfo;
 
     final statusIcon = isPending
         ? Icons.hourglass_top
         : isKyc
-            ? Icons.folder_outlined
-            : Icons.rate_review_outlined;
+        ? Icons.folder_outlined
+        : Icons.rate_review_outlined;
 
     final statusMessage = isPending
         ? 'Your application has been received and is awaiting review. We\'ll notify you once there\'s an update.'
         : isKyc
-            ? 'Additional KYC documents are required. Please upload the missing documents below.'
-            : 'Your application is being reviewed by our team. This usually takes 1-2 business days.';
+        ? 'Additional KYC documents are required. Please upload the missing documents below.'
+        : 'Your application is being reviewed by our team. This usually takes 1-2 business days.';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -522,7 +512,9 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     padding: const EdgeInsets.all(DesignTokens.s12),
                     decoration: BoxDecoration(
                       color: DesignTokens.colorError.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.inputRadius,
+                      ),
                     ),
                     child: Text(
                       application.rejectionReason!,
@@ -548,25 +540,13 @@ class _ApplicationStatusCard extends ConsumerWidget {
               style: DesignTokens.smallRegular,
             ),
             const SizedBox(height: DesignTokens.s12),
-            KycDocumentTile(
-              document: null,
-              onUpload: () {}, // TODO: integrate file picker
-            ),
+            const _KycUploadTile(type: KYCDocumentType.pan),
             const SizedBox(height: DesignTokens.s8),
-            KycDocumentTile(
-              document: null,
-              onUpload: () {},
-            ),
+            const _KycUploadTile(type: KYCDocumentType.citizenship),
             const SizedBox(height: DesignTokens.s8),
-            KycDocumentTile(
-              document: null,
-              onUpload: () {},
-            ),
+            const _KycUploadTile(type: KYCDocumentType.businessReg),
             const SizedBox(height: DesignTokens.s8),
-            KycDocumentTile(
-              document: null,
-              onUpload: () {},
-            ),
+            const _KycUploadTile(type: KYCDocumentType.taxDoc),
             const SizedBox(height: DesignTokens.s24),
             SizedBox(
               width: double.infinity,
@@ -591,7 +571,7 @@ class _ApplicationStatusCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => context.go(RouteNames.vendorDash),
+                onPressed: () => context.pushReplacement(RouteNames.vendorDash),
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Go to Vendor Dashboard',
@@ -626,6 +606,62 @@ class _ApplicationStatusCard extends ConsumerWidget {
           const SizedBox(height: DesignTokens.s16),
         ],
       ),
+    );
+  }
+}
+
+/// Self-contained KYC document slot: picks a file, uploads it via the vendor
+/// repository, and renders the result (uploaded / verifying / rejected) — owns
+/// its own pick → upload → state cycle so it can be dropped into either KYC
+/// section without lifting state into a parent.
+class _KycUploadTile extends ConsumerStatefulWidget {
+  const _KycUploadTile({required this.type});
+
+  final KYCDocumentType type;
+
+  @override
+  ConsumerState<_KycUploadTile> createState() => _KycUploadTileState();
+}
+
+class _KycUploadTileState extends ConsumerState<_KycUploadTile> {
+  KYCDocument? _doc;
+  bool _uploading = false;
+
+  Future<void> _pick() async {
+    if (_uploading) return;
+
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploading = true);
+    final result = await ref
+        .read(vendorRepositoryProvider)
+        .uploadKYCDocument(picked.path, widget.type);
+    if (!mounted) return;
+    setState(() => _uploading = false);
+    result.fold(
+      (_) => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Upload failed. Please try again.'),
+          backgroundColor: DesignTokens.colorError,
+          behavior: SnackBarBehavior.floating,
+        ),
+      ),
+      (doc) => setState(() => _doc = doc),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KycDocumentTile(
+      document: _doc,
+      type: widget.type,
+      isUploading: _uploading,
+      onUpload: _pick,
+      onRetry: _pick,
     );
   }
 }

@@ -26,6 +26,10 @@ class VendorRepositoryImpl implements VendorRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
+          // 404 = no application on file yet → let the UI show the apply form.
+          if (e.response?.statusCode == 404) {
+            return left(const NetworkExceptions.notFound());
+          }
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
           return left(e);

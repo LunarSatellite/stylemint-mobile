@@ -10,7 +10,13 @@ class DiscoveryRemoteDataSource {
 
   Future<DiscoverDataDto> getDiscoverData() async {
     final response = await apiClient.get('/v1/feed/explore');
-    return DiscoverDataDto.fromJson(response as Map<String, dynamic>);
+    // The explore feed returns a JSON array (`[]` when there is nothing to
+    // show). Only an object payload carries the curated discover sections, so
+    // anything that isn't a Map maps to an empty (default) DiscoverDataDto.
+    if (response is Map<String, dynamic>) {
+      return DiscoverDataDto.fromJson(response);
+    }
+    return const DiscoverDataDto();
   }
 
   Future<ProductDetailDto> getProductDetail(String productId) async {

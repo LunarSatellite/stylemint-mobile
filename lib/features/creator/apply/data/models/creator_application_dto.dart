@@ -32,10 +32,13 @@ abstract class PlatformDto with _$PlatformDto {
 abstract class CreatorApplicationDto with _$CreatorApplicationDto {
   const factory CreatorApplicationDto({
     required String id,
-    required String status,
+    // ApplicationState integer enum: 1 Draft, 2 Submitted, 3 UnderReview,
+    // 4 Approved, 5 Rejected.
+    required int state,
     String? rejectionReason,
-    required DateTime submittedAt,
-    required DateTime updatedAt,
+    DateTime? submittedAtUtc,
+    DateTime? createdUtc,
+    DateTime? updatedUtc,
   }) = _CreatorApplicationDto;
 
   const CreatorApplicationDto._();
@@ -43,24 +46,27 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
   factory CreatorApplicationDto.fromJson(Map<String, dynamic> json) =>
       _$CreatorApplicationDtoFromJson(json);
 
-  CreatorApplication toDomain() => CreatorApplication(
-    id: id,
-    status: _statusFromCode(status),
-    rejectionReason: rejectionReason,
-    submittedAt: submittedAt,
-    updatedAt: updatedAt,
-  );
+  CreatorApplication toDomain() {
+    final created = createdUtc ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return CreatorApplication(
+      id: id,
+      status: _statusFromState(state),
+      rejectionReason: rejectionReason,
+      submittedAt: submittedAtUtc ?? created,
+      updatedAt: updatedUtc ?? created,
+    );
+  }
 
-  static CreatorApplicationStatus _statusFromCode(String code) {
-    switch (code.toLowerCase()) {
-      case 'pending':
+  static CreatorApplicationStatus _statusFromState(int state) {
+    switch (state) {
+      case 1: // Draft
+      case 2: // Submitted
         return CreatorApplicationStatus.pending;
-      case 'under_review':
-      case 'review':
+      case 3: // UnderReview
         return CreatorApplicationStatus.underReview;
-      case 'approved':
+      case 4: // Approved
         return CreatorApplicationStatus.approved;
-      case 'rejected':
+      case 5: // Rejected
         return CreatorApplicationStatus.rejected;
       default:
         return CreatorApplicationStatus.pending;

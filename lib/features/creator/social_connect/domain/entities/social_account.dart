@@ -30,6 +30,20 @@ extension SocialPlatformX on SocialPlatform {
       };
 }
 
+/// First leg of the OAuth dance: the provider authorize URL the app opens in a
+/// browser, plus the opaque [state] that must round-trip back through the
+/// callback so it can be matched against the request that started it (CSRF
+/// protection).
+class SocialAuthorization {
+  const SocialAuthorization({
+    required this.authorizationUrl,
+    required this.state,
+  });
+
+  final String authorizationUrl;
+  final String state;
+}
+
 class SocialAccount {
   const SocialAccount({
     required this.id,

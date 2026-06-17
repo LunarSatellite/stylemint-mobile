@@ -97,12 +97,30 @@ class Platform {
   int get hashCode => Object.hash(id, name, handle, followerCount, connected);
 }
 
+/// A selectable creator content category from `GET /v1/public/creator-categories`.
+/// Its [id] is what the apply payload sends in `contentCategoryIds`.
+class CreatorContentCategory {
+  const CreatorContentCategory({
+    required this.id,
+    required this.name,
+    this.requiresOtherDescription = false,
+  });
+
+  final String id;
+  final String name;
+
+  /// When true (the "Other" bucket) the backend requires an
+  /// `otherCategoryDescription` alongside this id.
+  final bool requiresOtherDescription;
+}
+
 class CreatorApplicationForm {
   const CreatorApplicationForm({
     required this.fullName,
     required this.handle,
     required this.platforms,
-    required this.categories,
+    required this.contentCategoryIds,
+    required this.audienceBand,
     required this.bio,
     this.portfolioUrl,
     this.identityDocUrl,
@@ -111,7 +129,14 @@ class CreatorApplicationForm {
   final String fullName;
   final String handle;
   final List<Platform> platforms;
-  final List<String> categories;
+
+  /// GUIDs of selected content categories (from `GET /v1/public/interests`).
+  /// The backend requires at least one (`ContentCategoryIds` NotEmpty).
+  final List<String> contentCategoryIds;
+
+  /// Required audience-size band — the backend `AudienceSizeBand` integer enum
+  /// (1..5, ascending by follower count).
+  final int audienceBand;
   final String bio;
   final String? portfolioUrl;
   final String? identityDocUrl;
@@ -120,7 +145,8 @@ class CreatorApplicationForm {
     String? fullName,
     String? handle,
     List<Platform>? platforms,
-    List<String>? categories,
+    List<String>? contentCategoryIds,
+    int? audienceBand,
     String? bio,
     String? portfolioUrl,
     String? identityDocUrl,
@@ -129,7 +155,8 @@ class CreatorApplicationForm {
       fullName: fullName ?? this.fullName,
       handle: handle ?? this.handle,
       platforms: platforms ?? this.platforms,
-      categories: categories ?? this.categories,
+      contentCategoryIds: contentCategoryIds ?? this.contentCategoryIds,
+      audienceBand: audienceBand ?? this.audienceBand,
       bio: bio ?? this.bio,
       portfolioUrl: portfolioUrl ?? this.portfolioUrl,
       identityDocUrl: identityDocUrl ?? this.identityDocUrl,
@@ -142,13 +169,15 @@ class CreatorApplicationForm {
       other.fullName == fullName &&
       other.handle == handle &&
       _listEquals(other.platforms, platforms) &&
-      _listEquals(other.categories, categories) &&
+      _listEquals(other.contentCategoryIds, contentCategoryIds) &&
+      other.audienceBand == audienceBand &&
       other.bio == bio &&
       other.portfolioUrl == portfolioUrl &&
       other.identityDocUrl == identityDocUrl;
 
   @override
-  int get hashCode => Object.hash(fullName, handle, platforms.length, categories.length, bio, portfolioUrl, identityDocUrl);
+  int get hashCode => Object.hash(fullName, handle, platforms.length,
+      contentCategoryIds.length, audienceBand, bio, portfolioUrl, identityDocUrl);
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;

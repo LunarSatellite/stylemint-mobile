@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_header.dart';
@@ -140,6 +143,12 @@ class _ProfileBody extends ConsumerWidget {
         ProfileStatsRow(summary: summary),
         const SizedBox(height: DesignTokens.s20),
 
+        // Selling & Creating — apply for / switch into the Creator & Vendor
+        // surfaces. Routes to the apply screen (which self-redirects approved
+        // roles to their dashboard) or straight to the dashboard if active.
+        const _RoleSwitcherSection(),
+        const SizedBox(height: DesignTokens.s16),
+
         // Account & preferences
         ProfileMenuSection(
           items: [
@@ -256,5 +265,72 @@ class _ProfileBody extends ConsumerWidget {
       ],
     );
   }
-  
+}
+
+/// Creator & Vendor entry points + role switcher.
+///
+/// Loads the account's role profiles so each row reflects the real state:
+/// an **active** role links straight to its dashboard; otherwise the row links
+/// to the application/review flow. Role loading is best-effort — if it fails
+/// the rows default to the apply route, and the apply screen self-redirects an
+/// already-approved role to its dashboard, so navigation stays correct either
+/// way.
+class _RoleSwitcherSection extends ConsumerStatefulWidget {
+  const _RoleSwitcherSection();
+
+  @override
+  ConsumerState<_RoleSwitcherSection> createState() =>
+      _RoleSwitcherSectionState();
+}
+
+class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
+  // Role ids per the identity model: 2 = Creator, 3 = Vendor.
+  static const _creatorRole = 2;
+  static const _vendorRole = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final accountId = ref.read(sessionControllerProvider).maybeWhen(
+            authenticated: (id) => id,
+            orElse: () => null,
+          );
+      if (accountId != null && accountId.isNotEmpty) {
+        ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+      }
+    });
+  }
+
+  bool _isActive(List<RoleProfileDto> roles, int role) =>
+      roles.any((r) => r.role == role && r.isActivated);
+
+  @override
+  Widget build(BuildContext context) {
+    final roles = ref.watch(roleNotifierProvider).maybeWhen(
+          loadSuccess: (r) => r,
+          orElse: () => const <RoleProfileDto>[],
+        );
+    final creatorActive = _isActive(roles, _creatorRole);
+    final vendorActive = _isActive(roles, _vendorRole);
+
+    return ProfileMenuSection(
+      items: [
+        ProfileMenuItem(
+          icon: Icons.video_camera_back_outlined,
+          label: creatorActive ? 'Creator Studio' : 'Become a Creator',
+          onTap: () => context.push(
+            creatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
+          ),
+        ),
+        ProfileMenuItem(
+          icon: Icons.storefront_outlined,
+          label: vendorActive ? 'Vendor Dashboard' : 'Sell on Style Mint',
+          onTap: () => context.push(
+            vendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -258,6 +258,12 @@ abstract interface class AuthRepository {
   // --- Handles ---
   Future<Either<NetworkExceptions, List<HandleDto>>> listHandles(String accountId);
 
+  /// AI-derived creator specialization names
+  /// (`GET /v1/accounts/{accountId}/creator-specializations`).
+  Future<Either<NetworkExceptions, List<String>>> listCreatorSpecializations(
+    String accountId,
+  );
+
   Future<Either<NetworkExceptions, HandleDto>> registerHandle({
     required String accountId,
     required String handle,

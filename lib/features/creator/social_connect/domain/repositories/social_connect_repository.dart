@@ -5,11 +5,14 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 abstract interface class SocialConnectRepository {
   Future<Either<NetworkExceptions, List<SocialAccount>>> getConnectedAccounts();
 
-  Future<Either<NetworkExceptions, SocialAccount>> connectPlatform(
+  /// Starts the OAuth dance: asks the backend for the provider authorize URL +
+  /// state to open in a browser. The backend handles the provider callback
+  /// server-side; the app refreshes [getConnectedAccounts] on return.
+  Future<Either<NetworkExceptions, SocialAuthorization>> beginConnect(
     SocialPlatform platform,
-    String authCode,
-    String redirectUri,
   );
 
-  Future<Either<NetworkExceptions, Unit>> disconnectPlatform(String accountId);
+  Future<Either<NetworkExceptions, Unit>> disconnectPlatform(
+    SocialPlatform platform,
+  );
 }

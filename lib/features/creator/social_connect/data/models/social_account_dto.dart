@@ -4,19 +4,22 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 part 'social_account_dto.freezed.dart';
 part 'social_account_dto.g.dart';
 
+/// Matches the backend `SocialAccountDto`. `provider` is the SocialProvider
+/// integer enum (1 Instagram, 2 TikTok, 3 YouTube, 4 Facebook); `state` is the
+/// SocialAccountState enum (1 Connecting, 2 Active, 3 Expired, 4 Revoked,
+/// 5 RateLimited).
 @freezed
 abstract class SocialAccountDto with _$SocialAccountDto {
   const factory SocialAccountDto({
     required String id,
-    required String platform,
-    required String handle,
-    required String username,
-    required String displayName,
-    required String avatarUrl,
-    @Default(0) int followerCount,
-    @Default(true) bool isConnected,
-    String? accessToken,
-    DateTime? connectedAt,
+    required int provider,
+    @Default(2) int state,
+    String? providerUserId,
+    String? handle,
+    String? displayName,
+    String? avatarUrl,
+    int? followerCount,
+    DateTime? lastSyncedUtc,
   }) = _SocialAccountDto;
 
   const SocialAccountDto._();
@@ -25,22 +28,22 @@ abstract class SocialAccountDto with _$SocialAccountDto {
       _$SocialAccountDtoFromJson(json);
 
   SocialAccount toDomain() {
-    final platformEnum = SocialPlatform.values.firstWhere(
-      (p) => p.name == platform,
-      orElse: () => SocialPlatform.instagram,
-    );
+    // SocialProvider ints (1..4) map to the SocialPlatform enum order.
+    final platformEnum = (provider >= 1 && provider <= SocialPlatform.values.length)
+        ? SocialPlatform.values[provider - 1]
+        : SocialPlatform.instagram;
 
     return SocialAccount(
       id: id,
       platform: platformEnum,
-      handle: handle,
-      username: username,
-      displayName: displayName,
-      avatarUrl: avatarUrl,
-      followerCount: followerCount,
-      isConnected: isConnected,
-      accessToken: accessToken,
-      connectedAt: connectedAt,
+      handle: handle ?? '',
+      username: providerUserId ?? handle ?? '',
+      displayName: displayName ?? '',
+      avatarUrl: avatarUrl ?? '',
+      followerCount: followerCount ?? 0,
+      // SocialAccountState.Active == 2.
+      isConnected: state == 2,
+      connectedAt: lastSyncedUtc,
     );
   }
 }

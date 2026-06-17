@@ -20,7 +20,9 @@ class _HandleSetupScreenState extends ConsumerState<HandleSetupScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // Defer: load() mutates a provider synchronously, which is illegal during
+    // initState/build. Run it after the first frame.
+    Future.microtask(_load);
   }
 
   @override
@@ -29,14 +31,15 @@ class _HandleSetupScreenState extends ConsumerState<HandleSetupScreen> {
     super.dispose();
   }
 
-  void _load() {
+  Future<void> _load() async {
+    if (!mounted) return;
     final session = ref.read(sessionControllerProvider);
     _accountId = session.maybeWhen(
       authenticated: (id) => id,
       orElse: () => null,
     );
     if (_accountId != null) {
-      ref.read(handleListProvider.notifier).load(_accountId!);
+      await ref.read(handleListProvider.notifier).load(_accountId!);
     }
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/repositories/social_connect_repository.dart';
@@ -39,20 +40,51 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
     );
   }
 
-  Future<void> connect(SocialPlatform platform, String authCode) async {
-    final either = await _repository.connectPlatform(
-      platform,
-      authCode,
-      'stylemint://callback',
-    );
-    either.fold(
-      (_) => null,
-      (_) => unawaited(load()),
+  /// Starts the OAuth flow: fetches the provider authorize URL and opens it in
+  /// an in-app browser tab (Custom Tab / SFSafariViewController). Completion is
+  /// NOT awaited here — the backend exchanges the code server-side and then
+  /// redirects to `stylemint://social-connected?status=ok|error`, which the
+  /// app's deep-link handler routes to [onConnectReturn].
+  Future<void> connect(SocialPlatform platform) async {
+    final either = await _repository.beginConnect(platform);
+    await either.fold(
+      (failure) async => state = SocialConnectState.loadFailure(failure),
+      (auth) async {
+        final url = auth.authorizationUrl;
+        if (url.isEmpty) {
+          state =
+              SocialConnectState.loadFailure(NetworkExceptions.unexpectedError());
+          return;
+        }
+        try {
+          final launched = await launchUrl(
+            Uri.parse(url),
+            mode: LaunchMode.inAppBrowserView,
+          );
+          if (!launched) {
+            state = SocialConnectState.loadFailure(
+              NetworkExceptions.unexpectedError(),
+            );
+          }
+        } catch (_) {
+          // No browser available / malformed URL.
+          state =
+              SocialConnectState.loadFailure(NetworkExceptions.unexpectedError());
+        }
+      },
     );
   }
 
-  Future<void> disconnect(String accountId) async {
-    final either = await _repository.disconnectPlatform(accountId);
+  /// Invoked by the deep-link handler when the backend's
+  /// `stylemint://social-connected` redirect arrives. Dismisses the in-app
+  /// browser and refreshes the account list on success.
+  Future<void> onConnectReturn({required bool ok}) async {
+    await closeInAppWebView();
+    if (ok) await load();
+  }
+
+  Future<void> disconnect(SocialPlatform platform) async {
+    final either = await _repository.disconnectPlatform(platform);
     either.fold(
       (_) => null,
       (_) => unawaited(load()),

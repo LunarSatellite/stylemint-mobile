@@ -7,41 +7,46 @@ class SocialConnectRemoteDataSource {
 
   final ApiClient apiClient;
 
+  /// `GET /v1/social/accounts` → bare JSON array of SocialAccountDto.
   Future<List<SocialAccountDto>> getConnectedAccounts() async {
     final response = await apiClient.get('/v1/social/accounts');
-
-    final data = response as Map<String, dynamic>;
-    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+    final list = (response as List<dynamic>? ?? const <dynamic>[])
         .map((e) => SocialAccountDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
-    return items;
+    return list;
   }
 
-  Future<SocialAccountDto> connectPlatform({
-    required String platform,
-    required String authCode,
-    required String redirectUri,
+  /// OAuth leg 1 — `POST /v1/social/connect/{providerSlug}/begin` returns the
+  /// provider authorize URL + state (`SocialAuthorizeUrlDto { url, state }`).
+  ///
+  /// `redirectUri` is intentionally omitted so the backend uses its own
+  /// server-side callback (`GET .../callback`) — the provider must redirect to
+  /// the backend, not the app, so the server can exchange the code.
+  Future<({String url, String state})> beginConnect({
+    required String providerSlug,
     required String idempotencyKey,
   }) async {
     final response = await apiClient.post(
-      '/v1/social/connect/$platform/begin',
-      data: {
-        'platform': platform,
-        'authCode': authCode,
-        'redirectUri': redirectUri,
-      },
+      '/v1/social/connect/$providerSlug/begin',
+      data: const <String, dynamic>{},
       options: _idempotent(idempotencyKey),
     );
 
-    return SocialAccountDto.fromJson(response as Map<String, dynamic>);
+    final data = response as Map<String, dynamic>;
+    return (
+      url: data['url'] as String? ?? '',
+      state: data['state'] as String? ?? '',
+    );
   }
 
+  /// `DELETE /v1/social/accounts/{providerSlug}` — disconnect a linked account.
   Future<void> disconnectPlatform(
-    String accountId,
+    String providerSlug,
     String idempotencyKey,
   ) async {
     await apiClient.authDelete(
-      '/v1/social/accounts/$accountId',
+      '/v1/social/accounts/$providerSlug',
+      data: const <String, dynamic>{},
       options: _idempotent(idempotencyKey),
     );
   }

@@ -12,26 +12,54 @@ class CreatorRemoteDataSource {
     return CreatorApplicationDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Instant creator onboarding — `POST /v1/creator/activate`. Both fields
+  /// optional (`bio` ≤ 500, `expression` ≤ 140 free text). Idempotent: a repeat
+  /// call for an existing creator returns the same result. Response:
+  /// `{ creatorProfileId, profileApproved, creatorRoleActive }`.
+  Future<void> activate({
+    String? bio,
+    String? expression,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/creator/activate',
+      data: <String, dynamic>{
+        if (bio != null && bio.trim().isNotEmpty) 'bio': bio.trim(),
+        if (expression != null && expression.trim().isNotEmpty)
+          'expression': expression.trim(),
+      },
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// Public list of creator content categories (no auth required). Returns the
+  /// raw decoded `CreatorContentCategoryDto` maps; the repository maps + orders.
+  Future<List<Map<String, dynamic>>> getCreatorCategories() async {
+    final response = await apiClient.authGet('/v1/public/creator-categories');
+    return (response as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
+  /// Body matches `SubmitCreatorApplicationVm` exactly:
+  /// `{ bio, audienceBand:int(1..5), contentCategoryIds:[uuid] (required,
+  /// non-empty), otherCategoryDescription?, socials:[{ provider:int(1..4),
+  /// handle?, followerCountSelfReported? }] }`. There is no fullName/handle/
+  /// portfolio/identityDoc on this endpoint.
   Future<CreatorApplicationDto> submitApplication({
-    required String fullName,
-    required String handle,
-    required List<Map<String, dynamic>> platforms,
-    required List<String> categories,
+    required List<String> contentCategoryIds,
+    required int audienceBand,
+    required List<Map<String, dynamic>> socials,
     required String bio,
-    String? portfolioUrl,
-    String? identityDocUrl,
+    String? otherCategoryDescription,
     required String idempotencyKey,
   }) async {
     final response = await apiClient.post(
       '/v1/creator/apply',
       data: {
-        'fullName': fullName,
-        'handle': handle,
-        'platforms': platforms,
-        'categories': categories,
         'bio': bio,
-        if (portfolioUrl != null) 'portfolioUrl': portfolioUrl,
-        if (identityDocUrl != null) 'identityDocUrl': identityDocUrl,
+        'audienceBand': audienceBand,
+        'contentCategoryIds': contentCategoryIds,
+        'otherCategoryDescription': ?otherCategoryDescription,
+        if (socials.isNotEmpty) 'socials': socials,
       },
       options: _idempotent(idempotencyKey),
     );

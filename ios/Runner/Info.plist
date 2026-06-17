@@ -64,6 +64,12 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Deep links are handled exclusively by the app_links plugin (see
+	     main.dart). Disable Flutter's built-in deep-linking so GoRouter doesn't
+	     also receive OS links and fail with "route not found" on non-route URIs
+	     like stylemint://social-connected. -->
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

@@ -2,8 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/creator_identity_providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -161,6 +164,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: DesignTokens.s24),
+            const _CreatorIdentitySection(),
             TextFormField(
               controller: _nameCtrl,
               style: const TextStyle(color: DesignTokens.textWhite),
@@ -227,4 +231,111 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ),
     );
   }
+}
+
+/// Creator-only block: shows the auto-generated @handle and AI specializations,
+/// with a "Change" affordance into the handle-management screen. Hidden for
+/// non-creators (renders nothing).
+class _CreatorIdentitySection extends ConsumerWidget {
+  const _CreatorIdentitySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCreator = ref.watch(isCreatorProvider).maybeWhen(
+          data: (v) => v,
+          orElse: () => false,
+        );
+    if (!isCreator) return const SizedBox.shrink();
+
+    final handle = ref.watch(activeHandleProvider);
+    final specs = ref.watch(creatorSpecializationsProvider);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: DesignTokens.s16),
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Creator handle',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.s4),
+                    handle.when(
+                      loading: () => Text('…',
+                          style: DesignTokens.oneLinerSemibold),
+                      error: (_, __) => Text('—',
+                          style: DesignTokens.oneLinerSemibold),
+                      data: (h) => Text(
+                        (h == null || h.isEmpty) ? '—' : '@$h',
+                        style: DesignTokens.oneLinerSemibold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push(RouteNames.handleSetup),
+                child: Text(
+                  'Change',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          specs.maybeWhen(
+            data: (list) => list.isEmpty
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(top: DesignTokens.s12),
+                    child: Wrap(
+                      spacing: DesignTokens.s8,
+                      runSpacing: DesignTokens.s8,
+                      children: list
+                          .map((s) => _SpecChip(label: s))
+                          .toList(growable: false),
+                    ),
+                  ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpecChip extends StatelessWidget {
+  const _SpecChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: DesignTokens.s12,
+      vertical: DesignTokens.s4,
+    ),
+    decoration: BoxDecoration(
+      color: DesignTokens.primaryGreen.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+    ),
+    child: Text(
+      label,
+      style: DesignTokens.smallRegular.copyWith(
+        color: DesignTokens.primaryGreen,
+      ),
+    ),
+  );
 }

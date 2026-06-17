@@ -393,7 +393,9 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.socialConnect,
-        builder: (ctx, state) => const SocialConnectScreen(),
+        builder: (ctx, state) => SocialConnectScreen(
+          isOnboarding: state.uri.queryParameters['onboarding'] == 'true',
+        ),
       ),
       GoRoute(
         path: RouteNames.reelImport,

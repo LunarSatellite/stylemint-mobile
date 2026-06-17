@@ -6,19 +6,26 @@ class KycDocumentTile extends StatelessWidget {
   const KycDocumentTile({
     super.key,
     required this.document,
+    this.type,
+    this.isUploading = false,
     this.onUpload,
     this.onRetry,
   });
 
   final KYCDocument? document;
+
+  /// The document slot this tile represents, used for the icon/label when no
+  /// document has been uploaded yet (an empty [document] carries no type).
+  final KYCDocumentType? type;
+  final bool isUploading;
   final VoidCallback? onUpload;
   final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final hasDoc = document != null;
+    final effectiveType = document?.type ?? type;
     final status = document?.status;
-    final isPending = status == KYCDocumentStatus.pending;
     final isVerified = status == KYCDocumentStatus.verified;
     final isRejected = status == KYCDocumentStatus.rejected;
 
@@ -63,7 +70,7 @@ class KycDocumentTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              _iconForType(document?.type),
+              _iconForType(effectiveType),
               color: hasDoc ? DesignTokens.textWhite : DesignTokens.textMuted,
               size: 22,
             ),
@@ -74,7 +81,7 @@ class KycDocumentTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasDoc ? document!.fileName : _labelForType(document?.type),
+                  hasDoc ? document!.fileName : _labelForType(effectiveType),
                   style: DesignTokens.mediumSemibold.copyWith(
                     color: hasDoc ? DesignTokens.textWhite : DesignTokens.textMuted,
                   ),
@@ -82,7 +89,15 @@ class KycDocumentTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                if (hasDoc)
+                if (isUploading)
+                  Text(
+                    'Uploading…',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                else if (hasDoc)
                   Row(
                     children: [
                       Icon(statusIcon, color: statusColor, size: 12),
@@ -104,26 +119,36 @@ class KycDocumentTile extends StatelessWidget {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: hasDoc && isRejected ? onRetry : onUpload,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s12,
-                vertical: DesignTokens.s6,
+          if (isUploading)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: DesignTokens.primaryGreen,
               ),
-              decoration: BoxDecoration(
-                color: DesignTokens.primaryGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                actionLabel,
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.primaryGreen,
-                  fontWeight: FontWeight.w600,
+            )
+          else
+            GestureDetector(
+              onTap: hasDoc && isRejected ? onRetry : onUpload,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                  vertical: DesignTokens.s6,
+                ),
+                decoration: BoxDecoration(
+                  color: DesignTokens.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  actionLabel,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

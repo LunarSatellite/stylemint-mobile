@@ -20,7 +20,10 @@ NetworkExceptions mapDioExceptionToNetworkException(dynamic exception) {
         case 409:
           return const NetworkExceptions.conflict();
         case >= 500:
-          return NetworkExceptions.server(message);
+          // 500/502/503/504 — backend or the gateway in front of it is down.
+          // The body is often an HTML error page (e.g. nginx "502 Bad
+          // Gateway"), so never surface it; map to a friendly, retryable error.
+          return const NetworkExceptions.serverUnavailable();
         default:
           return NetworkExceptions.server(message);
       }

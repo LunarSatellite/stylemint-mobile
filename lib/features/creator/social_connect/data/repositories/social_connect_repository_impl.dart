@@ -37,20 +37,21 @@ class SocialConnectRepositoryImpl implements SocialConnectRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, SocialAccount>> connectPlatform(
+  Future<Either<NetworkExceptions, SocialAuthorization>> beginConnect(
     SocialPlatform platform,
-    String authCode,
-    String redirectUri,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.connectPlatform(
-          platform: platform.name,
-          authCode: authCode,
-          redirectUri: redirectUri,
+        final result = await remoteDataSource.beginConnect(
+          providerSlug: platform.name,
           idempotencyKey: const Uuid().v4(),
         );
-        return right(dto.toDomain());
+        return right(
+          SocialAuthorization(
+            authorizationUrl: result.url,
+            state: result.state,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -66,11 +67,13 @@ class SocialConnectRepositoryImpl implements SocialConnectRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> disconnectPlatform(String accountId) async {
+  Future<Either<NetworkExceptions, Unit>> disconnectPlatform(
+    SocialPlatform platform,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.disconnectPlatform(
-          accountId,
+          platform.name,
           const Uuid().v4(),
         );
         return right(unit);

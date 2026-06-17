@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/passkey_how_it_works.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -55,6 +56,13 @@ class _SignInMethodSelectionScreenState
         }
         // User cancelled the OS sheet — stay put, no error noise.
         if (failure.isAuth) return;
+        // Server/gateway down (502/503/504) or offline — this isn't a passkey
+        // problem, so say so plainly rather than telling the user to retry a
+        // ceremony that will keep failing until the backend is back.
+        if (failure.isServerUnavailable || failure.isNoInternet) {
+          SmSnackbar.error(context, NetworkExceptions.getMessage(failure));
+          return;
+        }
         SmSnackbar.error(context, 'Could not sign in with passkey. Try again.');
       },
       orElse: () {},

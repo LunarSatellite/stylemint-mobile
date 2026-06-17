@@ -667,6 +667,35 @@ class AuthRemoteDataSource {
         .toList();
   }
 
+  /// GET `/v1/accounts/{accountId}/creator-specializations` — AI-derived
+  /// content categories for the creator (populated asynchronously after
+  /// activation). Shape is broad; extract a display name per item (a bare
+  /// string, or a map with name/nameEn/displayName/category/code).
+  Future<List<String>> getCreatorSpecializations(String accountId) async {
+    final response =
+        await apiClient.get('/v1/accounts/$accountId/creator-specializations');
+    final list = response as List<dynamic>? ?? const <dynamic>[];
+    return list
+        .map<String>((e) {
+          if (e is String) return e.trim();
+          if (e is Map<String, dynamic>) {
+            for (final k in const [
+              'name',
+              'nameEn',
+              'displayName',
+              'category',
+              'code',
+            ]) {
+              final v = e[k];
+              if (v is String && v.trim().isNotEmpty) return v.trim();
+            }
+          }
+          return '';
+        })
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
+  }
+
   /// POST `/v1/accounts/{accountId}/handles`
   Future<HandleDto> registerHandle({
     required String accountId,

@@ -30,6 +30,15 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Deep links are handled exclusively by the app_links plugin
+                 (see main.dart). Disable Flutter's built-in deep-linking so
+                 GoRouter doesn't ALSO receive OS links and fail with
+                 "route not found" on non-route URIs like
+                 stylemint://social-connected. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -43,7 +52,16 @@
                 <data android:scheme="stylemint"/>
             </intent-filter>
 
-            <!-- App Links: https://stylemint.voyageritnepal.com -->
+            <!-- App Links: https://stylemint.voyageritnepal.com
+                 Scoped to the app's own CONTENT paths only. We must NOT claim
+                 the whole host, because the backend's OAuth callbacks live at
+                 /v1/social/connect/*/callback on the same domain — if the app
+                 intercepted those, the backend would never receive the auth
+                 code and social connect would silently fail. Anything not
+                 listed here (notably /v1/*) falls through to the browser, so
+                 the server-side OAuth callback works.
+                 Add a new <data android:pathPrefix="..."/> here when you ship a
+                 new shareable universal link. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -51,6 +69,19 @@
                 <data
                     android:scheme="https"
                     android:host="stylemint.voyageritnepal.com"/>
+                <data android:pathPrefix="/auth/magic"/>
+                <data android:pathPrefix="/reels"/>
+                <data android:pathPrefix="/product"/>
+                <data android:pathPrefix="/order"/>
+                <data android:pathPrefix="/creator"/>
+                <data android:pathPrefix="/vendor"/>
+                <data android:pathPrefix="/profile"/>
+                <data android:pathPrefix="/drop"/>
+                <data android:pathPrefix="/group-cart"/>
+                <data android:pathPrefix="/groups"/>
+                <data android:pathPrefix="/recommendations"/>
+                <data android:pathPrefix="/reco"/>
+                <data android:pathPrefix="/friend"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
@@ -68,6 +99,18 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Lets the OAuth/web flow open in an in-app Chrome Custom Tab
+             (flutter_web_browser). Without these, Android 11+ package
+             visibility hides browsers, so Custom Tabs can't be found and the
+             launch falls back to the "Complete action using" app chooser. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
         </intent>
     </queries>
 </manifest>

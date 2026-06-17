@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -40,6 +39,20 @@ class _UserTypeSelectionScreenState
   Future<void> _selectRole(int roleInt) async {
     final accountId = widget.authData.accountId;
 
+    // Already an active role → straight to that surface, no application needed.
+    if (_isRoleActivated(roleInt)) {
+      _navigateForRole(roleInt);
+      return;
+    }
+
+    // Creator (2) / Vendor (3) must go through the application + review flow
+    // before the role is activated — the apply screen owns request/activate.
+    if (roleInt == 2 || roleInt == 3) {
+      _navigateForRole(roleInt);
+      return;
+    }
+
+    // Customer (1) needs no review — request + activate inline, then onboard.
     final existing = _existingRoles.firstWhere(
       (r) => r.role == roleInt,
       orElse: () => RoleProfileDto(
@@ -53,12 +66,6 @@ class _UserTypeSelectionScreenState
     setState(() => _loadingRole = true);
 
     final notifier = ref.read(roleNotifierProvider.notifier);
-
-    if (existing.id.isNotEmpty && existing.isActivated) {
-      _navigateForRole(roleInt);
-      setState(() => _loadingRole = false);
-      return;
-    }
 
     if (existing.id.isEmpty) {
       await notifier.requestRole(accountId, roleInt);
@@ -74,9 +81,14 @@ class _UserTypeSelectionScreenState
   void _navigateForRole(int role) {
     switch (role) {
       case 2:
-        context.go(RouteNames.creatorHome);
+        // Active creator → dashboard; otherwise the application/review flow.
+        context.go(
+          _isRoleActivated(2) ? RouteNames.creatorHome : RouteNames.creatorApply,
+        );
       case 3:
-        context.go(RouteNames.vendorHome);
+        context.go(
+          _isRoleActivated(3) ? RouteNames.vendorHome : RouteNames.vendorApply,
+        );
       default:
         context.go(RouteNames.pickInterests);
     }

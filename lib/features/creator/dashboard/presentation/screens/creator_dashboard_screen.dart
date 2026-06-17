@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
+import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -25,23 +29,22 @@ class CreatorDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(creatorDashboardNotifierProvider);
+    // Gate on the Creator role. A Customer-only token would get 403 from
+    // /v1/creator/analytics/dashboard, so we never fire that call without the
+    // role — we show a "Become a creator" CTA instead. The dashboard notifier
+    // is only instantiated (lazily) inside [_CreatorDashboardView].
+    final isCreator = ref.watch(isCreatorProvider);
 
-    return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      body: SafeArea(
-        child: state.when(
-          initial: _loader,
-          loadInProgress: _loader,
-          loadSuccess: (dashboard) => _DashboardContent(
-            dashboard: dashboard,
-            onRefresh: () =>
-                ref.read(creatorDashboardNotifierProvider.notifier).load(),
-          ),
-          loadFailure: (failure) => SmErrorView(
-            message: 'Failed to load your dashboard.',
-            onRetry: () =>
-                ref.read(creatorDashboardNotifierProvider.notifier).load(),
+    return RootBackGuard(
+      child: Scaffold(
+        backgroundColor: DesignTokens.bgAppFoundation,
+        body: SafeArea(
+          child: isCreator.when(
+            loading: _loader,
+            error: (_, __) => const _BecomeCreatorCta(),
+            data: (creator) => creator
+                ? const _CreatorDashboardView()
+                : const _BecomeCreatorCta(),
           ),
         ),
       ),
@@ -49,8 +52,88 @@ class CreatorDashboardScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
+}
+
+/// The actual dashboard, only built once the Creator role is confirmed — so
+/// `creatorDashboardNotifierProvider` (which auto-loads) never fires for a
+/// non-creator.
+class _CreatorDashboardView extends ConsumerWidget {
+  const _CreatorDashboardView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(creatorDashboardNotifierProvider);
+    return state.when(
+      initial: _loader,
+      loadInProgress: _loader,
+      loadSuccess: (dashboard) => _DashboardContent(
+        dashboard: dashboard,
+        onRefresh: () =>
+            ref.read(creatorDashboardNotifierProvider.notifier).load(),
+      ),
+      loadFailure: (failure) => SmErrorView(
+        message: 'Failed to load your dashboard.',
+        onRetry: () =>
+            ref.read(creatorDashboardNotifierProvider.notifier).load(),
+      ),
+    );
+  }
+
+  Widget _loader() => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
+}
+
+/// Shown to a signed-in user who does not yet hold the Creator role. Routes
+/// into the creator activation flow.
+class _BecomeCreatorCta extends StatelessWidget {
+  const _BecomeCreatorCta();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              color: DesignTokens.primaryGreen,
+              size: 48,
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            Text(
+              'Become a Creator',
+              style: DesignTokens.sectionInnerTitle,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              'Start earning by sharing reels and tagging products. '
+              'It only takes a moment to get set up.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DesignTokens.s24),
+            SizedBox(
+              width: double.infinity,
+              child: SmPrimaryButton(
+                label: 'Get Started',
+                height: DesignTokens.buttonHeight,
+                borderRadius: DesignTokens.buttonRadius,
+                onPressed: () async => context.push(RouteNames.creatorApply),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DashboardContent extends StatelessWidget {
@@ -69,21 +152,32 @@ class _DashboardContent extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s16,
-            DesignTokens.s16, DesignTokens.s32),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _Header(firstName: _firstName),
             const SizedBox(height: DesignTokens.s20),
-            _EarningsHeroCard(earnings: dashboard.earnings),
+            _EarningsHeroCard(
+              earnings: dashboard.earnings,
+              deltaPercent: dashboard.earningsDeltaPercent,
+              pendingBalance: dashboard.pendingBalance,
+            ),
             const SizedBox(height: DesignTokens.s24),
             _StatsRow(
-              reels: dashboard.totalReels,
+              sales: dashboard.totalSales,
+              reels: dashboard.topReels.length,
               totalViews: dashboard.totalViews,
             ),
             const SizedBox(height: DesignTokens.s24),
-            _TopPerformingReels(reels: dashboard.recentReels),
+            const _ConnectAccountsCard(),
+            const SizedBox(height: DesignTokens.s24),
+            _TopPerformingReels(reels: dashboard.topReels),
             const SizedBox(height: DesignTokens.s24),
             const _RecentActivity(),
           ],
@@ -107,12 +201,17 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Welcome Back $firstName',
-                  style: DesignTokens.sectionInnerTitle),
+              Text(
+                'Welcome Back $firstName',
+                style: DesignTokens.sectionInnerTitle,
+              ),
               const SizedBox(height: DesignTokens.s4),
-              Text('Quick insights to your progress and earnings',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight)),
+              Text(
+                'Quick insights to your progress and earnings',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
+              ),
             ],
           ),
         ),
@@ -126,8 +225,11 @@ class _Header extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.notifications_none_rounded,
-              size: 20, color: DesignTokens.textWhite),
+          child: const Icon(
+            Icons.notifications_none_rounded,
+            size: 20,
+            color: DesignTokens.textWhite,
+          ),
         ),
       ],
     );
@@ -136,18 +238,30 @@ class _Header extends StatelessWidget {
 
 // ── Earnings + payout hero card ───────────────────────────────────────────────
 class _EarningsHeroCard extends StatelessWidget {
-  const _EarningsHeroCard({required this.earnings});
+  const _EarningsHeroCard({
+    required this.earnings,
+    required this.pendingBalance,
+    this.deltaPercent,
+  });
 
   final Money earnings;
+  final Money pendingBalance;
 
-  // MOCK — delta %, pending-sales count, and pending amount are not yet on the
-  // dashboard payload. Total Earned uses the real `earnings` value.
-  static const String _deltaPct = '+23%';
-  static const int _pendingSales = 12;
+  /// Percent change vs the previous window; `null` when the backend has no
+  /// comparison baseline yet (new creator), in which case we omit the badge.
+  final double? deltaPercent;
+
+  static String? _formatDelta(double? pct) {
+    if (pct == null) return null;
+    final rounded = pct.round();
+    return '${rounded >= 0 ? '+' : ''}$rounded%';
+  }
 
   @override
   Widget build(BuildContext context) {
     final amount = formatMoney(earnings);
+    final pending = formatMoney(pendingBalance);
+    final delta = _formatDelta(deltaPercent);
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -166,32 +280,46 @@ class _EarningsHeroCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('Total Earned ',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.buttonPrimaryText)),
-                    Text('($_deltaPct vs last)',
+                    Text(
+                      'Total Earned ',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
+                    ),
+                    if (delta != null)
+                      Text(
+                        '($delta vs last)',
                         style: DesignTokens.smallRegular.copyWith(
                           color: DesignTokens.buttonPrimaryText,
                           fontWeight: FontWeight.w600,
-                        )),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s4),
-                Text(amount,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                      color: DesignTokens.buttonPrimaryText,
-                    )),
+                Text(
+                  amount,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s8),
-                Text('Pending from $_pendingSales sales',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.buttonPrimaryText)),
-                Text(amount,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.buttonPrimaryText)),
+                Text(
+                  'Pending Balance',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
+                Text(
+                  pending,
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
               ],
             ),
           ),
@@ -212,12 +340,18 @@ class _EarningsHeroCard extends StatelessWidget {
                   onPressed: () async => context.push(RouteNames.earnings),
                 ),
                 const SizedBox(height: DesignTokens.s8),
-                Text('Payouts are processed weekly on fridays.',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.buttonPrimaryText)),
-                Text('The minimum withdraw amount is Rs 5,000.00',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.buttonPrimaryText)),
+                Text(
+                  'Payouts are processed weekly on fridays.',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
+                Text(
+                  'The minimum withdraw amount is Rs 5,000.00',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
               ],
             ),
           ),
@@ -229,40 +363,48 @@ class _EarningsHeroCard extends StatelessWidget {
 
 // ── Quick stats row ───────────────────────────────────────────────────────────
 class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.reels, required this.totalViews});
+  const _StatsRow({
+    required this.sales,
+    required this.reels,
+    required this.totalViews,
+  });
 
+  final int sales;
   final int reels;
   final int totalViews;
-
-  // MOCK — Sales and Clicks aren't on the dashboard payload yet.
-  static const int _sales = 20;
-  static const int _clicks = 105;
 
   @override
   Widget build(BuildContext context) {
     final comma = NumberFormat('#,###');
     return Column(
       children: [
+        // Clicks intentionally omitted — the backend does not track click
+        // signals yet (would always be 0). Re-add when the signals pipeline
+        // lands.
         Row(
           children: [
-            _StatBlock(label: 'Sales', value: '$_sales'),
+            _StatBlock(label: 'Sales', value: '$sales'),
             const SizedBox(width: DesignTokens.s12),
             _StatBlock(label: 'Reels', value: '$reels'),
-            const SizedBox(width: DesignTokens.s12),
-            _StatBlock(label: 'Clicks', value: '$_clicks'),
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
         _StatBlock(
-            label: 'Total Views', value: comma.format(totalViews), wide: true),
+          label: 'Total Views',
+          value: comma.format(totalViews),
+          wide: true,
+        ),
       ],
     );
   }
 }
 
 class _StatBlock extends StatelessWidget {
-  const _StatBlock(
-      {required this.label, required this.value, this.wide = false});
+  const _StatBlock({
+    required this.label,
+    required this.value,
+    this.wide = false,
+  });
 
   final String label;
   final String value;
@@ -277,18 +419,23 @@ class _StatBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
-                color: DesignTokens.textWhite,
-              )),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+              color: DesignTokens.textWhite,
+            ),
+          ),
           const SizedBox(height: DesignTokens.s4),
-          Text(label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight)),
+          Text(
+            label,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
         ],
       ),
     );
@@ -302,13 +449,6 @@ class _TopPerformingReels extends StatelessWidget {
 
   final List<CreatorReel> reels;
 
-  // MOCK — reel titles aren't on CreatorReel yet; fall back per index.
-  static const List<String> _mockTitles = [
-    'Mheecha: The Bag that Matches Your Aesthetics',
-    'Nike Structure 26 - Be the Trail Blazzer Runner',
-    'Winter Haul — 5 pieces under Rs 3,000',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -320,9 +460,12 @@ class _TopPerformingReels extends StatelessWidget {
             Text('Top Performing Reels', style: DesignTokens.sectionInnerTitle),
             GestureDetector(
               onTap: () => context.push(RouteNames.reelImport),
-              child: Text('View All',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.primaryGreen)),
+              child: Text(
+                'View All',
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
             ),
           ],
         ),
@@ -330,35 +473,34 @@ class _TopPerformingReels extends StatelessWidget {
         if (reels.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-            child: Text('No reels yet — import one to get started.',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted)),
+            child: Text(
+              'No reels yet — import one to get started.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
           )
         else
-          ...List.generate(reels.length, (i) {
-            return Padding(
+          ...reels.map(
+            (reel) => Padding(
               padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-              child: _TopReelCard(
-                reel: reels[i],
-                title:
-                    i < _mockTitles.length ? _mockTitles[i] : 'Untitled reel',
-              ),
-            );
-          }),
+              child: _TopReelCard(reel: reel),
+            ),
+          ),
       ],
     );
   }
 }
 
 class _TopReelCard extends StatelessWidget {
-  const _TopReelCard({required this.reel, required this.title});
+  const _TopReelCard({required this.reel});
 
   final CreatorReel reel;
-  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final posted = DateFormat('d MMM, yyyy hh:mm a').format(reel.createdAt);
+    final title = reel.title.isEmpty ? 'Untitled reel' : reel.title;
+    final posted = DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAt);
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: DesignTokens.cardDecoration(),
@@ -375,8 +517,11 @@ class _TopReelCard extends StatelessWidget {
                   height: 64,
                   color: DesignTokens.bgAppBodyLight,
                   alignment: Alignment.center,
-                  child: const Icon(Icons.play_circle_fill,
-                      color: DesignTokens.iconLight, size: 28),
+                  child: const Icon(
+                    Icons.play_circle_fill,
+                    color: DesignTokens.iconLight,
+                    size: 28,
+                  ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
@@ -384,15 +529,21 @@ class _TopReelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite)),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
                     const SizedBox(height: DesignTokens.s4),
-                    Text('Posted on: $posted',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textLight)),
+                    Text(
+                      'Posted on: $posted',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -428,9 +579,12 @@ class _Metric extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: DesignTokens.textMuted),
         const SizedBox(width: DesignTokens.s4),
-        Text(_compact(value),
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight)),
+        Text(
+          _compact(value),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
+        ),
       ],
     );
   }
@@ -443,58 +597,60 @@ class _Metric extends StatelessWidget {
 }
 
 // ── Recent Activity ───────────────────────────────────────────────────────────
-class _Activity {
-  const _Activity(this.icon, this.text, this.timeAgo);
-  final IconData icon;
-  final String text;
-  final String timeAgo;
-}
-
-class _RecentActivity extends StatelessWidget {
+/// Fed by the notification inbox (`GET /api/v1/notifications/inbox`) via
+/// [recentActivityProvider]. Degrades to an empty state on error/empty — which
+/// is also the current reality while the backend inbox auth bug is outstanding.
+class _RecentActivity extends ConsumerWidget {
   const _RecentActivity();
 
-  // MOCK — the activity feed isn't on the dashboard payload yet. Day-grouped.
-  static const Map<String, List<_Activity>> _feed = {
-    'Thu 23 Jan 2026': [
-      _Activity(Icons.movie_outlined,
-          'Your reel "Winter Haul" earned Rs 5,567.00 today!', '2h ago'),
-      _Activity(Icons.payments_outlined,
-          'Your commission of Rs 24,575.00 was paid', '8h ago'),
-    ],
-    'Wed 22 Jan 2026': [
-      _Activity(Icons.handshake_outlined,
-          'A new brand partnership request from Puma', '22h ago'),
-      _Activity(Icons.trending_up,
-          'Your reel "Nike Structure 26" hit 100k views', '1d ago'),
-    ],
-  };
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activity = ref.watch(recentActivityProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Recent Activity', style: DesignTokens.sectionInnerTitle),
         const SizedBox(height: DesignTokens.s12),
-        for (final entry in _feed.entries) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-            child: Text(entry.key,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted)),
+        activity.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: DesignTokens.s8),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
           ),
-          ...entry.value.map((a) => _ActivityRow(activity: a)),
-          const SizedBox(height: DesignTokens.s12),
-        ],
+          error: (_, __) => const _EmptyActivity(),
+          data: (items) => items.isEmpty
+              ? const _EmptyActivity()
+              : Column(
+                  children: items
+                      .map((a) => _ActivityRow(item: a))
+                      .toList(growable: false),
+                ),
+        ),
       ],
     );
   }
 }
 
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.activity});
+class _EmptyActivity extends StatelessWidget {
+  const _EmptyActivity();
 
-  final _Activity activity;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
+    child: Text(
+      'No recent activity yet.',
+      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+    ),
+  );
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.item});
+
+  final ActivityItem item;
 
   @override
   Widget build(BuildContext context) {
@@ -511,20 +667,102 @@ class _ActivityRow extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child:
-                Icon(activity.icon, size: 18, color: DesignTokens.primaryGreen),
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              size: 18,
+              color: DesignTokens.primaryGreen,
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
-            child: Text(activity.text,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textWhite, height: 1.4)),
+            child: Text(
+              item.title,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+                height: 1.4,
+              ),
+            ),
           ),
-          const SizedBox(width: DesignTokens.s8),
-          Text(activity.timeAgo,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted)),
+          if (item.occurredAt != null) ...[
+            const SizedBox(width: DesignTokens.s8),
+            Text(
+              _timeAgo(item.occurredAt!),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  static String _timeAgo(DateTime when) {
+    final diff = DateTime.now().toUtc().difference(when.toUtc());
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+}
+
+// ── Connect Accounts entry ────────────────────────────────────────────────────
+/// Permanent doorway into the social-connect OAuth flow. Opens the screen in
+/// normal (back-navigable) mode — distinct from the post-approval onboarding
+/// entry which passes `?onboarding=true`.
+class _ConnectAccountsCard extends StatelessWidget {
+  const _ConnectAccountsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(RouteNames.socialConnect),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: DesignTokens.cardDecoration(),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: DesignTokens.primaryGreen.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+              ),
+              child: const Icon(
+                Icons.link,
+                color: DesignTokens.primaryGreen,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Connect Accounts',
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Link Instagram, TikTok & more to import reels',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: DesignTokens.textMuted,
+              size: DesignTokens.iconSmall,
+            ),
+          ],
+        ),
       ),
     );
   }

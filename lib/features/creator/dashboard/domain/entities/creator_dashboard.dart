@@ -1,59 +1,49 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-enum CreatorReelStatus {
-  active('Active'),
-  pending('Pending'),
-  flagged('Flagged');
-
-  const CreatorReelStatus(this.label);
-
-  final String label;
-}
-
+/// A "top performing" reel from the dashboard payload (`topReels[]`). Matches
+/// the backend item: `reelId, title, thumbnailUrl, publishedAtUtc, views,
+/// likes, impressions, shares, comments, sales, earnings`. We model the subset
+/// the dashboard renders.
 class CreatorReel {
   const CreatorReel({
     required this.id,
-    required this.platform,
+    required this.title,
     required this.thumbnailUrl,
+    required this.publishedAt,
     required this.views,
     required this.likes,
     required this.comments,
     required this.shares,
-    required this.createdAt,
-    required this.status,
   });
 
   final String id;
-  final String platform;
+  final String title;
   final String thumbnailUrl;
+  final DateTime publishedAt;
   final int views;
   final int likes;
   final int comments;
   final int shares;
-  final DateTime createdAt;
-  final CreatorReelStatus status;
 
   CreatorReel copyWith({
     String? id,
-    String? platform,
+    String? title,
     String? thumbnailUrl,
+    DateTime? publishedAt,
     int? views,
     int? likes,
     int? comments,
     int? shares,
-    DateTime? createdAt,
-    CreatorReelStatus? status,
   }) {
     return CreatorReel(
       id: id ?? this.id,
-      platform: platform ?? this.platform,
+      title: title ?? this.title,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      publishedAt: publishedAt ?? this.publishedAt,
       views: views ?? this.views,
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       shares: shares ?? this.shares,
-      createdAt: createdAt ?? this.createdAt,
-      status: status ?? this.status,
     );
   }
 
@@ -61,55 +51,61 @@ class CreatorReel {
   bool operator ==(Object other) =>
       other is CreatorReel &&
       other.id == id &&
-      other.platform == platform &&
+      other.title == title &&
       other.thumbnailUrl == thumbnailUrl &&
+      other.publishedAt == publishedAt &&
       other.views == views &&
       other.likes == likes &&
       other.comments == comments &&
-      other.shares == shares &&
-      other.createdAt == createdAt &&
-      other.status == status;
+      other.shares == shares;
 
   @override
-  int get hashCode => Object.hash(id, platform, thumbnailUrl, views, likes, comments, shares, createdAt, status);
+  int get hashCode =>
+      Object.hash(id, title, thumbnailUrl, publishedAt, views, likes, comments, shares);
 }
 
+/// Mirrors the `GET /v1/creator/analytics/dashboard` payload. Only the fields
+/// the API actually returns are modelled here — earnings (+ period delta),
+/// pending balance, sales/views totals, and top reels. (The previous
+/// `totalReels`/`totalEngagement`/`activePartnerships`/`pendingInvites` fields
+/// were never part of this endpoint and have been removed.)
 class CreatorDashboard {
   const CreatorDashboard({
     required this.earnings,
-    required this.totalReels,
+    required this.pendingBalance,
+    required this.totalSales,
     required this.totalViews,
-    required this.totalEngagement,
-    required this.recentReels,
-    required this.activePartnerships,
-    required this.pendingInvites,
+    required this.topReels,
+    this.earningsDeltaPercent,
   });
 
+  /// `totalEarnings.current` for the window.
   final Money earnings;
-  final int totalReels;
+
+  /// `totalEarnings.deltaPercent` — percent change vs the previous window.
+  /// `null` when the backend has no comparison baseline yet.
+  final double? earningsDeltaPercent;
+
+  final Money pendingBalance;
+  final int totalSales;
   final int totalViews;
-  final int totalEngagement;
-  final List<CreatorReel> recentReels;
-  final int activePartnerships;
-  final int pendingInvites;
+  final List<CreatorReel> topReels;
 
   CreatorDashboard copyWith({
     Money? earnings,
-    int? totalReels,
+    double? earningsDeltaPercent,
+    Money? pendingBalance,
+    int? totalSales,
     int? totalViews,
-    int? totalEngagement,
-    List<CreatorReel>? recentReels,
-    int? activePartnerships,
-    int? pendingInvites,
+    List<CreatorReel>? topReels,
   }) {
     return CreatorDashboard(
       earnings: earnings ?? this.earnings,
-      totalReels: totalReels ?? this.totalReels,
+      earningsDeltaPercent: earningsDeltaPercent ?? this.earningsDeltaPercent,
+      pendingBalance: pendingBalance ?? this.pendingBalance,
+      totalSales: totalSales ?? this.totalSales,
       totalViews: totalViews ?? this.totalViews,
-      totalEngagement: totalEngagement ?? this.totalEngagement,
-      recentReels: recentReels ?? this.recentReels,
-      activePartnerships: activePartnerships ?? this.activePartnerships,
-      pendingInvites: pendingInvites ?? this.pendingInvites,
+      topReels: topReels ?? this.topReels,
     );
   }
 
@@ -117,12 +113,17 @@ class CreatorDashboard {
   bool operator ==(Object other) =>
       other is CreatorDashboard &&
       other.earnings == earnings &&
-      other.totalReels == totalReels &&
-      other.totalViews == totalViews &&
-      other.totalEngagement == totalEngagement &&
-      other.activePartnerships == activePartnerships &&
-      other.pendingInvites == pendingInvites;
+      other.earningsDeltaPercent == earningsDeltaPercent &&
+      other.pendingBalance == pendingBalance &&
+      other.totalSales == totalSales &&
+      other.totalViews == totalViews;
 
   @override
-  int get hashCode => Object.hash(earnings, totalReels, totalViews, totalEngagement, activePartnerships, pendingInvites);
+  int get hashCode => Object.hash(
+    earnings,
+    earningsDeltaPercent,
+    pendingBalance,
+    totalSales,
+    totalViews,
+  );
 }

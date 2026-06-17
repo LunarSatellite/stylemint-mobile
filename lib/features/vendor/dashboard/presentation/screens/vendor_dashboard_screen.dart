@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_stat_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -17,21 +18,23 @@ class VendorDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(vendorDashboardNotifierProvider);
 
-    return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      body: SafeArea(
-        child: state.when(
-          initial: _loader,
-          loadInProgress: _loader,
-          loadSuccess: (dashboard) => _DashboardContent(
-            dashboard: dashboard,
-            onRefresh: () =>
-                ref.read(vendorDashboardNotifierProvider.notifier).load(),
-          ),
-          loadFailure: (failure) => SmErrorView(
-            message: 'Failed to load vendor dashboard.',
-            onRetry: () =>
-                ref.read(vendorDashboardNotifierProvider.notifier).load(),
+    return RootBackGuard(
+      child: Scaffold(
+        backgroundColor: DesignTokens.bgAppFoundation,
+        body: SafeArea(
+          child: state.when(
+            initial: _loader,
+            loadInProgress: _loader,
+            loadSuccess: (dashboard) => _DashboardContent(
+              dashboard: dashboard,
+              onRefresh: () =>
+                  ref.read(vendorDashboardNotifierProvider.notifier).load(),
+            ),
+            loadFailure: (failure) => SmErrorView(
+              message: 'Failed to load vendor dashboard.',
+              onRetry: () =>
+                  ref.read(vendorDashboardNotifierProvider.notifier).load(),
+            ),
           ),
         ),
       ),
@@ -67,8 +70,10 @@ class _DashboardContent extends StatelessWidget {
                   Text('Vendor Dashboard', style: DesignTokens.titleLarge),
                   Consumer(
                     builder: (ctx, ref, _) => IconButton(
-                      icon: const Icon(Icons.more_horiz,
-                          color: DesignTokens.textWhite),
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        color: DesignTokens.textWhite,
+                      ),
                       onPressed: () => showVendorMoreMenu(ctx, ref),
                     ),
                   ),
@@ -208,11 +213,12 @@ class _DashboardContent extends StatelessWidget {
                 _EmptyOrdersView()
               else
                 ...dashboard.recentOrders
-                    .map((order) => Padding(
-                          padding:
-                              const EdgeInsets.only(bottom: DesignTokens.s8),
-                          child: _RecentOrderTile(order: order),
-                        ))
+                    .map(
+                      (order) => Padding(
+                        padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                        child: _RecentOrderTile(order: order),
+                      ),
+                    )
                     .toList(growable: false),
 
               const SizedBox(height: DesignTokens.s28),
