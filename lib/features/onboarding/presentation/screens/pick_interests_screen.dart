@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -15,14 +17,14 @@ class _Interest {
 /// Title + subtitle → "X/3 Picked" progress bar → search field → 4-column grid
 /// of glassmorphic "Radio Card" chips → sticky "Proceed" button (enabled once
 /// at least 3 are selected).
-class PickInterestsScreen extends StatefulWidget {
+class PickInterestsScreen extends ConsumerStatefulWidget {
   const PickInterestsScreen({super.key});
 
   @override
-  State<PickInterestsScreen> createState() => _PickInterestsScreenState();
+  ConsumerState<PickInterestsScreen> createState() => _PickInterestsScreenState();
 }
 
-class _PickInterestsScreenState extends State<PickInterestsScreen> {
+class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
   // TODO: source categories from the API; placeholder set for now.
   static const List<_Interest> _interests = [
     _Interest('Fashion', Icons.checkroom),
@@ -149,12 +151,31 @@ class _PickInterestsScreenState extends State<PickInterestsScreen> {
             ),
 
             // Sticky "Proceed" button
-            _StickyButton(
-              label: 'Proceed',
-              enabled: _canProceed,
-              onTap: () {
-                // TODO: persist selected interests.
-                context.go(RouteNames.followCreators);
+            Consumer(
+              builder: (context, ref, _) {
+                final saveState = ref.watch(saveInterestsProvider);
+
+                ref.listen(saveInterestsProvider, (_, next) {
+                  if (next.saved) context.go(RouteNames.followCreators);
+                  if (next.hasError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to save interests. Please try again.'),
+                      ),
+                    );
+                  }
+                });
+
+                return _StickyButton(
+                  label: 'Proceed',
+                  enabled: _canProceed && !saveState.isLoading,
+                  isLoading: saveState.isLoading,
+                  onTap: () {
+                    ref.read(saveInterestsProvider.notifier).save(
+                      _selected.toList(),
+                    );
+                  },
+                );
               },
             ),
           ],
@@ -230,12 +251,14 @@ class _RadioCard extends StatelessWidget {
 class _StickyButton extends StatelessWidget {
   final String label;
   final bool enabled;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _StickyButton({
     required this.label,
     required this.enabled,
     required this.onTap,
+    this.isLoading = false,
   });
 
   @override
@@ -264,13 +287,24 @@ class _StickyButton extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(label,
-                      style: DesignTokens.oneLinerSemibold
-                          .copyWith(color: DesignTokens.buttonPrimaryText)),
-                  const SizedBox(width: DesignTokens.s8),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: DesignTokens.iconSmall,
-                      color: DesignTokens.buttonPrimaryText),
+                  if (isLoading)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
+                    )
+                  else ...[
+                    Text(label,
+                        style: DesignTokens.oneLinerSemibold
+                            .copyWith(color: DesignTokens.buttonPrimaryText)),
+                    const SizedBox(width: DesignTokens.s8),
+                    const Icon(Icons.arrow_forward_rounded,
+                        size: DesignTokens.iconSmall,
+                        color: DesignTokens.buttonPrimaryText),
+                  ],
                 ],
               ),
             ),
