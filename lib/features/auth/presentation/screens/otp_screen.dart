@@ -46,8 +46,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     if (!mounted) return;
     final verifyState = ref.read(otpVerificationProvider);
-    if (verifyState.isSuccess && verifyState.authData != null) {
-      context.push(RouteNames.userTypeSelection, extra: verifyState.authData!);
+    if (verifyState.isSuccess) {
+      context.go(RouteNames.home);
     } else if (verifyState.hasError) {
       SmSnackbar.error(context, _getErrorMessage(verifyState.error));
       _codeFieldKey.currentState?.clearCode();

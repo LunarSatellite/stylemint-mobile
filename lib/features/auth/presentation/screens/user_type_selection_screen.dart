@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 
 /// Select User Type — pixel-matched to Figma frame `9365:7986`.
 ///
@@ -11,23 +10,14 @@ import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_respons
 /// rows (green numbered badge + title/description + chevron, divided by thin
 /// lines) → "Already have an account? Sign In" footer.
 class UserTypeSelectionScreen extends ConsumerWidget {
-  final AuthResponseDto authData;
-
-  const UserTypeSelectionScreen({super.key, required this.authData});
+  const UserTypeSelectionScreen({super.key});
 
   void _selectRole(BuildContext context, String role) {
-    // TODO: persist selected role + tokens (Tasks 10–13).
-    // Customer onboarding continues to Pick Interests → Follow Creators.
-    switch (role) {
-      case 'creator':
-        context.go(RouteNames.creatorHome);
-        break;
-      case 'vendor':
-        context.go(RouteNames.vendorHome);
-        break;
-      default:
-        // Customer onboarding: continue to interests selection.
-        context.go(RouteNames.pickInterests);
+    // Customer continues to onboarding carousel; creator/vendor go straight to sign-in.
+    if (role == 'customer') {
+      context.go(RouteNames.onboarding);
+    } else {
+      context.go(RouteNames.signInMethod);
     }
   }
 

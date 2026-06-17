@@ -24,7 +24,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // TODO: gate on a "seen onboarding" flag + auth session once token
     // persistence (Tasks 10–13) lands; for now always show onboarding.
     _timer = Timer(const Duration(milliseconds: 2000), () {
-      if (mounted) context.go(RouteNames.onboarding);
+      if (mounted) context.go(RouteNames.userTypeSelection);
     });
   }
 

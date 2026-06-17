@@ -11,7 +11,6 @@ import 'package:stylemint_mobile_frontend/features/onboarding/presentation/scree
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/onboarding_carousel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/pick_interests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_creators_screen.dart';
-import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'route_names.dart';
 
 part 'app_router.g.dart';
@@ -71,11 +70,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.userTypeSelection,
-        builder: (ctx, state) {
-          return UserTypeSelectionScreen(
-            authData: state.extra as AuthResponseDto,
-          );
-        },
+        builder: (ctx, state) => const UserTypeSelectionScreen(),
       ),
       GoRoute(
         path: RouteNames.pickInterests,
@@ -84,15 +79,6 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.followCreators,
         builder: (ctx, state) => const FollowCreatorsScreen(),
-      ),
-      // Deprecated route — kept for backwards compatibility
-      GoRoute(
-        path: RouteNames.rolePicker,
-        builder: (ctx, state) {
-          return UserTypeSelectionScreen(
-            authData: state.extra as AuthResponseDto,
-          );
-        },
       ),
       GoRoute(
         path: RouteNames.home,
