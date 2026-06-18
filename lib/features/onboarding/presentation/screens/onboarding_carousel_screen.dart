@@ -8,7 +8,8 @@ class _Slide {
   final String title;
   final String subtitle;
   final IconData icon;
-  const _Slide(this.title, this.subtitle, this.icon);
+  final String? imagePath;
+  const _Slide(this.title, this.subtitle, this.icon, {this.imagePath});
 }
 
 /// Onboarding intro carousel — pixel-matched to Figma section `9365:10823`
@@ -34,21 +35,25 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
       'Your Favorite Creators Are the New Stylists.',
       "Discover trending fits, tips, and products directly from the people who know what's up",
       Icons.groups_rounded,
+      imagePath: 'assets/images/onboarding/rafiki.png',
     ),
     _Slide(
       'Tap. Try. Buy. Just Like That With Vibe Try',
       'See a product in a reel? Tap it. Try it in AR. Cop it in seconds. No fluff, no fuss.',
       Icons.view_in_ar_rounded,
+      imagePath: 'assets/images/onboarding/ecommerce_campaign.png',
     ),
     _Slide(
       'Find Your Tribe, Make Your Squad, Share the Drip',
       'Start fashion challenges, shop in squads, and earn rewards together',
       Icons.diversity_3_rounded,
+      imagePath: 'assets/images/onboarding/group-discussion.png',
     ),
     _Slide(
       'Get Rewarded for Being Stylish.',
       'Earn points for engaging, shopping, and showing off your style',
       Icons.card_giftcard_rounded,
+      imagePath: 'assets/images/onboarding/gift.png',
     ),
   ];
 
@@ -76,9 +81,41 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      body: SafeArea(
-        child: Column(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Base gradient — original colors
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF477B4D),
+                  Color(0xFF2A7160),
+                  Color(0xFF173C49),
+                ],
+                stops: [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+          // Vignette — transparent center, dark corners
+          Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.1,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+                stops: [0.35, 1.0],
+              ),
+            ),
+          ),
+          SafeArea(
+          child: Column(
           children: [
             Expanded(
               child: PageView.builder(
@@ -100,6 +137,8 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
             ),
           ],
         ),
+        ),
+        ],
       ),
     );
   }
@@ -116,19 +155,27 @@ class _SlideView extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: DesignTokens.s24),
-          // Illustration (placeholder — TODO: real Figma rafiki asset)
+          // Illustration
           Expanded(
             child: Center(
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBodyLight,
-                  borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-                ),
-                child: Icon(slide.icon,
-                    size: 120, color: DesignTokens.primaryGreen),
-              ),
+              child: slide.imagePath != null
+                  ? Image.asset(
+                      slide.imagePath!,
+                      width: 240,
+                      height: 240,
+                      fit: BoxFit.contain,
+                    )
+                  : Container(
+                      width: 240,
+                      height: 240,
+                      decoration: BoxDecoration(
+                        color: DesignTokens.bgAppBodyLight,
+                        borderRadius:
+                            BorderRadius.circular(DesignTokens.cardRadius),
+                      ),
+                      child: Icon(slide.icon,
+                          size: 120, color: DesignTokens.primaryGreen),
+                    ),
             ),
           ),
           const SizedBox(height: DesignTokens.s24),

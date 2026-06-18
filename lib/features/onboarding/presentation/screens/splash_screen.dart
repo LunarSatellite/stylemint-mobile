@@ -39,18 +39,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.shopping_bag_outlined,
-              size: 72,
-              color: DesignTokens.primaryGreen,
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              'STYLE MINT',
-              style: DesignTokens.sectionInnerTitle.copyWith(
-                color: DesignTokens.primaryGreen,
-                letterSpacing: 3,
-              ),
+            Image.asset(
+              'assets/images/stylemint-logo.png',
+              width: 120,
+              height: 158,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: DesignTokens.s24),
             Text(
