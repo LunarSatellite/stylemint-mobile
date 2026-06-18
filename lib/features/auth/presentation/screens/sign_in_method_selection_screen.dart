@@ -147,9 +147,7 @@ class _TopBar extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: IconButton(
         icon: const Icon(Icons.chevron_left_rounded, color: DesignTokens.textWhite, size: DesignTokens.iconMedium),
-        onPressed: () {
-          if (context.canPop()) context.pop();
-        },
+        onPressed: () => context.go(RouteNames.userTypeSelection),
       ),
     );
   }
