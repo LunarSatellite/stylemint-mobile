@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class _Creator {
@@ -86,12 +85,9 @@ class _FollowCreatorsScreenState extends State<FollowCreatorsScreen> {
                 },
               ),
             ),
-            SmStickyBottomBar(
-              primaryLabel: 'Continue',
-              onPrimary: () => context.go(RouteNames.home),
-              secondaryLabel: 'Skip',
-              onSecondary: () => context.go(RouteNames.home),
-              showTopDivider: true,
+            _BottomActions(
+              onProceed: () => context.go(RouteNames.home),
+              onSkip: () => context.go(RouteNames.home),
             ),
           ],
         ),
@@ -228,6 +224,68 @@ class _FollowButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BottomActions extends StatelessWidget {
+  final VoidCallback onProceed;
+  final VoidCallback onSkip;
+
+  const _BottomActions({required this.onProceed, required this.onSkip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppFoundation,
+        border: Border(
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Proceed button
+          Material(
+            color: DesignTokens.primaryGreen,
+            borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+            child: InkWell(
+              onTap: onProceed,
+              borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s32, vertical: DesignTokens.s16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Proceed',
+                        style: DesignTokens.oneLinerSemibold
+                            .copyWith(color: DesignTokens.buttonPrimaryText)),
+                    const SizedBox(width: DesignTokens.s8),
+                    const Icon(Icons.arrow_forward_rounded,
+                        size: DesignTokens.iconSmall,
+                        color: DesignTokens.buttonPrimaryText),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          // Skip text link
+          GestureDetector(
+            onTap: onSkip,
+            child: Text(
+              'Skip',
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textLight),
+            ),
+          ),
+        ],
       ),
     );
   }
