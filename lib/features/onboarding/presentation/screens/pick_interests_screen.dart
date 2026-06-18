@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/interests_notifier.dart';
@@ -228,6 +229,32 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
       child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
 }
 
+/// Maps a backend interest name to a bundled SVG asset, when one exists.
+///
+/// Returns `null` for names we don't ship art for, so callers can fall back to
+/// a Material icon via [_iconForInterest].
+String? _svgAssetForInterest(String name) {
+  const assets = <String, String>{
+    'fashion': 'assets/images/interests/Fashion.svg',
+    'beauty': 'assets/images/interests/Beauty.svg',
+    'footwear': 'assets/images/interests/Footwear.svg',
+    'accessories': 'assets/images/interests/Accessories.svg',
+    'fitness': 'assets/images/interests/Fitness.svg',
+    'gaming': 'assets/images/interests/Gaming.svg',
+    'tech': 'assets/images/interests/Tech.svg',
+    'technology': 'assets/images/interests/Tech.svg',
+    'food': 'assets/images/interests/Food.svg',
+    'outdoor': 'assets/images/interests/Outdoor.svg',
+    'pets': 'assets/images/interests/Pets.svg',
+    'books': 'assets/images/interests/Books.svg',
+    'travel': 'assets/images/interests/Travel.svg',
+    'wellness': 'assets/images/interests/Wellness.svg',
+    'football': 'assets/images/interests/Football.svg',
+    'home': 'assets/images/interests/Home.svg',
+  };
+  return assets[name.toLowerCase()];
+}
+
 IconData _iconForInterest(String name) {
   switch (name.toLowerCase()) {
     case 'fashion':
@@ -282,6 +309,8 @@ class _RadioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final svgAsset = _svgAssetForInterest(label);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -307,13 +336,24 @@ class _RadioCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: selected
-                  ? DesignTokens.primaryGreen
-                  : DesignTokens.radioCardTitle,
-            ),
+            if (svgAsset != null)
+              SvgPicture.asset(
+                svgAsset,
+                width: 32,
+                height: 32,
+                colorFilter: selected
+                    ? const ColorFilter.mode(
+                        DesignTokens.primaryGreen, BlendMode.srcIn)
+                    : null,
+              )
+            else
+              Icon(
+                icon,
+                size: 32,
+                color: selected
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.radioCardTitle,
+              ),
             const SizedBox(height: DesignTokens.s4),
             Text(
               label,

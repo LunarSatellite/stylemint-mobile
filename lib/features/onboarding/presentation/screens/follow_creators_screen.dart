@@ -29,7 +29,7 @@ class FollowCreatorsScreen extends StatefulWidget {
 }
 
 class _FollowCreatorsScreenState extends State<FollowCreatorsScreen> {
-  // TODO: source creators from the API; placeholder set for now.
+  // TODO: replace with API once backend adds /v1/onboarding/creators endpoint.
   static const List<_Creator> _creators = [
     _Creator('Shree Teen', '@alieen.ace43', 'Travel & Skincare',
         'Get Personalized recommendations from creators in Fashion, Beauty, and Fitness', '4.9', '52.3k'),
