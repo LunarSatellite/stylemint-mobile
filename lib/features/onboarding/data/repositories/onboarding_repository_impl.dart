@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/error/failure.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/data/datasources/onboarding_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/data/models/creator_dto.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 class OnboardingRepositoryImpl implements OnboardingRepository {
@@ -12,6 +13,26 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   Future<Either<Failure, void>> saveInterests(List<String> categoryIds) async {
     try {
       await _datasource.saveInterests(categoryIds);
+      return right(null);
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<CreatorDto>>> fetchCreators() async {
+    try {
+      final creators = await _datasource.fetchCreators();
+      return right(creators);
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> followCreators(List<String> creatorIds) async {
+    try {
+      await _datasource.followCreators(creatorIds);
       return right(null);
     } catch (e) {
       return left(_mapError(e));
