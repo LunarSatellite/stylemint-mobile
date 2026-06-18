@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -8,8 +9,8 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// A selectable interest category.
 class _Interest {
   final String label;
-  final IconData icon;
-  const _Interest(this.label, this.icon);
+  final String assetPath;
+  const _Interest(this.label, this.assetPath);
 }
 
 /// Pick Your Interests — pixel-matched to Figma frame `9615:45821`.
@@ -27,21 +28,21 @@ class PickInterestsScreen extends ConsumerStatefulWidget {
 class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
   // TODO: source categories from the API; placeholder set for now.
   static const List<_Interest> _interests = [
-    _Interest('Fitness', Icons.fitness_center),
-    _Interest('Skincare', Icons.face_retouching_natural),
-    _Interest('Haircare', Icons.content_cut),
-    _Interest('Fashion', Icons.checkroom),
-    _Interest('Gaming', Icons.sports_esports),
-    _Interest('Outdoors', Icons.park),
-    _Interest('Travel', Icons.flight),
-    _Interest('Food', Icons.restaurant),
-    _Interest('Wellness', Icons.spa),
-    _Interest('Sports', Icons.sports_basketball),
-    _Interest('Music', Icons.music_note),
-    _Interest('Photography', Icons.camera_alt),
-    _Interest('Art', Icons.palette),
-    _Interest('Beauty', Icons.brush),
-    _Interest('Lifestyle', Icons.self_improvement),
+    _Interest('Fashion', 'assets/images/interests/Fashion.svg'),
+    _Interest('Beauty', 'assets/images/interests/Beauty.svg'),
+    _Interest('Footwear', 'assets/images/interests/Footwear.svg'),
+    _Interest('Accessories', 'assets/images/interests/Accessories.svg'),
+    _Interest('Fitness', 'assets/images/interests/Fitness.svg'),
+    _Interest('Gaming', 'assets/images/interests/Gaming.svg'),
+    _Interest('Tech', 'assets/images/interests/Tech.svg'),
+    _Interest('Food', 'assets/images/interests/Food.svg'),
+    _Interest('Outdoor', 'assets/images/interests/Outdoor.svg'),
+    _Interest('Pets', 'assets/images/interests/Pets.svg'),
+    _Interest('Books', 'assets/images/interests/Books.svg'),
+    _Interest('Travel', 'assets/images/interests/Travel.svg'),
+    _Interest('Wellness', 'assets/images/interests/Wellness.svg'),
+    _Interest('Football', 'assets/images/interests/Football.svg'),
+    _Interest('Home', 'assets/images/interests/Home.svg'),
   ];
 
   static const int _minPicks = 3;
@@ -220,12 +221,14 @@ class _RadioCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              interest.icon,
-              size: 32,
-              color: selected
-                  ? DesignTokens.primaryGreen
-                  : DesignTokens.radioCardTitle,
+            SvgPicture.asset(
+              interest.assetPath,
+              width: 32,
+              height: 32,
+              colorFilter: selected
+                  ? const ColorFilter.mode(
+                      DesignTokens.primaryGreen, BlendMode.srcIn)
+                  : null,
             ),
             const SizedBox(height: DesignTokens.s4),
             Text(
