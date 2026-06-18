@@ -27,21 +27,21 @@ class PickInterestsScreen extends ConsumerStatefulWidget {
 class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
   // TODO: source categories from the API; placeholder set for now.
   static const List<_Interest> _interests = [
-    _Interest('Fashion', Icons.checkroom),
-    _Interest('Beauty', Icons.brush),
     _Interest('Fitness', Icons.fitness_center),
-    _Interest('Tech', Icons.devices),
-    _Interest('Food', Icons.restaurant),
-    _Interest('Travel', Icons.flight),
-    _Interest('Music', Icons.music_note),
+    _Interest('Skincare', Icons.face_retouching_natural),
+    _Interest('Haircare', Icons.content_cut),
+    _Interest('Fashion', Icons.checkroom),
     _Interest('Gaming', Icons.sports_esports),
-    _Interest('Art', Icons.palette),
-    _Interest('Home', Icons.chair),
+    _Interest('Outdoors', Icons.park),
+    _Interest('Travel', Icons.flight),
+    _Interest('Food', Icons.restaurant),
+    _Interest('Wellness', Icons.spa),
     _Interest('Sports', Icons.sports_basketball),
-    _Interest('Books', Icons.menu_book),
-    _Interest('Movies', Icons.movie),
+    _Interest('Music', Icons.music_note),
     _Interest('Photography', Icons.camera_alt),
-    _Interest('Lifestyle', Icons.spa),
+    _Interest('Art', Icons.palette),
+    _Interest('Beauty', Icons.brush),
+    _Interest('Lifestyle', Icons.self_improvement),
   ];
 
   static const int _minPicks = 3;
@@ -120,7 +120,7 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                     ),
                     cursorColor: DesignTokens.primaryGreen,
                     decoration: DesignTokens.inputDecoration(
-                      hintText: 'Search',
+                      hintText: 'Search interest',
                       prefixIcon: const Icon(Icons.search,
                           color: DesignTokens.inputFieldPlaceholder, size: 20),
                     ),
