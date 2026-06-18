@@ -1,13 +1,19 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/onboarding/data/models/creator_dto.dart';
-import 'package:stylemint_mobile_frontend/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+class _Creator {
+  final String name;
+  final String handle;
+  final String category;
+  final String description;
+  final String rating;
+  final String followers;
+  const _Creator(this.name, this.handle, this.category, this.description,
+      this.rating, this.followers);
+}
 
 /// Follow Creators — pixel-matched to Figma frame `9383:4993`
 /// (card component `9383:2095`).
@@ -15,50 +21,42 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Title + subtitle → scrollable list of creator cards (avatar, name/handle,
 /// Follow toggle, category, description, rating/followers) → sticky Continue /
 /// Skip bottom bar.
-class FollowCreatorsScreen extends ConsumerStatefulWidget {
+class FollowCreatorsScreen extends StatefulWidget {
   const FollowCreatorsScreen({super.key});
 
   @override
-  ConsumerState<FollowCreatorsScreen> createState() =>
-      _FollowCreatorsScreenState();
+  State<FollowCreatorsScreen> createState() => _FollowCreatorsScreenState();
 }
 
-class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
+class _FollowCreatorsScreenState extends State<FollowCreatorsScreen> {
+  // TODO: replace with API once backend adds /v1/onboarding/creators endpoint.
+  static const List<_Creator> _creators = [
+    _Creator('Shree Teen', '@alieen.ace43', 'Travel & Skincare',
+        'Get Personalized recommendations from creators in Fashion, Beauty, and Fitness', '4.9', '52.3k'),
+    _Creator('Maya Lume', '@maya.lume', 'Fashion & Lifestyle',
+        'Daily fits, styling hacks and the latest drops curated for you', '4.8', '128k'),
+    _Creator('Ravi Kit', '@ravikit', 'Tech & Gadgets',
+        'Hands-on reviews and honest takes on the gear worth your money', '4.7', '87.1k'),
+    _Creator('Nina Bloom', '@ninabloom', 'Beauty & Skincare',
+        'Clean beauty routines and product breakdowns for every skin type', '5.0', '203k'),
+    _Creator('Theo Run', '@theoruns', 'Fitness & Wellness',
+        'Workouts, recovery tips and gear to keep you moving', '4.6', '64.8k'),
+  ];
+
   final Set<String> _following = {};
 
-  @override
-  void initState() {
-    super.initState();
-    unawaited(Future.microtask(
-      () => ref.read(fetchCreatorsProvider.notifier).fetch(),
-    ));
-  }
-
-  void _toggleFollow(String id) {
+  void _toggleFollow(String handle) {
     setState(() {
-      if (_following.contains(id)) {
-        _following.remove(id);
+      if (_following.contains(handle)) {
+        _following.remove(handle);
       } else {
-        _following.add(id);
+        _following.add(handle);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final fetchState = ref.watch(fetchCreatorsProvider);
-
-    ref.listen(followCreatorsProvider, (_, next) {
-      if (next.saved) context.go(RouteNames.home);
-      if (next.hasError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to save. Please try again.'),
-          ),
-        );
-      }
-    });
-
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
@@ -71,81 +69,33 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
               child: _Header(),
             ),
             const SizedBox(height: DesignTokens.s24),
-            Expanded(child: _buildBody(fetchState)),
-            Consumer(
-              builder: (context, ref, _) {
-                final followState = ref.watch(followCreatorsProvider);
-                return SmStickyBottomBar(
-                  primaryLabel: followState.isLoading ? 'Saving...' : 'Continue',
-                  onPrimary: followState.isLoading
-                      ? null
-                      : () {
-                          if (_following.isEmpty) {
-                            context.go(RouteNames.home);
-                          } else {
-                            ref
-                                .read(followCreatorsProvider.notifier)
-                                .follow(_following.toList());
-                          }
-                        },
-                  secondaryLabel: 'Skip',
-                  onSecondary: () => context.go(RouteNames.home),
-                  showTopDivider: true,
-                );
-              },
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16),
+                itemCount: _creators.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: DesignTokens.s20),
+                itemBuilder: (_, i) {
+                  final c = _creators[i];
+                  return _CreatorCard(
+                    creator: c,
+                    following: _following.contains(c.handle),
+                    onFollow: () => _toggleFollow(c.handle),
+                  );
+                },
+              ),
+            ),
+            SmStickyBottomBar(
+              primaryLabel: 'Continue',
+              onPrimary: () => context.go(RouteNames.home),
+              secondaryLabel: 'Skip',
+              onSecondary: () => context.go(RouteNames.home),
+              showTopDivider: true,
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildBody(FetchCreatorsState state) {
-    if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
-    }
-
-    if (state.hasError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Failed to load creators', style: DesignTokens.bodyText),
-            const SizedBox(height: DesignTokens.s16),
-            TextButton(
-              onPressed: () {
-                unawaited(
-                  ref.read(fetchCreatorsProvider.notifier).fetch(),
-                );
-              },
-              child: const Text('Retry',
-                  style: TextStyle(color: DesignTokens.primaryGreen)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (state.creators.isEmpty) {
-      return Center(
-        child: Text('No creators found', style: DesignTokens.bodyText),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      itemCount: state.creators.length,
-      separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s20),
-      itemBuilder: (_, i) {
-        final c = state.creators[i];
-        return _CreatorCard(
-          creator: c,
-          following: _following.contains(c.id),
-          onFollow: () => _toggleFollow(c.id),
-        );
-      },
     );
   }
 }
@@ -171,7 +121,7 @@ class _Header extends StatelessWidget {
 
 /// Creator card — Figma `9383:2095` (#18181B fill, 16px radius).
 class _CreatorCard extends StatelessWidget {
-  final CreatorDto creator;
+  final _Creator creator;
   final bool following;
   final VoidCallback onFollow;
 
@@ -195,7 +145,12 @@ class _CreatorCard extends StatelessWidget {
           // Top row: avatar + name/handle + Follow
           Row(
             children: [
-              _Avatar(avatarUrl: creator.avatarUrl),
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: DesignTokens.bgAppBodyLight,
+                child: Icon(Icons.person,
+                    color: DesignTokens.textMuted, size: 22),
+              ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: Column(
@@ -232,38 +187,17 @@ class _CreatorCard extends StatelessWidget {
             children: [
               _Stat(
                   icon: Icons.star_rounded,
-                  value: creator.formattedRating,
+                  value: creator.rating,
                   label: 'Stars'),
               const SizedBox(width: DesignTokens.s16),
               _Stat(
                   icon: Icons.person,
-                  value: creator.formattedFollowers,
+                  value: creator.followers,
                   label: 'Followers'),
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final String? avatarUrl;
-  const _Avatar({this.avatarUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    if (avatarUrl != null) {
-      return CircleAvatar(
-        radius: 20,
-        backgroundImage: NetworkImage(avatarUrl!),
-        backgroundColor: DesignTokens.bgAppBodyLight,
-      );
-    }
-    return const CircleAvatar(
-      radius: 20,
-      backgroundColor: DesignTokens.bgAppBodyLight,
-      child: Icon(Icons.person, color: DesignTokens.textMuted, size: 22),
     );
   }
 }
