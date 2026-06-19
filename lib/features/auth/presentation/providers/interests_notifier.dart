@@ -41,13 +41,16 @@ class InterestsNotifier extends StateNotifier<InterestsState> {
     final availableResult = results[0] as Either<NetworkExceptions, List<InterestDto>>;
     final selectedResult = results[1] as Either<NetworkExceptions, List<InterestDto>>;
 
+    // If the catalog fails there is nothing to show — surface the error.
+    // If only the user's selections fail (e.g. new account returns 404/empty),
+    // treat it as no interests selected so the screen still loads.
     state = availableResult.fold(
       InterestsState.loadFailure,
-      (available) => selectedResult.fold(
-        InterestsState.loadFailure,
-        (selected) => InterestsState.loadSuccess(
-          available: available,
-          selectedIds: selected.map((i) => i.categoryId).toSet(),
+      (available) => InterestsState.loadSuccess(
+        available: available,
+        selectedIds: selectedResult.fold(
+          (_) => {},
+          (selected) => selected.map((i) => i.categoryId).toSet(),
         ),
       ),
     );

@@ -39,29 +39,39 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final GlobalKey<AuthCodeFieldState> _codeFieldKey =
       GlobalKey<AuthCodeFieldState>();
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
 
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     super.dispose();
   }
 
-  /// Validate + fire. Navigation/error handled by the `ref.listen` in [build].
-  Future<void> _handleVerifyOtp(String code) async {
+  /// Called when all 5 OTP digits are entered — does NOT auto-submit.
+  /// For new accounts, moves focus to the name field so the user can
+  /// complete their profile before pressing Verify.
+  // When the last OTP digit is entered, move focus to the name field.
+  void _onCodeComplete(String _) => _nameFocusNode.requestFocus();
+
+  /// Called only by the Verify button — validates both fields then submits.
+  Future<void> _submit() async {
+    final code = _codeFieldKey.currentState?.getCode() ?? '';
     if (code.length != 5) {
       SmSnackbar.error(context, 'Please enter all 5 digits');
       return;
     }
-    await ref
-        .read(otpVerificationProvider.notifier)
-        .verifyOtp(
-          identifierType: widget.identifierType,
-          identifier: widget.phone,
-          code: code,
-          // Only meaningful for a new account; harmless (omitted) otherwise.
-          displayName:
-              widget.isNewAccount ? _nameController.text.trim() : null,
-        );
+    if (_nameController.text.trim().isEmpty) {
+      SmSnackbar.error(context, 'Please enter your name');
+      _nameFocusNode.requestFocus();
+      return;
+    }
+    await ref.read(otpVerificationProvider.notifier).verifyOtp(
+      identifierType: widget.identifierType,
+      identifier: widget.phone,
+      code: code,
+      displayName: _nameController.text.trim(),
+    );
   }
 
   String _getErrorMessage(NetworkExceptions failure) {
@@ -89,9 +99,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     // Side-effects react to the verification outcome (see SKILL §3.8).
     ref.listen<OtpVerificationState>(otpVerificationProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess: (auth) => context.push(
-          '${RouteNames.userTypeSelection}?new=${auth.isNewAccount}',
-        ),
+        loadSuccess: (_) => context.go(RouteNames.pickInterests),
         loadFailure: (failure) {
           SmSnackbar.error(context, _getErrorMessage(failure));
           _codeFieldKey.currentState?.clearCode();
@@ -159,39 +167,37 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         key: _codeFieldKey,
                         enabled: !isLoading,
                         codeLength: 5,
-                        onCompleted: _handleVerifyOtp,
+                        onCompleted: _onCodeComplete,
                       ),
                       const SizedBox(height: DesignTokens.s24),
 
-                      // Name field — only for a freshly provisioned account.
-                      // Sets the display name in the same verify call.
-                      if (widget.isNewAccount) ...[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Your name',
-                            style: DesignTokens.mediumSemibold,
-                          ),
+                      // Name field — label above, input below.
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Your name',
+                          style: DesignTokens.mediumSemibold,
                         ),
-                        const SizedBox(height: DesignTokens.s8),
-                        TextFormField(
-                          controller: _nameController,
-                          enabled: !isLoading,
-                          textCapitalization: TextCapitalization.words,
-                          textInputAction: TextInputAction.done,
-                          maxLength: 64,
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 14,
-                            color: DesignTokens.inputFieldData,
-                          ),
-                          cursorColor: DesignTokens.primaryGreen,
-                          decoration: DesignTokens.inputDecoration(
-                            hintText: 'e.g. Alice',
-                          ).copyWith(counterText: ''),
+                      ),
+                      const SizedBox(height: DesignTokens.s8),
+                      TextFormField(
+                        controller: _nameController,
+                        focusNode: _nameFocusNode,
+                        enabled: !isLoading,
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.done,
+                        maxLength: 64,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          color: DesignTokens.inputFieldData,
                         ),
-                        const SizedBox(height: DesignTokens.s24),
-                      ],
+                        cursorColor: DesignTokens.primaryGreen,
+                        decoration: DesignTokens.inputDecoration(
+                          hintText: 'e.g. Alice',
+                        ).copyWith(counterText: ''),
+                      ),
+                      const SizedBox(height: DesignTokens.s24),
 
                       // Resend line
                       GestureDetector(
@@ -245,10 +251,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   labelColor: DesignTokens.buttonPrimaryText,
                   disabled: isLoading,
                   isLoadingInitially: isLoading,
-                  onPressed: () async {
-                    final code = _codeFieldKey.currentState?.getCode() ?? '';
-                    await _handleVerifyOtp(code);
-                  },
+                  onPressed: _submit,
                 ),
               ),
             ),

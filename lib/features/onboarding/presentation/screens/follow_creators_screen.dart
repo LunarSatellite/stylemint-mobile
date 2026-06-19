@@ -93,9 +93,9 @@ class _FollowCreatorsScreenState extends State<FollowCreatorsScreen> {
                 size: 16,
                 color: DesignTokens.buttonPrimaryText, // #06190E
               ),
-              onPrimary: () => context.go(RouteNames.home),
+              onPrimary: () => context.go(RouteNames.followBrands),
               secondaryLabel: 'Skip',
-              onSecondary: () => context.go(RouteNames.home),
+              onSecondary: () => context.go(RouteNames.followBrands),
               showTopDivider: true,
             ),
           ],

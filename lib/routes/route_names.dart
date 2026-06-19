@@ -25,6 +25,7 @@ abstract class RouteNames {
   // Onboarding
   static const pickInterests = '/pick-interests';
   static const followCreators = '/follow-creators';
+  static const followBrands = '/follow-brands';
 
   // Customer
   static const home = '/home';

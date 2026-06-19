@@ -128,13 +128,18 @@ class OtpVerificationNotifier extends StateNotifier<OtpVerificationState> {
       deviceId: deviceId,
       displayName: displayName,
     );
-    state = result.fold(
-      OtpVerificationState.loadFailure,
-      OtpVerificationState.loadSuccess,
+    // On success: establish the session FIRST, then notify listeners.
+    // This ensures the session is already authenticated before the OTP
+    // screen's ref.listen fires and navigates away.
+    await result.fold(
+      (failure) async {
+        state = OtpVerificationState.loadFailure(failure);
+      },
+      (auth) async {
+        await ref.read(sessionControllerProvider.notifier).recheck();
+        state = OtpVerificationState.loadSuccess(auth);
+      },
     );
-    if (state is _OtpVerifySuccess) {
-      await ref.read(sessionControllerProvider.notifier).recheck();
-    }
   }
 
   void reset() => state = const OtpVerificationState.initial();
