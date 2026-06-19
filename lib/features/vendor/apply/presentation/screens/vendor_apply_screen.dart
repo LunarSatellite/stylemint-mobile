@@ -17,32 +17,68 @@ class VendorApplyScreen extends ConsumerStatefulWidget {
 }
 
 class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
-  static const _categories = [
-    'Electronics',
-    'Fashion',
-    'Beauty',
-    'Home & Living',
-    'Sports',
-    'Food & Grocery',
-    'Health',
-    'Automotive',
-    'Books',
-    'Toys',
-    'Services',
-    'Digital Goods',
+  static const int _totalSteps = 6;
+  static const int _currentStep = 1;
+
+  static const _countries = [
+    'Nepal',
+    'India',
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'Germany',
+    'France',
+    'China',
+    'Japan',
+    'South Korea',
+    'Singapore',
+    'UAE',
+    'Bangladesh',
+    'Pakistan',
+    'Sri Lanka',
+    'Thailand',
+    'Vietnam',
+    'Indonesia',
+    'Malaysia',
+    'Philippines',
+  ];
+
+  static const _statesProvinces = [
+    'Koshi Province',
+    'Madhesh Province',
+    'Bagmati Province',
+    'Gandaki Province',
+    'Lumbini Province',
+    'Karnali Province',
+    'Sudurpashchim Province',
+    'Maharashtra',
+    'Delhi',
+    'Karnataka',
+    'Tamil Nadu',
+    'Telangana',
+    'Gujarat',
+    'Rajasthan',
+    'Uttar Pradesh',
+    'West Bengal',
+    'Punjab',
+    'Kerala',
+    'Other',
   ];
 
   final _businessNameController = TextEditingController();
   final _taxIdController = TextEditingController();
-  final _ownerFullNameController = TextEditingController();
-  final _ownerPhoneController = TextEditingController();
-  final _ownerEmailController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _businessRegController = TextEditingController();
   final _websiteController = TextEditingController();
+  final _streetAddressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _zipCodeController = TextEditingController();
 
-  BusinessType _selectedBusinessType = BusinessType.individual;
-  final _selectedCategories = <String>{};
-  bool _isSubmitting = false;
+  BusinessType? _selectedBusinessType;
+  String? _selectedCountryRegion;
+  String? _selectedCountry;
+  String? _selectedState;
+
   bool _hasCheckedStatus = false;
 
   @override
@@ -55,11 +91,11 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
   void dispose() {
     _businessNameController.dispose();
     _taxIdController.dispose();
-    _ownerFullNameController.dispose();
-    _ownerPhoneController.dispose();
-    _ownerEmailController.dispose();
-    _descriptionController.dispose();
+    _businessRegController.dispose();
     _websiteController.dispose();
+    _streetAddressController.dispose();
+    _cityController.dispose();
+    _zipCodeController.dispose();
     super.dispose();
   }
 
@@ -69,67 +105,8 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
   }
 
-  void _toggleCategory(String category) {
-    setState(() {
-      if (_selectedCategories.contains(category)) {
-        _selectedCategories.remove(category);
-      } else {
-        _selectedCategories.add(category);
-      }
-    });
-  }
-
-  Future<void> _submit() async {
-    if (_isSubmitting) return;
-
-    final businessName = _businessNameController.text.trim();
-    final taxId = _taxIdController.text.trim();
-    final ownerFullName = _ownerFullNameController.text.trim();
-    final ownerPhone = _ownerPhoneController.text.trim();
-    final ownerEmail = _ownerEmailController.text.trim();
-    final description = _descriptionController.text.trim();
-    final website = _websiteController.text.trim();
-
-    if (businessName.isEmpty) {
-      _showError('Please enter your business name.');
-      return;
-    }
-    if (taxId.isEmpty) {
-      _showError('Please enter your tax ID / PAN.');
-      return;
-    }
-    if (ownerFullName.isEmpty) {
-      _showError('Please enter the owner\'s full name.');
-      return;
-    }
-    if (ownerPhone.isEmpty) {
-      _showError('Please enter the owner\'s phone number.');
-      return;
-    }
-    if (ownerEmail.isEmpty) {
-      _showError('Please enter the owner\'s email.');
-      return;
-    }
-    if (description.isEmpty) {
-      _showError('Please enter a business description.');
-      return;
-    }
-
-    final form = VendorApplicationForm(
-      businessName: businessName,
-      businessType: _selectedBusinessType,
-      taxId: taxId,
-      ownerFullName: ownerFullName,
-      ownerPhone: ownerPhone,
-      ownerEmail: ownerEmail,
-      description: description,
-      website: website.isNotEmpty ? website : null,
-      categories: _selectedCategories.toList(growable: false),
-    );
-
-    setState(() => _isSubmitting = true);
-    await ref.read(vendorApplyNotifierProvider.notifier).submit(form);
-    if (mounted) setState(() => _isSubmitting = false);
+  void _submit() {
+    context.push(RouteNames.vendorApplyStep2);
   }
 
   void _showError(String message) {
@@ -139,6 +116,84 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         backgroundColor: DesignTokens.colorError,
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  void _showPickerSheet({
+    required String title,
+    required List<String> items,
+    required ValueChanged<String> onSelected,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.cardRadius),
+        ),
+      ),
+      builder: (ctx) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: DesignTokens.s12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(title, style: DesignTokens.oneLinerSemibold),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const Divider(
+                    color: DesignTokens.borderDefault,
+                    height: 1,
+                  ),
+                  itemBuilder: (_, i) => ListTile(
+                    title: Text(items[i], style: DesignTokens.oneLinerRegular),
+                    onTap: () {
+                      onSelected(items[i]);
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
+        );
+      },
+    ).ignore();
+  }
+
+  void _showBusinessTypeSheet() {
+    _showPickerSheet(
+      title: 'Business Type',
+      items: BusinessType.values.map((e) => e.label).toList(growable: false),
+      onSelected: (label) {
+        setState(() {
+          _selectedBusinessType = BusinessType.values.firstWhere(
+            (e) => e.label == label,
+          );
+        });
+      },
     );
   }
 
@@ -162,15 +217,15 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         title: Text('Vendor Application', style: DesignTokens.oneLinerSemibold),
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
+        iconTheme: const IconThemeData(color: DesignTokens.textWhite),
       ),
       body: SafeArea(
         child: state.when(
-          initial: () => _buildForm(),
+          initial: () => _buildFormBody(),
           loadInProgress: _loader,
           loadSuccess: _buildStatusOrForm,
-          // No application on file yet (404) → first-time applicant: show form.
           loadFailure: (failure) => failure.isNotFound
-              ? _buildForm()
+              ? _buildFormBody()
               : SmErrorView(
                   message: 'Could not load application status.',
                   onRetry: () {
@@ -190,7 +245,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       case VendorApplicationStatus.kycRequired:
         return _ApplicationStatusCard(application: application);
       case VendorApplicationStatus.rejected:
-        return _buildForm();
+        return _buildFormBody();
       case VendorApplicationStatus.approved:
         Future.microtask(() {
           if (context.mounted) context.pushReplacement(RouteNames.vendorDash);
@@ -203,137 +258,104 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
   );
 
-  Widget _buildForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(DesignTokens.s16),
+  Widget _buildFormBody() {
+    return Column(
+      children: [
+        _buildProgressBar(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s16,
+              vertical: DesignTokens.s8,
+            ),
+            child: _buildFormCard(),
+          ),
+        ),
+        _buildProceedButton(),
+      ],
+    );
+  }
+
+  Widget _buildProgressBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s12,
+      ),
+      child: Row(
+        children: List.generate(_totalSteps, (index) {
+          return Expanded(
+            child: Container(
+              height: 4,
+              margin: EdgeInsets.only(
+                right: index < _totalSteps - 1 ? DesignTokens.s4 : 0,
+              ),
+              decoration: BoxDecoration(
+                color: index < _currentStep
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildFormCard() {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s20),
+      decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Set up your store', style: DesignTokens.titleLarge),
-          const SizedBox(height: DesignTokens.s4),
+          Text('Business Information', style: DesignTokens.sectionInnerTitle),
+          const SizedBox(height: DesignTokens.s8),
           Text(
-            'Fill in your business details to start selling on Style Mint.',
-            style: DesignTokens.bodyText,
+            'We collect this information to verify your identity and ensure the security of your account.',
+            style: DesignTokens.smallRegular,
           ),
           const SizedBox(height: DesignTokens.s24),
 
-          // --- Business Name ---
           TextField(
             controller: _businessNameController,
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
             decoration: DesignTokens.inputDecoration(
-              labelText: 'Business Name',
-              hintText: 'Enter your registered business name',
+              hintText: 'Legal Business Name',
             ),
           ),
-          const SizedBox(height: DesignTokens.s16),
+          const SizedBox(height: DesignTokens.s12),
 
-          // --- Business Type ---
-          Text('Business Type', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s8),
-          ...BusinessType.values.map((type) {
-            final isSelected = _selectedBusinessType == type;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedBusinessType = type),
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-                padding: const EdgeInsets.all(DesignTokens.s12),
-                decoration: DesignTokens.cardDecoration(
-                  borderColor: isSelected ? DesignTokens.primaryGreen : null,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: isSelected
-                          ? DesignTokens.primaryGreen
-                          : DesignTokens.textMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
-                    Text(type.label, style: DesignTokens.oneLinerRegular),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: DesignTokens.s16),
+          _buildDropdown(
+            hint: 'Business Type',
+            value: _selectedBusinessType?.label,
+            onTap: _showBusinessTypeSheet,
+          ),
+          const SizedBox(height: DesignTokens.s12),
 
-          // --- Tax ID ---
           TextField(
             controller: _taxIdController,
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Tax ID / PAN',
-              hintText: 'Enter your tax identification number',
-            ),
+            decoration: DesignTokens.inputDecoration(hintText: 'Tax ID / EIN'),
           ),
-          const SizedBox(height: DesignTokens.s16),
+          const SizedBox(height: DesignTokens.s12),
 
-          // --- Owner Full Name ---
           TextField(
-            controller: _ownerFullNameController,
+            controller: _businessRegController,
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
             decoration: DesignTokens.inputDecoration(
-              labelText: 'Owner Full Name',
-              hintText: 'Enter the business owner\'s full name',
+              hintText: 'Business Registration Number',
             ),
           ),
-          const SizedBox(height: DesignTokens.s16),
+          const SizedBox(height: DesignTokens.s12),
 
-          // --- Owner Phone ---
-          TextField(
-            controller: _ownerPhoneController,
-            keyboardType: TextInputType.phone,
-            style: DesignTokens.oneLinerRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Owner Phone',
-              hintText: '+977 98XXXXXXXX',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // --- Owner Email ---
-          TextField(
-            controller: _ownerEmailController,
-            keyboardType: TextInputType.emailAddress,
-            style: DesignTokens.oneLinerRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Owner Email',
-              hintText: 'owner@business.com',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s24),
-
-          // --- Description ---
-          TextField(
-            controller: _descriptionController,
-            maxLines: 4,
-            maxLength: 500,
-            style: DesignTokens.mediumRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Business Description',
-              hintText: 'Tell customers about your business...',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // --- Website ---
           TextField(
             controller: _websiteController,
             keyboardType: TextInputType.url,
@@ -341,99 +363,152 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               color: DesignTokens.inputFieldData,
             ),
             decoration: DesignTokens.inputDecoration(
-              labelText: 'Website (optional)',
-              hintText: 'https://...',
+              hintText: 'Website URL (optional)',
             ),
-          ),
-          const SizedBox(height: DesignTokens.s24),
-
-          // --- Categories ---
-          Text('Product Categories', style: DesignTokens.sectionInnerTitle),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Select categories for the products you sell.',
-            style: DesignTokens.smallRegular,
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
-            children: _categories
-                .map((category) {
-                  final isSelected = _selectedCategories.contains(category);
-                  return GestureDetector(
-                    onTap: () => _toggleCategory(category),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s16,
-                        vertical: DesignTokens.s8,
-                      ),
-                      decoration: isSelected
-                          ? DesignTokens.chipDecorationSelected()
-                          : DesignTokens.chipDecorationDefault(),
-                      child: Text(
-                        category,
-                        style:
-                            (isSelected
-                                    ? DesignTokens.mediumSemibold
-                                    : DesignTokens.mediumRegular)
-                                .copyWith(
-                                  color: isSelected
-                                      ? DesignTokens.primaryGreen
-                                      : DesignTokens.chipsDefaultText,
-                                ),
-                      ),
-                    ),
-                  );
-                })
-                .toList(growable: false),
-          ),
-          const SizedBox(height: DesignTokens.s24),
-
-          // --- KYC Documents ---
-          Text('KYC Documents', style: DesignTokens.sectionInnerTitle),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Upload the required documents to verify your business.',
-            style: DesignTokens.smallRegular,
           ),
           const SizedBox(height: DesignTokens.s12),
 
-          const _KycUploadTile(type: KYCDocumentType.pan),
-          const SizedBox(height: DesignTokens.s8),
-          const _KycUploadTile(type: KYCDocumentType.citizenship),
-          const SizedBox(height: DesignTokens.s8),
-          const _KycUploadTile(type: KYCDocumentType.businessReg),
-          const SizedBox(height: DesignTokens.s8),
-          const _KycUploadTile(type: KYCDocumentType.taxDoc),
-
-          const SizedBox(height: DesignTokens.s28),
-
-          // --- Submit ---
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              style: DesignTokens.primaryButtonStyle(),
-              child: _isSubmitting
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : Text(
-                      'Submit Application',
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    ),
+          _buildDropdown(
+            hint: 'Country/Region',
+            value: _selectedCountryRegion,
+            onTap: () => _showPickerSheet(
+              title: 'Country/Region',
+              items: _countries,
+              onSelected: (v) => setState(() => _selectedCountryRegion = v),
             ),
           ),
+
+          const SizedBox(height: DesignTokens.s24),
+          Text('Business Address', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s16),
+
+          TextField(
+            controller: _streetAddressController,
+            style: DesignTokens.oneLinerRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(hintText: 'Street Address'),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          TextField(
+            controller: _cityController,
+            style: DesignTokens.oneLinerRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(hintText: 'City'),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          _buildDropdown(
+            hint: 'Country',
+            value: _selectedCountry,
+            onTap: () => _showPickerSheet(
+              title: 'Country',
+              items: _countries,
+              onSelected: (v) => setState(() => _selectedCountry = v),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          TextField(
+            controller: _zipCodeController,
+            keyboardType: TextInputType.number,
+            style: DesignTokens.oneLinerRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(hintText: 'Zip Code'),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          _buildDropdown(
+            hint: 'State',
+            value: _selectedState,
+            onTap: () => _showPickerSheet(
+              title: 'State',
+              items: _statesProvinces,
+              onSelected: (v) => setState(() => _selectedState = v),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String hint,
+    String? value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: DesignTokens.inputHeight,
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.inputFieldFill,
+          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          border: Border.all(color: DesignTokens.inputFieldBorder),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? hint,
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: value != null
+                      ? DesignTokens.inputFieldData
+                      : DesignTokens.inputFieldPlaceholder,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: DesignTokens.inputFieldDropdownIcon,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProceedButton() {
+    return Container(
+      color: DesignTokens.bgAppFoundation,
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        DesignTokens.s16,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _submit,
+          style: DesignTokens.primaryButtonStyle(),
+          child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Proceed',
+                    style: DesignTokens.oneLinerSemibold.copyWith(
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  const Icon(
+                    Icons.arrow_forward,
+                    color: DesignTokens.buttonPrimaryText,
+                    size: 18,
+                  ),
+                ],
+                ),
+        ),
       ),
     );
   }
@@ -452,8 +527,6 @@ class _ApplicationStatusCard extends ConsumerWidget {
     final isKyc = application.status == VendorApplicationStatus.kycRequired;
     final statusColor = isPending
         ? DesignTokens.secondaryYellow
-        : isKyc
-        ? DesignTokens.colorInfo
         : DesignTokens.colorInfo;
 
     final statusIcon = isPending
@@ -488,11 +561,7 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     color: statusColor.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    statusIcon,
-                    color: statusColor,
-                    size: 32,
-                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 32),
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 Text(
@@ -512,9 +581,7 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     padding: const EdgeInsets.all(DesignTokens.s12),
                     decoration: BoxDecoration(
                       color: DesignTokens.colorError.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(
-                        DesignTokens.inputRadius,
-                      ),
+                      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                     ),
                     child: Text(
                       application.rejectionReason!,
@@ -529,7 +596,6 @@ class _ApplicationStatusCard extends ConsumerWidget {
             ),
           ),
 
-          // --- KYC Section (shown when kycRequired or pending/underReview) ---
           if (application.status == VendorApplicationStatus.kycRequired ||
               application.status == VendorApplicationStatus.pending) ...[
             const SizedBox(height: DesignTokens.s24),
@@ -551,9 +617,7 @@ class _ApplicationStatusCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  notifier.checkStatus();
-                },
+                onPressed: notifier.checkStatus,
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Refresh Status',
@@ -565,7 +629,6 @@ class _ApplicationStatusCard extends ConsumerWidget {
             ),
           ],
 
-          // --- "Go to Dashboard" button when approved ---
           if (application.status == VendorApplicationStatus.approved) ...[
             const SizedBox(height: DesignTokens.s24),
             SizedBox(
@@ -583,15 +646,12 @@ class _ApplicationStatusCard extends ConsumerWidget {
             ),
           ],
 
-          // --- Reapply button when rejected ---
           if (application.status == VendorApplicationStatus.rejected) ...[
             const SizedBox(height: DesignTokens.s24),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
-                },
+                onPressed: notifier.checkStatus,
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Reapply',
@@ -610,10 +670,6 @@ class _ApplicationStatusCard extends ConsumerWidget {
   }
 }
 
-/// Self-contained KYC document slot: picks a file, uploads it via the vendor
-/// repository, and renders the result (uploaded / verifying / rejected) — owns
-/// its own pick → upload → state cycle so it can be dropped into either KYC
-/// section without lifting state into a parent.
 class _KycUploadTile extends ConsumerStatefulWidget {
   const _KycUploadTile({required this.type});
 
