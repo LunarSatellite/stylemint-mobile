@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -102,8 +103,32 @@ class _SignInMethodSelectionScreenState
         );
   }
 
+  /// Social sign-in (Google / Facebook). Step 1: fetch the authorization URL
+  /// and stash the CSRF state, then open it in an in-app browser. The provider
+  /// redirects back via `stylemint://auth/oauth/callback?code=&state=`, which
+  /// the deep-link handler routes to [OAuthCallbackScreen] to finish the
+  /// exchange. The custom tab closes itself when the deep link fires.
+  Future<void> _startSocial(String provider) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final url =
+        await ref.read(oauthSignInProvider.notifier).authorize(provider);
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (url == null || url.isEmpty) {
+      SmSnackbar.error(
+        context,
+        'Could not start $provider sign-in. Please try again.',
+      );
+      return;
+    }
+    await FlutterWebBrowser.openWebPage(url: url);
+  }
+
+  /// Apple is a server-side stub (not yet live) — keep it as a no-op CTA.
   static void _comingSoon(BuildContext context, String provider) {
-    context.go(RouteNames.home);
+    SmSnackbar.info(context, '$provider sign-in is coming soon');
   }
 
   @override
@@ -188,7 +213,10 @@ class _SignInMethodSelectionScreenState
                         style: DesignTokens.bodyText,
                       ),
                       const SizedBox(height: DesignTokens.s24),
-                      _PlanB(onComingSoon: (p) => _comingSoon(context, p)),
+                      _PlanB(
+                        onSocial: _startSocial,
+                        onComingSoon: (p) => _comingSoon(context, p),
+                      ),
                       const SizedBox(height: DesignTokens.s8),
                       TextButton(
                         onPressed: () => setState(() => _showMore = false),
@@ -213,8 +241,12 @@ class _SignInMethodSelectionScreenState
 
 /// Plan B — revealed only via "More ways to continue".
 class _PlanB extends StatelessWidget {
-  const _PlanB({required this.onComingSoon});
+  const _PlanB({required this.onSocial, required this.onComingSoon});
 
+  /// Live providers (Google / Facebook) — starts the OAuth browser flow.
+  final Future<void> Function(String provider) onSocial;
+
+  /// Not-yet-live providers (Apple) — shows a "coming soon" notice.
   final void Function(String provider) onComingSoon;
 
   @override
@@ -240,10 +272,12 @@ class _PlanB extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s16),
 
-        // Create account
+        // Create account — smart-start: a new email/phone provisions an
+        // account automatically on OTP verify, so "create" and "sign in" are
+        // the same flow. Route to the email entry (no separate signup screen).
         Center(
           child: GestureDetector(
-            onTap: () => context.push(RouteNames.register),
+            onTap: () => context.push(RouteNames.email),
             child: Text.rich(
               TextSpan(
                 children: [
@@ -288,7 +322,7 @@ class _PlanB extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s24),
 
-        // Social
+        // Social — Google + Facebook are live; Apple is a stub.
         _SocialButton(
           assetPath: 'assets/icons/apple.svg',
           label: 'Apple ID',
@@ -298,13 +332,13 @@ class _PlanB extends StatelessWidget {
         _SocialButton(
           assetPath: 'assets/icons/facebook.svg',
           label: 'Facebook ID',
-          onTap: () => onComingSoon('Facebook'),
+          onTap: () => onSocial('Facebook'),
         ),
         const SizedBox(height: DesignTokens.s16),
         _SocialButton(
           assetPath: 'assets/icons/google.svg',
           label: 'Google ID',
-          onTap: () => onComingSoon('Google'),
+          onTap: () => onSocial('Google'),
         ),
       ],
     );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -14,9 +14,23 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// rows (green numbered badge + title/description + chevron, divided by thin
 /// lines) → "Already have an account? Sign In" footer.
 class UserTypeSelectionScreen extends ConsumerStatefulWidget {
-  final AuthResponseDto authData;
+  /// Whether this sign-in just provisioned a new account (smart-start). Passed
+  /// as the `?new=` query param rather than a typed `extra` object, because the
+  /// post-login session refresh rebuilds the router stack and does not preserve
+  /// `extra` reliably. `accountId` comes from the now-authenticated session.
+  final bool isNewAccount;
 
-  const UserTypeSelectionScreen({super.key, required this.authData});
+  /// When true (the post-login default), an account that already has an
+  /// activated role has finished onboarding, so we skip straight to home
+  /// instead of re-asking. Set false for a "manage / add a role" entry,
+  /// where the screen should always be shown.
+  final bool skipIfOnboarded;
+
+  const UserTypeSelectionScreen({
+    super.key,
+    this.isNewAccount = false,
+    this.skipIfOnboarded = true,
+  });
 
   @override
   ConsumerState<UserTypeSelectionScreen> createState() =>
@@ -28,16 +42,36 @@ class _UserTypeSelectionScreenState
   List<RoleProfileDto> _existingRoles = [];
   bool _loadingRole = false;
 
+  /// While true we hold on a loader and have not yet shown the role list —
+  /// this is the window in which an already-onboarded user is auto-skipped to
+  /// home, so they never see a flash of the selection screen.
+  late bool _deciding;
+
+  /// Account id from the active (authenticated) session.
+  String? get _accountId => ref.read(sessionControllerProvider).maybeWhen(
+        authenticated: (id) => id,
+        orElse: () => null,
+      );
+
   @override
   void initState() {
     super.initState();
+    // Only block the UI behind a loader while we may still auto-skip.
+    _deciding = widget.skipIfOnboarded;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(roleNotifierProvider.notifier).loadRoles(widget.authData.accountId);
+      final accountId = _accountId;
+      if (accountId != null) {
+        ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+      } else if (mounted) {
+        // No session to check against — just show the selection.
+        setState(() => _deciding = false);
+      }
     });
   }
 
   Future<void> _selectRole(int roleInt) async {
-    final accountId = widget.authData.accountId;
+    final accountId = _accountId;
+    if (accountId == null) return;
 
     // Already an active role → straight to that surface, no application needed.
     if (_isRoleActivated(roleInt)) {
@@ -102,7 +136,34 @@ class _UserTypeSelectionScreenState
   Widget build(BuildContext context) {
     ref.listen<RolesState>(roleNotifierProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess: (roles) => setState(() => _existingRoles = roles),
+        loadSuccess: (roles) {
+          if (!mounted) return;
+          // One-time setup: an account that already has an activated role has
+          // onboarded. Skip straight to home — but ONLY on the initial load
+          // (`_deciding`), never after the user activates a role in this very
+          // session (that path navigates to pick-interests itself).
+          //
+          // `isNewAccount` from the auth bundle is the authoritative "fresh
+          // signup" signal: a just-provisioned account is never skipped, even
+          // if a role somehow already exists. For returning users we still
+          // gate on having an activated role so abandoned-onboarding accounts
+          // are sent through the picker rather than dropped at home.
+          if (_deciding &&
+              widget.skipIfOnboarded &&
+              !widget.isNewAccount &&
+              roles.any((r) => r.isActivated)) {
+            context.go(RouteNames.home);
+            return;
+          }
+          setState(() {
+            _existingRoles = roles;
+            _deciding = false;
+          });
+        },
+        loadFailure: (_) {
+          // Couldn't read roles — fall back to showing the selection.
+          if (mounted) setState(() => _deciding = false);
+        },
         orElse: () {},
       );
     });
@@ -110,7 +171,7 @@ class _UserTypeSelectionScreenState
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
-        child: _loadingRole
+        child: (_deciding || _loadingRole)
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [

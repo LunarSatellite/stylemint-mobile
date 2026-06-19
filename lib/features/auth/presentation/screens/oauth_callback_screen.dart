@@ -8,22 +8,27 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Handles the OAuth redirect callback.
 ///
-/// Route: `/social/:provider?code=<code>&state=<state>`
+/// Reached via the deep link `stylemint://auth/oauth/callback?code=&state=`
+/// (or `?error=access_denied` when the user declines).
 ///
-/// After the user authorises in the external browser (Google/Apple/Facebook),
-/// the redirect comes back here. The screen calls [oauthCallback], which links
-/// the external identity; then the user registers or logs in.
+/// Verifies the CSRF `state` against the in-flight attempt, exchanges the code
+/// for a session, then routes by `isNewAccount` (new → role/onboarding picker,
+/// returning → home).
 class OAuthCallbackScreen extends ConsumerStatefulWidget {
   const OAuthCallbackScreen({
     super.key,
-    required this.provider,
+    this.provider = '',
     required this.code,
     required this.state,
+    this.error,
   });
 
   final String provider;
   final String code;
   final String state;
+
+  /// Provider error code from the deep link (e.g. `access_denied`).
+  final String? error;
 
   @override
   ConsumerState<OAuthCallbackScreen> createState() =>
@@ -31,8 +36,7 @@ class OAuthCallbackScreen extends ConsumerStatefulWidget {
 }
 
 class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
-  bool _processing = false;
-  String? _error;
+  bool _started = false;
 
   @override
   void initState() {
@@ -41,49 +45,63 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   }
 
   Future<void> _handleCallback() async {
-    if (_processing) return;
-    setState(() {
-      _processing = true;
-      _error = null;
-    });
+    if (_started) return;
+    _started = true;
 
-    final repo = ref.read(authRepositoryProvider);
-    final result = await repo.oauthCallback(
-      code: widget.code,
-      state: widget.state,
-    );
-    result.fold(
-      (failure) {
-        setState(() {
-          _processing = false;
-          _error = 'Social sign-in failed. Please try again.';
-        });
-      },
-      (callbackResult) async {
-        // If this was a new link the account may already be authenticated
-        // (tokens persisted from an earlier OTP/magic flow). Otherwise the
-        // user needs to register / pick a role.
-        await ref.read(sessionControllerProvider.notifier).recheck();
-        if (mounted) {
-          final session = ref.read(sessionControllerProvider);
-          if (session.isAuthenticated) {
-            context.go(RouteNames.home);
-          } else {
-            context.go(RouteNames.signInMethod);
-          }
-        }
-      },
-    );
+    // User declined in the provider sheet, or the provider returned an error.
+    if ((widget.error != null && widget.error!.isNotEmpty) ||
+        widget.code.isEmpty) {
+      _bail('Sign-in was cancelled.');
+      return;
+    }
+
+    // CSRF check — the state must match the one we stashed when starting the
+    // flow. The server also validates server-side; this is defense in depth.
+    final expected = ref.read(oauthFlowProvider).state;
+    if (expected == null || expected != widget.state) {
+      _bail('Sign-in could not be verified. Please try again.');
+      return;
+    }
+
+    await ref.read(oauthSignInProvider.notifier).completeCallback(
+          code: widget.code,
+          oauthState: widget.state,
+        );
+  }
+
+  void _bail(String message) {
+    if (!mounted) return;
+    SmSnackbar.error(context, message);
+    context.go(RouteNames.signInMethod);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_error != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        SmSnackbar.error(context, _error!);
-        context.go(RouteNames.signInMethod);
-      });
-    }
+    ref.listen<LoginState>(oauthSignInProvider, (previous, next) {
+      next.maybeWhen(
+        loadSuccess: (auth) {
+          if (auth.isNewAccount) {
+            // New account → role / onboarding picker. Pass isNewAccount via the
+            // query string (not extra) so it survives the post-login refresh.
+            context.go('${RouteNames.userTypeSelection}?new=true');
+          } else {
+            context.go(RouteNames.home);
+          }
+        },
+        loadFailure: (failure) {
+          // 409 — the email is already on a different sign-in method.
+          if (failure.isConflict) {
+            _bail(
+              'An account already uses this email. Sign in with your '
+              'existing method, then link this provider from settings.',
+            );
+            return;
+          }
+          _bail('Social sign-in failed. Please try again.');
+        },
+        orElse: () {},
+      );
+    });
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,

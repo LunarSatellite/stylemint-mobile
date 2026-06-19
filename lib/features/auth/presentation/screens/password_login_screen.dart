@@ -79,8 +79,9 @@ class _PasswordLoginScreenState extends ConsumerState<PasswordLoginScreen> {
 
     ref.listen<LoginState>(loginProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess:
-            (auth) => context.go(RouteNames.userTypeSelection, extra: auth),
+        loadSuccess: (auth) => context.go(
+          '${RouteNames.userTypeSelection}?new=${auth.isNewAccount}',
+        ),
         loadFailure:
             (_) => SmSnackbar.error(
               context,

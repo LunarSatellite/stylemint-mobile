@@ -118,6 +118,7 @@ class OtpVerificationNotifier extends StateNotifier<OtpVerificationState> {
     required String identifier,
     required String code,
     String? deviceId,
+    String? displayName,
   }) async {
     state = const OtpVerificationState.loadInProgress();
     final result = await authRepository.verifyOtpLogin(
@@ -125,6 +126,7 @@ class OtpVerificationNotifier extends StateNotifier<OtpVerificationState> {
       identifier: identifier,
       code: code,
       deviceId: deviceId,
+      displayName: displayName,
     );
     state = result.fold(
       OtpVerificationState.loadFailure,
@@ -462,5 +464,89 @@ final passkeyBootstrapProvider =
   return PasskeyBootstrapNotifier(
     ref: ref,
     passkeyService: ref.watch(passkeyServiceProvider),
+  );
+});
+
+// ============================================================================
+// OAUTH — social sign-in (Google / Facebook)
+// ============================================================================
+
+/// The server's registered OAuth redirect endpoint. Must match byte-for-byte
+/// what is registered in each provider's developer console — so it is fixed to
+/// the server callback, NOT derived from the app's API base URL.
+const oauthRedirectUri =
+    'https://stylemint.voyageritnepal.com/v1/auth/oauth/redirect';
+
+/// The in-flight OAuth attempt, held across the browser round-trip. The
+/// authorize step stores the provider + CSRF `state`; the deep-link callback
+/// reads them back to verify `state` before exchanging the code. Lives in a
+/// provider (not the screen) because the callback lands on a fresh screen
+/// instance after the browser hands control back.
+class OAuthFlow {
+  const OAuthFlow({this.provider, this.state});
+  final String? provider;
+  final String? state;
+}
+
+final oauthFlowProvider = StateProvider<OAuthFlow>((ref) => const OAuthFlow());
+
+/// Drives social sign-in. [authorize] fetches the provider URL and stashes the
+/// CSRF state; [completeCallback] exchanges the code for a session (reusing
+/// [LoginState] since success yields an [AuthResponseDto]).
+class OAuthSignInNotifier extends StateNotifier<LoginState> {
+  OAuthSignInNotifier({required this.ref, required this.authRepository})
+      : super(const LoginState.initial());
+
+  final Ref ref;
+  final AuthRepository authRepository;
+
+  /// Step 1 — get the authorization URL and remember provider + state.
+  /// Returns the URL to open in the in-app browser, or null on failure.
+  Future<String?> authorize(String provider) async {
+    state = const LoginState.loadInProgress();
+    final result = await authRepository.oauthAuthorize(
+      provider: provider,
+      redirectUri: oauthRedirectUri,
+    );
+    return result.fold(
+      (failure) {
+        state = LoginState.loadFailure(failure);
+        return null;
+      },
+      (dto) {
+        ref.read(oauthFlowProvider.notifier).state =
+            OAuthFlow(provider: provider, state: dto.state);
+        state = const LoginState.initial();
+        return dto.authorizationUrl;
+      },
+    );
+  }
+
+  /// Step 2 — exchange the code for a session. Verify `oauthState` matches the
+  /// stored CSRF state before calling this (defense in depth; the server also
+  /// validates). On success the repository has persisted tokens.
+  Future<void> completeCallback({
+    required String code,
+    required String oauthState,
+  }) async {
+    state = const LoginState.loadInProgress();
+    final result =
+        await authRepository.oauthCallback(code: code, state: oauthState);
+    state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
+    if (state is _LoginSuccess) {
+      await ref.read(sessionControllerProvider.notifier).recheck();
+    }
+    // Clear the in-flight attempt regardless of outcome.
+    ref.read(oauthFlowProvider.notifier).state = const OAuthFlow();
+  }
+
+  void reset() => state = const LoginState.initial();
+}
+
+final oauthSignInProvider =
+    StateNotifierProvider<OAuthSignInNotifier, LoginState>((ref) {
+  return OAuthSignInNotifier(
+    ref: ref,
+    authRepository: ref.watch(authRepositoryProvider),
   );
 });

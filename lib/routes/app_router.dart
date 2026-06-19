@@ -7,7 +7,6 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mag
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/oauth_callback_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/passkey_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/register_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/otp_screen.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
@@ -19,7 +18,6 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/blo
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/linked_accounts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/marketing_consents_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pause_account_screen.dart';
-import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
@@ -120,6 +118,7 @@ const _publicPaths = {
   RouteNames.otp,
   RouteNames.magicLink,
   RouteNames.socialLogin,
+  RouteNames.oauthCallback,
   RouteNames.userTypeSelection,
   RouteNames.rolePicker,
   RouteNames.pickInterests,
@@ -230,9 +229,13 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.login,
         builder: (ctx, state) => const LoginScreen(),
       ),
+      // Legacy multi-step registration is retired in favour of smart-start OTP
+      // (an unknown email/phone provisions the account on verify). Any nav to
+      // /register now lands on the smart-start email entry. RegisterScreen is
+      // kept as deprecated dead code for reference / rollback.
       GoRoute(
         path: RouteNames.register,
-        builder: (ctx, state) => const RegisterScreen(),
+        redirect: (ctx, state) => RouteNames.email,
       ),
       GoRoute(
         path: RouteNames.otp,
@@ -242,6 +245,7 @@ GoRouter appRouter(Ref ref) {
             phone: extra['phone'] as String,
             otpId: extra['otpId'] as String,
             identifierType: (extra['identifierType'] as String?) ?? 'phone',
+            isNewAccount: (extra['isNewAccount'] as bool?) ?? false,
           );
         },
       ),
@@ -258,17 +262,34 @@ GoRouter appRouter(Ref ref) {
           final provider = state.pathParameters['provider'] ?? '';
           final code = state.uri.queryParameters['code'] ?? '';
           final oauthState = state.uri.queryParameters['state'] ?? '';
+          final error = state.uri.queryParameters['error'];
           return OAuthCallbackScreen(
             provider: provider,
             code: code,
             state: oauthState,
+            error: error,
+          );
+        },
+      ),
+      // Contract OAuth redirect deep link (no provider in the path; the server
+      // resolves the account from the CSRF state).
+      GoRoute(
+        path: RouteNames.oauthCallback,
+        builder: (ctx, state) {
+          final code = state.uri.queryParameters['code'] ?? '';
+          final oauthState = state.uri.queryParameters['state'] ?? '';
+          final error = state.uri.queryParameters['error'];
+          return OAuthCallbackScreen(
+            code: code,
+            state: oauthState,
+            error: error,
           );
         },
       ),
       GoRoute(
         path: RouteNames.userTypeSelection,
         builder: (ctx, state) => UserTypeSelectionScreen(
-          authData: state.extra as AuthResponseDto,
+          isNewAccount: state.uri.queryParameters['new'] == 'true',
         ),
       ),
       GoRoute(
@@ -281,8 +302,9 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.rolePicker,
-        builder: (ctx, state) => UserTypeSelectionScreen(
-          authData: state.extra as AuthResponseDto,
+        builder: (ctx, state) => const UserTypeSelectionScreen(
+          // "Manage / add a role" entry — always show, never auto-skip.
+          skipIfOnboarded: false,
         ),
       ),
 

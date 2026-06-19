@@ -18,6 +18,14 @@ import '../providers/auth_state_provider.dart';
 import '../widgets/auth_code_field.dart';
 import '../widgets/registration_step_indicator.dart';
 
+/// Legacy multi-step registration (email + phone OTP + password + terms).
+///
+/// **Retired** in favour of smart-start OTP signup: an unknown email/phone now
+/// provisions the account on `login-otp/verify`, with the name set inline. The
+/// `/register` route redirects to the smart-start email entry and no screen
+/// references this widget any more. Kept as dead code for reference / rollback;
+/// safe to delete once the backend registration endpoints are decommissioned.
+@Deprecated('Use smart-start OTP signup (login-otp/request + verify) instead.')
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 

@@ -73,7 +73,9 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
       next.maybeWhen(
         loadSuccess: (_) {
           SmSnackbar.success(context, 'Passkey registered successfully!');
-          context.go(RouteNames.home);
+          // Continue onboarding: pick role → interests → follow creators.
+          // accountId comes from the active session (no auth payload here).
+          context.go(RouteNames.userTypeSelection);
         },
         loadFailure: (failure) =>
             SmSnackbar.error(context, _errorMessage(failure)),

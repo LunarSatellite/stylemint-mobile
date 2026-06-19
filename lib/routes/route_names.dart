@@ -11,6 +11,8 @@ abstract class RouteNames {
   static const passkeyFace = '/passkey/face';
   static const passkeyFingerprint = '/passkey/fingerprint';
   static const socialLogin = '/social/:provider';
+  // OAuth redirect deep link: stylemint://auth/oauth/callback?code=&state=
+  static const oauthCallback = '/auth/oauth/callback';
   static const otp = '/otp';
   static const magicLink = '/auth/magic';
   static const userTypeSelection = '/user-type-selection';

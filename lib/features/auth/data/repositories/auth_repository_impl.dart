@@ -70,6 +70,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String identifier,
     required String code,
     String? deviceId,
+    String? displayName,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -78,6 +79,7 @@ class AuthRepositoryImpl implements AuthRepository {
           identifier: identifier,
           code: code,
           deviceId: deviceId,
+          displayName: displayName,
           deviceFingerprint: await deviceIdentity.fingerprint(),
           devicePlatform: deviceIdentity.platformCode,
           deviceOsVersion: deviceIdentity.osVersion,
@@ -360,17 +362,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, OAuthCallbackResultDto>> oauthCallback({
+  Future<Either<NetworkExceptions, AuthResponseDto>> oauthCallback({
     required String code,
     required String state,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final response = await remoteDataSource.oauthCallback(
+        final auth = await remoteDataSource.oauthCallback(
           code: code,
           state: state,
+          deviceFingerprint: await deviceIdentity.fingerprint(),
+          devicePlatform: deviceIdentity.platformCode,
+          deviceOsVersion: deviceIdentity.osVersion,
         );
-        return right(response);
+        await _persist(auth);
+        return right(auth);
       } catch (e) {
         if (e is DioException) {
           return left(mapDioExceptionToNetworkException(e));

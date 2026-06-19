@@ -17,6 +17,7 @@ abstract interface class AuthRepository {
     required String identifier,
     required String code,
     String? deviceId,
+    String? displayName,
   });
 
   // --- Password login ---
@@ -60,7 +61,9 @@ abstract interface class AuthRepository {
     required String redirectUri,
   });
 
-  Future<Either<NetworkExceptions, OAuthCallbackResultDto>> oauthCallback({
+  /// Exchanges the OAuth authorization code for a session. Returns the standard
+  /// auth bundle (tokens + `isNewAccount`); the implementation persists tokens.
+  Future<Either<NetworkExceptions, AuthResponseDto>> oauthCallback({
     required String code,
     required String state,
   });

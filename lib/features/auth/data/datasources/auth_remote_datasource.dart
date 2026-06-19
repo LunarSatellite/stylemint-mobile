@@ -39,6 +39,7 @@ class AuthRemoteDataSource {
     required String identifier,
     required String code,
     String? deviceId,
+    String? displayName,
     String? deviceFingerprint,
     int? devicePlatform,
     String? deviceOsVersion,
@@ -50,6 +51,8 @@ class AuthRemoteDataSource {
         'identifier': identifier,
         'code': code,
         if (deviceId != null) 'deviceId': deviceId,
+        if (displayName != null && displayName.isNotEmpty)
+          'displayName': displayName,
         if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
         if (devicePlatform != null) 'devicePlatform': devicePlatform,
         if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
@@ -194,15 +197,29 @@ class AuthRemoteDataSource {
   }
 
   /// POST `/v1/auth/oauth/callback`
-  Future<OAuthCallbackResultDto> oauthCallback({
+  ///
+  /// Exchanges the authorization code for a session. Returns the standard auth
+  /// bundle (with `isNewAccount`) — the server mints the session here.
+  Future<AuthResponseDto> oauthCallback({
     required String code,
     required String state,
+    String? deviceId,
+    String? deviceFingerprint,
+    int? devicePlatform,
+    String? deviceOsVersion,
   }) async {
     final response = await apiClient.authPost(
       '/v1/auth/oauth/callback',
-      data: {'code': code, 'state': state},
+      data: {
+        'code': code,
+        'state': state,
+        if (deviceId != null) 'deviceId': deviceId,
+        if (deviceFingerprint != null) 'deviceFingerprint': deviceFingerprint,
+        if (devicePlatform != null) 'devicePlatform': devicePlatform,
+        if (deviceOsVersion != null) 'deviceOsVersion': deviceOsVersion,
+      },
     );
-    return OAuthCallbackResultDto.fromJson(response as Map<String, dynamic>);
+    return AuthResponseDto.fromJson(response as Map<String, dynamic>);
   }
 
   // ==========================================================================
