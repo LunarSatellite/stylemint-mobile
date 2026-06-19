@@ -62,16 +62,18 @@ class _UserTypeSelectionScreenState
       final accountId = _accountId;
       if (accountId != null) {
         ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
-      } else if (mounted) {
-        // No session to check against — just show the selection.
-        setState(() => _deciding = false);
+      } else {
+        if (mounted) setState(() => _deciding = false);
       }
     });
   }
 
   Future<void> _selectRole(int roleInt) async {
     final accountId = _accountId;
-    if (accountId == null) return;
+    if (accountId == null) {
+      _navigateForRole(roleInt);
+      return;
+    }
 
     // Already an active role → straight to that surface, no application needed.
     if (_isRoleActivated(roleInt)) {

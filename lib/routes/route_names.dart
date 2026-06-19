@@ -55,6 +55,9 @@ abstract class RouteNames {
   // Creator
   static const creatorHome = '/creator/home';
   static const creatorApply = '/creator/apply';
+  static const creatorApplySocial = '/creator/apply/social';
+  static const creatorApplyReview = '/creator/apply/review';
+  static const creatorApplySubmitted = '/creator/apply/submitted';
   static const creatorDash = '/creator/dashboard';
   static const reelImport = '/creator/import';
   static const reelImportTagProducts = '/creator/import/tag/:postId';

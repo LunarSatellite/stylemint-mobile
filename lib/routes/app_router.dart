@@ -40,6 +40,9 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_social_media_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -123,6 +126,10 @@ const _publicPaths = {
   RouteNames.rolePicker,
   RouteNames.pickInterests,
   RouteNames.followCreators,
+  RouteNames.creatorApply,
+  RouteNames.creatorApplySocial,
+  RouteNames.creatorApplyReview,
+  RouteNames.creatorApplySubmitted,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -408,6 +415,20 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.creatorApply,
         builder: (ctx, state) => const CreatorApplyScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySocial),
+            builder: (ctx, state) => const CreatorSocialMediaScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyReview),
+            builder: (ctx, state) => const CreatorReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySubmitted),
+            builder: (ctx, state) => const CreatorSubmittedScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.creatorDash,
