@@ -85,6 +85,7 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/s
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/screens/story_viewer_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/onboarding_carousel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/pick_interests_screen.dart';
@@ -123,6 +124,7 @@ const _publicPaths = {
   RouteNames.rolePicker,
   RouteNames.pickInterests,
   RouteNames.followCreators,
+  RouteNames.followBrands,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -189,7 +191,7 @@ GoRouter appRouter(Ref ref) {
         authenticated: (_) =>
             (atSplash || isAuthOnly) ? RouteNames.home : null,
         unauthenticated: () => atSplash
-            ? RouteNames.onboarding
+            ? RouteNames.userTypeSelection
             : (isPublic ? null : RouteNames.signInMethod),
       );
     },
@@ -299,6 +301,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.followCreators,
         builder: (ctx, state) => const FollowCreatorsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.followBrands,
+        builder: (ctx, state) => const FollowBrandsScreen(),
       ),
       GoRoute(
         path: RouteNames.rolePicker,

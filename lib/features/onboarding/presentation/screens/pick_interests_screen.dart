@@ -9,11 +9,6 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/i
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Pick Your Interests — pixel-matched to Figma frame `9615:45821`.
-///
-/// API-backed: loads available interests from `GET /v1/public/interests` and
-/// current user interests from `GET /v1/accounts/{id}/interests`. Toggles
-/// persist via POST/DELETE immediately.
 class PickInterestsScreen extends ConsumerStatefulWidget {
   const PickInterestsScreen({super.key});
 
@@ -24,20 +19,28 @@ class PickInterestsScreen extends ConsumerStatefulWidget {
 
 class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
   static const int _minPicks = 3;
-
   String _query = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  void _load() {
+    if (!mounted) return;
     final accountId = ref.read(sessionControllerProvider).maybeWhen(
       authenticated: (id) => id,
       orElse: () => null,
     );
-    if (accountId != null) {
-      Future.microtask(() =>
-          ref.read(interestsProvider.notifier).load(accountId: accountId),
-      );
+    if (accountId == null) return;
+    final needsLoad = ref.read(interestsProvider).maybeWhen(
+      initial: () => true,
+      loadFailure: (_) => true,
+      orElse: () => false,
+    );
+    if (needsLoad) {
+      ref.read(interestsProvider.notifier).load(accountId: accountId);
     }
   }
 
@@ -47,7 +50,6 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
       orElse: () => null,
     );
     if (accountId == null) return;
-
     ref.read(interestsProvider.notifier).toggleInterest(
       accountId: accountId,
       categoryId: categoryId,
@@ -57,6 +59,11 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Safety net for the edge case where session arrives after initState.
+    ref.listen(sessionControllerProvider, (_, next) {
+      next.maybeWhen(authenticated: (_) => _load(), orElse: () {});
+    });
+
     final state = ref.watch(interestsProvider);
 
     return Scaffold(
@@ -69,8 +76,8 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
             final filtered = _query.isEmpty
                 ? available
                 : available
-                    .where(
-                        (i) => i.name.toLowerCase().contains(_query.toLowerCase()))
+                    .where((i) =>
+                        i.name.toLowerCase().contains(_query.toLowerCase()))
                     .toList();
 
             final progress =
@@ -95,9 +102,10 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                       ),
                       const SizedBox(height: DesignTokens.s24),
                       Text(
-                          '${selectedIds.length}/$_minPicks Picked',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textLight)),
+                        '${selectedIds.length}/$_minPicks Picked',
+                        style: DesignTokens.smallRegular
+                            .copyWith(color: DesignTokens.textLight),
+                      ),
                       const SizedBox(height: DesignTokens.s8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(999),
@@ -141,7 +149,7 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                           selectedIds.contains(interest.categoryId);
                       return _RadioCard(
                         label: interest.name,
-                        icon: _iconForInterest(interest.name),
+                        code: interest.code,
                         selected: selected,
                         onTap: () =>
                             _toggleInterest(interest.categoryId, selected),
@@ -158,11 +166,8 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                           color: DesignTokens.borderDefault, width: 1),
                     ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(
-                      DesignTokens.s16,
-                      DesignTokens.s24,
-                      DesignTokens.s16,
-                      DesignTokens.s24),
+                  padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
+                      DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
                   child: Opacity(
                     opacity: canProceed ? 1 : 0.5,
                     child: Material(
@@ -170,10 +175,9 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                       borderRadius:
                           BorderRadius.circular(DesignTokens.buttonRadius),
                       child: InkWell(
-                        onTap:
-                            canProceed
-                                ? () => context.go(RouteNames.followCreators)
-                                : null,
+                        onTap: canProceed
+                            ? () => context.go(RouteNames.followCreators)
+                            : null,
                         borderRadius:
                             BorderRadius.circular(DesignTokens.buttonRadius),
                         child: Padding(
@@ -181,9 +185,11 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
                               horizontal: DesignTokens.s32,
                               vertical: DesignTokens.s16),
                           child: Center(
-                            child: Text('Proceed',
-                                style: DesignTokens.oneLinerSemibold.copyWith(
-                                    color: DesignTokens.buttonPrimaryText)),
+                            child: Text(
+                              'Proceed',
+                              style: DesignTokens.oneLinerSemibold.copyWith(
+                                  color: DesignTokens.buttonPrimaryText),
+                            ),
                           ),
                         ),
                       ),
@@ -193,27 +199,17 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
               ],
             );
           },
-          loadFailure: (failure) => Center(
+          loadFailure: (_) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.error_outline,
                     color: DesignTokens.colorError, size: 48),
                 const SizedBox(height: DesignTokens.s16),
-                Text('Failed to load interests',
-                    style: DesignTokens.bodyText),
+                Text('Failed to load interests', style: DesignTokens.bodyText),
                 const SizedBox(height: DesignTokens.s16),
                 GestureDetector(
-                  onTap: () {
-                    final accountId = ref
-                        .read(sessionControllerProvider)
-                        .maybeWhen(
-                            authenticated: (id) => id, orElse: () => null);
-                    if (accountId != null) {
-                      ref.read(interestsProvider.notifier).load(
-                          accountId: accountId);
-                    }
-                  },
+                  onTap: _load,
                   child: Text('Retry',
                       style: TextStyle(color: DesignTokens.primaryGreen)),
                 ),
@@ -229,148 +225,278 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
       child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
 }
 
-/// Maps a backend interest name to a bundled SVG asset, when one exists.
-///
-/// Returns `null` for names we don't ship art for, so callers can fall back to
-/// a Material icon via [_iconForInterest].
-String? _svgAssetForInterest(String name) {
-  const assets = <String, String>{
+// ---------------------------------------------------------------------------
+// Asset helpers — look up by code first (stable), then by nameEn (display).
+// ---------------------------------------------------------------------------
+
+String? _svgForCode(String? code) {
+  if (code == null) return null;
+  const map = <String, String>{
     'fashion': 'assets/images/interests/Fashion.svg',
     'beauty': 'assets/images/interests/Beauty.svg',
     'footwear': 'assets/images/interests/Footwear.svg',
     'accessories': 'assets/images/interests/Accessories.svg',
     'fitness': 'assets/images/interests/Fitness.svg',
+    'sports_fitness': 'assets/images/interests/Fitness.svg',
     'gaming': 'assets/images/interests/Gaming.svg',
     'tech': 'assets/images/interests/Tech.svg',
     'technology': 'assets/images/interests/Tech.svg',
     'food': 'assets/images/interests/Food.svg',
+    'food_dining': 'assets/images/interests/Food.svg',
     'outdoor': 'assets/images/interests/Outdoor.svg',
+    'outdoor_adventure': 'assets/images/interests/Outdoor.svg',
     'pets': 'assets/images/interests/Pets.svg',
     'books': 'assets/images/interests/Books.svg',
     'travel': 'assets/images/interests/Travel.svg',
     'wellness': 'assets/images/interests/Wellness.svg',
     'football': 'assets/images/interests/Football.svg',
+    'sports': 'assets/images/interests/Football.svg',
     'home': 'assets/images/interests/Home.svg',
+    'home_living': 'assets/images/interests/Home.svg',
   };
-  return assets[name.toLowerCase()];
+  return map[code.toLowerCase()];
 }
 
-IconData _iconForInterest(String name) {
-  switch (name.toLowerCase()) {
+String? _svgForName(String name) {
+  const map = <String, String>{
+    'fashion': 'assets/images/interests/Fashion.svg',
+    'beauty': 'assets/images/interests/Beauty.svg',
+    'footwear': 'assets/images/interests/Footwear.svg',
+    'accessories': 'assets/images/interests/Accessories.svg',
+    'fitness': 'assets/images/interests/Fitness.svg',
+    'sports & fitness': 'assets/images/interests/Fitness.svg',
+    'gaming': 'assets/images/interests/Gaming.svg',
+    'tech': 'assets/images/interests/Tech.svg',
+    'technology': 'assets/images/interests/Tech.svg',
+    'food': 'assets/images/interests/Food.svg',
+    'food & dining': 'assets/images/interests/Food.svg',
+    'outdoor': 'assets/images/interests/Outdoor.svg',
+    'outdoor & adventure': 'assets/images/interests/Outdoor.svg',
+    'pets': 'assets/images/interests/Pets.svg',
+    'books': 'assets/images/interests/Books.svg',
+    'travel': 'assets/images/interests/Travel.svg',
+    'wellness': 'assets/images/interests/Wellness.svg',
+    'football': 'assets/images/interests/Football.svg',
+    'sports': 'assets/images/interests/Football.svg',
+    'home': 'assets/images/interests/Home.svg',
+    'home & living': 'assets/images/interests/Home.svg',
+    'home_living': 'assets/images/interests/Home.svg',
+  };
+  return map[name.toLowerCase()];
+}
+
+IconData _iconForCode(String? code) {
+  switch (code?.toLowerCase()) {
     case 'fashion':
       return Icons.checkroom;
     case 'beauty':
       return Icons.brush;
+    case 'footwear':
+      return Icons.snowshoeing;
+    case 'accessories':
+      return Icons.watch;
     case 'fitness':
+    case 'sports_fitness':
       return Icons.fitness_center;
+    case 'gaming':
+      return Icons.sports_esports;
     case 'tech':
     case 'technology':
       return Icons.devices;
     case 'food':
+    case 'food_dining':
       return Icons.restaurant;
-    case 'travel':
-      return Icons.flight;
-    case 'music':
-      return Icons.music_note;
-    case 'gaming':
-      return Icons.sports_esports;
-    case 'art':
-      return Icons.palette;
-    case 'home':
-      return Icons.chair;
-    case 'sports':
-      return Icons.sports_basketball;
+    case 'outdoor':
+    case 'outdoor_adventure':
+      return Icons.terrain;
+    case 'pets':
+      return Icons.pets;
     case 'books':
       return Icons.menu_book;
+    case 'travel':
+      return Icons.flight;
+    case 'wellness':
+      return Icons.spa;
+    case 'football':
+    case 'sports':
+      return Icons.sports_soccer;
+    case 'home':
+    case 'home_living':
+      return Icons.chair;
+    case 'music':
+      return Icons.music_note;
+    case 'art':
+      return Icons.palette;
     case 'movies':
       return Icons.movie;
     case 'photography':
       return Icons.camera_alt;
     case 'lifestyle':
-      return Icons.spa;
+      return Icons.self_improvement;
     default:
       return Icons.category;
   }
 }
 
-/// Glassmorphic interest chip (Figma "Radio Card").
+IconData _iconForName(String name) {
+  switch (name.toLowerCase()) {
+    case 'fashion':
+      return Icons.checkroom;
+    case 'beauty':
+      return Icons.brush;
+    case 'footwear':
+      return Icons.snowshoeing;
+    case 'accessories':
+      return Icons.watch;
+    case 'fitness':
+    case 'sports & fitness':
+      return Icons.fitness_center;
+    case 'gaming':
+      return Icons.sports_esports;
+    case 'tech':
+    case 'technology':
+      return Icons.devices;
+    case 'food':
+    case 'food & dining':
+      return Icons.restaurant;
+    case 'outdoor':
+    case 'outdoor & adventure':
+      return Icons.terrain;
+    case 'pets':
+      return Icons.pets;
+    case 'books':
+      return Icons.menu_book;
+    case 'travel':
+      return Icons.flight;
+    case 'wellness':
+      return Icons.spa;
+    case 'football':
+    case 'sports':
+      return Icons.sports_soccer;
+    case 'home':
+    case 'home & living':
+    case 'home_living':
+      return Icons.chair;
+    case 'music':
+      return Icons.music_note;
+    case 'art':
+      return Icons.palette;
+    case 'movies':
+      return Icons.movie;
+    case 'photography':
+      return Icons.camera_alt;
+    case 'lifestyle':
+      return Icons.self_improvement;
+    default:
+      return Icons.category;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Glassmorphic interest chip — Figma "Radio Card"
+// ---------------------------------------------------------------------------
+
 class _RadioCard extends StatelessWidget {
   final String label;
-  final IconData icon;
+  final String? code;
   final bool selected;
   final VoidCallback onTap;
 
   const _RadioCard({
     required this.label,
-    required this.icon,
+    required this.code,
     required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final svgAsset = _svgAssetForInterest(label);
+    // Resolve SVG: try code first, fall back to nameEn.
+    final svgAsset = _svgForCode(code) ?? _svgForName(label);
+    // Resolve icon: try code first, fall back to nameEn.
+    final icon = code != null ? _iconForCode(code) : _iconForName(label);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      // Spec: glassmorphism — backdrop blur(5.7) behind the ~6% white fill.
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.7, sigmaY: 5.7),
-        child: Container(
-        padding: const EdgeInsets.all(DesignTokens.s12),
-        decoration: BoxDecoration(
-          color: selected
-              ? DesignTokens.primaryGreen.withOpacity(0.12)
-              : DesignTokens.radioCardFill,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? DesignTokens.primaryGreen
-                : DesignTokens.radioCardBorder,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (svgAsset != null)
-              SvgPicture.asset(
-                svgAsset,
-                width: 32,
-                height: 32,
-                colorFilter: selected
-                    ? const ColorFilter.mode(
-                        DesignTokens.primaryGreen, BlendMode.srcIn)
-                    : null,
-              )
-            else
-              Icon(
-                icon,
-                size: 32,
-                color: selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.radioCardTitle,
-              ),
-            const SizedBox(height: DesignTokens.s4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular.copyWith(
-                color: selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.radioCardTitle,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // ── Card — SizedBox.expand ensures every cell fills the grid slot ─
+        SizedBox.expand(
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.7, sigmaY: 5.7),
+                child: Container(
+                  padding: const EdgeInsets.all(DesignTokens.s12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? DesignTokens.primaryGreen.withOpacity(0.12)
+                        : DesignTokens.radioCardFill,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.radioCardBorder,
+                      width: selected ? 2.5 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (svgAsset != null)
+                        SvgPicture.asset(
+                          svgAsset,
+                          width: 32,
+                          height: 32,
+                          // No colorFilter — logo keeps its original colours
+                          // regardless of selection state.
+                        )
+                      else
+                        Icon(
+                          icon,
+                          size: 32,
+                          color: DesignTokens.radioCardTitle,
+                        ),
+                      const SizedBox(height: DesignTokens.s4),
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.radioCardTitle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
-        ),
-      ),
+
+        // ── Selection badge — white circle with black check, top-right ───
+        if (selected)
+          Positioned(
+            top: -8,
+            right: -8,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: Colors.black,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

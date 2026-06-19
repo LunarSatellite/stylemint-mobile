@@ -61,7 +61,11 @@ class DeviceIdentity {
   }
 
   /// Human-readable OS version string for the Device row (best-effort).
-  String get osVersion => Platform.operatingSystemVersion;
+  /// Truncated to 32 chars to satisfy the API's validation constraint.
+  String get osVersion {
+    final v = Platform.operatingSystemVersion;
+    return v.length > 32 ? v.substring(0, 32) : v;
+  }
 }
 
 final deviceIdentityProvider = Provider<DeviceIdentity>((ref) {

@@ -6,8 +6,9 @@ part 'interest_dto.g.dart';
 @freezed
 abstract class InterestDto with _$InterestDto {
   const factory InterestDto({
-    required String categoryId,
-    required String name,
+    @JsonKey(name: 'id') required String categoryId,
+    @JsonKey(name: 'nameEn') required String name,
+    @JsonKey(name: 'code') String? code,
     String? icon,
     String? description,
     @JsonKey(name: 'createdUtc') DateTime? createdUtc,

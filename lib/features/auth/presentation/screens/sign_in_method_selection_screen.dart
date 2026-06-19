@@ -33,7 +33,7 @@ class SignInMethodSelectionScreen extends ConsumerStatefulWidget {
 
 class _SignInMethodSelectionScreenState
     extends ConsumerState<SignInMethodSelectionScreen> {
-  bool _showMore = false;
+  bool _showMore = true;
   bool _busy = false;
 
   Future<void> _continueWithPasskey() async {
@@ -216,15 +216,7 @@ class _SignInMethodSelectionScreenState
                       _PlanB(
                         onSocial: _startSocial,
                         onComingSoon: (p) => _comingSoon(context, p),
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      TextButton(
-                        onPressed: () => setState(() => _showMore = false),
-                        child: Text(
-                          'Use passkey instead',
-                          style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.primaryGreen),
-                        ),
+                        onPasskey: () => context.push(RouteNames.passkey),
                       ),
                     ],
                   ],
@@ -239,9 +231,13 @@ class _SignInMethodSelectionScreenState
   }
 }
 
-/// Plan B — revealed only via "More ways to continue".
+/// Plan B — all sign-in options including passkey as a row.
 class _PlanB extends StatelessWidget {
-  const _PlanB({required this.onSocial, required this.onComingSoon});
+  const _PlanB({
+    required this.onSocial,
+    required this.onComingSoon,
+    required this.onPasskey,
+  });
 
   /// Live providers (Google / Facebook) — starts the OAuth browser flow.
   final Future<void> Function(String provider) onSocial;
@@ -249,11 +245,22 @@ class _PlanB extends StatelessWidget {
   /// Not-yet-live providers (Apple) — shows a "coming soon" notice.
   final void Function(String provider) onComingSoon;
 
+  /// Triggers usernameless passkey authentication. Null while busy.
+  final VoidCallback? onPasskey;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         const SizedBox(height: DesignTokens.s8),
+        _MethodRow(
+          icon: Icons.key_rounded,
+          iconTileColor: const Color(0xFFFFC107),
+          iconColor: Colors.black,
+          title: 'Use Passkey (Recommended)',
+          description: 'Fast, secure & no password needed',
+          onTap: onPasskey ?? () {},
+        ),
         _MethodRow(
           icon: Icons.mail_rounded,
           iconTileColor: DesignTokens.bgAppBodyLight,

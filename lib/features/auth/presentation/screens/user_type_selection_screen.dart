@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
@@ -7,6 +8,10 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+/// Stores the role the user tapped before signing in so it can be
+/// automatically applied once authentication completes.
+final pendingRoleProvider = StateProvider<int?>((ref) => null);
 
 /// Select User Type — pixel-matched to Figma frame `9365:7986`.
 ///
@@ -71,7 +76,18 @@ class _UserTypeSelectionScreenState
 
   Future<void> _selectRole(int roleInt) async {
     final accountId = _accountId;
-    if (accountId == null) return;
+    if (accountId == null) {
+      // Pre-auth: remember the chosen role so it is auto-applied after login.
+      ref.read(pendingRoleProvider.notifier).state = roleInt;
+      // Customer (1) sees the onboarding carousel before sign-in.
+      // Creator / Vendor go straight to sign-in (no carousel needed).
+      if (roleInt == 1) {
+        context.go(RouteNames.onboarding);
+      } else {
+        context.go(RouteNames.signInMethod);
+      }
+      return;
+    }
 
     // Already an active role → straight to that surface, no application needed.
     if (_isRoleActivated(roleInt)) {
@@ -138,6 +154,22 @@ class _UserTypeSelectionScreenState
       next.maybeWhen(
         loadSuccess: (roles) {
           if (!mounted) return;
+
+          // If the user pre-selected a role before signing in, apply it now
+          // automatically and skip showing the selection screen again.
+          final pendingRole = ref.read(pendingRoleProvider);
+          if (pendingRole != null) {
+            ref.read(pendingRoleProvider.notifier).state = null;
+            setState(() {
+              _existingRoles = roles;
+              _deciding = false;
+            });
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _selectRole(pendingRole);
+            });
+            return;
+          }
+
           // One-time setup: an account that already has an activated role has
           // onboarded. Skip straight to home — but ONLY on the initial load
           // (`_deciding`), never after the user activates a role in this very
