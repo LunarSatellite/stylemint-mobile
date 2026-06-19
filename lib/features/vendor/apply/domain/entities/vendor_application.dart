@@ -69,45 +69,53 @@ class VendorApplicationForm {
     required this.businessName,
     required this.businessType,
     required this.taxId,
-    required this.ownerFullName,
-    required this.ownerPhone,
-    required this.ownerEmail,
-    required this.description,
+    required this.businessRegistrationNumber,
     this.website,
-    required this.categories,
+    required this.countryRegion,
+    required this.streetAddress,
+    required this.city,
+    required this.country,
+    required this.zipCode,
+    required this.state,
   });
 
   final String businessName;
   final BusinessType businessType;
   final String taxId;
-  final String ownerFullName;
-  final String ownerPhone;
-  final String ownerEmail;
-  final String description;
+  final String businessRegistrationNumber;
   final String? website;
-  final List<String> categories;
+  final String countryRegion;
+  final String streetAddress;
+  final String city;
+  final String country;
+  final String zipCode;
+  final String state;
 
   VendorApplicationForm copyWith({
     String? businessName,
     BusinessType? businessType,
     String? taxId,
-    String? ownerFullName,
-    String? ownerPhone,
-    String? ownerEmail,
-    String? description,
+    String? businessRegistrationNumber,
     String? website,
-    List<String>? categories,
+    String? countryRegion,
+    String? streetAddress,
+    String? city,
+    String? country,
+    String? zipCode,
+    String? state,
   }) {
     return VendorApplicationForm(
       businessName: businessName ?? this.businessName,
       businessType: businessType ?? this.businessType,
       taxId: taxId ?? this.taxId,
-      ownerFullName: ownerFullName ?? this.ownerFullName,
-      ownerPhone: ownerPhone ?? this.ownerPhone,
-      ownerEmail: ownerEmail ?? this.ownerEmail,
-      description: description ?? this.description,
+      businessRegistrationNumber: businessRegistrationNumber ?? this.businessRegistrationNumber,
       website: website ?? this.website,
-      categories: categories ?? this.categories,
+      countryRegion: countryRegion ?? this.countryRegion,
+      streetAddress: streetAddress ?? this.streetAddress,
+      city: city ?? this.city,
+      country: country ?? this.country,
+      zipCode: zipCode ?? this.zipCode,
+      state: state ?? this.state,
     );
   }
 
@@ -117,23 +125,20 @@ class VendorApplicationForm {
       other.businessName == businessName &&
       other.businessType == businessType &&
       other.taxId == taxId &&
-      other.ownerFullName == ownerFullName &&
-      other.ownerPhone == ownerPhone &&
-      other.ownerEmail == ownerEmail &&
-      other.description == description &&
+      other.businessRegistrationNumber == businessRegistrationNumber &&
       other.website == website &&
-      _listEquals(other.categories, categories);
+      other.countryRegion == countryRegion &&
+      other.streetAddress == streetAddress &&
+      other.city == city &&
+      other.country == country &&
+      other.zipCode == zipCode &&
+      other.state == state;
 
   @override
-  int get hashCode => Object.hash(businessName, businessType, taxId, ownerFullName, ownerPhone, ownerEmail, description, website, categories.length);
-
-  static bool _listEquals<T>(List<T> a, List<T> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
+  int get hashCode => Object.hash(
+    businessName, businessType, taxId, businessRegistrationNumber,
+    website, countryRegion, streetAddress, city, country, zipCode, state,
+  );
 }
 
 enum KYCDocumentType {

@@ -72,6 +72,11 @@ abstract class RouteNames {
   // Vendor
   static const vendorHome = '/vendor/home';
   static const vendorApply = '/vendor/apply';
+  static const vendorApplyStep2 = '/vendor/apply/step2';
+  static const vendorApplyStep3 = '/vendor/apply/step3';
+  static const vendorApplyStep4 = '/vendor/apply/step4';
+  static const vendorApplyStep5 = '/vendor/apply/step5';
+  static const vendorApplyStep6 = '/vendor/apply/step6';
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';
