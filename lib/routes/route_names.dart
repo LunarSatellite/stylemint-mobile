@@ -77,6 +77,10 @@ abstract class RouteNames {
   static const vendorApplyStep4 = '/vendor/apply/step4';
   static const vendorApplyStep5 = '/vendor/apply/step5';
   static const vendorApplyStep6 = '/vendor/apply/step6';
+  static const vendorApplySubmitted = '/vendor/apply/submitted';
+  static const vendorApplyRejected = '/vendor/apply/rejected';
+  static const vendorApplyUnderReview = '/vendor/apply/under-review';
+  static const vendorApplyApproved = '/vendor/apply/approved';
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';

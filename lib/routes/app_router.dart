@@ -60,6 +60,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/scr
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step4_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step5_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step6_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_submitted_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_rejected_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_under_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/screens/brand_studio_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
@@ -515,6 +519,31 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorApplyStep6,
         builder: (ctx, state) => const VendorApplyStep6Screen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplySubmitted,
+        builder: (ctx, state) => VendorApplySubmittedScreen(
+          applicationId: state.uri.queryParameters['applicationId'],
+          submittedAt: state.uri.queryParameters['submittedAt'],
+          userEmail: state.uri.queryParameters['userEmail'],
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyRejected,
+        builder: (ctx, state) => VendorApplyRejectedScreen(
+          rejectionReason: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyUnderReview,
+        builder: (ctx, state) => VendorApplyUnderReviewScreen(
+          applicationId: state.uri.queryParameters['applicationId'],
+          userEmail: state.uri.queryParameters['userEmail'],
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyApproved,
+        builder: (ctx, state) => const VendorApplyApprovedScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorDash,

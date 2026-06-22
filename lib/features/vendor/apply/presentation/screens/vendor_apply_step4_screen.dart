@@ -251,7 +251,7 @@ class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
             ),
             child: Row(
               children: [
-                const Text('🔒', style: TextStyle(fontSize: 20)),
+                Image.asset('assets/images/lock.png', width: 28, height: 28),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
                   child: Text(
