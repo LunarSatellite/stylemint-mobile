@@ -216,7 +216,10 @@ class _SignInMethodSelectionScreenState
                       _PlanB(
                         onSocial: _startSocial,
                         onComingSoon: (p) => _comingSoon(context, p),
-                        onPasskey: () => context.push(RouteNames.passkey),
+                        // Same usernameless sign-in as the top button (with
+                        // bootstrap-signup fallback) — NOT the login-required
+                        // /passkey Setup screen.
+                        onPasskey: _continueWithPasskey,
                       ),
                     ],
                   ],
