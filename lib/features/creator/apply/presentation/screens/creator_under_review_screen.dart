@@ -5,39 +5,11 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/pr
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class CreatorSubmittedScreen extends ConsumerStatefulWidget {
-  const CreatorSubmittedScreen({super.key});
+class CreatorUnderReviewScreen extends ConsumerWidget {
+  const CreatorUnderReviewScreen({super.key});
 
   @override
-  ConsumerState<CreatorSubmittedScreen> createState() =>
-      _CreatorSubmittedScreenState();
-}
-
-class _CreatorSubmittedScreenState
-    extends ConsumerState<CreatorSubmittedScreen> {
-  late final DateTime _submittedAt;
-  late final String _appId;
-
-  @override
-  void initState() {
-    super.initState();
-    _submittedAt = DateTime.now();
-    _appId =
-        '#CR${_submittedAt.year}-${(_submittedAt.millisecondsSinceEpoch % 100000).toString().padLeft(5, '0')}';
-  }
-
-  String get _formattedDate {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final h = _submittedAt.hour.toString().padLeft(2, '0');
-    final m = _submittedAt.minute.toString().padLeft(2, '0');
-    return '$h:$m ${months[_submittedAt.month - 1]} ${_submittedAt.day}, ${_submittedAt.year}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final email = ref.read(creatorFormProvider).email;
 
     return Scaffold(
@@ -54,9 +26,9 @@ class _CreatorSubmittedScreenState
                 ),
                 child: Column(
                   children: [
-                    // Success badge
+                    // Under-review illustration
                     Image.asset(
-                      'assets/images/doneicon.png',
+                      'assets/images/underreview.png',
                       width: 100,
                       height: 100,
                     ),
@@ -64,7 +36,7 @@ class _CreatorSubmittedScreenState
 
                     // Title
                     const Text(
-                      'Application Submitted',
+                      'Application Under Review',
                       textAlign: TextAlign.center,
                       style: DesignTokens.titleMedium,
                     ),
@@ -72,17 +44,12 @@ class _CreatorSubmittedScreenState
 
                     // Subtitle
                     Text(
-                      'Thank you for applying to become a creator on ReelCommerce. We\'re reviewing your application',
+                      'Your application is being reviewed. We will notify you with the results once the review process is completed',
                       textAlign: TextAlign.center,
                       style: DesignTokens.mediumRegular
                           .copyWith(color: DesignTokens.textLight),
                     ),
                     const SizedBox(height: DesignTokens.s28),
-
-                    // Status card
-                    _StatusCard(
-                        appId: _appId, submittedAt: _formattedDate),
-                    const SizedBox(height: DesignTokens.s16),
 
                     // What happens next
                     _InfoCard(
@@ -142,7 +109,8 @@ class _CreatorSubmittedScreenState
                               .copyWith(color: DesignTokens.textLight),
                         ),
                         GestureDetector(
-                          onTap: () => context.push(RouteNames.creatorSupportContact),
+                          onTap: () => context
+                              .push(RouteNames.creatorSupportContact),
                           child: Text(
                             'Contact Support',
                             style: DesignTokens.mediumSemibold
@@ -179,7 +147,8 @@ class _CreatorSubmittedScreenState
                                   'Return to Home',
                                   style: DesignTokens.oneLinerSemibold
                                       .copyWith(
-                                          color: DesignTokens.buttonPrimaryText),
+                                          color:
+                                              DesignTokens.buttonPrimaryText),
                                 ),
                               ],
                             ),
@@ -193,99 +162,6 @@ class _CreatorSubmittedScreenState
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Application Current Status card
-// ---------------------------------------------------------------------------
-class _StatusCard extends StatelessWidget {
-  final String appId;
-  final String submittedAt;
-  const _StatusCard({required this.appId, required this.submittedAt});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Image.asset('assets/images/underreview.png', width: 36, height: 36),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Application Current Status',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s4),
-                Text(
-                  'Submitted on $submittedAt',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                // Under Review chip
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: DesignTokens.warningFillDark,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.chipRadius),
-                    border: Border.all(
-                        color: DesignTokens.colorWarning.withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.hourglass_top_rounded,
-                          size: 12, color: DesignTokens.colorWarning),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Under Review',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: DesignTokens.colorWarning,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                Text(
-                  'Application ID: $appId',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -335,11 +211,14 @@ class _InfoCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('• ',
-                      style: TextStyle(
-                          color: titleColor,
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14)),
+                  Text(
+                    '• ',
+                    style: TextStyle(
+                      color: titleColor,
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       item,
