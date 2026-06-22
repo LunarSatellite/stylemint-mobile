@@ -73,9 +73,15 @@ import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/screens/matchmaking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/orders_ready_to_ship_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/order_waiting_tracking_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/pending_customer_inquiries_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
@@ -560,6 +566,30 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorOrders,
         builder: (ctx, state) => const VendorOrdersScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorOrdersReadyToShip,
+        builder: (ctx, state) => const OrdersReadyToShipScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorOrdersWaitingTracking,
+        builder: (ctx, state) => const OrderWaitingTrackingScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPendingInquiries,
+        builder: (ctx, state) => const PendingCustomerInquiriesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreatorPartnershipRequests,
+        builder: (ctx, state) => const CreatorPartnershipRequestsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorTopProducts,
+        builder: (ctx, state) => const TopProductsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorRecentActivity,
+        builder: (ctx, state) => const RecentActivityScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorOrderDetail,

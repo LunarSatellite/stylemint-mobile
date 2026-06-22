@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 final _sampleDashboard = VendorDashboard(
@@ -198,7 +199,7 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: DesignTokens.s20),
             _buildTopProducts(context),
             const SizedBox(height: DesignTokens.s20),
-            _buildRecentActivity(),
+            _buildRecentActivity(context),
             const SizedBox(height: DesignTokens.s32),
           ],
         ),
@@ -362,10 +363,10 @@ class _DashboardContent extends StatelessWidget {
 
   Widget _buildAlertCards(BuildContext context) {
     final alerts = [
-      _Alert(assetIcon: 'assets/images/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship'),
-      _Alert(assetIcon: 'assets/images/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers'),
-      _Alert(assetIcon: 'assets/images/icon_pending_inquiries.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending'),
-      _Alert(assetIcon: 'assets/images/icon_handshake.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests'),
+      _Alert(assetIcon: 'assets/images/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
+      _Alert(assetIcon: 'assets/images/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
+      _Alert(assetIcon: 'assets/images/icon_pending_inquiries.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
+      _Alert(assetIcon: 'assets/images/icon_handshake.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
     ];
 
     return Column(
@@ -406,7 +407,7 @@ class _DashboardContent extends StatelessWidget {
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
                     contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
-                    onTap: () {},
+                    onTap: alert.route != null ? () => context.push(alert.route!) : null,
                   ),
                   if (i < alerts.length - 1)
                     const Divider(color: DesignTokens.borderDefault, height: 1, indent: DesignTokens.s16, endIndent: DesignTokens.s16),
@@ -430,7 +431,7 @@ class _DashboardContent extends StatelessWidget {
           children: [
             Text('Top Products (This Month)', style: DesignTokens.mediumSemibold),
             GestureDetector(
-              onTap: () {},
+              onTap: () => context.push(RouteNames.vendorTopProducts),
               child: Row(
                 children: [
                   Text('View All', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen)),
@@ -454,7 +455,7 @@ class _DashboardContent extends StatelessWidget {
 
   // ── Recent Activity ──────────────────────────────────────────────────────────
 
-  Widget _buildRecentActivity() {
+  Widget _buildRecentActivity(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -463,7 +464,7 @@ class _DashboardContent extends StatelessWidget {
           children: [
             Text('Recent Activity', style: DesignTokens.mediumSemibold.copyWith(color: const Color(0xFFD4D4D8))),
             GestureDetector(
-              onTap: () {},
+              onTap: () => context.push(RouteNames.vendorRecentActivity),
               child: Row(
                 children: [
                   Text('View All', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen)),
@@ -660,11 +661,12 @@ class _ActivityTile extends StatelessWidget {
 // ── Data models ───────────────────────────────────────────────────────────────
 
 class _Alert {
-  const _Alert({this.icon, this.assetIcon, required this.title, required this.subtitle});
+  const _Alert({this.icon, this.assetIcon, required this.title, required this.subtitle, this.route});
   final IconData? icon;
   final String? assetIcon;
   final String title;
   final String subtitle;
+  final String? route;
 }
 
 class _TopProduct {
