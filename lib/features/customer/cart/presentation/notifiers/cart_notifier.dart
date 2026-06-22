@@ -59,12 +59,19 @@ class CartNotifier extends StateNotifier<CartState> {
   }) async {
     final current = state;
     if (current is _LoadSuccess) {
-      state = CartState.loadSuccess(current.cart);
+      // Optimistic update: reflect the new quantity immediately in the UI.
+      final optimistic = current.cart.copyWith(
+        items: current.cart.items
+            .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
+            .toList(),
+      );
+      state = CartState.loadSuccess(optimistic);
     }
     final either = await _repository.updateCartItem(
       itemId: itemId,
       quantity: quantity,
     );
+    // Server response replaces optimistic state (includes recalculated totals).
     state = either.fold(
       CartState.loadFailure,
       CartState.loadSuccess,
@@ -74,9 +81,14 @@ class CartNotifier extends StateNotifier<CartState> {
   Future<void> removeItem(String itemId) async {
     final current = state;
     if (current is _LoadSuccess) {
-      state = CartState.loadSuccess(current.cart);
+      // Optimistic update: remove the item immediately in the UI.
+      final optimistic = current.cart.copyWith(
+        items: current.cart.items.where((i) => i.id != itemId).toList(),
+      );
+      state = CartState.loadSuccess(optimistic);
     }
     final either = await _repository.removeCartItem(itemId);
+    // Server response replaces optimistic state (includes recalculated totals).
     state = either.fold(
       CartState.loadFailure,
       CartState.loadSuccess,

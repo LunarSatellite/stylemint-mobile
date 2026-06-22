@@ -20,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mar
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pause_account_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
@@ -324,6 +325,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.checkout,
         builder: (ctx, state) => const CheckoutScreen(),
+      ),
+
+      // Order success
+      GoRoute(
+        path: RouteNames.orderSuccess,
+        builder: (ctx, state) => OrderSuccessScreen(
+          orderId: state.pathParameters['orderId']!,
+        ),
       ),
 
       // Product Detail

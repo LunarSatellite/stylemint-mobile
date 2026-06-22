@@ -1,253 +1,284 @@
+// This file intentionally contains only PaymentMethodScreen.
+// All checkout logic lives in checkout_screen.dart.
+// The previous version of this file incorrectly duplicated CheckoutScreen here.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
-import 'package:stylemint_mobile_frontend/features/customer/checkout/data/repositories/checkout_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Standalone screen for selecting a payment method.
+/// Navigated to via GoRouter at `${RouteNames.checkout}/payment-method`.
+/// On selection, pops with the chosen [PaymentMethod].
 class PaymentMethodScreen extends ConsumerWidget {
   const PaymentMethodScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.watch(checkoutRepositoryProvider);
+    final state = ref.watch(checkoutNotifierProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Payment Method', style: DesignTokens.titleLarge),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: DesignTokens.textWhite),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Payment Method',
+            style: DesignTokens.sectionInnerTitle),
         centerTitle: false,
       ),
-      body: FutureBuilder<List<PaymentMethod>>(
-        future: repository.getPaymentMethods().then(
-              (either) => either.fold(
-                (failure) => throw Exception(failure),
-                (methods) => methods,
-              ),
-            ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Failed to load payment methods',
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
-                  TextButton(
-                    onPressed: () {
-                      (context as Element).markNeedsBuild();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final methods = snapshot.data ?? <PaymentMethod>[];
-
-          return ListView(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            children: [
-              ...methods.map((method) => _PaymentMethodTile(method: method)),
-              const SizedBox(height: DesignTokens.s24),
-              const _SectionHeader(title: 'Add New'),
-              const SizedBox(height: DesignTokens.s8),
-              _AddPaymentOption(
-                icon: Icons.credit_card_rounded,
-                label: 'Add New Card',
-                onTap: () {
-                  // Navigate to add card flow
-                },
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              _AddPaymentOption(
-                icon: Icons.account_balance_wallet_rounded,
-                label: 'Add eSewa',
-                onTap: () {
-                  // Navigate to eSewa setup
-                },
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              _AddPaymentOption(
-                icon: Icons.money_rounded,
-                label: 'Cash on Delivery',
-                onTap: () {
-                  // Set COD as payment
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-      child: Text(title, style: DesignTokens.sectionInnerTitle),
-    );
-  }
-}
-
-class _PaymentMethodTile extends StatelessWidget {
-  const _PaymentMethodTile({required this.method});
-
-  final PaymentMethod method;
-
-  IconData get _icon {
-    switch (method.type) {
-      case PaymentMethodType.card:
-        return Icons.credit_card_rounded;
-      case PaymentMethodType.eSewa:
-        return Icons.account_balance_wallet_rounded;
-      case PaymentMethodType.cod:
-        return Icons.money_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-      child: InkWell(
-        onTap: () => Navigator.of(context).pop(method),
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          decoration: DesignTokens.cardDecoration(
-            borderColor: method.isDefault
-                ? DesignTokens.primaryGreen
-                : DesignTokens.borderDefault,
+      body: state.maybeWhen(
+        loadSuccess: (summary, _) => _MethodList(
+          methods: _buildMethods(summary),
+          selectedId: summary.paymentMethod.id,
+          onSelect: (method) => context.pop(method),
+        ),
+        orElse: () => state.maybeWhen(
+          loadFailure: (failure, _) => SmErrorView(
+            message: 'Failed to load payment methods.',
+            onRetry: () =>
+                ref.read(checkoutNotifierProvider.notifier).load(),
           ),
-          child: Row(
-            children: [
-              Radio<PaymentMethodType>(
-                value: method.type,
-                groupValue: method.type,
-                onChanged: (_) => Navigator.of(context).pop(method),
-                activeColor: DesignTokens.primaryGreen,
-                fillColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return DesignTokens.primaryGreen;
-                  }
-                  return DesignTokens.iconLight;
-                }),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Icon(_icon, color: DesignTokens.primaryGreen, size: 24),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      method.label,
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.textWhite,
-                      ),
-                    ),
-                    if (method.lastFour != null)
-                      Text(
-                        '•••• ${method.lastFour}',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (method.isDefault)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreenLight,
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
-                  ),
-                  child: Text(
-                    'Default',
-                    style: DesignTokens.tiny.copyWith(
-                      color: DesignTokens.primaryGreen,
-                    ),
-                  ),
-                ),
-            ],
+          orElse: () => const Center(
+            child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen),
           ),
         ),
       ),
     );
   }
+
+  List<PaymentMethod> _buildMethods(CheckoutSummary summary) {
+    return [
+      PaymentMethod(
+        id: 'card',
+        type: PaymentMethodType.card,
+        label: 'Visa Card',
+        lastFour: summary.paymentMethod.type == PaymentMethodType.card
+            ? summary.paymentMethod.lastFour
+            : null,
+        isDefault: summary.paymentMethod.type == PaymentMethodType.card,
+      ),
+      PaymentMethod(
+        id: 'esewa',
+        type: PaymentMethodType.eSewa,
+        label: 'eSewa',
+        isDefault: summary.paymentMethod.type == PaymentMethodType.eSewa,
+      ),
+      PaymentMethod(
+        id: 'cod',
+        type: PaymentMethodType.cod,
+        label: 'Cash on Delivery',
+        isDefault: summary.paymentMethod.type == PaymentMethodType.cod,
+      ),
+    ];
+  }
 }
 
-class _AddPaymentOption extends StatelessWidget {
-  const _AddPaymentOption({
-    required this.icon,
-    required this.label,
-    required this.onTap,
+// ─── METHOD LIST ──────────────────────────────────────────────────────────────
+class _MethodList extends StatefulWidget {
+  const _MethodList({
+    required this.methods,
+    required this.selectedId,
+    required this.onSelect,
   });
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+  final List<PaymentMethod> methods;
+  final String selectedId;
+  final ValueChanged<PaymentMethod> onSelect;
+
+  @override
+  State<_MethodList> createState() => _MethodListState();
+}
+
+class _MethodListState extends State<_MethodList> {
+  late String _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedId = widget.selectedId;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: DesignTokens.cardDecoration(
-          borderColor: DesignTokens.borderDefault,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: DesignTokens.iconLight, size: 24),
-            const SizedBox(width: DesignTokens.s12),
-            Expanded(
-              child: Text(
-                label,
-                style: DesignTokens.oneLinerSemibold.copyWith(
-                  color: DesignTokens.textWhite,
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            children: [
+              Container(
+                decoration: DesignTokens.cardDecoration(),
+                child: Column(
+                  children: List.generate(widget.methods.length, (i) {
+                    final method = widget.methods[i];
+                    final isSelected = _selectedId == method.id;
+                    final isLast = i == widget.methods.length - 1;
+
+                    return Column(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() => _selectedId = method.id);
+                            widget.onSelect(method);
+                          },
+                          borderRadius: BorderRadius.circular(
+                              DesignTokens.cardRadius),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: DesignTokens.s16,
+                                vertical: DesignTokens.s12),
+                            child: Row(
+                              children: [
+                                _PaymentIcon(type: method.type),
+                                const SizedBox(width: DesignTokens.s12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        method.label,
+                                        style: DesignTokens.oneLinerSemibold
+                                            .copyWith(
+                                            color:
+                                            DesignTokens.textWhite),
+                                      ),
+                                      Text(
+                                        _subtitle(method),
+                                        style: DesignTokens.smallRegular
+                                            .copyWith(
+                                            color:
+                                            DesignTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Radio circle
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? DesignTokens.primaryGreen
+                                          : DesignTokens.borderDefault,
+                                      width: isSelected ? 5 : 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (!isLast)
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: DesignTokens.borderDefault,
+                            indent: DesignTokens.s16,
+                            endIndent: DesignTokens.s16,
+                          ),
+                      ],
+                    );
+                  }),
                 ),
               ),
-            ),
-            const Icon(
-              Icons.add_circle_outline_rounded,
-              color: DesignTokens.primaryGreen,
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
+  }
+
+  String _subtitle(PaymentMethod m) {
+    switch (m.type) {
+      case PaymentMethodType.card:
+        return m.lastFour != null
+            ? 'Visa ending in ${m.lastFour}'
+            : 'Credit / Debit card';
+      case PaymentMethodType.eSewa:
+        return 'eSewa wallet';
+      case PaymentMethodType.cod:
+        return 'Pay on delivery';
+      case PaymentMethodType.paypal:
+        return 'PayPal';
+    }
+  }
+}
+
+// ─── PAYMENT ICON ─────────────────────────────────────────────────────────────
+class _PaymentIcon extends StatelessWidget {
+  const _PaymentIcon({required this.type});
+
+  final PaymentMethodType type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+      ),
+      alignment: Alignment.center,
+      child: _logo(),
+    );
+  }
+
+  Widget _logo() {
+    switch (type) {
+      case PaymentMethodType.card:
+        return const Text(
+          'VISA',
+          style: TextStyle(
+            color: Color(0xFF1A1F71),
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+            letterSpacing: 0.5,
+          ),
+        );
+      case PaymentMethodType.eSewa:
+        return Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF4CAF50),
+            borderRadius: BorderRadius.circular(DesignTokens.s8),
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'e-',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+        );
+      case PaymentMethodType.cod:
+        return const Icon(
+          Icons.payments_outlined,
+          color: Color(0xFF4CAF50),
+          size: 24,
+        );
+      case PaymentMethodType.paypal:
+        return const Icon(
+          Icons.payment_rounded,
+          color: Color(0xFF003087),
+          size: 24,
+        );
+    }
   }
 }

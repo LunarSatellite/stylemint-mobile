@@ -49,14 +49,49 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
   final CheckoutRepository _repository;
 
   Future<void> load() async {
-    state = state.maybeWhen(
-      loadSuccess: (summary, _) => const CheckoutState.loadInProgress(),
-      orElse: () => const CheckoutState.loadInProgress(),
-    );
-    final either = await _repository.getCheckoutSummary();
-    state = either.fold(
-      (failure) => CheckoutState.loadFailure(failure),
-      (summary) => CheckoutState.loadSuccess(summary),
+    state = const CheckoutState.loadInProgress();
+
+    final summaryEither = await _repository.getCheckoutSummary();
+
+    if (summaryEither.isLeft()) {
+      summaryEither.fold(
+        (failure) => state = CheckoutState.loadFailure(failure),
+        (_) {},
+      );
+      return;
+    }
+
+    final summary = summaryEither.fold((_) => throw StateError(''), (s) => s);
+
+    // Load addresses and payment methods in parallel; non-fatal — fall back to
+    // the values already embedded in the summary.
+    final addressesEither = await _repository.getShippingAddresses();
+    final methodsEither = await _repository.getPaymentMethods();
+
+    final addresses =
+        addressesEither.fold((_) => <ShippingAddress>[], (list) => list);
+    final methods =
+        methodsEither.fold((_) => <PaymentMethod>[], (list) => list);
+
+    // Merge: ensure the summary's selected address/method are always first
+    // and dedup by id so they don't appear twice.
+    final seenAddr = <String>{};
+    final allAddresses = [
+      summary.shippingAddress,
+      ...addresses.where((a) => seenAddr.add(a.id)),
+    ];
+
+    final seenMeth = <String>{};
+    final allMethods = [
+      summary.paymentMethod,
+      ...methods.where((m) => seenMeth.add(m.id)),
+    ];
+
+    state = CheckoutState.loadSuccess(
+      summary.copyWith(
+        availableAddresses: allAddresses,
+        availablePaymentMethods: allMethods,
+      ),
     );
   }
 
