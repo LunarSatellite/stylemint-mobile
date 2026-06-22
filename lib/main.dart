@@ -1,15 +1,321 @@
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:go_router/go_router.dart';
+import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
 import 'features/creator/social_connect/shared/providers.dart';
+import 'features/customer/cart/domain/entities/cart.dart';
+import 'features/customer/cart/domain/repositories/cart_repository.dart';
+import 'features/customer/cart/presentation/notifiers/cart_notifier.dart';
+import 'features/customer/cart/presentation/screens/cart_screen.dart';
+import 'features/customer/cart/shared/providers.dart';
+import 'features/customer/checkout/domain/entities/checkout.dart';
+import 'features/customer/checkout/domain/repositories/checkout_repository.dart';
+import 'features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
+import 'features/customer/checkout/presentation/screens/checkout_screen.dart';
+import 'features/customer/checkout/presentation/screens/order_success_screen.dart';
+import 'features/customer/checkout/presentation/screens/payment_method_screen.dart';
+import 'features/customer/checkout/shared/providers.dart';
 import 'routes/app_router.dart';
+import 'routes/route_names.dart';
+import 'shared/domain/entities/money.dart';
+import 'theme/app_theme.dart';
+
+// ─── MOCK DATA for CartScreen UI preview ────────────────────────────────────
+const _npr = 'NPR';
+
+final _mockCart = Cart(
+  id: 'mock-cart-001',
+  supportedCreatorsCount: 2,
+  items: [
+    CartItem(
+      id: 'item-1',
+      productId: 'prod-1',
+      productName: 'Oversized Linen Co-ord Set',
+      productImageUrl: 'https://picsum.photos/seed/item1/64/64',
+      variantName: 'Beige / Size M',
+      quantity: 1,
+      unitPrice: const Money(amount: 3499, currency: _npr),
+      isInStock: true,
+      creatorHandle: 'priya.styles',
+      commissionRate: 0.15,
+    ),
+    CartItem(
+      id: 'item-2',
+      productId: 'prod-2',
+      productName: 'Vintage Wash Denim Jacket',
+      productImageUrl: 'https://picsum.photos/seed/item2/64/64',
+      variantName: 'Light Blue / Size L',
+      quantity: 2,
+      unitPrice: const Money(amount: 5199, currency: _npr),
+      isInStock: true,
+    ),
+  ],
+  subtotal: const Money(amount: 13897, currency: _npr),
+  shippingTotal: const Money(amount: 0, currency: _npr),
+  taxTotal: const Money(amount: 1807, currency: _npr),
+  total: const Money(amount: 15704, currency: _npr),
+);
+
+// Stateful mock so +/- buttons actually update quantities in the preview.
+class _MockCartRepository implements CartRepository {
+  Cart _cart = _mockCart;
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> getCart() async => right(_cart);
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> addToCart({
+    required String productId,
+    required int quantity,
+    String? variantId,
+    required String idempotencyKey,
+  }) async => right(_cart);
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> updateCartItem({
+    required String itemId,
+    required int quantity,
+  }) async {
+    _cart = _cart.copyWith(
+      items: _cart.items
+          .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
+          .toList(),
+    );
+    return right(_cart);
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> removeCartItem(String itemId) async {
+    _cart = _cart.copyWith(
+      items: _cart.items.where((i) => i.id != itemId).toList(),
+    );
+    return right(_cart);
+  }
+}
+// ─── MOCK CHECKOUT REPOSITORY ────────────────────────────────────────────────
+class _MockCheckoutRepository implements CheckoutRepository {
+  @override
+  Future<Either<NetworkExceptions, CheckoutSummary>> getCheckoutSummary() async {
+    return right(CheckoutSummary(
+      shippingAddress: const ShippingAddress(
+        id: 'addr-1',
+        label: 'Home',
+        fullName: 'Sailesh Aryal',
+        phone: '+977-9800000001',
+        addressLine1: 'Thamel Marg',
+        city: 'Kathmandu',
+        state: 'Bagmati',
+        zipCode: '44600',
+        isDefault: true,
+      ),
+      paymentMethod: const PaymentMethod(
+        id: 'pm-1',
+        type: PaymentMethodType.card,
+        label: 'Visa',
+        lastFour: '4242',
+        isDefault: true,
+      ),
+      items: const [
+        CheckoutItem(
+          productId: 'prod-1',
+          productName: 'Oversized Linen Co-ord Set',
+          imageUrl: 'https://picsum.photos/seed/item1/56/56',
+          variantName: 'Beige / Size M',
+          quantity: 1,
+          unitPrice: Money(amount: 3499, currency: _npr),
+        ),
+        CheckoutItem(
+          productId: 'prod-2',
+          productName: 'Vintage Wash Denim Jacket',
+          imageUrl: 'https://picsum.photos/seed/item2/56/56',
+          variantName: 'Light Blue / Size L',
+          quantity: 2,
+          unitPrice: Money(amount: 5199, currency: _npr),
+        ),
+      ],
+      subtotal: const Money(amount: 13897, currency: _npr),
+      shipping: const Money(amount: 0, currency: _npr),
+      tax: const Money(amount: 1807, currency: _npr),
+      discount: const Money(amount: 0, currency: _npr),
+      total: const Money(amount: 15704, currency: _npr),
+      availableAddresses: const [
+        ShippingAddress(
+          id: 'addr-1',
+          label: 'Home',
+          fullName: 'Sailesh Aryal',
+          phone: '+977-9800000001',
+          addressLine1: 'Thamel Marg',
+          city: 'Kathmandu',
+          state: 'Bagmati',
+          zipCode: '44600',
+          isDefault: true,
+        ),
+        ShippingAddress(
+          id: 'addr-2',
+          label: 'Office',
+          fullName: 'Sailesh Aryal',
+          phone: '+977-9800000001',
+          addressLine1: 'Pulchowk-20',
+          city: 'Lalitpur',
+          state: 'Bagmati',
+          zipCode: '44700',
+          isDefault: false,
+        ),
+      ],
+      availablePaymentMethods: const [
+        PaymentMethod(
+          id: 'pm-1',
+          type: PaymentMethodType.card,
+          label: 'Visa Card',
+          lastFour: '4242',
+          isDefault: true,
+        ),
+        PaymentMethod(
+          id: 'pm-2',
+          type: PaymentMethodType.paypal,
+          label: 'Paypal',
+          lastFour: '@shreeteen123',
+          isDefault: false,
+        ),
+        PaymentMethod(
+          id: 'pm-3',
+          type: PaymentMethodType.eSewa,
+          label: 'eSewa',
+          lastFour: '9840098522',
+          isDefault: false,
+        ),
+        PaymentMethod(
+          id: 'pm-4',
+          type: PaymentMethodType.cod,
+          label: 'Cash on Delivery',
+          isDefault: false,
+        ),
+      ],
+    ));
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<ShippingAddress>>> getShippingAddresses() async =>
+      right([
+        const ShippingAddress(
+          id: 'addr-1',
+          label: 'Home',
+          fullName: 'Sailesh Aryal',
+          phone: '+977-9800000001',
+          addressLine1: 'Thamel Marg',
+          city: 'Kathmandu',
+          state: 'Bagmati',
+          zipCode: '44600',
+          isDefault: true,
+        ),
+        const ShippingAddress(
+          id: 'addr-2',
+          label: 'Office',
+          fullName: 'Sailesh Aryal',
+          phone: '+977-9800000001',
+          addressLine1: 'Pulchowk-20',
+          city: 'Lalitpur',
+          state: 'Bagmati',
+          zipCode: '44700',
+          isDefault: false,
+        ),
+      ]);
+
+  @override
+  Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async =>
+      right([
+        const PaymentMethod(
+          id: 'pm-1',
+          type: PaymentMethodType.card,
+          label: 'Visa Card',
+          lastFour: '4242',
+          isDefault: true,
+        ),
+        const PaymentMethod(
+          id: 'pm-3',
+          type: PaymentMethodType.eSewa,
+          label: 'eSewa',
+          lastFour: '9840098522',
+          isDefault: false,
+        ),
+        const PaymentMethod(
+          id: 'pm-4',
+          type: PaymentMethodType.cod,
+          label: 'Cash on Delivery',
+          lastFour: null,
+          isDefault: false,
+        ),
+      ]);
+
+  @override
+  Future<Either<NetworkExceptions, String>> placeOrder({
+    required String addressId,
+    required String paymentMethodId,
+    required String idempotencyKey,
+  }) async =>
+      right('mock-order-001');
+}
+
+// GoRouter for the single-screen preview (cart → checkout flow only).
+final _previewRouter = GoRouter(
+  initialLocation: RouteNames.cart,
+  routes: [
+    GoRoute(
+      path: RouteNames.cart,
+      builder: (_, __) => const CartScreen(),
+    ),
+    GoRoute(
+      path: RouteNames.checkout,
+      builder: (_, __) => const CheckoutScreen(),
+      routes: [
+        GoRoute(
+          path: 'payment-method',
+          builder: (_, __) => const PaymentMethodScreen(),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: RouteNames.orderSuccess,
+      builder: (_, state) => OrderSuccessScreen(
+        orderId: state.pathParameters['orderId'] ?? 'mock-order-001',
+      ),
+    ),
+    GoRoute(
+      path: RouteNames.home,
+      builder: (_, __) => const CartScreen(),
+    ),
+  ],
+);
+// ────────────────────────────────────────────────────────────────────────────
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   initTimezone();
 
+  // ─── SINGLE SCREEN — CartScreen → CheckoutScreen preview (uncomment to use)─
+  // runApp(
+  //   ProviderScope(
+  //     overrides: [
+  //       cartNotifierProvider.overrideWith(
+  //           (ref) => CartNotifier(_MockCartRepository())),
+  //       checkoutNotifierProvider.overrideWith(
+  //           (ref) => CheckoutNotifier(_MockCheckoutRepository())),
+  //     ],
+  //     child: MaterialApp.router(
+  //       debugShowCheckedModeBanner: false,
+  //       theme: AppTheme.light,
+  //       darkTheme: AppTheme.dark,
+  //       themeMode: ThemeMode.dark,
+  //       routerConfig: _previewRouter,
+  //     ),
+  //   ),
+  // );
+
+  // ─── FULL APP ────────────────────────────────────────────────────────────────
   runApp(
     const ProviderScope(
       child: _AppWithDeepLinks(),
