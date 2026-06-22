@@ -67,9 +67,8 @@ class _UserTypeSelectionScreenState
       final accountId = _accountId;
       if (accountId != null) {
         ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
-      } else if (mounted) {
-        // No session to check against — just show the selection.
-        setState(() => _deciding = false);
+      } else {
+        if (mounted) setState(() => _deciding = false);
       }
     });
   }

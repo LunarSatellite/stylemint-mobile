@@ -1,18 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/onboarding_step_progress.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Creator onboarding — **Step 1 of 2: profile**. Collects an optional
-/// free-text "expression" (the backend AI-maps it to content categories — the
-/// primary input) + an optional bio, then fires the single
-/// `POST /v1/creator/activate` call. On success we refresh the token (so it
-/// carries the new `Creator` role) and advance to **Step 2: connect accounts**.
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
+class _Category {
+  final String label;
+  final String emoji;
+  const _Category(this.label, this.emoji);
+}
+
+const _kCategories = [
+  _Category('Fashion', '🔥'),
+  _Category('Sports', '⚽'),
+  _Category('Outdoors', '🏔️'),
+  _Category('Tech', '💻'),
+  _Category('Accessories', '💍'),
+  _Category('Home', '🏠'),
+  _Category('Footwear', '👟'),
+  _Category('Fitness', '💪'),
+  _Category('Wellness', '🌿'),
+  _Category('Food', '🍕'),
+  _Category('Gaming', '🎮'),
+  _Category('Pets', '🐾'),
+  _Category('Books', '📚'),
+  _Category('Travel', '✈️'),
+  _Category('Other', ''),
+];
+
+const _kCountries = [
+  'Nepal', 'United States', 'India', 'United Kingdom',
+  'Australia', 'Canada', 'Germany', 'France', 'Japan', 'Singapore',
+];
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
+
 class CreatorApplyScreen extends ConsumerStatefulWidget {
   const CreatorApplyScreen({super.key});
 
@@ -21,174 +51,348 @@ class CreatorApplyScreen extends ConsumerStatefulWidget {
 }
 
 class _CreatorApplyScreenState extends ConsumerState<CreatorApplyScreen> {
-  final _expressionController = TextEditingController();
-  final _bioController = TextEditingController();
+  final _nameController  = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _whyController   = TextEditingController();
 
-  static const _maxExpression = 140;
-  static const _maxBio = 500;
+  String? _selectedCountry;
+  final Set<String> _selectedCategories = {};
+
+  static const int _maxWhy = 500;
+
+  bool get _canProceed =>
+      _nameController.text.trim().isNotEmpty &&
+      _emailController.text.trim().isNotEmpty &&
+      _phoneController.text.trim().isNotEmpty &&
+      _selectedCountry != null &&
+      _selectedCategories.isNotEmpty;
 
   @override
   void dispose() {
-    _expressionController.dispose();
-    _bioController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _whyController.dispose();
     super.dispose();
   }
 
-  void _activate() {
-    ref.read(creatorActivateNotifierProvider.notifier).activate(
-          bio: _bioController.text,
-          expression: _expressionController.text,
+  void _proceed() {
+    ref.read(creatorFormProvider.notifier).saveStep1(
+          fullName: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          country: _selectedCountry ?? '',
+          categories: _selectedCategories,
+          whyJoin: _whyController.text.trim(),
         );
+    context.push(RouteNames.creatorApplySocial);
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<CreatorActivateState>(creatorActivateNotifierProvider, (_, next) {
-      next.maybeWhen(
-        // → Step 2: connect accounts (onboarding mode).
-        success: () =>
-            context.go('${RouteNames.socialConnect}?onboarding=true'),
-        failure: (_) => SmSnackbar.error(
-          context,
-          'Could not set up your creator profile. Please try again.',
-        ),
-        orElse: () {},
-      );
-    });
-
-    final isSubmitting = ref.watch(creatorActivateNotifierProvider).maybeWhen(
-          submitting: () => true,
-          orElse: () => false,
-        );
-
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
-      appBar: AppBar(
-        title: Text('Become a Creator', style: DesignTokens.oneLinerSemibold),
-        backgroundColor: DesignTokens.bgAppFoundation,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const OnboardingStepProgress(step: 0, total: 2),
-              const SizedBox(height: DesignTokens.s24),
-              Text('Set up your creator profile',
-                  style: DesignTokens.titleLarge),
-              const SizedBox(height: DesignTokens.s8),
-              Text(
-                "Tell us about yourself. Next, you'll connect your social "
-                'accounts to import reels.',
-                style: DesignTokens.bodyText.copyWith(
-                  color: DesignTokens.textLight,
+      appBar: _buildAppBar(context),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16, DesignTokens.s20,
+          DesignTokens.s16, DesignTokens.s32,
+        ),
+        children: [
+          // Personal Information card
+          _SectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Personal Information',
+                    style: DesignTokens.sectionInnerTitle),
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  'We collect this information to verify your identity and '
+                  'ensure the security of your account.',
+                  style: DesignTokens.smallDescription,
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s24),
-
-              // Expression — the PRIMARY input (free text → AI categories).
-              const _FieldLabel('What do you create?'),
-              const SizedBox(height: DesignTokens.s8),
-              _ActivateField(
-                controller: _expressionController,
-                hint: 'e.g. street fashion hauls, budget tech reviews, '
-                    'home cooking…',
-                maxLength: _maxExpression,
-                maxLines: 3,
-                enabled: !isSubmitting,
-              ),
-              const SizedBox(height: DesignTokens.s20),
-
-              // Bio — optional.
-              const _FieldLabel('Short bio (optional)'),
-              const SizedBox(height: DesignTokens.s8),
-              _ActivateField(
-                controller: _bioController,
-                hint: 'A line or two about you',
-                maxLength: _maxBio,
-                maxLines: 3,
-                enabled: !isSubmitting,
-              ),
-              const SizedBox(height: DesignTokens.s32),
-
-              SizedBox(
-                width: double.infinity,
-                child: SmPrimaryButton(
-                  label: isSubmitting ? 'Setting up…' : 'Continue',
-                  height: DesignTokens.buttonHeight,
-                  borderRadius: DesignTokens.buttonRadius,
-                  disabled: isSubmitting,
-                  onPressed: () async => _activate(),
+                const SizedBox(height: DesignTokens.s24),
+                _inputField(
+                  controller: _nameController,
+                  hint: 'Full Name',
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              Text(
-                'Both fields are optional — you can skip and fill them in later.',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
+                const SizedBox(height: DesignTokens.s12),
+                _inputField(
+                  controller: _emailController,
+                  hint: 'Email Address',
+                  keyboardType: TextInputType.emailAddress,
                 ),
-              ),
-            ],
+                const SizedBox(height: DesignTokens.s12),
+                _inputField(
+                  controller: _phoneController,
+                  hint: 'Phone Number',
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                _countryDropdown(),
+              ],
+            ),
           ),
+
+          const SizedBox(height: DesignTokens.s24),
+
+          // Content Categories
+          const Text('Content Categories', style: DesignTokens.mediumSemibold),
+          const SizedBox(height: DesignTokens.s12),
+          Wrap(
+            spacing: DesignTokens.s8,
+            runSpacing: DesignTokens.s8,
+            children: _kCategories.map((cat) {
+              final selected = _selectedCategories.contains(cat.label);
+              return _CategoryChip(
+                category: cat,
+                selected: selected,
+                onTap: () => setState(() {
+                          selected
+                              ? _selectedCategories.remove(cat.label)
+                              : _selectedCategories.add(cat.label);
+                        }),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: DesignTokens.s24),
+
+          // Why join
+          _whyTextArea(),
+        ],
+      ),
+      bottomNavigationBar: SmStickyBottomBar(
+        primaryLabel: 'Proceed',
+        primaryEnabled: _canProceed,
+        primaryTrailing: const Icon(Icons.arrow_forward_rounded,
+            size: DesignTokens.iconSmall,
+            color: DesignTokens.buttonPrimaryText),
+        onPrimary: _proceed,
+        showTopDivider: true,
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new,
+            size: 18, color: DesignTokens.textWhite),
+        onPressed: () => context.pop(),
+      ),
+      title: const Text('Creator Form', style: DesignTokens.oneLinerSemibold),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(20),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s12),
+          child: _StepBar(currentStep: 0, totalSteps: 3),
         ),
       ),
     );
   }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(
+        fontFamily: DesignTokens.fontFamily,
+        fontSize: 14,
+        color: DesignTokens.inputFieldData,
+      ),
+      cursorColor: DesignTokens.primaryGreen,
+      onChanged: (_) => setState(() {}),
+      decoration: DesignTokens.inputDecoration(hintText: hint),
+    );
+  }
+
+  Widget _countryDropdown() {
+    return Container(
+        height: DesignTokens.inputHeight,
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.inputFieldFill,
+          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          border: Border.all(color: DesignTokens.inputFieldBorder),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: _selectedCountry,
+            isExpanded: true,
+            dropdownColor: DesignTokens.bgAppBody,
+            icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                color: DesignTokens.inputFieldDropdownIcon),
+            hint: const Text(
+              'Country/Region',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.inputFieldPlaceholder,
+              ),
+            ),
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              color: DesignTokens.inputFieldData,
+            ),
+            onChanged: (v) => setState(() => _selectedCountry = v),
+            items: _kCountries
+                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .toList(),
+          ),
+        ),
+    );
+  }
+
+  Widget _whyTextArea() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _whyController,
+          maxLines: 7,
+          maxLength: _maxWhy,
+          keyboardType: TextInputType.multiline,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: DesignTokens.inputFieldData,
+            height: 1.5,
+          ),
+          cursorColor: DesignTokens.primaryGreen,
+          onChanged: (_) => setState(() {}),
+          decoration: DesignTokens.inputDecoration(
+            hintText: 'Why do you want to join ReelCommerce ?',
+          ).copyWith(
+            counterText: '',
+            alignLabelWithHint: true,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.s4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            '${_whyController.text.length}/$_maxWhy',
+            style: DesignTokens.smallRegular,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) =>
-      Text(text, style: DesignTokens.oneLinerSemibold);
-}
-
-class _ActivateField extends StatelessWidget {
-  const _ActivateField({
-    required this.controller,
-    required this.hint,
-    required this.maxLength,
-    required this.maxLines,
-    required this.enabled,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final int maxLength;
-  final int maxLines;
-  final bool enabled;
+// ---------------------------------------------------------------------------
+// Step bar — 3 horizontal segments, active = white, inactive = dimmed
+// ---------------------------------------------------------------------------
+class _StepBar extends StatelessWidget {
+  final int currentStep;
+  final int totalSteps;
+  const _StepBar({required this.currentStep, required this.totalSteps});
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      maxLength: maxLength,
-      maxLines: maxLines,
-      style: DesignTokens.bodyText.copyWith(color: DesignTokens.textWhite),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: DesignTokens.smallRegular.copyWith(
-          color: DesignTokens.textMuted,
+    return Row(
+      children: List.generate(totalSteps, (i) {
+        return Expanded(
+          child: Container(
+            height: 4,
+            margin: EdgeInsets.only(right: i < totalSteps - 1 ? 6 : 0),
+            decoration: BoxDecoration(
+              color: i == currentStep
+                  ? DesignTokens.textWhite
+                  : DesignTokens.textWhite.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Personal Information card
+// ---------------------------------------------------------------------------
+class _SectionCard extends StatelessWidget {
+  final Widget child;
+  const _SectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Category chip
+// ---------------------------------------------------------------------------
+class _CategoryChip extends StatelessWidget {
+  final _Category category;
+  final bool selected;
+  final VoidCallback? onTap;
+  const _CategoryChip({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s8,
         ),
-        filled: true,
-        fillColor: DesignTokens.bgAppBody,
-        contentPadding: const EdgeInsets.all(DesignTokens.s16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          borderSide: const BorderSide(color: DesignTokens.borderDefault),
+        decoration: BoxDecoration(
+          color: selected ? DesignTokens.chipsSelectedFill : Colors.transparent,
+          borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+          border: Border.all(
+            color: selected
+                ? DesignTokens.chipsSelectedBorder
+                : DesignTokens.chipsDefaultBorder,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          borderSide: const BorderSide(color: DesignTokens.borderDefault),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          borderSide: const BorderSide(color: DesignTokens.primaryGreen),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (category.emoji.isNotEmpty) ...[
+              Text(category.emoji, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: DesignTokens.s6),
+            ],
+            Text(
+              category.label,
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: selected
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.chipsDefaultText,
+              ),
+            ),
+          ],
         ),
       ),
     );

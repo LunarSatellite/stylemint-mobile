@@ -41,6 +41,12 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_social_media_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_approved_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -56,6 +62,11 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentat
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/add_product_wizard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step2_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step3_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step4_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step5_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step6_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/screens/brand_studio_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
@@ -101,6 +112,7 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/screens
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
 import 'route_names.dart';
@@ -125,7 +137,14 @@ const _publicPaths = {
   RouteNames.rolePicker,
   RouteNames.pickInterests,
   RouteNames.followCreators,
+  RouteNames.creatorApply,
+  RouteNames.creatorApplySocial,
+  RouteNames.creatorApplyReview,
+  RouteNames.creatorApplySubmitted,
   RouteNames.followBrands,
+  RouteNames.creatorApplyUnderReview,
+  RouteNames.creatorApplyApproved,
+  RouteNames.creatorApplyRejected,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -423,6 +442,36 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.creatorApply,
         builder: (ctx, state) => const CreatorApplyScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySocial),
+            builder: (ctx, state) => const CreatorSocialMediaScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyReview),
+            builder: (ctx, state) => const CreatorReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySubmitted),
+            builder: (ctx, state) => const CreatorSubmittedScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyUnderReview),
+            builder: (ctx, state) => const CreatorUnderReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyApproved),
+            builder: (ctx, state) => const CreatorApprovedScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyRejected),
+            builder: (ctx, state) => const CreatorRejectedScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: RouteNames.creatorSupportContact,
+        builder: (ctx, state) => const CreatorContactSupportScreen(),
       ),
       GoRoute(
         path: RouteNames.creatorDash,
@@ -505,6 +554,26 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorApply,
         builder: (ctx, state) => const VendorApplyScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyStep2,
+        builder: (ctx, state) => const VendorApplyStep2Screen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyStep3,
+        builder: (ctx, state) => const VendorApplyStep3Screen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyStep4,
+        builder: (ctx, state) => const VendorApplyStep4Screen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyStep5,
+        builder: (ctx, state) => const VendorApplyStep5Screen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyStep6,
+        builder: (ctx, state) => const VendorApplyStep6Screen(),
       ),
       GoRoute(
         path: RouteNames.vendorDash,

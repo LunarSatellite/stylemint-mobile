@@ -57,6 +57,12 @@ abstract class RouteNames {
   // Creator
   static const creatorHome = '/creator/home';
   static const creatorApply = '/creator/apply';
+  static const creatorApplySocial = '/creator/apply/social';
+  static const creatorApplyReview = '/creator/apply/review';
+  static const creatorApplySubmitted = '/creator/apply/submitted';
+  static const creatorApplyUnderReview = '/creator/apply/under-review';
+  static const creatorApplyApproved = '/creator/apply/approved';
+  static const creatorApplyRejected = '/creator/apply/rejected';
   static const creatorDash = '/creator/dashboard';
   static const reelImport = '/creator/import';
   static const reelImportTagProducts = '/creator/import/tag/:postId';
@@ -74,6 +80,11 @@ abstract class RouteNames {
   // Vendor
   static const vendorHome = '/vendor/home';
   static const vendorApply = '/vendor/apply';
+  static const vendorApplyStep2 = '/vendor/apply/step2';
+  static const vendorApplyStep3 = '/vendor/apply/step3';
+  static const vendorApplyStep4 = '/vendor/apply/step4';
+  static const vendorApplyStep5 = '/vendor/apply/step5';
+  static const vendorApplyStep6 = '/vendor/apply/step6';
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';
@@ -133,4 +144,6 @@ abstract class RouteNames {
   static const support = '/support';
   static const supportContact = '/support/contact';
   static const supportTickets = '/support/tickets';
+
+  static const creatorSupportContact = '/creator/support/contact';
 }
