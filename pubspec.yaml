@@ -139,6 +139,7 @@ flutter:
     - assets/images/auth/
     - assets/images/interests/
     - assets/images/onboarding/
+    - assets/images/support/
     - assets/icons/
     - assets/fonts/
     - assets/animations/

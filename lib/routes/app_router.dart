@@ -43,6 +43,9 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_social_media_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_approved_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -102,6 +105,7 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/screens
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
 import 'route_names.dart';
@@ -130,6 +134,9 @@ const _publicPaths = {
   RouteNames.creatorApplySocial,
   RouteNames.creatorApplyReview,
   RouteNames.creatorApplySubmitted,
+  RouteNames.creatorApplyUnderReview,
+  RouteNames.creatorApplyApproved,
+  RouteNames.creatorApplyRejected,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -428,7 +435,23 @@ GoRouter appRouter(Ref ref) {
             path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySubmitted),
             builder: (ctx, state) => const CreatorSubmittedScreen(),
           ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyUnderReview),
+            builder: (ctx, state) => const CreatorUnderReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyApproved),
+            builder: (ctx, state) => const CreatorApprovedScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyRejected),
+            builder: (ctx, state) => const CreatorRejectedScreen(),
+          ),
         ],
+      ),
+      GoRoute(
+        path: RouteNames.creatorSupportContact,
+        builder: (ctx, state) => const CreatorContactSupportScreen(),
       ),
       GoRoute(
         path: RouteNames.creatorDash,
