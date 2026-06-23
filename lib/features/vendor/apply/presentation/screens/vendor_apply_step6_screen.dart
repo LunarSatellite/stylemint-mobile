@@ -20,13 +20,7 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
   bool _agreeInventory = false;
 
   void _submit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Application submitted successfully!'),
-        backgroundColor: DesignTokens.primaryGreen,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    context.go(RouteNames.vendorApplySubmitted);
   }
 
   @override

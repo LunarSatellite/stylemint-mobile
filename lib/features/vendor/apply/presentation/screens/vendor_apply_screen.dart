@@ -205,7 +205,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       next.whenOrNull(
         loadSuccess: (app) {
           if (app.status == VendorApplicationStatus.approved) {
-            context.pushReplacement(RouteNames.vendorDash);
+            context.pushReplacement(RouteNames.vendorApplyApproved);
           }
         },
       );
@@ -241,14 +241,30 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
   Widget _buildStatusOrForm(VendorApplication application) {
     switch (application.status) {
       case VendorApplicationStatus.pending:
-      case VendorApplicationStatus.underReview:
       case VendorApplicationStatus.kycRequired:
         return _ApplicationStatusCard(application: application);
+      case VendorApplicationStatus.underReview:
+        Future.microtask(() {
+          if (context.mounted) {
+            context.pushReplacement(RouteNames.vendorApplyUnderReview);
+          }
+        });
+        return _loader();
       case VendorApplicationStatus.rejected:
-        return _buildFormBody();
+        Future.microtask(() {
+          if (context.mounted) {
+            context.pushReplacement(
+              RouteNames.vendorApplyRejected,
+              extra: application.rejectionReason,
+            );
+          }
+        });
+        return _loader();
       case VendorApplicationStatus.approved:
         Future.microtask(() {
-          if (context.mounted) context.pushReplacement(RouteNames.vendorDash);
+          if (context.mounted) {
+            context.pushReplacement(RouteNames.vendorApplyApproved);
+          }
         });
         return _loader();
     }

@@ -76,18 +76,38 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/scr
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step4_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step5_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_step6_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_submitted_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_rejected_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_under_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/screens/brand_studio_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/all_payout_history_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/statement_details_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_payout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/change_payment_method_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/add_bank_account_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/bank_verification_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_performance_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/screens/vendor_inquiries_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/screens/matchmaking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/orders_ready_to_ship_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/order_waiting_tracking_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/pending_customer_inquiries_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
@@ -625,6 +645,31 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const VendorApplyStep6Screen(),
       ),
       GoRoute(
+        path: RouteNames.vendorApplySubmitted,
+        builder: (ctx, state) => VendorApplySubmittedScreen(
+          applicationId: state.uri.queryParameters['applicationId'],
+          submittedAt: state.uri.queryParameters['submittedAt'],
+          userEmail: state.uri.queryParameters['userEmail'],
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyRejected,
+        builder: (ctx, state) => VendorApplyRejectedScreen(
+          rejectionReason: state.extra as String?,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyUnderReview,
+        builder: (ctx, state) => VendorApplyUnderReviewScreen(
+          applicationId: state.uri.queryParameters['applicationId'],
+          userEmail: state.uri.queryParameters['userEmail'],
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorApplyApproved,
+        builder: (ctx, state) => const VendorApplyApprovedScreen(),
+      ),
+      GoRoute(
         path: RouteNames.vendorDash,
         builder: (ctx, state) => const VendorDashboardScreen(),
       ),
@@ -641,6 +686,30 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const VendorOrdersScreen(),
       ),
       GoRoute(
+        path: RouteNames.vendorOrdersReadyToShip,
+        builder: (ctx, state) => const OrdersReadyToShipScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorOrdersWaitingTracking,
+        builder: (ctx, state) => const OrderWaitingTrackingScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorPendingInquiries,
+        builder: (ctx, state) => const PendingCustomerInquiriesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreatorPartnershipRequests,
+        builder: (ctx, state) => const CreatorPartnershipRequestsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorTopProducts,
+        builder: (ctx, state) => const TopProductsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorRecentActivity,
+        builder: (ctx, state) => const RecentActivityScreen(),
+      ),
+      GoRoute(
         path: RouteNames.vendorOrderDetail,
         builder: (ctx, state) => VendorOrderDetailScreen(
           orderId: state.pathParameters['orderId']!,
@@ -649,6 +718,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorPartnerships,
         builder: (ctx, state) => const VendorPartnershipsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorSendPartnershipRequest,
+        builder: (ctx, state) => const SendPartnershipRequestScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorPartnershipsInvite,
@@ -673,6 +746,28 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const VendorPayoutScreen(),
       ),
       GoRoute(
+        path: RouteNames.vendorPayoutHistory,
+        builder: (ctx, state) => const AllPayoutHistoryScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorStatementDetails,
+        builder: (ctx, state) => StatementDetailsScreen(
+          item: state.extra as VendorPayoutItem,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorChangePaymentMethod,
+        builder: (ctx, state) => const ChangePaymentMethodScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorAddBankAccount,
+        builder: (ctx, state) => const AddBankAccountScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorBankVerification,
+        builder: (ctx, state) => const BankVerificationScreen(),
+      ),
+      GoRoute(
         path: RouteNames.vendorPaymentMethods,
         builder: (ctx, state) =>
             const PayoutMethodsScreen(role: PayeeKind.vendor),
@@ -684,6 +779,24 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorCreatorPerformance,
         builder: (ctx, state) => const CreatorPerformanceScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreatorAnalytics,
+        builder: (ctx, state) => CreatorAnalyticsScreen(
+          args: state.extra as CreatorAnalyticsArgs,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorMessageCreator,
+        builder: (ctx, state) => MessageCreatorScreen(
+          args: state.extra as MessageCreatorArgs,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorAdjustCommission,
+        builder: (ctx, state) => AdjustCommissionScreen(
+          args: state.extra as AdjustCommissionArgs,
+        ),
       ),
 
       // Social
