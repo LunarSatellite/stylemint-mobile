@@ -76,6 +76,8 @@ abstract class RouteNames {
   static const reelStudioCreateDraft = '/creator/reel-studio/create';
   static const partnerships = '/creator/partnerships';
   static const brandDetail = '/creator/partnerships/:partnershipId';
+  static const activePartnerships = '/creator/partnerships/active';
+  static const brandInfo = '/creator/brand-info';
   static const reach = '/creator/reach';
 
   // Vendor
@@ -148,4 +150,7 @@ abstract class RouteNames {
 
   static const creatorSupportContact = '/creator/support/contact';
   static const creatorActivity = '/creator/activity';
+  static const creatorAnalytics = '/creator/analytics';
+  static const creatorReelAnalyticsDetail = '/creator/analytics/reel-detail';
+  static const creatorFullAnalyticsReport = '/creator/analytics/full-report';
 }

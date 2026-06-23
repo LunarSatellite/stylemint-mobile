@@ -1036,7 +1036,7 @@ class _CreatorBottomNav extends StatelessWidget {
           _NavBtn(
             icon: Icons.bar_chart_rounded,
             label: 'Analytics',
-            onTap: () => context.push(RouteNames.earnings),
+            onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
           GestureDetector(
             onTap: () => context.push(RouteNames.reelImport),

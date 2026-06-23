@@ -89,3 +89,6 @@ assets/animations/*.json
 
 # local dev logs
 logs/
+
+
+lib/main_test.dart

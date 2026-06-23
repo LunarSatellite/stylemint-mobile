@@ -52,13 +52,18 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation
 import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnerships_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/active_partnerships_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/reel_detail_analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/full_analytics_report_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/create_draft_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/reel_studio_screen.dart';
@@ -506,6 +511,18 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const TagProductsScreen(),
       ),
       GoRoute(
+        path: RouteNames.creatorAnalytics,
+        builder: (ctx, state) => const AnalyticsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorReelAnalyticsDetail,
+        builder: (ctx, state) => const ReelDetailAnalyticsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorFullAnalyticsReport,
+        builder: (ctx, state) => const FullAnalyticsReportScreen(),
+      ),
+      GoRoute(
         path: RouteNames.reelStudio,
         builder: (ctx, state) => const ReelStudioScreen(),
       ),
@@ -545,7 +562,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.partnerships,
-        builder: (ctx, state) => const PartnershipsScreen(),
+        builder: (ctx, state) => const BrandsScreen(),
         routes: [
           GoRoute(
             path: _subPath(RouteNames.partnerships, RouteNames.brandDetail),
@@ -554,6 +571,15 @@ GoRouter appRouter(Ref ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: RouteNames.activePartnerships,
+        builder: (ctx, state) => const ActivePartnershipsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.brandInfo,
+        builder: (ctx, state) =>
+            BrandInfoScreen(data: state.extra! as BrandInfoData),
       ),
       GoRoute(
         path: RouteNames.reach,
