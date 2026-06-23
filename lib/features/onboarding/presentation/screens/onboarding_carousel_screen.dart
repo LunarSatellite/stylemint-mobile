@@ -17,7 +17,7 @@ class _Slide {
 ///
 /// Swipeable illustration + title (22px) + subtitle (14px) + 4-dot indicator,
 /// with a sticky Next / Skip bottom bar. Last slide's primary action reads
-/// "Get Started". Both Skip and finishing route to the home screen (reels feed).
+/// "Get Started". Both Skip and finishing route to the sign-in screen.
 class OnboardingCarouselScreen extends StatefulWidget {
   const OnboardingCarouselScreen({super.key});
 
@@ -59,7 +59,7 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
 
   bool get _isLast => _page == _slides.length - 1;
 
-  void _finish() => context.go(RouteNames.home);
+  void _finish() => context.go(RouteNames.signInMethod);
 
   void _next() {
     if (_isLast) {
@@ -81,54 +81,70 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Base gradient — original colors
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF477B4D),
-                  Color(0xFF2A7160),
-                  Color(0xFF173C49),
-                ],
-                stops: [0.0, 0.45, 1.0],
-              ),
-            ),
-          ),
-          // Vignette — transparent center, dark corners
-          Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.center,
-                radius: 1.1,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.7),
-                ],
-                stops: [0.35, 1.0],
-              ),
-            ),
-          ),
-          SafeArea(
-          child: Column(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
+            const SizedBox(height: DesignTokens.s12),
+            // Rounded card — does not reach the top edge of the screen
             Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: _slides.length,
-                onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (_, i) => _SlideView(slide: _slides[i]),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Base gradient
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF477B4D),
+                                Color(0xFF2A7160),
+                                Color(0xFF173C49),
+                              ],
+                              stops: [0.0, 0.45, 1.0],
+                            ),
+                          ),
+                        ),
+                        // Vignette — transparent center, dark corners
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: Alignment.center,
+                              radius: 1.1,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.7),
+                              ],
+                              stops: [0.35, 1.0],
+                            ),
+                          ),
+                        ),
+                        // Slide content
+                        PageView.builder(
+                          controller: _controller,
+                          itemCount: _slides.length,
+                          onPageChanged: (i) => setState(() => _page = i),
+                          itemBuilder: (_, i) => _SlideView(slide: _slides[i]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-            // Page dots
+            const SizedBox(height: DesignTokens.s20),
             _Dots(count: _slides.length, active: _page),
-            const SizedBox(height: DesignTokens.s24),
-            // Sticky Next / Skip
+            const SizedBox(height: DesignTokens.s20),
             SmStickyBottomBar(
               primaryLabel: _isLast ? 'Get Started' : 'Next',
               onPrimary: _next,
@@ -137,8 +153,6 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
             ),
           ],
         ),
-        ),
-        ],
       ),
     );
   }

@@ -26,9 +26,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _bootstrap() async {
-    // Sets the session to authenticated/unauthenticated; the router redirect
-    // (driven by its refreshListenable) then routes off splash.
-    await ref.read(sessionControllerProvider.notifier).bootstrap();
+    // Show the splash for at least 3 seconds regardless of how fast the
+    // session check completes, then let the router redirect take over.
+    await Future.wait([
+      ref.read(sessionControllerProvider.notifier).bootstrap(),
+      Future.delayed(const Duration(seconds: 3)),
+    ]);
   }
 
   @override

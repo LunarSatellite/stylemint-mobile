@@ -40,6 +40,12 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_social_media_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_review_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_approved_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -100,6 +106,7 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/s
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/screens/story_viewer_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
+import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/onboarding_carousel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/pick_interests_screen.dart';
@@ -114,6 +121,7 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/screens
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
 import 'route_names.dart';
@@ -138,6 +146,14 @@ const _publicPaths = {
   RouteNames.rolePicker,
   RouteNames.pickInterests,
   RouteNames.followCreators,
+  RouteNames.creatorApply,
+  RouteNames.creatorApplySocial,
+  RouteNames.creatorApplyReview,
+  RouteNames.creatorApplySubmitted,
+  RouteNames.followBrands,
+  RouteNames.creatorApplyUnderReview,
+  RouteNames.creatorApplyApproved,
+  RouteNames.creatorApplyRejected,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -204,7 +220,7 @@ GoRouter appRouter(Ref ref) {
         authenticated: (_) =>
             (atSplash || isAuthOnly) ? RouteNames.home : null,
         unauthenticated: () => atSplash
-            ? RouteNames.onboarding
+            ? RouteNames.userTypeSelection
             : (isPublic ? null : RouteNames.signInMethod),
       );
     },
@@ -316,6 +332,10 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const FollowCreatorsScreen(),
       ),
       GoRoute(
+        path: RouteNames.followBrands,
+        builder: (ctx, state) => const FollowBrandsScreen(),
+      ),
+      GoRoute(
         path: RouteNames.rolePicker,
         builder: (ctx, state) => const UserTypeSelectionScreen(
           // "Manage / add a role" entry — always show, never auto-skip.
@@ -423,6 +443,36 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.creatorApply,
         builder: (ctx, state) => const CreatorApplyScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySocial),
+            builder: (ctx, state) => const CreatorSocialMediaScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyReview),
+            builder: (ctx, state) => const CreatorReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySubmitted),
+            builder: (ctx, state) => const CreatorSubmittedScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyUnderReview),
+            builder: (ctx, state) => const CreatorUnderReviewScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyApproved),
+            builder: (ctx, state) => const CreatorApprovedScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyRejected),
+            builder: (ctx, state) => const CreatorRejectedScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: RouteNames.creatorSupportContact,
+        builder: (ctx, state) => const CreatorContactSupportScreen(),
       ),
       GoRoute(
         path: RouteNames.creatorDash,
