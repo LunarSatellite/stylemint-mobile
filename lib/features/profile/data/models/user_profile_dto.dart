@@ -52,6 +52,8 @@ abstract class FollowingUserDto with _$FollowingUserDto {
     @Default('') String handle,
     @Default(false) bool isFollowing,
     @Default(0) int followerCount,
+    String? category,
+    String? bio,
   }) = _FollowingUserDto;
 
   const FollowingUserDto._();
@@ -66,5 +68,7 @@ abstract class FollowingUserDto with _$FollowingUserDto {
     handle: handle,
     isFollowing: isFollowing,
     followerCount: followerCount,
+    category: category,
+    bio: bio,
   );
 }

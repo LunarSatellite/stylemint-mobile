@@ -6,22 +6,25 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/w
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// A single full-screen reel: video pointer background with a gradient
+/// A single full-screen reel: inline video background with a gradient
 /// scrim, creator info + caption, right-rail actions and tagged products.
+///
+/// [isActive] must be true for the reel currently visible in the viewport
+/// so that [ReelPlayer] auto-plays it and pauses all others.
 class ReelCard extends StatelessWidget {
-  const ReelCard({required this.reel, super.key});
+  const ReelCard({required this.reel, required this.isActive, super.key});
 
   final Reel reel;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Tap-to-open external video (IG / TikTok / YouTube / FB).
-        ReelPlayer(reel: reel),
+        ReelPlayer(reel: reel, isActive: isActive),
 
-        // Bottom scrim so overlaid text stays legible over any thumbnail.
+        // Bottom scrim so overlaid text stays legible over any video.
         const DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
