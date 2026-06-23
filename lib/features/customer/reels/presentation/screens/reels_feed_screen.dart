@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
@@ -20,10 +22,30 @@ class ReelsFeedScreen extends ConsumerStatefulWidget {
 }
 
 class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
+  final PageController _pageController = PageController();
   int _currentIndex = 0;
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  /// Scroll back to the first reel and refetch the feed. Triggered when the
+  /// user re-taps the Home tab while already on the reels screen.
+  void _refresh() {
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
+    }
+    if (_currentIndex != 0) setState(() => _currentIndex = 0);
+    unawaited(ref.read(reelsFeedNotifierProvider.notifier).fetchFeed());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Refresh + scroll to top when the Home tab is re-tapped.
+    ref.listen<int>(homeTabReselectedProvider, (_, _) => _refresh());
+
     final state = ref.watch(reelsFeedNotifierProvider);
 
     return Scaffold(
@@ -39,8 +61,14 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
             );
           }
           return PageView.builder(
+            controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: reels.length,
+            // Build the adjacent reels offscreen so the next one's video has
+            // already initialised/buffered by the time it's swiped into view —
+            // it then plays immediately instead of showing a loading spinner.
+            // (Inactive reels stay paused; only the active one plays.)
+            allowImplicitScrolling: true,
             onPageChanged: (index) => setState(() => _currentIndex = index),
             itemBuilder:
                 (_, index) => ReelCard(

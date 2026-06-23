@@ -29,3 +29,7 @@ final reelsFeedNotifierProvider =
     StateNotifierProvider<ReelsFeedNotifier, ReelsFeedState>(
       (ref) => ReelsFeedNotifier(ref.watch(reelsRepositoryProvider)),
     );
+
+/// Bumped each time the Home (reels) tab is tapped while already on it.
+/// The reels feed listens to this to refresh its content and scroll to top.
+final homeTabReselectedProvider = StateProvider<int>((ref) => 0);
