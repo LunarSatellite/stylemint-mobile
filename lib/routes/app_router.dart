@@ -50,7 +50,8 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/top_reels_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
-import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart';
+import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart'
+    as notifications_activity;
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/active_partnerships_screen.dart';
@@ -107,7 +108,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart'
+    as vendor_dashboard_activity;
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
@@ -513,7 +515,8 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.creatorActivity,
-        builder: (ctx, state) => const RecentActivityScreen(),
+        builder: (ctx, state) =>
+            const notifications_activity.RecentActivityScreen(),
       ),
       GoRoute(
         path: RouteNames.socialConnect,
@@ -707,7 +710,8 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.vendorRecentActivity,
-        builder: (ctx, state) => const RecentActivityScreen(),
+        builder: (ctx, state) =>
+            const vendor_dashboard_activity.RecentActivityScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorOrderDetail,
