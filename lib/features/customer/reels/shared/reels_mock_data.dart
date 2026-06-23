@@ -1,14 +1,16 @@
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-// Free HTTPS MP4s from Google's public test bucket — no auth, no rate limit.
+// Free HTTPS MP4s from stable public CDNs (Flutter's assets-for-api-docs,
+// media.w3.org, Blender) — no auth required. (The old gtv-videos-bucket
+// sample URLs now return 403 and were replaced.)
 final kMockReels = <Reel>[
   Reel(
     id: 'reel_001',
     sourceUrl: 'https://www.youtube.com/shorts/K4TOrB4TTSg',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel1/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
     creatorId: 'u_002',
     creatorName: 'Nina Bloom',
     creatorAvatarUrl: '',
@@ -45,7 +47,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/Ct3lR1sUhwA',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel2/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
     creatorId: 'u_001',
     creatorName: 'Maya Lume',
     creatorAvatarUrl: '',
@@ -75,7 +77,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/q4LOvgAGX8g',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel3/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        'https://media.w3.org/2010/05/sintel/trailer.mp4',
     creatorId: 'u_005',
     creatorName: 'Theo Run',
     creatorAvatarUrl: '',
@@ -112,7 +114,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/IfMpGlHvpTM',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel4/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+        'https://media.w3.org/2010/05/bunny/trailer.mp4',
     creatorId: 'u_004',
     creatorName: 'Shree Teen',
     creatorAvatarUrl: '',
@@ -142,7 +144,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/BVBsXMbsC4o',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel5/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        'https://media.w3.org/2010/05/video/movie_300.mp4',
     creatorId: 'u_006',
     creatorName: 'Lena Styles',
     creatorAvatarUrl: '',
@@ -179,7 +181,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/Px_EHgW4y9k',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel6/400/700',
     videoUrl:
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+        'https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4',
     creatorId: 'u_003',
     creatorName: 'Ravi Kit',
     creatorAvatarUrl: '',
