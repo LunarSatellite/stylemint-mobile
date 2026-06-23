@@ -6,6 +6,15 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entitie
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:video_player/video_player.dart';
 
+/// Lets an ancestor (e.g. a full-screen tap layer) toggle the player's
+/// play/pause state without owning the [VideoPlayerController].
+class ReelPlaybackController {
+  VoidCallback? _onToggle;
+
+  /// Toggle play/pause on the attached [ReelPlayer]; no-op if none attached.
+  void toggle() => _onToggle?.call();
+}
+
 /// Inline video player for a reel.
 ///
 /// Plays the MP4 pointed to by [Reel.videoUrl] when [isActive] is true,
@@ -16,11 +25,15 @@ class ReelPlayer extends StatefulWidget {
   const ReelPlayer({
     required this.reel,
     required this.isActive,
+    this.playbackController,
     super.key,
   });
 
   final Reel reel;
   final bool isActive;
+
+  /// Optional handle so an ancestor can toggle play/pause on tap.
+  final ReelPlaybackController? playbackController;
 
   @override
   State<ReelPlayer> createState() => _ReelPlayerState();
@@ -52,6 +65,7 @@ class _ReelPlayerState extends State<ReelPlayer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.playbackController?._onToggle = _togglePlayPause;
     unawaited(_initVideo());
   }
 
@@ -79,6 +93,13 @@ class _ReelPlayerState extends State<ReelPlayer>
   @override
   void didUpdateWidget(ReelPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.playbackController != widget.playbackController) {
+      if (oldWidget.playbackController?._onToggle == _togglePlayPause) {
+        oldWidget.playbackController?._onToggle = null;
+      }
+      widget.playbackController?._onToggle = _togglePlayPause;
+    }
 
     if (oldWidget.reel.videoUrl != widget.reel.videoUrl) {
       _disposeController();
@@ -139,12 +160,15 @@ class _ReelPlayerState extends State<ReelPlayer>
 
   @override
   void dispose() {
+    if (widget.playbackController?._onToggle == _togglePlayPause) {
+      widget.playbackController?._onToggle = null;
+    }
     WidgetsBinding.instance.removeObserver(this);
     _disposeController();
     super.dispose();
   }
 
-  void _onTap() {
+  void _togglePlayPause() {
     if (_controller == null || !_initialized) return;
     setState(() => _manuallyPaused = !_manuallyPaused);
     _reconcilePlayback();
@@ -154,13 +178,11 @@ class _ReelPlayerState extends State<ReelPlayer>
   Widget build(BuildContext context) {
     final hasVideo = widget.reel.videoUrl != null;
 
-    return GestureDetector(
-      onTap: hasVideo && !_hasError ? _onTap : null,
-      child: ColoredBox(
-        color: DesignTokens.baseBlack,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
+    return ColoredBox(
+      color: DesignTokens.baseBlack,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
             // Video layer
             if (_initialized && _controller != null)
               FittedBox(
@@ -234,7 +256,6 @@ class _ReelPlayerState extends State<ReelPlayer>
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

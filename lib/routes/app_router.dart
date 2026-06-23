@@ -58,6 +58,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/add_card_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/presentation/screens/customer_shell_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/presentation/widgets/swipeable_branch_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_comments_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/screens/product_reviews_screen.dart';
@@ -979,9 +980,14 @@ GoRouter appRouter(Ref ref) {
       ),
 
       // Customer dashboard
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (ctx, state, navigationShell) =>
             CustomerShellScreen(navigationShell: navigationShell),
+        navigatorContainerBuilder: (ctx, navigationShell, children) =>
+            SwipeableBranchView(
+              navigationShell: navigationShell,
+              branches: children,
+            ),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
