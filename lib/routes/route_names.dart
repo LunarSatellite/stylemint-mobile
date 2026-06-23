@@ -63,7 +63,9 @@ abstract class RouteNames {
   static const creatorApplyApproved = '/creator/apply/approved';
   static const creatorApplyRejected = '/creator/apply/rejected';
   static const creatorDash = '/creator/dashboard';
+  static const creatorTopReels = '/creator/reels/top';
   static const reelImport = '/creator/import';
+  static const reelImportPreview = '/creator/import/preview';
   static const reelImportTagProducts = '/creator/import/tag/:postId';
   static const earnings = '/creator/earnings';
   static const earningsPayout = '/creator/earnings/payout';
@@ -145,4 +147,5 @@ abstract class RouteNames {
   static const supportTickets = '/support/tickets';
 
   static const creatorSupportContact = '/creator/support/contact';
+  static const creatorActivity = '/creator/activity';
 }

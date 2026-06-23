@@ -49,45 +49,7 @@ class _CreatorContactSupportScreenState
     _Topic(icon: Icons.analytics_outlined, label: 'Analytics Issues'),
   ];
 
-  List<_Ticket> _tickets = [
-    _Ticket(
-      id: '#ST890087',
-      title: 'I cannot import my reels from my instagr...',
-      date: '04:53 PM, 25th Sep 2025',
-      filter: _TicketFilter.submitted,
-      category: 'Content Problems',
-      description: 'I cannot import my reels from my instagram',
-      seedAttachmentCount: 5,
-    ),
-    _Ticket(
-      id: '#ST890086',
-      title: 'My reels view count data is not showing in...',
-      date: '04:53 PM, 25th Sep 2025',
-      filter: _TicketFilter.submitted,
-      category: 'Analytics Issues',
-      description:
-          'My reels view count data is not showing in the analytics dashboard.',
-      seedAttachmentCount: 2,
-    ),
-    _Ticket(
-      id: '#ST890085',
-      title: 'Brand partnership payment not received',
-      date: '10:00 AM, 20th Sep 2025',
-      filter: _TicketFilter.inProgress,
-      category: 'Earnings & Payouts',
-      description:
-          'Brand partnership payment not received after campaign completion.',
-    ),
-    _Ticket(
-      id: '#ST890084',
-      title: 'Earnings payout delayed for over a week',
-      date: '08:30 AM, 15th Sep 2025',
-      filter: _TicketFilter.resolved,
-      category: 'Earnings & Payouts',
-      description: 'Earnings payout has been delayed for over a week.',
-      seedAttachmentCount: 1,
-    ),
-  ];
+  List<_Ticket> _tickets = [];
 
   void _showCreatorResources(BuildContext context) {
     unawaited(showModalBottomSheet<void>(
@@ -178,12 +140,26 @@ class _CreatorContactSupportScreenState
                   onChanged: (f) => setState(() => _activeFilter = f),
                 ),
                 const SizedBox(height: DesignTokens.s12),
-                ..._visibleTickets.map(
-                  (t) => _TicketCard(
-                    ticket: t,
-                    onTap: () => _showTicketDetail(context, t),
+                if (_visibleTickets.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+                    child: Center(
+                      child: Text(
+                        'Your ${_activeFilter == _TicketFilter.submitted ? 'submitted' : _activeFilter == _TicketFilter.inProgress ? 'in progress' : 'resolved'} support tickets will show here',
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  ..._visibleTickets.map(
+                    (t) => _TicketCard(
+                      ticket: t,
+                      onTap: () => _showTicketDetail(context, t),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

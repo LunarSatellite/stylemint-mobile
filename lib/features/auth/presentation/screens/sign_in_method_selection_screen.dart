@@ -370,9 +370,7 @@ class _TopBar extends StatelessWidget {
           color: DesignTokens.textWhite,
           size: DesignTokens.iconMedium,
         ),
-        onPressed: () {
-          if (context.canPop()) context.pop();
-        },
+        onPressed: () => context.go(RouteNames.userTypeSelection),
       ),
     );
   }

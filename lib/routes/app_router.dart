@@ -47,7 +47,9 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/top_reels_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
+import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnerships_screen.dart';
@@ -55,6 +57,8 @@ import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/create_draft_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/reel_studio_screen.dart';
@@ -144,6 +148,7 @@ const _publicPaths = {
   RouteNames.creatorApplyUnderReview,
   RouteNames.creatorApplyApproved,
   RouteNames.creatorApplyRejected,
+  RouteNames.creatorSupportContact,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
   RouteNames.search,
@@ -469,6 +474,14 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const CreatorDashboardScreen(),
       ),
       GoRoute(
+        path: RouteNames.creatorTopReels,
+        builder: (ctx, state) => const TopReelsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorActivity,
+        builder: (ctx, state) => const RecentActivityScreen(),
+      ),
+      GoRoute(
         path: RouteNames.socialConnect,
         builder: (ctx, state) => SocialConnectScreen(
           isOnboarding: state.uri.queryParameters['onboarding'] == 'true',
@@ -477,6 +490,16 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.reelImport,
         builder: (ctx, state) => const ImportReelScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.reelImportPreview,
+        builder: (ctx, state) {
+          final extra = state.extra! as Map<String, dynamic>;
+          return PreviewReelScreen(
+            url: extra['url'] as String,
+            platform: extra['platform'] as SocialPlatform,
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.reelImportTagProducts,

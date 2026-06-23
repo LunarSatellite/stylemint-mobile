@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -79,9 +81,12 @@ class _UserTypeSelectionScreenState
       // Pre-auth: remember the chosen role so it is auto-applied after login.
       ref.read(pendingRoleProvider.notifier).state = roleInt;
       // Customer (1) sees the onboarding carousel before sign-in.
-      // Creator / Vendor go straight to sign-in (no carousel needed).
+      // Creator (2) goes straight to the application form (public route).
+      // Vendor goes straight to sign-in.
       if (roleInt == 1) {
         context.go(RouteNames.onboarding);
+      } else if (roleInt == 2) {
+        context.go(RouteNames.creatorApply);
       } else {
         context.go(RouteNames.signInMethod);
       }
@@ -90,14 +95,14 @@ class _UserTypeSelectionScreenState
 
     // Already an active role → straight to that surface, no application needed.
     if (_isRoleActivated(roleInt)) {
-      _navigateForRole(roleInt);
+      await _navigateForRole(roleInt);
       return;
     }
 
     // Creator (2) / Vendor (3) must go through the application + review flow
     // before the role is activated — the apply screen owns request/activate.
     if (roleInt == 2 || roleInt == 3) {
-      _navigateForRole(roleInt);
+      await _navigateForRole(roleInt);
       return;
     }
 
@@ -124,16 +129,33 @@ class _UserTypeSelectionScreenState
 
     if (!mounted) return;
     setState(() => _loadingRole = false);
-    _navigateForRole(roleInt);
+    await _navigateForRole(roleInt);
   }
 
-  void _navigateForRole(int role) {
+  Future<void> _navigateForRole(int role) async {
     switch (role) {
       case 2:
-        // Active creator → dashboard; otherwise the application/review flow.
-        context.go(
-          _isRoleActivated(2) ? RouteNames.creatorHome : RouteNames.creatorApply,
+        if (_isRoleActivated(2)) {
+          context.go(RouteNames.creatorHome);
+          return;
+        }
+        // Check existing application status before routing.
+        setState(() => _loadingRole = true);
+        await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
+        if (!mounted) return;
+        setState(() => _loadingRole = false);
+        final statusState = ref.read(creatorApplyNotifierProvider);
+        final route = statusState.maybeWhen(
+          loadSuccess: (application) => switch (application.status) {
+            CreatorApplicationStatus.approved => RouteNames.creatorApplyApproved,
+            CreatorApplicationStatus.rejected => RouteNames.creatorApplyRejected,
+            CreatorApplicationStatus.pending ||
+            CreatorApplicationStatus.underReview =>
+              RouteNames.creatorApplyUnderReview,
+          },
+          orElse: () => RouteNames.creatorApply,
         );
+        context.go(route);
       case 3:
         context.go(
           _isRoleActivated(3) ? RouteNames.vendorHome : RouteNames.vendorApply,
@@ -224,20 +246,21 @@ class _UserTypeSelectionScreenState
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      Icons.shopping_bag_outlined,
-                                      size: 56,
-                                      color: DesignTokens.primaryGreen,
-                                    ),
+                                    Image.asset(
+                                     'assets/images/stylemint-logo.png',
+                                      width: 100,
+                                      height: 75,
+                                      fit: BoxFit.contain,
+                                     ),
                                     const SizedBox(height: DesignTokens.s4),
-                                    Text(
-                                      'STYLE MINT',
-                                      style: DesignTokens.mediumSemibold
-                                          .copyWith(
-                                            color: DesignTokens.primaryGreen,
-                                            letterSpacing: 2,
-                                          ),
-                                    ),
+                                    // Text(
+                                    //   'STYLE MINT',
+                                    //   style: DesignTokens.mediumSemibold
+                                    //       .copyWith(
+                                    //         color: DesignTokens.primaryGreen,
+                                    //         letterSpacing: 2,
+                                    //       ),
+                                    // ),
                                   ],
                                 ),
                               ),

@@ -184,7 +184,7 @@ class _CreatorApplyScreenState extends ConsumerState<CreatorApplyScreen> {
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new,
             size: 18, color: DesignTokens.textWhite),
-        onPressed: () => context.pop(),
+        onPressed: () => context.go(RouteNames.userTypeSelection),
       ),
       title: const Text('Creator Form', style: DesignTokens.oneLinerSemibold),
       bottom: PreferredSize(
