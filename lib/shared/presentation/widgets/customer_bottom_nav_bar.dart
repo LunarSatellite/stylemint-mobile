@@ -25,7 +25,7 @@ class CustomerBottomNavBar extends StatelessWidget {
   static const _items = <({IconData icon, String label})>[
     (icon: Icons.home_rounded, label: 'Home'),
     (icon: Icons.search_rounded, label: 'Discover'),
-    (icon: Icons.inventory_2_outlined, label: 'Track Order'),
+    (icon: Icons.inventory_2, label: 'Track Order'),
     (icon: Icons.person_outline_rounded, label: 'Profile'),
   ];
 

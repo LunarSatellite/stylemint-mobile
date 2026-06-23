@@ -9,13 +9,20 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Home Page Reel — vertical, full-screen reels feed (Figma node 9386-5224).
 ///
-/// State comes from [reelsFeedNotifierProvider]; the notifier talks to the
-/// reels repository directly (no UseCase layer).
-class ReelsFeedScreen extends ConsumerWidget {
+/// Tracks the visible reel index so the active [ReelCard] auto-plays its
+/// video while all others stay paused.
+class ReelsFeedScreen extends ConsumerStatefulWidget {
   const ReelsFeedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReelsFeedScreen> createState() => _ReelsFeedScreenState();
+}
+
+class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(reelsFeedNotifierProvider);
 
     return Scaffold(
@@ -33,21 +40,23 @@ class ReelsFeedScreen extends ConsumerWidget {
           return PageView.builder(
             scrollDirection: Axis.vertical,
             itemCount: reels.length,
-            itemBuilder: (_, index) => ReelCard(reel: reels[index]),
+            onPageChanged: (index) => setState(() => _currentIndex = index),
+            itemBuilder:
+                (_, index) => ReelCard(
+                  reel: reels[index],
+                  isActive: index == _currentIndex,
+                ),
           );
         },
         loadFailure: (failure) {
-          // Only a genuine connectivity problem deserves an error screen.
           if (failure.isNoInternet) {
             return SmErrorView(
               message: 'No internet connection.',
-              onRetry: () =>
-                  ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
+              onRetry:
+                  () =>
+                      ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
             );
           }
-          // Logged-out (feed needs auth) or no data yet → show the friendly
-          // empty state, not a scary "failed to load" error. The home should
-          // always look intentional, even before there's content / sign-in.
           return const SmEmptyState(
             message: 'No reels yet. Check back soon for new content.',
             icon: Icons.video_library_outlined,

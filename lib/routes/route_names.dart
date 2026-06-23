@@ -40,6 +40,7 @@ abstract class RouteNames {
   static const checkoutPayment = '/checkout/payment';
   static const orders = '/orders';
   static const orderDetail = '/orders/:orderId';
+  static const orderSuccess = '/order-success/:orderId';
   static const orderCancel = '/orders/:orderId/cancel';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';

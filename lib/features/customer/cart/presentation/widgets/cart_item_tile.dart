@@ -31,91 +31,125 @@ class CartItemTile extends StatelessWidget {
       ),
       child: Container(
         color: DesignTokens.bgAppFoundation,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16,
-            vertical: DesignTokens.s12,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(DesignTokens.s12),
-                child: Image.network(
-                  item.productImageUrl,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 64,
-                    height: 64,
-                    color: DesignTokens.bgAppBodyLight,
-                    child: const Icon(
-                      Icons.image_not_supported_outlined,
-                      color: DesignTokens.iconLight,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(DesignTokens.s12),
+                    child: Image.network(
+                      item.productImageUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 72,
+                        height: 72,
+                        color: DesignTokens.bgAppBodyLight,
+                        child: const Icon(
+                          Icons.image_not_supported_outlined,
+                          color: DesignTokens.iconLight,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.productName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textWhite,
-                      ),
+                  const SizedBox(width: DesignTokens.s12),
+                  // Product info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.productName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textWhite,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.s4),
+                        Text(
+                          item.variantName,
+                          style: DesignTokens.smallRegular.copyWith(
+                            fontSize: 11,
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                        if (item.creatorHandle != null) ...[
+                          const SizedBox(height: DesignTokens.s4),
+                          Text(
+                            'From: @${item.creatorHandle}'
+                            '${item.commissionRate != null ? ' (${(item.commissionRate! * 100).round()}% Commission)' : ''}',
+                            style: DesignTokens.smallRegular.copyWith(
+                              fontSize: 11,
+                              color: DesignTokens.textLight,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: DesignTokens.s4),
+                        GestureDetector(
+                          onTap: () {
+                            // TODO(cart): save for later
+                          },
+                          child: Text(
+                            'Save for later',
+                            style: DesignTokens.smallRegular.copyWith(
+                              fontSize: 12,
+                              color: DesignTokens.primaryGreen,
+                            ),
+                          ),
+                        ),
+                        if (!item.isInStock) ...[
+                          const SizedBox(height: DesignTokens.s4),
+                          Text(
+                            'Out of stock',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.colorError,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      item.variantName,
-                      style: DesignTokens.smallRegular.copyWith(
-                        fontSize: 11,
-                        color: DesignTokens.textMuted,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  // Stepper + price stacked on the right
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _QuantityStepper(
+                        quantity: item.quantity,
+                        onIncrement: item.isInStock ? onIncrement : null,
+                        onDecrement: onDecrement,
                       ),
-                    ),
-                    if (item.creatorHandle != null) ...[
-                      const SizedBox(height: DesignTokens.s4),
+                      const SizedBox(height: DesignTokens.s8),
                       Text(
-                        'From: @${item.creatorHandle}'
-                        '${item.commissionRate != null ? ' (${(item.commissionRate! * 100).round()}% Commission)' : ''}',
+                        formatMoney(item.unitPrice),
                         style: DesignTokens.smallRegular.copyWith(
-                          fontSize: 11,
-                          color: DesignTokens.textLight,
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
-                    const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      formatMoney(item.unitPrice),
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                    if (!item.isInStock)
-                      Padding(
-                        padding: const EdgeInsets.only(top: DesignTokens.s4),
-                        child: Text(
-                          'Out of stock',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.colorError,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              _QuantityStepper(
-                quantity: item.quantity,
-                onIncrement: item.isInStock ? onIncrement : null,
-                onDecrement: onDecrement,
-              ),
-            ],
-          ),
+            ),
+            const Divider(
+              color: DesignTokens.borderDefault,
+              height: 1,
+              thickness: 1,
+              indent: DesignTokens.s16,
+              endIndent: DesignTokens.s16,
+            ),
+          ],
         ),
       ),
     );
@@ -136,7 +170,6 @@ class _QuantityStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Spec: filled gray stepper (#3F3F46), fully rounded, ~28px tall, no outline.
       height: 28,
       decoration: BoxDecoration(
         color: DesignTokens.buttonGrayFill,
@@ -145,10 +178,7 @@ class _QuantityStepper extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _StepperButton(
-            icon: Icons.remove,
-            onPressed: onDecrement,
-          ),
+          _StepperButton(icon: Icons.remove, onPressed: onDecrement),
           SizedBox(
             width: 28,
             child: Text(
@@ -159,10 +189,7 @@ class _QuantityStepper extends StatelessWidget {
               ),
             ),
           ),
-          _StepperButton(
-            icon: Icons.add,
-            onPressed: onIncrement,
-          ),
+          _StepperButton(icon: Icons.add, onPressed: onIncrement),
         ],
       ),
     );

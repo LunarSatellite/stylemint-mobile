@@ -66,6 +66,8 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
     switch (code.toLowerCase()) {
       case 'card':
         return PaymentMethodType.card;
+      case 'paypal':
+        return PaymentMethodType.paypal;
       case 'esewa':
         return PaymentMethodType.eSewa;
       case 'cod':

@@ -18,6 +18,7 @@ class Reel {
     required this.commentCount,
     required this.shareCount,
     required this.createdAt,
+    this.videoUrl,
     this.isLikedByUser,
     this.isWishlistedByUser,
     this.isCreatorFollowed,
@@ -26,6 +27,7 @@ class Reel {
   final String id;
   final String sourceUrl; // Deep link to IG / TikTok / YouTube / FB
   final String thumbnailUrl; // Preview image
+  final String? videoUrl; // Direct MP4 for inline playback (optional)
   final String creatorId;
   final String creatorName;
   final String creatorAvatarUrl;
@@ -45,6 +47,7 @@ class Reel {
     String? id,
     String? sourceUrl,
     String? thumbnailUrl,
+    String? videoUrl,
     String? creatorId,
     String? creatorName,
     String? creatorAvatarUrl,
@@ -64,6 +67,7 @@ class Reel {
       id: id ?? this.id,
       sourceUrl: sourceUrl ?? this.sourceUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
       creatorId: creatorId ?? this.creatorId,
       creatorName: creatorName ?? this.creatorName,
       creatorAvatarUrl: creatorAvatarUrl ?? this.creatorAvatarUrl,

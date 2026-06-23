@@ -6,6 +6,8 @@ class FollowingUser {
     required this.handle,
     required this.isFollowing,
     required this.followerCount,
+    this.category,
+    this.bio,
   });
 
   final String id;
@@ -14,6 +16,8 @@ class FollowingUser {
   final String handle;
   final bool isFollowing;
   final int followerCount;
+  final String? category;
+  final String? bio;
 
   FollowingUser copyWith({
     String? id,
@@ -22,6 +26,8 @@ class FollowingUser {
     String? handle,
     bool? isFollowing,
     int? followerCount,
+    String? category,
+    String? bio,
   }) {
     return FollowingUser(
       id: id ?? this.id,
@@ -30,6 +36,8 @@ class FollowingUser {
       handle: handle ?? this.handle,
       isFollowing: isFollowing ?? this.isFollowing,
       followerCount: followerCount ?? this.followerCount,
+      category: category ?? this.category,
+      bio: bio ?? this.bio,
     );
   }
 }

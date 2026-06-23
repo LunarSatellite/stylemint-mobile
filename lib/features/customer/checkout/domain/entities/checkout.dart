@@ -80,7 +80,7 @@ class ShippingAddress {
       );
 }
 
-enum PaymentMethodType { card, eSewa, cod }
+enum PaymentMethodType { card, eSewa, cod, paypal }
 
 class PaymentMethod {
   const PaymentMethod({
@@ -192,6 +192,8 @@ class CheckoutSummary {
     required this.tax,
     required this.discount,
     required this.total,
+    this.availableAddresses = const [],
+    this.availablePaymentMethods = const [],
   });
 
   final ShippingAddress shippingAddress;
@@ -202,6 +204,10 @@ class CheckoutSummary {
   final Money tax;
   final Money discount;
   final Money total;
+  /// Saved addresses from the addresses API. First entry is always [shippingAddress].
+  final List<ShippingAddress> availableAddresses;
+  /// Saved payment methods from the payment-methods API. First entry is always [paymentMethod].
+  final List<PaymentMethod> availablePaymentMethods;
 
   CheckoutSummary copyWith({
     ShippingAddress? shippingAddress,
@@ -212,6 +218,8 @@ class CheckoutSummary {
     Money? tax,
     Money? discount,
     Money? total,
+    List<ShippingAddress>? availableAddresses,
+    List<PaymentMethod>? availablePaymentMethods,
   }) {
     return CheckoutSummary(
       shippingAddress: shippingAddress ?? this.shippingAddress,
@@ -222,6 +230,9 @@ class CheckoutSummary {
       tax: tax ?? this.tax,
       discount: discount ?? this.discount,
       total: total ?? this.total,
+      availableAddresses: availableAddresses ?? this.availableAddresses,
+      availablePaymentMethods:
+          availablePaymentMethods ?? this.availablePaymentMethods,
     );
   }
 
@@ -235,7 +246,9 @@ class CheckoutSummary {
       other.shipping == shipping &&
       other.tax == tax &&
       other.discount == discount &&
-      other.total == total;
+      other.total == total &&
+      _listEquals(other.availableAddresses, availableAddresses) &&
+      _listEquals(other.availablePaymentMethods, availablePaymentMethods);
 
   @override
   int get hashCode => Object.hash(
@@ -247,6 +260,8 @@ class CheckoutSummary {
         tax,
         discount,
         total,
+        Object.hashAll(availableAddresses),
+        Object.hashAll(availablePaymentMethods),
       );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {

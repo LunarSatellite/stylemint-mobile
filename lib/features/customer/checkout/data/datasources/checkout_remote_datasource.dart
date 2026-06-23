@@ -7,10 +7,20 @@ class CheckoutRemoteDataSource {
 
   final ApiClient apiClient;
 
-  // TODO: No GET /v1/checkout endpoint — create a session first with POST /v1/checkout/sessions
+  // Stores the session ID created by getCheckoutSummary for reuse in placeOrder.
+  String? _sessionId;
+
+  // POST /v1/checkout/sessions — creates (or resumes) a checkout session from
+  // the current cart. The response carries the same shape as the old GET, plus
+  // a `sessionId` field needed for subsequent session-scoped calls.
   Future<CheckoutSummaryDto> getCheckoutSummary() async {
-    final response = await apiClient.get('/v1/checkout/sessions');
-    return CheckoutSummaryDto.fromJson(response as Map<String, dynamic>);
+    final response = await apiClient.post(
+      '/v1/checkout/sessions',
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final data = response as Map<String, dynamic>;
+    _sessionId = data['sessionId'] as String?;
+    return CheckoutSummaryDto.fromJson(data);
   }
 
   Future<List<ShippingAddressDto>> getShippingAddresses() async {
@@ -29,27 +39,52 @@ class CheckoutRemoteDataSource {
         .toList(growable: false);
   }
 
-  // TODO: Real API requires creating a session (POST /v1/checkout/sessions),
-  //       setting address (POST /v1/checkout/sessions/{sessionId}/address),
-  //       setting payment (POST /v1/checkout/sessions/{sessionId}/payment-method),
-  //       then placing (POST /v1/checkout/sessions/{sessionId}/place).
+  // Multi-step checkout session flow:
+  //   1. Ensure a session exists (create one if _sessionId is null)
+  //   2. PATCH address onto the session
+  //   3. PATCH payment method onto the session
+  //   4. POST place — returns orderId
   Future<String> placeOrder({
     required String addressId,
     required String paymentMethodId,
     required String idempotencyKey,
   }) async {
+    final sessionId = _sessionId ?? await _createSession();
+
+    await apiClient.post(
+      '/v1/checkout/sessions/$sessionId/address',
+      data: {'addressId': addressId},
+      options: Options(headers: {'requiresToken': true}),
+    );
+
+    await apiClient.post(
+      '/v1/checkout/sessions/$sessionId/payment-method',
+      data: {'paymentMethodId': paymentMethodId},
+      options: Options(headers: {'requiresToken': true}),
+    );
+
     final response = await apiClient.post(
-      '/v1/checkout/sessions/$addressId/place',
-      data: {
-        'addressId': addressId,
-        'paymentMethodId': paymentMethodId,
-      },
+      '/v1/checkout/sessions/$sessionId/place',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,
       }),
     );
+
+    _sessionId = null; // clear after successful placement
     final data = response as Map<String, dynamic>;
     return data['orderId'] as String;
+  }
+
+  Future<String> _createSession() async {
+    final response = await apiClient.post(
+      '/v1/checkout/sessions',
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final data = response as Map<String, dynamic>;
+    final id = data['sessionId'] as String?;
+    if (id == null) throw Exception('Checkout session creation returned no sessionId');
+    _sessionId = id;
+    return id;
   }
 }

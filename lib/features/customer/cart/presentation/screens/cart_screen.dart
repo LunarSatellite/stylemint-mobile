@@ -7,24 +7,56 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/no
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_item_tile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class CartScreen extends ConsumerWidget {
+// ─── CART SCREEN ──────────────────────────────────────────────────────────────
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  // Promo code applied by the user, null if none.
+  String? _appliedPromoCode;
+
+  // Mock 10% discount — replace with API value when promo endpoint is ready.
+  Money? _promoDiscount(Cart cart) {
+    if (_appliedPromoCode == null) return null;
+    return Money(
+      amount: (cart.subtotal.amount * 0.10).roundToDouble(),
+      currency: cart.subtotal.currency,
+    );
+  }
+
+  Future<void> _openPromoSheet() async {
+    final code = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _PromoBottomSheet(),
+    );
+    if (code != null && code.isNotEmpty) {
+      setState(() => _appliedPromoCode = code);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(cartNotifierProvider);
 
     ref.listen<CartState>(cartNotifierProvider, (previous, next) {
       next.maybeWhen(
         loadSuccess: (cart) {
           final hadItems = previous?.maybeWhen(
-            loadSuccess: (c) => c.items.isNotEmpty,
-            orElse: () => false,
-          ) ?? false;
+                loadSuccess: (c) => c.items.isNotEmpty,
+                orElse: () => false,
+              ) ??
+              false;
           if (cart.items.isEmpty && hadItems) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Item removed from cart')),
@@ -39,6 +71,11 @@ class CartScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: DesignTokens.textWhite),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Your Cart', style: DesignTokens.sectionInnerTitle),
         centerTitle: false,
       ),
@@ -52,6 +89,7 @@ class CartScreen extends ConsumerWidget {
               icon: Icons.shopping_cart_outlined,
             );
           }
+          final discount = _promoDiscount(cart);
           return Column(
             children: [
               Expanded(
@@ -60,6 +98,7 @@ class CartScreen extends ConsumerWidget {
                   onRefresh: () =>
                       ref.read(cartNotifierProvider.notifier).fetchCart(),
                   child: ListView(
+                    padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                     children: [
                       ...List.generate(cart.items.length, (i) {
                         return CartItemTile(
@@ -77,7 +116,9 @@ class CartScreen extends ConsumerWidget {
                                   .read(cartNotifierProvider.notifier)
                                   .removeItem(cart.items[i].id);
                             } else {
-                              ref.read(cartNotifierProvider.notifier).updateItem(
+                              ref
+                                  .read(cartNotifierProvider.notifier)
+                                  .updateItem(
                                     itemId: cart.items[i].id,
                                     quantity: newQty,
                                   );
@@ -90,39 +131,42 @@ class CartScreen extends ConsumerWidget {
                           },
                         );
                       }),
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(DesignTokens.s16, 0,
-                            DesignTokens.s16, DesignTokens.s8),
-                        child: _PromoRow(),
+                      // Promo pill
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                            DesignTokens.s16,
+                            DesignTokens.s16,
+                            DesignTokens.s16,
+                            DesignTokens.s12),
+                        child: _PromoRow(
+                          appliedCode: _appliedPromoCode,
+                          onTap: _openPromoSheet,
+                        ),
                       ),
+                      // Ticket card: bill details + scallop + appreciation stub
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: DesignTokens.s16),
-                        child: _BillDetailsCard(cart: cart),
-                      ),
-                      if (cart.supportedCreatorsCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                              DesignTokens.s16,
-                              DesignTokens.s12,
-                              DesignTokens.s16,
-                              DesignTokens.s16),
-                          child: _AppreciatedContainer(
-                            creatorCount: cart.supportedCreatorsCount,
-                          ),
+                        child: _TicketCard(
+                          cart: cart,
+                          promoCode: _appliedPromoCode,
+                          promoDiscount: discount,
                         ),
+                      ),
                     ],
                   ),
                 ),
               ),
-              _CheckoutBar(cart: cart),
+              _CheckoutBar(
+                cart: cart,
+                onCheckout: () => context.push(RouteNames.checkout),
+              ),
             ],
           );
         },
         loadFailure: (failure) => SmErrorView(
           message: 'Failed to load your cart.',
-          onRetry: () =>
-              ref.read(cartNotifierProvider.notifier).fetchCart(),
+          onRetry: () => ref.read(cartNotifierProvider.notifier).fetchCart(),
         ),
       ),
     );
@@ -133,147 +177,492 @@ class CartScreen extends ConsumerWidget {
       );
 }
 
-// "Have a Promo Code?" row.
+// ─── PROMO PILL ───────────────────────────────────────────────────────────────
 class _PromoRow extends StatelessWidget {
-  const _PromoRow();
+  const _PromoRow({required this.onTap, this.appliedCode});
+
+  final VoidCallback onTap;
+  final String? appliedCode;
+
+  bool get _applied => appliedCode != null;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // TODO(cart): open the promo-code entry sheet (Apply Promo Code spec).
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
-        decoration: DesignTokens.cardDecoration(),
-        child: Row(
-          children: [
-            const Icon(Icons.local_offer_outlined,
-                size: 16, color: DesignTokens.iconLight),
-            const SizedBox(width: DesignTokens.s8),
-            Expanded(
-              child: Text('Have a Promo Code?',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textWhite)),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 16, color: DesignTokens.iconLight),
-          ],
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.5,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border.all(color: DesignTokens.primaryGreen, width: 1.5),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _applied ? 'Promo Code Applied' : 'Have a Promo Code?',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                _applied
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: DesignTokens.primaryGreen,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Bill Details card — Sub Total / Shipping / Tax / Grand Total.
-class _BillDetailsCard extends StatelessWidget {
-  const _BillDetailsCard({required this.cart});
+// ─── TICKET CARD ─────────────────────────────────────────────────────────────
+class _TicketCard extends StatelessWidget {
+  const _TicketCard({
+    required this.cart,
+    this.promoCode,
+    this.promoDiscount,
+  });
 
   final Cart cart;
+  final String? promoCode;
+  final Money? promoDiscount;
+
+  static const _scallopsRadius = 9.0;
+  static const _cardRadius = 16.0;
+  static const _topColor = DesignTokens.bgAppBody;
+  static const _stubColor = Color(0xFF2A2A2A);
 
   @override
   Widget build(BuildContext context) {
-    final shipping = cart.shippingTotal.amount <= 0
-        ? 'Free'
-        : formatMoney(cart.shippingTotal);
+    final isFreeShipping = cart.shippingTotal.amount <= 0;
+    final hasStub = cart.supportedCreatorsCount > 0;
+    final pageColor = DesignTokens.bgAppFoundation;
+
     return Container(
-      padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s16, horizontal: DesignTokens.s12),
-      decoration: DesignTokens.cardDecoration(),
+      decoration: BoxDecoration(
+        color: _topColor,
+        borderRadius: BorderRadius.circular(_cardRadius),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bill Details', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s12),
-          _BillRow(
-              label: 'Sub Total (${cart.items.length} items)',
-              value: formatMoney(cart.subtotal)),
-          const SizedBox(height: DesignTokens.s8),
-          _BillRow(label: 'Shipping', value: shipping),
-          const SizedBox(height: DesignTokens.s8),
-          _BillRow(
-              label: 'Tax (Estimated 13%)', value: formatMoney(cart.taxTotal)),
-          const Divider(
-              color: DesignTokens.borderDefault, height: DesignTokens.s24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Grand Total',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.textWhite)),
-              Text(formatMoney(cart.total),
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
+          // ── Bill details ─────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bill Details',
+                  style: DesignTokens.mediumSemibold.copyWith(
                     color: DesignTokens.textWhite,
-                  )),
-            ],
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _BillRow(
+                  icon: Icons.shopping_bag_outlined,
+                  label: 'Sub Total (${cart.items.length} items)',
+                  value: formatMoney(cart.subtotal),
+                ),
+                const SizedBox(height: 12),
+                _BillRow(
+                  icon: Icons.local_shipping_outlined,
+                  label: 'Shipping',
+                  valueBadge: isFreeShipping ? 'Free' : null,
+                  value: isFreeShipping
+                      ? null
+                      : formatMoney(cart.shippingTotal),
+                ),
+                const SizedBox(height: 12),
+                _BillRow(
+                  icon: Icons.percent_rounded,
+                  label: 'Tax (Estimated 13%)',
+                  value: formatMoney(cart.taxTotal),
+                ),
+                // Promo discount row — visible only when a code is applied
+                if (promoDiscount != null) ...[
+                  const SizedBox(height: 12),
+                  _BillRow(
+                    label: 'Promo Code (${promoCode!.toUpperCase()})',
+                    value: '- ${formatMoney(promoDiscount!)}',
+                    valueColor: DesignTokens.primaryGreen,
+                    iconWidget: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: DesignTokens.primaryGreen.withOpacity(0.15),
+                        border: Border.all(
+                            color: DesignTokens.primaryGreen, width: 1.2),
+                      ),
+                      child: const Icon(
+                        Icons.local_offer_rounded,
+                        size: 11,
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 1,
+                  width: double.infinity,
+                  child: CustomPaint(painter: _DashedLinePainter()),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      'Grand Total',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      formatMoney(cart.total),
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+
+          // ── Scalloped divider ────────────────────────────────────────────
+          if (hasStub)
+            SizedBox(
+              height: _scallopsRadius * 2,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _ScallopPainter(
+                  topColor: _topColor,
+                  stubColor: _stubColor,
+                  holeColor: pageColor,
+                  radius: _scallopsRadius,
+                ),
+              ),
+            ),
+
+          // ── Appreciation stub ────────────────────────────────────────────
+          if (hasStub)
+            Container(
+              decoration: const BoxDecoration(
+                color: _stubColor,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(_cardRadius),
+                  bottomRight: Radius.circular(_cardRadius),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE53935),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        const Icon(Icons.favorite, size: 22, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'You are appreciated',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textWhite,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Thank you so much! you are supporting '
+                          '${cart.supportedCreatorsCount} creators with this order',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textLight,
+                            fontSize: 11,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
+// ─── BILL ROW ─────────────────────────────────────────────────────────────────
 class _BillRow extends StatelessWidget {
-  const _BillRow({required this.label, required this.value});
+  const _BillRow({
+    this.icon,
+    this.iconWidget,
+    required this.label,
+    this.value,
+    this.valueBadge,
+    this.valueColor,
+  }) : assert(icon != null || iconWidget != null,
+            '_BillRow requires icon or iconWidget');
 
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
-  final String value;
+  final String? value;
+  final String? valueBadge;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
+        // Custom widget takes priority over IconData
+        iconWidget ??
+            Icon(icon!, size: 14, color: DesignTokens.textMuted),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
             style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight)),
-        Text(value,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight)),
+                .copyWith(color: DesignTokens.textLight, fontSize: 12),
+          ),
+        ),
+        if (valueBadge != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: DesignTokens.primaryGreen,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              valueBadge!,
+              style: DesignTokens.smallRegular.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          )
+        else
+          Text(
+            value ?? '',
+            style: DesignTokens.smallRegular.copyWith(
+              color: valueColor ?? DesignTokens.textLight,
+              fontSize: 12,
+              fontWeight:
+                  valueColor != null ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
       ],
     );
   }
 }
 
-// "You are appreciated" container.
-// creatorCount = cart.supportedCreatorsCount (backend
-// CartAppreciationSummaryDto.supportedCreatorsCount).
-class _AppreciatedContainer extends StatelessWidget {
-  const _AppreciatedContainer({required this.creatorCount});
+// ─── PAINTERS ─────────────────────────────────────────────────────────────────
 
-  final int creatorCount;
+class _DashedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = DesignTokens.borderDefault
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    const dashWidth = 6.0;
+    const dashGap = 4.0;
+    double x = 0;
+    while (x < size.width) {
+      canvas.drawLine(Offset(x, 0), Offset(x + dashWidth, 0), paint);
+      x += dashWidth + dashGap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedLinePainter old) => false;
+}
+
+class _ScallopPainter extends CustomPainter {
+  const _ScallopPainter({
+    required this.topColor,
+    required this.stubColor,
+    required this.holeColor,
+    required this.radius,
+  });
+
+  final Color topColor;
+  final Color stubColor;
+  final Color holeColor;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, radius),
+        Paint()..color = topColor);
+    canvas.drawRect(Rect.fromLTWH(0, radius, size.width, radius),
+        Paint()..color = stubColor);
+    final holePaint = Paint()
+      ..color = holeColor
+      ..style = PaintingStyle.fill;
+    double x = radius;
+    while (x <= size.width + radius) {
+      canvas.drawCircle(Offset(x, radius), radius, holePaint);
+      x += radius * 2;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ScallopPainter old) =>
+      old.topColor != topColor ||
+      old.stubColor != stubColor ||
+      old.holeColor != holeColor ||
+      old.radius != radius;
+}
+
+// ─── PROMO BOTTOM SHEET ───────────────────────────────────────────────────────
+class _PromoBottomSheet extends StatefulWidget {
+  const _PromoBottomSheet();
+
+  @override
+  State<_PromoBottomSheet> createState() => _PromoBottomSheetState();
+}
+
+class _PromoBottomSheetState extends State<_PromoBottomSheet> {
+  final _controller = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _apply() {
+    final code = _controller.text.trim();
+    if (code.isEmpty) return;
+    setState(() => _loading = true);
+    // TODO(cart): call promo-code validation API, then pop with validated code.
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      Navigator.of(context).pop(code); // returns code to CartScreen
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 24 + bottom),
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.favorite, size: 16, color: DesignTokens.primaryGreen),
-              const SizedBox(width: DesignTokens.s8),
-              Text('You are appreciated',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.textWhite)),
+              Text(
+                'Enter your promo code',
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                  fontSize: 18,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(Icons.close,
+                    size: 20, color: DesignTokens.textLight),
+              ),
             ],
           ),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Thank you so much! you are supporting $creatorCount creators with this order',
+          const SizedBox(height: 20),
+          TextField(
+            controller: _controller,
+            autofocus: true,
             style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight, height: 1.4),
+                .copyWith(color: DesignTokens.textWhite, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Promo Code',
+              hintStyle: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textMuted, fontSize: 14),
+              filled: true,
+              fillColor: DesignTokens.bgAppBodyLight,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _apply(),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DesignTokens.primaryGreen,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                ),
+              ),
+              onPressed: _loading ? null : _apply,
+              child: _loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.black),
+                    )
+                  : const Text(
+                      'Apply',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -281,68 +670,70 @@ class _AppreciatedContainer extends StatelessWidget {
   }
 }
 
+// ─── CHECKOUT BAR ─────────────────────────────────────────────────────────────
 class _CheckoutBar extends StatelessWidget {
-  const _CheckoutBar({required this.cart});
+  const _CheckoutBar({required this.cart, required this.onCheckout});
 
   final Cart cart;
+  final VoidCallback onCheckout;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s16),
+      decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
-        border: const Border(
-          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
-        ),
+        border: Border(
+            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        formatMoney(cart.total),
-                        style: DesignTokens.oneLinerSemibold.copyWith(
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                      Text(
-                        ' (${cart.items.length} item${cart.items.length == 1 ? '' : 's'})',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (cart.shippingTotal.amount > 0)
+            Row(
+              children: [
+                const Icon(Icons.shopping_cart_outlined,
+                    size: 18, color: DesignTokens.textWhite),
+                const SizedBox(width: DesignTokens.s8),
+                Text('Total Order',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textLight)),
+                const Spacer(),
+                Text(formatMoney(cart.total),
+                    style: DesignTokens.oneLinerSemibold
+                        .copyWith(color: DesignTokens.textWhite)),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26)),
+                ),
+                onPressed: onCheckout,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     Text(
-                      'incl. ${formatMoney(cart.shippingTotal)} shipping',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
+                      'Proceed to checkout',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
                       ),
                     ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 180,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                style: DesignTokens.primaryButtonStyle(),
-                onPressed: () => context.push(RouteNames.checkout),
-                child: const Text(
-                  'Proceed to checkout',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    SizedBox(width: DesignTokens.s8),
+                    Icon(Icons.arrow_forward_rounded,
+                        size: 18, color: Colors.black),
+                  ],
                 ),
               ),
             ),
