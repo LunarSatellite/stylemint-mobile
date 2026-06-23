@@ -26,16 +26,54 @@ class ReelPlayer extends StatefulWidget {
   State<ReelPlayer> createState() => _ReelPlayerState();
 }
 
-class _ReelPlayerState extends State<ReelPlayer> {
+class _ReelPlayerState extends State<ReelPlayer>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _initialized = false;
   bool _hasError = false;
-  bool _showPauseIcon = false;
+
+  /// User explicitly tapped to pause. Reset whenever this reel scrolls
+  /// off-screen so it auto-plays again next time it becomes active.
+  bool _manuallyPaused = false;
+
+  /// False while this tab branch is offscreen (go_router wraps inactive
+  /// shell branches in `TickerMode(enabled: false)`) — used to pause the
+  /// video when the user switches to another bottom tab.
+  bool _tabVisible = true;
+
+  /// The video should play only when it's the active reel, its tab is
+  /// visible, the app is foregrounded, and the user hasn't paused it.
+  bool get _shouldPlay =>
+      widget.isActive && _tabVisible && !_manuallyPaused && _appResumed;
+
+  bool _appResumed = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_initVideo());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // TickerMode flips to false when this shell branch (bottom tab) is
+    // hidden. React to tab switches here.
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible != _tabVisible) {
+      _tabVisible = visible;
+      _reconcilePlayback();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final resumed = state == AppLifecycleState.resumed;
+    if (resumed != _appResumed) {
+      _appResumed = resumed;
+      _reconcilePlayback();
+    }
   }
 
   @override
@@ -48,17 +86,11 @@ class _ReelPlayerState extends State<ReelPlayer> {
       return;
     }
 
-    if (oldWidget.isActive != widget.isActive && _initialized) {
-      // Only act when the controller is ready. If _initVideo is still
-      // running it reads widget.isActive at the end and calls play/pause
-      // itself — so we must not race it here.
-      if (widget.isActive) {
-        unawaited(_controller?.play() ?? Future<void>.value());
-        setState(() => _showPauseIcon = false);
-      } else {
-        unawaited(_controller?.pause() ?? Future<void>.value());
-        setState(() => _showPauseIcon = false);
-      }
+    if (oldWidget.isActive != widget.isActive) {
+      // Scrolling a reel off-screen clears any manual pause so it resumes
+      // auto-play when it next becomes the active reel.
+      if (!widget.isActive) _manuallyPaused = false;
+      _reconcilePlayback();
     }
   }
 
@@ -78,13 +110,22 @@ class _ReelPlayerState extends State<ReelPlayer> {
 
       setState(() => _initialized = true);
 
-      // widget.isActive is read here — after all the awaits — so it reflects
-      // whatever state the parent has settled into by the time init finishes.
-      if (widget.isActive) {
-        await controller.play();
-      }
+      // Reconcile against whatever state the parent/app/tab has settled
+      // into by the time init finished.
+      _reconcilePlayback();
     } on Exception catch (_) {
       if (mounted) setState(() => _hasError = true);
+    }
+  }
+
+  /// Single source of truth: drive the controller to match [_shouldPlay].
+  void _reconcilePlayback() {
+    final c = _controller;
+    if (c == null || !_initialized) return;
+    if (_shouldPlay) {
+      if (!c.value.isPlaying) unawaited(c.play());
+    } else {
+      if (c.value.isPlaying) unawaited(c.pause());
     }
   }
 
@@ -98,20 +139,15 @@ class _ReelPlayerState extends State<ReelPlayer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _disposeController();
     super.dispose();
   }
 
   void _onTap() {
-    final c = _controller;
-    if (c == null || !_initialized) return;
-    if (c.value.isPlaying) {
-      unawaited(c.pause());
-      setState(() => _showPauseIcon = true);
-    } else {
-      unawaited(c.play());
-      setState(() => _showPauseIcon = false);
-    }
+    if (_controller == null || !_initialized) return;
+    setState(() => _manuallyPaused = !_manuallyPaused);
+    _reconcilePlayback();
   }
 
   @override
@@ -162,8 +198,9 @@ class _ReelPlayerState extends State<ReelPlayer> {
                 ),
               ),
 
-            // Pause icon — stays until user taps to resume
-            if (_showPauseIcon)
+            // Manual-pause overlay — a play affordance that stays until the
+            // user taps anywhere to resume.
+            if (_manuallyPaused && _initialized)
               Center(
                 child: Container(
                   decoration: BoxDecoration(
@@ -172,7 +209,7 @@ class _ReelPlayerState extends State<ReelPlayer> {
                   ),
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   child: const Icon(
-                    Icons.pause_rounded,
+                    Icons.play_arrow_rounded,
                     size: DesignTokens.iconLarge,
                     color: DesignTokens.iconWhite,
                   ),
