@@ -100,14 +100,23 @@ abstract class RouteNames {
   static const vendorTopProducts = '/vendor/products/top';
   static const vendorRecentActivity = '/vendor/activity';
   static const vendorPartnerships = '/vendor/partnerships';
+  static const vendorSendPartnershipRequest = '/vendor/partnerships/send';
   static const vendorPartnershipsInvite = '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';
   static const vendorEarningsPayout = '/vendor/earnings/payout';
+  static const vendorPayoutHistory = '/vendor/earnings/history';
+  static const vendorStatementDetails = '/vendor/earnings/statement';
   static const vendorPaymentMethods = '/vendor/payment-methods';
+  static const vendorChangePaymentMethod = '/vendor/payment-methods/select';
+  static const vendorAddBankAccount = '/vendor/payment-methods/add-bank';
+  static const vendorBankVerification = '/vendor/payment-methods/verify';
   static const vendorInquiries = '/vendor/inquiries';
   static const vendorCreatorPerformance = '/vendor/creator-performance';
+  static const vendorCreatorAnalytics = '/vendor/creator-analytics';
+  static const vendorMessageCreator = '/vendor/message-creator';
+  static const vendorAdjustCommission = '/vendor/adjust-commission';
 
   // Social
   static const creatorProfile = '/creator-profile/:accountId';

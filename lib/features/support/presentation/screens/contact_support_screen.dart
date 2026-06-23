@@ -270,7 +270,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
       crossAxisCount: 2,
       crossAxisSpacing: DesignTokens.s12,
       mainAxisSpacing: DesignTokens.s12,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.25,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: actions
