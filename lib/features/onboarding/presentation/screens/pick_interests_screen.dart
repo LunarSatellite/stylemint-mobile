@@ -429,7 +429,8 @@ class _RadioCard extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 5.7, sigmaY: 5.7),
                 child: Container(
-                  padding: const EdgeInsets.all(DesignTokens.s12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s8, vertical: DesignTokens.s8),
                   decoration: BoxDecoration(
                     color: selected
                         ? DesignTokens.primaryGreen.withOpacity(0.12)
@@ -444,29 +445,32 @@ class _RadioCard extends StatelessWidget {
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (svgAsset != null)
                         SvgPicture.asset(
                           svgAsset,
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           // No colorFilter — logo keeps its original colours
                           // regardless of selection state.
                         )
                       else
                         Icon(
                           icon,
-                          size: 32,
+                          size: 28,
                           color: DesignTokens.radioCardTitle,
                         ),
                       const SizedBox(height: DesignTokens.s4),
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.radioCardTitle,
+                      Flexible(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.radioCardTitle,
+                          ),
                         ),
                       ),
                     ],

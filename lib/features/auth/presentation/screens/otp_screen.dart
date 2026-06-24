@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,6 +43,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final TextEditingController _nameController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
 
+  /// Inline verification error shown under the code field (null = no error).
+  /// Cleared as soon as the user edits the code again.
+  String? _codeError;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -48,20 +54,27 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     super.dispose();
   }
 
-  /// Called when all 5 OTP digits are entered — does NOT auto-submit.
-  /// For new accounts, moves focus to the name field so the user can
-  /// complete their profile before pressing Verify.
-  // When the last OTP digit is entered, move focus to the name field.
-  void _onCodeComplete(String _) => _nameFocusNode.requestFocus();
+  /// Called when all 5 OTP digits are entered.
+  /// - New accounts: move focus to the name field so the user can complete
+  ///   their profile before pressing Verify (does NOT auto-submit).
+  /// - Existing accounts: no name to collect, so verify the OTP directly.
+  void _onCodeComplete(String _) {
+    if (widget.isNewAccount) {
+      _nameFocusNode.requestFocus();
+    } else {
+      unawaited(_submit());
+    }
+  }
 
-  /// Called only by the Verify button — validates both fields then submits.
+  /// Called only by the Verify button — validates field(s) then submits.
   Future<void> _submit() async {
     final code = _codeFieldKey.currentState?.getCode() ?? '';
     if (code.length != 5) {
       SmSnackbar.error(context, 'Please enter all 5 digits');
       return;
     }
-    if (_nameController.text.trim().isEmpty) {
+    // Name is collected (and required) only when provisioning a new account.
+    if (widget.isNewAccount && _nameController.text.trim().isEmpty) {
       SmSnackbar.error(context, 'Please enter your name');
       _nameFocusNode.requestFocus();
       return;
@@ -70,27 +83,32 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       identifierType: widget.identifierType,
       identifier: widget.phone,
       code: code,
-      displayName: _nameController.text.trim(),
+      displayName:
+          widget.isNewAccount ? _nameController.text.trim() : null,
     );
   }
 
-  String _getErrorMessage(NetworkExceptions failure) {
-    final s = failure.toString();
-    if (s.contains('INVALID_OTP')) return 'Invalid OTP code. Please try again';
-    if (s.contains('OTP_EXPIRED') || s.contains('EXPIRED')) {
-      return 'OTP code has expired. Tap Resend to get a new one';
-    }
-    if (s.contains('ACCOUNT_LOCKED')) {
-      return 'Too many attempts. Please try again in 30 minutes';
-    }
-    if (s.contains('RATE_LIMITED')) {
-      return 'Too many requests. Please wait 60 seconds and try again';
-    }
-    if (s.contains('network')) {
-      return 'Network error. Please check your connection';
-    }
-    return 'Verification failed. Please try again';
-  }
+  /// Maps the failure to a user-facing message, keyed on the backend's
+  /// machine-readable `errorCode` (RFC 7807) — never HTTP status or English
+  /// title.
+  String _getErrorMessage(NetworkExceptions failure) => failure.maybeWhen(
+        validation: (code) => switch (code) {
+          'validation.invalid_format' || 'validation.invalid_otp' =>
+            'The code you entered is incorrect. Please try again',
+          'validation.otp_expired' || 'validation.expired' =>
+            'This code has expired. Tap Resend to get a new one',
+          'system.rate_limited' =>
+            'Too many attempts. Please wait a moment and try again',
+          'system.account_locked' =>
+            'Too many attempts. Please try again later',
+          _ => 'Verification failed. Please try again',
+        },
+        serverUnavailable: () =>
+            'StyleMint is temporarily unavailable. Please try again in a moment',
+        noInternetConnection: () =>
+            'Network error. Please check your connection',
+        orElse: () => 'Verification failed. Please try again',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -99,9 +117,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     // Side-effects react to the verification outcome (see SKILL §3.8).
     ref.listen<OtpVerificationState>(otpVerificationProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess: (_) => context.go(RouteNames.pickInterests),
+        // New accounts complete onboarding (pick interests); existing
+        // accounts go straight to home.
+        loadSuccess:
+            (_) => context.go(
+              widget.isNewAccount
+                  ? RouteNames.pickInterests
+                  : RouteNames.home,
+            ),
         loadFailure: (failure) {
-          SmSnackbar.error(context, _getErrorMessage(failure));
+          // Inline error (red boxes + message) instead of a transient
+          // snackbar — the user needs to see it while re-entering the code.
+          setState(() => _codeError = _getErrorMessage(failure));
           _codeFieldKey.currentState?.clearCode();
         },
         orElse: () {},
@@ -167,37 +194,57 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         key: _codeFieldKey,
                         enabled: !isLoading,
                         codeLength: 5,
+                        hasError: _codeError != null,
                         onCompleted: _onCodeComplete,
+                        // Clear the error the moment the user edits the code.
+                        onChanged: () {
+                          if (_codeError != null) {
+                            setState(() => _codeError = null);
+                          }
+                        },
                       ),
+                      if (_codeError != null) ...[
+                        const SizedBox(height: DesignTokens.s8),
+                        Text(
+                          _codeError!,
+                          textAlign: TextAlign.center,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.colorError,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: DesignTokens.s24),
 
-                      // Name field — label above, input below.
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Your name',
-                          style: DesignTokens.mediumSemibold,
+                      // Name field — new accounts only. Existing accounts
+                      // verify with the OTP alone (no name prompt).
+                      if (widget.isNewAccount) ...[
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Your name',
+                            style: DesignTokens.mediumSemibold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      TextFormField(
-                        controller: _nameController,
-                        focusNode: _nameFocusNode,
-                        enabled: !isLoading,
-                        textCapitalization: TextCapitalization.words,
-                        textInputAction: TextInputAction.done,
-                        maxLength: 64,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14,
-                          color: DesignTokens.inputFieldData,
+                        const SizedBox(height: DesignTokens.s8),
+                        TextFormField(
+                          controller: _nameController,
+                          focusNode: _nameFocusNode,
+                          enabled: !isLoading,
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.done,
+                          maxLength: 64,
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            color: DesignTokens.inputFieldData,
+                          ),
+                          cursorColor: DesignTokens.primaryGreen,
+                          decoration: DesignTokens.inputDecoration(
+                            hintText: 'e.g. Alice',
+                          ).copyWith(counterText: ''),
                         ),
-                        cursorColor: DesignTokens.primaryGreen,
-                        decoration: DesignTokens.inputDecoration(
-                          hintText: 'e.g. Alice',
-                        ).copyWith(counterText: ''),
-                      ),
-                      const SizedBox(height: DesignTokens.s24),
+                        const SizedBox(height: DesignTokens.s24),
+                      ],
 
                       // Resend line
                       GestureDetector(
