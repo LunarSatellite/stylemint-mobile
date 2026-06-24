@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -511,18 +516,24 @@ class _BrandsScreenState extends State<BrandsScreen> {
   Widget _buildTopBar() {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppBodyLight,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.person_rounded,
-            size: 22,
-            color: DesignTokens.textMuted,
-          ),
+        Consumer(
+          builder: (_, ref, __) {
+            final path = ref.watch(avatarImagePathProvider);
+            return ClipOval(
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: path != null
+                    ? Image.file(File(path), fit: BoxFit.cover)
+                    : Container(
+                        color: DesignTokens.bgAppBodyLight,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.person_rounded,
+                            size: 22, color: DesignTokens.textMuted),
+                      ),
+              ),
+            );
+          },
         ),
         const Spacer(),
         _IconBtn(icon: Icons.search_rounded),
@@ -541,20 +552,23 @@ class _BrandsScreenState extends State<BrandsScreen> {
             child: const _StatSummaryCard(
               bg: DesignTokens.primaryGreen,
               iconBg: Color(0xFF27AE60),
-              icon: Icons.people_alt_rounded,
+              imagePath: 'assets/images/creatordash/Partnership.png',
               label: 'Active Partnerships',
               value: '3',
             ),
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
-        const Expanded(
-          child: _StatSummaryCard(
-            bg: DesignTokens.bgAppBody,
-            iconBg: DesignTokens.bgAppBodyLight,
-            icon: Icons.hourglass_bottom_rounded,
-            label: 'Pending Requests',
-            value: '2',
+        Expanded(
+          child: GestureDetector(
+            onTap: () => context.push(RouteNames.partnershipRequests),
+            child: const _StatSummaryCard(
+              bg: DesignTokens.bgAppBody,
+              iconBg: DesignTokens.bgAppBodyLight,
+              imagePath: 'assets/images/creatordash/Pending.png',
+              label: 'Pending Requests',
+              value: '2',
+            ),
           ),
         ),
       ],
@@ -610,16 +624,18 @@ class _StatSummaryCard extends StatelessWidget {
   const _StatSummaryCard({
     required this.bg,
     required this.iconBg,
-    required this.icon,
     required this.label,
     required this.value,
+    this.icon,
+    this.imagePath,
   });
 
   final Color bg;
   final Color iconBg;
-  final IconData icon;
+  final IconData? icon;
   final String label;
   final String value;
+  final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -638,10 +654,16 @@ class _StatSummaryCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconBg,
+                  color: imagePath != null ? Colors.transparent : iconBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 20, color: Colors.white),
+                child: imagePath != null
+                    ? Image.asset(
+                        imagePath!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      )
+                    : Icon(icon, size: 20, color: Colors.white),
               ),
               const Spacer(),
               const Icon(
@@ -1173,7 +1195,14 @@ class _BrandsBottomNav extends StatelessWidget {
           _NavBtn(
             icon: Icons.person_outline_rounded,
             label: 'Profile',
-            onTap: () => context.push(RouteNames.profile),
+            onTap: () => context.push(
+              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
+              extra: const CreatorProfileArgs(
+                accountId: 'me',
+                displayName: 'Danny Perierra',
+                handle: '@wandererperierra',
+              ),
+            ),
           ),
         ],
       ),

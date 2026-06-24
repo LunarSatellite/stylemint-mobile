@@ -32,8 +32,10 @@ import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/active_partnerships_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
@@ -87,7 +89,9 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/screens
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/profile_settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
@@ -594,6 +598,33 @@ GoRouter appRouter(Ref ref) {
         },
       ),
       GoRoute(
+        path: RouteNames.creatorProfileSettings,
+        builder: (ctx, state) {
+          final extra = state.extra is CreatorProfileArgs
+              ? state.extra! as CreatorProfileArgs
+              : const CreatorProfileArgs(
+                  accountId: '', displayName: '', handle: '');
+          return ProfileSettingsScreen(
+            displayName: extra.displayName,
+            handle: extra.handle,
+            avatarUrl: extra.avatarUrl,
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteNames.creatorEditProfile,
+        builder: (ctx, state) {
+          final extra = state.extra is CreatorProfileArgs
+              ? state.extra! as CreatorProfileArgs
+              : const CreatorProfileArgs(
+                  accountId: '', displayName: '', handle: '');
+          return CreatorEditProfileScreen(
+            initialDisplayName: extra.displayName,
+            initialHandle: extra.handle,
+          );
+        },
+      ),
+      GoRoute(
         path: RouteNames.partnerships,
         builder: (ctx, state) => const BrandsScreen(),
         routes: [
@@ -602,12 +633,25 @@ GoRouter appRouter(Ref ref) {
             builder: (ctx, state) => BrandDetailScreen(
               partnershipId: state.pathParameters['partnershipId']!,
             ),
+            routes: [
+              GoRoute(
+                path: _subPath(
+                    RouteNames.brandDetail, RouteNames.partnershipApply),
+                builder: (ctx, state) => PartnershipRequestScreen(
+                  args: state.extra! as PartnershipApplyArgs,
+                ),
+              ),
+            ],
           ),
         ],
       ),
       GoRoute(
         path: RouteNames.activePartnerships,
         builder: (ctx, state) => const ActivePartnershipsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.partnershipRequests,
+        builder: (ctx, state) => const PartnershipRequestsScreen(),
       ),
       GoRoute(
         path: RouteNames.brandInfo,

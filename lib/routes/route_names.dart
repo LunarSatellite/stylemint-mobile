@@ -77,7 +77,9 @@ abstract class RouteNames {
   static const reelStudioCreateDraft = '/creator/reel-studio/create';
   static const partnerships = '/creator/partnerships';
   static const brandDetail = '/creator/partnerships/:partnershipId';
+  static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
   static const activePartnerships = '/creator/partnerships/active';
+  static const partnershipRequests = '/creator/partnerships/requests';
   static const brandInfo = '/creator/brand-info';
   static const reach = '/creator/reach';
 
@@ -125,6 +127,8 @@ abstract class RouteNames {
 
   // Social
   static const creatorProfile = '/creator-profile/:accountId';
+  static const creatorProfileSettings = '/creator/profile-settings';
+  static const creatorEditProfile = '/creator/edit-profile';
   static const feed = '/feed';
   static const feedCreatePost = '/feed/create';
   static const stories = '/stories';

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // ── Data model ────────────────────────────────────────────────────────────────
@@ -97,7 +99,7 @@ class _BrandInfoScreenState extends State<BrandInfoScreen>
           ),
         ),
       ),
-      bottomNavigationBar: _ApplyButton(brandName: d.name),
+      bottomNavigationBar: _ApplyButton(data: d),
       body: Column(
         children: [
           // Header section (non-scrolling above tabs)
@@ -610,8 +612,8 @@ class _TermsCard extends StatelessWidget {
 // ── Apply for Partnership button ──────────────────────────────────────────────
 
 class _ApplyButton extends StatelessWidget {
-  const _ApplyButton({required this.brandName});
-  final String brandName;
+  const _ApplyButton({required this.data});
+  final BrandInfoData data;
 
   @override
   Widget build(BuildContext context) {
@@ -625,10 +627,18 @@ class _ApplyButton extends StatelessWidget {
         ),
         child: GestureDetector(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Partnership request sent to $brandName!'),
-                backgroundColor: DesignTokens.primaryGreen,
+            final min = _parseMin(data.commission);
+            final max = _parseMax(data.commission);
+            context.push(
+              RouteNames.partnershipApply
+                  .replaceFirst(':partnershipId', _slugify(data.name)),
+              extra: PartnershipApplyArgs(
+                partnershipId: _slugify(data.name),
+                vendorName: data.name,
+                vendorRating: data.stars,
+                vendorCategory: data.category,
+                commissionMin: min,
+                commissionMax: max,
               ),
             );
           },
@@ -654,3 +664,19 @@ class _ApplyButton extends StatelessWidget {
     );
   }
 }
+
+// Parses "12-20%" → 12.0, "18%" → 18.0
+double _parseMin(String s) {
+  final n = s.replaceAll('%', '').trim();
+  if (n.contains('-')) return double.tryParse(n.split('-')[0].trim()) ?? 0;
+  return double.tryParse(n) ?? 0;
+}
+
+double _parseMax(String s) {
+  final n = s.replaceAll('%', '').trim();
+  if (n.contains('-')) return double.tryParse(n.split('-')[1].trim()) ?? 0;
+  return double.tryParse(n) ?? 0;
+}
+
+String _slugify(String name) =>
+    name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
