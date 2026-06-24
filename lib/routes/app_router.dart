@@ -145,6 +145,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation/screens/vendor_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
@@ -761,6 +762,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorMatchmaking,
         builder: (ctx, state) => const MatchmakingScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorAnalytics,
+        builder: (ctx, state) => const VendorAnalyticsScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorEarnings,

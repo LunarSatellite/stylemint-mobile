@@ -122,6 +122,7 @@ abstract class RouteNames {
   static const vendorInquiries = '/vendor/inquiries';
   static const vendorCreatorPerformance = '/vendor/creator-performance';
   static const vendorCreatorAnalytics = '/vendor/creator-analytics';
+  static const vendorAnalytics = '/vendor/analytics';
   static const vendorMessageCreator = '/vendor/message-creator';
   static const vendorAdjustCommission = '/vendor/adjust-commission';
 

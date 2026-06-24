@@ -65,7 +65,13 @@ class _TopProductsScreenState extends State<TopProductsScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: Text(_isFiltered ? 'Top Products' : 'Top Products(This Month)', style: DesignTokens.oneLinerSemibold),
+        title: const Text('Top Products', style: DesignTokens.oneLinerSemibold),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: DesignTokens.textWhite, size: 22),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,10 +304,10 @@ class _StockChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isLow ? const Color(0xFF2A1A00) : const Color(0xFF003A3A);
-    final border = isLow ? const Color(0xFFFFB800) : const Color(0xFF00BCD4);
-    final textColor = isLow ? const Color(0xFFFFB800) : const Color(0xFF00BCD4);
-    final label = isLow ? 'Low Stock ($count)' : 'In Stock ($count)';
+    final bg = isLow ? const Color(0xFF2A1A00) : const Color(0xFF0A2A0A);
+    final border = isLow ? const Color(0xFFFFB800) : DesignTokens.primaryGreen;
+    final textColor = isLow ? const Color(0xFFFFB800) : DesignTokens.primaryGreen;
+    final label = isLow ? 'Low Stock ($count)' : 'Sufficient Stock($count)';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
