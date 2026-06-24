@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class OrderWaitingTrackingScreen extends StatefulWidget {
@@ -20,7 +21,6 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
       shippingMethod: 'FedEx',
       shipBy: 'Dec 20, 2024',
       orderDate: 'Dec 15, 2024',
-      assetTag: 'assets/images/tag_fedex.png',
     ),
     _TrackingOrder(
       id: '2',
@@ -31,7 +31,6 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
       shippingMethod: 'DHL Express',
       shipBy: 'Dec 17, 2024',
       orderDate: 'Dec 15, 2024',
-      assetTag: 'assets/images/tag_dhl.png',
     ),
   ];
 
@@ -46,7 +45,7 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: Text('Order Waiting Tracking...', style: DesignTokens.oneLinerSemibold),
+        title: Text('Orders Waiting Tracking (${_orders.length})', style: DesignTokens.oneLinerSemibold),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined, color: DesignTokens.textWhite, size: 22),
@@ -63,6 +62,10 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
         separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s4),
         itemBuilder: (context, index) => _OrderCard(
           order: _orders[index],
+          onTap: () => context.push(
+            RouteNames.vendorOrderDetail
+                .replaceFirst(':orderId', _orders[index].id),
+          ),
           onAssign: () => _showAssignSheet(context, _orders[index]),
         ),
       ),
@@ -70,7 +73,7 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
   }
 
   void _showAssignSheet(BuildContext context, _TrackingOrder order) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF1C1C1E),
       isScrollControlled: true,
@@ -83,67 +86,160 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.onAssign});
+  const _OrderCard({
+    required this.order,
+    required this.onTap,
+    required this.onAssign,
+  });
 
   final _TrackingOrder order;
+  final VoidCallback onTap;
   final VoidCallback onAssign;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Package icon
+          // 48×48 icon container
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+              color: DesignTokens.bgAppBodyLight,
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset('assets/images/icon_ship_box.png', fit: BoxFit.contain),
+            alignment: Alignment.center,
+            child: Image.asset(
+              'assets/images/vendordashboard/Order.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(width: DesignTokens.s12),
+
           // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Order number — white 14px semibold
                 Text(
                   order.orderNumber,
-                  style: DesignTokens.smallRegular.copyWith(
-                    fontWeight: FontWeight.w700,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                     color: DesignTokens.textWhite,
+                    height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.customerName} • ${order.itemCount} items',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                    fontSize: 12,
+                const SizedBox(height: 4),
+
+                // Customer name (white) · item count (muted)
+                Row(
+                  children: [
+                    Text(
+                      order.customerName,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: DesignTokens.textWhite,
+                        height: 1.3,
+                      ),
+                    ),
+                    Container(
+                      width: 3,
+                      height: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF71717B),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Text(
+                      '${order.itemCount} items',
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF9F9FA9),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: DesignTokens.s8),
+
+                // Shipping Method chip — #B8E6FE bg, #024A70 text, truck icon
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB8E6FE),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.local_shipping_outlined,
+                        size: 12,
+                        color: Color(0xFF024A70),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Shipping Method: ${order.shippingMethod}',
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF024A70),
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: DesignTokens.s6),
-                if (order.assetTag != null)
-                  Image.asset(order.assetTag!, height: 26, fit: BoxFit.contain),
-                const SizedBox(height: DesignTokens.s6),
+                const SizedBox(height: DesignTokens.s4),
+
+                // Ship By (green) · Order Date (muted) — 11px
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11),
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 11,
+                      height: 1.2,
+                    ),
                     children: [
-                      TextSpan(
-                        text: 'Ship By: ${order.shipBy}',
-                        style: const TextStyle(color: DesignTokens.primaryGreen, fontWeight: FontWeight.w600),
+                      const TextSpan(
+                        text: 'Ship By: ',
+                        style: TextStyle(
+                          color: DesignTokens.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       TextSpan(
-                        text: ' • Order Date: ${order.orderDate}',
-                        style: TextStyle(color: DesignTokens.textMuted),
+                        text: order.shipBy,
+                        style: const TextStyle(
+                          color: DesignTokens.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const TextSpan(
+                        text: ' • ',
+                        style: TextStyle(color: Color(0xFF71717B)),
+                      ),
+                      TextSpan(
+                        text: 'Order Date: ${order.orderDate}',
+                        style: const TextStyle(color: Color(0xFF9F9FA9)),
                       ),
                     ],
                   ),
@@ -151,14 +247,21 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
           ),
-          // Chevron
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 16),
-            onPressed: onAssign,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+
+          // Chevron — opens assign sheet
+          GestureDetector(
+            onTap: onAssign,
+            child: const Padding(
+              padding: EdgeInsets.only(left: 8, top: 4),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                color: Color(0xFF9F9FA9),
+                size: 16,
+              ),
+            ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -286,7 +389,6 @@ class _TrackingOrder {
     required this.shippingMethod,
     required this.shipBy,
     required this.orderDate,
-    this.assetTag,
   });
 
   final String id;
@@ -297,5 +399,4 @@ class _TrackingOrder {
   final String shippingMethod;
   final String shipBy;
   final String orderDate;
-  final String? assetTag;
 }

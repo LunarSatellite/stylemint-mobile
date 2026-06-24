@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -102,7 +102,7 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
         ),
         actions: [
           _DarkIconButton(
-            assetPath: 'assets/images/money-bag-rounded.png',
+            assetPath: 'assets/images/vendordashboard/icon_payment.png',
             onTap: () {},
           ),
           const SizedBox(width: 8),

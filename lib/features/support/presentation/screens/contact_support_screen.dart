@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,7 +109,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
           ),
           const SizedBox(width: DesignTokens.s12),
           Image.asset(
-            'assets/images/support_illustration.png',
+            'assets/images/vendordashboard/support_illustration.png',
             width: 80,
             height: 80,
           ),
@@ -127,7 +127,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
         title: 'Vendor Support Chat',
         subtitle: 'Available · Wait: 1min',
         onTap: () {},
-        customIcon: 'assets/images/icon_chat.png',
+        customIcon: 'assets/images/vendordashboard/icon_chat.png',
         subtitleColor: const Color(0xFF9F9FA9),
       ),
       _Channel(
@@ -135,21 +135,21 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
         title: 'Email Support',
         subtitle: 'Response within 15 min',
         onTap: () {},
-        customIcon: 'assets/images/icon_email.png',
+        customIcon: 'assets/images/vendordashboard/icon_email.png',
       ),
       _Channel(
         icon: Icons.phone_outlined,
         title: 'Creator Hotline (1-800-VENDOR)',
         subtitle: 'Mon-Fri, 9 AM – 6 PM EST',
         onTap: () {},
-        customIcon: 'assets/images/icon_phone.png',
+        customIcon: 'assets/images/vendordashboard/icon_phone.png',
       ),
       _Channel(
         icon: Icons.archive_outlined,
         title: 'Vendor Resources',
         subtitle: 'Articles & Help for Vendors',
         onTap: _showResourcesSheet,
-        customIcon: 'assets/images/icon_resources.png',
+        customIcon: 'assets/images/vendordashboard/icon_resources.png',
       ),
     ];
 
@@ -260,10 +260,10 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
 
   Widget _buildQuickActions() {
     final actions = [
-      _QuickAction(icon: Icons.local_shipping_outlined, label: 'Order Fulfillment Issues', customIcon: 'assets/images/icon_truck.png'),
-      _QuickAction(icon: Icons.inventory_2_outlined, label: 'Inventory Sync Problems', customIcon: 'assets/images/icon_resources.png'),
-      _QuickAction(icon: Icons.monetization_on_outlined, label: 'Payment/Payout Questions', customIcon: 'assets/images/icon_payment.png'),
-      _QuickAction(icon: Icons.handshake_outlined, label: 'Creator Partnership Help', customIcon: 'assets/images/icon_partnership.png'),
+      _QuickAction(icon: Icons.local_shipping_outlined, label: 'Order Fulfillment Issues', customIcon: 'assets/images/vendordashboard/icon_truck.png'),
+      _QuickAction(icon: Icons.inventory_2_outlined, label: 'Inventory Sync Problems', customIcon: 'assets/images/vendordashboard/icon_resources.png'),
+      _QuickAction(icon: Icons.monetization_on_outlined, label: 'Payment/Payout Questions', customIcon: 'assets/images/vendordashboard/icon_payment.png'),
+      _QuickAction(icon: Icons.handshake_outlined, label: 'Creator Partnership Help', customIcon: 'assets/images/vendordashboard/icon_partnership.png'),
     ];
 
     return GridView.count(
@@ -662,7 +662,7 @@ class _TicketDetailSheet extends StatelessWidget {
               const SizedBox(width: DesignTokens.s8),
               _buildThumbnail('assets/images/attachment_2.png', false),
               const SizedBox(width: DesignTokens.s8),
-              _buildThumbnail('assets/images/attachment_3.png', true),
+              _buildThumbnail('assets/images/vendordashboard/attachment_3.png', true),
             ],
           ),
         ],
@@ -680,6 +680,11 @@ class _TicketDetailSheet extends StatelessWidget {
             width: 80,
             height: 80,
             fit: BoxFit.cover,
+            errorBuilder: (ctx, e, st) => Container(
+              width: 80,
+              height: 80,
+              color: DesignTokens.bgAppBodyLight,
+            ),
           ),
         ),
         if (hasOverflow)

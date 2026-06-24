@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -60,7 +60,7 @@ class VendorApplyRejectedScreen extends StatelessWidget {
 
   Widget _buildRejectedBadge() {
     return Image.asset(
-      'assets/images/badge_rejected.png',
+      'assets/images/vendordashboard/badge_rejected.png',
       width: 90,
       height: 90,
     );

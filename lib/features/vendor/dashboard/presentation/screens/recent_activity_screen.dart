@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -16,7 +16,7 @@ class _RecentActivityScreenState extends State<RecentActivityScreen> {
     _ActivityGroup(date: 'Today', items: [
       _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
       _ActivityItem(type: _ActivityType.payoutReceived, title: 'Payout Completed', description: 'Your Payout of Rs 12,24,575.00 was processed', time: '5h ago · Bank A/C ******8799'),
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'Creator Partnership Request', description: 'New Creator Partnership: @style_guru applied to promote your products', time: '5h ago · Bank A/C ******8799', actionLabel: 'Review Application'),
+      _ActivityItem(type: _ActivityType.orderReceived, title: 'Creator Partnership Request', description: 'New Creator Partnership: @style_guru applied to promote your products', time: '5h ago', actionLabel: 'Review Application'),
     ]),
     _ActivityGroup(date: 'Yesterday', items: [
       _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8911 - Rs 44,909 via @fashion_sarah', time: 'Yesterday at 11:45 PM', actionLabel: 'View Order'),
@@ -56,11 +56,11 @@ class _RecentActivityScreenState extends State<RecentActivityScreen> {
         title: Text('Recent Activity', style: DesignTokens.oneLinerSemibold),
         actions: [
           IconButton(
-            icon: Image.asset('assets/images/icon_filter_alt.png', width: 22, height: 22),
+            icon: Image.asset('assets/images/vendordashboard/icon_filter_alt.png', width: 22, height: 22),
             onPressed: _showFilterSheet,
           ),
           IconButton(
-            icon: Image.asset('assets/images/icon_file_export.png', width: 22, height: 22),
+            icon: Image.asset('assets/images/vendordashboard/icon_file_export.png', width: 22, height: 22),
             onPressed: () {},
           ),
         ],
@@ -181,11 +181,11 @@ class _ActivityRow extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    border: Border.all(color: DesignTokens.borderDefault),
+                    border: Border.all(color: item.type.iconColor.withValues(alpha: 0.3)),
                     shape: BoxShape.circle,
-                    color: const Color(0xFF1C1C1E),
+                    color: item.type.iconColor.withValues(alpha: 0.1),
                   ),
-                  child: const Icon(Icons.access_time_outlined, color: DesignTokens.textMuted, size: 18),
+                  child: Icon(item.type.icon, color: item.type.iconColor, size: 18),
                 ),
                 if (!isLast)
                   Container(width: 1, height: 24, color: DesignTokens.borderDefault, margin: const EdgeInsets.only(top: 4)),
@@ -318,6 +318,30 @@ enum _ActivityType {
       case payoutReceived: return 'Payout Received';
       case inventoryLowAlerts: return 'Inventory Low Alerts';
       case customerInquiry: return 'Customer Inquiries';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case orderReceived: return Icons.shopping_bag_outlined;
+      case orderShipped: return Icons.local_shipping_outlined;
+      case productsAdded: return Icons.add_box_outlined;
+      case productsUpdated: return Icons.inventory_2_outlined;
+      case payoutReceived: return Icons.account_balance_wallet_outlined;
+      case inventoryLowAlerts: return Icons.warning_amber_outlined;
+      case customerInquiry: return Icons.chat_bubble_outline;
+    }
+  }
+
+  Color get iconColor {
+    switch (this) {
+      case orderReceived: return DesignTokens.primaryGreen;
+      case orderShipped: return const Color(0xFF4DA6FF);
+      case productsAdded: return DesignTokens.primaryGreen;
+      case productsUpdated: return const Color(0xFFFFB800);
+      case payoutReceived: return const Color(0xFF4DA6FF);
+      case inventoryLowAlerts: return DesignTokens.colorError;
+      case customerInquiry: return const Color(0xFFFFB800);
     }
   }
 }

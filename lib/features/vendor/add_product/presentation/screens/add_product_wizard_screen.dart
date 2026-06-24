@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/step5_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/widgets/wizard_step_indicator.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class AddProductWizardScreen extends ConsumerWidget {
@@ -43,6 +44,31 @@ class AddProductWizardScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await notifier.saveDraft();
+              if (!context.mounted) return;
+              final saved = ref.read(addProductNotifierProvider).maybeWhen(
+                    saveSuccess: (_, d) => true,
+                    orElse: () => false,
+                  );
+              if (saved) {
+                SmSnackbar.success(context, 'Draft saved.');
+              } else {
+                SmSnackbar.info(
+                  context,
+                  'Complete all steps to save as draft.',
+                );
+              }
+            },
+            child: Text(
+              'Save as Draft',
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.primaryGreen),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -51,28 +77,11 @@ class AddProductWizardScreen extends ConsumerWidget {
               horizontal: DesignTokens.s16,
               vertical: DesignTokens.s12,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (currentStep > 1)
-                  TextButton(
-                    onPressed: () => notifier.prevStep(),
-                    child: Text('Back',
-                        style: DesignTokens.mediumSemibold.copyWith(
-                            color: DesignTokens.textMuted)),
-                  )
-                else
-                  const SizedBox(width: 48),
-                WizardStepIndicator(
-                  currentStep: currentStep,
-                  totalSteps: 5,
-                ),
-                const SizedBox(width: 48),
-              ],
+            child: WizardStepIndicator(
+              currentStep: currentStep,
+              totalSteps: 5,
             ),
           ),
-          _StepLabel(currentStep: currentStep, totalSteps: 5),
-          const SizedBox(height: DesignTokens.s8),
           Expanded(
             child: IndexedStack(
               index: currentStep - 1,
@@ -91,26 +100,3 @@ class AddProductWizardScreen extends ConsumerWidget {
   }
 }
 
-class _StepLabel extends StatelessWidget {
-  const _StepLabel({required this.currentStep, required this.totalSteps});
-
-  final int currentStep;
-  final int totalSteps;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (currentStep) {
-      1 => 'Basic Info',
-      2 => 'Images',
-      3 => 'Pricing',
-      4 => 'Shipping',
-      5 => 'Review',
-      _ => '',
-    };
-
-    return Text(
-      'Step $currentStep of $totalSteps: $label',
-      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-    );
-  }
-}

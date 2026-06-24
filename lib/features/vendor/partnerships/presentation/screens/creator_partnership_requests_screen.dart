@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -11,7 +11,7 @@ class CreatorPartnershipRequestsScreen extends StatelessWidget {
       creatorName: 'Immovable Royale',
       handle: '@immovableroyale',
       commission: '12% - 18%',
-      assetAvatar: 'assets/images/creator_avatar_immovable.png',
+      assetAvatar: null,
       niche: 'Fitness & Sports',
       audienceGroup: 'Fitness Enthusiasts, Sport People & Athletes',
       message: 'Hi there! We love your sports content and think you\'d be a great fit for our winter collection. Interested in a collaboration?',
@@ -132,7 +132,7 @@ class _RequestCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: DesignTokens.s8),
-            Image.asset('assets/images/separator_line.png', width: double.infinity, height: 1, fit: BoxFit.fitWidth),
+            const Divider(color: DesignTokens.borderDefault, height: 1, thickness: 1),
             const SizedBox(height: DesignTokens.s8),
             // Niche & followers tags
             Row(
@@ -221,7 +221,7 @@ class _PartnershipDetailScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: DesignTokens.s16),
-            child: Image.asset('assets/images/icon_vector_share.png', width: 22, height: 22),
+            child: Image.asset('assets/images/vendordashboard/icon_vector_share.png', width: 22, height: 22),
           ),
         ],
       ),
@@ -254,9 +254,9 @@ class _PartnershipDetailScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFF1A2A1A),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: DesignTokens.primaryGreen.withOpacity(0.4)),
+                          border: Border.all(color: DesignTokens.primaryGreen.withValues(alpha: 0.4)),
                         ),
-                        child: Text(request.statusChip, style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11, color: DesignTokens.primaryGreen)),
+                        child: Text(request.statusChip, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11, color: DesignTokens.primaryGreen)),
                       ),
                     ],
                   ),
@@ -285,14 +285,14 @@ class _PartnershipDetailScreen extends StatelessWidget {
               mainAxisSpacing: DesignTokens.s8,
               childAspectRatio: 1.0,
               children: [
-                _MetricTile(assetIcon: 'assets/images/icon_followers.png', value: request.followers, label: 'Followers'),
-                _MetricTile(assetIcon: 'assets/images/icon_reels_metric.png', value: request.reels, label: 'Reels'),
-                _MetricTile(assetIcon: 'assets/images/icon_thumb_up.png', value: request.likes, label: 'Likes'),
-                _MetricTile(assetIcon: 'assets/images/icon_star_metric.png', value: request.rating, label: 'Stars'),
-                _MetricTile(assetIcon: 'assets/images/icon_instagram.png', value: request.reach, label: 'Followers'),
-                _MetricTile(assetIcon: 'assets/images/icon_tiktok.png', value: request.engagement, label: 'Followers'),
-                _MetricTile(assetIcon: 'assets/images/icon_youtube.png', value: request.subscribers, label: 'Subscribers'),
-                _MetricTile(assetIcon: 'assets/images/icon_facebook.png', value: request.followers, label: 'Likes'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_followers.png', value: request.followers, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_reels.png', value: request.reels, label: 'Reels'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_thumb_up.png', value: request.likes, label: 'Likes'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: request.rating, label: 'Stars'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_instagram.png', value: request.reach, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_tiktok.png', value: request.engagement, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_youtube.png', value: request.subscribers, label: 'Subscribers'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_facebook.png', value: request.followers, label: 'Likes'),
               ],
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -306,14 +306,18 @@ class _PartnershipDetailScreen extends StatelessWidget {
                 itemCount: 3,
                 separatorBuilder: (_, __) => const SizedBox(width: DesignTokens.s8),
                 itemBuilder: (_, i) {
-                  final shoes = ['assets/images/sample_shoe1.png', 'assets/images/sample_shoe2.png', 'assets/images/sample_shoe3.png'];
                   return ClipRRect(
-                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                    child: Image.asset(
-                      shoes[i],
+                    borderRadius:
+                        BorderRadius.circular(DesignTokens.inputRadius),
+                    child: Container(
                       width: 100,
                       height: 100,
-                      fit: BoxFit.cover,
+                      color: DesignTokens.bgAppBodyLight,
+                      child: const Icon(
+                        Icons.image_outlined,
+                        color: DesignTokens.textMuted,
+                        size: 32,
+                      ),
                     ),
                   );
                 },
@@ -334,7 +338,7 @@ class _PartnershipDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                     ),
                     padding: const EdgeInsets.all(8),
-                    child: Image.asset('assets/images/icon_courier_offer.png'),
+                    child: Image.asset('assets/images/vendordashboard/icon_courier_offer.png'),
                   ),
                   const SizedBox(width: DesignTokens.s12),
                   Expanded(
@@ -492,7 +496,6 @@ class _DetailRow extends StatelessWidget {
       text: TextSpan(
         style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 12),
         children: [
-          const TextSpan(text: '', style: TextStyle(color: Color(0xFFFFFFFF))),
           TextSpan(text: '$label: ', style: const TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.w600)),
           TextSpan(text: value, style: const TextStyle(color: Color(0xFFD4D4D8), fontWeight: FontWeight.w400)),
         ],
