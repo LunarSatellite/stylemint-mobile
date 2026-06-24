@@ -1,16 +1,19 @@
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-// Free HTTPS MP4s from stable public CDNs (Flutter's assets-for-api-docs,
-// media.w3.org, Blender) — no auth required. (The old gtv-videos-bucket
-// sample URLs now return 403 and were replaced.)
+// A mix of portrait + landscape HTTPS MP4s (no auth/referer required), to
+// exercise the aspect-aware ReelPlayer:
+//   - Portrait (1080x1920): Cloudinary's public demo cloud, cropped to 9:16
+//     on the fly via `c_fill,h_1920,w_1080` — these fill the screen (cover).
+//   - Landscape (16:9): flutter.github.io / media.w3.org sample clips — these
+//     are letterboxed (contain) so they aren't zoomed in.
 final kMockReels = <Reel>[
   Reel(
     id: 'reel_001',
     sourceUrl: 'https://www.youtube.com/shorts/K4TOrB4TTSg',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel1/400/700',
     videoUrl:
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+        'https://res.cloudinary.com/demo/video/upload/c_fill,h_1920,w_1080/dog.mp4',
     creatorId: 'u_002',
     creatorName: 'Nina Bloom',
     creatorAvatarUrl: '',
@@ -47,7 +50,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/Ct3lR1sUhwA',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel2/400/700',
     videoUrl:
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
     creatorId: 'u_001',
     creatorName: 'Maya Lume',
     creatorAvatarUrl: '',
@@ -77,7 +80,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/q4LOvgAGX8g',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel3/400/700',
     videoUrl:
-        'https://media.w3.org/2010/05/sintel/trailer.mp4',
+        'https://res.cloudinary.com/demo/video/upload/c_fill,h_1920,w_1080/snow_horses.mp4',
     creatorId: 'u_005',
     creatorName: 'Theo Run',
     creatorAvatarUrl: '',
@@ -144,7 +147,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/BVBsXMbsC4o',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel5/400/700',
     videoUrl:
-        'https://media.w3.org/2010/05/video/movie_300.mp4',
+        'https://res.cloudinary.com/demo/video/upload/c_fill,h_1920,w_1080/elephants.mp4',
     creatorId: 'u_006',
     creatorName: 'Lena Styles',
     creatorAvatarUrl: '',
@@ -181,7 +184,7 @@ final kMockReels = <Reel>[
     sourceUrl: 'https://www.youtube.com/shorts/Px_EHgW4y9k',
     thumbnailUrl: 'https://picsum.photos/seed/stylemint-reel6/400/700',
     videoUrl:
-        'https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4',
+        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
     creatorId: 'u_003',
     creatorName: 'Ravi Kit',
     creatorAvatarUrl: '',
