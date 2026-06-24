@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -66,7 +66,7 @@ class VendorApplyUnderReviewScreen extends StatelessWidget {
 
   Widget _buildFolderIcon() {
     return Image.asset(
-      'assets/images/badge_under_review.png',
+      'assets/images/vendordashboard/badge_under_review.png',
       width: 90,
       height: 90,
     );

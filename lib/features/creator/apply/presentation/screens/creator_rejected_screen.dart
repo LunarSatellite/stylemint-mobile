@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -26,7 +26,7 @@ class CreatorRejectedScreen extends ConsumerWidget {
                   children: [
                     // Rejected icon
                     Image.asset(
-                      'assets/images/Crossed.png',
+                      'assets/images/vendordashboard/Crossed.png',
                       width: 100,
                       height: 100,
                     ),

@@ -102,6 +102,8 @@ abstract class RouteNames {
   static const vendorPendingInquiries = '/vendor/orders/pending-inquiries';
   static const vendorCreatorPartnershipRequests = '/vendor/partnerships/requests';
   static const vendorProducts = '/vendor/products';
+  static const vendorUpdateStock = '/vendor/products/update-stock';
+  static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
   static const vendorRecentActivity = '/vendor/activity';
   static const vendorPartnerships = '/vendor/partnerships';

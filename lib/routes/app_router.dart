@@ -144,7 +144,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
 
 import 'route_names.dart';
@@ -177,6 +180,11 @@ const _publicPaths = {
   RouteNames.creatorApplyUnderReview,
   RouteNames.creatorApplyApproved,
   RouteNames.creatorApplyRejected,
+  RouteNames.vendorApply,
+  RouteNames.vendorApplySubmitted,
+  RouteNames.vendorApplyUnderReview,
+  RouteNames.vendorApplyApproved,
+  RouteNames.vendorApplyRejected,
   RouteNames.creatorSupportContact,
   // Browse-friendly paths — accessible without auth
   RouteNames.home,
@@ -684,6 +692,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorProducts,
         builder: (ctx, state) => const VendorProductsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorUpdateStock,
+        builder: (ctx, state) => UpdateProductStockScreen(
+          product: state.extra as VendorProduct,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorProductAnalytics,
+        builder: (ctx, state) => ProductAnalyticsScreen(
+          product: state.extra as VendorProduct,
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorOrders,

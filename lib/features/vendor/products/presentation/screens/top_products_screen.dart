@@ -21,7 +21,7 @@ class _TopProductsScreenState extends State<TopProductsScreen> {
   static final _products = [
     _Product(
       name: 'Nike Air Max 2025',
-      assetImage: 'assets/images/product_nike_air_max.png',
+      assetImage: null,
       rating: 4.8,
       totalSales: 45,
       revenue: 'Rs 1,35,345',
@@ -32,7 +32,7 @@ class _TopProductsScreenState extends State<TopProductsScreen> {
     ),
     _Product(
       name: 'Nike Air Jordan Travis Scott Limited Edition',
-      assetImage: 'assets/images/product_nike_air_jordan.png',
+      assetImage: null,
       rating: 4.8,
       totalSales: 45,
       revenue: 'Rs 1,35,345',
@@ -43,7 +43,7 @@ class _TopProductsScreenState extends State<TopProductsScreen> {
     ),
     _Product(
       name: 'Nike Air Wind Sheeter Goretrex Ultra Thin Edition',
-      assetImage: 'assets/images/product_nike_windsheeter.png',
+      assetImage: null,
       rating: 4.8,
       totalSales: 45,
       revenue: 'Rs 1,35,345',
@@ -204,8 +204,20 @@ class _ProductCard extends StatelessWidget {
                   child: Container(
                     width: 64,
                     height: 64,
-                    color: Colors.white,
-                    child: Image.asset(product.assetImage!, width: 64, height: 64, fit: BoxFit.cover),
+                    color: DesignTokens.bgAppBodyLight,
+                    child: product.assetImage != null
+                        ? Image.asset(
+                            product.assetImage!,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox(),
+                          )
+                        : const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: DesignTokens.textMuted,
+                            size: 28,
+                          ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
@@ -289,7 +301,7 @@ class _StockChip extends StatelessWidget {
     final bg = isLow ? const Color(0xFF2A1A00) : const Color(0xFF003A3A);
     final border = isLow ? const Color(0xFFFFB800) : const Color(0xFF00BCD4);
     final textColor = isLow ? const Color(0xFFFFB800) : const Color(0xFF00BCD4);
-    final label = isLow ? '⚠ Low Stock($count)' : 'Sufficient Stock($count)';
+    final label = isLow ? 'Low Stock ($count)' : 'In Stock ($count)';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
@@ -389,7 +401,7 @@ class _FilterSheetState extends State<_FilterSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Filter Reels', style: DesignTokens.mediumSemibold),
+                Text('Filter Products', style: DesignTokens.mediumSemibold),
                 IconButton(
                   icon: const Icon(Icons.close, color: DesignTokens.textMuted, size: 20),
                   onPressed: () => Navigator.pop(context),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -13,18 +13,19 @@ class VendorProductTile extends StatelessWidget {
 
   final VendorProduct product;
   final VoidCallback onTap;
-
-  /// Opens the spec action sheet (Edit Details / Update Stock / Deactivate).
   final VoidCallback? onMore;
 
-  Color _statusColor() {
-    return switch (product.status) {
-      VendorProductStatus.active => DesignTokens.primaryGreen,
-      VendorProductStatus.draft => DesignTokens.secondaryYellow,
-      VendorProductStatus.outOfStock => DesignTokens.colorError,
-      VendorProductStatus.discontinued => DesignTokens.textMuted,
-    };
-  }
+  static const _lowStockThreshold = 100;
+
+  bool get _isDraft => product.status == VendorProductStatus.draft;
+  bool get _isOutOfStock => product.status == VendorProductStatus.outOfStock;
+  bool get _isActive => product.status == VendorProductStatus.active;
+
+  bool get _isLowStock =>
+      product.stockCount < _lowStockThreshold && _isActive;
+
+  String get _stockValue =>
+      product.stockCount == 0 ? 'Not Set Yet' : '${product.stockCount} units';
 
   @override
   Widget build(BuildContext context) {
@@ -35,80 +36,137 @@ class VendorProductTile extends StatelessWidget {
           horizontal: DesignTokens.s16,
           vertical: DesignTokens.s6,
         ),
-        padding: const EdgeInsets.all(DesignTokens.s12),
         decoration: DesignTokens.cardDecoration(),
-        child: Row(
+        child: Column(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(DesignTokens.s8),
-              child: Image.network(
-                product.imageUrl,
-                width: 72,
-                height: 72,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 72,
-                  height: 72,
-                  color: DesignTokens.bgAppBodyLight,
-                  child: const Icon(Icons.image,
-                      color: DesignTokens.textMuted),
-                ),
-              ),
-            ),
-            const SizedBox(width: DesignTokens.s12),
-            Expanded(
-              child: Column(
+            // ── Top: image + info + 3-dot ─────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(DesignTokens.s12),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    product.name,
-                    style: DesignTokens.mediumSemibold,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Product image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(DesignTokens.s8),
+                    child: Image.network(
+                      product.imageUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 72,
+                        height: 72,
+                        color: DesignTokens.bgAppBodyLight,
+                        child: const Icon(
+                          Icons.image,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    formatMoney(product.price),
-                    style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.primaryGreen),
-                  ),
-                  const SizedBox(height: DesignTokens.s4),
-                  Row(
-                    children: [
-                      _StatusBadge(
-                        label: product.status.label,
-                        color: _statusColor(),
-                      ),
-                      const SizedBox(width: DesignTokens.s8),
-                      Text(
-                        'Stock: ${product.stockCount}',
-                        style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted),
-                      ),
-                      const Spacer(),
-                      Icon(Icons.star,
-                          size: 14, color: DesignTokens.secondaryYellow),
-                      const SizedBox(width: 2),
-                      Text(
-                        product.rating.toStringAsFixed(1),
-                        style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textLight),
-                      ),
-                    ],
+                  const SizedBox(width: DesignTokens.s12),
+                  // Name / price / badges
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                product.name,
+                                style: DesignTokens.mediumSemibold,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (onMore != null)
+                              GestureDetector(
+                                onTap: onMore,
+                                behavior: HitTestBehavior.opaque,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(left: DesignTokens.s4),
+                                  child: Icon(
+                                    Icons.more_vert,
+                                    size: 20,
+                                    color: DesignTokens.iconLight,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: DesignTokens.s4),
+                        Text(
+                          product.commissionRate != null
+                              ? '${formatMoney(product.price)} · ${product.commissionRate!.toStringAsFixed(0)}% Commission'
+                              : formatMoney(product.price),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                        // Draft shows no badges
+                        if (!_isDraft) ...[
+                          const SizedBox(height: DesignTokens.s8),
+                          Wrap(
+                            spacing: DesignTokens.s6,
+                            runSpacing: DesignTokens.s4,
+                            children: [
+                              _SalesBadge(count: product.totalSales),
+                              if (_isLowStock) const _LowStockBadge(),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            if (onMore != null)
-              GestureDetector(
-                onTap: onMore,
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(DesignTokens.s4),
-                  child: Icon(Icons.more_vert,
-                      size: 20, color: DesignTokens.iconLight),
-                ),
+            // ── Divider ───────────────────────────────────────────────────
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: DesignTokens.borderDefault.withValues(alpha: 0.4),
+            ),
+            // ── Stats ─────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s12,
               ),
+              child: Column(
+                children: [
+                  // Draft and Active show In Stock; Out of Stock omits it
+                  if (!_isOutOfStock) ...[
+                    _StatRow(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'In Stock',
+                      value: _stockValue,
+                    ),
+                    const SizedBox(height: DesignTokens.s8),
+                  ],
+                  // Draft hides Ratings and Featured in
+                  if (!_isDraft) ...[
+                    _StatRow(
+                      icon: Icons.star_outline,
+                      label: product.reviewCount != null
+                          ? 'Ratings (${product.reviewCount} Reviews)'
+                          : 'Ratings',
+                      value: product.rating.toStringAsFixed(1),
+                    ),
+                    const SizedBox(height: DesignTokens.s8),
+                    _AssetStatRow(
+                      assetIcon: 'assets/images/vendordashboard/icon_featured_in.png',
+                      label: 'Featured in',
+                      value: product.reelCount != null
+                          ? '${product.reelCount} reels'
+                          : '— reels',
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -116,26 +174,150 @@ class VendorProductTile extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.color});
+// ── Badges ────────────────────────────────────────────────────────────────────
 
-  final String label;
-  final Color color;
+class _SalesBadge extends StatelessWidget {
+  const _SalesBadge({required this.count});
+
+  final int count;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       ),
-      child: Text(
-        label,
-        style: DesignTokens.tiny.copyWith(
-            color: color, fontWeight: FontWeight.w600),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.shopping_bag_outlined,
+            size: 12,
+            color: DesignTokens.primaryGreen,
+          ),
+          const SizedBox(width: DesignTokens.s4),
+          Text(
+            '$count sales this month',
+            style: DesignTokens.tiny.copyWith(
+              color: DesignTokens.primaryGreen,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _LowStockBadge extends StatelessWidget {
+  const _LowStockBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
+      decoration: BoxDecoration(
+        color: DesignTokens.secondaryYellow.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.warning_amber_outlined,
+            size: 12,
+            color: DesignTokens.secondaryYellow,
+          ),
+          const SizedBox(width: DesignTokens.s4),
+          Text(
+            'Low Stock',
+            style: DesignTokens.tiny.copyWith(
+              color: DesignTokens.secondaryYellow,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stat row ──────────────────────────────────────────────────────────────────
+
+class _StatRow extends StatelessWidget {
+  const _StatRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: DesignTokens.textMuted),
+        const SizedBox(width: DesignTokens.s6),
+        Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssetStatRow extends StatelessWidget {
+  const _AssetStatRow({
+    required this.assetIcon,
+    required this.label,
+    required this.value,
+  });
+
+  final String assetIcon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Image.asset(assetIcon, width: 14, height: 14, color: DesignTokens.textMuted),
+        const SizedBox(width: DesignTokens.s6),
+        Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
+        ),
+      ],
     );
   }
 }

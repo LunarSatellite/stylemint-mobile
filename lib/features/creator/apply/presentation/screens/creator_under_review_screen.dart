@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -28,7 +28,7 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                   children: [
                     // Under-review illustration
                     Image.asset(
-                      'assets/images/underreview.png',
+                      'assets/images/vendordashboard/underreview.png',
                       width: 100,
                       height: 100,
                     ),

@@ -14,23 +14,23 @@ class Step1BasicInfoScreen extends ConsumerStatefulWidget {
 
 class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   late TextEditingController _nameController;
-  // SKU is collected/persisted on Step 3 (backend models it at step-3); this
-  // field is a cosmetic preview only — not wired.
   late TextEditingController _skuController;
-  late TextEditingController _shortDescController; // -> BasicInfo.shortDescription
-  late TextEditingController _descriptionController; // Full Description
   late TextEditingController _brandController;
-  late TextEditingController _tagController;
-  // Backend takes a single categoryId; the picker is single-select.
+  late TextEditingController _shortDescController;
+  late TextEditingController _descriptionController;
   String? _selectedCategoryId;
   String? _selectedCategoryName;
-  final List<String> _tags = [];
 
-  // Spec counter: "n/max Characters".
-  static Widget? _counter(BuildContext context,
-      {required int currentLength, required int? maxLength, required bool isFocused}) {
-    return Text('$currentLength/$maxLength Characters',
-        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight));
+  static Widget? _counter(
+    BuildContext context, {
+    required int currentLength,
+    required int? maxLength,
+    required bool isFocused,
+  }) {
+    return Text(
+      '$currentLength/$maxLength Characters',
+      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+    );
   }
 
   @override
@@ -38,29 +38,19 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
     super.initState();
     _nameController = TextEditingController();
     _skuController = TextEditingController();
+    _brandController = TextEditingController();
     _shortDescController = TextEditingController();
     _descriptionController = TextEditingController();
-    _brandController = TextEditingController();
-    _tagController = TextEditingController();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _skuController.dispose();
+    _brandController.dispose();
     _shortDescController.dispose();
     _descriptionController.dispose();
-    _brandController.dispose();
-    _tagController.dispose();
     super.dispose();
-  }
-
-  void _addTag() {
-    final tag = _tagController.text.trim();
-    if (tag.isNotEmpty && !_tags.contains(tag)) {
-      setState(() => _tags.add(tag));
-      _tagController.clear();
-    }
   }
 
   void _onNext() {
@@ -74,188 +64,209 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
       brand: _brandController.text.trim().isEmpty
           ? null
           : _brandController.text.trim(),
-      tags: List.from(_tags),
+      tags: const [],
     );
     ref.read(addProductNotifierProvider.notifier).updateBasicInfo(info);
     ref.read(addProductNotifierProvider.notifier).nextStep();
   }
 
+  bool get _canProceed =>
+      _nameController.text.trim().isNotEmpty &&
+      _shortDescController.text.trim().isNotEmpty &&
+      _descriptionController.text.trim().isNotEmpty &&
+      _selectedCategoryId != null;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Basic Information',
-            style: DesignTokens.sectionInnerTitle,
-          ),
-          const SizedBox(height: DesignTokens.s20),
-          TextField(
-            controller: _nameController,
-            maxLength: 100,
-            buildCounter: _counter,
-            style: DesignTokens.bodyText,
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Product Name',
-              hintText: 'Enter product name',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          TextField(
-            controller: _skuController,
-            style: DesignTokens.bodyText,
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'SKU (Stock Keeping Unit)',
-              hintText: 'e.g. SM-CAKE-001',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          TextField(
-            controller: _shortDescController,
-            maxLines: 2,
-            maxLength: 200,
-            buildCounter: _counter,
-            style: DesignTokens.bodyText,
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Short Description',
-              hintText: 'A one-line summary',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          TextField(
-            controller: _descriptionController,
-            maxLines: 4,
-            maxLength: 2000,
-            buildCounter: _counter,
-            style: DesignTokens.bodyText,
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Full Description',
-              hintText: 'Describe your product',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s20),
-          Text('Category', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s8),
-          ref.watch(productCategoriesProvider).when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: DesignTokens.s12),
-                  child: SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: DesignTokens.primaryGreen),
+    final categoriesAsync = ref.watch(productCategoriesProvider);
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Basic Information',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
+                const SizedBox(height: DesignTokens.s20),
+
+                // Product Name
+                TextField(
+                  controller: _nameController,
+                  maxLength: 100,
+                  buildCounter: _counter,
+                  style: DesignTokens.bodyText,
+                  onChanged: (_) => setState(() {}),
+                  decoration: DesignTokens.inputDecoration(
+                    labelText: 'Product Name',
+                    hintText: 'Enter product name',
                   ),
                 ),
-                error: (_, __) => Text('Could not load categories.',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.colorError)),
-                data: (categories) => Wrap(
-                  spacing: DesignTokens.s8,
-                  runSpacing: DesignTokens.s8,
-                  children: categories.map((cat) {
-                    final selected = _selectedCategoryId == cat.id;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedCategoryId = cat.id;
-                          _selectedCategoryName = cat.name;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s16,
-                          vertical: DesignTokens.s8,
-                        ),
-                        decoration: selected
-                            ? DesignTokens.chipDecorationSelected()
-                            : DesignTokens.chipDecorationDefault(),
-                        child: Text(
-                          cat.name,
-                          style: DesignTokens.mediumRegular.copyWith(
-                            color: selected
-                                ? DesignTokens.primaryGreen
-                                : DesignTokens.chipsDefaultText,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-          const SizedBox(height: DesignTokens.s20),
-          TextField(
-            controller: _brandController,
-            style: DesignTokens.bodyText,
-            decoration: DesignTokens.inputDecoration(
-              labelText: 'Brand (optional)',
-              hintText: 'Enter brand name',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s20),
-          Text('Tags', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _tagController,
+                const SizedBox(height: DesignTokens.s16),
+
+                // SKU
+                TextField(
+                  controller: _skuController,
                   style: DesignTokens.bodyText,
                   decoration: DesignTokens.inputDecoration(
-                    hintText: 'Add a tag',
+                    labelText: 'SKU (Stock Keeping Unit)',
+                    hintText: 'e.g. SM-CAKE-001',
                   ),
-                  onSubmitted: (_) => _addTag(),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              IconButton(
-                icon: const Icon(Icons.add_circle,
-                    color: DesignTokens.primaryGreen),
-                onPressed: _addTag,
-              ),
-            ],
-          ),
-          if (_tags.isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            Wrap(
-              spacing: DesignTokens.s8,
-              runSpacing: DesignTokens.s8,
-              children: _tags.map((tag) {
-                return Chip(
-                  label: Text(tag,
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite)),
-                  backgroundColor: DesignTokens.bgAppBodyLight,
-                  deleteIcon: const Icon(Icons.close,
-                      size: 16, color: DesignTokens.textMuted),
-                  onDeleted: () {
-                    setState(() => _tags.remove(tag));
-                  },
-                );
-              }).toList(),
+                const SizedBox(height: DesignTokens.s16),
+
+                // Category — dropdown
+                categoriesAsync.when(
+                  loading: () => const _CategoryShell(
+                    child: Center(
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: DesignTokens.primaryGreen),
+                      ),
+                    ),
+                  ),
+                  error: (e, _) => _CategoryShell(
+                    borderColor: DesignTokens.colorError,
+                    child: Text(
+                      'Could not load categories',
+                      style: DesignTokens.smallRegular
+                          .copyWith(color: DesignTokens.colorError),
+                    ),
+                  ),
+                  data: (categories) => _CategoryShell(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategoryId,
+                        hint: Text(
+                          'Select Category',
+                          style: DesignTokens.mediumRegular
+                              .copyWith(color: DesignTokens.textMuted),
+                        ),
+                        isExpanded: true,
+                        dropdownColor: DesignTokens.bgAppBodyLight,
+                        icon: const Icon(Icons.keyboard_arrow_down,
+                            color: DesignTokens.textMuted),
+                        style: DesignTokens.mediumRegular
+                            .copyWith(color: DesignTokens.textWhite),
+                        items: categories
+                            .map((cat) => DropdownMenuItem(
+                                  value: cat.id,
+                                  child: Text(cat.name),
+                                ))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v == null) return;
+                          setState(() {
+                            _selectedCategoryId = v;
+                            _selectedCategoryName =
+                                categories.firstWhere((c) => c.id == v).name;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+
+                // Brand (optional)
+                TextField(
+                  controller: _brandController,
+                  style: DesignTokens.bodyText,
+                  decoration: DesignTokens.inputDecoration(
+                    labelText: 'Brand (optional)',
+                    hintText: 'Enter brand name',
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+
+                // Short Description
+                TextField(
+                  controller: _shortDescController,
+                  maxLines: 2,
+                  maxLength: 200,
+                  buildCounter: _counter,
+                  style: DesignTokens.bodyText,
+                  onChanged: (_) => setState(() {}),
+                  decoration: DesignTokens.inputDecoration(
+                    labelText: 'Short Description',
+                    hintText: 'A one-line summary',
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+
+                // Full Description
+                TextField(
+                  controller: _descriptionController,
+                  maxLines: 4,
+                  maxLength: 2000,
+                  buildCounter: _counter,
+                  style: DesignTokens.bodyText,
+                  onChanged: (_) => setState(() {}),
+                  decoration: DesignTokens.inputDecoration(
+                    labelText: 'Full Description',
+                    hintText: 'Describe your product',
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s8),
+              ],
             ),
-          ],
-          const SizedBox(height: DesignTokens.s32),
-          SizedBox(
+          ),
+        ),
+
+        // Fixed Proceed button at bottom
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s24),
+          child: SizedBox(
             width: double.infinity,
             height: DesignTokens.buttonHeight,
             child: ElevatedButton(
-              onPressed: () {
-                if (_nameController.text.trim().isEmpty ||
-                    _shortDescController.text.trim().isEmpty ||
-                    _descriptionController.text.trim().isEmpty ||
-                    _selectedCategoryId == null) return;
-                _onNext();
-              },
+              onPressed: _canProceed ? _onNext : null,
               style: DesignTokens.primaryButtonStyle(),
-              child: Text('Next',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.buttonPrimaryText)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Proceed',
+                    style: DesignTokens.mediumSemibold
+                        .copyWith(color: DesignTokens.buttonPrimaryText),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  const Icon(Icons.arrow_forward,
+                      size: 16, color: DesignTokens.buttonPrimaryText),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryShell extends StatelessWidget {
+  const _CategoryShell({required this.child, this.borderColor});
+
+  final Widget child;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+        border: Border.all(color: borderColor ?? DesignTokens.borderDefault),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+      child: child,
     );
   }
 }

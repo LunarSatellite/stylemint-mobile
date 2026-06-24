@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -931,13 +931,13 @@ class _CreatorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _PerfRow(
-                  asset: 'assets/images/perf-revenue-generated.png',
+                  asset: 'assets/images/vendordashboard/icon_gross_sales.png',
                   label: 'Revenue Generated',
                   value: creator.revenueGenerated,
                   highlight: true,
                 ),
                 _PerfRow(
-                  asset: 'assets/images/perf-reels-published.png',
+                  asset: 'assets/images/vendordashboard/icon_reels.png',
                   label: 'Reels Published',
                   value: '${creator.reelsPublished}',
                 ),
@@ -947,17 +947,17 @@ class _CreatorCard extends StatelessWidget {
                   value: '${creator.sales}',
                 ),
                 _PerfRow(
-                  asset: 'assets/images/perf-views.png',
+                  asset: 'assets/images/vendordashboard/icon_followers.png',
                   label: 'Views',
                   value: creator.viewsLabel,
                 ),
                 _PerfRow(
-                  asset: 'assets/images/perf-commission-paid.png',
+                  asset: 'assets/images/vendordashboard/icon_payment.png',
                   label: 'Commission Paid',
                   value: creator.commissionPaid,
                 ),
                 _PerfRow(
-                  asset: 'assets/images/perf-roi.png',
+                  asset: 'assets/images/vendordashboard/icon_net_revenue.png',
                   label: 'Your ROI',
                   value: creator.roi,
                 ),

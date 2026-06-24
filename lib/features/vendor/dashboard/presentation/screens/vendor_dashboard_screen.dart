@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
@@ -9,6 +9,14 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+// Bottom nav tap destinations (null = current screen, stay)
+const _navRoutes = [
+  null,                       // 0 Home (current)
+  RouteNames.vendorOrders,    // 1 Orders
+  RouteNames.vendorProducts,  // 2 Products
+  RouteNames.settings,        // 3 Profile
+];
 
 final _sampleDashboard = VendorDashboard(
   totalRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
@@ -76,15 +84,15 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
   Widget _buildBottomNav() {
     const items = [
       _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-      _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Orders', assetIcon: 'assets/images/nav_orders.png'),
-      _NavItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view, label: 'Products', assetIcon: 'assets/images/nav_products.png'),
-      _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', assetIcon: 'assets/images/nav_profile.png'),
+      _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Orders', assetIcon: 'assets/images/vendordashboard/nav_orders.png'),
+      _NavItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view, label: 'Products', assetIcon: 'assets/images/vendordashboard/nav_products.png'),
+      _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', assetIcon: 'assets/images/vendordashboard/nav_profile.png'),
     ];
 
     return Container(
       decoration: BoxDecoration(
         color: DesignTokens.bgAppFoundation,
-        border: Border(top: BorderSide(color: DesignTokens.borderDefault.withOpacity(0.3))),
+        border: Border(top: BorderSide(color: DesignTokens.borderDefault.withValues(alpha: 0.3))),
       ),
       child: SafeArea(
         top: false,
@@ -97,7 +105,14 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
               final item = entry.value;
               final selected = _selectedIndex == i;
               return GestureDetector(
-                onTap: () => setState(() => _selectedIndex = i),
+                onTap: () {
+                  final route = _navRoutes[i];
+                  if (route != null) {
+                    context.go(route);
+                  } else {
+                    setState(() => _selectedIndex = i);
+                  }
+                },
                 behavior: HitTestBehavior.opaque,
                 child: SizedBox(
                   width: 72,
@@ -159,8 +174,8 @@ class _DashboardContent extends StatelessWidget {
   final VoidCallback onRefresh;
 
   static final _sampleProducts = [
-    _TopProduct(name: 'Nike Air Max 2025', sales: 45, revenue: 'Rs 1,35,345', creators: 8, brandColor: const Color(0xFFCC2200), assetImage: 'assets/images/product_nike_air_max.png'),
-    _TopProduct(name: 'Nike Air Jordan Travis Scott Limited Edition', sales: 45, revenue: 'Rs 88,550', creators: 4, brandColor: const Color(0xFF3A3A2A), assetImage: 'assets/images/product_nike_air_jordan.png'),
+    _TopProduct(name: 'Nike Air Max 2025', sales: 45, revenue: 'Rs 1,35,345', creators: 8, brandColor: const Color(0xFFCC2200)),
+    _TopProduct(name: 'Nike Air Jordan Travis Scott Limited Edition', sales: 45, revenue: 'Rs 88,550', creators: 4, brandColor: const Color(0xFF3A3A2A)),
     _TopProduct(name: 'Adidas Ultraboost 24', sales: 28, revenue: 'Rs 55,200', creators: 3, brandColor: const Color(0xFF1A1A2E)),
   ];
 
@@ -222,7 +237,7 @@ class _DashboardContent extends StatelessWidget {
             children: [
               // Gross Sales row
               _buildRevenueRow(
-                assetIcon: 'assets/images/icon_gross_sales.png',
+                assetIcon: 'assets/images/vendordashboard/icon_gross_sales.png',
                 iconBg: const Color(0xFF1A3A1A),
                 label: 'Gross Sales (+23% vs last)',
                 amount: formatMoney(const Money(amount: 34512589.98, currency: 'NPR')),
@@ -230,7 +245,7 @@ class _DashboardContent extends StatelessWidget {
               const SizedBox(height: DesignTokens.s16),
               // Net Revenue row
               _buildRevenueRow(
-                assetIcon: 'assets/images/icon_net_revenue.png',
+                assetIcon: 'assets/images/vendordashboard/icon_net_revenue.png',
                 iconBg: const Color(0xFF0D2137),
                 label: 'Net Revenue (After fees & commissions)',
                 amount: formatMoney(dashboard.totalRevenue),
@@ -239,11 +254,11 @@ class _DashboardContent extends StatelessWidget {
               // Stat chips
               Row(
                 children: [
-                  _statChip(assetIcon: 'assets/images/icon_star.png', value: dashboard.averageRating.toStringAsFixed(1), label: 'Rating'),
+                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: dashboard.averageRating.toStringAsFixed(1), label: 'Rating'),
                   const SizedBox(width: DesignTokens.s8),
                   _statChip(icon: Icons.videocam_outlined, value: '230', label: 'Creators'),
                   const SizedBox(width: DesignTokens.s8),
-                  _statChip(assetIcon: 'assets/images/icon_reels.png', value: '89', label: 'Reels'),
+                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_reels.png', value: '89', label: 'Reels'),
                 ],
               ),
             ],
@@ -281,7 +296,7 @@ class _DashboardContent extends StatelessWidget {
                   ],
                 ),
               ),
-              Image.asset('assets/images/icon_orders_completed.png', width: 64, height: 64),
+              Image.asset('assets/images/vendordashboard/badge_approved.png', width: 64, height: 64),
             ],
           ),
         ),
@@ -363,10 +378,10 @@ class _DashboardContent extends StatelessWidget {
 
   Widget _buildAlertCards(BuildContext context) {
     final alerts = [
-      _Alert(assetIcon: 'assets/images/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
-      _Alert(assetIcon: 'assets/images/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
-      _Alert(assetIcon: 'assets/images/icon_pending_inquiries.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
-      _Alert(assetIcon: 'assets/images/icon_handshake.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_chat.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_partnership.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
     ];
 
     return Column(
@@ -522,7 +537,7 @@ class _ProductCard extends StatelessWidget {
                           width: 56,
                           height: 56,
                           color: product.brandColor,
-                          child: Icon(Icons.shopping_bag_outlined, color: Colors.white.withOpacity(0.6), size: 24),
+                          child: Icon(Icons.shopping_bag_outlined, color: Colors.white.withValues(alpha: 0.6), size: 24),
                         ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
