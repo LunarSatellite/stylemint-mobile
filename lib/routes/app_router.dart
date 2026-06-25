@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/ema
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/handle_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/linked_accounts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/complete_name_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/magic_link_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/marketing_consents_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mfa_setup_screen.dart';
@@ -171,6 +172,7 @@ const _publicPaths = {
   RouteNames.passkeyFingerprint,
   RouteNames.otp,
   RouteNames.magicLink,
+  RouteNames.completeName,
   RouteNames.socialLogin,
   RouteNames.oauthCallback,
   RouteNames.userTypeSelection,
@@ -313,7 +315,6 @@ GoRouter appRouter(Ref ref) {
             phone: extra['phone'] as String,
             otpId: extra['otpId'] as String,
             identifierType: (extra['identifierType'] as String?) ?? 'phone',
-            isNewAccount: (extra['isNewAccount'] as bool?) ?? false,
           );
         },
       ),
@@ -322,6 +323,15 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) {
           final token = state.uri.queryParameters['token'] ?? '';
           return MagicLinkScreen(token: token);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.completeName,
+        builder: (ctx, state) {
+          final extra = (state.extra as Map?) ?? const {};
+          return CompleteNameScreen(
+            accountId: (extra['accountId'] as String?) ?? '',
+          );
         },
       ),
       GoRoute(

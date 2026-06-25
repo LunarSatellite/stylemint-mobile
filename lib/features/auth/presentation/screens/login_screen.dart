@@ -70,7 +70,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 'phone': _submittedPhone,
                 'otpId': otp.otpId,
                 'identifierType': 'phone',
-                'isNewAccount': otp.isNewAccount,
               },
             ),
         loadFailure:

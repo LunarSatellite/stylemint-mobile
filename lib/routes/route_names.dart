@@ -15,6 +15,8 @@ abstract class RouteNames {
   static const oauthCallback = '/auth/oauth/callback';
   static const otp = '/otp';
   static const magicLink = '/auth/magic';
+  // Post-sign-in name capture (magic-link / accounts with no confirmed name).
+  static const completeName = '/auth/complete-name';
   static const userTypeSelection = '/user-type-selection';
   static const rolePicker = '/role-picker';
   static const register = '/register';

@@ -473,6 +473,57 @@ final passkeyBootstrapProvider =
 });
 
 // ============================================================================
+// DISPLAY NAME — set the account display name after sign-in (e.g. magic-link)
+// ============================================================================
+
+@freezed
+abstract class DisplayNameUpdateState with _$DisplayNameUpdateState {
+  const DisplayNameUpdateState._();
+
+  const factory DisplayNameUpdateState.initial() = _DisplayNameInitial;
+  const factory DisplayNameUpdateState.loadInProgress() = _DisplayNameInProgress;
+  const factory DisplayNameUpdateState.loadSuccess() = _DisplayNameSuccess;
+  const factory DisplayNameUpdateState.loadFailure(NetworkExceptions failure) =
+      _DisplayNameFailure;
+
+  bool get isLoading =>
+      maybeWhen(loadInProgress: () => true, orElse: () => false);
+}
+
+/// Sets the account's display name via `PATCH /v1/accounts/{id}`. Used by the
+/// post-sign-in "What's your name?" step when the account has no confirmed name.
+class DisplayNameNotifier extends StateNotifier<DisplayNameUpdateState> {
+  DisplayNameNotifier({required this.authRepository})
+      : super(const DisplayNameUpdateState.initial());
+
+  final AuthRepository authRepository;
+
+  Future<void> setDisplayName({
+    required String accountId,
+    required String displayName,
+  }) async {
+    state = const DisplayNameUpdateState.loadInProgress();
+    final result = await authRepository.updateProfile(
+      accountId: accountId,
+      displayName: displayName,
+    );
+    state = result.fold(
+      DisplayNameUpdateState.loadFailure,
+      (_) => const DisplayNameUpdateState.loadSuccess(),
+    );
+  }
+
+  void reset() => state = const DisplayNameUpdateState.initial();
+}
+
+final displayNameProvider =
+    StateNotifierProvider<DisplayNameNotifier, DisplayNameUpdateState>((ref) {
+  return DisplayNameNotifier(
+    authRepository: ref.watch(authRepositoryProvider),
+  );
+});
+
+// ============================================================================
 // OAUTH — social sign-in (Google / Facebook)
 // ============================================================================
 

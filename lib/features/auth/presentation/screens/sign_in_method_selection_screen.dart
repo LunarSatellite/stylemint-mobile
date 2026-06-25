@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/passkey_how_it_works.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -36,6 +37,23 @@ class _SignInMethodSelectionScreenState
   bool _showMore = true;
   bool _busy = false;
 
+  /// Post-passkey routing. Collect a name first if the account has none
+  /// confirmed; otherwise new accounts onboard via pick-interests, existing go
+  /// home. Keyed on displayNameConfirmed (not isNewAccount) because passkey
+  /// bootstrap already captures the name in its sheet.
+  void _routeAfterAuth(AuthResponseDto auth) {
+    if (!auth.displayNameConfirmed) {
+      context.go(
+        RouteNames.completeName,
+        extra: {'accountId': auth.accountId},
+      );
+      return;
+    }
+    context.go(
+      auth.isNewAccount ? RouteNames.pickInterests : RouteNames.home,
+    );
+  }
+
   Future<void> _continueWithPasskey() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -47,10 +65,7 @@ class _SignInMethodSelectionScreenState
     state.maybeWhen(
       // Success: session is persisted + rechecked. Navigate explicitly (the
       // router redirect alone doesn't reliably move us off this screen).
-      // New accounts complete onboarding (pick interests) first.
-      loadSuccess: (auth) => context.go(
-        auth.isNewAccount ? RouteNames.pickInterests : RouteNames.home,
-      ),
+      loadSuccess: (auth) => _routeAfterAuth(auth),
       loadFailure: (failure) {
         // No credential on this device → this is a new user; offer the
         // passkey-first quick signup (display name only).
@@ -96,10 +111,7 @@ class _SignInMethodSelectionScreenState
 
     ref.read(passkeyBootstrapProvider).maybeWhen(
           // Success: session is persisted + rechecked. Navigate explicitly.
-          // Bootstrap signup always creates a new account → onboarding.
-          loadSuccess: (auth) => context.go(
-            auth.isNewAccount ? RouteNames.pickInterests : RouteNames.home,
-          ),
+          loadSuccess: (auth) => _routeAfterAuth(auth),
           loadFailure: (failure) {
             if (failure.isAuth) return;
             SmSnackbar.error(
@@ -287,34 +299,34 @@ class _PlanB extends StatelessWidget {
           onTap: () => context.push(RouteNames.login),
         ),
         const SizedBox(height: DesignTokens.s16),
-
-        // Create account — smart-start: a new email/phone provisions an
-        // account automatically on OTP verify, so "create" and "sign in" are
-        // the same flow. Route to the email entry (no separate signup screen).
-        Center(
-          child: GestureDetector(
-            onTap: () => context.push(RouteNames.email),
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'New to Style Mint? ',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight),
-                  ),
-                  TextSpan(
-                    text: 'Create account',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.primaryGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: DesignTokens.s24),
+        //
+        // // Create account — smart-start: a new email/phone provisions an
+        // // account automatically on OTP verify, so "create" and "sign in" are
+        // // the same flow. Route to the email entry (no separate signup screen).
+        // Center(
+        //   child: GestureDetector(
+        //     onTap: () => context.push(RouteNames.email),
+        //     child: Text.rich(
+        //       TextSpan(
+        //         children: [
+        //           TextSpan(
+        //             text: 'New to Style Mint? ',
+        //             style: DesignTokens.smallRegular
+        //                 .copyWith(color: DesignTokens.textLight),
+        //           ),
+        //           TextSpan(
+        //             text: 'Create account',
+        //             style: DesignTokens.smallRegular.copyWith(
+        //               color: DesignTokens.primaryGreen,
+        //               fontWeight: FontWeight.w600,
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
+        // ),
+        // const SizedBox(height: DesignTokens.s24),
 
         // Divider
         Row(

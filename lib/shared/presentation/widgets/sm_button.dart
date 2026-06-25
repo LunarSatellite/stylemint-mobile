@@ -105,7 +105,7 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
                   style: TextStyle(
                     fontSize: fs,
                     fontWeight: widget.labelWeight ?? FontWeight.w600,
-                    color: widget.labelColor ?? Colors.white,
+                    color: widget.disabled?Colors.grey:widget.labelColor ?? Colors.white,
                   ),
                 ),
                 if (widget.suffixIcon != null) ...[

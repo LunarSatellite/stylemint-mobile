@@ -21,6 +21,10 @@ abstract class AuthResponseDto with _$AuthResponseDto {
     // social sign-in). Drives whether the post-signup onboarding screens are
     // shown. Absent on refresh and older responses → defaults to false.
     @Default(false) bool isNewAccount,
+    // True once the user has set/confirmed their display name. When false we
+    // prompt for a name after sign-in (e.g. magic-link). Absent on refresh and
+    // older responses → defaults to true so existing flows don't re-prompt.
+    @Default(true) bool displayNameConfirmed,
   }) = _AuthResponseDto;
 
   factory AuthResponseDto.fromJson(Map<String, dynamic> json) =>
