@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -92,7 +93,8 @@ class _ProfileSettingsScreenState
                 _MenuItem(
                   icon: Icons.workspace_premium_outlined,
                   label: 'Upgrade Subscription Plan',
-                  onTap: () {},
+                  onTap: () => context.push(
+                      RouteNames.creatorUpgradeSubscription),
                 ),
                 _MenuItem(
                   icon: Icons.manage_accounts_outlined,
@@ -109,7 +111,13 @@ class _ProfileSettingsScreenState
                 _MenuItem(
                   icon: Icons.verified_outlined,
                   label: 'Badges',
-                  onTap: () {},
+                  onTap: () => context.push(RouteNames.creatorProfileBadges),
+                ),
+                _MenuItem(
+                  icon: Icons.category_outlined,
+                  label: 'Category Niche',
+                  onTap: () =>
+                      context.push(RouteNames.creatorCategoryNiche),
                 ),
                 _MenuItem(
                   icon: Icons.key_outlined,
@@ -129,7 +137,7 @@ class _ProfileSettingsScreenState
                 _MenuItem(
                   icon: Icons.logout_rounded,
                   label: 'Logout',
-                  onTap: () {},
+                  onTap: () => confirmAndLogout(context, ref),
                   destructive: true,
                 ),
               ],
@@ -323,9 +331,10 @@ class _BecomeBrandBanner extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
         gradient: const LinearGradient(
-          colors: [Color(0xFF0F3D2A), Color(0xFF1A5C3A)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [Color(0xFF0D5C32), Color(0xFF1DB954), Color(0xFF25E07A)],
+          stops: [0.0, 0.6, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -362,7 +371,7 @@ class _BecomeBrandBanner extends StatelessWidget {
             ),
           ),
           Image.asset(
-            'assets/images/onboarding/ecommerce_campaign.png',
+            'assets/images/creatordash/shop.png',
             width: 90,
             fit: BoxFit.cover,
             errorBuilder: (_, __, _e) => const Padding(

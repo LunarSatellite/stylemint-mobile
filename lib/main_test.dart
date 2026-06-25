@@ -46,6 +46,10 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/change_password_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/edit_category_niche_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/upgrade_subscription_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/edit_profile_badges_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/profile_settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/repositories/notifications_repository.dart';
@@ -619,6 +623,22 @@ class _DevApp extends StatelessWidget {
               initialHandle: extra.handle,
             );
           },
+        ),
+        GoRoute(
+          path: RouteNames.creatorProfileBadges,
+          builder: (ctx, _) => const EditProfileBadgesScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.creatorCategoryNiche,
+          builder: (ctx, _) => const EditCategoryNicheScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.creatorUpgradeSubscription,
+          builder: (ctx, _) => const UpgradeSubscriptionScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.settingsChangePassword,
+          builder: (ctx, _) => const ChangePasswordScreen(),
         ),
         GoRoute(
           path: RouteNames.profileEdit,

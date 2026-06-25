@@ -5,43 +5,17 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Confirms intent, then performs a full logout and routes to the sign-in entry.
-///
-/// [SessionController.logout] revokes the session server-side (best effort),
-/// clears the local tokens, and flips the session to `unauthenticated`. We then
-/// navigate to [RouteNames.signInMethod] (the same target the vendor more-menu
-/// uses) so the user lands on a clean auth screen.
-///
-/// Pass [allSessions] true to sign out of every device.
+/// Shows the confirm-logout bottom sheet, then logs out and navigates to
+/// sign-in if the user confirms.
 Future<void> confirmAndLogout(
   BuildContext context,
   WidgetRef ref, {
   bool allSessions = false,
 }) async {
-  final confirmed = await showDialog<bool>(
+  final confirmed = await showModalBottomSheet<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: DesignTokens.bgAppBody,
-      title: const Text(
-        'Log Out',
-        style: TextStyle(color: DesignTokens.textWhite),
-      ),
-      content: const Text(
-        'Are you sure you want to log out?',
-        style: TextStyle(color: DesignTokens.textLight),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          style: TextButton.styleFrom(foregroundColor: DesignTokens.colorError),
-          child: const Text('Log Out'),
-        ),
-      ],
-    ),
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _LogoutSheet(),
   );
   if (confirmed != true) return;
 
@@ -50,4 +24,132 @@ Future<void> confirmAndLogout(
       .logout(allSessions: allSessions);
 
   if (context.mounted) context.go(RouteNames.signInMethod);
+}
+
+// ── Bottom sheet ─────────────────────────────────────────────────────────────
+
+class _LogoutSheet extends StatelessWidget {
+  const _LogoutSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        bottomPadding,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: DesignTokens.borderDefault,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          // Logout illustration
+          Image.asset(
+            'assets/images/creatordash/logout.png',
+            width: 72,
+            height: 72,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.logout_rounded,
+              size: 64,
+              color: DesignTokens.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s20),
+          const Text(
+            'Confirm Logout',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          const Text(
+            'Are you sure you want to logout ?',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          // Logout button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DesignTokens.primaryGreen,
+                foregroundColor: DesignTokens.textWhite,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(width: DesignTokens.s8),
+                  Icon(Icons.logout_rounded, size: 18),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          // Cancel button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DesignTokens.bgAppBodyLight,
+                foregroundColor: DesignTokens.textWhite,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
