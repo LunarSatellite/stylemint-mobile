@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class AddCardScreen extends ConsumerStatefulWidget {
-  const AddCardScreen({super.key});
+  const AddCardScreen({this.card, super.key});
+
+  final PaymentMethod? card;
+
+  bool get isEditing => card != null;
 
   @override
   ConsumerState<AddCardScreen> createState() => _AddCardScreenState();
@@ -14,40 +20,27 @@ class AddCardScreen extends ConsumerStatefulWidget {
 
 class _AddCardScreenState extends ConsumerState<AddCardScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _cardNumberCtl = TextEditingController();
-  final _expiryCtl = TextEditingController();
-  final _cvvCtl = TextEditingController();
-  final _cardholderCtl = TextEditingController();
+
+  late TextEditingController _cardNumberCtl;
+  late TextEditingController _expiryCtl;
+  late TextEditingController _cvvCtl;
+  late TextEditingController _cardholderCtl;
+
+  bool _billingSameAsShipping = true;
+  bool _setAsDefault = false;
   bool _saving = false;
 
-  String get _maskedCardNumber {
-    final digits = _cardNumberCtl.text.replaceAll(RegExp(r'\s+'), '');
-    if (digits.isEmpty) return '•••• •••• •••• ••••';
-    final buffer = StringBuffer();
-    for (var i = 0; i < 16; i++) {
-      if (i >= digits.length) {
-        buffer.write('•');
-      } else if (i < 4) {
-        buffer.write(digits[i]);
-      } else if (i < 12) {
-        buffer.write('•');
-      } else {
-        buffer.write(digits[i]);
-      }
-      if ((i + 1) % 4 == 0 && i < 15) buffer.write(' ');
-    }
-    return buffer.toString();
-  }
-
-  String? _detectedCardType() {
-    final digits = _cardNumberCtl.text.replaceAll(RegExp(r'\s+'), '');
-    if (digits.isEmpty) return null;
-    final first = digits[0];
-    final firstTwo = digits.length >= 2 ? digits.substring(0, 2) : '';
-    if (first == '4') return 'Visa';
-    if (firstTwo == '51' || firstTwo == '52' || firstTwo == '53' || firstTwo == '54' || firstTwo == '55') return 'Mastercard';
-    if (firstTwo == '34' || firstTwo == '37') return 'Amex';
-    return null;
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.card;
+    _cardNumberCtl = TextEditingController(
+      text: c?.lastFour != null ? '•••• •••• •••• ${c!.lastFour}' : '',
+    );
+    _expiryCtl = TextEditingController(text: c?.expiryDate ?? '');
+    _cvvCtl = TextEditingController();
+    _cardholderCtl = TextEditingController(text: c?.cardholderName ?? '');
+    _setAsDefault = c?.isDefault ?? false;
   }
 
   @override
@@ -61,17 +54,28 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _saving = true);
 
-    final digits = _cardNumberCtl.text.replaceAll(RegExp(r'\s+'), '');
+    final notifier = ref.read(paymentNotifierProvider.notifier);
+    final digits = _cardNumberCtl.text.replaceAll(RegExp(r'[\s•]'), '');
+    final bool success;
 
-    final success = await ref.read(paymentNotifierProvider.notifier).addCard(
-      cardNumber: digits,
-      expiry: _expiryCtl.text.trim(),
-      cvv: _cvvCtl.text.trim(),
-      cardholderName: _cardholderCtl.text.trim(),
-    );
+    if (widget.isEditing) {
+      success = await notifier.updateCard(
+        id: widget.card!.id,
+        cardNumber: digits,
+        expiry: _expiryCtl.text.trim(),
+        cvv: _cvvCtl.text.trim(),
+        cardholderName: _cardholderCtl.text.trim(),
+      );
+    } else {
+      success = await notifier.addCard(
+        cardNumber: digits,
+        expiry: _expiryCtl.text.trim(),
+        cvv: _cvvCtl.text.trim(),
+        cardholderName: _cardholderCtl.text.trim(),
+      );
+    }
 
     if (mounted) {
       setState(() => _saving = false);
@@ -79,7 +83,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
         context.pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to add card')),
+          SnackBar(content: Text(widget.isEditing ? 'Failed to update card' : 'Failed to add card')),
         );
       }
     }
@@ -87,227 +91,246 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.isEditing;
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: const Text('Add Card Details',
-            style: DesignTokens.sectionInnerTitle),
         backgroundColor: DesignTokens.bgAppFoundation,
+        leading: const BackButton(color: DesignTokens.textWhite),
+        title: Text(
+          isEdit ? 'Edit Card Details' : 'Add Card Details',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          children: [
-            _CardPreview(
-              cardNumber: _maskedCardNumber,
-              cardholderName:
-                  _cardholderCtl.text.isNotEmpty
-                      ? _cardholderCtl.text
-                      : 'Your Name',
-              expiry:
-                  _expiryCtl.text.isNotEmpty ? _expiryCtl.text : 'MM/YY',
-              cardType: _detectedCardType(),
-            ),
-            const SizedBox(height: DesignTokens.s24),
-            TextFormField(
-              controller: _cardNumberCtl,
-              keyboardType: TextInputType.number,
-              maxLength: 19,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                _CardNumberFormatter(),
-              ],
-              style: DesignTokens.mediumRegular.copyWith(
-                color: DesignTokens.inputFieldData,
-              ),
-              decoration: DesignTokens.inputDecoration(
-                labelText: 'Card Number',
-              ),
-              validator: (v) {
-                final digits = v?.replaceAll(RegExp(r'\s+'), '') ?? '';
-                if (digits.length < 13) return 'Enter valid card number';
-                return null;
-              },
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: DesignTokens.s20),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _expiryCtl,
+      body: Column(
+        children: [
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(DesignTokens.s16),
+                children: [
+                  _field(
+                    'Card Number',
+                    _cardNumberCtl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 19,
+                    inputFormatters: isEdit
+                        ? null
+                        : [
+                            FilteringTextInputFormatter.digitsOnly,
+                            _CardNumberFormatter(),
+                          ],
+                    validator: (v) {
+                      final clean = v?.replaceAll(RegExp(r'[\s•]'), '') ?? '';
+                      if (clean.length < 13) return 'Enter a valid card number';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    'Expiry Date',
+                    _expiryCtl,
                     keyboardType: TextInputType.number,
                     maxLength: 5,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       _ExpiryFormatter(),
                     ],
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    decoration: DesignTokens.inputDecoration(
-                      labelText: 'Expiry Date',
-                      suffixIcon: const Icon(Icons.calendar_today_outlined,
-                          size: 16, color: Color(0xFF71717B)),
+                    suffixIcon: const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: Color(0xFF71717B),
                     ),
                     validator: (v) {
                       final digits = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
                       if (digits.length < 4) return 'Required';
                       return null;
                     },
-                    onChanged: (_) => setState(() {}),
                   ),
-                ),
-                const SizedBox(width: DesignTokens.s16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _cvvCtl,
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    'CVV',
+                    _cvvCtl,
                     keyboardType: TextInputType.number,
                     maxLength: 4,
                     obscureText: true,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    decoration: DesignTokens.inputDecoration(labelText: 'CVV'),
-                    validator: (v) {
-                      if (v == null || v.trim().length < 3) return 'Required';
-                      return null;
-                    },
+                    validator: (v) =>
+                        (v == null || v.trim().length < 3) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    'Cardholder Name',
+                    _cardholderCtl,
+                    textCapitalization: TextCapitalization.words,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  // Billing Address checkbox
+                  _CheckboxRow(
+                    label: 'Billing Address',
+                    subtitle: "Set your card's billing address same as your shipping address",
+                    value: _billingSameAsShipping,
+                    onChanged: (v) => setState(() => _billingSameAsShipping = v ?? true),
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  // Set as Default checkbox
+                  _CheckboxRow(
+                    label: 'Set as Default Payment',
+                    subtitle: 'Set this card as your default payment option',
+                    value: _setAsDefault,
+                    onChanged: (v) => setState(() => _setAsDefault = v ?? false),
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                ],
+              ),
+            ),
+          ),
+          // Secure banner + pinned button
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(DesignTokens.cardRadius),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  color: DesignTokens.bgAppBodyLight,
+                  padding: const EdgeInsets.all(DesignTokens.s16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SvgPicture.asset('assets/icons/SecureIcon.svg', width: 36, height: 36),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Secure & Encrypted', style: DesignTokens.mediumSemibold),
+                            const SizedBox(height: DesignTokens.s4),
+                            Text(
+                              "Don't worry about your card details, they are protected with high level encryption",
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  color: DesignTokens.bgAppFoundation,
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.s16,
+                    DesignTokens.s16,
+                    DesignTokens.s16,
+                    DesignTokens.s32,
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _save,
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                          )
+                        : Text(
+                            isEdit ? 'Update Card Details' : 'Add Card Details',
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+
+                          ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: DesignTokens.s20),
-            TextFormField(
-              controller: _cardholderCtl,
-              textCapitalization: TextCapitalization.words,
-              style: DesignTokens.mediumRegular.copyWith(
-                color: DesignTokens.inputFieldData,
-              ),
-              decoration: DesignTokens.inputDecoration(
-                labelText: 'Cardholder Name',
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                return null;
-              },
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: DesignTokens.s32),
-            ElevatedButton(
-              onPressed: _saving ? null : _save,
-              style: DesignTokens.primaryButtonStyle(),
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : Text(
-                      'Add Card',
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+    int? maxLength,
+    bool obscureText = false,
+    List<TextInputFormatter>? inputFormatters,
+    Widget? suffixIcon,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      obscureText: obscureText,
+      inputFormatters: inputFormatters,
+      textCapitalization: textCapitalization,
+      style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.inputFieldData),
+      decoration: DesignTokens.inputDecoration(labelText: label, suffixIcon: suffixIcon),
+      validator: validator,
     );
   }
 }
 
-class _CardPreview extends StatelessWidget {
-  const _CardPreview({
-    required this.cardNumber,
-    required this.cardholderName,
-    required this.expiry,
-    this.cardType,
+class _CheckboxRow extends StatelessWidget {
+  const _CheckboxRow({
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
   });
 
-  final String cardNumber;
-  final String cardholderName;
-  final String expiry;
-  final String? cardType;
+  final String label;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(DesignTokens.s20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2ECC71), Color(0xFF1A7A44)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: value,
+            onChanged: onChanged,
+            activeColor: DesignTokens.primaryGreen,
+            side: const BorderSide(color: DesignTokens.borderDefault, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        const SizedBox(width: DesignTokens.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.credit_card_rounded,
-                  color: DesignTokens.textWhite, size: 32),
-              if (cardType != null)
-                Text(cardType!,
-                    style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite)),
-            ],
-          ),
-          Text(
-            cardNumber,
-            style: DesignTokens.titleMedium.copyWith(
-              color: DesignTokens.textWhite,
-              letterSpacing: 2,
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('CARD HOLDER',
-                        style: DesignTokens.tiny.copyWith(
-                            color: DesignTokens.textWhite.withValues(alpha: 0.7))),
-                    const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      cardholderName.toUpperCase(),
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textWhite,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('EXPIRES',
-                      style: DesignTokens.tiny.copyWith(
-                          color: DesignTokens.textWhite.withValues(alpha: 0.7))),
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(expiry,
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite)),
-                ],
+              Text(label, style: DesignTokens.mediumSemibold),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                subtitle,
+                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

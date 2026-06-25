@@ -35,6 +35,27 @@ class PaymentRemoteDataSource {
     return PaymentMethodDto.fromJson(response as Map<String, dynamic>);
   }
 
+  Future<PaymentMethodDto> updateCard({
+    required String id,
+    required String cardNumber,
+    required String expiry,
+    required String cvv,
+    required String cardholderName,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.patch(
+      '/v1/payments/saved-methods/$id',
+      data: {
+        'cardNumber': cardNumber,
+        'expiry': expiry,
+        'cvv': cvv,
+        'cardholderName': cardholderName,
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return PaymentMethodDto.fromJson(response as Map<String, dynamic>);
+  }
+
   Future<void> deletePaymentMethod(String id) async {
     await apiClient.authDelete('/v1/payments/saved-methods/$id');
   }

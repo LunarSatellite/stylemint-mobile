@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -7,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/data/dataso
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/models/shipping_address_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/repositories/shipping_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/shipping_mock_data.dart';
 
 class ShippingRepositoryImpl implements ShippingRepository {
   ShippingRepositoryImpl({
@@ -21,6 +23,8 @@ class ShippingRepositoryImpl implements ShippingRepository {
 
   @override
   Future<Either<NetworkExceptions, List<ShippingAddress>>> getAddresses() async {
+    // ponytail: static stub for UI dev, remove when backend is stable
+    if (kDebugMode) return right(kMockShippingAddresses);
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getAddresses();
@@ -133,6 +137,7 @@ class ShippingRepositoryImpl implements ShippingRepository {
     phone: address.phone,
     addressLine1: address.addressLine1,
     addressLine2: address.addressLine2,
+    country: address.country,
     city: address.city,
     state: address.state,
     zipCode: address.zipCode,

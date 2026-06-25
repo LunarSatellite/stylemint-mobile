@@ -12,6 +12,14 @@ abstract interface class PaymentRepository {
     required String cardholderName,
   });
 
+  Future<Either<NetworkExceptions, PaymentMethod>> updateCard({
+    required String id,
+    required String cardNumber,
+    required String expiry,
+    required String cvv,
+    required String cardholderName,
+  });
+
   Future<Either<NetworkExceptions, Unit>> deletePaymentMethod(String id);
 
   Future<Either<NetworkExceptions, Unit>> setDefault(String id);

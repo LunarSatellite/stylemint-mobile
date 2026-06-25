@@ -54,6 +54,26 @@ class PaymentNotifier extends StateNotifier<PaymentMethodsState> {
     });
   }
 
+  Future<bool> updateCard({
+    required String id,
+    required String cardNumber,
+    required String expiry,
+    required String cvv,
+    required String cardholderName,
+  }) async {
+    final either = await _repository.updateCard(
+      id: id,
+      cardNumber: cardNumber,
+      expiry: expiry,
+      cvv: cvv,
+      cardholderName: cardholderName,
+    );
+    return either.fold((_) => false, (_) {
+      unawaited(load());
+      return true;
+    });
+  }
+
   Future<bool> delete(String id) async {
     final either = await _repository.deletePaymentMethod(id);
     return either.fold((_) => false, (_) {

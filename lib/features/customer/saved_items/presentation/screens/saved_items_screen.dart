@@ -5,8 +5,8 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/notifiers/saved_items_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -44,11 +44,7 @@ class SavedItemsScreen extends ConsumerWidget {
         loadInProgress: _loader,
         loadSuccess: (items, hasMore, nextCursor) {
           if (items.isEmpty) {
-            return const SmEmptyState(
-              message:
-                  "You haven't saved any items yet. Tap the heart on products you love.",
-              icon: Icons.bookmark_border_rounded,
-            );
+            return _EmptyState(onContinue: () => context.go(RouteNames.home));
           }
           final notifier = ref.read(savedItemsNotifierProvider.notifier);
           return RefreshIndicator(
@@ -98,10 +94,14 @@ class SavedItemsScreen extends ConsumerWidget {
                     style: TextButton.styleFrom(
                       minimumSize:
                           const Size.fromHeight(DesignTokens.buttonHeight),
+                      backgroundColor: DesignTokens.bgAppBodyLight,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                      ),
                     ),
                     child: Text('Clear All Saved Items',
                         style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.colorError)),
+                            .copyWith(color: DesignTokens.textWhite)),
                   ),
                   const SizedBox(height: DesignTokens.s16),
                 ],
@@ -192,12 +192,11 @@ class _SavedItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SavedForLaterItemDto carries no stock or compare-at price, so the row
-    // shows real data only: stock defaults to in-stock (a saved item that
-    // lists is available) and there is no strikethrough old price.
-    // BACKEND GAP: add per-variant stock + original price to the saved DTO to
-    // restore the low/out-of-stock tags and discount strikethrough.
-    const stock = _Stock.inStock;
+    final stock = switch (item.stockStatus) {
+      'lowStock' => _Stock.lowStock,
+      'outOfStock' => _Stock.outOfStock,
+      _ => _Stock.inStock,
+    };
 
     return Container(
       margin: const EdgeInsets.only(bottom: DesignTokens.s12),
@@ -260,19 +259,52 @@ class _SavedItemRow extends StatelessWidget {
                       )),
                 ],
                 const SizedBox(height: DesignTokens.s8),
-                Text(formatMoney(item.price),
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontWeight: FontWeight.w600,
-                    )),
-                const SizedBox(height: DesignTokens.s8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _StockTag(stock: stock),
-                    _RowAction(stock: stock, onTap: onAction),
+                    Text(formatMoney(item.price),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w600,
+                        )),
+                    if (item.originalPrice != null) ...[
+                      const SizedBox(width: DesignTokens.s8),
+                      Text(
+                        formatMoney(item.originalPrice!),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
+                const SizedBox(height: DesignTokens.s8),
+                Row(
+                  children: [
+                    _StockTag(stock: stock),
+                    if (item.isFreeShipping) ...[
+                      const SizedBox(width: DesignTokens.s8),
+                      _Badge(
+                        label: 'Free Shipping',
+                        icon: Icons.local_shipping_outlined,
+                        bg: const Color(0xFFDDEEFF),
+                        fg: const Color(0xFF004999),
+                      ),
+                    ],
+                    if (item.priceDrop != null) ...[
+                      const SizedBox(width: DesignTokens.s8),
+                      _Badge(
+                        label: 'Price Dropped ${formatMoney(item.priceDrop!)}',
+                        icon: Icons.savings_outlined,
+                        bg: const Color(0xFFFFF085),
+                        fg: const Color(0xFF894B00),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: DesignTokens.s8),
+                _RowAction(stock: stock, onTap: onAction),
               ],
             ),
           ),
@@ -347,6 +379,171 @@ class _RowAction extends StatelessWidget {
           color: DesignTokens.primaryGreen,
           decoration: TextDecoration.underline,
           decorationColor: DesignTokens.primaryGreen,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Badge (Free Shipping / Price Dropped) ────────────────────────────────────
+class _Badge extends StatelessWidget {
+  const _Badge({
+    required this.label,
+    required this.icon,
+    required this.bg,
+    required this.fg,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color bg;
+  final Color fg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: fg,
+                height: 1.0,
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onContinue});
+
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Illustration — stacked placeholder cards
+          SizedBox(
+            height: 160,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                _PlaceholderCard(offsetY: -40, offsetX: -30, initials: 'SD'),
+                _PlaceholderCard(offsetY: 0, offsetX: 20, initials: 'AP'),
+                _PlaceholderCard(offsetY: 40, offsetX: -20, initials: 'JS'),
+              ],
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          Text('No Saved Items Yet',
+              style: DesignTokens.sectionInnerTitle.copyWith(
+                color: DesignTokens.textWhite,
+                fontSize: 20,
+              ),
+              textAlign: TextAlign.center),
+          const SizedBox(height: DesignTokens.s12),
+          Text(
+            'When you tap the heart icon in the product detail screen you will be able to view it here',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: DesignTokens.s32),
+          SmPrimaryButton(
+            label: 'Continue Shopping →',
+            height: DesignTokens.buttonHeight,
+            borderRadius: DesignTokens.buttonRadius,
+            color: DesignTokens.primaryGreen,
+            labelColor: DesignTokens.buttonPrimaryText,
+            onPressed: () async => onContinue(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceholderCard extends StatelessWidget {
+  const _PlaceholderCard({
+    required this.offsetY,
+    required this.offsetX,
+    required this.initials,
+  });
+
+  final double offsetY;
+  final double offsetX;
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: Offset(offsetX, offsetY),
+      child: Container(
+        width: 200,
+        height: 52,
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBodyLight,
+          borderRadius: BorderRadius.circular(DesignTokens.s12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: DesignTokens.primaryGreen,
+              child: Text(initials,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                  )),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 8,
+                    width: 80,
+                    decoration: BoxDecoration(
+                      color: DesignTokens.secondaryYellow.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 6,
+                    width: 110,
+                    decoration: BoxDecoration(
+                      color: DesignTokens.textMuted.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

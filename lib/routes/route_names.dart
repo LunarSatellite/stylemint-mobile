@@ -46,8 +46,10 @@ abstract class RouteNames {
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';
   static const shippingAddEdit = '/shipping/edit';
+  static const shippingView = '/shipping/view';
   static const paymentMethods = '/payment-methods';
   static const paymentAddCard = '/payment/add-card';
+  static const paymentEditCard = '/payment/edit-card';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
   static const qrScan = '/qr-login/scan';
@@ -167,6 +169,8 @@ abstract class RouteNames {
   static const support = '/support';
   static const supportContact = '/support/contact';
   static const supportTickets = '/support/tickets';
+  static const supportTopic = '/support/topic';
+  static const supportArticle = '/support/article';
 
   static const creatorSupportContact = '/creator/support/contact';
   static const creatorActivity = '/creator/activity';

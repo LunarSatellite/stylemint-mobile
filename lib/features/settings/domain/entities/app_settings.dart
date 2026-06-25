@@ -1,19 +1,23 @@
 class LanguageOption {
   const LanguageOption({
     required this.code,
-    required this.label,
-    required this.nativeLabel,
+    required this.flag,
+    required this.displayName,
   });
 
   final String code;
-  final String label;
-  final String nativeLabel;
+  final String flag;
+  final String displayName;
+
+  // Legacy getters — keep existing callers compiling
+  String get label => displayName;
+  String get nativeLabel => displayName;
 
   static const List<LanguageOption> supportedLanguages = [
-    LanguageOption(code: 'en', label: 'English', nativeLabel: 'English'),
-    LanguageOption(code: 'ne', label: 'Nepali', nativeLabel: 'नेपाली'),
-    LanguageOption(code: 'zh', label: 'Chinese', nativeLabel: '中文'),
-    LanguageOption(code: 'es', label: 'Spanish', nativeLabel: 'Español'),
-    LanguageOption(code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी'),
+    LanguageOption(code: 'en', flag: '🇺🇸', displayName: 'English (United States)'),
+    LanguageOption(code: 'zh', flag: '🇨🇳', displayName: 'Chinese (中国人)'),
+    LanguageOption(code: 'ne', flag: '🇳🇵', displayName: 'Nepali (नेपाली)'),
+    LanguageOption(code: 'es', flag: '🇪🇸', displayName: 'Spanish (Español)'),
+    LanguageOption(code: 'hi', flag: '🇮🇳', displayName: 'Hindi (हिन्दी)'),
   ];
 }

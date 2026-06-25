@@ -155,16 +155,12 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               label: 'Shipping Addresses',
-              onTap: () {
-                /* TODO(profile): shipping addresses */
-              },
+              onTap: () => context.push(RouteNames.shippingAddresses),
             ),
             ProfileMenuItem(
               icon: Icons.credit_card_outlined,
               label: 'Payment Methods',
-              onTap: () {
-                /* TODO(profile): payment methods */
-              },
+              onTap: () => context.push(RouteNames.paymentMethods),
             ),
             ProfileMenuItem(
               icon: Icons.palette_outlined,
@@ -181,7 +177,7 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.notifications_outlined,
               label: 'Notification Settings',
-              onTap: () => context.push(RouteNames.settings),
+              onTap: () => context.push(RouteNames.settingsNotifications),
             ),
             ProfileMenuItem(
               icon: Icons.language_outlined,
