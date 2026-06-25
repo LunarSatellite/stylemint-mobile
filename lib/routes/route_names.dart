@@ -131,6 +131,7 @@ abstract class RouteNames {
   static const vendorAnalytics = '/vendor/analytics';
   static const vendorMessageCreator = '/vendor/message-creator';
   static const vendorAdjustCommission = '/vendor/adjust-commission';
+  static const vendorSupportContact = '/vendor/support/contact';
 
   // Social
   static const creatorProfile = '/creator-profile/:accountId';

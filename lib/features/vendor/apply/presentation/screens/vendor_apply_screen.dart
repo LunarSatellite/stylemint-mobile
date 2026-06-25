@@ -224,6 +224,10 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: SafeArea(
         child: state.when(

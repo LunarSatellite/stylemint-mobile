@@ -160,6 +160,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation/screens/vendor_analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
@@ -916,6 +917,10 @@ GoRouter appRouter(Ref ref) {
           args: state.extra as AdjustCommissionArgs,
         ),
       ),
+      GoRoute(
+        path: RouteNames.vendorSupportContact,
+        builder: (ctx, state) => const VendorContactSupportScreen(),
+      ),
 
       // Social
       GoRoute(
@@ -1053,7 +1058,7 @@ GoRouter appRouter(Ref ref) {
         routes: [
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportContact),
-            builder: (ctx, state) => const ContactSupportScreen(),
+            builder: (ctx, state) => const VendorContactSupportScreen(),
           ),
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportTickets),

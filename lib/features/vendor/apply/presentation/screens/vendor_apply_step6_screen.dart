@@ -32,6 +32,10 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -80,11 +84,12 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
                     const SizedBox(height: DesignTokens.s16),
                     _buildTermsSection(),
                     const SizedBox(height: DesignTokens.s24),
+                    _buildSubmitButton(),
+                    const SizedBox(height: DesignTokens.s16),
                   ],
                 ),
               ),
             ),
-            _buildSubmitButton(),
           ],
         ),
       ),
@@ -281,30 +286,44 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
   }
 
   Widget _buildProductInfo() {
-    const selectedCategories = ['Sports', 'Fitness', 'Footwear'];
+    const categoryImages = {
+      'Sports': 'assets/images/vendordashboard/sports.png',
+      'Fitness': 'assets/images/vendordashboard/fitness.png',
+      'Footwear': 'assets/images/vendordashboard/footware.png',
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Content Categories',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
         ),
         const SizedBox(height: DesignTokens.s8),
         Wrap(
           spacing: DesignTokens.s8,
           runSpacing: DesignTokens.s8,
-          children: selectedCategories.map((cat) {
+          children: categoryImages.entries.map((entry) {
             return Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: DesignTokens.s12,
                 vertical: DesignTokens.s6,
               ),
-              decoration: DesignTokens.chipDecorationSelected(),
-              child: Text(
-                cat,
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.primaryGreen,
-                ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3F3F46),
+                borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(entry.value, width: 16, height: 16),
+                  const SizedBox(width: DesignTokens.s4),
+                  Text(
+                    entry.key,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(growable: false),
@@ -323,10 +342,19 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
     return Row(
       children: [
         Text(
-          '$label: ',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          label,
+          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
         ),
-        Text(value, style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600)),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -435,25 +463,16 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
   }
 
   Widget _buildSubmitButton() {
-    return Container(
-      color: DesignTokens.bgAppFoundation,
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s12,
-        DesignTokens.s16,
-        DesignTokens.s16,
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: DesignTokens.buttonHeight,
-        child: ElevatedButton(
-          onPressed: _submit,
-          style: DesignTokens.primaryButtonStyle(),
-          child: Text(
-            'Submit Application',
-            style: DesignTokens.oneLinerSemibold.copyWith(
-              color: DesignTokens.buttonPrimaryText,
-            ),
+    return SizedBox(
+      width: double.infinity,
+      height: DesignTokens.buttonHeight,
+      child: ElevatedButton(
+        onPressed: _submit,
+        style: DesignTokens.primaryButtonStyle(),
+        child: Text(
+          'Submit Application',
+          style: DesignTokens.oneLinerSemibold.copyWith(
+            color: DesignTokens.buttonPrimaryText,
           ),
         ),
       ),

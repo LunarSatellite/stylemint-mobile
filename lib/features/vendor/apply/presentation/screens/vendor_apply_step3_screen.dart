@@ -143,6 +143,10 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -211,7 +215,7 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
             width: double.infinity,
             padding: const EdgeInsets.all(DesignTokens.s16),
             decoration: BoxDecoration(
-              color: DesignTokens.infoFillDark,
+              color: const Color(0xFF052F4A),
               borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
             ),
             child: Column(
@@ -457,13 +461,15 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
                       children: [
                         const Icon(
                           Icons.upload_outlined,
-                          color: DesignTokens.textWhite,
+                          color: Color(0xFFD4D4D8),
                           size: 20,
                         ),
                         const SizedBox(width: DesignTokens.s8),
                         Text(
                           'Upload Document',
-                          style: DesignTokens.oneLinerSemibold,
+                          style: DesignTokens.oneLinerSemibold.copyWith(
+                            color: const Color(0xFFD4D4D8),
+                          ),
                         ),
                       ],
                     ),
@@ -488,7 +494,7 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.bgAppBodyLight,
+                backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(

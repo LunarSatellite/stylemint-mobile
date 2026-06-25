@@ -138,6 +138,10 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -406,7 +410,7 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.bgAppBodyLight,
+                backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(
