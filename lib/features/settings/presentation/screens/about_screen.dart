@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// About ReelCommerce — informational screen.
-/// Pixel-matched to `About Reelcommerce.pdf` (Customer User): brand logo,
-/// "Discover. Shop. Earn" tagline, version, Our Mission, platform stats
-/// (250k Products / 5k Creators / 1000+ Brands) and social handle pills.
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  static const _version = 'Version 1.2.0 (Build 456)';
-  static const _mission =
-      'ReelCommerce is revolutionizing e-commerce by connecting customers with '
-      'products through engaging short-form video content, empowering creators '
-      'to earn while helping shoppers discover amazing products in an '
-      'entertaining way.';
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,148 +24,469 @@ class AboutScreen extends StatelessWidget {
               size: 18, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: const Text('About ReelCommerce',
+        title: const Text('About StyleMint',
             style: DesignTokens.sectionInnerTitle),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s24,
-            DesignTokens.s16, DesignTokens.s32),
+        padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s32),
         children: [
-          // Brand logo (placeholder mark, consistent with user-type screen).
+          // Logo + Tagline
           Column(
             children: [
               const Icon(Icons.shopping_bag_outlined,
                   size: 56, color: DesignTokens.primaryGreen),
               const SizedBox(height: DesignTokens.s8),
-              Text('STYLE MINT',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    letterSpacing: 2,
-                  )),
+              Text(
+                'STYLE MINT',
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.primaryGreen,
+                  letterSpacing: 2,
+                ),
+              ),
               const SizedBox(height: DesignTokens.s16),
-              Text('Discover. Shop. Earn',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 20,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  )),
+              const Text(
+                'Discover. Shop. Earn',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
               const SizedBox(height: DesignTokens.s4),
-              Text(_version,
-                  textAlign: TextAlign.center,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted)),
+              Text(
+                'Version 1.2.0 (Build 456)',
+                textAlign: TextAlign.center,
+                style:
+                    DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s32),
 
           // Our Mission
-          Text('Our Mission', style: DesignTokens.mediumSemibold),
+          const _SectionHeading('Our Mission'),
           const SizedBox(height: DesignTokens.s8),
-          Text(_mission, style: DesignTokens.bodyText),
+          const _Body(
+            'ReelCommerce is revolutionizing e-commerce by connecting customers with '
+            'products through engaging short-form video content, empowering creators '
+            'to earn while helping shoppers discover amazing products in an entertaining way.',
+          ),
           const SizedBox(height: DesignTokens.s32),
 
-          // Platform stats
-          Text('Platform Stats', style: DesignTokens.mediumSemibold),
+          // Platform Stats
+          const _SectionHeading('Platform Stats'),
           const SizedBox(height: DesignTokens.s12),
           Row(
             children: const [
-              Expanded(child: _StatTile(value: '250k', label: 'Products')),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.inventory_2_outlined,
+                  value: '250k',
+                  label: 'Products',
+                ),
+              ),
               SizedBox(width: DesignTokens.s12),
-              Expanded(child: _StatTile(value: '5k', label: 'Creators')),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.videocam_outlined,
+                  value: '5k',
+                  label: 'Creators',
+                ),
+              ),
               SizedBox(width: DesignTokens.s12),
-              Expanded(child: _StatTile(value: '1000+', label: 'Brands')),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.store_outlined,
+                  value: '1000+',
+                  label: 'Brands',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          Row(
+            children: const [
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.play_circle_outline,
+                  value: '15m',
+                  label: 'Reels',
+                ),
+              ),
+              SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.access_time_outlined,
+                  value: '98%',
+                  label: 'On-Time',
+                ),
+              ),
+              SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: _StatTile(
+                  icon: Icons.star_outline_rounded,
+                  value: '4.8',
+                  label: 'Rating',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s32),
 
-          // Social handles
-          Text('Follow us', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s12),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
+          // Company Information
+          const _SectionHeading('Company Information'),
+          const SizedBox(height: DesignTokens.s8),
+          _LabelLink(
+            label: 'Email: ',
+            linkText: 'hello@reelcommerce.com',
+            onTap: () => _launch('mailto:hello@reelcommerce.com'),
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          _LabelLink(
+            label: 'Headquarters: ',
+            linkText:
+                'ReelCommerce Inc., 123 Privacy Lane San Francisco, CA 94102',
+            onTap: () => _launch(
+                'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102'),
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          _LabelLink(
+            label: 'Website: ',
+            linkText: 'www.reelcommerce.com',
+            onTap: () => _launch('https://www.reelcommerce.com'),
+          ),
+          const SizedBox(height: DesignTokens.s32),
+
+          // Follow us on
+          const _SectionHeading('Follow us on:'),
+          const SizedBox(height: DesignTokens.s16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              for (final s in const [
-                ('Instagram', Icons.camera_alt_outlined),
-                ('TikTok', Icons.music_note),
-                ('YouTube', Icons.play_circle_outline),
-                ('Facebook', Icons.facebook),
-              ])
-                _SocialPill(
-                  label: s.$1,
-                  icon: s.$2,
-                  onTap: () =>
-                      SmSnackbar.info(context, '${s.$1} — coming soon'),
-                ),
+              _SocialCircle(
+                icon: Icons.play_arrow_rounded,
+                color: const Color(0xFFFF0000),
+                onTap: () => _launch('https://youtube.com'),
+              ),
+              const SizedBox(width: DesignTokens.s16),
+              _SocialCircle(
+                icon: Icons.camera_alt_outlined,
+                color: const Color(0xFFE1306C),
+                onTap: () => _launch('https://instagram.com'),
+              ),
+              const SizedBox(width: DesignTokens.s16),
+              _SocialCircle(
+                icon: Icons.facebook,
+                color: const Color(0xFF1877F2),
+                onTap: () => _launch('https://facebook.com'),
+              ),
+              const SizedBox(width: DesignTokens.s16),
+              _SocialCircle(
+                icon: Icons.music_note_rounded,
+                color: const Color(0xFF010101),
+                onTap: () => _launch('https://tiktok.com'),
+              ),
             ],
           ),
+          const SizedBox(height: DesignTokens.s32),
+
+          // Legal
+          const _SectionHeading('Legal'),
+          const SizedBox(height: DesignTokens.s8),
+          _BulletLink('Terms of Service',
+              onTap: () => context.push('${RouteNames.settings}/terms')),
+          _BulletLink('Privacy Policy',
+              onTap: () => context.push('${RouteNames.settings}/privacy')),
+          _BulletLink('Cookie Policy', onTap: () {}),
+          _BulletLink('Community Guidelines', onTap: () {}),
+          _BulletLink('Intellectual Property', onTap: () {}),
+          const SizedBox(height: DesignTokens.s32),
+
+          // Resources
+          const _SectionHeading('Resources'),
+          const SizedBox(height: DesignTokens.s8),
+          _BulletLink('Help Center',
+              onTap: () => context.push(RouteNames.support)),
+          _BulletLink('Become a Creator', onTap: () {}),
+          _BulletLink('Sell on ReelCommerce', onTap: () {}),
+          _BulletLink('Press Kit', onTap: () {}),
+          _BulletLink('Careers', onTap: () {}),
+          _BulletLink('Blog', onTap: () {}),
+          const SizedBox(height: DesignTokens.s32),
+
+          // App Information
+          const _SectionHeading('App Information'),
+          const SizedBox(height: DesignTokens.s8),
+          const _InfoRow(label: 'Version:', value: '1.2.0'),
+          const _InfoRow(label: 'Build:', value: '456'),
+          const _InfoRow(label: 'Released:', value: 'December 15, 2024'),
+          const SizedBox(height: DesignTokens.s4),
+          _BulletLink('Check for Updates', onTap: () {}),
+          _BulletLink('View Release Notes', onTap: () {}),
+          const SizedBox(height: DesignTokens.s32),
+
+          // Licenses
+          const _SectionHeading('Licenses'),
+          const SizedBox(height: DesignTokens.s8),
+          _BulletLink('Open Source Licenses',
+              onTap: () => showLicensePage(context: context)),
+          _BulletLink('Third-Party Services', onTap: () {}),
+          const SizedBox(height: DesignTokens.s32),
+
+          // Footer
+          const Center(
+            child: Text(
+              '© 2024 ReelCommerce Inc. All rights reserved.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontFamily: DesignTokens.fontFamily,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: DesignTokens.textWhite,
+      ),
+    );
+  }
+}
+
+class _Body extends StatelessWidget {
+  const _Body(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontFamily: DesignTokens.fontFamily,
+        fontSize: 14,
+        height: 1.6,
+        color: DesignTokens.textLight,
       ),
     );
   }
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.value, required this.label});
-
+  const _StatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+  final IconData icon;
   final String value;
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
+      padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Column(
         children: [
-          Text(value, style: DesignTokens.sectionInnerTitle),
+          Icon(icon, size: 22, color: DesignTokens.textLight),
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: DesignTokens.textWhite,
+            ),
+          ),
           const SizedBox(height: DesignTokens.s4),
-          Text(label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight)),
+          Text(
+            label,
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SocialPill extends StatelessWidget {
-  const _SocialPill({
-    required this.label,
+class _SocialCircle extends StatelessWidget {
+  const _SocialCircle({
     required this.icon,
+    required this.color,
     required this.onTap,
   });
-
-  final String label;
   final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
+    return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0x38FFFFFF)), // white @ 22%
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: DesignTokens.textWhite),
-            const SizedBox(width: DesignTokens.s8),
-            Text(label, style: DesignTokens.smallRegular),
-          ],
-        ),
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 26),
+      ),
+    );
+  }
+}
+
+class _BulletLink extends StatelessWidget {
+  const _BulletLink(this.text, {required this.onTap});
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6, right: 8),
+            child: CircleAvatar(
+                radius: 3, backgroundColor: DesignTokens.primaryGreen),
+          ),
+          GestureDetector(
+            onTap: onTap,
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                height: 1.6,
+                color: DesignTokens.primaryGreen,
+                decoration: TextDecoration.underline,
+                decorationColor: DesignTokens.primaryGreen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LabelLink extends StatelessWidget {
+  const _LabelLink({
+    required this.label,
+    required this.linkText,
+    required this.onTap,
+  });
+  final String label;
+  final String linkText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6, right: 8),
+            child: CircleAvatar(
+                radius: 3, backgroundColor: DesignTokens.textLight),
+          ),
+          Expanded(
+            child: Wrap(
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    height: 1.6,
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onTap,
+                  child: Text(
+                    linkText,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      height: 1.6,
+                      color: DesignTokens.primaryGreen,
+                      decoration: TextDecoration.underline,
+                      decorationColor: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6, right: 8),
+            child: CircleAvatar(
+                radius: 3, backgroundColor: DesignTokens.textLight),
+          ),
+          Text(
+            '$label  ',
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              height: 1.6,
+              color: DesignTokens.textLight,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              height: 1.6,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+        ],
       ),
     );
   }
