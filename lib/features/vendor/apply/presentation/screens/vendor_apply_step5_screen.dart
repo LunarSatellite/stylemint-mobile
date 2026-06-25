@@ -410,7 +410,7 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.bgAppBodyLight,
+                backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(
