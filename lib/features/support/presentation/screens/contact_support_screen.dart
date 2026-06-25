@@ -389,12 +389,12 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                 onTap: () => setState(() => _selectedTab = i),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s12,
-                    vertical: DesignTokens.s6,
+                    horizontal: 10,
+                    vertical: DesignTokens.s8,
                   ),
                   decoration: BoxDecoration(
                     color: selected ? DesignTokens.primaryGreen : Colors.transparent,
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: selected ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
                     ),
@@ -402,7 +402,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                   child: Text(
                     '${tab.label}(${tab.count})',
                     style: DesignTokens.smallRegular.copyWith(
-                      color: selected ? Colors.black : DesignTokens.textMuted,
+                      color: selected ? DesignTokens.textWhite : DesignTokens.textMuted,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),

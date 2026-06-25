@@ -65,6 +65,10 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: SafeArea(
         child: Column(
