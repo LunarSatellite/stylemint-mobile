@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/notification_prefs.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
@@ -10,254 +9,447 @@ class NotificationPrefsScreen extends ConsumerStatefulWidget {
   const NotificationPrefsScreen({super.key});
 
   @override
-  ConsumerState<NotificationPrefsScreen> createState() => _NotificationPrefsScreenState();
+  ConsumerState<NotificationPrefsScreen> createState() =>
+      _NotificationPrefsScreenState();
 }
 
-class _NotificationPrefsScreenState extends ConsumerState<NotificationPrefsScreen> {
+class _NotificationPrefsScreenState
+    extends ConsumerState<NotificationPrefsScreen> {
+  // Push
   bool _pushEnabled = true;
-  bool _emailEnabled = false;
-  bool _orderUpdates = true;
-  bool _promotional = true;
-  bool _reelLikes = false;
-  bool _newFollowers = false;
-  bool _quietHoursEnabled = false;
-  TimeOfDay? _quietStart;
-  TimeOfDay? _quietEnd;
+  // Order Updates
+  bool _orderStatusChanges = true;
+  bool _deliveryUpdates = true;
+  bool _returnStatus = true;
+  // Shopping & Deals
+  bool _priceDrops = true;
+  bool _backInStock = true;
+  bool _flashSales = true;
+  bool _newArrivals = false;
+  // Creator Activity
+  bool _newReelsFromCreators = false;
+  bool _creatorRecommendations = false;
+  // Account & Security
+  bool _loginAlerts = true;
+  bool _passwordChanges = true;
+  bool _paymentUpdates = true;
+  // Marketing & Promotions
+  bool _personalizedOffers = true;
+  bool _productRecommendations = false;
+  bool _newsletter = false;
+  // Email & SMS
+  bool _emailNotifications = false;
+  bool _smsNotifications = false;
+  // Quiet Hours
+  bool _quietHoursEnabled = true;
+  String _quietStart = '22:00';
+  String _quietEnd = '08:00';
+
   bool _loaded = false;
 
   void _populate(NotificationPreferences prefs) {
     if (_loaded) return;
     _loaded = true;
     _pushEnabled = prefs.pushEnabled;
-    _emailEnabled = prefs.emailEnabled;
-    _orderUpdates = prefs.orderUpdates;
-    _promotional = prefs.promotional;
-    _reelLikes = prefs.reelLikes;
-    _newFollowers = prefs.newFollowers;
+    _orderStatusChanges = prefs.orderStatusChanges;
+    _deliveryUpdates = prefs.deliveryUpdates;
+    _returnStatus = prefs.returnStatus;
+    _priceDrops = prefs.priceDrops;
+    _backInStock = prefs.backInStock;
+    _flashSales = prefs.flashSales;
+    _newArrivals = prefs.newArrivals;
+    _newReelsFromCreators = prefs.newReelsFromCreators;
+    _creatorRecommendations = prefs.creatorRecommendations;
+    _loginAlerts = prefs.loginAlerts;
+    _passwordChanges = prefs.passwordChanges;
+    _paymentUpdates = prefs.paymentUpdates;
+    _personalizedOffers = prefs.personalizedOffers;
+    _productRecommendations = prefs.productRecommendations;
+    _newsletter = prefs.newsletter;
+    _emailNotifications = prefs.emailNotifications;
+    _smsNotifications = prefs.smsNotifications;
     _quietHoursEnabled = prefs.quietHoursEnabled;
-    if (prefs.quietHoursStart != null) {
-      final parts = prefs.quietHoursStart!.split(':');
-      _quietStart = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-    }
-    if (prefs.quietHoursEnd != null) {
-      final parts = prefs.quietHoursEnd!.split(':');
-      _quietEnd = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-    }
+    if (prefs.quietHoursStart != null) _quietStart = prefs.quietHoursStart!;
+    if (prefs.quietHoursEnd != null) _quietEnd = prefs.quietHoursEnd!;
   }
 
   void _save() {
     ref.read(settingsNotifierProvider.notifier).savePrefs(
       NotificationPreferences(
         pushEnabled: _pushEnabled,
-        emailEnabled: _emailEnabled,
-        orderUpdates: _orderUpdates,
-        promotional: _promotional,
-        reelLikes: _reelLikes,
-        newFollowers: _newFollowers,
+        orderStatusChanges: _orderStatusChanges,
+        deliveryUpdates: _deliveryUpdates,
+        returnStatus: _returnStatus,
+        priceDrops: _priceDrops,
+        backInStock: _backInStock,
+        flashSales: _flashSales,
+        newArrivals: _newArrivals,
+        newReelsFromCreators: _newReelsFromCreators,
+        creatorRecommendations: _creatorRecommendations,
+        loginAlerts: _loginAlerts,
+        passwordChanges: _passwordChanges,
+        paymentUpdates: _paymentUpdates,
+        personalizedOffers: _personalizedOffers,
+        productRecommendations: _productRecommendations,
+        newsletter: _newsletter,
+        emailNotifications: _emailNotifications,
+        smsNotifications: _smsNotifications,
         quietHoursEnabled: _quietHoursEnabled,
-        quietHoursStart: _quietStart != null
-            ? '${_quietStart!.hour.toString().padLeft(2, '0')}:${_quietStart!.minute.toString().padLeft(2, '0')}'
-            : null,
-        quietHoursEnd: _quietEnd != null
-            ? '${_quietEnd!.hour.toString().padLeft(2, '0')}:${_quietEnd!.minute.toString().padLeft(2, '0')}'
-            : null,
+        quietHoursStart: _quietStart,
+        quietHoursEnd: _quietEnd,
       ),
     );
   }
 
-  Future<void> _pickStartTime() async {
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _quietStart ?? const TimeOfDay(hour: 22, minute: 0),
-    );
-    if (time != null) setState(() => _quietStart = time);
-  }
-
-  Future<void> _pickEndTime() async {
-    final time = await showTimePicker(
-      context: context,
-      initialTime: _quietEnd ?? const TimeOfDay(hour: 8, minute: 0),
-    );
-    if (time != null) setState(() => _quietEnd = time);
+  void _turnOnAll() {
+    setState(() {
+      _pushEnabled = true;
+      _orderStatusChanges = true;
+      _deliveryUpdates = true;
+      _returnStatus = true;
+      _priceDrops = true;
+      _backInStock = true;
+      _flashSales = true;
+      _newArrivals = true;
+      _newReelsFromCreators = true;
+      _creatorRecommendations = true;
+      _loginAlerts = true;
+      _passwordChanges = true;
+      _paymentUpdates = true;
+      _personalizedOffers = true;
+      _productRecommendations = true;
+      _newsletter = true;
+      _emailNotifications = true;
+      _smsNotifications = true;
+      _quietHoursEnabled = true;
+    });
+    _save();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(settingsNotifierProvider);
 
-    ref.listen<NotificationPrefsState>(settingsNotifierProvider, (prev, next) {
+    ref.listen<NotificationPrefsState>(settingsNotifierProvider, (_, next) {
       next.whenOrNull(
-        saveSuccess: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Preferences saved')),
-          );
-          context.pop();
-        },
-        saveFailure: (failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Save failed: ${failure.toString()}')),
-          );
-        },
+        saveSuccess: () => ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Preferences saved')),
+        ),
+        saveFailure: (f) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: ${f.toString()}')),
+        ),
       );
     });
+
+    state.whenOrNull(loadSuccess: _populate);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Notifications', style: DesignTokens.sectionInnerTitle),
+        leading: const BackButton(color: DesignTokens.textWhite),
+        title: const Text('Notification Settings', style: DesignTokens.sectionInnerTitle),
       ),
-      body: state.maybeWhen(
-        loadSuccess: (prefs) {
-          _populate(prefs);
-          return _buildBody();
-        },
-        orElse: () => _buildBody(),
-      ),
-    );
-  }
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              children: [
+                // ── Push Notifications ─────────────────────────────────
+                _SectionLabel('Push Notifications'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Enable Push Notifications',
+                    subtitle: 'Allow Reel Commerce to send you push notifications',
+                    value: _pushEnabled,
+                    onChanged: (v) => setState(() => _pushEnabled = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
 
-  Widget _buildBody() {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBody,
-                  borderRadius: BorderRadius.circular(DesignTokens.s12),
-                ),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Push Notifications', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('Receive push notifications', style: DesignTokens.smallRegular),
-                      value: _pushEnabled,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _pushEnabled = v),
-                    ),
-                    const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                    SwitchListTile(
-                      title: const Text('Email Notifications', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('Receive email updates', style: DesignTokens.smallRegular),
-                      value: _emailEnabled,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _emailEnabled = v),
-                    ),
-                    const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                    SwitchListTile(
-                      title: const Text('Order Updates', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('Notifications about your orders', style: DesignTokens.smallRegular),
-                      value: _orderUpdates,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _orderUpdates = v),
-                    ),
-                    const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                    SwitchListTile(
-                      title: const Text('Promotional', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('Deals, offers, and recommendations', style: DesignTokens.smallRegular),
-                      value: _promotional,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _promotional = v),
-                    ),
-                    const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                    SwitchListTile(
-                      title: const Text('Reel Likes', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('When someone likes your reel', style: DesignTokens.smallRegular),
-                      value: _reelLikes,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _reelLikes = v),
-                    ),
-                    const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                    SwitchListTile(
-                      title: const Text('New Followers', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('When someone follows you', style: DesignTokens.smallRegular),
-                      value: _newFollowers,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _newFollowers = v),
-                    ),
-                  ],
-                ),
-              ),
+                // ── Order Updates ──────────────────────────────────────
+                _SectionLabel('Order Updates'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Order Status Changes',
+                    subtitle: 'Order shipped, Delivered & Delays',
+                    value: _orderStatusChanges,
+                    onChanged: (v) => setState(() => _orderStatusChanges = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Delivery Updates',
+                    subtitle: 'Out for delivery, Delivery attempts',
+                    value: _deliveryUpdates,
+                    onChanged: (v) => setState(() => _deliveryUpdates = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Return Status',
+                    subtitle: 'Return approved, Refund processed',
+                    value: _returnStatus,
+                    onChanged: (v) => setState(() => _returnStatus = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
 
-              const SizedBox(height: DesignTokens.s24),
+                // ── Shopping & Deals ───────────────────────────────────
+                _SectionLabel('Shopping & Deals'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Price Drops',
+                    subtitle: 'When saved items go on sale',
+                    value: _priceDrops,
+                    onChanged: (v) => setState(() => _priceDrops = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Back in Stock',
+                    subtitle: 'Products you want are available',
+                    value: _backInStock,
+                    onChanged: (v) => setState(() => _backInStock = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Flash Sales',
+                    subtitle: 'Limited-time deals and promotions',
+                    value: _flashSales,
+                    onChanged: (v) => setState(() => _flashSales = v),
+                  ),
+                  _ToggleItem(
+                    title: 'New Arrivals',
+                    subtitle: 'Latest products in categories you follow',
+                    value: _newArrivals,
+                    onChanged: (v) => setState(() => _newArrivals = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
 
-              // Quiet Hours section
-              Container(
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBody,
-                  borderRadius: BorderRadius.circular(DesignTokens.s12),
-                ),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Quiet Hours', style: DesignTokens.mediumRegular),
-                      subtitle: const Text('Mute notifications during specific hours', style: DesignTokens.smallRegular),
-                      value: _quietHoursEnabled,
-                      activeColor: DesignTokens.primaryGreen,
-                      onChanged: (v) => setState(() => _quietHoursEnabled = v),
-                    ),
-                    if (_quietHoursEnabled) ...[
-                      const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                      ListTile(
-                        title: const Text('Start Time', style: DesignTokens.mediumRegular),
-                        trailing: TextButton(
-                          onPressed: _pickStartTime,
-                          child: Text(
-                            _quietStart?.format(context) ?? '22:00',
-                            style: const TextStyle(color: DesignTokens.primaryGreen),
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1, color: DesignTokens.borderDefault, indent: DesignTokens.s48),
-                      ListTile(
-                        title: const Text('End Time', style: DesignTokens.mediumRegular),
-                        trailing: TextButton(
-                          onPressed: _pickEndTime,
-                          child: Text(
-                            _quietEnd?.format(context) ?? '08:00',
-                            style: const TextStyle(color: DesignTokens.primaryGreen),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+                // ── Creator Activity ───────────────────────────────────
+                _SectionLabel('Creator Activity'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'New Reels from Creators',
+                    subtitle: 'When creators you follow post new reels',
+                    value: _newReelsFromCreators,
+                    onChanged: (v) => setState(() => _newReelsFromCreators = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Creator Recommendations',
+                    subtitle: 'Suggested creators to follow',
+                    value: _creatorRecommendations,
+                    onChanged: (v) => setState(() => _creatorRecommendations = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
+
+                // ── Account & Security ─────────────────────────────────
+                _SectionLabel('Account & Security'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Login Alerts',
+                    subtitle: 'New device or unusual  activity',
+                    value: _loginAlerts,
+                    onChanged: (v) => setState(() => _loginAlerts = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Password Changes',
+                    subtitle: 'Account security updates',
+                    value: _passwordChanges,
+                    onChanged: (v) => setState(() => _passwordChanges = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Payment Updates',
+                    subtitle: 'Payment method changes, receipts',
+                    value: _paymentUpdates,
+                    onChanged: (v) => setState(() => _paymentUpdates = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
+
+                // ── Marketing & Promotions ─────────────────────────────
+                _SectionLabel('Marketing & Promotions'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Personalized Offers',
+                    subtitle: 'Special deals based on your interests',
+                    value: _personalizedOffers,
+                    onChanged: (v) => setState(() => _personalizedOffers = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Product Recommendations',
+                    subtitle: 'Suggested products you might like',
+                    value: _productRecommendations,
+                    onChanged: (v) => setState(() => _productRecommendations = v),
+                  ),
+                  _ToggleItem(
+                    title: 'Newsletter',
+                    subtitle: 'Weekly email with new products and tips',
+                    value: _newsletter,
+                    onChanged: (v) => setState(() => _newsletter = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
+
+                // ── Email & SMS ────────────────────────────────────────
+                _SectionLabel('Email & SMS'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Email Notifications',
+                    subtitle: 'Notifications & Alerts to your email',
+                    value: _emailNotifications,
+                    onChanged: (v) => setState(() => _emailNotifications = v),
+                  ),
+                  _ToggleItem(
+                    title: 'SMS Notifications',
+                    subtitle: "Notifications & Alerts to your phone's sms",
+                    value: _smsNotifications,
+                    onChanged: (v) => setState(() => _smsNotifications = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
+
+                // ── Quiet Hours ────────────────────────────────────────
+                _SectionLabel('Quiet Hours'),
+                _SectionCard(items: [
+                  _ToggleItem(
+                    title: 'Pause Notifications',
+                    subtitle:
+                        'Pause notifications from ${_formatTime(_quietStart)} – ${_formatTime(_quietEnd)}',
+                    value: _quietHoursEnabled,
+                    onChanged: (v) => setState(() => _quietHoursEnabled = v),
+                  ),
+                ]),
+                const SizedBox(height: DesignTokens.s16),
+              ],
+            ),
           ),
-        ),
 
-        // Save button
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            child: SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: DesignTokens.primaryButtonStyle(),
-                child: const Text(
-                  'Save Preferences',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.buttonPrimaryText,
+          // ── Pinned button ────────────────────────────────────────────
+          const Divider(height: 1, thickness: 1, color: DesignTokens.borderDefault),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _turnOnAll,
+                  style: DesignTokens.primaryButtonStyle(),
+                  child: Text(
+                    'Turn On All Notifications',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(String hhmm) {
+    final parts = hhmm.split(':');
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
+    final period = hour < 12 ? 'AM' : 'PM';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+  }
+}
+
+// ── Section label ────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+      child: Text(
+        text,
+        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+      ),
+    );
+  }
+}
+
+// ── Section card ─────────────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.items});
+  final List<_ToggleItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              const Divider(
+                height: 1,
+                color: DesignTokens.borderDefault,
+                indent: DesignTokens.s16,
+                endIndent: DesignTokens.s16,
+              ),
+            items[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Toggle item ───────────────────────────────────────────────────────────────
+
+class _ToggleItem extends StatelessWidget {
+  const _ToggleItem({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s4,
+      ),
+      title: Text(
+        title,
+        style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+      ),
+      value: value,
+      activeColor: DesignTokens.primaryGreen,
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return DesignTokens.primaryGreen.withValues(alpha: 0.3);
+        }
+        return DesignTokens.bgAppBodyLight;
+      }),
+      onChanged: onChanged,
     );
   }
 }

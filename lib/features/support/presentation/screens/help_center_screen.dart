@@ -1,250 +1,338 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
-import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
-import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class HelpCenterScreen extends ConsumerStatefulWidget {
+class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
 
   @override
-  ConsumerState<HelpCenterScreen> createState() => _HelpCenterScreenState();
+  State<HelpCenterScreen> createState() => _HelpCenterScreenState();
 }
 
-class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
-  final _searchCtrl = TextEditingController();
+class _HelpCenterScreenState extends State<HelpCenterScreen> {
+  String _query = '';
+  int? _expandedFaq;
 
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
+  List<HelpTopic> get _filteredTopics {
+    if (_query.isEmpty) return kHelpTopics;
+    final q = _query.toLowerCase();
+    return kHelpTopics
+        .where((t) =>
+            t.title.toLowerCase().contains(q) ||
+            t.subtitle.toLowerCase().contains(q) ||
+            t.articles.any((a) => a.title.toLowerCase().contains(q)))
+        .toList();
+  }
+
+  List<FaqItem> get _filteredFaqs {
+    if (_query.isEmpty) return kFaqs;
+    final q = _query.toLowerCase();
+    return kFaqs
+        .where((f) =>
+            f.question.toLowerCase().contains(q) ||
+            f.answer.toLowerCase().contains(q))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ticketsState = ref.watch(supportNotifierProvider);
-    final categoriesState = ref.watch(categoriesNotifierProvider);
-
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
+          style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
         title: const Text('Help Center', style: DesignTokens.sectionInnerTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(DesignTokens.s16),
         children: [
-          TextFormField(
-            controller: _searchCtrl,
-            style: const TextStyle(color: DesignTokens.textWhite),
-            decoration: DesignTokens.inputDecoration(
-              hintText: 'Search help articles...',
-              prefixIcon: const Icon(Icons.search, color: DesignTokens.inputFieldPlaceholder, size: 20),
-            ),
+          // Subtitle
+          Text(
+            'How can we help you?',
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
           ),
-          const SizedBox(height: DesignTokens.s24),
+          const SizedBox(height: DesignTokens.s16),
 
-          const Text('Categories', style: DesignTokens.sectionInnerTitle),
-          const SizedBox(height: DesignTokens.s12),
-
-          categoriesState.when(
-            initial: () => const _CategoriesLoader(),
-            loadInProgress: () => const _CategoriesLoader(),
-            loadFailure: (_) => const Center(child: Text('Failed to load categories', style: DesignTokens.smallRegular)),
-            loadSuccess: (categories) => Wrap(
-              spacing: DesignTokens.s12,
-              runSpacing: DesignTokens.s12,
-              children: categories.map((cat) => _CategoryCard(category: cat, onTap: () {
-                context.push('${RouteNames.support}/contact', extra: cat);
-              })).toList(),
+          // Search
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
             ),
-          ),
-
-          const SizedBox(height: DesignTokens.s24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('My Tickets', style: DesignTokens.sectionInnerTitle),
-              TextButton(
-                onPressed: () => context.push('${RouteNames.support}/tickets'),
-                child: const Text('View All', style: TextStyle(color: DesignTokens.primaryGreen)),
+            child: TextField(
+              onChanged: (v) => setState(() {
+                _query = v;
+                _expandedFaq = null;
+              }),
+              style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+              decoration: InputDecoration(
+                hintText: 'Search for help on any topic',
+                hintStyle: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
+                suffixIcon: const Icon(Icons.search, color: DesignTokens.textMuted, size: 20),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                  vertical: DesignTokens.s12,
+                ),
               ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s24),
+
+          // ── Popular Topics ─────────────────────────────────────────────
+          Text(
+            'Popular Topics',
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _SectionCard(
+            children: [
+              for (var i = 0; i < _filteredTopics.length; i++) ...[
+                _TopicTile(
+                  topic: _filteredTopics[i],
+                  onTap: () => context.push(
+                    RouteNames.supportTopic,
+                    extra: _filteredTopics[i],
+                  ),
+                ),
+              ],
+              if (_filteredTopics.isEmpty) _emptyResult('No topics match your search.'),
             ],
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s24),
 
-          ticketsState.when(
-            initial: () => const _TicketsLoader(),
-            loadInProgress: () => const _TicketsLoader(),
-            loadFailure: (_) => const Center(child: Text('Failed to load tickets', style: DesignTokens.smallRegular)),
-            loadSuccess: (tickets) {
-              if (tickets.isEmpty) {
-                return const SmEmptyState(
-                  message: 'No support tickets yet.',
-                  icon: Icons.support_agent_outlined,
-                );
-              }
-              return Column(
-                children: tickets.take(3).map((t) => _TicketPreviewTile(ticket: t)).toList(),
-              );
-            },
+          // ── FAQs ───────────────────────────────────────────────────────
+          Text(
+            "FAQ's",
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
           ),
+          const SizedBox(height: DesignTokens.s8),
+          _SectionCard(
+            children: [
+              for (var i = 0; i < _filteredFaqs.length; i++) ...[
+                _FaqTile(
+                  item: _filteredFaqs[i],
+                  isExpanded: _expandedFaq == i,
+                  onTap: () => setState(() {
+                    _expandedFaq = _expandedFaq == i ? null : i;
+                  }),
+                ),
+              ],
+              if (_filteredFaqs.isEmpty) _emptyResult('No FAQs match your search.'),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s24),
+
+          // ── Still need help? ───────────────────────────────────────────
+          Text(
+            'Still need help?',
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _SectionCard(
+            children: [
+              for (final opt in kContactOptions) _ContactTile(option: opt),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s24),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('${RouteNames.support}/contact'),
-        backgroundColor: DesignTokens.primaryGreen,
-        icon: const Icon(Icons.headset_mic, color: DesignTokens.textDark),
-        label: const Text('Contact Us', style: TextStyle(color: DesignTokens.textDark, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  Widget _divider() => const Divider(
+        height: 1,
+        color: DesignTokens.borderDefault,
+        indent: DesignTokens.s16,
+        endIndent: DesignTokens.s16,
+      );
+
+  Widget _emptyResult(String msg) => Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Text(msg,
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
+      );
+}
+
+// ── Section card wrapper ──────────────────────────────────────────────────────
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
+      child: Column(children: children),
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.category, required this.onTap});
+// ── Topic tile ────────────────────────────────────────────────────────────────
 
-  final SupportCategory category;
+class _TopicTile extends StatelessWidget {
+  const _TopicTile({required this.topic, required this.onTap});
+  final HelpTopic topic;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        width: (MediaQuery.of(context).size.width - DesignTokens.s32 - DesignTokens.s12) / 2,
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.s12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            Icon(_mapIcon(category.iconName), color: DesignTokens.primaryGreen, size: 28),
-            const SizedBox(height: DesignTokens.s8),
-            Text(category.title, style: DesignTokens.mediumSemibold, maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: DesignTokens.s4),
-            Text(category.description, style: DesignTokens.smallRegular, maxLines: 2, overflow: TextOverflow.ellipsis),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+              ),
+              child: Icon(topic.icon, color: DesignTokens.textWhite.withValues(alpha: 0.8), size: 20),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(topic.title,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite)),
+                  const SizedBox(height: 2),
+                  Text(topic.subtitle,
+                      style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: DesignTokens.textMuted, size: 20),
           ],
         ),
       ),
     );
   }
-
-  IconData _mapIcon(String name) => switch (name) {
-    'order' => Icons.shopping_bag_outlined,
-    'payment' => Icons.payment_outlined,
-    'account' => Icons.person_outline,
-    'delivery' => Icons.local_shipping_outlined,
-    'returns' => Icons.assignment_return_outlined,
-    _ => Icons.help_outline,
-  };
 }
 
-class _TicketPreviewTile extends StatelessWidget {
-  const _TicketPreviewTile({required this.ticket});
+// ── FAQ tile ──────────────────────────────────────────────────────────────────
 
-  final Ticket ticket;
-
-  Color _statusColor() => switch (ticket.status) {
-    TicketStatus.open => DesignTokens.primaryGreen,
-    TicketStatus.inProgress => DesignTokens.colorInfo,
-    TicketStatus.resolved => DesignTokens.colorSuccess,
-    TicketStatus.closed => DesignTokens.textMuted,
-  };
-
-  String _statusLabel() => switch (ticket.status) {
-    TicketStatus.open => 'Open',
-    TicketStatus.inProgress => 'In Progress',
-    TicketStatus.resolved => 'Resolved',
-    TicketStatus.closed => 'Closed',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.s12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(ticket.subject, style: DesignTokens.mediumSemibold),
-                const SizedBox(height: DesignTokens.s4),
-                Text(ticket.ticketNumber, style: DesignTokens.smallRegular),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
-            decoration: BoxDecoration(
-              color: _statusColor().withOpacity(0.15),
-              borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-            ),
-            child: Text(
-              _statusLabel(),
-              style: DesignTokens.tiny.copyWith(color: _statusColor()),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoriesLoader extends StatelessWidget {
-  const _CategoriesLoader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: DesignTokens.s12,
-      runSpacing: DesignTokens.s12,
-      children: List.generate(4, (i) => Container(
-        width: (MediaQuery.of(context).size.width - DesignTokens.s32 - DesignTokens.s12) / 2,
-        height: 100,
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.s12),
-        ),
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: DesignTokens.primaryGreen)),
-      )),
-    );
-  }
-}
-
-class _TicketsLoader extends StatelessWidget {
-  const _TicketsLoader();
+class _FaqTile extends StatelessWidget {
+  const _FaqTile({
+    required this.item,
+    required this.isExpanded,
+    required this.onTap,
+  });
+  final FaqItem item;
+  final bool isExpanded;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: List.generate(2, (_) => Container(
-        margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-        height: 60,
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.s12),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s16,
+              vertical: DesignTokens.s12,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.question,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite),
+                  ),
+                ),
+                Icon(
+                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
         ),
-      )),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              0,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
+            child: Text(
+              item.answer,
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Contact tile ──────────────────────────────────────────────────────────────
+
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({required this.option});
+  final ContactOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {},
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+              ),
+              child: Icon(option.icon, color: DesignTokens.textWhite.withValues(alpha: 0.8), size: 20),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(option.title,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite)),
+                  const SizedBox(height: 2),
+                  Text(option.subtitle,
+                      style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: DesignTokens.textMuted, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@ class PaymentMethod {
     required this.label,
     this.lastFour,
     this.expiryDate,
+    this.cardholderName,
     required this.isDefault,
   });
 
@@ -15,6 +16,7 @@ class PaymentMethod {
   final String label;
   final String? lastFour;
   final String? expiryDate;
+  final String? cardholderName;
   final bool isDefault;
 
   PaymentMethod copyWith({
@@ -23,6 +25,7 @@ class PaymentMethod {
     String? label,
     String? lastFour,
     String? expiryDate,
+    String? cardholderName,
     bool? isDefault,
   }) {
     return PaymentMethod(
@@ -31,6 +34,7 @@ class PaymentMethod {
       label: label ?? this.label,
       lastFour: lastFour ?? this.lastFour,
       expiryDate: expiryDate ?? this.expiryDate,
+      cardholderName: cardholderName ?? this.cardholderName,
       isDefault: isDefault ?? this.isDefault,
     );
   }

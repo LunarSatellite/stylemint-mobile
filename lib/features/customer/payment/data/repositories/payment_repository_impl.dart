@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -6,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/data/datasources/payment_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/repositories/payment_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/payment/shared/payment_mock_data.dart';
 
 class PaymentRepositoryImpl implements PaymentRepository {
   PaymentRepositoryImpl({
@@ -20,6 +22,8 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
   @override
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async {
+    // ponytail: static stub for UI dev, remove when processor tokenization is wired
+    if (kDebugMode) return right(kMockPaymentMethods);
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPaymentMethods();
@@ -48,6 +52,39 @@ class PaymentRepositoryImpl implements PaymentRepository {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.addCard(
+          cardNumber: cardNumber,
+          expiry: expiry,
+          cvv: cvv,
+          cardholderName: cardholderName,
+          idempotencyKey: _uuid.v4(),
+        );
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PaymentMethod>> updateCard({
+    required String id,
+    required String cardNumber,
+    required String expiry,
+    required String cvv,
+    required String cardholderName,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.updateCard(
+          id: id,
           cardNumber: cardNumber,
           expiry: expiry,
           cvv: cvv,

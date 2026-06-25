@@ -8,7 +8,7 @@ class CartRemoteDataSource {
   final ApiClient apiClient;
 
   Future<CartDto> getCart() async {
-    final response = await apiClient.get('/v1/cart');
+    final response = await apiClient.authGet('/v1/cart');
     return CartDto.fromJson(response as Map<String, dynamic>);
   }
 

@@ -13,38 +13,46 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
   bool get isEditing => address != null;
 
   @override
-  ConsumerState<AddEditAddressScreen> createState() =>
-      _AddEditAddressScreenState();
+  ConsumerState<AddEditAddressScreen> createState() => _AddEditAddressScreenState();
 }
 
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   final _formKey = GlobalKey<FormState>();
-  late String _label;
+
   late TextEditingController _fullNameCtl;
   late TextEditingController _phoneCtl;
   late TextEditingController _addressLine1Ctl;
-  late TextEditingController _addressLine2Ctl;
-  late TextEditingController _cityCtl;
-  late TextEditingController _stateCtl;
+  late TextEditingController _landmarkCtl;
   late TextEditingController _zipCodeCtl;
-  late bool _isDefault;
+  late TextEditingController _cityCtl;
+  late TextEditingController _labelCtl;
+
+  late String _country;
+  late String _province;
+
   bool _saving = false;
 
-  static const _labels = ['Home', 'Work', 'Other'];
+  static const _countries = [
+    'Nepal', 'India', 'China', 'Bangladesh', 'Bhutan', 'Pakistan', 'Sri Lanka',
+  ];
+
+  static const _nepalProvinces = [
+    'Koshi', 'Madhesh', 'Bagmati', 'Gandaki', 'Lumbini', 'Karnali', 'Sudurpashchim',
+  ];
 
   @override
   void initState() {
     super.initState();
     final a = widget.address;
-    _label = a?.label ?? 'Home';
     _fullNameCtl = TextEditingController(text: a?.fullName ?? '');
     _phoneCtl = TextEditingController(text: a?.phone ?? '');
     _addressLine1Ctl = TextEditingController(text: a?.addressLine1 ?? '');
-    _addressLine2Ctl = TextEditingController(text: a?.addressLine2 ?? '');
-    _cityCtl = TextEditingController(text: a?.city ?? '');
-    _stateCtl = TextEditingController(text: a?.state ?? '');
+    _landmarkCtl = TextEditingController(text: a?.addressLine2 ?? '');
     _zipCodeCtl = TextEditingController(text: a?.zipCode ?? '');
-    _isDefault = a?.isDefault ?? false;
+    _cityCtl = TextEditingController(text: a?.city ?? '');
+    _labelCtl = TextEditingController(text: a?.label ?? 'Home');
+    _country = _countries.contains(a?.country) ? (a!.country) : 'Nepal';
+    _province = _nepalProvinces.contains(a?.state) ? (a!.state) : 'Bagmati';
   }
 
   @override
@@ -52,33 +60,30 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     _fullNameCtl.dispose();
     _phoneCtl.dispose();
     _addressLine1Ctl.dispose();
-    _addressLine2Ctl.dispose();
-    _cityCtl.dispose();
-    _stateCtl.dispose();
+    _landmarkCtl.dispose();
     _zipCodeCtl.dispose();
+    _cityCtl.dispose();
+    _labelCtl.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _saving = true);
 
     final notifier = ref.read(addressNotifierProvider.notifier);
-
     final address = ShippingAddress(
       id: widget.address?.id ?? '',
-      label: _label,
+      label: _labelCtl.text.trim().isEmpty ? 'Home' : _labelCtl.text.trim(),
       fullName: _fullNameCtl.text.trim(),
       phone: _phoneCtl.text.trim(),
       addressLine1: _addressLine1Ctl.text.trim(),
-      addressLine2: _addressLine2Ctl.text.trim().isEmpty
-          ? null
-          : _addressLine2Ctl.text.trim(),
+      addressLine2: _landmarkCtl.text.trim().isEmpty ? null : _landmarkCtl.text.trim(),
+      country: _country,
       city: _cityCtl.text.trim(),
-      state: _stateCtl.text.trim(),
+      state: _province,
       zipCode: _zipCodeCtl.text.trim(),
-      isDefault: _isDefault,
+      isDefault: widget.address?.isDefault ?? false,
     );
 
     final success = widget.isEditing
@@ -104,124 +109,131 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: Text(isEdit ? 'Edit Address' : 'Add Address'),
         backgroundColor: DesignTokens.bgAppFoundation,
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          children: [
-            Text('Address Label', style: DesignTokens.mediumSemibold),
-            const SizedBox(height: DesignTokens.s8),
-            Wrap(
-              spacing: DesignTokens.s8,
-              runSpacing: DesignTokens.s8,
-              children: _labels.map((l) {
-                final selected = l == _label;
-                return GestureDetector(
-                  onTap: () => setState(() => _label = l),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s8,
-                    ),
-                    decoration: selected
-                        ? DesignTokens.chipDecorationSelected()
-                        : DesignTokens.chipDecorationDefault(),
-                    child: Text(
-                      l,
-                      style: DesignTokens.mediumRegular.copyWith(
-                        color: selected
-                            ? DesignTokens.textWhite
-                            : DesignTokens.chipsDefaultText,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(growable: false),
-            ),
-            const SizedBox(height: DesignTokens.s20),
-            _buildField('Full Name', _fullNameCtl, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('Phone Number', _phoneCtl, keyboardType: TextInputType.phone, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('Address Line 1', _addressLine1Ctl, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('Address Line 2', _addressLine2Ctl),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('City', _cityCtl, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('State', _stateCtl, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s16),
-            _buildField('Zip Code', _zipCodeCtl, keyboardType: TextInputType.number, validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Required';
-              return null;
-            }),
-            const SizedBox(height: DesignTokens.s20),
-            SwitchListTile(
-              value: _isDefault,
-              onChanged: (v) => setState(() => _isDefault = v),
-              title: Text('Set as default address',
-                  style: DesignTokens.mediumSemibold),
-              activeColor: DesignTokens.primaryGreen,
-              contentPadding: EdgeInsets.zero,
-            ),
-            const SizedBox(height: DesignTokens.s32),
-            ElevatedButton(
-              onPressed: _saving ? null : _save,
-              style: DesignTokens.primaryButtonStyle(),
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : Text(
-                      isEdit ? 'Update Address' : 'Save Address',
-                      style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    ),
-            ),
-          ],
+        leading: const BackButton(color: DesignTokens.textWhite),
+        title: Text(
+          isEdit ? 'Edit Shipping Address' : 'Add Shipping Address',
+          style: DesignTokens.sectionInnerTitle,
         ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(DesignTokens.s16),
+                children: [
+                  _field('Full Name', _fullNameCtl, required: true),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    "Receiver's Phone No.",
+                    _phoneCtl,
+                    keyboardType: TextInputType.phone,
+                    required: true,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field('Address Line 1', _addressLine1Ctl, required: true),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field('Nearest Landmark (Optional)', _landmarkCtl),
+                  const SizedBox(height: DesignTokens.s16),
+                  _dropdown(
+                    label: 'Country',
+                    value: _country,
+                    items: _countries,
+                    onChanged: (v) => setState(() => _country = v ?? 'Nepal'),
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _dropdown(
+                    label: 'State/Province',
+                    value: _province,
+                    items: _nepalProvinces,
+                    onChanged: (v) => setState(() => _province = v ?? 'Bagmati'),
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    'Zip/Postal Code',
+                    _zipCodeCtl,
+                    keyboardType: TextInputType.number,
+                    required: true,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field('City', _cityCtl, required: true),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field('Save Address As', _labelCtl),
+                ],
+              ),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+              ),
+            ),
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _saving ? null : _save,
+                style: DesignTokens.primaryButtonStyle(),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      )
+                    : Text(
+                        isEdit ? 'Update Address Details' : 'Add Address Details',
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildField(
+  Widget _field(
     String label,
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
+    bool required = false,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: DesignTokens.mediumRegular.copyWith(
-        color: DesignTokens.inputFieldData,
-      ),
+      style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.inputFieldData),
       decoration: DesignTokens.inputDecoration(labelText: label),
-      validator: validator,
+      validator: required
+          ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null
+          : null,
+    );
+  }
+
+  Widget _dropdown({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      onChanged: onChanged,
+      style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.inputFieldData),
+      dropdownColor: DesignTokens.bgAppBodyLight,
+      iconEnabledColor: DesignTokens.inputFieldDropdownIcon,
+      decoration: DesignTokens.inputDecoration(labelText: label),
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(growable: false),
+      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
     );
   }
 }

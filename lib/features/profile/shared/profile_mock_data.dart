@@ -1,4 +1,12 @@
+import 'package:stylemint_mobile_frontend/features/profile/data/models/profile_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/following_user.dart';
+
+// ponytail: static stub for UI dev while backend is down, remove when /v1/accounts is stable
+const kMockProfileSummaryDto = ProfileSummaryDto(
+  displayName: 'Sailesh Aryal',
+  avatarUrl: '',
+  locale: 'en-US',
+);
 
 const kMockFollowingUsers = <FollowingUser>[
   FollowingUser(

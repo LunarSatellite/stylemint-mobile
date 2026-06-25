@@ -23,7 +23,7 @@ class ProfileStatsRow extends StatelessWidget {
               icon: Icons.favorite_border_rounded,
               value: summary.savedItemsCount,
               label: 'Saved Items',
-              onTap: () => context.push('${RouteNames.profile}/saved-items'),
+              onTap: () => context.push(RouteNames.savedItems),
             ),
           ),
           const SizedBox(width: DesignTokens.s12),

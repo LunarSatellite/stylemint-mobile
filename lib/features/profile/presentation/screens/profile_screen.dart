@@ -12,6 +12,9 @@ import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_menu_section.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_stats_row.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/core/device/push_notification_service.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -131,6 +134,12 @@ class _ProfileBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final notifState = ref.watch(settingsNotifierProvider);
+    final pushEnabled = notifState.maybeWhen(
+      loadSuccess: (prefs) => prefs.pushEnabled,
+      orElse: () => false,
+    );
+
     return ListView(
       padding: const EdgeInsets.only(bottom: DesignTokens.s24),
       children: [
@@ -155,16 +164,36 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               label: 'Shipping Addresses',
-              onTap: () {
-                /* TODO(profile): shipping addresses */
+              onTap: () => context.push(RouteNames.shippingAddresses),
+            ),
+            ProfileMenuItem(
+              icon: Icons.notifications_active_outlined,
+              label: 'Push Notifications',
+              toggleValue: pushEnabled,
+              onToggle: (val) async {
+                final current = notifState.maybeWhen(
+                  loadSuccess: (p) => p,
+                  orElse: () => null,
+                );
+                if (current == null) return;
+
+                if (val) {
+                  final granted =
+                      await PushNotificationService.requestPermission();
+                  if (!granted) return;
+                  // Token is fetched so the backend can register it on savePrefs.
+                  await PushNotificationService.getToken();
+                }
+
+                ref
+                    .read(settingsNotifierProvider.notifier)
+                    .savePrefs(current.copyWith(pushEnabled: val));
               },
             ),
             ProfileMenuItem(
               icon: Icons.credit_card_outlined,
               label: 'Payment Methods',
-              onTap: () {
-                /* TODO(profile): payment methods */
-              },
+              onTap: () => context.push(RouteNames.paymentMethods),
             ),
             ProfileMenuItem(
               icon: Icons.palette_outlined,
@@ -174,14 +203,9 @@ class _ProfileBody extends ConsumerWidget {
               },
             ),
             ProfileMenuItem(
-              icon: Icons.qr_code_scanner_rounded,
-              label: 'Log in on web',
-              onTap: () => context.push(RouteNames.qrScan),
-            ),
-            ProfileMenuItem(
               icon: Icons.notifications_outlined,
               label: 'Notification Settings',
-              onTap: () => context.push(RouteNames.settings),
+              onTap: () => context.push(RouteNames.settingsNotifications),
             ),
             ProfileMenuItem(
               icon: Icons.language_outlined,
@@ -232,29 +256,20 @@ class _ProfileBody extends ConsumerWidget {
             ),
             ProfileMenuItem(
               icon: Icons.info_outline_rounded,
-              label: 'About ReelCommerce',
-              onTap: () {
-                /* TODO(profile): about */
-              },
+              label: 'About StyleMint',
+              onTap: () => context.push(RouteNames.settingsAbout),
             ),
           ],
         ),
         const SizedBox(height: DesignTokens.s16),
 
-        // Logout & Delete
+        // Log Out
         ProfileMenuSection(
           items: [
             ProfileMenuItem(
               icon: Icons.logout_rounded,
               label: 'Log Out',
-              isDestructive: true,
               onTap: () => confirmAndLogout(context, ref),
-            ),
-            ProfileMenuItem(
-              icon: Icons.delete_forever_outlined,
-              label: 'Delete Account',
-              isDestructive: true,
-              onTap: () => context.push('${RouteNames.settings}/delete-account'),
             ),
           ],
         ),

@@ -12,6 +12,7 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
     @Default('') String label,
     String? lastFour,
     String? expiryDate,
+    @Default('') String cardholderName,
     @Default(false) bool isDefault,
   }) = _PaymentMethodDto;
 
@@ -26,6 +27,7 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
     'label': label,
     'lastFour': lastFour,
     'expiryDate': expiryDate,
+    'cardholderName': cardholderName,
     'isDefault': isDefault,
   };
 
@@ -42,6 +44,7 @@ abstract class PaymentMethodDto with _$PaymentMethodDto {
       label: label,
       lastFour: lastFour,
       expiryDate: expiryDate,
+      cardholderName: cardholderName.isEmpty ? null : cardholderName,
       isDefault: isDefault,
     );
   }

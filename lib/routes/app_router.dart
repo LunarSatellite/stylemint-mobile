@@ -58,6 +58,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/track_orders_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/add_card_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/presentation/screens/customer_shell_screen.dart';
@@ -69,6 +70,7 @@ import 'package:stylemint_mobile_frontend/features/customer/saved_items/presenta
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/add_edit_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/shipping_addresses_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/screens/view_address_screen.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/presentation/screens/recent_activity_screen.dart'
     as notifications_activity;
 import 'package:stylemint_mobile_frontend/features/onboarding/presentation/screens/follow_brands_screen.dart';
@@ -114,8 +116,11 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/s
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_article_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
+import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_topic_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
+import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/add_product_wizard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_rejected_screen.dart';
@@ -477,10 +482,15 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.shippingAddEdit,
         builder: (ctx, state) => AddEditAddressScreen(
-          address: state.extra
-              is ShippingAddress
+          address: state.extra is ShippingAddress
               ? state.extra as ShippingAddress
               : null,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.shippingView,
+        builder: (ctx, state) => ViewAddressScreen(
+          address: state.extra! as ShippingAddress,
         ),
       ),
 
@@ -492,6 +502,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.paymentAddCard,
         builder: (ctx, state) => const AddCardScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.paymentEditCard,
+        builder: (ctx, state) => AddCardScreen(card: state.extra! as PaymentMethod),
       ),
 
       // Creator
@@ -1044,6 +1058,16 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportTickets),
             builder: (ctx, state) => const MyTicketsScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.support, RouteNames.supportTopic),
+            builder: (ctx, state) =>
+                HelpTopicScreen(topic: state.extra! as HelpTopic),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.support, RouteNames.supportArticle),
+            builder: (ctx, state) =>
+                HelpArticleScreen(article: state.extra! as HelpArticle),
           ),
         ],
       ),

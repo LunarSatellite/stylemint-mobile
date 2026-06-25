@@ -6,6 +6,7 @@ class ShippingAddress {
     required this.phone,
     required this.addressLine1,
     this.addressLine2,
+    required this.country,
     required this.city,
     required this.state,
     required this.zipCode,
@@ -18,6 +19,7 @@ class ShippingAddress {
   final String phone;
   final String addressLine1;
   final String? addressLine2;
+  final String country;
   final String city;
   final String state;
   final String zipCode;
@@ -30,6 +32,7 @@ class ShippingAddress {
     String? phone,
     String? addressLine1,
     String? addressLine2,
+    String? country,
     String? city,
     String? state,
     String? zipCode,
@@ -42,6 +45,7 @@ class ShippingAddress {
       phone: phone ?? this.phone,
       addressLine1: addressLine1 ?? this.addressLine1,
       addressLine2: addressLine2 ?? this.addressLine2,
+      country: country ?? this.country,
       city: city ?? this.city,
       state: state ?? this.state,
       zipCode: zipCode ?? this.zipCode,

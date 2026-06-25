@@ -98,10 +98,19 @@ class _MenuTile extends StatelessWidget {
               const SizedBox(width: DesignTokens.s8),
             ],
             if (hasToggle)
-              Switch.adaptive(
+              Switch(
                 value: item.toggleValue!,
                 onChanged: item.onToggle,
-                activeColor: DesignTokens.primaryGreen,
+                thumbColor: WidgetStateProperty.resolveWith((states) =>
+                    states.contains(WidgetState.selected)
+                        ? Colors.white
+                        : DesignTokens.textMuted),
+                trackColor: WidgetStateProperty.resolveWith((states) =>
+                    states.contains(WidgetState.selected)
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.bgAppBodyLight),
+                trackOutlineColor:
+                    WidgetStateProperty.all(Colors.transparent),
               )
             else if (!item.isDestructive)
               const Icon(

@@ -11,6 +11,10 @@ class SavedItem {
     required this.price,
     required this.rating,
     required this.savedAt,
+    this.stockStatus = 'inStock',
+    this.originalPrice,
+    this.isFreeShipping = false,
+    this.priceDrop,
   });
 
   final String id;
@@ -26,6 +30,13 @@ class SavedItem {
   final double rating;
   final DateTime savedAt;
 
+  // Display-only — not yet on the backend DTO; populated by mock or future API.
+  /// 'inStock' | 'lowStock' | 'outOfStock'
+  final String stockStatus;
+  final Money? originalPrice;
+  final bool isFreeShipping;
+  final Money? priceDrop;
+
   SavedItem copyWith({
     String? id,
     String? productId,
@@ -35,6 +46,10 @@ class SavedItem {
     Money? price,
     double? rating,
     DateTime? savedAt,
+    String? stockStatus,
+    Money? originalPrice,
+    bool? isFreeShipping,
+    Money? priceDrop,
   }) {
     return SavedItem(
       id: id ?? this.id,
@@ -45,6 +60,10 @@ class SavedItem {
       price: price ?? this.price,
       rating: rating ?? this.rating,
       savedAt: savedAt ?? this.savedAt,
+      stockStatus: stockStatus ?? this.stockStatus,
+      originalPrice: originalPrice ?? this.originalPrice,
+      isFreeShipping: isFreeShipping ?? this.isFreeShipping,
+      priceDrop: priceDrop ?? this.priceDrop,
     );
   }
 }
