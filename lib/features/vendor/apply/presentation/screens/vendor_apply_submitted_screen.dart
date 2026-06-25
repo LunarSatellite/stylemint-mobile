@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -71,7 +71,7 @@ class VendorApplySubmittedScreen extends StatelessWidget {
 
   Widget _buildSuccessBadge() {
     return Image.asset(
-      'assets/images/badge_approved.png',
+      'assets/images/vendordashboard/badge_approved.png',
       width: 90,
       height: 90,
     );
@@ -88,7 +88,7 @@ class VendorApplySubmittedScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.asset(
-            'assets/images/badge_under_review.png',
+            'assets/images/vendordashboard/badge_under_review.png',
             width: 44,
             height: 44,
           ),
@@ -109,9 +109,30 @@ class VendorApplySubmittedScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
-                Image.asset(
-                  'assets/images/tag_under_review.png',
-                  height: 28,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: DesignTokens.warningFillDark,
+                    borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                    border: Border.all(
+                        color: DesignTokens.colorWarning.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.hourglass_top_rounded,
+                          size: 12, color: DesignTokens.colorWarning),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Under Review',
+                        style: DesignTokens.smallRegular.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: DesignTokens.colorWarning,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
                 Text(

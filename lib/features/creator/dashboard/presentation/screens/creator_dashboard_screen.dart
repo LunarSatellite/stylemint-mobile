@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +14,8 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -168,15 +172,24 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppBodyLight,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
+        Consumer(
+          builder: (_, ref, __) {
+            final path = ref.watch(avatarImagePathProvider);
+            return ClipOval(
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: path != null
+                    ? Image.file(File(path), fit: BoxFit.cover)
+                    : Container(
+                        color: DesignTokens.bgAppBodyLight,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.person_rounded,
+                            size: 22, color: DesignTokens.textMuted),
+                      ),
+              ),
+            );
+          },
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
@@ -1063,7 +1076,14 @@ class _CreatorBottomNav extends StatelessWidget {
           _NavBtn(
             icon: Icons.person_outline_rounded,
             label: 'Profile',
-            onTap: () => context.push(RouteNames.profile),
+            onTap: () => context.push(
+              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
+              extra: const CreatorProfileArgs(
+                accountId: 'me',
+                displayName: 'Danny Perierra',
+                handle: '@wandererperierra',
+              ),
+            ),
           ),
         ],
       ),

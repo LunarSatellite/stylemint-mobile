@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -227,7 +227,7 @@ class _MessageCreatorScreenState extends State<MessageCreatorScreen> {
       ),
       actions: [
         _DarkIconButton(
-          assetPath: 'assets/images/icon_message_creator.png',
+          assetPath: 'assets/images/vendordashboard/icon_message_creator.png',
           onTap: () {},
         ),
         const SizedBox(width: 8),

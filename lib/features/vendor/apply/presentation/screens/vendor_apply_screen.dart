@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/widgets/kyc_document_tile.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -102,6 +103,11 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
   void _checkStatus() {
     if (_hasCheckedStatus) return;
     _hasCheckedStatus = true;
+    final isAuthenticated = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (_) => true,
+      orElse: () => false,
+    );
+    if (!isAuthenticated) return;
     ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
   }
 

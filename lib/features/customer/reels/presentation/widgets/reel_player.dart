@@ -183,10 +183,14 @@ class _ReelPlayerState extends State<ReelPlayer>
       child: Stack(
         fit: StackFit.expand,
         children: [
-            // Video layer
+            // Video layer. Vertical reels fill the screen (`cover`); landscape
+            // clips are fitted (`contain`, letterboxed) so they aren't zoomed
+            // in. Keyed off the video's own aspect ratio.
             if (_initialized && _controller != null)
               FittedBox(
-                fit: BoxFit.cover,
+                fit: _controller!.value.aspectRatio < 1
+                    ? BoxFit.cover
+                    : BoxFit.contain,
                 clipBehavior: Clip.hardEdge,
                 child: SizedBox(
                   width: _controller!.value.size.width,

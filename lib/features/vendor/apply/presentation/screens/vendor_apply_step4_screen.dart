@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -251,7 +251,7 @@ class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
             ),
             child: Row(
               children: [
-                Image.asset('assets/images/lock.png', width: 28, height: 28),
+                Image.asset('assets/images/vendordashboard/lock.png', width: 28, height: 28),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
                   child: Text(

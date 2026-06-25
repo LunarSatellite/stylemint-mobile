@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -56,7 +56,7 @@ class _CreatorSubmittedScreenState
                   children: [
                     // Success badge
                     Image.asset(
-                      'assets/images/doneicon.png',
+                      'assets/images/vendordashboard/badge_approved.png',
                       width: 100,
                       height: 100,
                     ),
@@ -218,7 +218,7 @@ class _StatusCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset('assets/images/underreview.png', width: 36, height: 36),
+          Image.asset('assets/images/vendordashboard/badge_under_review.png', width: 36, height: 36),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(

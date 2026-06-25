@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -51,19 +56,24 @@ class AnalyticsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.person_rounded,
-              color: DesignTokens.textMuted,
-              size: 20,
-            ),
+          Consumer(
+            builder: (_, ref, __) {
+              final path = ref.watch(avatarImagePathProvider);
+              return ClipOval(
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: path != null
+                      ? Image.file(File(path), fit: BoxFit.cover)
+                      : Container(
+                          color: DesignTokens.bgAppBodyLight,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.person_rounded,
+                              size: 20, color: DesignTokens.textMuted),
+                        ),
+                ),
+              );
+            },
           ),
           const Spacer(),
           IconButton(
@@ -934,7 +944,14 @@ class _AnalyticsBottomNav extends StatelessWidget {
           _NavBtn(
             icon: Icons.person_outline_rounded,
             label: 'Profile',
-            onTap: () => context.push(RouteNames.profile),
+            onTap: () => context.push(
+              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
+              extra: const CreatorProfileArgs(
+                accountId: 'me',
+                displayName: 'Danny Perierra',
+                handle: '@wandererperierra',
+              ),
+            ),
           ),
         ],
       ),

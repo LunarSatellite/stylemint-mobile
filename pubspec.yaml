@@ -141,10 +141,13 @@ flutter:
     - assets/images/interests/
     - assets/images/onboarding/
     - assets/images/creatordash/
+    - assets/images/profile_badges/
     - assets/images/support/
+    - assets/images/vendordashboard/
     - assets/icons/
     - assets/fonts/
     - assets/animations/
+
 
 #  fonts:
 #    - family: Inter

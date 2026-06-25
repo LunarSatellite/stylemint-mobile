@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
@@ -32,10 +33,132 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   /// Stashed so the listener can pass it to the OTP route on success.
   String _submittedEmail = '';
 
+  /// True while the "Check your email" dialog is on screen — guards against a
+  /// second dialog stacking when the magic-link request succeeds again (resend).
+  bool _emailDialogOpen = false;
+
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
+  }
+
+  /// Best-effort: open the device's default mail app so the user can tap the
+  /// link. Falls back to a hint if no handler is available.
+  Future<void> _openEmailApp() async {
+    try {
+      final launched = await launchUrl(
+        Uri(scheme: 'mailto'),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && mounted) {
+        SmSnackbar.info(context, 'Please open your email app to continue');
+      }
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.info(context, 'Please open your email app to continue');
+      }
+    }
+  }
+
+  /// "Check your email" confirmation shown after a magic link is sent.
+  Future<void> _showCheckEmailDialog(String email) async {
+    _emailDialogOpen = true;
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: DesignTokens.bgAppBody,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: DesignTokens.s24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s24,
+              DesignTokens.s24,
+              DesignTokens.s24,
+              DesignTokens.s16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 92,
+                  height: 80,
+                  child: Image.asset(
+                    'assets/images/auth/auth_email.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+                Text(
+                  'Check your email',
+                  textAlign: TextAlign.center,
+                  style: DesignTokens.titleMedium,
+                ),
+                const SizedBox(height: DesignTokens.s8),
+                Text.rich(
+                  TextSpan(
+                    style: DesignTokens.bodyText,
+                    children: [
+                      const TextSpan(text: 'We sent a sign-in link to '),
+                      TextSpan(
+                        text: email,
+                        style: DesignTokens.mediumSemibold
+                            .copyWith(color: DesignTokens.textWhite),
+                      ),
+                      const TextSpan(
+                        text:
+                            '. Open it on this device to finish signing in.',
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: DesignTokens.s24),
+                SizedBox(
+                  width: double.infinity,
+                  child: SmPrimaryButton(
+                    label: 'Open Email App',
+                    height: DesignTokens.buttonHeight,
+                    borderRadius: DesignTokens.buttonRadius,
+                    color: DesignTokens.primaryGreen,
+                    labelColor: DesignTokens.buttonPrimaryText,
+                    onPressed: _openEmailApp,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s8),
+                TextButton(
+                  onPressed: () => ref
+                      .read(magicLinkProvider.notifier)
+                      .requestLink(email),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Did not receive it? ',
+                          style: DesignTokens.mediumRegular
+                              .copyWith(color: DesignTokens.textLight),
+                        ),
+                        TextSpan(
+                          text: 'Resend link',
+                          style: DesignTokens.mediumSemibold
+                              .copyWith(color: DesignTokens.primaryGreen),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    _emailDialogOpen = false;
   }
 
   /// Validate + fire. Navigation/error handled by the `ref.listen` in [build].
@@ -98,12 +221,15 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
 
     ..listen<MagicLinkRequestState>(magicLinkProvider, (previous, next) {
       next.maybeWhen(
-        loadSuccess:
-            (_) => SmSnackbar.success(
-              context,
-              'Magic link sent to $_submittedEmail. '
-              'Open it on this device to sign in.',
-            ),
+        loadSuccess: (_) {
+          // If the dialog is already open, this is a resend — confirm in place
+          // rather than stacking a second dialog.
+          if (_emailDialogOpen) {
+            SmSnackbar.success(context, 'Link resent to $_submittedEmail');
+          } else {
+            _showCheckEmailDialog(_submittedEmail);
+          }
+        },
         loadFailure:
             (_) => SmSnackbar.error(
               context,

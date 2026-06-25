@@ -7,6 +7,12 @@ class PartnershipDetailDto {
     required this.commissionMaxPercent,
     required this.vendorRating,
     required this.requestMessage,
+    required this.vendorName,
+    this.vendorLogoUrl,
+    this.vendorCategory,
+    this.description,
+    this.avgOrderValue,
+    this.successRatePercent,
   });
 
   final String id;
@@ -15,6 +21,12 @@ class PartnershipDetailDto {
   final double commissionMaxPercent;
   final double? vendorRating;
   final String? requestMessage;
+  final String vendorName;
+  final String? vendorLogoUrl;
+  final String? vendorCategory;
+  final String? description;
+  final double? avgOrderValue;
+  final double? successRatePercent;
 
   static const _states = {
     1: 'Invited',
@@ -34,6 +46,12 @@ class PartnershipDetailDto {
           (json['commissionMaxPercent'] as num?)?.toDouble() ?? 0,
       vendorRating: (json['vendorRating'] as num?)?.toDouble(),
       requestMessage: json['requestMessage'] as String?,
+      vendorName: (json['vendorName'] as String?) ?? '',
+      vendorLogoUrl: json['vendorLogoUrl'] as String?,
+      vendorCategory: json['vendorCategory'] as String?,
+      description: json['description'] as String?,
+      avgOrderValue: (json['avgOrderValue'] as num?)?.toDouble(),
+      successRatePercent: (json['successRatePercent'] as num?)?.toDouble(),
     );
   }
 }
@@ -95,6 +113,33 @@ class PartnershipTermsDto {
     return TermsSection(
       heading: (json['heading'] as String?) ?? fallbackHeading,
       bullets: bullets,
+    );
+  }
+}
+
+/// A single sample campaign — backend `GET /v1/partnerships/{id}/campaigns`.
+class SampleCampaignDto {
+  const SampleCampaignDto({
+    required this.id,
+    required this.title,
+    this.imageUrl,
+    required this.reelCount,
+    required this.creatorCollabCount,
+  });
+
+  final String id;
+  final String title;
+  final String? imageUrl;
+  final int reelCount;
+  final int creatorCollabCount;
+
+  factory SampleCampaignDto.fromJson(Map<String, dynamic> json) {
+    return SampleCampaignDto(
+      id: (json['id'] as String?) ?? '',
+      title: (json['title'] as String?) ?? '',
+      imageUrl: json['imageUrl'] as String?,
+      reelCount: (json['reelCount'] as num?)?.toInt() ?? 0,
+      creatorCollabCount: (json['creatorCollabCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

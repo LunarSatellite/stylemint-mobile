@@ -8,6 +8,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -81,14 +83,13 @@ class _UserTypeSelectionScreenState
       // Pre-auth: remember the chosen role so it is auto-applied after login.
       ref.read(pendingRoleProvider.notifier).state = roleInt;
       // Customer (1) sees the onboarding carousel before sign-in.
-      // Creator (2) goes straight to the application form (public route).
-      // Vendor goes straight to sign-in.
+      // Creator (2) and Vendor (3) go straight to the application form (public route).
       if (roleInt == 1) {
         context.go(RouteNames.onboarding);
       } else if (roleInt == 2) {
         context.go(RouteNames.creatorApply);
       } else {
-        context.go(RouteNames.signInMethod);
+        context.go(RouteNames.vendorApply);
       }
       return;
     }
@@ -157,9 +158,32 @@ class _UserTypeSelectionScreenState
         );
         context.go(route);
       case 3:
-        context.go(
-          _isRoleActivated(3) ? RouteNames.vendorHome : RouteNames.vendorApply,
+        if (_isRoleActivated(3)) {
+          context.go(RouteNames.vendorHome);
+          return;
+        }
+        setState(() => _loadingRole = true);
+        await ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
+        if (!mounted) return;
+        setState(() => _loadingRole = false);
+        final vendorStatusState = ref.read(vendorApplyNotifierProvider);
+        String vendorRoute = RouteNames.vendorApply;
+        String? rejectionReason;
+        vendorStatusState.maybeWhen(
+          loadSuccess: (application) {
+            vendorRoute = switch (application.status) {
+              VendorApplicationStatus.approved => RouteNames.vendorApplyApproved,
+              VendorApplicationStatus.rejected => RouteNames.vendorApplyRejected,
+              VendorApplicationStatus.pending ||
+              VendorApplicationStatus.underReview ||
+              VendorApplicationStatus.kycRequired =>
+                RouteNames.vendorApplyUnderReview,
+            };
+            rejectionReason = application.rejectionReason;
+          },
+          orElse: () {},
         );
+        context.go(vendorRoute, extra: rejectionReason);
       default:
         context.go(RouteNames.pickInterests);
     }

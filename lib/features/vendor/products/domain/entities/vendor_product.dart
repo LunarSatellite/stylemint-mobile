@@ -22,6 +22,9 @@ class VendorProduct {
     required this.totalSales,
     required this.rating,
     required this.createdAt,
+    this.commissionRate,
+    this.reviewCount,
+    this.reelCount,
   });
 
   final String id;
@@ -33,6 +36,9 @@ class VendorProduct {
   final int totalSales;
   final double rating;
   final DateTime createdAt;
+  final double? commissionRate;
+  final int? reviewCount;
+  final int? reelCount;
 
   VendorProduct copyWith({
     String? id,
@@ -44,6 +50,9 @@ class VendorProduct {
     int? totalSales,
     double? rating,
     DateTime? createdAt,
+    double? commissionRate,
+    int? reviewCount,
+    int? reelCount,
   }) {
     return VendorProduct(
       id: id ?? this.id,
@@ -55,6 +64,9 @@ class VendorProduct {
       totalSales: totalSales ?? this.totalSales,
       rating: rating ?? this.rating,
       createdAt: createdAt ?? this.createdAt,
+      commissionRate: commissionRate ?? this.commissionRate,
+      reviewCount: reviewCount ?? this.reviewCount,
+      reelCount: reelCount ?? this.reelCount,
     );
   }
 
@@ -69,7 +81,10 @@ class VendorProduct {
       other.status == status &&
       other.totalSales == totalSales &&
       other.rating == rating &&
-      other.createdAt == createdAt;
+      other.createdAt == createdAt &&
+      other.commissionRate == commissionRate &&
+      other.reviewCount == reviewCount &&
+      other.reelCount == reelCount;
 
   @override
   int get hashCode => Object.hash(
@@ -82,5 +97,8 @@ class VendorProduct {
         totalSales,
         rating,
         createdAt,
+        commissionRate,
+        reviewCount,
+        reelCount,
       );
 }

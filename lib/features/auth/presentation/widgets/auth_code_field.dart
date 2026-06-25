@@ -6,13 +6,22 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Displays configurable number of individual digit inputs in a row
 class AuthCodeField extends StatefulWidget {
   final ValueChanged<String> onCompleted;
+
+  /// Fired on every digit change (entry or deletion). Lets the parent clear
+  /// an error state as soon as the user starts correcting the code.
+  final VoidCallback? onChanged;
   final bool enabled;
+
+  /// When true, the digit boxes render with an error (red) border.
+  final bool hasError;
   final int codeLength;
 
   const AuthCodeField({
     Key? key,
     required this.onCompleted,
+    this.onChanged,
     this.enabled = true,
+    this.hasError = false,
     this.codeLength = 5,
   }) : super(key: key);
 
@@ -84,6 +93,12 @@ class AuthCodeFieldState extends State<AuthCodeField> {
 
   @override
   Widget build(BuildContext context) {
+    // In an error state every box (idle / enabled / focused) shows red.
+    final restingBorderColor =
+        widget.hasError ? DesignTokens.colorError : DesignTokens.inputFieldBorder;
+    final focusedBorderColor =
+        widget.hasError ? DesignTokens.colorError : DesignTokens.primaryGreen;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.codeLength, (index) {
@@ -106,6 +121,7 @@ class AuthCodeFieldState extends State<AuthCodeField> {
                 LengthLimitingTextInputFormatter(1),
               ],
               onChanged: (value) {
+                widget.onChanged?.call();
                 _handleInput(value, index);
                 if (value.isEmpty && index > 0) {
                   _handleBackspace(index);
@@ -122,28 +138,22 @@ class AuthCodeFieldState extends State<AuthCodeField> {
                 fillColor: DesignTokens.inputFieldFill,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.inputFieldBorder,
-                  ),
+                  borderSide: BorderSide(color: restingBorderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.inputFieldBorder,
-                  ),
+                  borderSide: BorderSide(color: restingBorderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.primaryGreen,
+                  borderSide: BorderSide(
+                    color: focusedBorderColor,
                     width: 1.5,
                   ),
                 ),
                 disabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.inputFieldBorder,
-                  ),
+                  borderSide: BorderSide(color: restingBorderColor),
                 ),
                 contentPadding: EdgeInsets.zero,
               ),

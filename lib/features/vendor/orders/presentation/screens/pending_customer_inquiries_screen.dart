@@ -107,7 +107,7 @@ class _InquiryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: const Color(0xFF001A33),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF0066CC).withOpacity(0.4)),
+                    border: Border.all(color: const Color(0xFF0066CC).withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -128,19 +128,25 @@ class _InquiryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.s6),
                 // Response time
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 13, color: DesignTokens.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Response Time Remaining: ${inquiry.timeRemaining}',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
-                        fontSize: 11,
+                Builder(builder: (context) {
+                  final urgent = inquiry.timeRemaining.startsWith('00:');
+                  final timeColor = urgent
+                      ? DesignTokens.colorError
+                      : DesignTokens.textMuted;
+                  return Row(
+                    children: [
+                      Icon(Icons.access_time, size: 13, color: timeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Response Time Remaining: ${inquiry.timeRemaining}',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: timeColor,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
               ],
             ),
           ),

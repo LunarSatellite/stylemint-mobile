@@ -47,7 +47,10 @@ class _SignInMethodSelectionScreenState
     state.maybeWhen(
       // Success: session is persisted + rechecked. Navigate explicitly (the
       // router redirect alone doesn't reliably move us off this screen).
-      loadSuccess: (_) => context.go(RouteNames.home),
+      // New accounts complete onboarding (pick interests) first.
+      loadSuccess: (auth) => context.go(
+        auth.isNewAccount ? RouteNames.pickInterests : RouteNames.home,
+      ),
       loadFailure: (failure) {
         // No credential on this device → this is a new user; offer the
         // passkey-first quick signup (display name only).
@@ -93,7 +96,10 @@ class _SignInMethodSelectionScreenState
 
     ref.read(passkeyBootstrapProvider).maybeWhen(
           // Success: session is persisted + rechecked. Navigate explicitly.
-          loadSuccess: (_) => context.go(RouteNames.home),
+          // Bootstrap signup always creates a new account → onboarding.
+          loadSuccess: (auth) => context.go(
+            auth.isNewAccount ? RouteNames.pickInterests : RouteNames.home,
+          ),
           loadFailure: (failure) {
             if (failure.isAuth) return;
             SmSnackbar.error(
@@ -370,7 +376,13 @@ class _TopBar extends StatelessWidget {
           color: DesignTokens.textWhite,
           size: DesignTokens.iconMedium,
         ),
-        onPressed: () => context.go(RouteNames.userTypeSelection),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(RouteNames.userTypeSelection);
+          }
+        },
       ),
     );
   }

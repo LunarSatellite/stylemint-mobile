@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
@@ -161,12 +161,12 @@ class _CreatorAnalyticsScreenState extends State<CreatorAnalyticsScreen>
         ),
         actions: [
           _AppBarIconButton(
-            assetPath: 'assets/images/icon_file_export.png',
+            assetPath: 'assets/images/vendordashboard/icon_file_export.png',
             onTap: () {},
           ),
           const SizedBox(width: 8),
           _AppBarIconButton(
-            assetPath: 'assets/images/icon_btn_right.png',
+            assetPath: 'assets/images/vendordashboard/icon_btn_right.png',
             onTap: () {},
           ),
           const SizedBox(width: 8),
@@ -424,21 +424,21 @@ class _CreatorCard extends StatelessWidget {
             child: Column(
               children: [
                 _StatRow(
-                  iconAsset: 'assets/images/icon_gross_sales.png',
+                  iconAsset: 'assets/images/vendordashboard/icon_gross_sales.png',
                   iconBgColor: const Color(0xFF1A3A1A),
                   label: 'Total Sales',
                   value: '3,45,12,589.98',
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  iconAsset: 'assets/images/icon_net_revenue.png',
+                  iconAsset: 'assets/images/vendordashboard/icon_net_revenue.png',
                   iconBgColor: const Color(0xFF0D2137),
                   label: 'Total Revenue',
                   value: '2,85,92,677.90',
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  iconAsset: 'assets/images/icon_conversion_rate.png',
+                  iconAsset: 'assets/images/vendordashboard/icon_conversion_rate.png',
                   iconBgColor: Colors.transparent,
                   iconAssetFill: true,
                   label: 'Conversion Rate',

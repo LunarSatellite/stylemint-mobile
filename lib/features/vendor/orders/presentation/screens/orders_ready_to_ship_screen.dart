@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -19,7 +19,7 @@ class _OrdersReadyToShipScreenState extends State<OrdersReadyToShipScreen> {
       shippingMethod: 'FedEx',
       shipBy: 'Dec 20, 2024',
       orderDate: 'Dec 16, 2024',
-      assetTag: 'assets/images/tag_fedex.png',
+      assetTag: null,
     ),
     _ShipOrder(
       id: '2',
@@ -29,7 +29,7 @@ class _OrdersReadyToShipScreenState extends State<OrdersReadyToShipScreen> {
       shippingMethod: 'DHL Express',
       shipBy: 'Dec 17, 2024',
       orderDate: 'Dec 15, 2024',
-      assetTag: 'assets/images/tag_dhl.png',
+      assetTag: null,
     ),
   ];
 
@@ -250,7 +250,7 @@ class _OrderCard extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Image.asset('assets/images/icon_ship_box.png', fit: BoxFit.contain),
+                child: Image.asset('assets/images/vendordashboard/icon_ship_box.png', fit: BoxFit.contain),
               ),
             ),
             const SizedBox(width: DesignTokens.s12),
@@ -275,8 +275,22 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s6),
-                  if (order.assetTag != null)
-                    Image.asset(order.assetTag!, height: 26, fit: BoxFit.contain),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A2A3A),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      order.shippingMethod,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF4DA6FF),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: DesignTokens.s6),
                   RichText(
                     text: TextSpan(
