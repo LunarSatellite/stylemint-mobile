@@ -132,6 +132,9 @@ abstract class RouteNames {
   static const creatorProfile = '/creator-profile/:accountId';
   static const creatorProfileSettings = '/creator/profile-settings';
   static const creatorEditProfile = '/creator/edit-profile';
+  static const creatorProfileBadges = '/creator/edit-profile-badges';
+  static const creatorCategoryNiche = '/creator/edit-category-niche';
+  static const creatorUpgradeSubscription = '/creator/upgrade-subscription';
   static const feed = '/feed';
   static const feedCreatePost = '/feed/create';
   static const stories = '/stories';

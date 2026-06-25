@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -16,61 +14,62 @@ class ChangePasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _currentCtrl = TextEditingController();
+  final _newCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+  int _strength = 0; // 0–4
 
   @override
   void dispose() {
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
+    _currentCtrl.dispose();
+    _newCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleChange() async {
-    final current = _currentPasswordController.text.trim();
-    final newPwd = _newPasswordController.text.trim();
-    final confirm = _confirmPasswordController.text.trim();
+  void _onNewPasswordChanged(String value) {
+    var score = 0;
+    if (value.length >= 8) score++;
+    if (value.contains(RegExp('[A-Z]'))) score++;
+    if (value.contains(RegExp('[0-9]'))) score++;
+    if (value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) score++;
+    setState(() => _strength = score);
+  }
+
+  Future<void> _handleSubmit() async {
+    final current = _currentCtrl.text.trim();
+    final newPwd = _newCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
 
     if (current.isEmpty) {
       SmSnackbar.error(context, 'Please enter your current password');
       return;
     }
-
     if (newPwd.isEmpty || newPwd.length < 8) {
       SmSnackbar.error(
-        context,
-        'New password must be at least 8 characters',
-      );
+          context, 'New password must be at least 8 characters');
       return;
     }
-
     if (newPwd != confirm) {
       SmSnackbar.error(context, 'New passwords do not match');
       return;
     }
-
     if (newPwd == current) {
       SmSnackbar.error(
-        context,
-        'New password must be different from current password',
-      );
+          context, 'New password must differ from current password');
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final session =
-        ref.read(sessionControllerProvider);
-    final accountId = session.maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => '',
-    );
+    final session = ref.read(sessionControllerProvider);
+    final accountId =
+        session.maybeWhen(authenticated: (id) => id, orElse: () => '');
 
     if (accountId.isEmpty) {
       if (!mounted) return;
@@ -79,18 +78,17 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       return;
     }
 
-    final repo = ref.read(authRepositoryProvider);
-    final result = await repo.changePassword(
-      accountId: accountId,
-      currentPassword: current,
-      newPassword: newPwd,
-    );
+    final result = await ref.read(authRepositoryProvider).changePassword(
+          accountId: accountId,
+          currentPassword: current,
+          newPassword: newPwd,
+        );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     result.fold(
-      (failure) => SmSnackbar.error(context, 'Failed to change password'),
+      (_) => SmSnackbar.error(context, 'Failed to change password'),
       (_) {
         SmSnackbar.success(context, 'Password changed successfully');
         context.pop();
@@ -100,137 +98,231 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.chevron_left_rounded,
-            color: DesignTokens.textWhite,
-            size: DesignTokens.iconMedium,
-          ),
-          onPressed: () => context.canPop() ? context.pop() : null,
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 18, color: DesignTokens.textWhite),
+          onPressed: () => context.pop(),
         ),
-        title: Text(
+        title: const Text(
           'Change Password',
-          style: DesignTokens.sectionInnerTitle,
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.appHorizontalPadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: DesignTokens.s24),
-              TextFormField(
-                controller: _currentPasswordController,
-                enabled: !_isLoading,
-                obscureText: _obscureCurrent,
-                textInputAction: TextInputAction.next,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.inputFieldData,
-                ),
-                cursorColor: DesignTokens.primaryGreen,
-                decoration: DesignTokens.inputDecoration(
-                  hintText: 'Current Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureCurrent
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: DesignTokens.textMuted,
-                      size: DesignTokens.iconSmall,
-                    ),
-                    onPressed:
-                        () => setState(
-                          () => _obscureCurrent = !_obscureCurrent,
-                        ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              TextFormField(
-                controller: _newPasswordController,
-                enabled: !_isLoading,
-                obscureText: _obscureNew,
-                textInputAction: TextInputAction.next,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.inputFieldData,
-                ),
-                cursorColor: DesignTokens.primaryGreen,
-                decoration: DesignTokens.inputDecoration(
-                  hintText: 'New Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureNew
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: DesignTokens.textMuted,
-                      size: DesignTokens.iconSmall,
-                    ),
-                    onPressed:
-                        () => setState(
-                          () => _obscureNew = !_obscureNew,
-                        ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              TextFormField(
-                controller: _confirmPasswordController,
-                enabled: !_isLoading,
-                obscureText: _obscureConfirm,
-                textInputAction: TextInputAction.done,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.inputFieldData,
-                ),
-                cursorColor: DesignTokens.primaryGreen,
-                decoration: DesignTokens.inputDecoration(
-                  hintText: 'Confirm New Password',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirm
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: DesignTokens.textMuted,
-                      size: DesignTokens.iconSmall,
-                    ),
-                    onPressed:
-                        () => setState(
-                          () => _obscureConfirm = !_obscureConfirm,
-                        ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s24),
-              SizedBox(
-                height: DesignTokens.buttonHeight,
-                child: SmPrimaryButton(
-                  label: 'Change Password',
-                  height: DesignTokens.buttonHeight,
-                  borderRadius: DesignTokens.buttonRadius,
-                  color: DesignTokens.primaryGreen,
-                  labelColor: DesignTokens.buttonPrimaryText,
-                  disabled: _isLoading,
-                  isLoadingInitially: _isLoading,
-                  onPressed: _handleChange,
-                ),
-              ),
-            ],
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
           ),
         ),
       ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s24,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _PasswordField(
+                    controller: _currentCtrl,
+                    hint: 'Current Password',
+                    obscure: _obscureCurrent,
+                    enabled: !_isLoading,
+                    onToggle: () => setState(
+                        () => _obscureCurrent = !_obscureCurrent),
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _PasswordField(
+                    controller: _newCtrl,
+                    hint: 'New Password',
+                    obscure: _obscureNew,
+                    enabled: !_isLoading,
+                    onToggle: () =>
+                        setState(() => _obscureNew = !_obscureNew),
+                    onChanged: _onNewPasswordChanged,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  _PasswordField(
+                    controller: _confirmCtrl,
+                    hint: 'Confirm New Password',
+                    obscure: _obscureConfirm,
+                    enabled: !_isLoading,
+                    textInputAction: TextInputAction.done,
+                    onToggle: () => setState(
+                        () => _obscureConfirm = !_obscureConfirm),
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  _StrengthBars(strength: _strength),
+                  const SizedBox(height: DesignTokens.s12),
+                  const Text(
+                    'Your password must have 8+ characters, with a capital'
+                    ' letter, a lowercase letter, a number, & a special'
+                    ' character',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      color: DesignTokens.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s8,
+              DesignTokens.s16,
+              bottomPadding,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: DesignTokens.textWhite,
+                  disabledBackgroundColor:
+                      DesignTokens.primaryGreen.withValues(alpha: 0.5),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.textWhite,
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Submit',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(width: DesignTokens.s8),
+                          Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Password field ───────────────────────────────────────────────────────────
+
+class _PasswordField extends StatelessWidget {
+  const _PasswordField({
+    required this.controller,
+    required this.hint,
+    required this.obscure,
+    required this.enabled,
+    required this.onToggle,
+    this.onChanged,
+    this.textInputAction = TextInputAction.next,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final bool obscure;
+  final bool enabled;
+  final VoidCallback onToggle;
+  final ValueChanged<String>? onChanged;
+  final TextInputAction textInputAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      obscureText: obscure,
+      textInputAction: textInputAction,
+      onChanged: onChanged,
+      style: const TextStyle(
+        fontFamily: DesignTokens.fontFamily,
+        fontSize: 14,
+        color: DesignTokens.inputFieldData,
+      ),
+      cursorColor: DesignTokens.primaryGreen,
+      decoration: DesignTokens.inputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(
+          Icons.lock_outline_rounded,
+          size: DesignTokens.iconSmall,
+          color: DesignTokens.textMuted,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscure
+                ? Icons.visibility_off_rounded
+                : Icons.visibility_rounded,
+            color: DesignTokens.textMuted,
+            size: DesignTokens.iconSmall,
+          ),
+          onPressed: onToggle,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Strength bars ────────────────────────────────────────────────────────────
+
+class _StrengthBars extends StatelessWidget {
+  const _StrengthBars({required this.strength});
+  final int strength; // 0–4
+
+  static const List<Color> _colors = [
+    Color(0xFFFF4C4C), // 1 – weak (red)
+    Color(0xFFFF8C00), // 2 – fair (orange)
+    Color(0xFFF1C40F), // 3 – good (yellow)
+    DesignTokens.primaryGreen, // 4 – strong (green)
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(4, (i) {
+        final filled = i < strength;
+        final color =
+            filled ? _colors[strength - 1] : DesignTokens.bgAppBodyLight;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: i < 3 ? DesignTokens.s8 : 0),
+            height: 4,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
