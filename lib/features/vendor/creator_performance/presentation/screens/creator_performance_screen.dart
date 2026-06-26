@@ -103,7 +103,7 @@ class _CreatorPerformanceScreenState extends State<CreatorPerformanceScreen> {
           _Chip(label: 'Filter', leadingIcon: Icons.tune, onTap: () {}),
           const SizedBox(width: DesignTokens.s8),
           _Chip(
-            label: _sortBy,
+            label: 'Sort By',
             trailingIcon: Icons.keyboard_arrow_down,
             onTap: _showSortSheet,
           ),
@@ -215,13 +215,13 @@ class _CreatorCard extends StatelessWidget {
 
           // Stats rows
           _StatRow(
-            icon: Icons.account_balance_wallet_outlined,
+            assetIcon: 'assets/images/vendordashboard/Revenue.png',
             label: 'Revenue Generated',
             trailing: _blueChip(creator.revenue),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
-            icon: Icons.play_circle_outline,
+            assetIcon: 'assets/images/vendordashboard/icon_reels.png',
             label: creator.activeReels != null ? 'Active Reels' : 'Reels Published',
             trailing: _plainValue(
                 '${creator.activeReels ?? creator.reelsPublished}'),
@@ -240,7 +240,7 @@ class _CreatorCard extends StatelessWidget {
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
-            icon: Icons.account_balance_outlined,
+            assetIcon: 'assets/images/vendordashboard/icon_pending_inquiries.png',
             label: 'Commission Paid',
             trailing: _plainValue(creator.commissionPaid),
           ),
@@ -259,7 +259,7 @@ class _CreatorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D2A3A),
+        color: const Color(0xFFB8E6FE),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -268,7 +268,7 @@ class _CreatorCard extends StatelessWidget {
           fontFamily: DesignTokens.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF4FC3F7),
+          color: Color(0xFF0D1B2A),
         ),
       ),
     );
@@ -306,9 +306,9 @@ class _CreatorCard extends StatelessWidget {
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow(
-      {required this.icon, required this.label, required this.trailing});
-  final IconData icon;
+  const _StatRow({this.icon, this.assetIcon, required this.label, required this.trailing});
+  final IconData? icon;
+  final String? assetIcon;
   final String label;
   final Widget trailing;
 
@@ -318,7 +318,10 @@ class _StatRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: const Color(0xFF9F9FA9)),
+          if (assetIcon != null)
+            Image.asset(assetIcon!, width: 15, height: 15)
+          else if (icon != null)
+            Icon(icon, size: 15, color: const Color(0xFF9F9FA9)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
