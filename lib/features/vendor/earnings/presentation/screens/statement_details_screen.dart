@@ -47,74 +47,76 @@ class StatementDetailsScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(DesignTokens.s16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Receipt card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: DesignTokens.cardDecoration(),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Receipt header
-              Row(children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D2137),
-                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          // Receipt card with scalloped bottom
+          ClipPath(
+            clipper: _ScallopedBottomClipper(),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s28),
+              decoration: DesignTokens.cardDecoration(),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Receipt header
+                Row(children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1A3A1A),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.receipt_long_outlined, color: DesignTokens.primaryGreen, size: 22),
                   ),
-                  child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF4DA6FF), size: 20),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('EasyCommerce Receipt', style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w700, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text(title, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ])),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D2A0D),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text('Completed', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen, fontWeight: FontWeight.w600, fontSize: 11)),
-                ),
-              ]),
-              const SizedBox(height: DesignTokens.s16),
-              const Divider(color: DesignTokens.borderDefault, height: 1),
-              const SizedBox(height: DesignTokens.s16),
-
-              // Order info
-              _DetailRow(label: 'Order Number', value: '#NK2024-8912'),
-              _DetailRow(label: 'Payout ID', value: '#PO-${item.id.padLeft(6, '0')}'),
-              _DetailRow(label: 'Payment Method', value: item.subtitle.isEmpty ? 'Bank of Kathmandu A/C ******8799' : item.subtitle),
-              _DetailRow(label: 'Date', value: 'Jan 23, 2024'),
-              const SizedBox(height: DesignTokens.s16),
-              const Divider(color: DesignTokens.borderDefault, height: 1),
-              const SizedBox(height: DesignTokens.s16),
-
-              // Order items
-              Text('Order Items', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
-              const SizedBox(height: DesignTokens.s8),
-              ..._orderItems.map((line) => Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Expanded(child: Text('${line.name} x${line.qty}', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontSize: 12))),
-                  Text(line.price, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600, fontSize: 12)),
+                  const SizedBox(width: DesignTokens.s12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('ReelCommerce Receipt', style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w700, fontSize: 15, color: DesignTokens.textWhite)),
+                    const SizedBox(height: 2),
+                    Text('December 18, 2024', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
+                  ])),
                 ]),
-              )),
-              const SizedBox(height: DesignTokens.s8),
-              const Divider(color: DesignTokens.borderDefault, height: 1),
-              const SizedBox(height: DesignTokens.s12),
+                const SizedBox(height: DesignTokens.s16),
+                const Divider(color: DesignTokens.borderDefault, height: 1),
+                const SizedBox(height: DesignTokens.s12),
 
-              // Breakdown
-              _AmountRow(label: 'Subtotal', value: 'Rs 12,500.00'),
-              _AmountRow(label: 'Platform Fee (3%)', value: '- Rs 375.00', valueColor: DesignTokens.colorError),
-              _AmountRow(label: 'Creator Commission (10%)', value: '- Rs 1,250.00', valueColor: DesignTokens.colorError),
-              const SizedBox(height: DesignTokens.s8),
-              const Divider(color: DesignTokens.borderDefault, height: 1),
-              const SizedBox(height: DesignTokens.s8),
-              _AmountRow(label: 'Net Payout', value: 'Rs 10,875.00', valueColor: DesignTokens.primaryGreen, bold: true),
-            ]),
+                // Detail rows
+                _DetailRow(label: 'Receipt No.', value: 'INV-2024-8912'),
+                _DetailRow(label: 'Date', value: 'December 18, 2024'),
+                _DetailRow(label: 'Payout to Bank', value: 'Chase Bank'),
+                _DetailRow(label: 'Payout to', value: '********1268'),
+                _DetailRow(label: 'TXN', value: 'TXN-292-2039843'),
+                // Payment Status with green badge
+                Padding(
+                  padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text('Payment Status', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D2A0D),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: DesignTokens.primaryGreen, width: 1),
+                      ),
+                      child: Text('Completed', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen, fontWeight: FontWeight.w600, fontSize: 11)),
+                    ),
+                  ]),
+                ),
+
+                const SizedBox(height: DesignTokens.s4),
+                const Divider(color: DesignTokens.borderDefault, height: 1),
+                const SizedBox(height: DesignTokens.s12),
+
+                // Breakdown
+                _AmountRow(label: 'Sub Total', value: 'Rs 18,000'),
+                _AmountRow(label: 'Processing Fee (2%)', value: '-500', valueColor: DesignTokens.colorError),
+                _AmountRow(label: 'Platform Fee (2%)', value: '-500', valueColor: DesignTokens.colorError),
+                const SizedBox(height: DesignTokens.s8),
+                const Divider(color: DesignTokens.borderDefault, height: 1),
+                const SizedBox(height: DesignTokens.s12),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('Net Payout', style: DesignTokens.mediumSemibold.copyWith(fontSize: 15)),
+                  Text('Rs 17,000', style: DesignTokens.mediumSemibold.copyWith(fontSize: 18, color: DesignTokens.textWhite)),
+                ]),
+              ]),
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
           SizedBox(
@@ -179,4 +181,26 @@ class _OrderLine {
   final String name;
   final int qty;
   final String price;
+}
+
+class _ScallopedBottomClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const r = 10.0;
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, size.height - r);
+    double x = size.width;
+    while (x > 0) {
+      path.arcToPoint(Offset(x - r * 2, size.height - r), radius: const Radius.circular(r), clockwise: true);
+      x -= r * 2;
+    }
+    path.lineTo(0, size.height - r);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

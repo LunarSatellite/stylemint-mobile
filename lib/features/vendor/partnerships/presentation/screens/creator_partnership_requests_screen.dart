@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -116,14 +117,14 @@ class _RequestCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE0F7FA),
+                          color: const Color(0xFFB8E6FE),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           'Requested Commission: ${request.commission}',
-                          style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 10, color: Color(0xFF006064), fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 10, color: Color(0xFF0D1B2A), fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -252,11 +253,10 @@ class _PartnershipDetailScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A2A1A),
+                          color: const Color(0xFFB8E6FE),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: DesignTokens.primaryGreen.withValues(alpha: 0.4)),
                         ),
-                        child: Text(request.statusChip, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11, color: DesignTokens.primaryGreen)),
+                        child: Text(request.statusChip, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11, color: Color(0xFF0D1B2A), fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -285,14 +285,14 @@ class _PartnershipDetailScreen extends StatelessWidget {
               mainAxisSpacing: DesignTokens.s8,
               childAspectRatio: 1.0,
               children: [
-                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_followers.png', value: request.followers, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/images/vendordashboard/followers.png', value: request.followers, label: 'Followers'),
                 _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_reels.png', value: request.reels, label: 'Reels'),
                 _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_thumb_up.png', value: request.likes, label: 'Likes'),
                 _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: request.rating, label: 'Stars'),
-                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_instagram.png', value: request.reach, label: 'Followers'),
-                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_tiktok.png', value: request.engagement, label: 'Followers'),
-                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_youtube.png', value: request.subscribers, label: 'Subscribers'),
-                _MetricTile(assetIcon: 'assets/images/vendordashboard/icon_facebook.png', value: request.followers, label: 'Likes'),
+                _MetricTile(assetIcon: 'assets/icons/instagram.svg', value: request.reach, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/icons/tiktok.svg', value: request.engagement, label: 'Followers'),
+                _MetricTile(assetIcon: 'assets/icons/youtube.svg', value: request.subscribers, label: 'Subscribers'),
+                _MetricTile(assetIcon: 'assets/icons/facebook.svg', value: request.followers, label: 'Likes'),
               ],
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -523,7 +523,9 @@ class _MetricTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(assetIcon, width: 28, height: 28),
+          assetIcon.endsWith('.svg')
+              ? SvgPicture.asset(assetIcon, width: 28, height: 28)
+              : Image.asset(assetIcon, width: 28, height: 28),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

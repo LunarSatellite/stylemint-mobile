@@ -49,8 +49,7 @@ class VendorEarningsScreen extends StatelessWidget {
             decoration: DesignTokens.cardDecoration(),
             child: Column(children: [
               _BalanceRow(
-                icon: Icons.savings_outlined,
-                iconColor: DesignTokens.primaryGreen,
+                assetIcon: 'assets/images/vendordashboard/Available Balance.png',
                 iconBg: const Color(0xFF1A3A1A),
                 label: 'Available Balance (In NPR)',
                 amount: '6,12,589.98',
@@ -58,7 +57,7 @@ class VendorEarningsScreen extends StatelessWidget {
               const SizedBox(height: DesignTokens.s16),
               _BalanceRow(
                 icon: Icons.hourglass_bottom_outlined,
-                iconColor: const Color(0xFFFFB800),
+                iconColor: const Color(0xFFF1C40F),
                 iconBg: const Color(0xFF2A2000),
                 label: 'Pending Balance (In NPR)',
                 amount: '4,56,781.52',
@@ -68,45 +67,48 @@ class VendorEarningsScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s12),
 
           // ── Next Payout banner ───────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFB800),
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          ClipPath(
+            clipper: _ScallopedTopClipper(),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s20, DesignTokens.s16, DesignTokens.s16),
+              decoration: const BoxDecoration(color: Color(0xFFF1C40F)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A00),
+                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Image.asset('assets/images/vendordashboard/Next payout.png', fit: BoxFit.contain),
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text(
+                    'Next Payout: Fri Dec 20, 2024',
+                    style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black),
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  const Text(
+                    'Payouts are processed automatically every Friday & transferred to your Chase Bank ******2349',
+                    style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF333300)),
+                  ),
+                ])),
+              ]),
             ),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A00),
-                  borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                ),
-                child: const Icon(Icons.account_balance_outlined, color: Color(0xFFFFB800), size: 24),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text(
-                  'Next Payout: Fri Dec 20, 2024',
-                  style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black),
-                ),
-                const SizedBox(height: DesignTokens.s4),
-                const Text(
-                  'Payouts are processed automatically every Friday & transferred to your Chase Bank ******2349',
-                  style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 12, fontWeight: FontWeight.w400, color: Color(0xFF333300)),
-                ),
-              ])),
-            ]),
           ),
           const SizedBox(height: DesignTokens.s16),
 
           // ── Stats row ────────────────────────────────────────────────────────
           Row(children: [
-            _StatCard(icon: Icons.inventory_2_outlined, value: '234', label: 'Total Orders'),
+            _StatCard(assetIcon: 'assets/images/vendordashboard/Total Orders.png', value: '234', label: 'Total Orders'),
             const SizedBox(width: DesignTokens.s8),
-            _StatCard(icon: Icons.receipt_long_outlined, value: '12,456', label: 'Average\nOrder Value'),
+            _StatCard(assetIcon: 'assets/images/vendordashboard/Average Order Value.png', value: '12,456', label: 'Average\nOrder Value'),
             const SizedBox(width: DesignTokens.s8),
-            _StatCard(icon: Icons.percent_outlined, value: '12%', label: 'Average\nCommission'),
+            _StatCard(assetIcon: 'assets/images/vendordashboard/Average Commission.png', value: '12%', label: 'Average\nCommission'),
           ]),
           const SizedBox(height: DesignTokens.s20),
 
@@ -117,10 +119,10 @@ class VendorEarningsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(DesignTokens.s16),
             decoration: DesignTokens.cardDecoration(),
             child: Column(children: [
-              _RevenueRow(icon: Icons.bar_chart_outlined, label: 'Gross Sales', value: 'Rs 12,56,678.98'),
+              _RevenueRow(assetIcon: 'assets/images/vendordashboard/Gross Sales.png', label: 'Gross Sales', value: 'Rs 12,56,678.98', labelColor: const Color(0xFFFFFFFF)),
               _RevenueRow(icon: Icons.percent_outlined, label: 'Platform Fee (5%)', value: '-Rs 62,456.00', valueColor: DesignTokens.colorError),
               _RevenueRow(icon: Icons.credit_card_outlined, label: 'Payment Processing', value: '-Rs 28,564.22', valueColor: DesignTokens.colorError),
-              _RevenueRow(icon: Icons.people_outline, label: 'Creator Commissions', value: '-Rs 3,42,334.56', valueColor: DesignTokens.colorError),
+              _RevenueRow(assetIcon: 'assets/images/vendordashboard/Creator Commissions.png', label: 'Creator Commissions', value: '-Rs 3,42,334.56', valueColor: DesignTokens.colorError, labelColor: const Color(0xFFFFFFFF)),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: DesignTokens.s12),
                 child: _DashedDivider(),
@@ -196,9 +198,10 @@ class VendorEarningsScreen extends StatelessWidget {
 // ── Balance row ───────────────────────────────────────────────────────────────
 
 class _BalanceRow extends StatelessWidget {
-  const _BalanceRow({required this.icon, required this.iconColor, required this.iconBg, required this.label, required this.amount});
-  final IconData icon;
-  final Color iconColor;
+  const _BalanceRow({this.icon, this.iconColor, this.assetIcon, required this.iconBg, required this.label, required this.amount});
+  final IconData? icon;
+  final Color? iconColor;
+  final String? assetIcon;
   final Color iconBg;
   final String label;
   final String amount;
@@ -210,7 +213,9 @@ class _BalanceRow extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(DesignTokens.inputRadius)),
-        child: Icon(icon, color: iconColor, size: 22),
+        child: assetIcon != null
+            ? Padding(padding: const EdgeInsets.all(8), child: Image.asset(assetIcon!, fit: BoxFit.contain))
+            : Icon(icon, color: iconColor, size: 22),
       ),
       const SizedBox(width: DesignTokens.s12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -225,8 +230,9 @@ class _BalanceRow extends StatelessWidget {
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.icon, required this.value, required this.label});
-  final IconData icon;
+  const _StatCard({this.icon, this.assetIcon, required this.value, required this.label});
+  final IconData? icon;
+  final String? assetIcon;
   final String value;
   final String label;
 
@@ -237,7 +243,10 @@ class _StatCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12, horizontal: DesignTokens.s8),
         decoration: DesignTokens.cardDecoration(),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, color: DesignTokens.textMuted, size: 22),
+          if (assetIcon != null)
+            Image.asset(assetIcon!, width: 22, height: 22)
+          else if (icon != null)
+            Icon(icon, color: DesignTokens.textMuted, size: 22),
           const SizedBox(height: DesignTokens.s8),
           Text(value, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 18, fontWeight: FontWeight.w700, color: DesignTokens.textWhite)),
           const SizedBox(height: 2),
@@ -251,20 +260,25 @@ class _StatCard extends StatelessWidget {
 // ── Revenue row ───────────────────────────────────────────────────────────────
 
 class _RevenueRow extends StatelessWidget {
-  const _RevenueRow({required this.icon, required this.label, required this.value, this.valueColor});
-  final IconData icon;
+  const _RevenueRow({this.icon, this.assetIcon, required this.label, required this.value, this.valueColor, this.labelColor});
+  final IconData? icon;
+  final String? assetIcon;
   final String label;
   final String value;
   final Color? valueColor;
+  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s12),
       child: Row(children: [
-        Icon(icon, color: DesignTokens.textMuted, size: 16),
+        if (assetIcon != null)
+          Image.asset(assetIcon!, width: 16, height: 16)
+        else if (icon != null)
+          Icon(icon, color: DesignTokens.textMuted, size: 16),
         const SizedBox(width: DesignTokens.s8),
-        Expanded(child: Text(label, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 13))),
+        Expanded(child: Text(label, style: DesignTokens.smallRegular.copyWith(color: labelColor ?? DesignTokens.textMuted, fontSize: 13))),
         Text(value, style: DesignTokens.smallRegular.copyWith(color: valueColor ?? DesignTokens.textWhite, fontWeight: FontWeight.w600, fontSize: 13)),
       ]),
     );
@@ -428,4 +442,25 @@ class _PaymentMethodEntry {
   final String label;
   final String accountInfo;
   final bool isDefault;
+}
+
+class _ScallopedTopClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const r = 10.0;
+    final path = Path();
+    path.moveTo(0, r);
+    double x = 0;
+    while (x < size.width) {
+      path.arcToPoint(Offset(x + r * 2, r), radius: const Radius.circular(r), clockwise: true);
+      x += r * 2;
+    }
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

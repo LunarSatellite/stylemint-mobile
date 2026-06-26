@@ -424,7 +424,7 @@ class _CreatorCard extends StatelessWidget {
             child: Column(
               children: [
                 _StatRow(
-                  iconAsset: 'assets/images/vendordashboard/icon_gross_sales.png',
+                  iconAsset: 'assets/images/vendordashboard/Total Sales.png',
                   iconBgColor: const Color(0xFF1A3A1A),
                   label: 'Total Sales',
                   value: '3,45,12,589.98',
@@ -446,8 +446,7 @@ class _CreatorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  icon: Icons.trending_up_rounded,
-                  iconColor: DesignTokens.primaryGreen,
+                  iconAsset: 'assets/images/vendordashboard/GainLoss.png',
                   iconBgColor: const Color(0xFF1A3A1A),
                   label: 'Gain/Loss (ROI Calculation)',
                   value: '+173%',

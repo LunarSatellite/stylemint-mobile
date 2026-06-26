@@ -544,21 +544,20 @@ class _InvitedCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          // Proposed commission chip — blue
+          // Proposed commission chip
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D1E36),
+              color: const Color(0xFFB8E6FE),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF2B5C9A), width: 0.8),
             ),
             child: Text(
               'Proposed Commission: ${invitation.proposedCommission}%',
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
-                color: Color(0xFF5B9BD5),
+                color: Color(0xFF0D1B2A),
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -931,7 +930,7 @@ class _CreatorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _PerfRow(
-                  asset: 'assets/images/vendordashboard/icon_gross_sales.png',
+                  asset: 'assets/images/vendordashboard/Revenue Generated.png',
                   label: 'Revenue Generated',
                   value: creator.revenueGenerated,
                   highlight: true,
@@ -947,7 +946,7 @@ class _CreatorCard extends StatelessWidget {
                   value: '${creator.sales}',
                 ),
                 _PerfRow(
-                  asset: 'assets/images/vendordashboard/icon_followers.png',
+                  asset: 'assets/images/vendordashboard/Views.png',
                   label: 'Views',
                   value: creator.viewsLabel,
                 ),
@@ -957,7 +956,7 @@ class _CreatorCard extends StatelessWidget {
                   value: creator.commissionPaid,
                 ),
                 _PerfRow(
-                  asset: 'assets/images/vendordashboard/icon_net_revenue.png',
+                  asset: 'assets/images/vendordashboard/Your ROI.png',
                   label: 'Your ROI',
                   value: creator.roi,
                 ),
@@ -1010,15 +1009,14 @@ class _PerfRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF0D3321),
+                color: const Color(0xFFB8E6FE),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: DesignTokens.primaryGreen, width: 0.8),
               ),
               child: Text(
                 value,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
-                  color: DesignTokens.primaryGreen,
+                  color: Color(0xFF0D1B2A),
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
@@ -1125,17 +1123,16 @@ class _PendingCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D1E36),
+              color: const Color(0xFFB8E6FE),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF2B5C9A), width: 0.8),
             ),
             child: Text(
               'Requested Commission: ${request.commissionMin}% - ${request.commissionMax}%',
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
-                color: Color(0xFF5B9BD5),
+                color: Color(0xFF0D1B2A),
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
