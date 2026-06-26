@@ -151,21 +151,39 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _topBar(),
-              const SizedBox(height: DesignTokens.s12),
-              _avatarSection(),
-              const SizedBox(height: DesignTokens.s12),
-              _nameRow(profileData),
-              const SizedBox(height: 4),
-              _handleText(),
-              const SizedBox(height: DesignTokens.s12),
-              _achievementChips(profileData),
-              const SizedBox(height: DesignTokens.s8),
-              _partnerChips(profileData),
-              const SizedBox(height: DesignTokens.s16),
-              _brandLogosRow(),
-              const SizedBox(height: DesignTokens.s16),
-              _statsRow(),
+              Container(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height * 0.5,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2A2A2E),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(28),
+                    bottomRight: Radius.circular(28),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _topBar(),
+                    const SizedBox(height: DesignTokens.s12),
+                    _avatarSection(),
+                    const SizedBox(height: DesignTokens.s12),
+                    _nameRow(profileData),
+                    const SizedBox(height: 4),
+                    _handleText(),
+                    const SizedBox(height: DesignTokens.s12),
+                    _achievementChips(profileData),
+                    const SizedBox(height: DesignTokens.s8),
+                    _partnerChips(profileData),
+                    const SizedBox(height: DesignTokens.s16),
+                    _brandLogosRow(),
+                    const SizedBox(height: DesignTokens.s16),
+                    _statsRow(),
+                    const SizedBox(height: DesignTokens.s8),
+                  ],
+                ),
+              ),
               const SizedBox(height: DesignTokens.s20),
               _socialPlatforms(),
               const SizedBox(height: DesignTokens.s20),
@@ -413,7 +431,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
+        color: DesignTokens.bgAppFoundation,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Row(
@@ -461,7 +479,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
+        color: DesignTokens.bgAppFoundation,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Column(
@@ -757,7 +775,7 @@ class _SocialIcon extends StatelessWidget {
           width: 70,
           height: 70,
           decoration: const BoxDecoration(
-            color: Color(0xFF3A3A3A),
+            color: DesignTokens.bgAppFoundation,
             shape: BoxShape.circle,
           ),
           padding: const EdgeInsets.all(10),
@@ -845,7 +863,7 @@ class _FilterTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? DesignTokens.primaryGreenLight
-              : DesignTokens.bgAppBody,
+              : DesignTokens.bgAppFoundation,
           borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
           border: Border.all(
             color: selected
@@ -1147,7 +1165,7 @@ class _BottomNav extends StatelessWidget {
     return Container(
       height: 68,
       decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
+        color: DesignTokens.bgAppFoundation,
         border: Border(
             top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
@@ -1160,31 +1178,14 @@ class _BottomNav extends StatelessWidget {
             onTap: () => context.canPop() ? context.pop() : null,
           ),
           _NavBtn(
-            icon: Icons.bar_chart_rounded,
+            icon: Icons.auto_graph_rounded,
             label: 'Analytics',
             onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
-          GestureDetector(
-            onTap: () => context.push(RouteNames.reelImport),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: DesignTokens.primaryGreen,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.add_rounded,
-                color: DesignTokens.buttonPrimaryText,
-                size: 26,
-              ),
-            ),
-          ),
           _NavBtn(
-            icon: Icons.storefront_outlined,
-            label: 'Brands',
-            onTap: () => context.push(RouteNames.partnerships),
+            icon: Icons.explore_outlined,
+            label: 'Explore',
+            onTap: () {},
           ),
           const _NavBtn(
             icon: Icons.person_rounded,

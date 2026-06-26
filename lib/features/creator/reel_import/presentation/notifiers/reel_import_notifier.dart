@@ -104,10 +104,6 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
   final ReelImportRepository _repository;
 
   Future<void> search(String query) async {
-    if (query.isEmpty) {
-      state = const ProductSearchState.initial();
-      return;
-    }
     state = const ProductSearchState.loadInProgress();
     final either = await _repository.searchProducts(query);
     state = either.fold(

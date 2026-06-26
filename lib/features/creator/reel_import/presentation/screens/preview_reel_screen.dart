@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -74,6 +75,7 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                       controller: _captionController,
                       maxLines: null,
                       expands: true,
+                      textAlignVertical: TextAlignVertical.top,
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textWhite,
                       ),
@@ -84,7 +86,7 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                         ),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: const EdgeInsets.only(top: 12),
                       ),
                     ),
                   ),
@@ -184,24 +186,11 @@ class _VideoThumbnail extends StatelessWidget {
               ),
             ),
             // Play button
-            Center(
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.20),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.40),
-                    width: 1.5,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 30,
-                ),
+            const Center(
+              child: Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 52,
               ),
             ),
             // Duration badge
@@ -240,11 +229,11 @@ class _ReelInfoCard extends StatelessWidget {
   final SocialPlatform platform;
 
   static const _stats = [
-    (Icons.favorite_rounded, '23.8k'),
-    (Icons.visibility_outlined, '465k'),
-    (Icons.bookmark_border_rounded, '1.8k'),
-    (Icons.share_outlined, '13.67k'),
-    (Icons.chat_bubble_outline_rounded, '976'),
+    (Icons.favorite_rounded, '23.8k', DesignTokens.textLight),
+    (Icons.visibility_rounded, '465k', DesignTokens.textLight),
+    (Icons.bookmark_rounded, '1.8k', Colors.white),
+    (Icons.share_rounded, '13.67k', DesignTokens.textLight),
+    (Icons.chat_bubble_rounded, '976', Colors.white),
   ];
 
   @override
@@ -256,10 +245,10 @@ class _ReelInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _PlatformCircleIcon(platform: platform),
-              const SizedBox(width: DesignTokens.s12),
+              const SizedBox(width: DesignTokens.s16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,8 +257,8 @@ class _ReelInfoCard extends StatelessWidget {
                       'Delicious Chocolate Cakes for Birthdays',
                       style: TextStyle(
                         fontFamily: DesignTokens.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                         color: DesignTokens.textWhite,
                         height: 1.4,
                       ),
@@ -299,7 +288,7 @@ class _ReelInfoCard extends StatelessWidget {
                 .map(
                   (s) => Column(
                     children: [
-                      Icon(s.$1, size: 20, color: DesignTokens.textLight),
+                      Icon(s.$1, size: 20, color: s.$3),
                       const SizedBox(height: DesignTokens.s4),
                       Text(
                         s.$2,
@@ -325,77 +314,26 @@ class _PlatformCircleIcon extends StatelessWidget {
 
   final SocialPlatform platform;
 
+  static const _svgAssets = {
+    SocialPlatform.instagram: 'assets/icons/instagram.svg',
+    SocialPlatform.tiktok: 'assets/icons/tiktok.svg',
+    SocialPlatform.youtube: 'assets/icons/youtube.svg',
+    SocialPlatform.facebook: 'assets/icons/facebook.svg',
+  };
+
   @override
   Widget build(BuildContext context) {
-    switch (platform) {
-      case SocialPlatform.instagram:
-        return Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF833AB4), Color(0xFFE1306C), Color(0xFFF77737)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.camera_alt_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        );
-      case SocialPlatform.youtube:
-        return Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFF0000),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.play_arrow_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        );
-      case SocialPlatform.tiktok:
-        return Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Color(0xFF010101),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.music_note_rounded,
-            color: Colors.white,
-            size: 18,
-          ),
-        );
-      case SocialPlatform.facebook:
-        return Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Color(0xFF1877F2),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Text(
-            'f',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        );
-    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        width: 50,
+        height: 50,
+        child: SvgPicture.asset(
+          _svgAssets[platform]!,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
   }
 }
 
@@ -406,11 +344,11 @@ class _SuccessBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s8,
-        vertical: DesignTokens.s4,
+        horizontal: DesignTokens.s12,
+        vertical: DesignTokens.s6,
       ),
       decoration: BoxDecoration(
-        color: DesignTokens.primaryGreenDark,
+        color: const Color(0xFFDCFCE7),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -418,15 +356,15 @@ class _SuccessBadge extends StatelessWidget {
         children: [
           const Icon(
             Icons.check_circle_rounded,
-            size: 14,
-            color: DesignTokens.primaryGreen,
+            size: 16,
+            color: Color(0xFF166534),
           ),
-          const SizedBox(width: DesignTokens.s4),
+          const SizedBox(width: DesignTokens.s6),
           Text(
             'Successfully Imported',
             style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.primaryGreen,
-              fontWeight: FontWeight.w500,
+              color: const Color(0xFF166534),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

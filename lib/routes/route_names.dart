@@ -72,9 +72,15 @@ abstract class RouteNames {
   static const reelImport = '/creator/import';
   static const reelImportPreview = '/creator/import/preview';
   static const reelImportTagProducts = '/creator/import/tag/:postId';
+  static const reelImportReview = '/creator/import/review';
+  static const reelPublished = '/creator/import/published';
   static const earnings = '/creator/earnings';
   static const earningsPayout = '/creator/earnings/payout';
+  static const creatorPayoutHistory = '/creator/earnings/all-history';
+  static const creatorPayoutInvoice = '/creator/earnings/invoice';
   static const creatorPaymentMethods = '/creator/payment-methods';
+  static const creatorAddPaymentMethod = '/creator/payment-methods/add';
+  static const creatorBankVerification = '/creator/payment-methods/verify';
   static const creatorReelDetail = '/creator/reels/:reelId';
   static const socialConnect = '/creator/social-connect';
   static const reelStudio = '/creator/reel-studio';
@@ -138,6 +144,7 @@ abstract class RouteNames {
   static const creatorProfileSettings = '/creator/profile-settings';
   static const creatorEditProfile = '/creator/edit-profile';
   static const creatorProfileBadges = '/creator/edit-profile-badges';
+  static const creatorProfileTags = '/creator/edit-profile-tags';
   static const creatorCategoryNiche = '/creator/edit-category-niche';
   static const creatorUpgradeSubscription = '/creator/upgrade-subscription';
   static const feed = '/feed';

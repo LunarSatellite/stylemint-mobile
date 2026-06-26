@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -338,6 +339,7 @@ class _PlatformTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Container(
             width: double.infinity,
@@ -370,20 +372,20 @@ class _PlatformTile extends StatelessWidget {
           ),
           if (isSelected)
             Positioned(
-              top: 6,
-              right: 6,
+              top: -9,
+              right: -9,
               child: Container(
                 width: 18,
                 height: 18,
                 decoration: const BoxDecoration(
-                  color: DesignTokens.primaryGreen,
+                  color: Colors.white,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: const Icon(
                   Icons.check,
                   size: 12,
-                  color: Colors.white,
+                  color: DesignTokens.bgAppBody,
                 ),
               ),
             ),
@@ -392,78 +394,20 @@ class _PlatformTile extends StatelessWidget {
     );
   }
 
+  static const _svgAssets = {
+    SocialPlatform.instagram: 'assets/icons/instagram.svg',
+    SocialPlatform.tiktok: 'assets/icons/tiktok.svg',
+    SocialPlatform.youtube: 'assets/icons/youtube.svg',
+    SocialPlatform.facebook: 'assets/icons/facebook.svg',
+  };
+
   Widget _iconWidget() {
-    switch (platform) {
-      case SocialPlatform.instagram:
-        return Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF833AB4), Color(0xFFE1306C), Color(0xFFF77737)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.camera_alt_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        );
-      case SocialPlatform.youtube:
-        return Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF0000),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.play_arrow_rounded,
-            color: Colors.white,
-            size: 24,
-          ),
-        );
-      case SocialPlatform.tiktok:
-        return Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF010101),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF333333)),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.music_note_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        );
-      case SocialPlatform.facebook:
-        return Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1877F2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: const Text(
-            'f',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'serif',
-            ),
-          ),
-        );
-    }
+    return SvgPicture.asset(
+      _svgAssets[platform]!,
+      width: 36,
+      height: 36,
+      fit: BoxFit.contain,
+    );
   }
 }
 

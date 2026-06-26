@@ -215,20 +215,29 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: DesignTokens.s8),
-        _HeaderIconBtn(icon: Icons.search_rounded, onTap: () => context.push(RouteNames.search)),
+        _HeaderIconBtn(
+          iconWidget: const Icon(Icons.search_rounded, size: 20, color: DesignTokens.textWhite),
+          onTap: () => context.push(RouteNames.search),
+        ),
         const SizedBox(width: DesignTokens.s8),
-        _HeaderIconBtn(icon: Icons.notifications_none_rounded, onTap: () {}),
+        _HeaderIconBtn(
+          iconWidget: const Icon(Icons.notifications_none_rounded, size: 20, color: DesignTokens.textWhite),
+          onTap: () {},
+        ),
         const SizedBox(width: DesignTokens.s8),
-        _HeaderIconBtn(icon: Icons.menu_rounded, onTap: () {}),
+        _HeaderIconBtn(
+          iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
+          onTap: () {},
+        ),
       ],
     );
   }
 }
 
 class _HeaderIconBtn extends StatelessWidget {
-  const _HeaderIconBtn({required this.icon, required this.onTap});
+  const _HeaderIconBtn({required this.iconWidget, required this.onTap});
 
-  final IconData icon;
+  final Widget iconWidget;
   final VoidCallback onTap;
 
   @override
@@ -243,7 +252,7 @@ class _HeaderIconBtn extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: DesignTokens.textWhite),
+        child: iconWidget,
       ),
     );
   }
@@ -282,7 +291,10 @@ class _QuickMetricsCard extends StatelessWidget {
       child: Column(
         children: [
           // ── Top half — dark ───────────────────────────────────────────────
-          Container(
+          GestureDetector(
+            onTap: () => context.push(RouteNames.earnings),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
             width: double.infinity,
             color: DesignTokens.bgAppBody,
             padding: const EdgeInsets.symmetric(
@@ -293,8 +305,10 @@ class _QuickMetricsCard extends StatelessWidget {
               children: [
                 _MetricRow(
                   iconBg: DesignTokens.primaryGreenDark,
-                  icon: Icons.account_balance_wallet_outlined,
-                  iconColor: DesignTokens.primaryGreen,
+                  iconChild: Image.asset(
+                    'assets/images/creatordash/material-symbols_money-bag-rounded.png',
+                    width: 28, height: 28, fit: BoxFit.contain,
+                  ),
                   labelWidget: Row(
                     children: [
                       Text(
@@ -317,9 +331,9 @@ class _QuickMetricsCard extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _MetricRow(
-                  iconBg: DesignTokens.warningFillDark,
-                  icon: Icons.monetization_on_outlined,
-                  iconColor: DesignTokens.secondaryYellow,
+                  iconBg: const Color(0xFF3A2F03),
+                  iconChild: const Icon(Icons.hourglass_bottom_rounded,
+                      size: 28, color: DesignTokens.secondaryYellow),
                   labelWidget: Text(
                     'Pending from $pendingSalesCount sales',
                     style: DesignTokens.smallRegular.copyWith(
@@ -331,14 +345,17 @@ class _QuickMetricsCard extends StatelessWidget {
               ],
             ),
           ),
-          // ── Bottom half — yellow ──────────────────────────────────────────
+          ),
+          // ── Bottom half — yellow scalloped ───────────────────────────────
           GestureDetector(
             onTap: () => context.push(RouteNames.earningsPayout),
             behavior: HitTestBehavior.opaque,
+            child: ClipPath(
+              clipper: const _ScallopedTopClipper(),
             child: Container(
               width: double.infinity,
               color: DesignTokens.secondaryYellow,
-              padding: const EdgeInsets.all(DesignTokens.s16),
+              padding: const EdgeInsets.fromLTRB(DesignTokens.s16, 22, DesignTokens.s16, DesignTokens.s16),
               child: Row(
                 children: [
                   Image.asset(
@@ -386,6 +403,7 @@ class _QuickMetricsCard extends StatelessWidget {
                 ],
               ),
             ),
+            ),
           ),
         ],
       ),
@@ -396,15 +414,13 @@ class _QuickMetricsCard extends StatelessWidget {
 class _MetricRow extends StatelessWidget {
   const _MetricRow({
     required this.iconBg,
-    required this.icon,
-    required this.iconColor,
+    required this.iconChild,
     required this.labelWidget,
     required this.value,
   });
 
   final Color iconBg;
-  final IconData icon;
-  final Color iconColor;
+  final Widget iconChild;
   final Widget labelWidget;
   final String value;
 
@@ -416,13 +432,12 @@ class _MetricRow extends StatelessWidget {
         Container(
           width: 48,
           height: 48,
-          padding: const EdgeInsets.all(DesignTokens.s4),
           decoration: BoxDecoration(
             color: iconBg,
             borderRadius: BorderRadius.circular(DesignTokens.s8),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: iconColor, size: 28),
+          child: iconChild,
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
@@ -478,7 +493,7 @@ class _StatsSection extends StatelessWidget {
             const SizedBox(width: DesignTokens.s8),
             Expanded(
               child: _StatCard(
-                icon: Icons.people_outline_rounded,
+                imagePath: 'assets/images/creatordash/person-heart-outline-rounded.png',
                 label: 'Reels',
                 value: '$reels',
               ),
@@ -487,7 +502,7 @@ class _StatsSection extends StatelessWidget {
             // MOCK — backend click signals pipeline not yet live.
             const Expanded(
               child: _StatCard(
-                icon: Icons.open_in_new_rounded,
+                imagePath: 'assets/images/creatordash/box-outline-rounded.png',
                 label: 'Clicks',
                 value: '0',
               ),
@@ -503,17 +518,23 @@ class _StatsSection extends StatelessWidget {
 
 class _StatCard extends StatelessWidget {
   const _StatCard({
-    required this.icon,
     required this.label,
     required this.value,
+    this.icon,
+    this.imagePath,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    final iconWidget = imagePath != null
+        ? Image.asset(imagePath!, width: 24, height: 24, fit: BoxFit.contain)
+        : Icon(icon, size: 24, color: DesignTokens.textWhite);
+
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
@@ -529,7 +550,7 @@ class _StatCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, size: 24, color: DesignTokens.textWhite),
+            child: iconWidget,
           ),
           const SizedBox(height: DesignTokens.s8),
           Text(
@@ -740,14 +761,15 @@ class _TopReelCard extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s12),
           const Divider(color: DesignTokens.borderDefault, height: 1, thickness: 1),
+          const SizedBox(height: DesignTokens.s8),
           // Stats row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _ReelStat(icon: Icons.visibility_outlined, value: reel.views),
-              _ReelStat(icon: Icons.favorite_outline, value: reel.likes),
-              _ReelStat(icon: Icons.chat_bubble_outline, value: reel.comments),
-              _ReelStat(icon: Icons.share_outlined, value: reel.shares),
+              _ReelStat(icon: Icons.visibility_rounded, value: reel.views),
+              _ReelStat(icon: Icons.favorite_rounded, value: reel.likes),
+              _ReelStat(icon: Icons.chat_bubble_rounded, value: reel.comments),
+              _ReelStat(icon: Icons.share_rounded, value: reel.shares),
             ],
           ),
           // Chevron — visual affordance for expand/navigate
@@ -900,10 +922,10 @@ class _ActivityItem extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 24,
-                    color: DesignTokens.textWhite,
+                  child: Image.asset(
+                    'assets/images/creatordash/nest-clock-farsight-analog-outline-rounded.png',
+                    width: 24,
+                    height: 24,
                   ),
                 ),
                 if (showConnector)
@@ -1041,13 +1063,17 @@ class _CreatorBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
-            icon: Icons.home_rounded,
+            iconWidget: const Icon(Icons.home_rounded, size: 22, color: DesignTokens.primaryGreen),
             label: 'Home',
             active: true,
             onTap: null,
           ),
           _NavBtn(
-            icon: Icons.bar_chart_rounded,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/Analytics_icon.png',
+              width: 22,
+              height: 22,
+            ),
             label: 'Analytics',
             onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
@@ -1069,12 +1095,12 @@ class _CreatorBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            icon: Icons.storefront_outlined,
+            iconWidget: const Icon(Icons.storefront_outlined, size: 22, color: DesignTokens.textMuted),
             label: 'Brands',
             onTap: () => context.push(RouteNames.partnerships),
           ),
           _NavBtn(
-            icon: Icons.person_outline_rounded,
+            iconWidget: const Icon(Icons.person_outline_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
@@ -1091,15 +1117,43 @@ class _CreatorBottomNav extends StatelessWidget {
   }
 }
 
+// ── Scalloped top clipper (matches earnings screen) ───────────────────────────
+class _ScallopedTopClipper extends CustomClipper<Path> {
+  const _ScallopedTopClipper();
+
+  @override
+  Path getClip(Size size) {
+    const r = 9.0;
+    final path = Path()..moveTo(0, r);
+    double x = 0;
+    while (x < size.width) {
+      path.arcToPoint(
+        Offset((x + r * 2).clamp(0, size.width), r),
+        radius: const Radius.circular(r),
+        clockwise: true,
+      );
+      x += r * 2;
+    }
+    path
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> old) => false;
+}
+
 class _NavBtn extends StatelessWidget {
   const _NavBtn({
-    required this.icon,
+    required this.iconWidget,
     required this.label,
     required this.onTap,
     this.active = false,
   });
 
-  final IconData icon;
+  final Widget iconWidget;
   final String label;
   final VoidCallback? onTap;
   final bool active;
@@ -1115,7 +1169,7 @@ class _NavBtn extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            iconWidget,
             const SizedBox(height: 2),
             Text(
               label,

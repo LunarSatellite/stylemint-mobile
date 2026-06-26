@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -27,7 +28,6 @@ class _CreatorEditProfileScreenState
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nicknameCtrl;
   late final TextEditingController _bioCtrl;
-  late final TextEditingController _tagInputCtrl;
 
   late List<String> _tags;
   late Set<String> _selectedNiches;
@@ -52,7 +52,6 @@ class _CreatorEditProfileScreenState
   @override
   void initState() {
     super.initState();
-    _tagInputCtrl = TextEditingController();
     // Controllers initialised with empty strings; seeded in didChangeDependencies
     // once ref is available (initState runs before first build).
     _nicknameCtrl = TextEditingController();
@@ -78,20 +77,8 @@ class _CreatorEditProfileScreenState
   void dispose() {
     _nicknameCtrl.dispose();
     _bioCtrl.dispose();
-    _tagInputCtrl.dispose();
     super.dispose();
   }
-
-  void _addTag() {
-    final tag = _tagInputCtrl.text.trim();
-    if (tag.isEmpty || _tags.contains(tag)) return;
-    setState(() {
-      _tags.add(tag);
-      _tagInputCtrl.clear();
-    });
-  }
-
-  void _removeTag(String tag) => setState(() => _tags.remove(tag));
 
   void _toggleNiche(String niche) => setState(() {
         if (_selectedNiches.contains(niche)) {
@@ -213,47 +200,15 @@ class _CreatorEditProfileScreenState
                 ),
               ),
               const SizedBox(height: DesignTokens.s12),
-              Wrap(
-                spacing: DesignTokens.s8,
-                runSpacing: DesignTokens.s8,
-                children: [
-                  ..._tags.map((t) => _TagChip(
-                        label: t,
-                        onRemove: () => _removeTag(t),
-                      )),
-                ],
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _tagInputCtrl,
-                      style: _inputStyle,
-                      textInputAction: TextInputAction.done,
-                      decoration: DesignTokens.inputDecoration(
-                        hintText: 'e.g. Marathon Runner',
-                        labelText: 'Add a tag',
-                      ),
-                      onFieldSubmitted: (_) => _addTag(),
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s8),
-                  GestureDetector(
-                    onTap: _addTag,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.primaryGreen,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.inputRadius),
-                      ),
-                      child: const Icon(Icons.add_rounded,
-                          color: DesignTokens.buttonPrimaryText, size: 22),
-                    ),
-                  ),
-                ],
+              _TagsRow(
+                tags: _tags,
+                onTap: () async {
+                  final result = await context.push<List<String>>(
+                    RouteNames.creatorProfileTags,
+                    extra: List<String>.from(_tags),
+                  );
+                  if (result != null) setState(() => _tags = result);
+                },
               ),
               const SizedBox(height: DesignTokens.s24),
 
@@ -342,38 +297,60 @@ class _SectionLabel extends StatelessWidget {
       );
 }
 
-class _TagChip extends StatelessWidget {
-  const _TagChip({required this.label, required this.onRemove});
-  final String label;
-  final VoidCallback onRemove;
+class _TagsRow extends StatelessWidget {
+  const _TagsRow({required this.tags, required this.onTap});
+  final List<String> tags;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: DesignTokens.borderDefault),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 12,
-              color: DesignTokens.textLight,
+    final preview = tags.isEmpty
+        ? 'No tags added'
+        : tags.take(3).join(', ') + (tags.length > 3 ? '…' : '');
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tags.isEmpty ? 'Add tags' : '${tags.length} tag${tags.length == 1 ? '' : 's'}',
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                  if (tags.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      preview,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onRemove,
-            child: const Icon(Icons.close_rounded,
-                size: 14, color: DesignTokens.textMuted),
-          ),
-        ],
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: DesignTokens.textMuted),
+          ],
+        ),
       ),
     );
   }
