@@ -38,6 +38,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             setState(() => _selectedAddress = summary.shippingAddress);
           }
         },
+        loadFailure: (failure, _) {},
         orElse: () {},
       );
 
@@ -139,8 +140,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         },
         loadFailure: (failure, _) => SmErrorView(
           message: 'Failed to load checkout details.',
-          onRetry: () =>
-              ref.read(checkoutNotifierProvider.notifier).load(),
+          onRetry: () => ref.read(checkoutNotifierProvider.notifier).load(),
         ),
       ),
     );

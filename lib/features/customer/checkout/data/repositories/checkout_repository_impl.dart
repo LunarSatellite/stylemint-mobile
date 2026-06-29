@@ -23,6 +23,11 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
+          if (e.response?.statusCode == 400) {
+            final data = e.response?.data;
+            final code = data is Map ? data['errorCode'] as String? : null;
+            if (code != null) return left(NetworkExceptions.validation(code: code));
+          }
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
           return left(e);

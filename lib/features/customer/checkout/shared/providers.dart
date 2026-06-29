@@ -20,6 +20,6 @@ final checkoutRepositoryProvider = Provider<CheckoutRepository>(
 );
 
 final checkoutNotifierProvider =
-    StateNotifierProvider<CheckoutNotifier, CheckoutState>(
+    StateNotifierProvider.autoDispose<CheckoutNotifier, CheckoutState>(
       (ref) => CheckoutNotifier(ref.watch(checkoutRepositoryProvider)),
     );

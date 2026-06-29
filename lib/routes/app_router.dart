@@ -53,10 +53,14 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_list_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/fedex_tracking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_invoice_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/track_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/add_card_screen.dart';
@@ -452,6 +456,18 @@ GoRouter appRouter(Ref ref) {
                   : null,
             ),
           ),
+          GoRoute(
+            path: _subPath(RouteNames.orderDetail, RouteNames.orderInvoice),
+            builder: (ctx, state) => OrderInvoiceScreen(
+              order: state.extra! as OrderDetail,
+            ),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.orderDetail, RouteNames.orderFedEx),
+            builder: (ctx, state) => FedExTrackingScreen(
+              order: state.extra! as OrderDetail,
+            ),
+          ),
         ],
       ),
 
@@ -459,6 +475,29 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.discoverCreators,
         builder: (ctx, state) => const FollowCreatorsDiscoveryScreen(),
+      ),
+
+      // Search results
+      GoRoute(
+        path: RouteNames.searchResults,
+        builder: (ctx, state) => SearchResultsScreen(
+          query: state.uri.queryParameters['q'] ?? '',
+        ),
+      ),
+
+      // Trending products
+      GoRoute(
+        path: RouteNames.searchTrending,
+        builder: (ctx, state) => const ProductListScreen(title: 'Trending Products'),
+      ),
+
+      // Category products
+      GoRoute(
+        path: RouteNames.searchCategory,
+        builder: (ctx, state) {
+          final label = state.uri.queryParameters['label'] ?? 'Products';
+          return ProductListScreen(title: '$label Products');
+        },
       ),
 
       // Reel comments
