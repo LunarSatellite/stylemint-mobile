@@ -276,10 +276,10 @@ class _OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: DesignTokens.s6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A2A3A),
-                      borderRadius: BorderRadius.circular(4),
+                      color: const Color(0xFFB8E6FE),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       order.shippingMethod,
@@ -287,7 +287,7 @@ class _OrderCard extends StatelessWidget {
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF4DA6FF),
+                        color: Color(0xFF0D1B2A),
                       ),
                     ),
                   ),

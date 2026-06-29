@@ -72,7 +72,7 @@ class _VendorMoreMenu extends StatelessWidget {
             _MoreItem(
               icon: Icons.bar_chart_rounded,
               title: 'Analytics',
-              onTap: () => _go(context, RouteNames.vendorDash),
+              onTap: () => _go(context, RouteNames.vendorAnalytics),
             ),
             const _MoreDivider(),
             _MoreItem(

@@ -273,8 +273,8 @@ class _ProductCard extends StatelessWidget {
             label: 'Total Revenue',
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xFF0D2A3A), borderRadius: BorderRadius.circular(999)),
-              child: Text(product.revenue, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.colorInfo, fontWeight: FontWeight.w600, fontSize: 12)),
+              decoration: BoxDecoration(color: const Color(0xFFB8E6FE), borderRadius: BorderRadius.circular(999)),
+              child: Text(product.revenue, style: DesignTokens.smallRegular.copyWith(color: const Color(0xFF0D1B2A), fontWeight: FontWeight.w600, fontSize: 12)),
             ),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
@@ -304,9 +304,9 @@ class _StockChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isLow ? const Color(0xFF2A1A00) : const Color(0xFF0A2A0A);
-    final border = isLow ? const Color(0xFFFFB800) : DesignTokens.primaryGreen;
-    final textColor = isLow ? const Color(0xFFFFB800) : DesignTokens.primaryGreen;
+    final bg = isLow ? const Color(0xFFFFF085) : const Color(0xFFCDF4DD);
+    final border = isLow ? const Color(0xFFFFF085) : const Color(0xFFCDF4DD);
+    final textColor = isLow ? const Color(0xFF0D1B2A) : const Color(0xFF0D1B2A);
     final label = isLow ? 'Low Stock ($count)' : 'Sufficient Stock($count)';
 
     return Container(

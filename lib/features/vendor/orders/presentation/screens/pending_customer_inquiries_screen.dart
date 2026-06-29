@@ -105,22 +105,21 @@ class _InquiryCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF001A33),
+                    color: const Color(0xFFB8E6FE),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF0066CC).withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.person_outline, size: 13, color: Color(0xFF4DA6FF)),
+                      const Icon(Icons.person_outline, size: 13, color: Color(0xFF0D1B2A)),
                       const SizedBox(width: 4),
                       Text(
                         'Customer: ${inquiry.customerName}',
                         style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF4DA6FF),
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0D1B2A),
                         ),
                       ),
                     ],
@@ -130,9 +129,7 @@ class _InquiryCard extends StatelessWidget {
                 // Response time
                 Builder(builder: (context) {
                   final urgent = inquiry.timeRemaining.startsWith('00:');
-                  final timeColor = urgent
-                      ? DesignTokens.colorError
-                      : DesignTokens.textMuted;
+                  const timeColor = Color(0xFFD4D4D8);
                   return Row(
                     children: [
                       Icon(Icons.access_time, size: 13, color: timeColor),

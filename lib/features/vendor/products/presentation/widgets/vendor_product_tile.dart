@@ -189,7 +189,7 @@ class _SalesBadge extends StatelessWidget {
         vertical: DesignTokens.s4,
       ),
       decoration: BoxDecoration(
-        color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+        color: const Color(0xFFB8E6FE),
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       ),
       child: Row(
@@ -198,13 +198,13 @@ class _SalesBadge extends StatelessWidget {
           const Icon(
             Icons.shopping_bag_outlined,
             size: 12,
-            color: DesignTokens.primaryGreen,
+            color: Color(0xFF0D1B2A),
           ),
           const SizedBox(width: DesignTokens.s4),
           Text(
             '$count sales this month',
             style: DesignTokens.tiny.copyWith(
-              color: DesignTokens.primaryGreen,
+              color: const Color(0xFF0D1B2A),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -225,7 +225,7 @@ class _LowStockBadge extends StatelessWidget {
         vertical: DesignTokens.s4,
       ),
       decoration: BoxDecoration(
-        color: DesignTokens.secondaryYellow.withValues(alpha: 0.15),
+        color: const Color(0xFFFFF085),
         borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
       ),
       child: Row(
@@ -234,13 +234,13 @@ class _LowStockBadge extends StatelessWidget {
           const Icon(
             Icons.warning_amber_outlined,
             size: 12,
-            color: DesignTokens.secondaryYellow,
+            color: Color(0xFF0D1B2A),
           ),
           const SizedBox(width: DesignTokens.s4),
           Text(
             'Low Stock',
             style: DesignTokens.tiny.copyWith(
-              color: DesignTokens.secondaryYellow,
+              color: const Color(0xFF0D1B2A),
               fontWeight: FontWeight.w600,
             ),
           ),

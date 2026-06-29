@@ -189,10 +189,10 @@ class _OrderCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.local_shipping_outlined,
-                        size: 12,
-                        color: Color(0xFF024A70),
+                      Image.asset(
+                        'assets/images/vendordashboard/Tag (3).png',
+                        width: 12,
+                        height: 12,
                       ),
                       const SizedBox(width: 4),
                       Text(
