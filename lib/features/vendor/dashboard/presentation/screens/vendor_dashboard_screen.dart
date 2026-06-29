@@ -48,15 +48,28 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
         appBar: AppBar(
           backgroundColor: DesignTokens.bgAppFoundation,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
-            onPressed: () => context.pop(),
+          automaticallyImplyLeading: false,
+          leading: Padding(
+            padding: const EdgeInsets.all(8),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/vendordashboard/stylemint logo.png',
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          title: Text('Vendor Dashboard', style: DesignTokens.oneLinerSemibold),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.search_rounded, color: DesignTokens.textWhite, size: 22),
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: DesignTokens.textWhite, size: 22),
+              onPressed: () {},
+            ),
             Consumer(
               builder: (ctx, ref, _) => IconButton(
-                icon: const Icon(Icons.settings_outlined, color: DesignTokens.textWhite, size: 22),
+                icon: const Icon(Icons.menu_rounded, color: DesignTokens.textWhite, size: 22),
                 onPressed: () => showVendorMoreMenu(ctx, ref),
               ),
             ),
@@ -256,7 +269,7 @@ class _DashboardContent extends StatelessWidget {
                 children: [
                   _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: dashboard.averageRating.toStringAsFixed(1), label: 'Rating'),
                   const SizedBox(width: DesignTokens.s8),
-                  _statChip(icon: Icons.videocam_outlined, value: '230', label: 'Creators'),
+                  _statChip(assetIcon: 'assets/images/vendordashboard/creator.png', value: '230', label: 'Creators'),
                   const SizedBox(width: DesignTokens.s8),
                   _statChip(assetIcon: 'assets/images/vendordashboard/icon_reels.png', value: '89', label: 'Reels'),
                 ],
@@ -296,7 +309,7 @@ class _DashboardContent extends StatelessWidget {
                   ],
                 ),
               ),
-              Image.asset('assets/images/vendordashboard/badge_approved.png', width: 64, height: 64),
+              Image.asset('assets/images/vendordashboard/total order completed.png', width: 64, height: 64),
             ],
           ),
         ),

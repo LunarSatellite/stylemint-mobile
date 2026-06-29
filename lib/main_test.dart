@@ -26,6 +26,10 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entit
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/repositories/earnings_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/add_payment_method_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/bank_verification_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/all_payout_history_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_invoice_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/active_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
@@ -38,6 +42,8 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/re
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/reel_published_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/analytics_screen.dart';
@@ -151,7 +157,32 @@ class _MockEarningsRepository implements EarningsRepository {
     int limit = 20,
     String? cursor,
   }) async =>
-      right([]);
+      right([
+        EarningsLedgerEntry(
+          id: 'p1',
+          type: LedgerEntryType.payout,
+          description: 'Payout to Bank A/C',
+          amount: const Money(amount: 12500, currency: 'NPR'),
+          createdAt: DateTime.now().subtract(const Duration(days: 1)),
+          reference: '********1268',
+        ),
+        EarningsLedgerEntry(
+          id: 'p2',
+          type: LedgerEntryType.payout,
+          description: 'Payout to Esewa Wallet',
+          amount: const Money(amount: 17000, currency: 'NPR'),
+          createdAt: DateTime.now().subtract(const Duration(days: 3)),
+          reference: '********22',
+        ),
+        EarningsLedgerEntry(
+          id: 'p3',
+          type: LedgerEntryType.payout,
+          description: 'Payout to Bank A/C',
+          amount: const Money(amount: 10985.89, currency: 'NPR'),
+          createdAt: DateTime.now().subtract(const Duration(days: 7)),
+          reference: '********4566',
+        ),
+      ]);
 
   @override
   Future<Either<NetworkExceptions, List<PayoutMethod>>> getPayoutMethods() async =>
@@ -326,59 +357,38 @@ class _MockReelImportRepository implements ReelImportRepository {
   static final _allProducts = [
     const TaggedProductForImport(
       productId: 'p1',
-      productName: 'Floral Summer Dress',
+      productName: 'Raspberry Velvet Cake',
       imageUrl: '',
-      price: Money(amount: 2499, currency: 'NPR'),
-      vendorName: 'StyleCo',
+      price: Money(amount: 5000, currency: 'NPR'),
+      vendorName: "Sam's Bakery",
     ),
     const TaggedProductForImport(
       productId: 'p2',
-      productName: 'Slim Fit Chinos',
+      productName: 'Strawberry Cheese Cake',
       imageUrl: '',
-      price: Money(amount: 1899, currency: 'NPR'),
-      vendorName: 'Urban Thread',
+      price: Money(amount: 2500, currency: 'NPR'),
+      vendorName: 'Traditional Bakery',
     ),
     const TaggedProductForImport(
       productId: 'p3',
-      productName: 'Oversized Hoodie',
+      productName: 'Belgian Chocolate Truffles Cake with Swiss Chocolate Drizzle',
       imageUrl: '',
-      price: Money(amount: 3200, currency: 'NPR'),
-      vendorName: 'StreetWear Co',
+      price: Money(amount: 8000, currency: 'NPR'),
+      vendorName: 'The German Bakery',
     ),
     const TaggedProductForImport(
       productId: 'p4',
-      productName: 'Leather Crossbody Bag',
+      productName: 'Classic Red Velvet Cake',
       imageUrl: '',
-      price: Money(amount: 4599, currency: 'NPR'),
-      vendorName: 'LuxeBag',
+      price: Money(amount: 4500, currency: 'NPR'),
+      vendorName: "Sam's Bakery",
     ),
     const TaggedProductForImport(
       productId: 'p5',
-      productName: 'Ankle Strap Heels',
+      productName: 'Mango Mousse Cake',
       imageUrl: '',
-      price: Money(amount: 2999, currency: 'NPR'),
-      vendorName: 'StepUp',
-    ),
-    const TaggedProductForImport(
-      productId: 'p6',
-      productName: 'Classic Denim Jacket',
-      imageUrl: '',
-      price: Money(amount: 3750, currency: 'NPR'),
-      vendorName: 'DenimLab',
-    ),
-    const TaggedProductForImport(
-      productId: 'p7',
-      productName: 'Printed Crop Top',
-      imageUrl: '',
-      price: Money(amount: 999, currency: 'NPR'),
-      vendorName: 'StyleCo',
-    ),
-    const TaggedProductForImport(
-      productId: 'p8',
-      productName: 'Running Sneakers',
-      imageUrl: '',
-      price: Money(amount: 5200, currency: 'NPR'),
-      vendorName: 'KickZone',
+      price: Money(amount: 3800, currency: 'NPR'),
+      vendorName: 'Sweet Treats',
     ),
   ];
 
@@ -520,6 +530,24 @@ class _DevApp extends StatelessWidget {
           builder: (ctx, _) => const PayoutScreen(),
         ),
         GoRoute(
+          path: RouteNames.creatorPayoutHistory,
+          builder: (ctx, _) => const AllPayoutHistoryScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.creatorPayoutInvoice,
+          builder: (ctx, state) => PayoutInvoiceScreen(
+            args: state.extra! as PayoutInvoiceArgs,
+          ),
+        ),
+        GoRoute(
+          path: RouteNames.creatorAddPaymentMethod,
+          builder: (ctx, _) => const AddPaymentMethodScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.creatorBankVerification,
+          builder: (ctx, _) => const BankVerificationScreen(),
+        ),
+        GoRoute(
           path: RouteNames.earnings,
           builder: (ctx, _) => const EarningsScreen(),
         ),
@@ -544,6 +572,18 @@ class _DevApp extends StatelessWidget {
         GoRoute(
           path: RouteNames.reelImportTagProducts,
           builder: (ctx, _) => const TagProductsScreen(),
+        ),
+        GoRoute(
+          path: RouteNames.reelImportReview,
+          builder: (ctx, state) => ReviewReelScreen(
+            args: state.extra! as ReviewReelArgs,
+          ),
+        ),
+        GoRoute(
+          path: RouteNames.reelPublished,
+          builder: (ctx, state) => ReelPublishedScreen(
+            args: state.extra! as ReviewReelArgs,
+          ),
         ),
         GoRoute(
           path: RouteNames.creatorAnalytics,

@@ -909,12 +909,16 @@ class _AnalyticsBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
-            icon: Icons.home_rounded,
+            iconWidget: const Icon(Icons.home_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Home',
             onTap: () => context.go(RouteNames.creatorHome),
           ),
           _NavBtn(
-            icon: Icons.bar_chart_rounded,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/Analytics_Icon_green.png',
+              width: 22,
+              height: 22,
+            ),
             label: 'Analytics',
             active: true,
             onTap: null,
@@ -937,12 +941,12 @@ class _AnalyticsBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            icon: Icons.storefront_outlined,
+            iconWidget: const Icon(Icons.storefront_outlined, size: 22, color: DesignTokens.textMuted),
             label: 'Brands',
             onTap: () => context.push(RouteNames.partnerships),
           ),
           _NavBtn(
-            icon: Icons.person_outline_rounded,
+            iconWidget: const Icon(Icons.person_outline_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
@@ -961,13 +965,13 @@ class _AnalyticsBottomNav extends StatelessWidget {
 
 class _NavBtn extends StatelessWidget {
   const _NavBtn({
-    required this.icon,
+    required this.iconWidget,
     required this.label,
     required this.onTap,
     this.active = false,
   });
 
-  final IconData icon;
+  final Widget iconWidget;
   final String label;
   final VoidCallback? onTap;
   final bool active;
@@ -983,7 +987,7 @@ class _NavBtn extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            iconWidget,
             const SizedBox(height: 2),
             Text(
               label,

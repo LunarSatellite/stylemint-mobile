@@ -263,7 +263,7 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
       _QuickAction(icon: Icons.local_shipping_outlined, label: 'Order Fulfillment Issues', customIcon: 'assets/images/vendordashboard/icon_truck.png'),
       _QuickAction(icon: Icons.inventory_2_outlined, label: 'Inventory Sync Problems', customIcon: 'assets/images/vendordashboard/icon_resources.png'),
       _QuickAction(icon: Icons.monetization_on_outlined, label: 'Payment/Payout Questions', customIcon: 'assets/images/vendordashboard/icon_payment.png'),
-      _QuickAction(icon: Icons.handshake_outlined, label: 'Creator Partnership Help', customIcon: 'assets/images/vendordashboard/icon_partnership.png'),
+      _QuickAction(icon: Icons.handshake_outlined, label: 'Creator Partnership Help', customIcon: 'assets/images/vendordashboard/Creator Partnership Help.png'),
     ];
 
     return GridView.count(
@@ -534,10 +534,10 @@ class _TicketTile extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 12,
-                        color: DesignTokens.textMuted,
+                      Image.asset(
+                        'assets/images/vendordashboard/calendar.png',
+                        width: 12,
+                        height: 12,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -646,7 +646,17 @@ class _TicketDetailSheet extends StatelessWidget {
                 'Created On',
                 style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
               ),
-              Text(_formatDateTime(ticket.createdAt), style: DesignTokens.smallRegular),
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/images/vendordashboard/calendar.png',
+                    width: 12,
+                    height: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(_formatDateTime(ticket.createdAt), style: DesignTokens.smallRegular),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s16),

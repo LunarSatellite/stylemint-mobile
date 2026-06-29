@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -832,7 +833,7 @@ class _TrafficSourcesCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _TrafficTile(
-                  icon: 'assets/images/vendordashboard/icon_youtube.png',
+                  icon: 'assets/icons/youtube.svg',
                   label: 'Youtube\nShorts',
                   percent: '23%',
                   color: const Color(0xFFFF0000),
@@ -841,7 +842,7 @@ class _TrafficSourcesCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TrafficTile(
-                  icon: 'assets/images/vendordashboard/icon_instagram.png',
+                  icon: 'assets/icons/instagram.svg',
                   label: 'Instagram\nReels',
                   percent: '45%',
                   color: const Color(0xFFE1306C),
@@ -850,7 +851,7 @@ class _TrafficSourcesCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _TrafficTile(
-                  icon: 'assets/images/vendordashboard/icon_tiktok.png',
+                  icon: 'assets/icons/tiktok.svg',
                   label: 'TikTok',
                   percent: '32%',
                   color: DesignTokens.textWhite,
@@ -887,7 +888,7 @@ class _TrafficTile extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Image.asset(icon, width: 32, height: 32, fit: BoxFit.contain),
+          SvgPicture.asset(icon, width: 32, height: 32, fit: BoxFit.contain),
           const SizedBox(height: 8),
           Text(
             percent,
