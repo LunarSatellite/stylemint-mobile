@@ -59,6 +59,9 @@ class _ProductTile extends StatelessWidget {
     if (context.mounted) await context.push('/cart');
   }
 
+  void _openProduct(BuildContext context) =>
+      context.push('/product/${product.id}');
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -74,52 +77,61 @@ class _ProductTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(DesignTokens.s8),
-                child: SizedBox(
-                  width: 76,
-                  height: 76,
-                  child: product.imageUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: product.imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight),
-                          errorWidget: (_, _, _) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight,
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: DesignTokens.iconLight,
-                              )),
-                        )
-                      : const ColoredBox(color: DesignTokens.bgAppBodyLight),
+              // Tapping the image opens the product detail page.
+              GestureDetector(
+                onTap: () => _openProduct(context),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  child: SizedBox(
+                    width: 76,
+                    height: 76,
+                    child: product.imageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: product.imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => const ColoredBox(
+                                color: DesignTokens.bgAppBodyLight),
+                            errorWidget: (_, _, _) => const ColoredBox(
+                                color: DesignTokens.bgAppBodyLight,
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: DesignTokens.iconLight,
+                                )),
+                          )
+                        : const ColoredBox(color: DesignTokens.bgAppBodyLight),
+                  ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
+              // Tapping the name also opens the product detail page.
               Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.textWhite),
-                    ),
-                    const SizedBox(height: DesignTokens.s4),
-                    MoneyText(
-                      product.price,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                        color: DesignTokens.textLight,
+                child: GestureDetector(
+                  onTap: () => _openProduct(context),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.textWhite),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: DesignTokens.s4),
+                      MoneyText(
+                        product.price,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
