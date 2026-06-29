@@ -207,7 +207,6 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                     _submittedEmail, // OtpScreen uses this as the identifier
                 'otpId': otp.otpId,
                 'identifierType': 'email',
-                'isNewAccount': otp.isNewAccount,
               },
             ),
         loadFailure:

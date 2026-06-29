@@ -12,7 +12,9 @@ abstract class AccountDto with _$AccountDto {
     String? displayName,
     String? locale,
     String? timezone,
-    String? status,
+    // Account status enum from the backend (e.g. 1 = Active). Sent as an int.
+    int? status,
+    @Default(false) bool displayNameConfirmed,
     @JsonKey(name: 'dateOfBirth') DateTime? dateOfBirth,
     String? gender,
     String? avatarUrl,

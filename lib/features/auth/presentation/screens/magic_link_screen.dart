@@ -49,7 +49,20 @@ class _MagicLinkScreenState extends ConsumerState<MagicLinkScreen> {
   Widget build(BuildContext context) {
     ref.listen<LoginState>(loginProvider, (_, next) {
       next.maybeWhen(
-        loadSuccess: (_) => context.go(RouteNames.home),
+        loadSuccess: (auth) {
+          // No confirmed name → collect it (then onboarding). Already named but
+          // new → onboarding. Otherwise an existing user → home.
+          if (!auth.displayNameConfirmed) {
+            context.go(
+              RouteNames.completeName,
+              extra: {'accountId': auth.accountId},
+            );
+          } else if (auth.isNewAccount) {
+            context.go(RouteNames.pickInterests);
+          } else {
+            context.go(RouteNames.home);
+          }
+        },
         loadFailure: (failure) {
           SmSnackbar.error(context, _errorMessage(failure));
           context.go(RouteNames.signInMethod);

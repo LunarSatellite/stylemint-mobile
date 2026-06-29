@@ -30,6 +30,10 @@ abstract class OtpLoginRequestedDto with _$OtpLoginRequestedDto {
     // Drives showing the "Your name" field on the OTP screen. Defaults to
     // false for older responses that omit the field.
     @Default(false) bool isNewAccount,
+    // True once the account has a confirmed display name. When false we also
+    // show the "Your name" field on the OTP screen. Absent → defaults to true
+    // so existing named accounts aren't re-prompted.
+    @Default(true) bool displayNameConfirmed,
   }) = _OtpLoginRequestedDto;
 
   factory OtpLoginRequestedDto.fromJson(Map<String, dynamic> json) =>

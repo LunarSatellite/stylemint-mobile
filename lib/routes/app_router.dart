@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/ema
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/handle_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/linked_accounts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/login_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/complete_name_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/magic_link_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/marketing_consents_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/mfa_setup_screen.dart';
@@ -93,6 +94,10 @@ import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/change_password_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/edit_category_niche_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/upgrade_subscription_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/edit_profile_badges_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/profile_settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
@@ -155,6 +160,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/vendor_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation/screens/vendor_analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
@@ -176,6 +182,7 @@ const _publicPaths = {
   RouteNames.passkeyFingerprint,
   RouteNames.otp,
   RouteNames.magicLink,
+  RouteNames.completeName,
   RouteNames.socialLogin,
   RouteNames.oauthCallback,
   RouteNames.userTypeSelection,
@@ -318,7 +325,6 @@ GoRouter appRouter(Ref ref) {
             phone: extra['phone'] as String,
             otpId: extra['otpId'] as String,
             identifierType: (extra['identifierType'] as String?) ?? 'phone',
-            isNewAccount: (extra['isNewAccount'] as bool?) ?? false,
           );
         },
       ),
@@ -327,6 +333,15 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) {
           final token = state.uri.queryParameters['token'] ?? '';
           return MagicLinkScreen(token: token);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.completeName,
+        builder: (ctx, state) {
+          final extra = (state.extra as Map?) ?? const {};
+          return CompleteNameScreen(
+            accountId: (extra['accountId'] as String?) ?? '',
+          );
         },
       ),
       GoRoute(
@@ -648,6 +663,22 @@ GoRouter appRouter(Ref ref) {
         },
       ),
       GoRoute(
+        path: RouteNames.creatorProfileBadges,
+        builder: (ctx, state) => const EditProfileBadgesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorCategoryNiche,
+        builder: (ctx, state) => const EditCategoryNicheScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorUpgradeSubscription,
+        builder: (ctx, state) => const UpgradeSubscriptionScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.settingsChangePassword,
+        builder: (ctx, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
         path: RouteNames.partnerships,
         builder: (ctx, state) => const BrandsScreen(),
         routes: [
@@ -886,6 +917,10 @@ GoRouter appRouter(Ref ref) {
           args: state.extra as AdjustCommissionArgs,
         ),
       ),
+      GoRoute(
+        path: RouteNames.vendorSupportContact,
+        builder: (ctx, state) => const VendorContactSupportScreen(),
+      ),
 
       // Social
       GoRoute(
@@ -1023,7 +1058,7 @@ GoRouter appRouter(Ref ref) {
         routes: [
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportContact),
-            builder: (ctx, state) => const ContactSupportScreen(),
+            builder: (ctx, state) => const VendorContactSupportScreen(),
           ),
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportTickets),

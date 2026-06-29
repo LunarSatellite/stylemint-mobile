@@ -15,6 +15,8 @@ abstract class RouteNames {
   static const oauthCallback = '/auth/oauth/callback';
   static const otp = '/otp';
   static const magicLink = '/auth/magic';
+  // Post-sign-in name capture (magic-link / accounts with no confirmed name).
+  static const completeName = '/auth/complete-name';
   static const userTypeSelection = '/user-type-selection';
   static const rolePicker = '/role-picker';
   static const register = '/register';
@@ -129,11 +131,15 @@ abstract class RouteNames {
   static const vendorAnalytics = '/vendor/analytics';
   static const vendorMessageCreator = '/vendor/message-creator';
   static const vendorAdjustCommission = '/vendor/adjust-commission';
+  static const vendorSupportContact = '/vendor/support/contact';
 
   // Social
   static const creatorProfile = '/creator-profile/:accountId';
   static const creatorProfileSettings = '/creator/profile-settings';
   static const creatorEditProfile = '/creator/edit-profile';
+  static const creatorProfileBadges = '/creator/edit-profile-badges';
+  static const creatorCategoryNiche = '/creator/edit-category-niche';
+  static const creatorUpgradeSubscription = '/creator/upgrade-subscription';
   static const feed = '/feed';
   static const feedCreatePost = '/feed/create';
   static const stories = '/stories';

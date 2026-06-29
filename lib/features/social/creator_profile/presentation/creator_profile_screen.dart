@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -80,6 +81,47 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   bool _expanded = false;
   int _reelFilter = 1;
 
+  static const _allBadges = [
+    'assets/images/profile_badges/diamond_badge.png',
+    'assets/images/profile_badges/red_badge.png',
+    'assets/images/profile_badges/golden_badge.png',
+    'assets/images/profile_badges/silver_badge.png',
+    'assets/images/profile_badges/badge_5.png',
+    'assets/images/profile_badges/badge_6.png',
+    'assets/images/profile_badges/badge_7.png',
+  ];
+
+  void _showBadgesSheet() {
+    unawaited(showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _BadgesSheet(badges: _allBadges),
+    ));
+  }
+
+  static const _tagEmojis = [
+    '🚀', '🏃', '🎯', '⚡', '📱', '⚽', '💪', '🍕',
+    '🌟', '🔥', '🏆', '✨',
+  ];
+
+  // All visible tags: achievement tags + partner labels
+  static const _partnerLabels = [
+    'Nike Creator', 'FastPaced', 'Gadget Obsessed',
+    'Football Lover', 'Fitness Monster', 'Foodie',
+  ];
+
+  void _showTagsSheet(List<String> achievementTags) {
+    final combined = <String>[
+      ...achievementTags,
+      ..._partnerLabels.where((p) => !achievementTags.contains(p)),
+    ];
+    unawaited(showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TagsSheet(tags: combined, emojis: _tagEmojis),
+    ));
+  }
+
   static const _reels = <_ReelItem>[
     _ReelItem('assets/images/product_nike_air_jordan.png', '00:47'),
     _ReelItem('assets/images/sample_shoe1.png', '1:20'),
@@ -119,7 +161,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               const SizedBox(height: DesignTokens.s12),
               _achievementChips(profileData),
               const SizedBox(height: DesignTokens.s8),
-              _partnerChips(),
+              _partnerChips(profileData),
               const SizedBox(height: DesignTokens.s16),
               _brandLogosRow(),
               const SizedBox(height: DesignTokens.s16),
@@ -228,12 +270,12 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Container(
-          width: 20,
-          height: 20,
-          decoration: const BoxDecoration(
-              color: Color(0xFF1DA1F2), shape: BoxShape.circle),
-          child: const Icon(Icons.check, color: Colors.white, size: 12),
+        Image.asset(
+          'assets/images/ph_seal-check-fill.png',
+          width: 22,
+          height: 22,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, _e) => const SizedBox.shrink(),
         ),
       ],
     );
@@ -268,6 +310,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               emoji: emojis[i % emojis.length],
               label: profileData.tags[i],
               bg: i == 0 ? const Color(0xFF3A2F00) : DesignTokens.bgAppBodyLight,
+              onTap: () => _showTagsSheet(profileData.tags),
             ),
           );
         }),
@@ -275,7 +318,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _partnerChips() {
+  Widget _partnerChips(CreatorProfileEditData profileData) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -287,20 +330,23 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           const _PartnerChip(
               color: Color(0xFF1565C0), label: 'FastPaced', initial: 'F'),
           const SizedBox(width: DesignTokens.s8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              borderRadius:
-                  BorderRadius.circular(DesignTokens.chipRadius),
-            ),
-            child: const Text(
-              '+3 more',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                color: DesignTokens.textMuted,
+          GestureDetector(
+            onTap: () => _showTagsSheet(profileData.tags),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius:
+                    BorderRadius.circular(DesignTokens.chipRadius),
+              ),
+              child: const Text(
+                '+3 more',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           ),
@@ -316,38 +362,44 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           ..._brands.map(
-            (b) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Image.asset(
-                b.badgePath,
-                width: 40,
-                height: 40,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, _e) => Container(
+            (b) => GestureDetector(
+              onTap: _showBadgesSheet,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Image.asset(
+                  b.badgePath,
                   width: 40,
                   height: 40,
-                  decoration: const BoxDecoration(
-                    color: DesignTokens.bgAppBodyLight,
-                    shape: BoxShape.circle,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, _e) => Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: DesignTokens.bgAppBodyLight,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Text(
-              '+3',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                color: DesignTokens.textLight,
-                fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: _showBadgesSheet,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                '+3',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  color: DesignTokens.textLight,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -387,29 +439,13 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _SocialIcon(
-            imagePath: 'assets/images/icon_youtube.png',
-            bg: const Color(0xFFCC0000),
-          ),
+          const _SocialIcon(svgPath: 'assets/icons/youtube.svg'),
           const SizedBox(width: DesignTokens.s12),
-          _SocialIcon(
-            imagePath: 'assets/images/icon_instagram.png',
-            gradientColors: const [
-              Color(0xFFF58529),
-              Color(0xFFDD2A7B),
-              Color(0xFF8134AF),
-            ],
-          ),
+          const _SocialIcon(svgPath: 'assets/icons/instagram.svg'),
           const SizedBox(width: DesignTokens.s12),
-          _SocialIcon(
-            imagePath: 'assets/images/icon_facebook.png',
-            bg: const Color(0xFF1877F2),
-          ),
+          const _SocialIcon(svgPath: 'assets/icons/facebook.svg', warning: true),
           const SizedBox(width: DesignTokens.s12),
-          _SocialIcon(
-            imagePath: 'assets/images/icon_tiktok.png',
-            bg: const Color(0xFF010101),
-          ),
+          const _SocialIcon(svgPath: 'assets/icons/tiktok.svg'),
         ],
       ),
     );
@@ -580,35 +616,43 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 // ── Reusable sub-widgets ──────────────────────────────────────────────────────
 
 class _AchievementChip extends StatelessWidget {
-  const _AchievementChip(
-      {required this.emoji, required this.label, required this.bg});
+  const _AchievementChip({
+    required this.emoji,
+    required this.label,
+    required this.bg,
+    this.onTap,
+  });
   final String emoji;
   final String label;
   final Color bg;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: DesignTokens.borderDefault),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 12,
-              color: DesignTokens.textLight,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+          border: Border.all(color: DesignTokens.borderDefault),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                color: DesignTokens.textLight,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -700,49 +744,45 @@ class _StatItem extends StatelessWidget {
 }
 
 class _SocialIcon extends StatelessWidget {
-  const _SocialIcon({required this.imagePath, this.bg, this.gradientColors});
-  final String imagePath;
-  final Color? bg;
-  final List<Color>? gradientColors;
+  const _SocialIcon({required this.svgPath, this.warning = false});
+  final String svgPath;
+  final bool warning;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: gradientColors == null ? bg : null,
-            gradient: gradientColors != null
-                ? LinearGradient(
-                    colors: gradientColors!,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(14),
+          width: 70,
+          height: 70,
+          decoration: const BoxDecoration(
+            color: Color(0xFF3A3A3A),
+            shape: BoxShape.circle,
           ),
           padding: const EdgeInsets.all(10),
-          child: Image.asset(
-            imagePath,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, _e) => const SizedBox.shrink(),
-          ),
+          child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
         ),
         Positioned(
-          top: 0,
-          right: 0,
+          top: 2,
+          right: 2,
           child: Container(
-            width: 16,
-            height: 16,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
-              color: DesignTokens.primaryGreen,
+              color: warning
+                  ? const Color(0xFFFFAA00)
+                  : DesignTokens.primaryGreen,
               shape: BoxShape.circle,
-              border: Border.all(
-                  color: DesignTokens.bgAppFoundation, width: 1.5),
+              border:
+                  Border.all(color: DesignTokens.bgAppFoundation, width: 1.5),
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 9),
+            alignment: Alignment.center,
+            child: Icon(
+              warning ? Icons.priority_high_rounded : Icons.check_rounded,
+              color: Colors.white,
+              size: 11,
+            ),
           ),
         ),
       ],
@@ -876,6 +916,219 @@ class _ReelCard extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Badges bottom sheet ───────────────────────────────────────────────────────
+
+class _BadgesSheet extends StatelessWidget {
+  const _BadgesSheet({required this.badges});
+  final List<String> badges;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        bottomPadding,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DesignTokens.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          Row(
+            children: [
+              const Text(
+                'Your Badges',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: badges.length,
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: DesignTokens.s12,
+              crossAxisSpacing: DesignTokens.s12,
+            ),
+            itemBuilder: (_, i) => _BadgeDisplayTile(asset: badges[i]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeDisplayTile extends StatelessWidget {
+  const _BadgeDisplayTile({required this.asset});
+  final String asset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Image.asset(
+        asset,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.verified_outlined,
+          color: DesignTokens.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Tags bottom sheet ─────────────────────────────────────────────────────────
+
+class _TagsSheet extends StatelessWidget {
+  const _TagsSheet({required this.tags, required this.emojis});
+  final List<String> tags;
+  final List<String> emojis;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        bottomPadding,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DesignTokens.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          Row(
+            children: [
+              const Text(
+                'Your Tags',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          Wrap(
+            spacing: DesignTokens.s8,
+            runSpacing: DesignTokens.s8,
+            children: List.generate(tags.length, (i) {
+              return _SheetTagChip(
+                emoji: emojis[i % emojis.length],
+                label: tags[i],
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetTagChip extends StatelessWidget {
+  const _SheetTagChip({required this.emoji, required this.label});
+  final String emoji;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              color: DesignTokens.textLight,
             ),
           ),
         ],

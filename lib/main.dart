@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
+import 'features/auth/presentation/providers/auth_state_provider.dart';
 import 'features/creator/social_connect/shared/providers.dart';
 import 'features/customer/cart/domain/entities/cart.dart';
 import 'features/customer/cart/domain/repositories/cart_repository.dart';
@@ -339,11 +340,28 @@ class _AppWithDeepLinks extends ConsumerStatefulWidget {
 class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   late final AppLinks _appLinks;
 
+  /// A deep link that arrived while the session was still bootstrapping
+  /// (`AuthSessionState.unknown`). The router's redirect bounces every
+  /// non-splash path to splash while the session is unknown, which would drop
+  /// the link and its token (e.g. a magic-link launched cold). We hold it here
+  /// and replay it once the session resolves.
+  Uri? _pendingUri;
+
   @override
   void initState() {
     super.initState();
     _appLinks = AppLinks();
     _listenDeepLinks();
+    // Replay any deferred deep link as soon as the session leaves `unknown`.
+    ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
+      final stillUnknown =
+          next.maybeWhen(unknown: () => true, orElse: () => false);
+      final pending = _pendingUri;
+      if (!stillUnknown && pending != null) {
+        _pendingUri = null;
+        _navigate(pending);
+      }
+    });
   }
 
   void _listenDeepLinks() {
@@ -374,6 +392,21 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       return;
     }
 
+    // While the session is still bootstrapping, the redirect guard forces every
+    // non-splash route to splash — which would discard this link (and any
+    // token). Defer it; the session listener replays it once resolved.
+    final sessionUnknown = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(unknown: () => true, orElse: () => false);
+    if (sessionUnknown) {
+      _pendingUri = uri;
+      return;
+    }
+
+    _navigate(uri);
+  }
+
+  void _navigate(Uri uri) {
     final router = ref.read(appRouterProvider);
     // Convert the incoming deep link to a go_router path.
     //  - https links: the host is the domain, so the route is just `uri.path`

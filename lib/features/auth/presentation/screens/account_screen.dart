@@ -54,7 +54,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           'email': account.id,
           'locale': account.locale ?? '—',
           'timezone': account.timezone ?? '—',
-          'status': account.status ?? 'Active',
+          'status': account.status == 1
+              ? 'Active'
+              : (account.status?.toString() ?? 'Active'),
           'countryCode': account.countryCode ?? '—',
           'createdUtc': account.createdUtc.toString(),
           'rowVersion': account.rowVersion,
