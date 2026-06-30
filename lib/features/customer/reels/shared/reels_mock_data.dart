@@ -209,4 +209,52 @@ final kMockReels = <Reel>[
     isWishlistedByUser: false,
     isCreatorFollowed: true,
   ),
+  Reel(
+    id: 'reel_007',
+    sourceUrl: 'https://www.youtube.com/shorts/K4TOrB4TTSg',
+    thumbnailUrl:
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=700&fit=crop&q=80',
+    videoUrl:
+        'https://res.cloudinary.com/demo/video/upload/c_fill,h_1920,w_1080/cld-sample.mp4',
+    creatorId: 'u_007',
+    creatorName: 'Jordan Steps',
+    creatorAvatarUrl: '',
+    caption:
+        'Nike haul just dropped 🔥 Air Max, Tech Fleece and the classic Dri-FIT tee — full fit check. #nike #airmax #techfleece #sneakerhead #ootd',
+    musicTitle: 'HUMBLE.',
+    musicArtist: 'Kendrick Lamar',
+    taggedProducts: [
+      TaggedProductEntity(
+        id: 'p_nk01',
+        name: 'Nike Air Max 270',
+        imageUrl:
+            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&h=80&fit=crop&q=80',
+        price: const Money(amount: 12999, currency: 'NPR'),
+        quantity: 18,
+      ),
+      TaggedProductEntity(
+        id: 'p_nk02',
+        name: 'Nike Tech Fleece Hoodie',
+        imageUrl:
+            'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=80&h=80&fit=crop&q=80',
+        price: const Money(amount: 9499, currency: 'NPR'),
+        quantity: 23,
+      ),
+      TaggedProductEntity(
+        id: 'p_nk03',
+        name: 'Nike Dri-FIT T-Shirt',
+        imageUrl:
+            'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop&q=80',
+        price: const Money(amount: 2499, currency: 'NPR'),
+        quantity: 60,
+      ),
+    ],
+    likeCount: 204000,
+    commentCount: 3890,
+    shareCount: 11200,
+    createdAt: DateTime(2024, 6, 5),
+    isLikedByUser: false,
+    isWishlistedByUser: false,
+    isCreatorFollowed: false,
+  ),
 ];

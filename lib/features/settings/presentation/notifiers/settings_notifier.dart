@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/deletion_request.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/notification_prefs.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/settings_repository.dart';
 
@@ -87,9 +88,9 @@ class DeleteAccountNotifier extends StateNotifier<DeleteAccountState> {
 
   final SettingsRepository _repository;
 
-  Future<void> deleteAccount(String accountId) async {
+  Future<void> deleteAccount(String reason) async {
     state = const DeleteAccountState.inProgress();
-    final either = await _repository.deleteAccount(accountId, const Uuid().v4());
+    final either = await _repository.deleteAccount(const Uuid().v4(), reason);
     state = either.fold(
       DeleteAccountState.failure,
       (_) => const DeleteAccountState.success(),
@@ -118,6 +119,48 @@ class LogoutNotifier extends StateNotifier<LogoutState> {
     state = either.fold(
       LogoutState.failure,
       (_) => const LogoutState.success(),
+    );
+  }
+}
+
+// ── Pending Deletion ─────────────────────────────────────────────────────────
+
+@freezed
+abstract class PendingDeletionState with _$PendingDeletionState {
+  const PendingDeletionState._();
+
+  const factory PendingDeletionState.initial() = _PdInitial;
+  const factory PendingDeletionState.loading() = _PdLoading;
+  const factory PendingDeletionState.found(DeletionRequest request) = _PdFound;
+  const factory PendingDeletionState.notFound() = _PdNotFound;
+  const factory PendingDeletionState.cancelling() = _PdCancelling;
+  const factory PendingDeletionState.cancelled() = _PdCancelled;
+  const factory PendingDeletionState.failure(NetworkExceptions failure) = _PdFailure;
+}
+
+class PendingDeletionNotifier extends StateNotifier<PendingDeletionState> {
+  PendingDeletionNotifier(this._repository)
+      : super(const PendingDeletionState.initial());
+
+  final SettingsRepository _repository;
+
+  Future<void> load() async {
+    state = const PendingDeletionState.loading();
+    final either = await _repository.getPendingDeletion();
+    state = either.fold(
+      PendingDeletionState.failure,
+      (r) => r == null
+          ? const PendingDeletionState.notFound()
+          : PendingDeletionState.found(r),
+    );
+  }
+
+  Future<void> cancel(String requestId) async {
+    state = const PendingDeletionState.cancelling();
+    final either = await _repository.cancelDeletion(requestId);
+    state = either.fold(
+      PendingDeletionState.failure,
+      (_) => const PendingDeletionState.cancelled(),
     );
   }
 }

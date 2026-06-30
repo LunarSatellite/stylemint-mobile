@@ -7,10 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/user_profile.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/deletion_request.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/creator_identity_providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -52,6 +56,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _websiteCtrl = TextEditingController();
     _dobCtrl = TextEditingController();
     _tiktokCtrl = TextEditingController();
+    Future.microtask(
+      () => ref.read(pendingDeletionNotifierProvider.notifier).load(),
+    );
   }
 
   @override
@@ -89,7 +96,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ref.read(editProfileNotifierProvider.notifier).updateProfile(
             displayName: _nameCtrl.text.trim(),
             bio: _bioCtrl.text.trim(),
-            website: _websiteCtrl.text.trim(),
             gender: _gender,
             dateOfBirth: _dateOfBirth,
           ),
@@ -153,33 +159,51 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
     if (picked != null) {
       setState(() => _localAvatarFile = File(picked.path));
-      // TODO: upload _localAvatarFile via updateProfile(avatarPath: picked.path)
+      // TODO: upload picked.path to blob storage → get URL → pass as avatarUrl
+      // unawaited(ref.read(editProfileNotifierProvider.notifier).updateProfile(avatarUrl: uploadedUrl));
     }
   }
 
   // ── DELETE ACCOUNT ────────────────────────────────────────────────────────────
   void _showDeleteSheet() {
-    showModalBottomSheet<void>(
+    showModalBottomSheet<String>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => _DeleteAccountSheet(
-        onConfirm: () {
-          Navigator.pop(context);
-          // TODO: ref.read(authNotifierProvider.notifier).deleteAccount()
-        },
-        onCancel: () => Navigator.pop(context),
-      ),
-    );
+      builder: (_) => const _DeleteAccountSheet(),
+    ).then((reason) {
+      if (reason != null && mounted) {
+        unawaited(
+          ref.read(deleteAccountNotifierProvider.notifier).deleteAccount(reason),
+        );
+      }
+    });
   }
 
   // ── BUILD ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editProfileNotifierProvider);
+    final deletionState = ref.watch(pendingDeletionNotifierProvider);
+    final pendingRequest = deletionState.whenOrNull(found: (r) => r);
+
+    ref.listen<PendingDeletionState>(pendingDeletionNotifierProvider, (_, next) {
+      next.whenOrNull(
+        cancelled: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account deletion cancelled')),
+          );
+        },
+        failure: (f) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${f.toString()}')),
+          );
+        },
+      );
+    });
 
     ref.listen<EditProfileState>(editProfileNotifierProvider, (_, next) {
       next.whenOrNull(
@@ -192,6 +216,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         saveFailure: (failure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Save failed: ${failure.toString()}')),
+          );
+        },
+      );
+    });
+
+    ref.listen<DeleteAccountState>(deleteAccountNotifierProvider, (_, next) {
+      next.whenOrNull(
+        success: () => unawaited(
+          ref.read(sessionControllerProvider.notifier).logout().then((_) {
+            if (context.mounted) context.go(RouteNames.signInMethod);
+          }),
+        ),
+        failure: (f) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: ${f.toString()}')),
           );
         },
       );
@@ -217,12 +256,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         title: const Text('Edit Profile', style: DesignTokens.sectionInnerTitle),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: DesignTokens.secondaryYellow,
+            icon: Icon(
+              pendingRequest != null
+                  ? Icons.cancel_outlined
+                  : Icons.delete_outline,
+              color: pendingRequest != null
+                  ? DesignTokens.colorError
+                  : DesignTokens.secondaryYellow,
             ),
-            tooltip: 'Delete account',
-            onPressed: _showDeleteSheet,
+            tooltip: pendingRequest != null
+                ? 'Cancel deletion request'
+                : 'Delete account',
+            onPressed: pendingRequest != null
+                ? () => ref
+                    .read(pendingDeletionNotifierProvider.notifier)
+                    .cancel(pendingRequest.id)
+                : _showDeleteSheet,
           ),
         ],
       ),
@@ -238,14 +287,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         loadSuccess: (profile) {
           _populateFields(profile);
           _avatarUrl = profile.avatarUrl;
-          return _buildForm(saving: false);
+          return _buildForm(saving: false, pendingRequest: pendingRequest);
         },
-        saving: () => _buildForm(saving: true),
+        saving: () => _buildForm(saving: true, pendingRequest: pendingRequest),
         saveSuccess: (profile) {
+          _populateFields(profile);
           _avatarUrl = profile.avatarUrl;
-          return _buildForm(saving: false);
+          return _buildForm(saving: false, pendingRequest: pendingRequest);
         },
-        saveFailure: (_) => _buildForm(saving: false),
+        saveFailure: (_) => _buildForm(saving: false, pendingRequest: pendingRequest),
       ),
     );
   }
@@ -255,7 +305,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       );
 
   // ── FORM ──────────────────────────────────────────────────────────────────────
-  Widget _buildForm({required bool saving}) {
+  Widget _buildForm({required bool saving, DeletionRequest? pendingRequest}) {
     // SafeArea(top:false) handles the home indicator / navigation bar at the
     // bottom without duplicating the AppBar's top safe-area inset.
     return SafeArea(
@@ -380,7 +430,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: DesignTokens.s24),
 
               // ── Delete Account row ───────────────────────────────────────────
-              _DeleteAccountRow(onTap: _showDeleteSheet),
+              _DeleteAccountRow(
+                isPending: pendingRequest != null,
+                onTap: pendingRequest != null
+                    ? () => ref
+                        .read(pendingDeletionNotifierProvider.notifier)
+                        .cancel(pendingRequest.id)
+                    : _showDeleteSheet,
+              ),
               const SizedBox(height: DesignTokens.s24),
 
               // ── Save Changes ─────────────────────────────────────────────────
@@ -598,12 +655,17 @@ class _SheetRow extends StatelessWidget {
 // DELETE ACCOUNT ROW  (inline, inside the form)
 // ─────────────────────────────────────────────────────────────────────────────
 class _DeleteAccountRow extends StatelessWidget {
-  const _DeleteAccountRow({required this.onTap});
+  const _DeleteAccountRow({required this.onTap, this.isPending = false});
 
   final VoidCallback onTap;
+  final bool isPending;
 
   @override
   Widget build(BuildContext context) {
+    const color = DesignTokens.colorError;
+    final label = isPending ? 'Cancel Deletion Request' : 'Delete Account';
+    final icon = isPending ? Icons.cancel_outlined : Icons.delete_outline;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
@@ -619,19 +681,17 @@ class _DeleteAccountRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.delete_outline, color: DesignTokens.colorError, size: 20),
+            Icon(icon, color: color, size: 20),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Text(
-                'Delete Account',
-                style: DesignTokens.mediumRegular.copyWith(
-                  color: DesignTokens.colorError,
-                ),
+                label,
+                style: DesignTokens.mediumRegular.copyWith(color: color),
               ),
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: DesignTokens.colorError,
+              color: color,
               size: 20,
             ),
           ],
@@ -644,14 +704,24 @@ class _DeleteAccountRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE ACCOUNT SHEET  (modal bottom sheet)
 // ─────────────────────────────────────────────────────────────────────────────
-class _DeleteAccountSheet extends StatelessWidget {
-  const _DeleteAccountSheet({
-    required this.onConfirm,
-    required this.onCancel,
-  });
+// Pops with the selected reason string, or null if cancelled.
+class _DeleteAccountSheet extends StatefulWidget {
+  const _DeleteAccountSheet();
 
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
+  @override
+  State<_DeleteAccountSheet> createState() => _DeleteAccountSheetState();
+}
+
+class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
+  static const _reasons = [
+    'I no longer use this app',
+    'Privacy concerns',
+    'Found a better alternative',
+    'Too many notifications',
+    'Other',
+  ];
+
+  String? _selectedReason;
 
   @override
   Widget build(BuildContext context) {
@@ -661,7 +731,6 @@ class _DeleteAccountSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Container(
               width: 40,
               height: 4,
@@ -672,7 +741,6 @@ class _DeleteAccountSheet extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            // Red gradient circle with X icon
             Container(
               width: 72,
               height: 72,
@@ -689,16 +757,15 @@ class _DeleteAccountSheet extends StatelessWidget {
             const SizedBox(height: 20),
 
             Text(
-              'Confirm Delete?',
+              'Delete Account',
               style: DesignTokens.sectionInnerTitle.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 10),
-
+            const SizedBox(height: 8),
             Text(
-              'Are you sure you want to delete your account?\nThis action cannot be undone.',
+              'Please tell us why you\'re leaving. This action cannot be undone.',
               textAlign: TextAlign.center,
               style: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.textMuted,
@@ -706,7 +773,43 @@ class _DeleteAccountSheet extends StatelessWidget {
                 height: 1.6,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
+
+            // Reason picker
+            ...List.generate(_reasons.length, (i) {
+              final r = _reasons[i];
+              final selected = _selectedReason == r;
+              return InkWell(
+                onTap: () => setState(() => _selectedReason = r),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? DesignTokens.colorError.withValues(alpha: 0.12)
+                        : DesignTokens.bgAppBodyLight,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: selected
+                          ? DesignTokens.colorError
+                          : DesignTokens.borderDefault,
+                    ),
+                  ),
+                  child: Text(
+                    r,
+                    style: DesignTokens.mediumRegular.copyWith(
+                      color: selected
+                          ? DesignTokens.colorError
+                          : DesignTokens.textLight,
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            const SizedBox(height: 8),
 
             SizedBox(
               width: double.infinity,
@@ -720,7 +823,9 @@ class _DeleteAccountSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
                   ),
                 ),
-                onPressed: onConfirm,
+                onPressed: _selectedReason == null
+                    ? null
+                    : () => Navigator.pop(context, _selectedReason),
                 child: const Text(
                   'Delete Account',
                   style: TextStyle(
@@ -746,7 +851,7 @@ class _DeleteAccountSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
                   ),
                 ),
-                onPressed: onCancel,
+                onPressed: () => Navigator.pop(context),
                 child: const Text(
                   'Cancel',
                   style: TextStyle(
@@ -817,6 +922,14 @@ class _ReadOnlyFieldState extends State<_ReadOnlyField> {
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(_ReadOnlyField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _ctrl.text = widget.value;
+    }
   }
 
   @override

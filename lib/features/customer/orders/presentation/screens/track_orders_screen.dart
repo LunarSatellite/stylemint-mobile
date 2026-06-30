@@ -291,6 +291,8 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Text(
                     'Order #${order.orderNumber}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: DesignTokens.mediumSemibold.copyWith(
                       color: DesignTokens.textWhite,
                       fontSize: 14,
@@ -300,6 +302,8 @@ class _OrderCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     meta,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textMuted,
                       fontSize: 12,
@@ -307,7 +311,6 @@ class _OrderCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _StatusBadge(status: order.status),
-
                 ],
               ),
             ),

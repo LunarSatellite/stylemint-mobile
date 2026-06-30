@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -8,7 +7,6 @@ import 'package:stylemint_mobile_frontend/features/customer/saved_items/data/dat
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/data/models/saved_item_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/repositories/saved_items_repository.dart';
-import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/saved_items_mock_data.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 class SavedItemsRepositoryImpl implements SavedItemsRepository {
@@ -27,15 +25,6 @@ class SavedItemsRepositoryImpl implements SavedItemsRepository {
     int limit = 20,
     String? cursor,
   }) async {
-    // ponytail: static stub for UI dev, remove when backend is stable
-    if (kDebugMode) {
-      return right(PagedResult<SavedItem>(
-        items: kMockSavedItems,
-        totalCount: kMockSavedItems.length,
-        pageSize: kMockSavedItems.length,
-        hasMore: false,
-      ));
-    }
     if (await networkInfo.isConnected) {
       try {
         final list = await remoteDataSource.getSavedItems();

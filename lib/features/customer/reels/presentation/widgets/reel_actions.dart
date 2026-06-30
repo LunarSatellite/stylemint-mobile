@@ -2,9 +2,9 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Right-rail reel actions: like, comment, share, wishlist.
@@ -32,8 +32,8 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     });
   }
 
-  Future<void> _openComments() async {
-    await context.push('/reels/${widget.reel.id}/comments');
+  void _openComments() {
+    showReelCommentsSheet(context, widget.reel.id);
   }
 
   void _toggleWishlist() {

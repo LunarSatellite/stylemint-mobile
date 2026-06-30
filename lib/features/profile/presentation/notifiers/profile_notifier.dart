@@ -69,19 +69,23 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
   Future<void> updateProfile({
     String? displayName,
     String? bio,
-    String? website,
-    String? avatarPath,
+    String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
   }) async {
+    final current = state.maybeWhen(
+      loadSuccess: (p) => p,
+      saveSuccess: (p) => p,
+      orElse: () => null,
+    );
     state = const EditProfileState.saving();
     final either = await _repository.updateProfile(
-      displayName: displayName,
+      displayName: displayName ?? current?.displayName,
       bio: bio,
-      website: website,
-      avatarPath: avatarPath,
+      avatarUrl: avatarUrl,
       gender: gender,
       dateOfBirth: dateOfBirth,
+      rowVersion: current?.rowVersion ?? '',
     );
     state = either.fold(
       EditProfileState.saveFailure,

@@ -63,20 +63,20 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<Either<NetworkExceptions, UserProfile>> updateProfile({
     String? displayName,
     String? bio,
-    String? website,
-    String? avatarPath,
+    String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
+    required String rowVersion,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.updateProfile(
           displayName: displayName,
           bio: bio,
-          website: website,
-          avatarPath: avatarPath,
+          avatarUrl: avatarUrl,
           gender: gender,
           dateOfBirth: dateOfBirth,
+          rowVersion: rowVersion,
         );
         return right(dto.toDomain());
       } catch (e) {

@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/datasources/settings_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/repositories/settings_repository_impl.dart';
@@ -13,7 +14,10 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/notifie
 // ============================================================================
 
 final settingsRemoteDataSourceProvider = Provider<SettingsRemoteDataSource>(
-  (ref) => SettingsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+  (ref) => SettingsRemoteDataSource(
+    apiClient: ref.watch(apiClientProvider),
+    tokenStorage: ref.watch(tokenStorageProvider),
+  ),
 );
 
 final settingsRepositoryProvider = Provider<SettingsRepository>(
@@ -41,4 +45,9 @@ final deleteAccountNotifierProvider =
 final logoutNotifierProvider =
     StateNotifierProvider<LogoutNotifier, LogoutState>(
       (ref) => LogoutNotifier(ref.watch(settingsRepositoryProvider)),
+    );
+
+final pendingDeletionNotifierProvider =
+    StateNotifierProvider<PendingDeletionNotifier, PendingDeletionState>(
+      (ref) => PendingDeletionNotifier(ref.watch(settingsRepositoryProvider)),
     );

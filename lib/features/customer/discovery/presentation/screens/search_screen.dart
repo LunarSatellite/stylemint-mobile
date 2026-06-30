@@ -10,8 +10,9 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Discover/Search tab — search field plus popular searches, categories,
-/// trending products and top creators (Figma "Search", node 9611-3671).
+// Number of categories shown inline before showing "+N more" pill.
+const int _kCategoryPreviewCount = 7;
+
 class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
 
@@ -25,8 +26,8 @@ class SearchScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
                 DesignTokens.s16,
                 DesignTokens.s16,
                 DesignTokens.s16,
@@ -36,28 +37,24 @@ class SearchScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Search', style: DesignTokens.titleLarge),
-                  Icon(Icons.tune_rounded, color: DesignTokens.iconWhite),
+                  Icon(Icons.tune_rounded, color: DesignTokens.iconWhite, size: 22),
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(DesignTokens.s16),
-              child: _SearchField(),
+            Padding(
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              child: _SearchBar(),
             ),
             Expanded(
               child: state.when(
                 initial: _loader,
                 loadInProgress: _loader,
                 loadSuccess: (data) => _DiscoverBody(data: data),
-                loadFailure:
-                    (failure) => SmErrorView(
-                      message: 'Failed to load Discover.',
-                      onRetry:
-                          () =>
-                              ref
-                                  .read(discoverNotifierProvider.notifier)
-                                  .fetchDiscover(),
-                    ),
+                loadFailure: (failure) => SmErrorView(
+                  message: 'Failed to load Discover.',
+                  onRetry: () =>
+                      ref.read(discoverNotifierProvider.notifier).fetchDiscover(),
+                ),
               ),
             ),
           ],
@@ -67,26 +64,49 @@ class SearchScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      );
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField();
+// ─── SEARCH BAR ───────────────────────────────────────────────────────────────
+class _SearchBar extends StatefulWidget {
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return;
+    context.push('${RouteNames.searchResults}?q=${Uri.encodeComponent(q)}');
+    _controller.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: _controller,
       style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
       decoration: InputDecoration(
         hintText: 'Search Products, Brands, Creators...',
         hintStyle: DesignTokens.mediumRegular.copyWith(
           color: DesignTokens.inputFieldPlaceholder,
         ),
-        prefixIcon: const Icon(Icons.search, color: DesignTokens.iconLight),
+        suffixIcon: const Icon(Icons.search, color: DesignTokens.iconLight),
         filled: true,
         fillColor: DesignTokens.inputFieldFill,
-        contentPadding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
           borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
@@ -100,13 +120,13 @@ class _SearchField extends StatelessWidget {
           borderSide: const BorderSide(color: DesignTokens.primaryGreen),
         ),
       ),
-      onSubmitted: (_) {
-        /* TODO(discovery): run search → results screen */
-      },
+      textInputAction: TextInputAction.search,
+      onSubmitted: _submit,
     );
   }
 }
 
+// ─── DISCOVER BODY ────────────────────────────────────────────────────────────
 class _DiscoverBody extends StatelessWidget {
   const _DiscoverBody({required this.data});
 
@@ -114,6 +134,13 @@ class _DiscoverBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final extraCategories = data.categories.length > _kCategoryPreviewCount
+        ? data.categories.length - _kCategoryPreviewCount
+        : 0;
+    final visibleCategories = data.categories.length > _kCategoryPreviewCount
+        ? data.categories.sublist(0, _kCategoryPreviewCount)
+        : data.categories;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s16,
@@ -122,49 +149,65 @@ class _DiscoverBody extends StatelessWidget {
         DesignTokens.s24,
       ),
       children: [
+        // ── Popular Searches ─────────────────────────────────────────────
         if (data.popularSearches.isNotEmpty) ...[
           const _SectionHeader('Popular Searches'),
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
             children: [
-              for (final term in data.popularSearches) _Pill(label: term),
+              for (final term in data.popularSearches)
+                _HashtagPill(
+                  label: term.startsWith('#') ? term : '#$term',
+                  onTap: () => context.push(
+                    '${RouteNames.searchResults}?q=${Uri.encodeComponent(term.replaceAll('#', ''))}',
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: DesignTokens.s24),
         ],
+
+        // ── Browse by Category ────────────────────────────────────────────
         if (data.categories.isNotEmpty) ...[
           const _SectionHeader('Browse by Category'),
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
             children: [
-              for (final cat in data.categories)
-                _Pill(label: '${cat.emoji} ${cat.label}'.trim()),
+              for (final cat in visibleCategories)
+                _CategoryPill(
+                  label: '${cat.emoji} ${cat.label}'.trim(),
+                  onTap: () => context.push(
+                    RouteNames.searchCategory.replaceFirst(':categoryId', cat.id) +
+                        '?label=${Uri.encodeComponent(cat.label)}',
+                  ),
+                ),
+              if (extraCategories > 0)
+                _MorePill(
+                  count: extraCategories,
+                  onTap: () => _showMoreCategories(context, data.categories),
+                ),
             ],
           ),
           const SizedBox(height: DesignTokens.s24),
         ],
+
+        // ── Trending Now ──────────────────────────────────────────────────
         if (data.trending.isNotEmpty) ...[
           const _SectionHeader('Trending Now 🔥'),
-          for (final p in data.trending) ...[
+          for (final p in data.trending.take(2)) ...[
             TrendingProductCard(
               product: p,
-              onTap:
-                  () => context.push(
-                    '${RouteNames.productDetail}'.replaceFirst(
-                      ':productId',
-                      p.id,
-                    ),
-                  ),
+              onTap: () => context.push(
+                RouteNames.productDetail.replaceFirst(':productId', p.id),
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
           ],
           Center(
             child: TextButton(
-              onPressed: () {
-                /* TODO(discovery): all trending screen */
-              },
+              onPressed: () => context.push(RouteNames.searchTrending),
               child: Text(
                 'View All Trending  →',
                 style: DesignTokens.mediumSemibold.copyWith(
@@ -175,28 +218,39 @@ class _DiscoverBody extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s16),
         ],
+
+        // ── Top Creators ──────────────────────────────────────────────────
         if (data.topCreators.isNotEmpty) ...[
           const _SectionHeader('Top Creators'),
           for (final creator in data.topCreators) ...[
             DiscoverCreatorCard(creator: creator),
             const SizedBox(height: DesignTokens.s12),
           ],
-          Center(
-            child: TextButton(
-              onPressed: () => context.push(RouteNames.discoverCreators),
-              child: Text(
-                'Discover more creators',
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.primaryGreen),
-              ),
-            ),
-          ),
         ],
       ],
     );
   }
+
+  void _showMoreCategories(BuildContext context, List<DiscoverCategory> all) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _MoreCategoriesSheet(
+        categories: all,
+        onSelect: (cat) {
+          Navigator.pop(context);
+          context.push(
+            RouteNames.searchCategory.replaceFirst(':categoryId', cat.id) +
+                '?label=${Uri.encodeComponent(cat.label)}',
+          );
+        },
+      ),
+    );
+  }
 }
 
+// ─── SECTION HEADER ───────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
 
@@ -206,33 +260,190 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-      child: Text(title, style: DesignTokens.mediumRegular),
+      child: Text(
+        title,
+        style: DesignTokens.mediumSemibold.copyWith(
+          color: DesignTokens.textWhite,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
 
-class _Pill extends StatelessWidget {
-  const _Pill({required this.label});
+// ─── HASHTAG PILL ─────────────────────────────────────────────────────────────
+class _HashtagPill extends StatelessWidget {
+  const _HashtagPill({required this.label, required this.onTap});
 
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s8,
-        vertical: DesignTokens.s4,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBodyLight,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: DesignTokens.borderDefault, width: 1),
+        ),
+        child: Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textLight,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
-      decoration: BoxDecoration(
-        color: DesignTokens.buttonGrayFill,
-        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+    );
+  }
+}
+
+// ─── CATEGORY PILL ────────────────────────────────────────────────────────────
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBodyLight,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: DesignTokens.borderDefault, width: 1),
+        ),
+        child: Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textWhite,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: DesignTokens.smallRegular.copyWith(
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFFF4F4F5),
+    );
+  }
+}
+
+// ─── +N MORE PILL ─────────────────────────────────────────────────────────────
+class _MorePill extends StatelessWidget {
+  const _MorePill({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: DesignTokens.primaryGreenLight,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          '+$count more',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.primaryGreen,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── MORE CATEGORIES BOTTOM SHEET ─────────────────────────────────────────────
+class _MoreCategoriesSheet extends StatelessWidget {
+  const _MoreCategoriesSheet({
+    required this.categories,
+    required this.onSelect,
+  });
+
+  final List<DiscoverCategory> categories;
+  final ValueChanged<DiscoverCategory> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.35,
+      maxChildSize: 0.88,
+      expand: false,
+      builder: (_, controller) => Container(
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 14),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Title + close
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'More Categories',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.close,
+                        color: DesignTokens.textWhite, size: 22),
+                  ),
+                ],
+              ),
+            ),
+
+            // Scrollable category grid
+            Expanded(
+              child: SingleChildScrollView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                child: Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s12,
+                  children: [
+                    for (final cat in categories)
+                      _CategoryPill(
+                        label: '${cat.emoji} ${cat.label}'.trim(),
+                        onTap: () => onSelect(cat),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

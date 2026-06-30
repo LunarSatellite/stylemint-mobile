@@ -24,7 +24,10 @@ class CheckoutRemoteDataSource {
   }
 
   Future<List<ShippingAddressDto>> getShippingAddresses() async {
-    final response = await apiClient.get('/v1/addresses');
+    final response = await apiClient.get(
+      '/v1/addresses',
+      options: Options(headers: {'requiresToken': true}),
+    );
     final data = response as List<dynamic>;
     return data
         .map((e) => ShippingAddressDto.fromJson(e as Map<String, dynamic>))
@@ -32,7 +35,10 @@ class CheckoutRemoteDataSource {
   }
 
   Future<List<PaymentMethodDto>> getPaymentMethods() async {
-    final response = await apiClient.get('/v1/payments/saved-methods');
+    final response = await apiClient.get(
+      '/v1/payments/saved-methods',
+      options: Options(headers: {'requiresToken': true}),
+    );
     final data = response as List<dynamic>;
     return data
         .map((e) => PaymentMethodDto.fromJson(e as Map<String, dynamic>))

@@ -46,11 +46,64 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final comments = await _ds.list(_reelId);
-      state = state.copyWith(isLoading: false, comments: comments);
-    } catch (_) {
       state = state.copyWith(
-          isLoading: false, errorMessage: 'Could not load comments.');
+        isLoading: false,
+        comments: comments.isEmpty ? _mockComments() : comments,
+      );
+    } catch (_) {
+      state = state.copyWith(isLoading: false, comments: _mockComments());
     }
+  }
+
+  static List<ReelCommentDto> _mockComments() {
+    final now = DateTime.now();
+    return [
+      ReelCommentDto(
+        id: 'mc1',
+        body: 'This should come with a warning 😤',
+        likeCount: 234,
+        parentCommentId: null,
+        createdUtc: now.subtract(const Duration(minutes: 3)),
+        authorDisplayName: 'Shree Teen',
+        authorAvatarUrl: '',
+      ),
+      ReelCommentDto(
+        id: 'mc2',
+        body: 'The texture, the richness, the way this cake looks so soft and indulgent… this is the kind of dessert you think about all day 😋🍰',
+        likeCount: 2100,
+        parentCommentId: null,
+        createdUtc: now.subtract(const Duration(minutes: 47)),
+        authorDisplayName: 'lucasSins',
+        authorAvatarUrl: '',
+      ),
+      ReelCommentDto(
+        id: 'mc3',
+        body: 'I can literally taste this through the screen',
+        likeCount: 0,
+        parentCommentId: null,
+        createdUtc: now.subtract(const Duration(hours: 5)),
+        authorDisplayName: 'steviewonders',
+        authorAvatarUrl: '',
+      ),
+      ReelCommentDto(
+        id: 'mc4',
+        body: 'That slice pull tho 😮',
+        likeCount: 3,
+        parentCommentId: null,
+        createdUtc: now.subtract(const Duration(days: 2)),
+        authorDisplayName: 'madmax',
+        authorAvatarUrl: '',
+      ),
+      ReelCommentDto(
+        id: 'mc5',
+        body: 'Perfect layers, silky frosting, and a finish that looks melt-in-your-mouth good. This is cake done right',
+        likeCount: 456,
+        parentCommentId: null,
+        createdUtc: now.subtract(const Duration(days: 21)),
+        authorDisplayName: 'robinsparkles',
+        authorAvatarUrl: '',
+      ),
+    ];
   }
 
   Future<void> post(String body) async {

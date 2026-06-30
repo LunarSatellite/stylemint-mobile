@@ -1,21 +1,23 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/shared/mock_orders_repository.dart';
 
-// ── Repository provider ───────────────────────────────────────────────────────
-// Using MockOrdersRepository for development/demo (static data, no API needed).
-// To restore the real network implementation, replace the body below with:
-//
-//   OrdersRepositoryImpl(
-//     remoteDataSource: ref.watch(ordersRemoteDataSourceProvider),
-//     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-//   )
-//
+final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
+  (ref) => OrdersRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
 final ordersRepositoryProvider = Provider<OrdersRepository>(
-  (ref) => MockOrdersRepository(),
+  (ref) => OrdersRepositoryImpl(
+    remoteDataSource: ref.watch(ordersRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
 );
 
 final trackOrdersNotifierProvider =

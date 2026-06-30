@@ -6,11 +6,7 @@ part 'user_profile_dto.freezed.dart';
 part 'user_profile_dto.g.dart';
 
 /// DTO for the account entity from `GET /v1/accounts/{accountId}`.
-///
-/// Only the fields the endpoint actually returns are declared; unknown JSON
-/// keys (status, timezone, countryCode, verified timestamps, rowVersion, audit
-/// ids…) are ignored by json_serializable. `email`, `phone`, `bio`, and
-/// `website` are NOT part of this response, so the domain defaults them.
+/// `primaryEmail` and `primaryPhone` are returned by the API and mapped here.
 @freezed
 abstract class UserProfileDto with _$UserProfileDto {
   const factory UserProfileDto({
@@ -19,8 +15,15 @@ abstract class UserProfileDto with _$UserProfileDto {
     String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
+    String? primaryEmail,
+    String? primaryPhone,
     @Default('en-US') String locale,
+    String? timezone,
+    String? countryCode,
     DateTime? createdUtc,
+    @Default('') String rowVersion,
+    @Default('') String bio,
+    @Default('') String website,
   }) = _UserProfileDto;
 
   const UserProfileDto._();
@@ -31,15 +34,16 @@ abstract class UserProfileDto with _$UserProfileDto {
   UserProfile toDomain() => UserProfile(
     id: id,
     displayName: displayName,
-    email: '',
-    phone: '',
+    email: primaryEmail ?? '',
+    phone: primaryPhone ?? '',
     avatarUrl: avatarUrl ?? '',
-    bio: '',
-    website: '',
+    bio: bio,
+    website: website,
     gender: gender,
     dateOfBirth: dateOfBirth,
     language: locale,
     dateJoined: createdUtc ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    rowVersion: rowVersion,
   );
 }
 

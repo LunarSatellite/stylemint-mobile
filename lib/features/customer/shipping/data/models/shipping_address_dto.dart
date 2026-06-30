@@ -8,16 +8,18 @@ part 'shipping_address_dto.g.dart';
 abstract class ShippingAddressDto with _$ShippingAddressDto {
   const factory ShippingAddressDto({
     required String id,
+    @Default('') String accountId,
     @Default('Home') String label,
-    required String fullName,
-    required String phone,
-    required String addressLine1,
-    String? addressLine2,
-    @Default('Nepal') String country,
+    required String line1,
+    String? line2,
     required String city,
-    required String state,
-    required String zipCode,
+    String? stateProvince,
+    String? postalCode,
+    required String countryCode,
     @Default(false) bool isDefault,
+    @Default('') String rowVersion,
+    DateTime? createdUtc,
+    DateTime? updatedUtc,
   }) = _ShippingAddressDto;
 
   const ShippingAddressDto._();
@@ -25,31 +27,29 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
   factory ShippingAddressDto.fromJson(Map<String, dynamic> json) =>
       _$ShippingAddressDtoFromJson(json);
 
+  // Manual toJson sends only the write fields the API expects.
   Map<String, dynamic> toJson() => {
-    'id': id,
     'label': label,
-    'fullName': fullName,
-    'phone': phone,
-    'addressLine1': addressLine1,
-    'addressLine2': addressLine2,
-    'country': country,
+    'line1': line1,
+    if (line2 != null && line2!.isNotEmpty) 'line2': line2,
     'city': city,
-    'state': state,
-    'zipCode': zipCode,
+    if (stateProvince != null && stateProvince!.isNotEmpty) 'stateProvince': stateProvince,
+    if (postalCode != null && postalCode!.isNotEmpty) 'postalCode': postalCode,
+    'countryCode': countryCode,
     'isDefault': isDefault,
+    if (rowVersion.isNotEmpty) 'rowVersion': rowVersion,
   };
 
   ShippingAddress toDomain() => ShippingAddress(
     id: id,
     label: label,
-    fullName: fullName,
-    phone: phone,
-    addressLine1: addressLine1,
-    addressLine2: addressLine2,
-    country: country,
+    line1: line1,
+    line2: line2,
     city: city,
-    state: state,
-    zipCode: zipCode,
+    stateProvince: stateProvince,
+    postalCode: postalCode,
+    countryCode: countryCode,
     isDefault: isDefault,
+    rowVersion: rowVersion,
   );
 }

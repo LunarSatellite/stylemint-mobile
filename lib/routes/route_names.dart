@@ -32,6 +32,9 @@ abstract class RouteNames {
   // Customer
   static const home = '/home';
   static const search = '/search';
+  static const searchResults = '/search-results';
+  static const searchTrending = '/trending-products';
+  static const searchCategory = '/browse-category/:categoryId';
   static const reelsFeed = '/reels';
   static const reelDetail = '/reels/:reelId';
   static const reelComments = '/reels/:reelId/comments';
@@ -44,6 +47,8 @@ abstract class RouteNames {
   static const orderDetail = '/orders/:orderId';
   static const orderSuccess = '/order-success/:orderId';
   static const orderCancel = '/orders/:orderId/cancel';
+  static const orderInvoice = '/orders/:orderId/invoice';
+  static const orderFedEx = '/orders/:orderId/fedex';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';
