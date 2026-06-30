@@ -9,15 +9,15 @@ part 'checkout_dto.g.dart';
 abstract class ShippingAddressDto with _$ShippingAddressDto {
   const factory ShippingAddressDto({
     required String id,
-    required String label,
-    required String fullName,
-    required String phone,
-    required String addressLine1,
-    String? addressLine2,
+    @Default('Home') String label,
+    required String line1,
+    String? line2,
     required String city,
-    required String state,
-    required String zipCode,
-    required bool isDefault,
+    String? stateProvince,
+    String? postalCode,
+    required String countryCode,
+    @Default(false) bool isDefault,
+    @Default('') String rowVersion,
   }) = _ShippingAddressDto;
 
   const ShippingAddressDto._();
@@ -28,14 +28,14 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
   ShippingAddress toDomain() => ShippingAddress(
         id: id,
         label: label,
-        fullName: fullName,
-        phone: phone,
-        addressLine1: addressLine1,
-        addressLine2: addressLine2,
+        line1: line1,
+        line2: line2,
         city: city,
-        state: state,
-        zipCode: zipCode,
+        stateProvince: stateProvince,
+        postalCode: postalCode,
+        countryCode: countryCode,
         isDefault: isDefault,
+        rowVersion: rowVersion,
       );
 }
 

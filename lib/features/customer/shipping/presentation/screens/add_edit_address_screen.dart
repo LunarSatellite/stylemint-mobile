@@ -19,11 +19,9 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _fullNameCtl;
-  late TextEditingController _phoneCtl;
-  late TextEditingController _addressLine1Ctl;
+  late TextEditingController _line1Ctl;
   late TextEditingController _landmarkCtl;
-  late TextEditingController _zipCodeCtl;
+  late TextEditingController _postalCodeCtl;
   late TextEditingController _cityCtl;
   late TextEditingController _labelCtl;
 
@@ -32,9 +30,15 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
 
   bool _saving = false;
 
-  static const _countries = [
-    'Nepal', 'India', 'China', 'Bangladesh', 'Bhutan', 'Pakistan', 'Sri Lanka',
-  ];
+  static const _countryMap = {
+    'Nepal': 'NP',
+    'India': 'IN',
+    'China': 'CN',
+    'Bangladesh': 'BD',
+    'Bhutan': 'BT',
+    'Pakistan': 'PK',
+    'Sri Lanka': 'LK',
+  };
 
   static const _nepalProvinces = [
     'Koshi', 'Madhesh', 'Bagmati', 'Gandaki', 'Lumbini', 'Karnali', 'Sudurpashchim',
@@ -44,24 +48,23 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   void initState() {
     super.initState();
     final a = widget.address;
-    _fullNameCtl = TextEditingController(text: a?.fullName ?? '');
-    _phoneCtl = TextEditingController(text: a?.phone ?? '');
-    _addressLine1Ctl = TextEditingController(text: a?.addressLine1 ?? '');
-    _landmarkCtl = TextEditingController(text: a?.addressLine2 ?? '');
-    _zipCodeCtl = TextEditingController(text: a?.zipCode ?? '');
+    _line1Ctl = TextEditingController(text: a?.line1 ?? '');
+    _landmarkCtl = TextEditingController(text: a?.line2 ?? '');
+    _postalCodeCtl = TextEditingController(text: a?.postalCode ?? '');
     _cityCtl = TextEditingController(text: a?.city ?? '');
     _labelCtl = TextEditingController(text: a?.label ?? 'Home');
-    _country = _countries.contains(a?.country) ? (a!.country) : 'Nepal';
-    _province = _nepalProvinces.contains(a?.state) ? (a!.state) : 'Bagmati';
+    final existing = a?.countryCode;
+    _country = _countryMap.containsValue(existing)
+        ? existing!
+        : (_countryMap[existing] ?? 'NP');
+    _province = _nepalProvinces.contains(a?.stateProvince) ? (a!.stateProvince!) : 'Bagmati';
   }
 
   @override
   void dispose() {
-    _fullNameCtl.dispose();
-    _phoneCtl.dispose();
-    _addressLine1Ctl.dispose();
+    _line1Ctl.dispose();
     _landmarkCtl.dispose();
-    _zipCodeCtl.dispose();
+    _postalCodeCtl.dispose();
     _cityCtl.dispose();
     _labelCtl.dispose();
     super.dispose();
@@ -75,15 +78,14 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     final address = ShippingAddress(
       id: widget.address?.id ?? '',
       label: _labelCtl.text.trim().isEmpty ? 'Home' : _labelCtl.text.trim(),
-      fullName: _fullNameCtl.text.trim(),
-      phone: _phoneCtl.text.trim(),
-      addressLine1: _addressLine1Ctl.text.trim(),
-      addressLine2: _landmarkCtl.text.trim().isEmpty ? null : _landmarkCtl.text.trim(),
-      country: _country,
+      line1: _line1Ctl.text.trim(),
+      line2: _landmarkCtl.text.trim().isEmpty ? null : _landmarkCtl.text.trim(),
+      countryCode: _country,
       city: _cityCtl.text.trim(),
-      state: _province,
-      zipCode: _zipCodeCtl.text.trim(),
+      stateProvince: _province,
+      postalCode: _postalCodeCtl.text.trim().isEmpty ? null : _postalCodeCtl.text.trim(),
       isDefault: widget.address?.isDefault ?? false,
+      rowVersion: widget.address?.rowVersion ?? '',
     );
 
     final success = widget.isEditing
@@ -124,24 +126,24 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(DesignTokens.s16),
                 children: [
-                  _field('Full Name', _fullNameCtl, required: true),
-                  const SizedBox(height: DesignTokens.s16),
-                  _field(
-                    "Receiver's Phone No.",
-                    _phoneCtl,
-                    keyboardType: TextInputType.phone,
-                    required: true,
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
-                  _field('Address Line 1', _addressLine1Ctl, required: true),
+                  _field('Address Line 1', _line1Ctl, required: true),
                   const SizedBox(height: DesignTokens.s16),
                   _field('Nearest Landmark (Optional)', _landmarkCtl),
                   const SizedBox(height: DesignTokens.s16),
-                  _dropdown(
-                    label: 'Country',
+                  DropdownButtonFormField<String>(
                     value: _country,
-                    items: _countries,
-                    onChanged: (v) => setState(() => _country = v ?? 'Nepal'),
+                    onChanged: (v) => setState(() => _country = v ?? 'NP'),
+                    style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.inputFieldData),
+                    dropdownColor: DesignTokens.bgAppBodyLight,
+                    iconEnabledColor: DesignTokens.inputFieldDropdownIcon,
+                    decoration: DesignTokens.inputDecoration(labelText: 'Country'),
+                    items: _countryMap.entries
+                        .map((e) => DropdownMenuItem(
+                              value: e.value,
+                              child: Text('${e.key} (${e.value})'),
+                            ))
+                        .toList(growable: false),
+                    validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
                   ),
                   const SizedBox(height: DesignTokens.s16),
                   _dropdown(
@@ -153,9 +155,8 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                   const SizedBox(height: DesignTokens.s16),
                   _field(
                     'Zip/Postal Code',
-                    _zipCodeCtl,
+                    _postalCodeCtl,
                     keyboardType: TextInputType.number,
-                    required: true,
                   ),
                   const SizedBox(height: DesignTokens.s16),
                   _field('City', _cityCtl, required: true),

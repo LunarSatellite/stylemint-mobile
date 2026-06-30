@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -10,6 +15,21 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<DeleteAccountState>(deleteAccountNotifierProvider, (_, next) {
+      next.whenOrNull(
+        success: () => unawaited(
+          ref.read(sessionControllerProvider.notifier).logout().then((_) {
+            if (context.mounted) context.go(RouteNames.signInMethod);
+          }),
+        ),
+        failure: (f) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: ${f.toString()}')),
+          );
+        },
+      );
+    });
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -81,20 +101,23 @@ class SettingsScreen extends ConsumerWidget {
             icon: Icons.delete_forever_outlined,
             label: 'Delete Account',
             isDestructive: true,
-            onTap: () => _confirmDelete(context),
+            onTap: () => _confirmDelete(context, ref),
           ),
         ],
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context) {
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
         title: const Text('Delete Account', style: TextStyle(color: DesignTokens.colorError)),
-        content: const Text('This action cannot be undone. All your data will be permanently deleted.', style: TextStyle(color: DesignTokens.textLight)),
+        content: const Text(
+          'This action cannot be undone. All your data will be permanently deleted.',
+          style: TextStyle(color: DesignTokens.textLight),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -103,9 +126,10 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account deletion requested')),
-              );
+              // Settings screen uses a simple dialog; default reason for brevity.
+              ref
+                  .read(deleteAccountNotifierProvider.notifier)
+                  .deleteAccount('User requested account deletion from settings');
             },
             style: TextButton.styleFrom(foregroundColor: DesignTokens.colorError),
             child: const Text('Delete'),

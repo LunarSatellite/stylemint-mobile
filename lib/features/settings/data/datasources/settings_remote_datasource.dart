@@ -1,11 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
+import 'package:stylemint_mobile_frontend/features/settings/data/models/deletion_request_dto.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/models/notification_prefs_dto.dart';
 
 class SettingsRemoteDataSource {
-  SettingsRemoteDataSource({required this.apiClient});
+  SettingsRemoteDataSource({required this.apiClient, required this.tokenStorage});
 
   final ApiClient apiClient;
+  final TokenStorage tokenStorage;
+
+  Future<String> _accountId() async {
+    final id = await tokenStorage.accountId;
+    if (id == null || id.isEmpty) throw Exception('No accountId in storage');
+    return id;
+  }
 
   Future<NotificationPreferencesDto> getNotificationPreferences() async {
     final response = await apiClient.get('/v1/notifications/preferences');
@@ -38,14 +47,39 @@ class SettingsRemoteDataSource {
   }
 
   /// POST `/v1/accounts/{accountId}/deletion-requests`
-  Future<void> deleteAccount(String accountId, String idempotencyKey) async {
+  Future<void> deleteAccount(String idempotencyKey, String reason) async {
+    final accountId = await _accountId();
     await apiClient.authPost(
       '/v1/accounts/$accountId/deletion-requests',
-      data: {},
+      data: <String, dynamic>{'reason': reason},
       options: Options(headers: {
         'requiresToken': false,
         'Idempotency-Key': idempotencyKey,
       }),
+    );
+  }
+
+  /// GET `/v1/accounts/{accountId}/deletion-requests/pending`
+  /// Returns null if there is no pending request (404).
+  Future<DeletionRequestDto?> getPendingDeletion() async {
+    final accountId = await _accountId();
+    try {
+      final response = await apiClient.get(
+        '/v1/accounts/$accountId/deletion-requests/pending',
+      );
+      if (response == null) return null; // 204 No Content — no pending request
+      return DeletionRequestDto.fromJson(response as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// POST `/v1/accounts/{accountId}/deletion-requests/{requestId}/cancel`
+  Future<void> cancelDeletion(String requestId) async {
+    final accountId = await _accountId();
+    await apiClient.post(
+      '/v1/accounts/$accountId/deletion-requests/$requestId/cancel',
     );
   }
 

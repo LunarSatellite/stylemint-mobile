@@ -2,54 +2,50 @@ class ShippingAddress {
   const ShippingAddress({
     required this.id,
     required this.label,
-    required this.fullName,
-    required this.phone,
-    required this.addressLine1,
-    this.addressLine2,
-    required this.country,
+    required this.line1,
+    this.line2,
     required this.city,
-    required this.state,
-    required this.zipCode,
+    this.stateProvince,
+    this.postalCode,
+    required this.countryCode,
     required this.isDefault,
+    this.rowVersion = '',
   });
 
   final String id;
   final String label;
-  final String fullName;
-  final String phone;
-  final String addressLine1;
-  final String? addressLine2;
-  final String country;
+  final String line1;
+  final String? line2;
   final String city;
-  final String state;
-  final String zipCode;
+  final String? stateProvince;
+  final String? postalCode;
+  final String countryCode;
   final bool isDefault;
+  final String rowVersion;
 
   ShippingAddress copyWith({
     String? id,
     String? label,
-    String? fullName,
-    String? phone,
-    String? addressLine1,
-    String? addressLine2,
-    String? country,
+    String? line1,
+    String? line2,
     String? city,
-    String? state,
-    String? zipCode,
+    String? stateProvince,
+    String? postalCode,
+    String? countryCode,
     bool? isDefault,
+    String? rowVersion,
   }) {
     return ShippingAddress(
       id: id ?? this.id,
       label: label ?? this.label,
-      fullName: fullName ?? this.fullName,
-      phone: phone ?? this.phone,
-      addressLine1: addressLine1 ?? this.addressLine1,
-      addressLine2: addressLine2 ?? this.addressLine2,
-      country: country ?? this.country,
+      line1: line1 ?? this.line1,
+      line2: line2 ?? this.line2,
       city: city ?? this.city,
-      state: state ?? this.state,
-      zipCode: zipCode ?? this.zipCode,
+      stateProvince: stateProvince ?? this.stateProvince,
+      postalCode: postalCode ?? this.postalCode,
+      countryCode: countryCode ?? this.countryCode,
       isDefault: isDefault ?? this.isDefault,
+      rowVersion: rowVersion ?? this.rowVersion,
     );
   }
 }

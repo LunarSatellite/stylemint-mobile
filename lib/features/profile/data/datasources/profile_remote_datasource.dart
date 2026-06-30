@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/profile_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/user_profile_dto.dart';
-import 'package:stylemint_mobile_frontend/features/profile/shared/profile_mock_data.dart';
 
 class ProfileRemoteDataSource {
   ProfileRemoteDataSource({
@@ -15,15 +13,9 @@ class ProfileRemoteDataSource {
   final ApiClient apiClient;
   final TokenStorage tokenStorage;
 
-  /// The profile feature always operates on the signed-in account. The id is
-  /// the source of truth in [TokenStorage] (persisted at login); a null/empty
-  /// value means there is no valid session, so we surface it as an auth error
-  /// rather than calling the API with the unsubstituted `{accountId}` literal.
   Future<String> _accountId() async {
     final id = await tokenStorage.accountId;
     if (id == null || id.isEmpty) {
-      // NetworkExceptions is the app's domain failure type; the repository
-      // catches it and folds it into Either.
       // ignore: only_throw_errors
       throw const NetworkExceptions.auth();
     }
@@ -31,8 +23,6 @@ class ProfileRemoteDataSource {
   }
 
   Future<ProfileSummaryDto> getProfileSummary() async {
-    // ponytail: static stub for UI dev, remove when backend is stable
-    if (kDebugMode) return kMockProfileSummaryDto;
     final accountId = await _accountId();
     final response = await apiClient.get('/v1/accounts/$accountId');
     return ProfileSummaryDto.fromJson(response as Map<String, dynamic>);
@@ -47,19 +37,19 @@ class ProfileRemoteDataSource {
   Future<UserProfileDto> updateProfile({
     String? displayName,
     String? bio,
-    String? website,
-    String? avatarPath,
+    String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
+    required String rowVersion,
   }) async {
     final accountId = await _accountId();
     final data = <String, dynamic>{
+      'rowVersion': rowVersion,
       if (displayName != null) 'displayName': displayName,
       if (bio != null) 'bio': bio,
-      if (website != null) 'website': website,
-      if (avatarPath != null) 'avatarPath': avatarPath,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
       if (gender != null) 'gender': gender,
-      if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String(),
+      if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String().substring(0, 10),
     };
     final response = await apiClient.patch('/v1/accounts/$accountId', data: data);
     return UserProfileDto.fromJson(response as Map<String, dynamic>);

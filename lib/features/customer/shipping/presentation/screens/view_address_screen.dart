@@ -21,21 +21,21 @@ class ViewAddressScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Field(label: 'Full Name', value: address.fullName),
-            const SizedBox(height: DesignTokens.s20),
-            _Field(label: "Receiver's Phone No.", value: address.phone),
-            const SizedBox(height: DesignTokens.s20),
-            _Field(label: 'Address Line 1', value: address.addressLine1),
-            if (address.addressLine2 != null && address.addressLine2!.isNotEmpty) ...[
+            _Field(label: 'Address Line 1', value: address.line1),
+            if (address.line2 != null && address.line2!.isNotEmpty) ...[
               const SizedBox(height: DesignTokens.s20),
-              _Field(label: 'Nearest Landmark (Optional)', value: address.addressLine2!),
+              _Field(label: 'Nearest Landmark (Optional)', value: address.line2!),
             ],
             const SizedBox(height: DesignTokens.s20),
-            _Field(label: 'Country', value: address.country),
-            const SizedBox(height: DesignTokens.s20),
-            _Field(label: 'State/Province', value: address.state),
-            const SizedBox(height: DesignTokens.s20),
-            _Field(label: 'Zip/Postal Code', value: address.zipCode),
+            _Field(label: 'Country', value: address.countryCode),
+            if (address.stateProvince != null && address.stateProvince!.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s20),
+              _Field(label: 'State/Province', value: address.stateProvince!),
+            ],
+            if (address.postalCode != null && address.postalCode!.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s20),
+              _Field(label: 'Zip/Postal Code', value: address.postalCode!),
+            ],
             const SizedBox(height: DesignTokens.s20),
             _Field(label: 'City', value: address.city),
             const SizedBox(height: DesignTokens.s20),

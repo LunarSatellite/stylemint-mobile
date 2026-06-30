@@ -64,10 +64,10 @@ class MockProfileRepository implements ProfileRepository {
   Future<Either<NetworkExceptions, UserProfile>> updateProfile({
     String? displayName,
     String? bio,
-    String? website,
-    String? avatarPath,
+    String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
+    required String rowVersion,
   }) async =>
       left(const NetworkExceptions.noInternetConnection());
 }

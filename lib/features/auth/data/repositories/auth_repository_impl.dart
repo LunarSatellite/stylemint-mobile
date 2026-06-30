@@ -84,7 +84,10 @@ class AuthRepositoryImpl implements AuthRepository {
           devicePlatform: deviceIdentity.platformCode,
           deviceOsVersion: deviceIdentity.osVersion,
         );
-        await _persist(auth);
+        await Future.wait([
+          _persist(auth),
+          tokenStorage.saveIdentifier(identifierType, identifier),
+        ]);
         return right(auth);
       } catch (e) {
         if (e is DioException) {
@@ -122,7 +125,10 @@ class AuthRepositoryImpl implements AuthRepository {
           devicePlatform: deviceIdentity.platformCode,
           deviceOsVersion: deviceIdentity.osVersion,
         );
-        await _persist(auth);
+        await Future.wait([
+          _persist(auth),
+          tokenStorage.saveIdentifier(identifierType, identifier),
+        ]);
         return right(auth);
       } catch (e) {
         if (e is DioException) {

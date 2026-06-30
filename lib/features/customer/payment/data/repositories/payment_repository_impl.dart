@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -7,7 +6,6 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/data/datasources/payment_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/repositories/payment_repository.dart';
-import 'package:stylemint_mobile_frontend/features/customer/payment/shared/payment_mock_data.dart';
 
 class PaymentRepositoryImpl implements PaymentRepository {
   PaymentRepositoryImpl({
@@ -22,8 +20,6 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
   @override
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async {
-    // ponytail: static stub for UI dev, remove when processor tokenization is wired
-    if (kDebugMode) return right(kMockPaymentMethods);
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPaymentMethods();

@@ -14,6 +14,8 @@ class TokenStorage {
   static const _kRefreshExpiry = 'auth.refreshExpiresUtc';
   static const _kAccountId = 'auth.accountId';
   static const _kSessionId = 'auth.sessionId';
+  static const _kEmail = 'auth.email';
+  static const _kPhone = 'auth.phone';
 
   Future<void> saveSession({
     required String? accessToken,
@@ -48,6 +50,13 @@ class TokenStorage {
   Future<String?> get refreshToken => _safeRead(_kRefreshToken);
   Future<String?> get accountId => _safeRead(_kAccountId);
   Future<String?> get sessionId => _safeRead(_kSessionId);
+  Future<String?> get email => _safeRead(_kEmail);
+  Future<String?> get phone => _safeRead(_kPhone);
+
+  Future<void> saveIdentifier(String identifierType, String identifier) =>
+      identifierType.toLowerCase() == 'email'
+          ? _write(_kEmail, identifier)
+          : _write(_kPhone, identifier);
 
   Future<DateTime?> get refreshExpiresUtc async {
     final raw = await _safeRead(_kRefreshExpiry);
@@ -73,6 +82,8 @@ class TokenStorage {
         _storage.delete(key: _kRefreshExpiry),
         _storage.delete(key: _kAccountId),
         _storage.delete(key: _kSessionId),
+        _storage.delete(key: _kEmail),
+        _storage.delete(key: _kPhone),
       ]);
 
   Future<void> _write(String key, String? value) =>

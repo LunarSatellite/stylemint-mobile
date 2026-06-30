@@ -78,7 +78,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         loadSuccess: (summary, placeOrderState) {
           final effectiveAddress = _selectedAddress ?? summary.shippingAddress;
           final hasAddress =
-              effectiveAddress.addressLine1.trim().isNotEmpty;
+              effectiveAddress.line1.trim().isNotEmpty;
           final isProcessing = placeOrderState.maybeWhen(
             processing: () => true,
             orElse: () => false,
@@ -261,12 +261,13 @@ class _ShippingAddressCard extends StatelessWidget {
       return _NoAddressCard(onAdd: onAddAddress);
     }
 
-    final addressLine = StringBuffer()..write(address.addressLine1);
-    if (address.addressLine2 != null && address.addressLine2!.isNotEmpty) {
-      addressLine.write(', ${address.addressLine2}');
+    final addressLine = StringBuffer()..write(address.line1);
+    if (address.line2 != null && address.line2!.isNotEmpty) {
+      addressLine.write(', ${address.line2}');
     }
-    addressLine
-        .write(', ${address.city}, ${address.state} ${address.zipCode}');
+    addressLine.write(', ${address.city}');
+    if (address.stateProvince != null) addressLine.write(', ${address.stateProvince}');
+    if (address.postalCode != null) addressLine.write(' ${address.postalCode}');
 
     return GestureDetector(
       onTap: onChangeAddress,
@@ -315,12 +316,6 @@ class _ShippingAddressCard extends StatelessWidget {
                         ),
                       ],
                     ],
-                  ),
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    '${address.fullName} • ${address.phone}',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
                   ),
                   const SizedBox(height: DesignTokens.s4),
                   Text(
@@ -1200,12 +1195,12 @@ class _AddressPickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final line = StringBuffer()..write(address.addressLine1);
-    if (address.addressLine2 != null && address.addressLine2!.isNotEmpty) {
-      line.write(', ${address.addressLine2}');
+    final line = StringBuffer()..write(address.line1);
+    if (address.line2 != null && address.line2!.isNotEmpty) {
+      line.write(', ${address.line2}');
     }
-    line.write(', ${address.city}, ${address.state}');
-    line.write(' - ${address.fullName} (${address.phone})');
+    line.write(', ${address.city}');
+    if (address.stateProvince != null) line.write(', ${address.stateProvince}');
 
     return GestureDetector(
       onTap: onTap,
@@ -1285,8 +1280,6 @@ class _AddAddressSheet extends StatefulWidget {
 }
 
 class _AddAddressSheetState extends State<_AddAddressSheet> {
-  final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _line1Ctrl = TextEditingController();
   final _landmarkCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
@@ -1313,8 +1306,6 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _phoneCtrl.dispose();
     _line1Ctrl.dispose();
     _landmarkCtrl.dispose();
     _zipCtrl.dispose();
@@ -1348,17 +1339,6 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
               ],
             ),
             const SizedBox(height: 24),
-            TextField(
-                controller: _nameCtrl,
-                style: style,
-                decoration: _dec('Your Name')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _phoneCtrl,
-                style: style,
-                keyboardType: TextInputType.phone,
-                decoration: _dec("Receiver's Phone No.")),
-            const SizedBox(height: 12),
             TextField(
                 controller: _line1Ctrl,
                 style: style,

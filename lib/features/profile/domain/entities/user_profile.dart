@@ -11,6 +11,7 @@ class UserProfile {
     required this.dateOfBirth,
     required this.language,
     required this.dateJoined,
+    this.rowVersion = '',
   });
 
   final String id;
@@ -24,6 +25,7 @@ class UserProfile {
   final DateTime? dateOfBirth;
   final String language;
   final DateTime dateJoined;
+  final String rowVersion;
 
   UserProfile copyWith({
     String? id,
@@ -37,6 +39,7 @@ class UserProfile {
     DateTime? dateOfBirth,
     String? language,
     DateTime? dateJoined,
+    String? rowVersion,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class UserProfile {
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       language: language ?? this.language,
       dateJoined: dateJoined ?? this.dateJoined,
+      rowVersion: rowVersion ?? this.rowVersion,
     );
   }
 }

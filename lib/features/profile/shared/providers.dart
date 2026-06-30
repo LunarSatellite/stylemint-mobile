@@ -8,7 +8,6 @@ import 'package:stylemint_mobile_frontend/features/profile/data/datasources/prof
 import 'package:stylemint_mobile_frontend/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/repositories/profile_repository.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/profile/shared/mock_profile_repository.dart';
 
 final profileRemoteDataSourceProvider = Provider<ProfileRemoteDataSource>(
   (ref) => ProfileRemoteDataSource(
@@ -30,14 +29,11 @@ final profileNotifierProvider =
     );
 
 final editProfileNotifierProvider =
-    StateNotifierProvider<EditProfileNotifier, EditProfileState>(
+    StateNotifierProvider.autoDispose<EditProfileNotifier, EditProfileState>(
       (ref) => EditProfileNotifier(ref.watch(profileRepositoryProvider)),
     );
 
-// Using MockProfileRepository for development (static data, no API needed).
-// To restore real network calls replace MockProfileRepository() with:
-//   ref.watch(profileRepositoryProvider)
 final followingNotifierProvider =
     StateNotifierProvider<FollowingNotifier, FollowingState>(
-      (ref) => FollowingNotifier(MockProfileRepository()),
+      (ref) => FollowingNotifier(ref.watch(profileRepositoryProvider)),
     );

@@ -99,15 +99,12 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
   static CheckoutSummary _mockSummary() => CheckoutSummary(
         shippingAddress: const ShippingAddress(
-          id: 'mock-addr-1',
+          id: '',
           label: 'Home',
-          fullName: 'Sailesh Aryal',
-          phone: '+977-9800000000',
-          addressLine1: 'Baneshwor, New Baneshwor',
-          city: 'Kathmandu',
-          state: 'Bagmati',
-          zipCode: '44600',
-          isDefault: true,
+          line1: '',
+          city: '',
+          countryCode: 'NP',
+          isDefault: false,
         ),
         paymentMethod: const PaymentMethod(
           id: 'mock-pm-1',
