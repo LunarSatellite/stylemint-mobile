@@ -92,6 +92,11 @@ class _ProfileSettingsScreenState
               items: [
                 _MenuItem(
                   icon: Icons.workspace_premium_outlined,
+                  iconWidget: Image.asset(
+                    'assets/images/creatordash/crowned.png',
+                    width: 20,
+                    height: 20,
+                  ),
                   label: 'Upgrade Subscription Plan',
                   onTap: () => context.push(
                       RouteNames.creatorUpgradeSubscription),
@@ -109,7 +114,7 @@ class _ProfileSettingsScreenState
                   ),
                 ),
                 _MenuItem(
-                  icon: Icons.verified_outlined,
+                  icon: Icons.local_police_outlined,
                   label: 'Badges',
                   onTap: () => context.push(RouteNames.creatorProfileBadges),
                 ),
@@ -398,9 +403,11 @@ class _MenuItem {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconWidget,
     this.destructive = false,
   });
   final IconData icon;
+  final Widget? iconWidget;
   final String label;
   final VoidCallback onTap;
   final bool destructive;
@@ -451,7 +458,7 @@ class _MenuTile extends StatelessWidget {
             horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
         child: Row(
           children: [
-            Icon(item.icon, size: 20, color: color),
+            item.iconWidget ?? Icon(item.icon, size: 20, color: color),
             const SizedBox(width: DesignTokens.s16),
             Expanded(
               child: Text(

@@ -14,6 +14,7 @@ class CreatorReel {
     required this.likes,
     required this.comments,
     required this.shares,
+    this.sales = 0,
   });
 
   final String id;
@@ -24,6 +25,7 @@ class CreatorReel {
   final int likes;
   final int comments;
   final int shares;
+  final int sales;
 
   CreatorReel copyWith({
     String? id,
@@ -34,6 +36,7 @@ class CreatorReel {
     int? likes,
     int? comments,
     int? shares,
+    int? sales,
   }) {
     return CreatorReel(
       id: id ?? this.id,
@@ -44,6 +47,7 @@ class CreatorReel {
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       shares: shares ?? this.shares,
+      sales: sales ?? this.sales,
     );
   }
 
@@ -57,11 +61,12 @@ class CreatorReel {
       other.views == views &&
       other.likes == likes &&
       other.comments == comments &&
-      other.shares == shares;
+      other.shares == shares &&
+      other.sales == sales;
 
   @override
   int get hashCode =>
-      Object.hash(id, title, thumbnailUrl, publishedAt, views, likes, comments, shares);
+      Object.hash(id, title, thumbnailUrl, publishedAt, views, likes, comments, shares, sales);
 }
 
 /// Mirrors the `GET /v1/creator/analytics/dashboard` payload. Only the fields

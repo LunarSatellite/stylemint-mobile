@@ -607,10 +607,9 @@ class _IconBtn extends StatelessWidget {
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: DesignTokens.borderDefault),
+      decoration: const BoxDecoration(
+        color: Color(0xFF2C2C2E),
+        shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: 18, color: DesignTokens.textLight),
@@ -759,13 +758,23 @@ class _RecommendedCard extends StatelessWidget {
                           color: DesignTokens.secondaryYellow,
                         ),
                         const SizedBox(width: 3),
-                        Text(
-                          '${stars.toStringAsFixed(1)} Stars',
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: DesignTokens.secondaryYellow,
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 12,
+                              color: DesignTokens.textWhite,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: stars.toStringAsFixed(1),
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              const TextSpan(
+                                text: ' Stars',
+                                style: TextStyle(fontWeight: FontWeight.w400),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -779,37 +788,37 @@ class _RecommendedCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: DesignTokens.s8),
+                    Text(
+                      reason,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 13,
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          Text(
-            reason,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 13,
-              color: DesignTokens.textLight,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
           const _DashedDivider(),
           const SizedBox(height: DesignTokens.s12),
           _MetricRow(
-            icon: Icons.monetization_on_outlined,
+            iconWidget: Image.asset('assets/images/creatordash/material-symbols_money-bag-outline-rounded.png', width: 15, height: 15, color: DesignTokens.textMuted),
             label: 'Commission Range',
             trailing: _CommissionChip(commission),
           ),
           const SizedBox(height: DesignTokens.s8),
           _MetricRow(
-            icon: Icons.inventory_2_outlined,
+            iconWidget: Image.asset('assets/images/creatordash/material-symbols_package-2-outline.png', width: 15, height: 15, color: DesignTokens.textMuted),
             label: 'Products',
             trailingText: products,
           ),
           const SizedBox(height: DesignTokens.s8),
           _MetricRow(
-            icon: Icons.people_outline_rounded,
+            iconWidget: Image.asset('assets/images/creatordash/video-camera-front-outline-rounded.png', width: 15, height: 15, color: DesignTokens.textMuted),
             label: 'Creators',
             trailingText: creators,
           ),
@@ -821,13 +830,15 @@ class _RecommendedCard extends StatelessWidget {
 
 class _MetricRow extends StatelessWidget {
   const _MetricRow({
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.label,
     this.trailing,
     this.trailingText,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
   final Widget? trailing;
   final String? trailingText;
@@ -836,7 +847,7 @@ class _MetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 15, color: DesignTokens.textMuted),
+        iconWidget ?? Icon(icon!, size: 15, color: DesignTokens.textMuted),
         const SizedBox(width: 6),
         Text(
           label,
@@ -872,9 +883,8 @@ class _CommissionChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: DesignTokens.primaryGreenLight,
+        color: const Color(0xFF87CEEB),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: DesignTokens.primaryGreen, width: 0.8),
       ),
       child: Text(
         label,
@@ -882,7 +892,7 @@ class _CommissionChip extends StatelessWidget {
           fontFamily: DesignTokens.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: DesignTokens.primaryGreen,
+          color: Color(0xFF0D1B4B),
         ),
       ),
     );
@@ -896,9 +906,9 @@ class _DashedDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 1,
-      child: CustomPaint(painter: _DashedPainter()),
+    return CustomPaint(
+      painter: _DashedPainter(),
+      child: const SizedBox(height: 1, width: double.infinity),
     );
   }
 }
@@ -907,7 +917,7 @@ class _DashedPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = DesignTokens.borderDefault
+      ..color = const Color(0xFF6B6B6B)
       ..strokeWidth = 1;
     double x = 0;
     const dash = 6.0;
@@ -1030,13 +1040,23 @@ class _BrandRow extends StatelessWidget {
                       color: DesignTokens.secondaryYellow,
                     ),
                     const SizedBox(width: 3),
-                    Text(
-                      '${stars.toStringAsFixed(1)} Stars',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: DesignTokens.secondaryYellow,
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 12,
+                          color: DesignTokens.textWhite,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: stars.toStringAsFixed(1),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const TextSpan(
+                            text: ' Stars',
+                            style: TextStyle(fontWeight: FontWeight.w400),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1057,7 +1077,7 @@ class _BrandRow extends StatelessWidget {
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: DesignTokens.primaryGreen,
+                    color: Color(0xFF4A90D9),
                   ),
                 ),
               ],
@@ -1097,14 +1117,14 @@ class _NikeLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.black,
+        color: Colors.white,
         shape: BoxShape.circle,
       ),
       child: const Center(
         child: Text(
           '✓',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black,
             fontSize: 22,
             fontWeight: FontWeight.w900,
           ),
@@ -1121,19 +1141,16 @@ class _SephoraLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0A),
+        color: Colors.white,
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2.5),
-          ),
-          child: const Center(
-            child: CircleAvatar(radius: 4, backgroundColor: Colors.white),
+      child: const Center(
+        child: Text(
+          'S',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -1165,7 +1182,7 @@ class _BrandsBottomNav extends StatelessWidget {
             onTap: () => context.go(RouteNames.creatorHome),
           ),
           _NavBtn(
-            icon: Icons.bar_chart_rounded,
+            iconWidget: Image.asset('assets/images/creatordash/Analytics_icon.png', width: 22, height: 22),
             label: 'Analytics',
             onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
@@ -1187,13 +1204,13 @@ class _BrandsBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            icon: Icons.storefront_outlined,
+            iconWidget: Image.asset('assets/images/creatordash/open_brand_icon.png', width: 22, height: 22),
             label: 'Brands',
             active: true,
             onTap: null,
           ),
           _NavBtn(
-            icon: Icons.person_outline_rounded,
+            icon: Icons.person_rounded,
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
@@ -1212,13 +1229,15 @@ class _BrandsBottomNav extends StatelessWidget {
 
 class _NavBtn extends StatelessWidget {
   const _NavBtn({
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.label,
     required this.onTap,
     this.active = false,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
   final VoidCallback? onTap;
   final bool active;
@@ -1235,7 +1254,7 @@ class _NavBtn extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            iconWidget ?? Icon(icon!, size: 22, color: color),
             const SizedBox(height: 3),
             Text(
               label,

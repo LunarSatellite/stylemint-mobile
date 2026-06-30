@@ -100,7 +100,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   }
 
   static const _tagEmojis = [
-    '🚀', '🏃', '🎯', '⚡', '📱', '⚽', '💪', '🍕',
+    '🚀', '👟', '🎯', '⚡', '📱', '⚽', '💪', '🍕',
     '🌟', '🔥', '🏆', '✨',
   ];
 
@@ -315,7 +315,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   Widget _achievementChips(CreatorProfileEditData profileData) {
     if (profileData.tags.isEmpty) return const SizedBox.shrink();
-    const emojis = ['🏆', '🏃', '🌟', '🎯', '💪', '🔥'];
+    const emojis = ['🚀', '👟', '🌟', '🎯', '💪', '🔥'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -342,11 +342,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         children: [
-          const _PartnerChip(
-              color: Color(0xFFCC0000), label: 'Nike Creator', initial: 'N'),
+          const _PartnerChip(emoji: '🎯', label: 'Nike Creator'),
           const SizedBox(width: DesignTokens.s8),
-          const _PartnerChip(
-              color: Color(0xFF1565C0), label: 'FastPaced', initial: 'F'),
+          const _PartnerChip(emoji: '⚡', label: 'FastPaced'),
           const SizedBox(width: DesignTokens.s8),
           GestureDetector(
             onTap: () => _showTagsSheet(profileData.tags),
@@ -666,7 +664,7 @@ class _AchievementChip extends StatelessWidget {
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 12,
-                color: DesignTokens.textLight,
+                color: DesignTokens.textMuted,
               ),
             ),
           ],
@@ -677,46 +675,30 @@ class _AchievementChip extends StatelessWidget {
 }
 
 class _PartnerChip extends StatelessWidget {
-  const _PartnerChip(
-      {required this.color, required this.label, required this.initial});
-  final Color color;
+  const _PartnerChip({required this.emoji, required this.label});
+  final String emoji;
   final String label;
-  final String initial;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: DesignTokens.borderDefault),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                fontFamily: DesignTokens.fontFamily,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 12,
-              color: color.withValues(alpha: 0.9),
+              color: DesignTokens.textMuted,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -775,10 +757,10 @@ class _SocialIcon extends StatelessWidget {
           width: 70,
           height: 70,
           decoration: const BoxDecoration(
-            color: DesignTokens.bgAppFoundation,
+            color: DesignTokens.bgAppBodyLight,
             shape: BoxShape.circle,
           ),
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(18),
           child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
         ),
         Positioned(
@@ -1179,6 +1161,11 @@ class _BottomNav extends StatelessWidget {
           ),
           _NavBtn(
             icon: Icons.auto_graph_rounded,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/Analytics_icon.png',
+              width: 22,
+              height: 22,
+            ),
             label: 'Analytics',
             onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
@@ -1204,10 +1191,12 @@ class _NavBtn extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconWidget,
     this.active = false,
   });
 
   final IconData icon;
+  final Widget? iconWidget;
   final String label;
   final VoidCallback? onTap;
   final bool active;
@@ -1224,7 +1213,7 @@ class _NavBtn extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            iconWidget ?? Icon(icon, size: 22, color: color),
             const SizedBox(height: 2),
             Text(
               label,

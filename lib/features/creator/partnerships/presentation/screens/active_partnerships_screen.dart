@@ -1051,14 +1051,14 @@ class _NikeLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.black,
+        color: Colors.white,
         shape: BoxShape.circle,
       ),
       child: const Center(
         child: Text(
           '✓',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.black,
             fontSize: 22,
             fontWeight: FontWeight.w900,
           ),

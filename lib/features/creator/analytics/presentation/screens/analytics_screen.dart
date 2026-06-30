@@ -119,20 +119,20 @@ class _PerformanceOverview extends StatelessWidget {
         Row(
           children: [
             Expanded(child: _SmallMetricCard(
-              cardBg: const Color(0xFF2D1A5E),
-              iconBg: const Color(0xFF3D2870),
+              cardBg: const Color(0xFF7C3AED),
+              iconBg: const Color(0xFF5B21B6),
               icon: Icons.shopping_bag_outlined,
-              iconColor: const Color(0xFFAB8FF5),
+              iconColor: Colors.white,
               label: 'Total Sales',
               value: '109',
               delta: '+36%',
             )),
             const SizedBox(width: DesignTokens.s12),
             Expanded(child: _SmallMetricCard(
-              cardBg: const Color(0xFF0D2D3A),
-              iconBg: const Color(0xFF1A3D4A),
-              icon: Icons.sync_rounded,
-              iconColor: const Color(0xFF4DA6FF),
+              cardBg: const Color(0xFF0891B2),
+              iconBg: const Color(0xFF0E7490),
+              icon: Icons.currency_exchange,
+              iconColor: Colors.white,
               label: 'Conversion Rate',
               value: '3.2%',
               delta: '+25%',
@@ -154,7 +154,9 @@ class _EarningsCard extends StatelessWidget {
     return Container(
       height: 90,
       clipBehavior: Clip.antiAlias,
-      decoration: DesignTokens.cardDecoration(),
+      decoration: DesignTokens.cardDecoration().copyWith(
+        border: Border.all(color: DesignTokens.borderDefault, width: 1),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -240,14 +242,14 @@ class _SmallMetricCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: iconBg,
-                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon, color: iconColor, size: 18),
+                child: Icon(icon, color: iconColor, size: 28),
               ),
               const SizedBox(width: DesignTokens.s8),
               _DeltaBadge(delta: delta),
@@ -329,8 +331,8 @@ class _TotalViewsCard extends StatelessWidget {
           ),
           Image.asset(
             'assets/images/creatordash/hands.png',
-            width: 90,
-            height: 90,
+            width: 130,
+            height: 130,
             fit: BoxFit.contain,
             alignment: Alignment.bottomCenter,
           ),
@@ -941,12 +943,12 @@ class _AnalyticsBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            iconWidget: const Icon(Icons.storefront_outlined, size: 22, color: DesignTokens.textMuted),
+            iconWidget: Image.asset('assets/images/creatordash/Brand_Icon.png', width: 22, height: 22),
             label: 'Brands',
             onTap: () => context.push(RouteNames.partnerships),
           ),
           _NavBtn(
-            iconWidget: const Icon(Icons.person_outline_rounded, size: 22, color: DesignTokens.textMuted),
+            iconWidget: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
