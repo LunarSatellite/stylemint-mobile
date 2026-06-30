@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/domain/entities/creator_performance.dart';
+
 /// `VendorCreatorPerformanceDto` from `GET /v1/vendor/creator-performance` —
 /// real per-creator sales/earnings of the vendor's products over a window.
 ///
@@ -51,4 +53,16 @@ class CreatorPerformanceDto {
       creatorAvatarUrl: json['creatorAvatarUrl'] as String?,
     );
   }
+
+  CreatorPerformance toDomain() => CreatorPerformance(
+        creatorAccountId: creatorAccountId,
+        unitsSold: unitsSold,
+        attributedRevenue: attributedRevenue,
+        commissionPaid: commissionPaid,
+        currency: currency,
+        distinctReelCount: distinctReelCount,
+        creatorHandle: creatorHandle,
+        creatorDisplayName: creatorDisplayName,
+        creatorAvatarUrl: creatorAvatarUrl,
+      );
 }

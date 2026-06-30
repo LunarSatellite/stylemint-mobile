@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
+
 /// `ProductInquiryDto` from `/v1/product-inquiries/vendor`.
 /// State enum (int): Open=1, Replied=2, Expired=3.
 enum ProductInquiryState {
@@ -45,4 +47,18 @@ class ProductInquiryDto {
       repliedUtc: DateTime.tryParse(json['repliedUtc'] as String? ?? ''),
     );
   }
+
+  ProductInquiry toDomain() => ProductInquiry(
+        id: id,
+        question: question,
+        status: switch (state) {
+          ProductInquiryState.open => InquiryStatus.open,
+          ProductInquiryState.replied => InquiryStatus.replied,
+          ProductInquiryState.expired => InquiryStatus.expired,
+        },
+        openedAt: openedUtc,
+        responseDeadlineAt: responseDeadlineUtc,
+        reply: reply,
+        repliedAt: repliedUtc,
+      );
 }
