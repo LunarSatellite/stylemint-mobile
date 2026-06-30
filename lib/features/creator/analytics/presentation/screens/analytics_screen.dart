@@ -3,42 +3,45 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/creator_dashboard.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/earnings_trend_point.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/kpi_tile.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_product_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_dashboard_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_overview_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class AnalyticsScreen extends StatelessWidget {
+class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(creatorDashboardNotifierProvider);
+    final avatarPath = ref.watch(avatarImagePathProvider);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       bottomNavigationBar: const _AnalyticsBottomNav(),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
+            _buildHeader(context, avatarPath),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16,
-                  DesignTokens.s8,
-                  DesignTokens.s16,
-                  DesignTokens.s32,
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PerformanceOverview(),
-                    SizedBox(height: DesignTokens.s24),
-                    _TopReelsSection(),
-                    SizedBox(height: DesignTokens.s24),
-                    _EarningTrendSection(),
-                    SizedBox(height: DesignTokens.s24),
-                    _TopProductsSection(),
-                  ],
+              child: state.when(
+                initial: () => const _LoadingView(),
+                loadInProgress: () => const _LoadingView(),
+                loadSuccess: (dashboard) =>
+                    _DashboardBody(dashboard: dashboard),
+                loadFailure: (_) => _ErrorView(
+                  onRetry: () => ref
+                      .read(creatorDashboardNotifierProvider.notifier)
+                      .fetch(),
                 ),
               ),
             ),
@@ -48,7 +51,7 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, String? avatarPath) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s16,
@@ -56,34 +59,105 @@ class AnalyticsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Consumer(
-            builder: (_, ref, __) {
-              final path = ref.watch(avatarImagePathProvider);
-              return ClipOval(
-                child: SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: path != null
-                      ? Image.file(File(path), fit: BoxFit.cover)
-                      : Container(
-                          color: DesignTokens.bgAppBodyLight,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.person_rounded,
-                              size: 20, color: DesignTokens.textMuted),
-                        ),
-                ),
-              );
-            },
+          ClipOval(
+            child: SizedBox(
+              width: 36,
+              height: 36,
+              child: avatarPath != null
+                  ? Image.file(File(avatarPath), fit: BoxFit.cover)
+                  : Container(
+                      color: DesignTokens.bgAppBodyLight,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.person_rounded,
+                          size: 20, color: DesignTokens.textMuted),
+                    ),
+            ),
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.search_rounded, color: DesignTokens.textWhite),
+            icon: const Icon(Icons.search_rounded,
+                color: DesignTokens.textWhite),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: DesignTokens.textWhite),
+            icon: const Icon(Icons.notifications_none_rounded,
+                color: DesignTokens.textWhite),
             onPressed: () {},
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Loading / error states ────────────────────────────────────────────────────
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor:
+            AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Failed to load analytics.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          ElevatedButton(
+            onPressed: onRetry,
+            style: DesignTokens.primaryButtonStyle(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Dashboard body ────────────────────────────────────────────────────────────
+
+class _DashboardBody extends StatelessWidget {
+  const _DashboardBody({required this.dashboard});
+  final CreatorDashboard dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s8,
+        DesignTokens.s16,
+        DesignTokens.s32,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PerformanceOverview(dashboard: dashboard),
+          const SizedBox(height: DesignTokens.s24),
+          _TopReelsSection(topReels: dashboard.topReels),
+          const SizedBox(height: DesignTokens.s24),
+          const _EarningTrendSection(),
+          const SizedBox(height: DesignTokens.s24),
+          _TopProductsSection(topProducts: dashboard.topProducts),
         ],
       ),
     );
@@ -93,7 +167,8 @@ class AnalyticsScreen extends StatelessWidget {
 // ── Performance Overview ──────────────────────────────────────────────────────
 
 class _PerformanceOverview extends StatelessWidget {
-  const _PerformanceOverview();
+  const _PerformanceOverview({required this.dashboard});
+  final CreatorDashboard dashboard;
 
   @override
   Widget build(BuildContext context) {
@@ -110,47 +185,50 @@ class _PerformanceOverview extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-
-        // Total Earnings — full width
-        _EarningsCard(),
+        _EarningsCard(tile: dashboard.totalEarnings),
         const SizedBox(height: DesignTokens.s12),
-
-        // Sales + Conversion — side by side
         Row(
           children: [
-            Expanded(child: _SmallMetricCard(
-              cardBg: const Color(0xFF7C3AED),
-              iconBg: const Color(0xFF5B21B6),
-              icon: Icons.shopping_bag_outlined,
-              iconColor: Colors.white,
-              label: 'Total Sales',
-              value: '109',
-              delta: '+36%',
-            )),
+            Expanded(
+              child: _SmallMetricCard(
+                cardBg: const Color(0xFF7C3AED),
+                iconBg: const Color(0xFF5B21B6),
+                icon: Icons.shopping_bag_outlined,
+                iconColor: Colors.white,
+                label: 'Total Sales',
+                value: _formatCount(dashboard.totalSales.current),
+                delta: _formatDelta(dashboard.totalSales.deltaPercent),
+              ),
+            ),
             const SizedBox(width: DesignTokens.s12),
-            Expanded(child: _SmallMetricCard(
-              cardBg: const Color(0xFF0891B2),
-              iconBg: const Color(0xFF0E7490),
-              icon: Icons.currency_exchange,
-              iconColor: Colors.white,
-              label: 'Conversion Rate',
-              value: '3.2%',
-              delta: '+25%',
-            )),
+            Expanded(
+              child: _SmallMetricCard(
+                cardBg: const Color(0xFF0891B2),
+                iconBg: const Color(0xFF0E7490),
+                icon: Icons.currency_exchange,
+                iconColor: Colors.white,
+                label: 'Conversion Rate',
+                value:
+                    '${dashboard.conversionRate.current.toStringAsFixed(1)}%',
+                delta: _formatDelta(dashboard.conversionRate.deltaPercent),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-
-        // Total Views — full width
-        _TotalViewsCard(),
+        _TotalViewsCard(tile: dashboard.totalViews),
       ],
     );
   }
 }
 
 class _EarningsCard extends StatelessWidget {
+  const _EarningsCard({required this.tile});
+  final KpiTile<Money> tile;
+
   @override
   Widget build(BuildContext context) {
+    final delta = _formatDelta(tile.deltaPercent);
     return Container(
       height: 90,
       clipBehavior: Clip.antiAlias,
@@ -177,17 +255,19 @@ class _EarningsCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Rs. 52,625',
-                        style: TextStyle(
+                      Text(
+                        _formatMoney(tile.current),
+                        style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: DesignTokens.textWhite,
                         ),
                       ),
-                      const SizedBox(width: DesignTokens.s8),
-                      _DeltaBadge(delta: '+25%'),
+                      if (delta.isNotEmpty) ...[
+                        const SizedBox(width: DesignTokens.s8),
+                        _DeltaBadge(delta: delta),
+                      ],
                     ],
                   ),
                 ],
@@ -252,7 +332,7 @@ class _SmallMetricCard extends StatelessWidget {
                 child: Icon(icon, color: iconColor, size: 28),
               ),
               const SizedBox(width: DesignTokens.s8),
-              _DeltaBadge(delta: delta),
+              if (delta.isNotEmpty) _DeltaBadge(delta: delta),
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
@@ -279,8 +359,12 @@ class _SmallMetricCard extends StatelessWidget {
 }
 
 class _TotalViewsCard extends StatelessWidget {
+  const _TotalViewsCard({required this.tile});
+  final KpiTile<int> tile;
+
   @override
   Widget build(BuildContext context) {
+    final delta = _formatDelta(tile.deltaPercent);
     return Container(
       height: 90,
       clipBehavior: Clip.antiAlias,
@@ -312,17 +396,19 @@ class _TotalViewsCard extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
-                        '33,981',
-                        style: TextStyle(
+                      Text(
+                        _formatCount(tile.current),
+                        style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: DesignTokens.textWhite,
                         ),
                       ),
-                      const SizedBox(width: DesignTokens.s8),
-                      _DeltaBadge(delta: '+14%', onGreen: true),
+                      if (delta.isNotEmpty) ...[
+                        const SizedBox(width: DesignTokens.s8),
+                        _DeltaBadge(delta: delta, onGreen: true),
+                      ],
                     ],
                   ),
                 ],
@@ -350,6 +436,7 @@ class _DeltaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (delta.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s8,
@@ -376,7 +463,8 @@ class _DeltaBadge extends StatelessWidget {
 // ── Top Performing Reels ──────────────────────────────────────────────────────
 
 class _TopReelsSection extends StatelessWidget {
-  const _TopReelsSection();
+  const _TopReelsSection({required this.topReels});
+  final List<TopReelSummary> topReels;
 
   @override
   Widget build(BuildContext context) {
@@ -393,46 +481,37 @@ class _TopReelsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-        _TopReelCard(
-          title: 'Mheecha: The Bag that Matches Your Aesthetics',
-          postedAt: '7 Aug. 2025 09:57 PM',
-          stats: const [
-            (Icons.play_circle_outline_rounded, '25.76k'),
-            (Icons.favorite_rounded, '23.8k'),
-            (Icons.visibility_outlined, '465k'),
-            (Icons.bookmark_border_rounded, '1.8k'),
-            (Icons.share_outlined, '13.67k'),
-            (Icons.chat_bubble_outline_rounded, '976'),
-          ],
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        _TopReelCard(
-          title: 'Nike Structure 26 – Be the Trail Blazzer Runner',
-          postedAt: '7 Aug. 2025 09:57 PM',
-          stats: const [
-            (Icons.play_circle_outline_rounded, '800.25'),
-            (Icons.favorite_rounded, '23.8k'),
-            (Icons.visibility_outlined, '465k'),
-            (Icons.bookmark_border_rounded, '1.8k'),
-            (Icons.share_outlined, '13.67k'),
-            (Icons.chat_bubble_outline_rounded, '976'),
-          ],
-        ),
+        if (topReels.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  vertical: DesignTokens.s16),
+              child: Text(
+                'No reel data available.',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted),
+              ),
+            ),
+          )
+        else
+          ...topReels.asMap().entries.map(
+                (e) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: e.key < topReels.length - 1
+                        ? DesignTokens.s12
+                        : 0,
+                  ),
+                  child: _TopReelCard(reel: e.value),
+                ),
+              ),
       ],
     );
   }
 }
 
 class _TopReelCard extends StatefulWidget {
-  const _TopReelCard({
-    required this.title,
-    required this.postedAt,
-    required this.stats,
-  });
-
-  final String title;
-  final String postedAt;
-  final List<(IconData, String)> stats;
+  const _TopReelCard({required this.reel});
+  final TopReelSummary reel;
 
   static void _openDetail(BuildContext context) =>
       context.push(RouteNames.creatorReelAnalyticsDetail);
@@ -446,6 +525,16 @@ class _TopReelCardState extends State<_TopReelCard> {
 
   @override
   Widget build(BuildContext context) {
+    final reel = widget.reel;
+    final stats = [
+      (Icons.play_circle_outline_rounded, _formatCount(reel.views)),
+      (Icons.favorite_rounded, _formatCount(reel.likes)),
+      (Icons.visibility_outlined, _formatCount(reel.impressions)),
+      (Icons.share_outlined, _formatCount(reel.shares)),
+      (Icons.chat_bubble_outline_rounded, _formatCount(reel.comments)),
+      (Icons.shopping_bag_outlined, reel.sales.toString()),
+    ];
+
     return Container(
       decoration: DesignTokens.cardDecoration(),
       padding: const EdgeInsets.all(DesignTokens.s12),
@@ -455,20 +544,18 @@ class _TopReelCardState extends State<_TopReelCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Thumbnail
               ClipRRect(
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  color: DesignTokens.bgAppBodyLight,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.play_circle_outline_rounded,
-                    color: DesignTokens.textMuted,
-                    size: 28,
-                  ),
-                ),
+                child: reel.thumbnailUrl.isNotEmpty
+                    ? Image.network(
+                        reel.thumbnailUrl,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const _PlaceholderThumb(),
+                      )
+                    : const _PlaceholderThumb(),
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
@@ -476,7 +563,7 @@ class _TopReelCardState extends State<_TopReelCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.title,
+                      reel.title.isNotEmpty ? reel.title : 'Untitled Reel',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -489,7 +576,7 @@ class _TopReelCardState extends State<_TopReelCard> {
                     ),
                     const SizedBox(height: DesignTokens.s4),
                     Text(
-                      'Posted on: ${widget.postedAt}',
+                      'Posted on: ${_formatPostedAt(reel.publishedAtUtc)}',
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textMuted,
                         fontSize: 11,
@@ -514,7 +601,9 @@ class _TopReelCardState extends State<_TopReelCard> {
             const SizedBox(height: DesignTokens.s12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: widget.stats.map((s) => _StatItem(icon: s.$1, value: s.$2)).toList(),
+              children: stats
+                  .map((s) => _StatItem(icon: s.$1, value: s.$2))
+                  .toList(),
             ),
           ],
           const SizedBox(height: DesignTokens.s8),
@@ -531,6 +620,25 @@ class _TopReelCardState extends State<_TopReelCard> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PlaceholderThumb extends StatelessWidget {
+  const _PlaceholderThumb();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      color: DesignTokens.bgAppBodyLight,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.play_circle_outline_rounded,
+        color: DesignTokens.textMuted,
+        size: 28,
       ),
     );
   }
@@ -562,11 +670,13 @@ class _StatItem extends StatelessWidget {
 
 // ── Earning Trend ─────────────────────────────────────────────────────────────
 
-class _EarningTrendSection extends StatelessWidget {
+class _EarningTrendSection extends ConsumerWidget {
   const _EarningTrendSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overviewState = ref.watch(creatorOverviewNotifierProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -590,9 +700,29 @@ class _EarningTrendSection extends StatelessWidget {
           ),
           child: SizedBox(
             height: 200,
-            child: CustomPaint(
-              painter: _TrendChartPainter(),
-              size: Size.infinite,
+            child: overviewState.when(
+              initial: () => const _ChartLoadingPlaceholder(),
+              loadInProgress: () => const _ChartLoadingPlaceholder(),
+              loadFailure: (_) => Center(
+                child: Text(
+                  'Could not load trend data.',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.textMuted),
+                ),
+              ),
+              loadSuccess: (overview) => overview.earningsTrend.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No trend data available.',
+                        style: DesignTokens.smallRegular
+                            .copyWith(color: DesignTokens.textMuted),
+                      ),
+                    )
+                  : CustomPaint(
+                      painter:
+                          _TrendChartPainter(overview.earningsTrend),
+                      size: Size.infinite,
+                    ),
             ),
           ),
         ),
@@ -601,46 +731,74 @@ class _EarningTrendSection extends StatelessWidget {
   }
 }
 
+class _ChartLoadingPlaceholder extends StatelessWidget {
+  const _ChartLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor:
+            AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
+        strokeWidth: 2,
+      ),
+    );
+  }
+}
+
 class _TrendChartPainter extends CustomPainter {
-  static const _data = [4200.0, 8800.0, 16500.0, 11000.0, 20000.0, 24500.0];
-  static const _maxValue = 25000.0;
+  const _TrendChartPainter(this.points);
+
+  final List<EarningsTrendPoint> points;
+
   static const _leftPad = 36.0;
   static const _bottomPad = 22.0;
-  static const _xLabels = ['Dec 1', 'Dec 7', 'Dec 14', 'Dec 21', 'Dec 28', 'Today'];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final chartL = _leftPad;
+    final amounts = points.map((p) => p.amount.amount).toList();
+    if (amounts.isEmpty) return;
+
+    final rawMax = amounts.reduce((a, b) => a > b ? a : b);
+    final maxValue = rawMax > 0 ? rawMax * 1.1 : 1;
+
+    const chartL = _leftPad;
     final chartW = size.width - chartL;
     final chartB = size.height - _bottomPad;
     final chartH = chartB;
 
-    // Grid lines
     final gridPaint = Paint()
       ..color = const Color(0x1AFFFFFF)
       ..strokeWidth = 1;
-    for (int i = 0; i <= 5; i++) {
+    for (var i = 0; i <= 5; i++) {
       final y = chartB - i / 5 * chartH;
       canvas.drawLine(Offset(chartL, y), Offset(size.width, y), gridPaint);
     }
 
-    // Y-axis labels
-    for (int i = 0; i <= 5; i++) {
+    for (var i = 0; i <= 5; i++) {
       final y = chartB - i / 5 * chartH;
-      final label = i == 0 ? '0' : '${i * 5}k';
-      _paintText(canvas, label, Offset(0, y - 6), _leftPad - 2, TextAlign.right);
+      final tickValue = maxValue * i / 5;
+      final label = tickValue == 0
+          ? '0'
+          : tickValue >= 1000000
+              ? '${(tickValue / 1000000).toStringAsFixed(1)}M'
+              : tickValue >= 1000
+                  ? '${(tickValue / 1000).toStringAsFixed(0)}k'
+                  : tickValue.toStringAsFixed(0);
+      _paintText(
+          canvas, label, Offset(0, y - 6), _leftPad - 2, TextAlign.right);
     }
 
-    // Convert data to canvas points
+    if (amounts.length < 2) return;
+
     final pts = <Offset>[];
-    for (int i = 0; i < _data.length; i++) {
+    for (var i = 0; i < amounts.length; i++) {
       pts.add(Offset(
-        chartL + i / (_data.length - 1) * chartW,
-        chartB - _data[i] / _maxValue * chartH,
+        chartL + i / (amounts.length - 1) * chartW,
+        chartB - amounts[i] / maxValue * chartH,
       ));
     }
 
-    // Area path (bezier)
     final areaPath = Path()..moveTo(pts.first.dx, chartB);
     _addBezier(areaPath, pts);
     areaPath
@@ -661,7 +819,6 @@ class _TrendChartPainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Line path (bezier)
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
     _addBezier(linePath, pts);
 
@@ -675,11 +832,11 @@ class _TrendChartPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // X-axis labels
-    for (int i = 0; i < pts.length; i++) {
+    final labelIdxs = _labelIndices(points.length);
+    for (final i in labelIdxs) {
       _paintText(
         canvas,
-        _xLabels[i],
+        _formatAxisDate(points[i].date),
         Offset(pts[i].dx - 22, chartB + 5),
         44,
         TextAlign.center,
@@ -687,10 +844,25 @@ class _TrendChartPainter extends CustomPainter {
     }
   }
 
+  List<int> _labelIndices(int count) {
+    if (count <= 6) return List.generate(count, (i) => i);
+    final step = (count - 1) / 5;
+    return List.generate(6, (i) => (i * step).round());
+  }
+
+  String _formatAxisDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}';
+  }
+
   void _addBezier(Path path, List<Offset> pts) {
-    for (int i = 1; i < pts.length; i++) {
+    for (var i = 1; i < pts.length; i++) {
       final cpX = (pts[i - 1].dx + pts[i].dx) / 2;
-      path.cubicTo(cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
+      path.cubicTo(
+          cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
     }
   }
 
@@ -717,13 +889,22 @@ class _TrendChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(_TrendChartPainter oldDelegate) =>
+      oldDelegate.points != points;
 }
 
 // ── Top Products ──────────────────────────────────────────────────────────────
 
 class _TopProductsSection extends StatelessWidget {
-  const _TopProductsSection();
+  const _TopProductsSection({required this.topProducts});
+  final List<TopProductSummary> topProducts;
+
+  static const _accentColors = [
+    Color(0xFFE74C3C),
+    Color(0xFF3498DB),
+    Color(0xFF2ECC71),
+    Color(0xFFF39C12),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -740,31 +921,43 @@ class _TopProductsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-        const _TopProductItem(
-          name: 'Nike Air Max 2025',
-          totalSales: 45,
-          commission: 'Rs 17,789',
-          rate: '15%',
-          average: 'Rs 860/sale',
-          accentColor: Color(0xFFE74C3C),
-          icon: Icons.sports_outlined,
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        const _TopProductItem(
-          name: 'Raspberry Velvet Cake',
-          totalSales: 66,
-          commission: 'Rs 33,000',
-          rate: '48%',
-          accentColor: Color(0xFFE74C3C),
-          icon: Icons.cake_outlined,
-        ),
-        const SizedBox(height: DesignTokens.s16),
+        if (topProducts.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Center(
+              child: Text(
+                'No product data available.',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted),
+              ),
+            ),
+          )
+        else
+          ...topProducts.asMap().entries.map((e) {
+            final product = e.value;
+            final accent = _accentColors[e.key % _accentColors.length];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+              child: _TopProductItem(
+                name: product.name.isNotEmpty ? product.name : 'Product',
+                totalSales: product.totalSales,
+                commission: _formatMoney(product.totalCommission),
+                rate:
+                    '${product.commissionRatePercent.toStringAsFixed(1)}%',
+                average: _formatMoney(product.avgCommissionPerSale),
+                accentColor: accent,
+                icon: Icons.inventory_2_outlined,
+              ),
+            );
+          }),
+        const SizedBox(height: DesignTokens.s4),
         SizedBox(
           width: double.infinity,
           height: DesignTokens.buttonHeight,
           child: Builder(
             builder: (ctx) => ElevatedButton(
-              onPressed: () => ctx.push(RouteNames.creatorFullAnalyticsReport),
+              onPressed: () =>
+                  ctx.push(RouteNames.creatorFullAnalyticsReport),
               style: DesignTokens.primaryButtonStyle(),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -809,7 +1002,6 @@ class _TopProductItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
           Container(
             width: 48,
             height: 48,
@@ -821,7 +1013,6 @@ class _TopProductItem extends StatelessWidget {
             child: Icon(icon, color: accentColor, size: 24),
           ),
           const SizedBox(width: DesignTokens.s12),
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,7 +1034,8 @@ class _TopProductItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
-                const Divider(color: DesignTokens.borderDefault, height: 1),
+                const Divider(
+                    color: DesignTokens.borderDefault, height: 1),
                 const SizedBox(height: DesignTokens.s8),
                 _InfoRow(label: 'Total Commission', value: commission),
                 const SizedBox(height: DesignTokens.s4),
@@ -905,13 +1097,15 @@ class _AnalyticsBottomNav extends StatelessWidget {
       height: 68,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
-        border: Border(top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+        border: Border(
+            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
-            iconWidget: const Icon(Icons.home_rounded, size: 22, color: DesignTokens.textMuted),
+            iconWidget: const Icon(Icons.home_rounded,
+                size: 22, color: DesignTokens.textMuted),
             label: 'Home',
             onTap: () => context.go(RouteNames.creatorHome),
           ),
@@ -943,15 +1137,20 @@ class _AnalyticsBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            iconWidget: Image.asset('assets/images/creatordash/Brand_Icon.png', width: 22, height: 22),
+            iconWidget: Image.asset(
+                'assets/images/creatordash/Brand_Icon.png',
+                width: 22,
+                height: 22),
             label: 'Brands',
             onTap: () => context.push(RouteNames.partnerships),
           ),
           _NavBtn(
-            iconWidget: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
+            iconWidget: const Icon(Icons.person_rounded,
+                size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
-              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
+              RouteNames.creatorProfile
+                  .replaceFirst(':accountId', 'me'),
               extra: const CreatorProfileArgs(
                 accountId: 'me',
                 displayName: 'Danny Perierra',
@@ -980,7 +1179,8 @@ class _NavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
+    final color =
+        active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1006,4 +1206,42 @@ class _NavBtn extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+
+String _formatMoney(Money money) {
+  final amount = money.amount;
+  final isWhole = amount == amount.truncateToDouble();
+  final raw =
+      isWhole ? amount.toInt().toString() : amount.toStringAsFixed(2);
+  final parts = raw.split('.');
+  final intPart = parts[0].replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+$)'),
+    (m) => '${m[1]},',
+  );
+  return parts.length > 1 ? 'Rs. $intPart.${parts[1]}' : 'Rs. $intPart';
+}
+
+String _formatDelta(double? delta) {
+  if (delta == null) return '';
+  final sign = delta >= 0 ? '+' : '';
+  return '$sign${delta.toStringAsFixed(0)}%';
+}
+
+String _formatCount(int count) {
+  if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+  if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+  return count.toString();
+}
+
+String _formatPostedAt(DateTime dt) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  final min = dt.minute.toString().padLeft(2, '0');
+  final ampm = dt.hour < 12 ? 'AM' : 'PM';
+  return '${dt.day} ${months[dt.month - 1]}. ${dt.year} $hour:$min $ampm';
 }
