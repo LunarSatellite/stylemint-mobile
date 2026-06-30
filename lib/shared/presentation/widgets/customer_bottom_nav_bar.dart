@@ -26,7 +26,7 @@ class CustomerBottomNavBar extends StatelessWidget {
     (icon: Icons.home_rounded, label: 'Home'),
     (icon: Icons.search_rounded, label: 'Discover'),
     (icon: Icons.inventory_2, label: 'Track Order'),
-    (icon: Icons.person_outline_rounded, label: 'Profile'),
+    (icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   @override

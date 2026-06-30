@@ -152,6 +152,22 @@ class _PartnershipRequestScreenState
           children: [
             // Brand mini-card
             _BrandCard(args: args),
+            const SizedBox(height: DesignTokens.s16),
+
+            // Message textarea
+            TextField(
+              controller: _messageCtrl,
+              minLines: 4,
+              maxLines: 6,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.inputFieldData,
+              ),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Why this partnership makes sense',
+              ),
+            ),
             const SizedBox(height: DesignTokens.s24),
 
             // Commission range slider
@@ -194,22 +210,6 @@ class _PartnershipRequestScreenState
                       style: DesignTokens.smallRegular
                           .copyWith(color: DesignTokens.textLight)),
                 ],
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s24),
-
-            // Message textarea
-            TextField(
-              controller: _messageCtrl,
-              minLines: 4,
-              maxLines: 6,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.inputFieldData,
-              ),
-              decoration: DesignTokens.inputDecoration(
-                hintText: 'Why this partnership makes sense',
               ),
             ),
             const SizedBox(height: DesignTokens.s12),

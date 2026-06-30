@@ -90,6 +90,7 @@ abstract class RouteNames {
   static const partnershipApply = '/creator/partnerships/:partnershipId/apply';
   static const activePartnerships = '/creator/partnerships/active';
   static const partnershipRequests = '/creator/partnerships/requests';
+  static const brandMessaging = '/creator/brand-messaging';
   static const brandInfo = '/creator/brand-info';
   static const reach = '/creator/reach';
 

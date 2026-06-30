@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -383,11 +384,24 @@ class _RequestCardState extends State<_RequestCard> {
                             size: 13,
                             color: DesignTokens.secondaryYellow),
                         const SizedBox(width: 3),
-                        Text(
-                          req.rating.toStringAsFixed(1),
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.secondaryYellow,
-                            fontWeight: FontWeight.w600,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: req.rating.toStringAsFixed(1),
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' Stars',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -398,19 +412,30 @@ class _RequestCardState extends State<_RequestCard> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => BrandMessagingScreen(
+                            args: BrandMessagingArgs(
+                              brandName: req.brandName,
+                              rating: req.rating,
+                              category: req.category,
+                            ),
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Message Back',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                          decorationColor: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    ),
                   ],
-                ),
-              ),
-              GestureDetector(
-                onTap: () {},
-                child: Text(
-                  'Message Back',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
-                  ),
                 ),
               ),
             ],
@@ -471,16 +496,31 @@ class _RequestCardState extends State<_RequestCard> {
           // Info rows
           _InfoRow(
             label: 'Proposed Commission',
+            icon: Image.asset(
+              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+              width: 16,
+              height: 16,
+            ),
             trailing: _CommissionChip(req.commission),
           ),
           const SizedBox(height: DesignTokens.s8),
           _InfoRow(
             label: 'Product Category',
+            icon: Image.asset(
+              'assets/images/creatordash/material-symbols_package-2-outline.png',
+              width: 16,
+              height: 16,
+            ),
             trailingText: req.category,
           ),
           const SizedBox(height: DesignTokens.s8),
           _InfoRow(
             label: 'Products',
+            icon: Image.asset(
+              'assets/images/creatordash/video-camera-front-outline-rounded.png',
+              width: 16,
+              height: 16,
+            ),
             trailingText: req.products,
           ),
 
@@ -521,23 +561,45 @@ class _BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lower = name.toLowerCase();
+    final isNike = lower.contains('nike');
+    final isSephora = lower.contains('sephora');
+
     return Container(
       width: 44,
       height: 44,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: DesignTokens.bgAppBodyLight,
+        color: Colors.white,
       ),
       alignment: Alignment.center,
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: DesignTokens.textWhite,
-        ),
-      ),
+      child: isNike
+          ? const Text(
+              '✓',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            )
+          : isSephora
+              ? const Text(
+                  'S',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                  ),
+                )
+              : Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
     );
   }
 }
@@ -545,9 +607,15 @@ class _BrandLogo extends StatelessWidget {
 // ── Info row ──────────────────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, this.trailing, this.trailingText});
+  const _InfoRow({
+    required this.label,
+    this.icon,
+    this.trailing,
+    this.trailingText,
+  });
 
   final String label;
+  final Widget? icon;
   final Widget? trailing;
   final String? trailingText;
 
@@ -555,6 +623,10 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        if (icon != null) ...[
+          icon!,
+          const SizedBox(width: 6),
+        ],
         Text(
           label,
           style: DesignTokens.smallRegular
@@ -586,13 +658,13 @@ class _CommissionChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: DesignTokens.chipsSelectedFill,
+        color: const Color(0xFF87CEEB),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        label,
+        '$label Commissions',
         style: DesignTokens.smallRegular.copyWith(
-          color: DesignTokens.primaryGreen,
+          color: const Color(0xFF0D1B4B),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -632,9 +704,7 @@ class _ActionButton extends StatelessWidget {
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: filled
-                ? DesignTokens.buttonPrimaryText
-                : DesignTokens.textWhite,
+            color: filled ? Colors.black : DesignTokens.textWhite,
           ),
         ),
       ),
@@ -760,11 +830,24 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                             size: 13,
                             color: DesignTokens.secondaryYellow),
                         const SizedBox(width: 3),
-                        Text(
-                          req.rating.toStringAsFixed(1),
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.secondaryYellow,
-                            fontWeight: FontWeight.w600,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: req.rating.toStringAsFixed(1),
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' Stars',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -1006,11 +1089,24 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                             size: 13,
                             color: DesignTokens.secondaryYellow),
                         const SizedBox(width: 3),
-                        Text(
-                          req.rating.toStringAsFixed(1),
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.secondaryYellow,
-                            fontWeight: FontWeight.w600,
+                        RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: req.rating.toStringAsFixed(1),
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' Stars',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textWhite,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 4),

@@ -265,22 +265,6 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
               child: _SectionCard(
                 child: Row(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.s8),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.account_balance_wallet_outlined,
-                        size: 18,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
                     Expanded(
                       child: _selectedMethodId == null || methods.isEmpty
                           ? Text(
@@ -329,6 +313,11 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                   const SizedBox(height: DesignTokens.s16),
                   _SummaryRow(
                     icon: Icons.wallet_outlined,
+                    iconWidget: Image.asset(
+                      'assets/images/creatordash/universal-currency.png',
+                      width: 16,
+                      height: 16,
+                    ),
                     label: 'Withdrawal Amount',
                     value: 'Rs ${_amount.toStringAsFixed(2)}',
                   ),
@@ -487,6 +476,11 @@ class _BalanceCard extends StatelessWidget {
             iconBg: DesignTokens.primaryGreenDark,
             icon: Icons.savings_outlined,
             iconColor: DesignTokens.primaryGreen,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_money-bag-rounded.png',
+              width: 24,
+              height: 24,
+            ),
             label: 'Available for Withdrawal',
             amount: formatMoney(summary.availableBalance),
           ),
@@ -495,6 +489,11 @@ class _BalanceCard extends StatelessWidget {
             iconBg: DesignTokens.warningFillDark,
             icon: Icons.hourglass_bottom_rounded,
             iconColor: DesignTokens.secondaryYellow,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_hourglass-top-rounded.png',
+              width: 24,
+              height: 24,
+            ),
             label: 'Pending (Processing from recent sales)',
             amount: formatMoney(summary.pendingBalance),
             suffix: ' (releases in 3 days)',
@@ -512,12 +511,14 @@ class _BalanceRow extends StatelessWidget {
     required this.iconColor,
     required this.label,
     required this.amount,
+    this.iconWidget,
     this.suffix,
   });
 
   final Color iconBg;
   final IconData icon;
   final Color iconColor;
+  final Widget? iconWidget;
   final String label;
   final String amount;
   final String? suffix;
@@ -534,7 +535,7 @@ class _BalanceRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(DesignTokens.s8),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, color: iconColor, size: 22),
+          child: iconWidget ?? Icon(icon, color: iconColor, size: 22),
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
@@ -601,10 +602,12 @@ class _SummaryRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.iconWidget,
     this.valueColor,
   });
 
   final IconData icon;
+  final Widget? iconWidget;
   final String label;
   final String value;
   final Color? valueColor;
@@ -613,7 +616,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: DesignTokens.textMuted),
+        iconWidget ?? Icon(icon, size: 16, color: DesignTokens.textMuted),
         const SizedBox(width: DesignTokens.s8),
         Expanded(
           child: Text(

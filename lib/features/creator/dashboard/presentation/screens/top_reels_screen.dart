@@ -581,145 +581,146 @@ class _RankedReelCard extends StatelessWidget {
     final title = reel.title.isEmpty ? 'Untitled reel' : reel.title;
     final posted = DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAt);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '#$rank',
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: DesignTokens.textMuted,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s12,
+      ),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '#$rank',
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: DesignTokens.textWhite,
+            ),
           ),
-        ),
-        const SizedBox(height: DesignTokens.s4),
-        Container(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s16,
-            DesignTokens.s16,
-            DesignTokens.s12,
-          ),
-          decoration: BoxDecoration(
-            color: DesignTokens.bgAppBodyLight,
-            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          ),
-          child: Column(
+          const SizedBox(height: DesignTokens.s12),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(DesignTokens.s4),
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      color: DesignTokens.bgAppBody,
-                      alignment: Alignment.center,
-                      child: reel.thumbnailUrl.isNotEmpty
-                          ? Image.network(
-                              reel.thumbnailUrl,
-                              width: 64,
-                              height: 64,
-                              fit: BoxFit.cover,
-                            )
-                          : const Icon(
-                              Icons.play_circle_fill,
-                              color: DesignTokens.iconLight,
-                              size: 28,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                            color: DesignTokens.textWhite,
-                          ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(DesignTokens.s4),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: DesignTokens.bgAppBody,
+                  alignment: Alignment.center,
+                  child: reel.thumbnailUrl.isNotEmpty
+                      ? Image.network(
+                          reel.thumbnailUrl,
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                        )
+                      : const Icon(
+                          Icons.play_circle_fill,
+                          color: DesignTokens.iconLight,
+                          size: 28,
                         ),
-                        const SizedBox(height: DesignTokens.s4),
-                        Text(
-                          'Posted on: $posted',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s8),
-                  const Icon(
-                    Icons.open_in_new_rounded,
-                    color: DesignTokens.iconLight,
-                    size: 16,
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: DesignTokens.s12),
-              const Divider(
-                color: DesignTokens.borderDefault,
-                height: 1,
-                thickness: 1,
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: DesignTokens.s8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Stat(
-                      icon: Icons.receipt_long_outlined,
-                      value: reel.comments,
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
-                    _Stat(icon: Icons.favorite_outline, value: reel.likes),
-                    _Stat(icon: Icons.visibility_outlined, value: reel.views),
-                    _Stat(
-                      icon: Icons.shopping_bag_outlined,
-                      value: reel.shares,
+                    const SizedBox(height: DesignTokens.s4),
+                    Text(
+                      'Posted on: $posted',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: DesignTokens.s8),
-                  child: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 16,
-                    color: DesignTokens.iconLight,
-                  ),
-                ),
+              const SizedBox(width: DesignTokens.s8),
+              const Icon(
+                Icons.arrow_outward,
+                color: DesignTokens.iconLight,
+                size: 16,
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: DesignTokens.s12),
+          const Divider(
+            color: DesignTokens.borderDefault,
+            height: 1,
+            thickness: 1,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: DesignTokens.s8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _Stat(
+                  icon: Icons.receipt_long_outlined,
+                  iconWidget: Image.asset(
+                    'assets/images/creatordash/universal-currency.png',
+                    width: 20,
+                    height: 20,
+                  ),
+                  value: reel.comments,
+                ),
+                _Stat(icon: Icons.favorite, value: reel.likes),
+                _Stat(icon: Icons.visibility, value: reel.views),
+                _Stat(
+                  icon: Icons.shopping_bag,
+                  value: reel.shares,
+                ),
+              ],
+            ),
+          ),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: DesignTokens.s8),
+              child: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: DesignTokens.iconLight,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.value});
+  const _Stat({required this.icon, required this.value, this.iconWidget});
 
   final IconData icon;
   final int value;
+  final Widget? iconWidget;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: DesignTokens.textWhite),
+        iconWidget ?? Icon(icon, size: 20, color: DesignTokens.textWhite),
         const SizedBox(height: DesignTokens.s4),
         Text(
           _compact(value),
