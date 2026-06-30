@@ -1,8 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/datasources/inquiries_remote_datasource.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/models/product_inquiry_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/repositories/inquiries_repository.dart';
 
 class InquiriesState {
   const InquiriesState({
@@ -13,9 +13,9 @@ class InquiriesState {
   });
 
   final bool isLoading;
-  final String? replyingId; // id currently being replied to
+  final String? replyingId;
   final String? errorMessage;
-  final List<ProductInquiryDto> items;
+  final List<ProductInquiry> items;
 
   InquiriesState copyWith({
     bool? isLoading,
@@ -23,7 +23,7 @@ class InquiriesState {
     bool clearReplying = false,
     String? errorMessage,
     bool clearError = false,
-    List<ProductInquiryDto>? items,
+    List<ProductInquiry>? items,
   }) {
     return InquiriesState(
       isLoading: isLoading ?? this.isLoading,
@@ -35,48 +35,42 @@ class InquiriesState {
 }
 
 class InquiriesController extends StateNotifier<InquiriesState> {
-  InquiriesController(this._ds) : super(const InquiriesState()) {
-    load();
+  InquiriesController(this._repository) : super(const InquiriesState()) {
+    unawaited(load());
   }
 
-  final InquiriesRemoteDataSource _ds;
+  final InquiriesRepository _repository;
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final items = await _ds.listVendor();
-      state = state.copyWith(isLoading: false, items: items);
-    } catch (_) {
-      state = state.copyWith(
-          isLoading: false, errorMessage: 'Could not load inquiries.');
-    }
+    final either = await _repository.listVendor();
+    state = either.fold(
+      (_) => state.copyWith(
+          isLoading: false, errorMessage: 'Could not load inquiries.'),
+      (items) => state.copyWith(isLoading: false, items: items),
+    );
   }
 
   Future<bool> reply(String inquiryId, String text) async {
     if (text.trim().isEmpty) return false;
     state = state.copyWith(replyingId: inquiryId, clearError: true);
-    try {
-      final updated = await _ds.reply(inquiryId, text.trim());
-      state = state.copyWith(
-        clearReplying: true,
-        items: [
-          for (final i in state.items) if (i.id == inquiryId) updated else i,
-        ],
-      );
-      return true;
-    } catch (_) {
-      state = state.copyWith(
-          clearReplying: true, errorMessage: 'Could not send your reply.');
-      return false;
-    }
+    final either = await _repository.reply(inquiryId, text.trim());
+    return either.fold(
+      (_) {
+        state = state.copyWith(
+            clearReplying: true, errorMessage: 'Could not send your reply.');
+        return false;
+      },
+      (updated) {
+        state = state.copyWith(
+          clearReplying: true,
+          items: [
+            for (final i in state.items)
+              if (i.id == inquiryId) updated else i,
+          ],
+        );
+        return true;
+      },
+    );
   }
 }
-
-final _inquiriesDataSourceProvider = Provider<InquiriesRemoteDataSource>(
-  (ref) => InquiriesRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
-
-final inquiriesControllerProvider =
-    StateNotifierProvider.autoDispose<InquiriesController, InquiriesState>(
-  (ref) => InquiriesController(ref.watch(_inquiriesDataSourceProvider)),
-);

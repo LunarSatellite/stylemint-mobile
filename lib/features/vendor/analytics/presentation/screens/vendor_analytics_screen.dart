@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorAnalyticsScreen extends StatelessWidget {
+class VendorAnalyticsScreen extends ConsumerWidget {
   const VendorAnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(analyticsNotifierProvider);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -33,36 +38,26 @@ class VendorAnalyticsScreen extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Revenue Overview (Last 30 Days)',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textWhite,
-                    ),
+            child: state.when(
+              initial: () => const SizedBox.shrink(),
+              loadInProgress: () => const Center(
+                child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
+              loadSuccess: (summary) => _AnalyticsBody(summary: summary),
+              loadFailure: (_) => const Center(
+                child: Text(
+                  'Failed to load analytics.',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    color: Color(0xFF9F9FA9),
                   ),
-                  const SizedBox(height: 8),
-                  _RevenueOverviewCard(),
-                  const SizedBox(height: 12),
-                  _EarningsOverviewCard(),
-                  const SizedBox(height: 12),
-                  _topProductsSection(context),
-                  const SizedBox(height: 12),
-                  _creatorPerformanceSection(context),
-                  const SizedBox(height: 12),
-                  _TrafficSourcesCard(),
-                ],
+                ),
               ),
             ),
           ),
-
-          // Fixed bottom button
           Container(
             color: DesignTokens.bgAppFoundation,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
@@ -99,10 +94,55 @@ class VendorAnalyticsScreen extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Scrollable body — shown only when data is loaded
+// ---------------------------------------------------------------------------
+
+class _AnalyticsBody extends StatelessWidget {
+  const _AnalyticsBody({required this.summary});
+
+  final VendorAnalyticsSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Revenue Overview (Last 30 Days)',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _RevenueOverviewCard(overview: summary.revenueOverview),
+          const SizedBox(height: 12),
+          _EarningsOverviewCard(points: summary.earningsPoints),
+          const SizedBox(height: 12),
+          _topProductsSection(context, summary.topProducts),
+          const SizedBox(height: 12),
+          _creatorPerformanceSection(context, summary.topCreators),
+          const SizedBox(height: 12),
+          _TrafficSourcesCard(sources: summary.trafficSources),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Revenue Overview
 // ---------------------------------------------------------------------------
 
 class _RevenueOverviewCard extends StatelessWidget {
+  const _RevenueOverviewCard({required this.overview});
+
+  final RevenueOverview overview;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -120,46 +160,46 @@ class _RevenueOverviewCard extends StatelessWidget {
                 _MetricRow(
                   icon: 'assets/images/vendordashboard/icon_gross_sales.png',
                   label: 'Gross Sales',
-                  badge: '+23%',
-                  value: '3,45,12,589.98',
-                  badgeColor: DesignTokens.primaryGreen,
+                  badge: overview.grossSalesBadge,
+                  value: 'Rs ${overview.grossSales.toStringAsFixed(2)}',
+                  badgeColor: _badgeColor(overview.grossSalesBadge),
                 ),
                 const SizedBox(height: 14),
                 _MetricRow(
                   icon: 'assets/images/vendordashboard/icon_net_revenue.png',
                   label: 'Net Revenue',
-                  badge: '+15%',
-                  value: '2,85,92,677.90',
-                  badgeColor: DesignTokens.primaryGreen,
+                  badge: overview.netRevenueBadge,
+                  value: 'Rs ${overview.netRevenue.toStringAsFixed(2)}',
+                  badgeColor: _badgeColor(overview.netRevenueBadge),
                 ),
                 const SizedBox(height: 14),
                 _MetricRow(
-                  icon: 'assets/images/vendordashboard/icon_conversion_rate.png',
+                  icon:
+                      'assets/images/vendordashboard/icon_conversion_rate.png',
                   label: 'Conversion Rate',
-                  badge: '+15%',
-                  value: '3.8%',
-                  badgeColor: DesignTokens.primaryGreen,
+                  badge: overview.conversionRateBadge,
+                  value: '${overview.conversionRate.toStringAsFixed(1)}%',
+                  badgeColor: _badgeColor(overview.conversionRateBadge),
                 ),
               ],
             ),
           ),
-
-          // Total Orders strip
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2ECC71),
-              borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(DesignTokens.cardRadius)),
+            decoration: const BoxDecoration(
+              color: Color(0xFF2ECC71),
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(DesignTokens.cardRadius),
+              ),
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Total Orders Completed',
                         style: TextStyle(
                           fontFamily: DesignTokens.fontFamily,
@@ -168,24 +208,24 @@ class _RevenueOverviewCard extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Text(
-                            '1,981',
-                            style: TextStyle(
+                            overview.totalOrders.toString(),
+                            style: const TextStyle(
                               fontFamily: DesignTokens.fontFamily,
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
                           ),
-                          SizedBox(width: 6),
-                          Icon(Icons.arrow_drop_up,
+                          const SizedBox(width: 6),
+                          const Icon(Icons.arrow_drop_up,
                               size: 18, color: Colors.black87),
                           Text(
-                            '14%',
-                            style: TextStyle(
+                            overview.totalOrdersBadge,
+                            style: const TextStyle(
                               fontFamily: DesignTokens.fontFamily,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -208,6 +248,12 @@ class _RevenueOverviewCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _badgeColor(String badge) {
+    if (badge.startsWith('+')) return DesignTokens.primaryGreen;
+    if (badge.startsWith('-')) return Colors.red;
+    return const Color(0xFF9F9FA9);
   }
 }
 
@@ -247,23 +293,24 @@ class _MetricRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      badge,
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: badgeColor,
+                  if (badge.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: badgeColor,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 2),
@@ -289,15 +336,16 @@ class _MetricRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _EarningsOverviewCard extends StatelessWidget {
-  static const _points = [
-    5000.0, 8000.0, 20000.0, 13000.0, 8000.0, 10000.0,
-  ];
-  static const _labels = [
-    'Dec 1', 'Dec 7', 'Dec 14', 'Dec 21', 'Dec 28', 'Today',
-  ];
+  const _EarningsOverviewCard({required this.points});
+
+  final List<EarningsPoint> points;
 
   @override
   Widget build(BuildContext context) {
+    final values = points.map((p) => p.value).toList();
+    final labels = points.map((p) => p.label).toList();
+    final yMax = _computeYMax(values);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -328,31 +376,57 @@ class _EarningsOverviewCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             height: 160,
-            child: _LineChart(points: _points, xLabels: _labels),
+            child: values.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No data',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        color: Color(0xFF9F9FA9),
+                      ),
+                    ),
+                  )
+                : _LineChart(points: values, xLabels: labels, yMax: yMax),
           ),
         ],
       ),
     );
   }
+
+  double _computeYMax(List<double> pts) {
+    if (pts.isEmpty) return 25000;
+    final m = pts.fold<double>(0, (a, b) => a > b ? a : b);
+    if (m <= 0) return 25000;
+    const step = 5000.0;
+    return (m / step).ceil() * step;
+  }
 }
 
 class _LineChart extends StatelessWidget {
-  const _LineChart({required this.points, required this.xLabels});
+  const _LineChart({
+    required this.points,
+    required this.xLabels,
+    required this.yMax,
+  });
 
   final List<double> points;
   final List<String> xLabels;
+  final double yMax;
 
   @override
   Widget build(BuildContext context) {
-    const yMax = 25000.0;
     const ySteps = 5;
-    const yLabels = ['0', '5k', '10k', '15k', '20k', '25k'];
     const labelW = 32.0;
     const bottomH = 20.0;
+    final yLabels = List.generate(ySteps + 1, (i) {
+      final v = (yMax / ySteps) * i;
+      if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+      return v.toStringAsFixed(0);
+    });
 
     return Row(
       children: [
-        // Y-axis labels
         SizedBox(
           width: labelW,
           child: Column(
@@ -424,16 +498,14 @@ class _ChartPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Grid lines
     final gridPaint = Paint()
       ..color = const Color(0xFF3A3A3C)
       ..strokeWidth = 0.5;
-    for (int i = 0; i <= ySteps; i++) {
+    for (var i = 0; i <= ySteps; i++) {
       final y = h - (i / ySteps) * h;
       canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
     }
 
-    // Convert data to canvas coordinates
     Offset toOffset(int i) {
       final x = (i / (points.length - 1)) * w;
       final y = h - (points[i] / yMax) * h;
@@ -442,14 +514,14 @@ class _ChartPainter extends CustomPainter {
 
     final offsets = List.generate(points.length, toOffset);
 
-    // Filled gradient area
-    final fillPath = Path();
-    fillPath.moveTo(offsets.first.dx, h);
+    final fillPath = Path()
+      ..moveTo(offsets.first.dx, h);
     for (final o in offsets) {
       fillPath.lineTo(o.dx, o.dy);
     }
-    fillPath.lineTo(offsets.last.dx, h);
-    fillPath.close();
+    fillPath
+      ..lineTo(offsets.last.dx, h)
+      ..close();
 
     final fillPaint = Paint()
       ..shader = LinearGradient(
@@ -457,12 +529,11 @@ class _ChartPainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [
           DesignTokens.primaryGreen.withValues(alpha: 0.3),
-          DesignTokens.primaryGreen.withValues(alpha: 0.0),
+          DesignTokens.primaryGreen.withValues(alpha: 0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(fillPath, fillPaint);
 
-    // Line
     final linePaint = Paint()
       ..color = DesignTokens.primaryGreen
       ..strokeWidth = 2.5
@@ -470,9 +541,9 @@ class _ChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
 
-    final linePath = Path();
-    linePath.moveTo(offsets.first.dx, offsets.first.dy);
-    for (int i = 1; i < offsets.length; i++) {
+    final linePath = Path()
+      ..moveTo(offsets.first.dx, offsets.first.dy);
+    for (var i = 1; i < offsets.length; i++) {
       final prev = offsets[i - 1];
       final curr = offsets[i];
       final cpx = (prev.dx + curr.dx) / 2;
@@ -480,12 +551,12 @@ class _ChartPainter extends CustomPainter {
     }
     canvas.drawPath(linePath, linePaint);
 
-    // Dots at each data point
     final dotPaint = Paint()..color = DesignTokens.primaryGreen;
     final dotBg = Paint()..color = DesignTokens.bgAppBodyLight;
     for (final o in offsets) {
-      canvas.drawCircle(o, 4, dotBg);
-      canvas.drawCircle(o, 3, dotPaint);
+      canvas
+        ..drawCircle(o, 4, dotBg)
+        ..drawCircle(o, 3, dotPaint);
     }
   }
 
@@ -497,31 +568,7 @@ class _ChartPainter extends CustomPainter {
 // Top Products
 // ---------------------------------------------------------------------------
 
-Widget _topProductsSection(BuildContext context) {
-  const products = [
-    _Product(
-      rank: 1,
-      name: 'Nike Air Jordan Travis Scott\nLimited Edition',
-      price: 'Rs 25,000',
-      sales: '245 sales',
-      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100',
-    ),
-    _Product(
-      rank: 2,
-      name: 'Nike Air Max Reds 2025',
-      price: 'Rs 18,000',
-      sales: '198 sales',
-      image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=100',
-    ),
-    _Product(
-      rank: 3,
-      name: 'Nike Tech Fleece Jacket',
-      price: 'Rs 12,000',
-      sales: '178 sales',
-      image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=100',
-    ),
-  ];
-
+Widget _topProductsSection(BuildContext context, List<TopProduct> products) {
   return Column(
     children: [
       Row(
@@ -564,7 +611,11 @@ Widget _topProductsSection(BuildContext context) {
                 _ProductRow(product: e.value),
                 if (!isLast)
                   const Divider(
-                      height: 1, color: Color(0xFF3A3A3C), indent: 16, endIndent: 16),
+                    height: 1,
+                    color: Color(0xFF3A3A3C),
+                    indent: 16,
+                    endIndent: 16,
+                  ),
               ],
             );
           }).toList(),
@@ -577,7 +628,7 @@ Widget _topProductsSection(BuildContext context) {
 class _ProductRow extends StatelessWidget {
   const _ProductRow({required this.product});
 
-  final _Product product;
+  final TopProduct product;
 
   @override
   Widget build(BuildContext context) {
@@ -597,19 +648,15 @@ class _ProductRow extends StatelessWidget {
           const SizedBox(width: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: Image.network(
-              product.image,
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 48,
-                height: 48,
-                color: const Color(0xFF2C2C2E),
-                child: const Icon(Icons.inventory_2_outlined,
-                    color: Color(0xFF9F9FA9), size: 24),
-              ),
-            ),
+            child: product.imageUrl != null
+                ? Image.network(
+                    product.imageUrl!,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _placeholder(),
+                  )
+                : _placeholder(),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -628,7 +675,8 @@ class _ProductRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${product.price}  •  ${product.sales}',
+                  'Rs ${product.price.toStringAsFixed(0)}'
+                  '  •  ${product.unitsSold} sales',
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 11,
@@ -642,35 +690,24 @@ class _ProductRow extends StatelessWidget {
       ),
     );
   }
-}
 
-class _Product {
-  const _Product({
-    required this.rank,
-    required this.name,
-    required this.price,
-    required this.sales,
-    required this.image,
-  });
-
-  final int rank;
-  final String name;
-  final String price;
-  final String sales;
-  final String image;
+  Widget _placeholder() => Container(
+        width: 48,
+        height: 48,
+        color: const Color(0xFF2C2C2E),
+        child: const Icon(Icons.inventory_2_outlined,
+            color: Color(0xFF9F9FA9), size: 24),
+      );
 }
 
 // ---------------------------------------------------------------------------
 // Creator Performance
 // ---------------------------------------------------------------------------
 
-Widget _creatorPerformanceSection(BuildContext context) {
-  const creators = [
-    _Creator(rank: 1, handle: '@fashion_sarah', sales: 'Rs 25,000', reels: '12 reels'),
-    _Creator(rank: 2, handle: '@style_guru', sales: 'Rs 25,000', reels: '12 reels'),
-    _Creator(rank: 3, handle: '@fitness_pro', sales: 'Rs 25,000', reels: '12 reels'),
-  ];
-
+Widget _creatorPerformanceSection(
+  BuildContext context,
+  List<TopCreatorSummary> creators,
+) {
   return Column(
     children: [
       Row(
@@ -713,7 +750,11 @@ Widget _creatorPerformanceSection(BuildContext context) {
                 _CreatorRow(creator: e.value),
                 if (!isLast)
                   const Divider(
-                      height: 1, color: Color(0xFF3A3A3C), indent: 16, endIndent: 16),
+                    height: 1,
+                    color: Color(0xFF3A3A3C),
+                    indent: 16,
+                    endIndent: 16,
+                  ),
               ],
             );
           }).toList(),
@@ -726,7 +767,7 @@ Widget _creatorPerformanceSection(BuildContext context) {
 class _CreatorRow extends StatelessWidget {
   const _CreatorRow({required this.creator});
 
-  final _Creator creator;
+  final TopCreatorSummary creator;
 
   @override
   Widget build(BuildContext context) {
@@ -748,7 +789,7 @@ class _CreatorRow extends StatelessWidget {
             radius: 24,
             backgroundColor: const Color(0xFF2C2C2E),
             child: Text(
-              creator.handle[1].toUpperCase(),
+              creator.avatarInitial,
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 18,
@@ -763,7 +804,7 @@ class _CreatorRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  creator.handle,
+                  creator.formattedHandle,
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 13,
@@ -773,7 +814,8 @@ class _CreatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${creator.sales}  •  ${creator.reels}',
+                  'Rs ${creator.attributedRevenue.toStringAsFixed(0)}'
+                  '  •  ${creator.distinctReelCount} reels',
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 11,
@@ -789,25 +831,15 @@ class _CreatorRow extends StatelessWidget {
   }
 }
 
-class _Creator {
-  const _Creator({
-    required this.rank,
-    required this.handle,
-    required this.sales,
-    required this.reels,
-  });
-
-  final int rank;
-  final String handle;
-  final String sales;
-  final String reels;
-}
-
 // ---------------------------------------------------------------------------
 // Traffic Sources
 // ---------------------------------------------------------------------------
 
 class _TrafficSourcesCard extends StatelessWidget {
+  const _TrafficSourcesCard({required this.sources});
+
+  final List<TrafficSource> sources;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -831,37 +863,45 @@ class _TrafficSourcesCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: _TrafficTile(
-                  icon: 'assets/icons/youtube.svg',
-                  label: 'Youtube\nShorts',
-                  percent: '23%',
-                  color: const Color(0xFFFF0000),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _TrafficTile(
-                  icon: 'assets/icons/instagram.svg',
-                  label: 'Instagram\nReels',
-                  percent: '45%',
-                  color: const Color(0xFFE1306C),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _TrafficTile(
-                  icon: 'assets/icons/tiktok.svg',
-                  label: 'TikTok',
-                  percent: '32%',
-                  color: DesignTokens.textWhite,
-                ),
-              ),
+              for (int i = 0; i < sources.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(child: _buildTile(sources[i])),
+              ],
             ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTile(TrafficSource source) {
+    final (icon, label, color) = _sourceMeta(source.platform);
+    return _TrafficTile(
+      icon: icon,
+      label: label,
+      percent: '${source.percentage.toStringAsFixed(0)}%',
+      color: color,
+    );
+  }
+
+  (String, String, Color) _sourceMeta(String platform) {
+    return switch (platform.toLowerCase()) {
+      'youtube' => (
+        'assets/icons/youtube.svg',
+        'Youtube\nShorts',
+        const Color(0xFFFF0000),
+      ),
+      'instagram' => (
+        'assets/icons/instagram.svg',
+        'Instagram\nReels',
+        const Color(0xFFE1306C),
+      ),
+      _ => (
+        'assets/icons/tiktok.svg',
+        platform,
+        DesignTokens.textWhite,
+      ),
+    };
   }
 }
 
@@ -888,7 +928,7 @@ class _TrafficTile extends StatelessWidget {
       ),
       child: Column(
         children: [
-          SvgPicture.asset(icon, width: 32, height: 32, fit: BoxFit.contain),
+          SvgPicture.asset(icon, width: 32, height: 32),
           const SizedBox(height: 8),
           Text(
             percent,
