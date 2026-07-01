@@ -4,14 +4,17 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/
 part 'vendor_application_dto.freezed.dart';
 part 'vendor_application_dto.g.dart';
 
+/// Mirrors the backend's `Onboarding.Entity.Dtos.VendorApplicationDto` shape
+/// (fields not consumed by the app — brandName, commission %, catalog size,
+/// etc. — are intentionally omitted rather than kept in lockstep).
 @freezed
 abstract class VendorApplicationDto with _$VendorApplicationDto {
   const factory VendorApplicationDto({
     required String id,
-    required String status,
+    required int state,
     String? rejectionReason,
-    required DateTime submittedAt,
-    required DateTime updatedAt,
+    DateTime? submittedAtUtc,
+    required DateTime updatedUtc,
   }) = _VendorApplicationDto;
 
   const VendorApplicationDto._();
@@ -21,26 +24,26 @@ abstract class VendorApplicationDto with _$VendorApplicationDto {
 
   VendorApplication toDomain() => VendorApplication(
     id: id,
-    status: _statusFromCode(status),
+    status: _statusFromState(state),
     rejectionReason: rejectionReason,
-    submittedAt: submittedAt,
-    updatedAt: updatedAt,
+    submittedAt: submittedAtUtc,
+    updatedAt: updatedUtc,
   );
 
-  static VendorApplicationStatus _statusFromCode(String code) {
-    switch (code.toLowerCase()) {
-      case 'pending':
+  /// `Onboarding.Enums.ApplicationState`: Draft(1) → Submitted(2) →
+  /// UnderReview(3) → Approved(4) | Rejected(5).
+  static VendorApplicationStatus _statusFromState(int state) {
+    switch (state) {
+      case 1:
+        return VendorApplicationStatus.draft;
+      case 2:
         return VendorApplicationStatus.pending;
-      case 'under_review':
-      case 'review':
+      case 3:
         return VendorApplicationStatus.underReview;
-      case 'approved':
+      case 4:
         return VendorApplicationStatus.approved;
-      case 'rejected':
+      case 5:
         return VendorApplicationStatus.rejected;
-      case 'kyc_required':
-      case 'kycrequired':
-        return VendorApplicationStatus.kycRequired;
       default:
         return VendorApplicationStatus.pending;
     }

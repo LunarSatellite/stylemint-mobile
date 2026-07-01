@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyStep2Screen extends StatefulWidget {
+class VendorApplyStep2Screen extends ConsumerStatefulWidget {
   const VendorApplyStep2Screen({super.key});
 
   @override
-  State<VendorApplyStep2Screen> createState() => _VendorApplyStep2ScreenState();
+  ConsumerState<VendorApplyStep2Screen> createState() =>
+      _VendorApplyStep2ScreenState();
 }
 
-class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
+class _VendorApplyStep2ScreenState
+    extends ConsumerState<VendorApplyStep2Screen> {
   static const int _totalSteps = 6;
   static const int _currentStep = 2;
 
@@ -42,18 +48,22 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
     super.dispose();
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: DesignTokens.colorError,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   void _proceed() {
-    context.push(RouteNames.vendorApplyStep3);
+    final current = ref.read(vendorApplyDraftProvider);
+    if (current != null) {
+      final policy = _returnPolicyController.text.trim();
+      ref.read(vendorApplyDraftProvider.notifier).draft = current.copyWith(
+        supportEmail: _supportEmailController.text.trim(),
+        supportPhone: _supportPhoneController.text.trim(),
+        returnPolicyUrl: policy.isEmpty ? null : policy,
+        contactFullName: _fullNameController.text.trim(),
+        contactPosition: _positionController.text.trim(),
+        contactEmail: _emailController.text.trim(),
+        contactPhone: _phoneController.text.trim(),
+        businessHours: _selectedHours.toList(growable: false),
+      );
+    }
+    unawaited(context.push(RouteNames.vendorApplyStep3));
   }
 
   @override
@@ -61,13 +71,21 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: Text('Vendor Application', style: DesignTokens.oneLinerSemibold),
+        title: Text(
+          'Vendor Application',
+          style: DesignTokens.oneLinerSemibold,
+        ),
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
+          onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApply),
         ),
       ),
       body: SafeArea(
@@ -127,7 +145,8 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
           Text('Contact Information', style: DesignTokens.sectionInnerTitle),
           const SizedBox(height: DesignTokens.s8),
           Text(
-            'We collect this information to verify your identity and ensure the security of your account.',
+            'We collect this information to verify your identity and ensure'
+            ' the security of your account.',
             style: DesignTokens.smallRegular,
           ),
           const SizedBox(height: DesignTokens.s24),
@@ -150,7 +169,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Support Phone'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Support Phone',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -186,7 +207,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Position/Title'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Position/Title',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -196,7 +219,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Email Address'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Email Address',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -206,7 +231,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Phone Number'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Phone Number',
+            ),
           ),
 
           const SizedBox(height: DesignTokens.s20),
@@ -288,7 +315,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApply),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,
@@ -296,7 +325,9 @@ class _VendorApplyStep2ScreenState extends State<VendorApplyStep2Screen> {
                   vertical: DesignTokens.s16,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 minimumSize: const Size(0, DesignTokens.buttonHeight),
                 elevation: 0,

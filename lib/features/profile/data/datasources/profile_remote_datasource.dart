@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/profile_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/user_profile_dto.dart';
-import 'package:stylemint_mobile_frontend/features/profile/shared/profile_mock_data.dart';
 
 class ProfileRemoteDataSource {
   ProfileRemoteDataSource({
@@ -31,8 +29,6 @@ class ProfileRemoteDataSource {
   }
 
   Future<ProfileSummaryDto> getProfileSummary() async {
-    // ponytail: static stub for UI dev, remove when backend is stable
-    if (kDebugMode) return kMockProfileSummaryDto;
     final accountId = await _accountId();
     final response = await apiClient.get('/v1/accounts/$accountId');
     return ProfileSummaryDto.fromJson(response as Map<String, dynamic>);

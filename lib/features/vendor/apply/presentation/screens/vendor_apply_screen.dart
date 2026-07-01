@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/widgets/kyc_document_tile.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -67,7 +70,8 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     'Other',
   ];
 
-  final _businessNameController = TextEditingController();
+  final _brandNameController = TextEditingController();
+  final _legalBusinessNameController = TextEditingController();
   final _taxIdController = TextEditingController();
   final _businessRegController = TextEditingController();
   final _websiteController = TextEditingController();
@@ -81,16 +85,18 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
   String? _selectedState;
 
   bool _hasCheckedStatus = false;
+  String? _accountId;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(_checkStatus);
+    unawaited(Future.microtask(_checkStatus));
   }
 
   @override
   void dispose() {
-    _businessNameController.dispose();
+    _brandNameController.dispose();
+    _legalBusinessNameController.dispose();
     _taxIdController.dispose();
     _businessRegController.dispose();
     _websiteController.dispose();
@@ -100,18 +106,76 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     super.dispose();
   }
 
-  void _checkStatus() {
+  Future<void> _checkStatus() async {
     if (_hasCheckedStatus) return;
     _hasCheckedStatus = true;
-    final isAuthenticated = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (_) => true,
-      orElse: () => false,
+
+    // Prefer session state; fall back to token storage as ground truth
+    var accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => null,
     );
-    if (!isAuthenticated) return;
-    ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
+    accountId ??= await ref.read(tokenStorageProvider).accountId;
+
+    if (!mounted) return;
+    if (accountId != null && accountId.isNotEmpty) {
+      setState(() => _accountId = accountId);
+      await ref.read(vendorApplyNotifierProvider.notifier).checkStatus(accountId);
+    }
   }
 
   void _submit() {
+    final brandName = _brandNameController.text.trim();
+    final legalBusinessName = _legalBusinessNameController.text.trim();
+    final taxId = _taxIdController.text.trim();
+    final businessReg = _businessRegController.text.trim();
+    final streetAddress = _streetAddressController.text.trim();
+    final city = _cityController.text.trim();
+    final zipCode = _zipCodeController.text.trim();
+
+    if (brandName.isEmpty) {
+      return _showError('Brand name is required');
+    }
+    if (legalBusinessName.isEmpty) {
+      return _showError('Legal business name is required');
+    }
+    if (_selectedBusinessType == null) {
+      return _showError('Business type is required');
+    }
+    if (taxId.isEmpty) return _showError('Tax ID is required');
+    if (businessReg.isEmpty) {
+      return _showError('Business registration number is required');
+    }
+    if (_selectedCountryRegion == null) {
+      return _showError('Country/Region is required');
+    }
+    if (streetAddress.isEmpty) {
+      return _showError('Street address is required');
+    }
+    if (city.isEmpty) return _showError('City is required');
+    if (_selectedCountry == null) {
+      return _showError('Country is required');
+    }
+    if (zipCode.isEmpty) return _showError('Zip code is required');
+    if (_selectedState == null) return _showError('State is required');
+
+    final websiteText = _websiteController.text.trim();
+    ref.read(vendorApplyDraftProvider.notifier).draft = VendorApplyDraft(
+      accountId: _accountId ?? '',
+      brandName: brandName,
+      legalBusinessName: legalBusinessName,
+      businessType: _selectedBusinessType!,
+      taxId: taxId,
+      businessRegistrationNumber: businessReg,
+      website: websiteText.isEmpty ? null : websiteText,
+      countryRegion: _selectedCountryRegion!,
+      streetAddress: streetAddress,
+      city: city,
+      country: _selectedCountry!,
+      zipCode: zipCode,
+      state: _selectedState!,
+    );
+
     context.push(RouteNames.vendorApplyStep2);
   }
 
@@ -226,7 +290,9 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.userTypeSelection),
         ),
       ),
       body: SafeArea(
@@ -250,8 +316,10 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
 
   Widget _buildStatusOrForm(VendorApplication application) {
     switch (application.status) {
+      case VendorApplicationStatus.draft:
+        // Draft = wizard was started but never submitted; let them continue.
+        return _buildFormBody();
       case VendorApplicationStatus.pending:
-      case VendorApplicationStatus.kycRequired:
         return _ApplicationStatusCard(application: application);
       case VendorApplicationStatus.underReview:
         Future.microtask(() {
@@ -345,7 +413,18 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           const SizedBox(height: DesignTokens.s24),
 
           TextField(
-            controller: _businessNameController,
+            controller: _brandNameController,
+            style: DesignTokens.oneLinerRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Brand Name',
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          TextField(
+            controller: _legalBusinessNameController,
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
@@ -550,21 +629,16 @@ class _ApplicationStatusCard extends ConsumerWidget {
     final notifier = ref.watch(vendorApplyNotifierProvider.notifier);
 
     final isPending = application.status == VendorApplicationStatus.pending;
-    final isKyc = application.status == VendorApplicationStatus.kycRequired;
     final statusColor = isPending
         ? DesignTokens.secondaryYellow
         : DesignTokens.colorInfo;
 
     final statusIcon = isPending
         ? Icons.hourglass_top
-        : isKyc
-        ? Icons.folder_outlined
         : Icons.rate_review_outlined;
 
     final statusMessage = isPending
         ? 'Your application has been received and is awaiting review. We\'ll notify you once there\'s an update.'
-        : isKyc
-        ? 'Additional KYC documents are required. Please upload the missing documents below.'
         : 'Your application is being reviewed by our team. This usually takes 1-2 business days.';
 
     return SingleChildScrollView(
@@ -622,8 +696,7 @@ class _ApplicationStatusCard extends ConsumerWidget {
             ),
           ),
 
-          if (application.status == VendorApplicationStatus.kycRequired ||
-              application.status == VendorApplicationStatus.pending) ...[
+          if (application.status == VendorApplicationStatus.pending) ...[
             const SizedBox(height: DesignTokens.s24),
             Text('Your Documents', style: DesignTokens.sectionInnerTitle),
             const SizedBox(height: DesignTokens.s4),
@@ -643,7 +716,14 @@ class _ApplicationStatusCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: notifier.checkStatus,
+                onPressed: () async {
+                  var id = ref.read(sessionControllerProvider).maybeWhen(
+                    authenticated: (v) => v,
+                    orElse: () => null,
+                  );
+                  id ??= await ref.read(tokenStorageProvider).accountId;
+                  if (id != null && id.isNotEmpty) unawaited(notifier.checkStatus(id));
+                },
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Refresh Status',
@@ -677,7 +757,14 @@ class _ApplicationStatusCard extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: notifier.checkStatus,
+                onPressed: () async {
+                  var id = ref.read(sessionControllerProvider).maybeWhen(
+                    authenticated: (v) => v,
+                    orElse: () => null,
+                  );
+                  id ??= await ref.read(tokenStorageProvider).accountId;
+                  if (id != null && id.isNotEmpty) unawaited(notifier.checkStatus(id));
+                },
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Reapply',
@@ -718,10 +805,16 @@ class _KycUploadTileState extends ConsumerState<_KycUploadTile> {
     );
     if (picked == null) return;
 
+    var accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => null,
+    );
+    accountId ??= await ref.read(tokenStorageProvider).accountId;
+    if (accountId == null || accountId.isEmpty) return;
     setState(() => _uploading = true);
     final result = await ref
         .read(vendorRepositoryProvider)
-        .uploadKYCDocument(picked.path, widget.type);
+        .uploadKYCDocument(picked.path, widget.type, accountId: accountId);
     if (!mounted) return;
     setState(() => _uploading = false);
     result.fold(

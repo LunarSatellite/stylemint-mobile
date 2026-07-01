@@ -56,7 +56,7 @@ class VendorApplyNotifier extends StateNotifier<ApplicationState> {
     _kycDocsState = s;
   }
 
-  Future<void> checkStatus() async {
+  Future<void> checkStatus(String accountId) async {
     state = const ApplicationState.loadInProgress();
     final either = await _repository.getApplicationStatus();
     state = either.fold(
@@ -64,13 +64,14 @@ class VendorApplyNotifier extends StateNotifier<ApplicationState> {
       (a) => ApplicationState.loadSuccess(a),
     );
     state.maybeWhen(
-      loadSuccess: (_) => _loadKYCDocuments(),
+      loadSuccess: (app) => _loadKYCDocuments(accountId, app.id),
       orElse: () {},
     );
   }
 
-  Future<void> submit(VendorApplicationForm form) async {
+  Future<void> submit(VendorApplicationForm form, String accountId) async {
     _updateSubmitState(const SubmitState.submitting());
+    state = const ApplicationState.loadInProgress();
     final either = await _repository.submitApplication(form);
     either.fold(
       (failure) {
@@ -80,22 +81,37 @@ class VendorApplyNotifier extends StateNotifier<ApplicationState> {
       (application) {
         _updateSubmitState(SubmitState.success(application));
         state = ApplicationState.loadSuccess(application);
-        _loadKYCDocuments();
+        _loadKYCDocuments(accountId, application.id);
       },
     );
   }
 
-  Future<void> uploadDoc(String filePath, KYCDocumentType type) async {
-    final either = await _repository.uploadKYCDocument(filePath, type);
+  Future<void> uploadDoc(
+    String filePath,
+    KYCDocumentType type,
+    String accountId,
+    String applicationId,
+  ) async {
+    final either = await _repository.uploadKYCDocument(
+      filePath,
+      type,
+      accountId: accountId,
+    );
     either.fold(
       (_) {},
-      (_) => _loadKYCDocuments(),
+      (_) => _loadKYCDocuments(accountId, applicationId),
     );
   }
 
-  Future<void> _loadKYCDocuments() async {
+  Future<void> _loadKYCDocuments(
+    String accountId,
+    String sessionId,
+  ) async {
     _updateKycDocsState(const KYCDocumentsState.loadInProgress());
-    final either = await _repository.getKYCDocuments();
+    final either = await _repository.getKYCDocuments(
+      accountId: accountId,
+      sessionId: sessionId,
+    );
     _updateKycDocsState(either.fold(
       KYCDocumentsState.loadFailure,
       KYCDocumentsState.loadSuccess,
