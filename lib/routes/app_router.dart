@@ -41,6 +41,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
@@ -792,6 +793,11 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.partnershipRequests,
         builder: (ctx, state) => const PartnershipRequestsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.brandMessaging,
+        builder: (ctx, state) =>
+            BrandMessagingScreen(args: state.extra! as BrandMessagingArgs),
       ),
       GoRoute(
         path: RouteNames.brandInfo,

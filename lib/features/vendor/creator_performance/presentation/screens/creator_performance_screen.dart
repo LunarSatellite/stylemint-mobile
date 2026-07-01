@@ -1,60 +1,51 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/domain/entities/creator_performance.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class CreatorPerformanceScreen extends StatefulWidget {
+class CreatorPerformanceScreen extends ConsumerStatefulWidget {
   const CreatorPerformanceScreen({super.key});
 
   @override
-  State<CreatorPerformanceScreen> createState() =>
+  ConsumerState<CreatorPerformanceScreen> createState() =>
       _CreatorPerformanceScreenState();
 }
 
-class _CreatorPerformanceScreenState extends State<CreatorPerformanceScreen> {
+class _CreatorPerformanceScreenState
+    extends ConsumerState<CreatorPerformanceScreen> {
   String _sortBy = 'Revenue';
   String _metric = 'Performance';
 
-  static const _creators = [
-    _Creator(
-      name: 'Nhuga Fitness',
-      handle: '@nhuga_fitness',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100',
-      revenue: 'Rs 4,56,770.09',
-      activeReels: 5,
-      sales: 389,
-      views: '127.8m',
-      commissionPaid: 'Rs 23,889.98',
-      conversionRate: '88%',
-    ),
-    _Creator(
-      name: 'Zin Rabia',
-      handle: '@rabia.zin',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100',
-      revenue: 'Rs 3,56,876',
-      reelsPublished: 8,
-      sales: 345,
-      views: '16.8m',
-      commissionPaid: 'Rs 23,889.98',
-      conversionRate: '78%',
-    ),
-    _Creator(
-      name: 'Shree Teen',
-      handle: '@alieen.ace43',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1499952127939-9bbf5af6c51c?w=100',
-      revenue: 'Rs 1,25,569.96',
-      reelsPublished: 12,
-      sales: 201,
-      views: '9.4m',
-      commissionPaid: 'Rs 12,445.50',
-      conversionRate: '61%',
-    ),
-  ];
+  static const Map<String, String> _sortApiMap = {
+    'Revenue': 'revenue',
+    'Sales': 'sales',
+    'Views': 'views',
+    'Commission': 'commission',
+  };
+
+  static const Map<String, String?> _windowApiMap = {
+    'Performance': null,
+    'Last 30 days': '30d',
+    'Last 90 days': '90d',
+  };
+
+  void _reload() {
+    unawaited(
+      ref.read(creatorPerformanceNotifierProvider.notifier).load(
+            sortBy: _sortApiMap[_sortBy],
+            window: _windowApiMap[_metric],
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(creatorPerformanceNotifierProvider);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -79,19 +70,58 @@ class _CreatorPerformanceScreenState extends State<CreatorPerformanceScreen> {
         children: [
           _buildFilterChips(),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
-              itemCount: _creators.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: DesignTokens.s12),
-              itemBuilder: (_, i) => _CreatorCard(creator: _creators[i]),
+            child: state.when(
+              initial: _loader,
+              loadInProgress: _loader,
+              loadSuccess: (creators) => creators.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No creator data available.',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s16,
+                          vertical: DesignTokens.s12),
+                      itemCount: creators.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: DesignTokens.s12),
+                      itemBuilder: (_, i) =>
+                          _CreatorCard(creator: creators[i]),
+                    ),
+              loadFailure: (failure) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Failed to load creator performance.',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 14,
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _reload,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _loader() => const Center(child: CircularProgressIndicator());
 
   Widget _buildFilterChips() {
     return SingleChildScrollView(
@@ -119,31 +149,41 @@ class _CreatorPerformanceScreenState extends State<CreatorPerformanceScreen> {
   }
 
   void _showSortSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => _PickSheet(
-        title: 'Sort By',
-        options: const ['Revenue', 'Sales', 'Views', 'Commission'],
-        selected: _sortBy,
-        onPick: (v) => setState(() => _sortBy = v),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        builder: (_) => _PickSheet(
+          title: 'Sort By',
+          options: const ['Revenue', 'Sales', 'Views', 'Commission'],
+          selected: _sortBy,
+          onPick: (v) {
+            setState(() => _sortBy = v);
+            _reload();
+          },
+        ),
       ),
     );
   }
 
   void _showMetricSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => _PickSheet(
-        title: 'Metric',
-        options: const ['Performance', 'Last 30 days', 'Last 90 days'],
-        selected: _metric,
-        onPick: (v) => setState(() => _metric = v),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: const Color(0xFF1C1C1E),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        builder: (_) => _PickSheet(
+          title: 'Metric',
+          options: const ['Performance', 'Last 30 days', 'Last 90 days'],
+          selected: _metric,
+          onPick: (v) {
+            setState(() => _metric = v);
+            _reload();
+          },
+        ),
       ),
     );
   }
@@ -155,7 +195,12 @@ class _CreatorPerformanceScreenState extends State<CreatorPerformanceScreen> {
 
 class _CreatorCard extends StatelessWidget {
   const _CreatorCard({required this.creator});
-  final _Creator creator;
+  final CreatorPerformance creator;
+
+  String _formatMoney(double amount, String currency) {
+    final prefix = currency == 'NPR' ? 'Rs ' : '$currency ';
+    return '$prefix${amount.toStringAsFixed(2)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,14 +217,14 @@ class _CreatorCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
             child: Row(
               children: [
-                _Avatar(url: creator.avatarUrl),
+                _Avatar(url: creator.creatorAvatarUrl),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        creator.name,
+                        creator.label,
                         style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 15,
@@ -189,7 +234,7 @@ class _CreatorCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        creator.handle,
+                        creator.formattedHandle,
                         style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 12,
@@ -210,45 +255,33 @@ class _CreatorCard extends StatelessWidget {
             ),
           ),
 
-          // Dashed divider
           _dashedDivider(),
 
-          // Stats rows
           _StatRow(
             assetIcon: 'assets/images/vendordashboard/Revenue.png',
             label: 'Revenue Generated',
-            trailing: _blueChip(creator.revenue),
+            trailing: _blueChip(
+                _formatMoney(creator.attributedRevenue, creator.currency)),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
             assetIcon: 'assets/images/vendordashboard/icon_reels.png',
-            label: creator.activeReels != null ? 'Active Reels' : 'Reels Published',
-            trailing: _plainValue(
-                '${creator.activeReels ?? creator.reelsPublished}'),
+            label: 'Active Reels',
+            trailing: _plainValue('${creator.distinctReelCount}'),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
             icon: Icons.shopping_bag_outlined,
             label: 'Sales',
-            trailing: _plainValue('${creator.sales}'),
+            trailing: _plainValue('${creator.unitsSold}'),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
-            icon: Icons.visibility_outlined,
-            label: 'Views',
-            trailing: _plainValue(creator.views),
-          ),
-          const Divider(color: DesignTokens.borderDefault, height: 1),
-          _StatRow(
-            assetIcon: 'assets/images/vendordashboard/icon_pending_inquiries.png',
+            assetIcon:
+                'assets/images/vendordashboard/icon_pending_inquiries.png',
             label: 'Commission Paid',
-            trailing: _plainValue(creator.commissionPaid),
-          ),
-          const Divider(color: DesignTokens.borderDefault, height: 1),
-          _StatRow(
-            icon: Icons.trending_up,
-            label: 'Conversion Rate',
-            trailing: _plainValue(creator.conversionRate),
+            trailing: _plainValue(
+                _formatMoney(creator.commissionPaid, creator.currency)),
           ),
         ],
       ),
@@ -288,7 +321,8 @@ class _CreatorCard extends StatelessWidget {
 
   Widget _dashedDivider() {
     return LayoutBuilder(builder: (_, constraints) {
-      const dashW = 6.0, dashGap = 4.0;
+      const dashW = 6.0;
+      const dashGap = 4.0;
       final count = (constraints.maxWidth / (dashW + dashGap)).floor();
       return Row(
         children: List.generate(
@@ -306,7 +340,8 @@ class _CreatorCard extends StatelessWidget {
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow({this.icon, this.assetIcon, required this.label, required this.trailing});
+  const _StatRow(
+      {required this.label, required this.trailing, this.icon, this.assetIcon});
   final IconData? icon;
   final String? assetIcon;
   final String label;
@@ -342,17 +377,28 @@ class _StatRow extends StatelessWidget {
 
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.url});
-  final String url;
+  final String? url;
 
   @override
   Widget build(BuildContext context) {
+    if (url == null || url!.isEmpty) {
+      return Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFF2C2C2E),
+        ),
+        child: const Icon(Icons.person, color: Color(0xFF9F9FA9), size: 24),
+      );
+    }
     return ClipOval(
       child: Image.network(
-        url,
+        url!,
         width: 48,
         height: 48,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           width: 48,
           height: 48,
           color: const Color(0xFF2C2C2E),
@@ -486,34 +532,4 @@ class _PickSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Data model
-// ---------------------------------------------------------------------------
-
-class _Creator {
-  const _Creator({
-    required this.name,
-    required this.handle,
-    required this.avatarUrl,
-    required this.revenue,
-    this.activeReels,
-    this.reelsPublished,
-    required this.sales,
-    required this.views,
-    required this.commissionPaid,
-    required this.conversionRate,
-  });
-
-  final String name;
-  final String handle;
-  final String avatarUrl;
-  final String revenue;
-  final int? activeReels;
-  final int? reelsPublished;
-  final int sales;
-  final String views;
-  final String commissionPaid;
-  final String conversionRate;
 }

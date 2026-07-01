@@ -102,6 +102,7 @@ abstract class CreatorReelDto with _$CreatorReelDto {
     likes: likes,
     comments: comments,
     shares: shares,
+    sales: sales,
   );
 }
 

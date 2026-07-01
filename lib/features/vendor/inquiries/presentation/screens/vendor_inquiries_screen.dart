@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/models/product_inquiry_dto.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_controller.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Pending Customer Inquiries + Reply (vendor).
@@ -73,7 +73,7 @@ class _InquiryCard extends StatefulWidget {
     required this.onReply,
   });
 
-  final ProductInquiryDto inquiry;
+  final ProductInquiry inquiry;
   final bool replying;
   final Future<bool> Function(String) onReply;
 
@@ -94,7 +94,7 @@ class _InquiryCardState extends State<_InquiryCard> {
   @override
   Widget build(BuildContext context) {
     final inq = widget.inquiry;
-    final answered = inq.state == ProductInquiryState.replied;
+    final answered = inq.status == InquiryStatus.replied;
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
@@ -106,10 +106,10 @@ class _InquiryCardState extends State<_InquiryCard> {
         children: [
           Row(
             children: [
-              _StateBadge(state: inq.state),
+              _StateBadge(status: inq.status),
               const Spacer(),
-              if (inq.responseDeadlineUtc != null && !answered)
-                Text('Reply by ${_date(inq.responseDeadlineUtc!)}',
+              if (inq.responseDeadlineAt != null && !answered)
+                Text('Reply by ${_date(inq.responseDeadlineAt!)}',
                     style: DesignTokens.smallRegular
                         .copyWith(color: DesignTokens.textMuted)),
             ],
@@ -204,21 +204,21 @@ class _InquiryCardState extends State<_InquiryCard> {
 }
 
 class _StateBadge extends StatelessWidget {
-  const _StateBadge({required this.state});
+  const _StateBadge({required this.status});
 
-  final ProductInquiryState state;
+  final InquiryStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (state) {
-      ProductInquiryState.open => (DesignTokens.statusOngoingBg, DesignTokens.colorInfo),
-      ProductInquiryState.replied => (
+    final (bg, fg) = switch (status) {
+      InquiryStatus.open => (DesignTokens.statusOngoingBg, DesignTokens.colorInfo),
+      InquiryStatus.replied => (
           DesignTokens.statusCompletedBg,
-          DesignTokens.colorSuccess
+          DesignTokens.colorSuccess,
         ),
-      ProductInquiryState.expired => (
+      InquiryStatus.expired => (
           DesignTokens.statusRemainingBg,
-          DesignTokens.textMuted
+          DesignTokens.textMuted,
         ),
     };
     return Container(
@@ -227,7 +227,7 @@ class _StateBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(state.label, style: DesignTokens.tiny.copyWith(color: fg)),
+      child: Text(status.label, style: DesignTokens.tiny.copyWith(color: fg)),
     );
   }
 }

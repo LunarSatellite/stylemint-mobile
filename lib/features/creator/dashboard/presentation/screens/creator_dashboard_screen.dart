@@ -332,8 +332,11 @@ class _QuickMetricsCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s16),
                 _MetricRow(
                   iconBg: const Color(0xFF3A2F03),
-                  iconChild: const Icon(Icons.hourglass_bottom_rounded,
-                      size: 28, color: DesignTokens.secondaryYellow),
+                  iconChild: Image.asset(
+                    'assets/images/creatordash/material-symbols_hourglass-top-rounded.png',
+                    width: 28,
+                    height: 28,
+                  ),
                   labelWidget: Text(
                     'Pending from $pendingSalesCount sales',
                     style: DesignTokens.smallRegular.copyWith(
@@ -753,7 +756,7 @@ class _TopReelCard extends StatelessWidget {
               ),
               const SizedBox(width: DesignTokens.s8),
               const Icon(
-                Icons.open_in_new_rounded,
+                Icons.arrow_outward_rounded,
                 color: DesignTokens.iconLight,
                 size: 16,
               ),
@@ -766,10 +769,13 @@ class _TopReelCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _ReelStat(icon: Icons.visibility_rounded, value: reel.views),
+              _ReelStat(imagePath: 'assets/images/creatordash/universal-currency.png', value: reel.sales),
               _ReelStat(icon: Icons.favorite_rounded, value: reel.likes),
-              _ReelStat(icon: Icons.chat_bubble_rounded, value: reel.comments),
+              _ReelStat(icon: Icons.visibility_rounded, value: reel.views),
+              _ReelStat(icon: Icons.shopping_bag_rounded, value: reel.sales),
               _ReelStat(icon: Icons.share_rounded, value: reel.shares),
+              _ReelStat(icon: Icons.chat_bubble_rounded, value: reel.comments),
+              
             ],
           ),
           // Chevron — visual affordance for expand/navigate
@@ -790,16 +796,26 @@ class _TopReelCard extends StatelessWidget {
 }
 
 class _ReelStat extends StatelessWidget {
-  const _ReelStat({required this.icon, required this.value});
+  const _ReelStat({this.icon, this.imagePath, required this.value})
+      : assert(icon != null || imagePath != null);
 
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
   final int value;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: DesignTokens.textWhite),
+        if (imagePath != null)
+          Image.asset(
+            imagePath!,
+            width: 20,
+            height: 20,
+            color: DesignTokens.textWhite,
+          )
+        else
+          Icon(icon!, size: 20, color: DesignTokens.textWhite),
         const SizedBox(height: DesignTokens.s4),
         Text(
           _compact(value),
@@ -1095,12 +1111,12 @@ class _CreatorBottomNav extends StatelessWidget {
             ),
           ),
           _NavBtn(
-            iconWidget: const Icon(Icons.storefront_outlined, size: 22, color: DesignTokens.textMuted),
+            iconWidget: Image.asset('assets/images/creatordash/Brand_Icon.png', width: 22, height: 22),
             label: 'Brands',
             onTap: () => context.push(RouteNames.partnerships),
           ),
           _NavBtn(
-            iconWidget: const Icon(Icons.person_outline_rounded, size: 22, color: DesignTokens.textMuted),
+            iconWidget: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),

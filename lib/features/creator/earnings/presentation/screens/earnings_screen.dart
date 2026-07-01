@@ -101,8 +101,11 @@ class _BalancesPayoutCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s16),
                 _BalanceMetric(
                   iconBg: const Color(0xFF3A2F03),
-                  iconChild: const Icon(Icons.hourglass_bottom_rounded,
-                      size: 28, color: DesignTokens.secondaryYellow),
+                  iconChild: Image.asset(
+                    'assets/images/creatordash/material-symbols_hourglass-top-rounded.png',
+                    width: 28,
+                    height: 28,
+                  ),
                   label: 'Pending Balance (In NPR)',
                   value: formatMoney(summary.pendingBalance),
                 ),
