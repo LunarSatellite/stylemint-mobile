@@ -7,7 +7,10 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/data/dataso
 import 'package:stylemint_mobile_frontend/features/creator/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/repositories/analytics_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_dashboard_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_full_report_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_overview_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_reel_analytics_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_top_reels_notifier.dart';
 
 final analyticsRemoteDataSourceProvider = Provider<AnalyticsRemoteDataSource>(
   (ref) => AnalyticsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -28,4 +31,22 @@ final creatorDashboardNotifierProvider =
 final creatorOverviewNotifierProvider =
     StateNotifierProvider<CreatorOverviewNotifier, CreatorOverviewState>(
   (ref) => CreatorOverviewNotifier(ref.watch(analyticsRepositoryProvider)),
+);
+
+final creatorFullReportNotifierProvider =
+    StateNotifierProvider<CreatorFullReportNotifier, CreatorFullReportState>(
+  (ref) => CreatorFullReportNotifier(ref.watch(analyticsRepositoryProvider)),
+);
+
+final creatorTopReelsNotifierProvider =
+    StateNotifierProvider<CreatorTopReelsNotifier, CreatorTopReelsState>(
+  (ref) => CreatorTopReelsNotifier(ref.watch(analyticsRepositoryProvider)),
+);
+
+final creatorReelAnalyticsNotifierProvider = StateNotifierProvider.family<
+    CreatorReelAnalyticsNotifier, CreatorReelAnalyticsState, String>(
+  (ref, reelId) => CreatorReelAnalyticsNotifier(
+    ref.watch(analyticsRepositoryProvider),
+    reelId,
+  ),
 );

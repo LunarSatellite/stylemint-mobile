@@ -632,13 +632,22 @@ class _TotalViewsCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: DesignTokens.s12),
-            child: Image.asset(
-              'assets/images/creatordash/hands.png',
-              width: 90,
-              height: 90,
-              fit: BoxFit.contain,
-              alignment: Alignment.bottomCenter,
+            padding: const EdgeInsets.only(right: DesignTokens.s32),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: OverflowBox(
+                maxWidth: 120,
+                maxHeight: 120,
+                alignment: Alignment.bottomCenter,
+                child: Image.asset(
+                  'assets/images/creatordash/hands.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
             ),
           ),
           

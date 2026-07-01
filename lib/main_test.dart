@@ -591,7 +591,9 @@ class _DevApp extends StatelessWidget {
         ),
         GoRoute(
           path: RouteNames.creatorReelAnalyticsDetail,
-          builder: (ctx, _) => const ReelDetailAnalyticsScreen(),
+          builder: (ctx, state) => ReelDetailAnalyticsScreen(
+            reelId: state.pathParameters['reelId']!,
+          ),
         ),
         GoRoute(
           path: RouteNames.creatorFullAnalyticsReport,

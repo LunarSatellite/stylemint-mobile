@@ -201,6 +201,6 @@ abstract class RouteNames {
   static const creatorSupportContact = '/creator/support/contact';
   static const creatorActivity = '/creator/activity';
   static const creatorAnalytics = '/creator/analytics';
-  static const creatorReelAnalyticsDetail = '/creator/analytics/reel-detail';
+  static const creatorReelAnalyticsDetail = '/creator/analytics/reel-detail/:reelId';
   static const creatorFullAnalyticsReport = '/creator/analytics/full-report';
 }

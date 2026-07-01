@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
-import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_reels_sort.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_top_reels_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Enums ─────────────────────────────────────────────────────────────────────
-
-enum _SortOption {
-  highestEarnings('Highest Earnings'),
-  mostLiked('Most Liked'),
-  mostWatched('Most Watched'),
-  highestConversionRate('Highest Conversion Rate'),
-  highestEngagement('Most Engagement (likes & Shares)');
-
-  const _SortOption(this.label);
-  final String label;
-}
+// ── Time filter enum (local UX only — maps to fromUtc/toUtc for API) ──────────
 
 enum _TimeFilter {
   thisWeek('This Week'),
@@ -25,6 +16,15 @@ enum _TimeFilter {
 
   const _TimeFilter(this.label);
   final String label;
+}
+
+extension _TopReelsSortLabel on TopReelsSort {
+  String get label => switch (this) {
+        TopReelsSort.highestEarnings => 'Highest Earnings',
+        TopReelsSort.mostViewed => 'Most Viewed',
+        TopReelsSort.highestConversion => 'Highest Conversion Rate',
+        TopReelsSort.mostEngagement => 'Most Engagement',
+      };
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -37,18 +37,26 @@ class TopReelsScreen extends ConsumerStatefulWidget {
 }
 
 class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
-  _SortOption _sort = _SortOption.highestEarnings;
+  TopReelsSort _sort = TopReelsSort.highestEarnings;
   _TimeFilter _timeFilter = _TimeFilter.allTime;
 
   bool get _isFilterActive => _timeFilter != _TimeFilter.allTime;
 
+  DateTime? get _fromUtc => switch (_timeFilter) {
+        _TimeFilter.allTime => null,
+        _TimeFilter.thisWeek =>
+          DateTime.now().toUtc().subtract(const Duration(days: 7)),
+        _TimeFilter.thisMonth =>
+          DateTime.now().toUtc().subtract(const Duration(days: 30)),
+      };
+
   @override
   Widget build(BuildContext context) {
-    final dashState = ref.watch(creatorDashboardNotifierProvider);
+    final state = ref.watch(creatorTopReelsNotifierProvider);
 
-    final reels = dashState.maybeWhen(
-      loadSuccess: (d) => _apply(d.topReels),
-      orElse: () => const <CreatorReel>[],
+    final reels = state.maybeWhen(
+      loadSuccess: (r) => r,
+      orElse: () => const <TopReelSummary>[],
     );
 
     return Scaffold(
@@ -91,7 +99,7 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
           ),
           // ── List ────────────────────────────────────────────────────────
           Expanded(
-            child: dashState.maybeWhen(
+            child: state.maybeWhen(
               loadInProgress: () => const Center(
                 child: CircularProgressIndicator(
                   color: DesignTokens.primaryGreen,
@@ -128,37 +136,11 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
     );
   }
 
-  List<CreatorReel> _apply(List<CreatorReel> source) {
-    var result = List<CreatorReel>.from(source);
-
-    // Time filter
-    if (_timeFilter != _TimeFilter.allTime) {
-      final now = DateTime.now();
-      final cutoff = _timeFilter == _TimeFilter.thisWeek
-          ? now.subtract(const Duration(days: 7))
-          : now.subtract(const Duration(days: 30));
-      result = result
-          .where((r) => r.publishedAt.isAfter(cutoff))
-          .toList();
-    }
-
-    // Sort
-    switch (_sort) {
-      case _SortOption.highestEarnings:
-        result.sort((a, b) => b.comments.compareTo(a.comments));
-      case _SortOption.mostLiked:
-        result.sort((a, b) => b.likes.compareTo(a.likes));
-      case _SortOption.mostWatched:
-        result.sort((a, b) => b.views.compareTo(a.views));
-      case _SortOption.highestConversionRate:
-        result.sort((a, b) => b.shares.compareTo(a.shares));
-      case _SortOption.highestEngagement:
-        result.sort(
-          (a, b) => (b.views + b.shares).compareTo(a.views + a.shares),
+  void _fetch() {
+    ref.read(creatorTopReelsNotifierProvider.notifier).fetch(
+          sortBy: _sort,
+          fromUtc: _fromUtc,
         );
-    }
-
-    return result;
   }
 
   void _openSortSheet(BuildContext context) {
@@ -175,6 +157,7 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
         onSelected: (opt) {
           setState(() => _sort = opt);
           Navigator.of(sheetCtx).pop();
+          _fetch();
         },
       ),
     );
@@ -199,13 +182,15 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
             _timeFilter = time;
           });
           Navigator.of(sheetCtx).pop();
+          _fetch();
         },
         onClear: () {
           setState(() {
-            _sort = _SortOption.highestEarnings;
+            _sort = TopReelsSort.highestEarnings;
             _timeFilter = _TimeFilter.allTime;
           });
           Navigator.of(sheetCtx).pop();
+          _fetch();
         },
       ),
     );
@@ -265,7 +250,7 @@ class _FilterChip extends StatelessWidget {
 class _SortChip extends StatelessWidget {
   const _SortChip({required this.current, required this.onTap});
 
-  final _SortOption current;
+  final TopReelsSort current;
   final VoidCallback onTap;
 
   @override
@@ -309,16 +294,10 @@ class _SortChip extends StatelessWidget {
 class _SortSheet extends StatelessWidget {
   const _SortSheet({required this.current, required this.onSelected});
 
-  final _SortOption current;
-  final ValueChanged<_SortOption> onSelected;
+  final TopReelsSort current;
+  final ValueChanged<TopReelsSort> onSelected;
 
-  // Options shown in the Sort By sheet (subset matching the design)
-  static const _options = [
-    _SortOption.highestEarnings,
-    _SortOption.mostLiked,
-    _SortOption.mostWatched,
-    _SortOption.highestEngagement,
-  ];
+  static const _options = TopReelsSort.values;
 
   @override
   Widget build(BuildContext context) {
@@ -333,7 +312,7 @@ class _SortSheet extends StatelessWidget {
           onClose: () => Navigator.of(context).pop(),
         ),
         for (final opt in _options)
-          RadioListTile<_SortOption>(
+          RadioListTile<TopReelsSort>(
             value: opt,
             groupValue: current,
             onChanged: (val) {
@@ -363,9 +342,9 @@ class _FilterSheet extends StatefulWidget {
     required this.onClear,
   });
 
-  final _SortOption initialSort;
+  final TopReelsSort initialSort;
   final _TimeFilter initialTime;
-  final void Function(_SortOption sort, _TimeFilter time) onApply;
+  final void Function(TopReelsSort sort, _TimeFilter time) onApply;
   final VoidCallback onClear;
 
   @override
@@ -373,15 +352,8 @@ class _FilterSheet extends StatefulWidget {
 }
 
 class _FilterSheetState extends State<_FilterSheet> {
-  late _SortOption _sort;
+  late TopReelsSort _sort;
   late _TimeFilter _time;
-
-  static const _sortOptions = [
-    _SortOption.highestEarnings,
-    _SortOption.mostLiked,
-    _SortOption.highestConversionRate,
-    _SortOption.highestEngagement,
-  ];
 
   @override
   void initState() {
@@ -454,8 +426,8 @@ class _FilterSheetState extends State<_FilterSheet> {
               ),
             ),
           ),
-          for (final opt in _sortOptions)
-            RadioListTile<_SortOption>(
+          for (final opt in TopReelsSort.values)
+            RadioListTile<TopReelsSort>(
               value: opt,
               groupValue: _sort,
               onChanged: (val) {
@@ -574,12 +546,13 @@ class _RankedReelCard extends StatelessWidget {
   const _RankedReelCard({required this.rank, required this.reel});
 
   final int rank;
-  final CreatorReel reel;
+  final TopReelSummary reel;
 
   @override
   Widget build(BuildContext context) {
     final title = reel.title.isEmpty ? 'Untitled reel' : reel.title;
-    final posted = DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAt);
+    final posted =
+        DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAtUtc.toLocal());
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -682,14 +655,11 @@ class _RankedReelCard extends StatelessWidget {
                     width: 20,
                     height: 20,
                   ),
-                  value: reel.comments,
+                  value: reel.earnings.amount.round(),
                 ),
                 _Stat(icon: Icons.favorite, value: reel.likes),
                 _Stat(icon: Icons.visibility, value: reel.views),
-                _Stat(
-                  icon: Icons.shopping_bag,
-                  value: reel.shares,
-                ),
+                _Stat(icon: Icons.shopping_bag, value: reel.sales),
               ],
             ),
           ),

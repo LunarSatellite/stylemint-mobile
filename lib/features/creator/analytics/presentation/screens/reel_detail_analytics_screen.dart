@@ -1,13 +1,68 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/audience_age_bucket.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/audience_location.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/creator_reel_analytics.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/earnings_trend_point.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/gender_distribution.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/reel_header.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/reel_product_earnings_slice.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/reel_statistics.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_reel_analytics_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class ReelDetailAnalyticsScreen extends StatelessWidget {
-  const ReelDetailAnalyticsScreen({super.key});
+// ── Color palette for charts ──────────────────────────────────────────────────
+
+const _kChartColors = [
+  Color(0xFF4DA6FF),
+  Color(0xFF2ECC71),
+  Color(0xFFFF6B6B),
+  Color(0xFFFFD93D),
+  Color(0xFFAB8FF5),
+];
+
+// ── Date filter ───────────────────────────────────────────────────────────────
+
+enum _DateFilter {
+  last7Days('Last 7 days', 7),
+  last30Days('Last 30 days', 30),
+  last90Days('Last 90 days', 90);
+
+  const _DateFilter(this.label, this.days);
+  final String label;
+  final int days;
+
+  DateTime get fromUtc =>
+      DateTime.now().toUtc().subtract(Duration(days: days));
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+class ReelDetailAnalyticsScreen extends ConsumerStatefulWidget {
+  const ReelDetailAnalyticsScreen({super.key, required this.reelId});
+
+  final String reelId;
+
+  @override
+  ConsumerState<ReelDetailAnalyticsScreen> createState() =>
+      _ReelDetailAnalyticsScreenState();
+}
+
+class _ReelDetailAnalyticsScreenState
+    extends ConsumerState<ReelDetailAnalyticsScreen> {
+  _DateFilter _filter = _DateFilter.last7Days;
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(
+      creatorReelAnalyticsNotifierProvider(widget.reelId),
+    );
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -20,86 +75,170 @@ class ReelDetailAnalyticsScreen extends StatelessWidget {
         title: const Text('Reel Details', style: DesignTokens.titleMedium),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border_rounded, color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.bookmark_border_rounded,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () {},
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () {},
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Date range text + filter chips ─────────────────────────
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s8, DesignTokens.s16, DesignTokens.s8,
-              ),
-              child: Text(
-                'Date Range: Dec 1 - 18, 2025',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ),
-            const _FilterChipsRow(),
-            const SizedBox(height: DesignTokens.s16),
-
-            // ── Reel info + stats ───────────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              child: _ReelInfoCard(),
-            ),
-            const SizedBox(height: DesignTokens.s20),
-
-            // ── Earnings distribution ───────────────────────────────────
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Earnings Distribution Data',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Analytics data for each tagged product\'s earnings',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 12,
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
-                  SizedBox(height: DesignTokens.s12),
-                  _EarningsDistributionCard(),
-                  SizedBox(height: DesignTokens.s16),
-                  _StatisticsSection(),
-                  SizedBox(height: DesignTokens.s24),
-                  _EarningsOverviewSection(),
-                  SizedBox(height: DesignTokens.s24),
-                  _AudienceDemographicSection(),
-                  SizedBox(height: DesignTokens.s24),
-                  _GenderDistributionSection(),
-                  SizedBox(height: DesignTokens.s24),
-                  _TopLocationsSection(),
-                  SizedBox(height: DesignTokens.s32),
-                ],
-              ),
-            ),
-          ],
+      body: state.when(
+        initial: () => const SizedBox.shrink(),
+        loadInProgress: () => const Center(
+          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
         ),
+        loadFailure: (failure) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                failure.isNoInternet
+                    ? 'No internet connection'
+                    : 'Failed to load reel analytics',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              ElevatedButton(
+                onPressed: _fetch,
+                style: DesignTokens.primaryButtonStyle(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        loadSuccess: (CreatorReelAnalytics analytics) =>
+            _Body(analytics: analytics, filter: _filter, onFilter: _setFilter),
+      ),
+    );
+  }
+
+  void _setFilter(_DateFilter f) {
+    setState(() => _filter = f);
+    _fetch();
+  }
+
+  void _fetch() {
+    ref
+        .read(creatorReelAnalyticsNotifierProvider(widget.reelId).notifier)
+        .fetch(fromUtc: _filter.fromUtc);
+  }
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────────
+
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.analytics,
+    required this.filter,
+    required this.onFilter,
+  });
+
+  final CreatorReelAnalytics analytics;
+  final _DateFilter filter;
+  final ValueChanged<_DateFilter> onFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final from = DateFormat('MMM d, yyyy').format(analytics.window.fromUtc);
+    final to = DateFormat('MMM d, yyyy').format(analytics.window.toUtc);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Date range + filter chips ───────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s8,
+              DesignTokens.s16,
+              DesignTokens.s8,
+            ),
+            child: Text(
+              'Date Range: $from – $to',
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: DesignTokens.textLight,
+              ),
+            ),
+          ),
+          _FilterChipsRow(current: filter, onSelected: onFilter),
+          const SizedBox(height: DesignTokens.s16),
+
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Reel info card ────────────────────────────────────────
+                _ReelInfoCard(reel: analytics.reel),
+                const SizedBox(height: DesignTokens.s20),
+
+                // ── Earnings distribution ─────────────────────────────────
+                const Text(
+                  'Earnings Distribution Data',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Analytics data for each tagged product's earnings",
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                _EarningsDistributionCard(
+                  totalEarnings: analytics.totalEarnings,
+                  slices: analytics.earningsDistribution,
+                ),
+                const SizedBox(height: DesignTokens.s16),
+
+                // ── Statistics ────────────────────────────────────────────
+                _StatisticsSection(
+                  stats: analytics.statistics,
+                  watchTimeMinutes: analytics.watchTimeMinutes,
+                ),
+                const SizedBox(height: DesignTokens.s24),
+
+                // ── Earnings overview chart ────────────────────────────────
+                _EarningsOverviewSection(trend: analytics.earningsTrend),
+                const SizedBox(height: DesignTokens.s24),
+
+                // ── Audience demographic ──────────────────────────────────
+                _AudienceDemographicSection(
+                  buckets: analytics.audienceDemographic,
+                ),
+                const SizedBox(height: DesignTokens.s24),
+
+                // ── Gender distribution ───────────────────────────────────
+                _GenderDistributionSection(
+                  gender: analytics.genderDistribution,
+                ),
+                const SizedBox(height: DesignTokens.s24),
+
+                // ── Top locations ─────────────────────────────────────────
+                _TopLocationsSection(locations: analytics.topLocations),
+                const SizedBox(height: DesignTokens.s32),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -108,14 +247,10 @@ class ReelDetailAnalyticsScreen extends StatelessWidget {
 // ── Filter chips ──────────────────────────────────────────────────────────────
 
 class _FilterChipsRow extends StatelessWidget {
-  const _FilterChipsRow();
+  const _FilterChipsRow({required this.current, required this.onSelected});
 
-  static const _chips = [
-    (Icons.calendar_today_rounded, 'Custom Date', false),
-    (null,                          'Last 7 days',  true),
-    (null,                          'Last 30 days', false),
-    (null,                          'Last 90 days', false),
-  ];
+  final _DateFilter current;
+  final ValueChanged<_DateFilter> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -123,48 +258,39 @@ class _FilterChipsRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
-        children: _chips.map((c) {
-          final icon     = c.$1;
-          final label    = c.$2;
-          final selected = c.$3;
-          return Container(
-            margin: const EdgeInsets.only(right: DesignTokens.s8),
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s12,
-              vertical: 7,
-            ),
-            decoration: BoxDecoration(
-              color: selected
-                  ? DesignTokens.primaryGreen.withValues(alpha: 0.15)
-                  : DesignTokens.bgAppBody,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.borderDefault,
-                width: 1,
+        children: _DateFilter.values.map((f) {
+          final selected = f == current;
+          return GestureDetector(
+            onTap: () => onSelected(f),
+            child: Container(
+              margin: const EdgeInsets.only(right: DesignTokens.s8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+                vertical: 7,
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon,
-                    size: 13,
-                    color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
-                  ),
-                  const SizedBox(width: 5),
-                ],
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? DesignTokens.primaryGreen : DesignTokens.textLight,
-                  ),
+              decoration: BoxDecoration(
+                color: selected
+                    ? DesignTokens.primaryGreen.withValues(alpha: 0.15)
+                    : DesignTokens.bgAppBody,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.borderDefault,
                 ),
-              ],
+              ),
+              child: Text(
+                f.label,
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight:
+                      selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.textLight,
+                ),
+              ),
             ),
           );
         }).toList(),
@@ -176,59 +302,59 @@ class _FilterChipsRow extends StatelessWidget {
 // ── Reel info card ────────────────────────────────────────────────────────────
 
 class _ReelInfoCard extends StatelessWidget {
-  const _ReelInfoCard();
+  const _ReelInfoCard({required this.reel});
 
-  static const _stats = [
-    (Icons.favorite_rounded,           '23.8k'),
-    (Icons.visibility_outlined,         '465k'),
-    (Icons.share_outlined,              '13.67k'),
-    (Icons.chat_bubble_outline_rounded, '976'),
-  ];
+  final ReelHeader reel;
 
   @override
   Widget build(BuildContext context) {
+    final title =
+        (reel.title?.isNotEmpty ?? false) ? reel.title! : 'Untitled reel';
+    final posted = reel.publishedAtUtc != null
+        ? 'Posted on: ${DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAtUtc!.toLocal())}'
+        : '';
+    final platform = reel.sourcePlatform ?? '';
+
     return Container(
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         children: [
-          // ── Top: thumbnail + info + link icon ─────────────────────────
           Padding(
             padding: const EdgeInsets.all(DesignTokens.s12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Red thumbnail
                 ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.s8),
                   child: Container(
                     width: 64,
                     height: 72,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFB71C1C), Color(0xFF4A0000)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
+                    color: DesignTokens.bgAppBody,
                     alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.directions_run_rounded,
-                      color: Colors.white38,
-                      size: 32,
-                    ),
+                    child: (reel.thumbnailUrl?.isNotEmpty ?? false)
+                        ? Image.network(
+                            reel.thumbnailUrl!,
+                            width: 64,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          )
+                        : const Icon(
+                            Icons.play_circle_fill,
+                            color: DesignTokens.iconLight,
+                            size: 32,
+                          ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
-                // Title + badges
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Nike Structure 26 – Be the Trail Blazzer Runner',
+                      Text(
+                        title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -236,46 +362,26 @@ class _ReelInfoCard extends StatelessWidget {
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      // Instagram badge
-                      Row(
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF833AB4), Color(0xFFE1306C), Color(0xFFF77737)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              size: 10,
-                              color: Colors.white,
-                            ),
+                      if (platform.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Imported from $platform',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                            fontSize: 11,
                           ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Imported from Instagram',
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Posted on: 7 Aug, 2025 09:57 PM',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                          fontSize: 11,
                         ),
-                      ),
+                      ],
+                      if (posted.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          posted,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -288,10 +394,7 @@ class _ReelInfoCard extends StatelessWidget {
               ],
             ),
           ),
-
           const Divider(color: DesignTokens.borderDefault, height: 1),
-
-          // ── Bottom: engagement stats ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: DesignTokens.s16,
@@ -299,21 +402,14 @@ class _ReelInfoCard extends StatelessWidget {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: _stats.map((s) => Column(
-                children: [
-                  Icon(s.$1, size: 20, color: DesignTokens.textLight),
-                  const SizedBox(height: 4),
-                  Text(
-                    s.$2,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                ],
-              )).toList(),
+              children: [
+                _IconStat(icon: Icons.favorite_rounded, value: reel.likes),
+                _IconStat(icon: Icons.visibility_outlined, value: reel.views),
+                _IconStat(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  value: reel.comments,
+                ),
+              ],
             ),
           ),
         ],
@@ -322,38 +418,85 @@ class _ReelInfoCard extends StatelessWidget {
   }
 }
 
-// ── Earnings distribution card ────────────────────────────────────────────────
+class _IconStat extends StatelessWidget {
+  const _IconStat({required this.icon, required this.value});
 
-class _EarningsDistributionCard extends StatelessWidget {
-  const _EarningsDistributionCard();
-
-  static const _products = [
-    _Product('Blueberry Cheese Cake',                                        Color(0xFF4DA6FF), 31, 'Rs 4,135.50'),
-    _Product('Belgian Chocolate Truffles Cake with Swiss Chocolate Drizzle', Color(0xFF2ECC71), 30, 'Rs 3,954.18'),
-    _Product('Strawberry Cheese Cake',                                       Color(0xFFFF6B6B), 26, 'Rs 2,377.30'),
-    _Product('Belgian Chocolate Tiramisu Cake',                              Color(0xFFFFD93D), 20, 'Rs 1,897'),
-  ];
-  
+  final IconData icon;
+  final int value;
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, size: 20, color: DesignTokens.textLight),
+        const SizedBox(height: 4),
+        Text(
+          _compact(value),
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _compact(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(2)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(2)}k';
+    return '$n';
+  }
+}
+
+// ── Earnings distribution card ────────────────────────────────────────────────
+
+class _EarningsDistributionCard extends StatelessWidget {
+  const _EarningsDistributionCard({
+    required this.totalEarnings,
+    required this.slices,
+  });
+
+  final dynamic totalEarnings;
+  final List<ReelProductEarningsSlice> slices;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = totalEarnings.amount as double;
+    final currency = totalEarnings.currency as String;
+
+    if (slices.isEmpty) {
+      return Container(
+        decoration: DesignTokens.cardDecoration(),
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Text(
+          'No product data yet.',
+          style:
+              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+        ),
+      );
+    }
+
     return Container(
       decoration: DesignTokens.cardDecoration(),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Large earnings number ──────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s12,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s12,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  '14,235.98',
-                  style: TextStyle(
+                Text(
+                  total.toStringAsFixed(2),
+                  style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 38,
                     fontWeight: FontWeight.w800,
@@ -366,7 +509,7 @@ class _EarningsDistributionCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 5),
                   child: Text(
-                    'Rs. earned',
+                    '$currency earned',
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textMuted,
                       fontSize: 13,
@@ -376,108 +519,115 @@ class _EarningsDistributionCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // ── Segmented bar ──────────────────────────────────────────────
+          // Segmented bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+            padding:
+                const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s8),
               child: SizedBox(
                 height: 36,
                 child: Row(
-                  children: _products.map((p) => Expanded(
-                    flex: p.pct,
-                    child: Container(
-                      color: p.color,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '${p.pct}%',
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                  children: slices.asMap().entries.map((e) {
+                    final color =
+                        _kChartColors[e.key % _kChartColors.length];
+                    final pct = e.value.percentOfTotal.round();
+                    return Expanded(
+                      flex: pct.clamp(1, 100),
+                      child: Container(
+                        color: color,
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$pct%',
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                  )).toList(),
+                    );
+                  }).toList(),
                 ),
               ),
             ),
           ),
-
-          // ── Product rows ───────────────────────────────────────────────
-          ...List.generate(_products.length, (i) => Column(
-            children: [
-              const Divider(
-                color: DesignTokens.borderDefault,
-                height: 1,
-                indent: DesignTokens.s16,
-                endIndent: DesignTokens.s16,
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                  vertical: DesignTokens.s12,
+          // Product rows
+          ...slices.asMap().entries.map((e) {
+            final slice = e.value;
+            final color = _kChartColors[e.key % _kChartColors.length];
+            final name =
+                (slice.name?.isNotEmpty ?? false) ? slice.name! : 'Product';
+            return Column(
+              children: [
+                const Divider(
+                  color: DesignTokens.borderDefault,
+                  height: 1,
+                  indent: DesignTokens.s16,
+                  endIndent: DesignTokens.s16,
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: _products[i].color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
-                    Expanded(
-                      child: Text(
-                        _products[i].name,
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s12,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
                         ),
-                        maxLines: 2,
                       ),
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
-                    Text(
-                      _products[i].amount,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textWhite),
+                          maxLines: 2,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: DesignTokens.s12),
+                      Text(
+                        '${slice.amount.currency} ${slice.amount.amount.toStringAsFixed(2)}',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          )),
+              ],
+            );
+          }),
         ],
       ),
     );
   }
 }
 
-class _Product {
-  const _Product(this.name, this.color, this.pct, this.amount);
-  final String name;
-  final Color  color;
-  final int    pct;
-  final String amount;
-}
-
 // ── Statistics section ────────────────────────────────────────────────────────
 
 class _StatisticsSection extends StatelessWidget {
-  const _StatisticsSection();
+  const _StatisticsSection({
+    required this.stats,
+    required this.watchTimeMinutes,
+  });
+
+  final ReelStatistics stats;
+  final int watchTimeMinutes;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Statistics',
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
@@ -486,48 +636,75 @@ class _StatisticsSection extends StatelessWidget {
             color: DesignTokens.textWhite,
           ),
         ),
-        SizedBox(height: DesignTokens.s12),
+        const SizedBox(height: DesignTokens.s12),
         Row(
           children: [
-            Expanded(child: _StatCard(
-              iconWidget: _PercentIcon(),
-              value: '10.25%',
-              label: 'Conversion Rate',
-            )),
-            SizedBox(width: DesignTokens.s12),
-            Expanded(child: _StatCard(
-              iconWidget: Icon(Icons.ads_click_rounded, color: DesignTokens.textMuted, size: 22),
-              value: '40%',
-              label: 'Click Through Rate',
-            )),
+            Expanded(
+              child: _StatCard(
+                iconWidget: const _PercentIcon(),
+                value: '${stats.conversionRate.toStringAsFixed(2)}%',
+                label: 'Conversion Rate',
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: _StatCard(
+                iconWidget: const Icon(
+                  Icons.ads_click_rounded,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
+                value: '${stats.clickThroughRate.toStringAsFixed(2)}%',
+                label: 'Click Through Rate',
+              ),
+            ),
           ],
         ),
-        SizedBox(height: DesignTokens.s12),
+        const SizedBox(height: DesignTokens.s12),
         Row(
           children: [
-            Expanded(child: _StatCard(
-              iconWidget: Icon(Icons.remove_red_eye_outlined, color: DesignTokens.textMuted, size: 22),
-              value: '257.9k',
-              label: 'Completion Rate',
-            )),
-            SizedBox(width: DesignTokens.s12),
-            Expanded(child: _StatCard(
-              iconWidget: Icon(Icons.account_circle_outlined, color: DesignTokens.textMuted, size: 22),
-              value: '187.9k',
-              label: 'Unique Viewers',
-            )),
+            Expanded(
+              child: _StatCard(
+                iconWidget: const Icon(
+                  Icons.remove_red_eye_outlined,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
+                value: '${stats.completionRate.toStringAsFixed(2)}%',
+                label: 'Completion Rate',
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: _StatCard(
+                iconWidget: const Icon(
+                  Icons.account_circle_outlined,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
+                value: _compact(stats.uniqueViewersEstimate),
+                label: 'Unique Viewers',
+              ),
+            ),
           ],
         ),
-        SizedBox(height: DesignTokens.s12),
-        // Green watch time card
-        _WatchTimeCard(),
+        const SizedBox(height: DesignTokens.s12),
+        _WatchTimeCard(minutes: watchTimeMinutes),
       ],
     );
+  }
+
+  static String _compact(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(2)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(2)}k';
+    return '$n';
   }
 }
 
 class _WatchTimeCard extends StatelessWidget {
-  const _WatchTimeCard();
+  const _WatchTimeCard({required this.minutes});
+
+  final int minutes;
 
   @override
   Widget build(BuildContext context) {
@@ -548,15 +725,19 @@ class _WatchTimeCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.timer_rounded, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.timer_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: DesignTokens.s16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '5,563 minutes',
-                style: TextStyle(
+              Text(
+                '${_formatMinutes(minutes)} minutes',
+                style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -575,6 +756,12 @@ class _WatchTimeCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _formatMinutes(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(2)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(2)}k';
+    return '$n';
   }
 }
 
@@ -651,7 +838,9 @@ class _PercentIcon extends StatelessWidget {
 // ── Earnings overview chart ───────────────────────────────────────────────────
 
 class _EarningsOverviewSection extends StatelessWidget {
-  const _EarningsOverviewSection();
+  const _EarningsOverviewSection({required this.trend});
+
+  final List<EarningsTrendPoint> trend;
 
   @override
   Widget build(BuildContext context) {
@@ -667,51 +856,68 @@ class _EarningsOverviewSection extends StatelessWidget {
             color: DesignTokens.textWhite,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'According to demographics according to age groups',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-        ),
         const SizedBox(height: DesignTokens.s12),
-        Container(
-          decoration: DesignTokens.cardDecoration(),
-          padding: const EdgeInsets.fromLTRB(8, DesignTokens.s16, DesignTokens.s12, DesignTokens.s12),
-          child: SizedBox(
-            height: 180,
-            width: double.infinity,
-            child: CustomPaint(painter: _EarningsLinePainter()),
+        if (trend.isEmpty)
+          Text(
+            'No earnings data for this period.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textMuted),
+          )
+        else
+          Container(
+            decoration: DesignTokens.cardDecoration(),
+            padding: const EdgeInsets.fromLTRB(
+              8,
+              DesignTokens.s16,
+              DesignTokens.s12,
+              DesignTokens.s12,
+            ),
+            child: SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _EarningsLinePainter(trend: trend),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
 }
 
 class _EarningsLinePainter extends CustomPainter {
-  static const _data    = [1200.0, 3500, 5000, 8000, 11000, 22000];
-  static const _xLabels = ['Dec 1', 'Dec 7', 'Dec 14', 'Dec 21', 'Dec 28', 'Today'];
-  static const _yLabels = ['0', '5k', '10k', '15k', '20k', '25k'];
-  static const _maxVal  = 25000.0;
-  static const _leftPad   = 38.0;
+  const _EarningsLinePainter({required this.trend});
+
+  final List<EarningsTrendPoint> trend;
+
+  static const _leftPad = 42.0;
   static const _bottomPad = 22.0;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (trend.isEmpty) return;
+
+    final data = trend.map((p) => p.amount.amount).toList();
+    final maxVal = data.reduce(math.max) * 1.1;
     final chartW = size.width - _leftPad;
     final chartH = size.height - _bottomPad;
 
-    final pts = List.generate(_data.length, (i) => Offset(
-      _leftPad + i * chartW / (_data.length - 1),
-      chartH - (_data[i] / _maxVal) * chartH,
-    ));
+    final pts = List.generate(data.length, (i) => Offset(
+          _leftPad + i * chartW / (data.length - 1).clamp(1, double.infinity),
+          chartH - (maxVal > 0 ? (data[i] / maxVal) * chartH : 0),
+        ));
 
     // Area fill
     final areaPath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      areaPath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      areaPath.cubicTo(
+          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
-    areaPath..lineTo(pts.last.dx, chartH)..lineTo(pts.first.dx, chartH)..close();
+    areaPath
+      ..lineTo(pts.last.dx, chartH)
+      ..lineTo(pts.first.dx, chartH)
+      ..close();
     canvas.drawPath(
       areaPath,
       Paint()
@@ -729,96 +935,162 @@ class _EarningsLinePainter extends CustomPainter {
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      linePath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      linePath.cubicTo(
+          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
-    canvas.drawPath(linePath, Paint()
-      ..color = DesignTokens.primaryGreen
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke);
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = DesignTokens.primaryGreen
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke,
+    );
 
-    // Grid + y-labels
+    // Y-axis grid + labels
+    const ySteps = 5;
     final gridPaint = Paint()
       ..color = DesignTokens.borderDefault.withValues(alpha: 0.5)
       ..strokeWidth = 0.5;
-    for (int i = 0; i < _yLabels.length; i++) {
-      final y = chartH - (i / (_yLabels.length - 1)) * chartH;
-      canvas.drawLine(Offset(_leftPad, y), Offset(size.width, y), gridPaint);
+    for (int i = 0; i <= ySteps; i++) {
+      final y = chartH - (i / ySteps) * chartH;
+      canvas.drawLine(
+          Offset(_leftPad, y), Offset(size.width, y), gridPaint);
+      final val = (maxVal * i / ySteps).round();
+      final label =
+          val >= 1000 ? '${(val / 1000).toStringAsFixed(0)}k' : '$val';
       final tp = TextPainter(
-        text: TextSpan(text: _yLabels[i], style: const TextStyle(color: DesignTokens.textMuted, fontSize: 9, fontFamily: DesignTokens.fontFamily)),
-        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            color: DesignTokens.textMuted,
+            fontSize: 9,
+            fontFamily: DesignTokens.fontFamily,
+          ),
+        ),
+        textDirection: ui.TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    // X-labels
-    for (int i = 0; i < _xLabels.length; i++) {
-      final x = _leftPad + i * chartW / (_xLabels.length - 1);
-      final tp = TextPainter(
-        text: TextSpan(text: _xLabels[i], style: const TextStyle(color: DesignTokens.textMuted, fontSize: 9, fontFamily: DesignTokens.fontFamily)),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, chartH + 5));
+    // X-axis labels (first and last)
+    if (trend.length >= 2) {
+      final xLabels = [
+        DateFormat('MMM d').format(trend.first.date),
+        DateFormat('MMM d').format(trend.last.date),
+      ];
+      final xPositions = [pts.first.dx, pts.last.dx];
+      for (int i = 0; i < 2; i++) {
+        final tp = TextPainter(
+          text: TextSpan(
+            text: xLabels[i],
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 9,
+              fontFamily: DesignTokens.fontFamily,
+            ),
+          ),
+          textDirection: ui.TextDirection.ltr,
+        )..layout();
+        tp.paint(
+            canvas, Offset(xPositions[i] - tp.width / 2, chartH + 5));
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
+  bool shouldRepaint(covariant _EarningsLinePainter old) =>
+      old.trend != trend;
 }
 
 // ── Audience demographic ──────────────────────────────────────────────────────
 
 class _AudienceDemographicSection extends StatelessWidget {
-  const _AudienceDemographicSection();
+  const _AudienceDemographicSection({required this.buckets});
 
-  static const _segments = [
-    (0.35, Color(0xFF2ECC71), '18–24', '35%'),
-    (0.25, Color(0xFF4DA6FF), '25–34', '25%'),
-    (0.20, Color(0xFFAB8FF5), '35–44', '20%'),
-    (0.12, Color(0xFFFF6B6B), '45–54', '12%'),
-    (0.08, Color(0xFFFFD93D), '55+',    '8%'),
-  ];
+  final List<AudienceAgeBucket> buckets;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Audience Demographic',
-          style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: DesignTokens.textWhite)),
-        const SizedBox(height: 4),
-        Text('According to demographics according to age groups',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
-        const SizedBox(height: DesignTokens.s12),
-        Container(
-          decoration: DesignTokens.cardDecoration(),
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          child: Column(
-            children: [
-              SizedBox(
-                width: 180, height: 180,
-                child: CustomPaint(painter: _DonutPainter(
-                  segments: _segments.map((s) => (s.$1, s.$2)).toList(),
-                  strokeWidth: 30,
-                )),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              Wrap(
-                spacing: DesignTokens.s16,
-                runSpacing: DesignTokens.s8,
-                alignment: WrapAlignment.center,
-                children: _segments.map((s) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(width: 10, height: 10, decoration: BoxDecoration(color: s.$2, shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    Text('${s.$3}  ${s.$4}',
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight, fontSize: 11)),
-                  ],
-                )).toList(),
-              ),
-            ],
+        const Text(
+          'Audience Demographic',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'According to demographics according to age groups',
+          style:
+              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (buckets.isEmpty)
+          Text(
+            'No demographic data yet.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textMuted),
+          )
+        else
+          Container(
+            decoration: DesignTokens.cardDecoration(),
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: 180,
+                  height: 180,
+                  child: CustomPaint(
+                    painter: _DonutPainter(
+                      segments: buckets.asMap().entries.map((e) {
+                        final color =
+                            _kChartColors[e.key % _kChartColors.length];
+                        return (e.value.percent / 100.0, color);
+                      }).toList(),
+                      strokeWidth: 30,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+                Wrap(
+                  spacing: DesignTokens.s16,
+                  runSpacing: DesignTokens.s8,
+                  alignment: WrapAlignment.center,
+                  children: buckets.asMap().entries.map((e) {
+                    final color =
+                        _kChartColors[e.key % _kChartColors.length];
+                    final label = e.value.ageRange ?? '?';
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$label  ${e.value.percent.toStringAsFixed(0)}%',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textLight,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -827,21 +1099,36 @@ class _AudienceDemographicSection extends StatelessWidget {
 // ── Gender distribution ───────────────────────────────────────────────────────
 
 class _GenderDistributionSection extends StatelessWidget {
-  const _GenderDistributionSection();
+  const _GenderDistributionSection({required this.gender});
 
-  static const _genders = [
-    ('Female', Color(0xFF4DA6FF), 0.54, '54%'),
-    ('Male',   Color(0xFF2ECC71), 0.35, '35%'),
-    ('Other',  Color(0xFFAB8FF5), 0.11, '11%'),
+  final GenderDistribution gender;
+
+  static const _colors = [
+    Color(0xFF4DA6FF),
+    Color(0xFF2ECC71),
+    Color(0xFFAB8FF5),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final entries = [
+      ('Female', _colors[0], gender.femalePercent),
+      ('Male', _colors[1], gender.malePercent),
+      ('Other', _colors[2], gender.otherPercent),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Gender Distribution Data',
-          style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: DesignTokens.textWhite)),
+        const Text(
+          'Gender Distribution Data',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
+          ),
+        ),
         const SizedBox(height: DesignTokens.s12),
         Container(
           decoration: DesignTokens.cardDecoration(),
@@ -851,26 +1138,55 @@ class _GenderDistributionSection extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _genders.map((g) => Padding(
-                    padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-                    child: Row(
-                      children: [
-                        Container(width: 10, height: 10, decoration: BoxDecoration(color: g.$2, shape: BoxShape.circle)),
-                        const SizedBox(width: DesignTokens.s8),
-                        Expanded(child: Text(g.$1, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted))),
-                        Text(g.$4, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: DesignTokens.textWhite)),
-                      ],
-                    ),
-                  )).toList(),
+                  children: entries.map((g) {
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: DesignTokens.s16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: g.$2,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: DesignTokens.s8),
+                          Expanded(
+                            child: Text(
+                              g.$1,
+                              style: DesignTokens.smallRegular
+                                  .copyWith(color: DesignTokens.textMuted),
+                            ),
+                          ),
+                          Text(
+                            '${g.$3.toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
               const SizedBox(width: DesignTokens.s16),
               SizedBox(
-                width: 110, height: 110,
-                child: CustomPaint(painter: _DonutPainter(
-                  segments: _genders.map((g) => (g.$3, g.$2)).toList(),
-                  strokeWidth: 22,
-                )),
+                width: 110,
+                height: 110,
+                child: CustomPaint(
+                  painter: _DonutPainter(
+                    segments: entries
+                        .map((g) => (g.$3 / 100.0, g.$2))
+                        .toList(),
+                    strokeWidth: 22,
+                  ),
+                ),
               ),
             ],
           ),
@@ -883,57 +1199,93 @@ class _GenderDistributionSection extends StatelessWidget {
 // ── Top locations ─────────────────────────────────────────────────────────────
 
 class _TopLocationsSection extends StatelessWidget {
-  const _TopLocationsSection();
+  const _TopLocationsSection({required this.locations});
 
-  static const _locations = [
-    ('New York', Color(0xFF2ECC71), 0.40),
-    ('Chicago',  Color(0xFF4DA6FF), 0.35),
-    ('Atlanta',  Color(0xFFAB8FF5), 0.25),
-  ];
+  final List<AudienceLocation> locations;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Top Locations',
-          style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: DesignTokens.textWhite)),
-        const SizedBox(height: 4),
-        Text('Audience demographics according to different locations',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
-        const SizedBox(height: DesignTokens.s12),
-        Container(
-          decoration: DesignTokens.cardDecoration(),
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          child: Column(
-            children: [
-              Center(
-                child: SizedBox(
-                  width: 160, height: 160,
-                  child: CustomPaint(painter: _DonutPainter(
-                    segments: _locations.map((l) => (l.$3, l.$2)).toList(),
-                    strokeWidth: 32,
-                  )),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: _locations.map((l) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(width: 10, height: 10, decoration: BoxDecoration(color: l.$2, shape: BoxShape.circle)),
-                      const SizedBox(width: DesignTokens.s4),
-                      Text(l.$1, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight, fontSize: 11)),
-                    ],
-                  ),
-                )).toList(),
-              ),
-            ],
+        const Text(
+          'Top Locations',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
           ),
         ),
+        const SizedBox(height: 4),
+        Text(
+          'Audience demographics according to different locations',
+          style:
+              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (locations.isEmpty)
+          Text(
+            'No location data yet.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textMuted),
+          )
+        else
+          Container(
+            decoration: DesignTokens.cardDecoration(),
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: Column(
+              children: [
+                Center(
+                  child: SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: CustomPaint(
+                      painter: _DonutPainter(
+                        segments: locations.asMap().entries.map((e) {
+                          final color =
+                              _kChartColors[e.key % _kChartColors.length];
+                          return (e.value.percent / 100.0, color);
+                        }).toList(),
+                        strokeWidth: 32,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+                Wrap(
+                  spacing: DesignTokens.s12,
+                  runSpacing: DesignTokens.s8,
+                  alignment: WrapAlignment.center,
+                  children: locations.asMap().entries.map((e) {
+                    final color =
+                        _kChartColors[e.key % _kChartColors.length];
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: DesignTokens.s4),
+                        Text(
+                          e.value.city ?? 'Unknown',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textLight,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -949,11 +1301,13 @@ class _DonutPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (segments.isEmpty) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (math.min(size.width, size.height) / 2) - strokeWidth / 2;
     const gapAngle = 0.05;
     final totalGap = gapAngle * segments.length;
     final total = segments.fold(0.0, (s, e) => s + e.$1);
+    if (total == 0) return;
     double startAngle = -math.pi / 2;
 
     final paint = Paint()
@@ -964,11 +1318,18 @@ class _DonutPainter extends CustomPainter {
     for (final seg in segments) {
       final sweep = (seg.$1 / total) * (2 * math.pi - totalGap);
       paint.color = seg.$2;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweep, false, paint);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweep,
+        false,
+        paint,
+      );
       startAngle += sweep + gapAngle;
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
+  bool shouldRepaint(covariant _DonutPainter old) =>
+      old.segments != segments || old.strokeWidth != strokeWidth;
 }

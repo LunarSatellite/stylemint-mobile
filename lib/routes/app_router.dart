@@ -650,7 +650,9 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.creatorReelAnalyticsDetail,
-        builder: (ctx, state) => const ReelDetailAnalyticsScreen(),
+        builder: (ctx, state) => ReelDetailAnalyticsScreen(
+          reelId: state.pathParameters['reelId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.creatorFullAnalyticsReport,
