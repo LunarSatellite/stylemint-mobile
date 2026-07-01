@@ -191,6 +191,11 @@ class _ProfileBody extends ConsumerWidget {
               },
             ),
             ProfileMenuItem(
+              icon: Icons.account_balance_wallet_outlined,
+              label: 'My Wallet',
+              onTap: () => context.push(RouteNames.wallet),
+            ),
+            ProfileMenuItem(
               icon: Icons.credit_card_outlined,
               label: 'Payment Methods',
               onTap: () => context.push(RouteNames.paymentMethods),
