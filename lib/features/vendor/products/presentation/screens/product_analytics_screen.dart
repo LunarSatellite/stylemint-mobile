@@ -1,42 +1,92 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/domain/entities/vendor_product_analytics.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class ProductAnalyticsScreen extends StatefulWidget {
+class ProductAnalyticsScreen extends ConsumerStatefulWidget {
   const ProductAnalyticsScreen({required this.product, super.key});
 
   final VendorProduct product;
 
   @override
-  State<ProductAnalyticsScreen> createState() =>
+  ConsumerState<ProductAnalyticsScreen> createState() =>
       _ProductAnalyticsScreenState();
 }
 
-class _ProductAnalyticsScreenState extends State<ProductAnalyticsScreen>
-    with SingleTickerProviderStateMixin {
+class _ProductAnalyticsScreenState
+    extends ConsumerState<ProductAnalyticsScreen> {
   int _selectedFilter = 1;
-  late final TabController _reviewTabController;
+  DateTimeRange? _customRange;
 
-  static const _filters = ['Custom Date', 'Last 7 days', 'Last 30 days', 'Last 90 days'];
+  static const _filters = [
+    'Custom Date',
+    'Last 7 days',
+    'Last 30 days',
+    'Last 90 days',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _reviewTabController = TabController(length: 2, vsync: this);
+    _load();
   }
 
-  @override
-  void dispose() {
-    _reviewTabController.dispose();
-    super.dispose();
+  (DateTime, DateTime) _rangeFor(int filterIndex) {
+    final now = DateTime.now().toUtc();
+    switch (filterIndex) {
+      case 0:
+        final range = _customRange;
+        return range == null
+            ? (now.subtract(const Duration(days: 7)), now)
+            : (range.start, range.end);
+      case 2:
+        return (now.subtract(const Duration(days: 30)), now);
+      case 3:
+        return (now.subtract(const Duration(days: 90)), now);
+      case 1:
+      default:
+        return (now.subtract(const Duration(days: 7)), now);
+    }
+  }
+
+  void _load() {
+    final (fromUtc, toUtc) = _rangeFor(_selectedFilter);
+    ref
+        .read(vendorProductAnalyticsNotifierProvider.notifier)
+        .load(productId: widget.product.id, fromUtc: fromUtc, toUtc: toUtc);
+  }
+
+  Future<void> _selectFilter(int index) async {
+    if (index == 0) {
+      final now = DateTime.now();
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(now.year - 2),
+        lastDate: now,
+        initialDateRange: _customRange,
+      );
+      if (picked == null) return;
+      setState(() {
+        _selectedFilter = 0;
+        _customRange = picked;
+      });
+    } else {
+      setState(() => _selectedFilter = index);
+    }
+    _load();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(vendorProductAnalyticsNotifierProvider);
+    final (fromUtc, toUtc) = _rangeFor(_selectedFilter);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -54,19 +104,18 @@ class _ProductAnalyticsScreenState extends State<ProductAnalyticsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date filter chips
             _DateFilterRow(
               filters: _filters,
               selected: _selectedFilter,
-              onSelected: (i) => setState(() => _selectedFilter = i),
+              onSelected: _selectFilter,
             ),
-            // Date range label
-            const Padding(
-              padding: EdgeInsets.symmetric(
+            Padding(
+              padding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
               child: Text(
-                'Date Range: Dec 1 - 18, 2025',
-                style: TextStyle(
+                'Date Range: ${DateFormat('MMM d').format(fromUtc.toLocal())} - '
+                '${DateFormat('MMM d, yyyy').format(toUtc.toLocal())}',
+                style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 12,
                   color: DesignTokens.textMuted,
@@ -79,26 +128,15 @@ class _ProductAnalyticsScreenState extends State<ProductAnalyticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: DesignTokens.s8),
-                  // Product card
                   _ProductHeader(product: widget.product),
                   const SizedBox(height: DesignTokens.s20),
-                  // Earnings chart + stats
-                  _EarningsSection(),
-                  const SizedBox(height: DesignTokens.s20),
-                  // Age group donut
-                  const _AgeTrafficSection(),
-                  const SizedBox(height: DesignTokens.s20),
-                  // Reviews
-                  _ReviewsSection(tabController: _reviewTabController),
-                  const SizedBox(height: DesignTokens.s20),
-                  // Gender bar
-                  const _GenderTrafficSection(),
-                  const SizedBox(height: DesignTokens.s20),
-                  // Creator list
-                  const _CreatorTrafficSection(),
-                  const SizedBox(height: DesignTokens.s20),
-                  // Location donut
-                  const _LocationTrafficSection(),
+                  state.when(
+                    initial: _loader,
+                    loadInProgress: _loader,
+                    loadFailure: (_) => _FailureView(onRetry: _load),
+                    loadSuccess: (analytics) =>
+                        _AnalyticsBody(analytics: analytics),
+                  ),
                   const SizedBox(height: DesignTokens.s32),
                 ],
               ),
@@ -108,9 +146,61 @@ class _ProductAnalyticsScreenState extends State<ProductAnalyticsScreen>
       ),
     );
   }
+
+  Widget _loader() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: DesignTokens.s32),
+    child: Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
+  );
 }
 
-// â”€â”€ Date filter chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+class _FailureView extends StatelessWidget {
+  const _FailureView({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s32),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Failed to load product analytics.',
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    ),
+  );
+}
+
+class _AnalyticsBody extends StatelessWidget {
+  const _AnalyticsBody({required this.analytics});
+
+  final VendorProductAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _EarningsSection(analytics: analytics),
+        const SizedBox(height: DesignTokens.s20),
+        if (analytics.reviews != null) ...[
+          _ReviewsSection(reviews: analytics.reviews!),
+          const SizedBox(height: DesignTokens.s20),
+        ],
+        _CreatorTrafficSection(creators: analytics.topCreators),
+        const SizedBox(height: DesignTokens.s20),
+        _LocationTrafficSection(locations: analytics.locations),
+      ],
+    );
+  }
+}
+
+// ── Date filter chips ───────────────────────────────────────────────────────
 
 class _DateFilterRow extends StatelessWidget {
   const _DateFilterRow({
@@ -181,7 +271,7 @@ class _DateFilterRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ Product header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Product header ──────────────────────────────────────────────────────────
 
 class _ProductHeader extends StatelessWidget {
   const _ProductHeader({required this.product});
@@ -222,7 +312,7 @@ class _ProductHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   product.commissionRate != null
-                      ? '${formatMoney(product.price)} Â· ${product.commissionRate!.toStringAsFixed(0)}% Commission'
+                      ? '${formatMoney(product.price)} · ${product.commissionRate!.toStringAsFixed(0)}% Commission'
                       : formatMoney(product.price),
                   style: DesignTokens.smallRegular
                       .copyWith(color: DesignTokens.textMuted),
@@ -236,11 +326,23 @@ class _ProductHeader extends StatelessWidget {
   }
 }
 
-// â”€â”€ Earnings section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Earnings section ─────────────────────────────────────────────────────────
 
 class _EarningsSection extends StatelessWidget {
+  const _EarningsSection({required this.analytics});
+
+  final VendorProductAnalytics analytics;
+
+  static String? _formatDelta(double? pct) {
+    if (pct == null) return null;
+    final r = pct.round();
+    return '${r >= 0 ? '+' : ''}$r%';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final revenueDelta = _formatDelta(analytics.revenueDeltaPercent);
+    final unitsDelta = _formatDelta(analytics.unitsSoldDeltaPercent);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -253,104 +355,49 @@ class _EarningsSection extends StatelessWidget {
             children: [
               Text('Earnings Overview', style: DesignTokens.mediumSemibold),
               const SizedBox(height: 2),
-              Text('Sales Trend Graph',
+              Text('Revenue Trend',
                   style: DesignTokens.tiny
                       .copyWith(color: DesignTokens.textMuted)),
               const SizedBox(height: DesignTokens.s16),
               SizedBox(
                 height: 160,
-                child: CustomPaint(
-                  painter: _EarningsChartPainter(),
-                  size: const Size(double.infinity, 160),
-                ),
+                child: analytics.revenueTrend.length < 2
+                    ? Center(
+                        child: Text(
+                          'Not enough data for this window.',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textMuted),
+                        ),
+                      )
+                    : CustomPaint(
+                        painter: _EarningsChartPainter(analytics.revenueTrend),
+                        size: const Size(double.infinity, 160),
+                      ),
               ),
             ],
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-        // Total Revenue â€” full width
-        _StatCard(
-          icon: Icons.monetization_on_outlined,
-          value: 'Rs 15,56,784.69',
-          label: 'Total Revenue',
-          fullWidth: true,
-        ),
-        const SizedBox(height: DesignTokens.s8),
-        // Conversion Rate | Avg. Order Value
         Row(
           children: [
             Expanded(
               child: _StatCard(
-                icon: Icons.sync_alt_outlined,
-                value: '10.25%',
-                label: 'Conversion Rate',
-              ),
-            ),
-            const SizedBox(width: DesignTokens.s8),
-            Expanded(
-              child: _StatCard(
-                icon: Icons.credit_card_outlined,
-                value: formatMoney(const Money(amount: 5478, currency: 'NPR')),
-                label: 'Avg. Order Value',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: DesignTokens.s8),
-        // Added Cart | Units Sold
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                icon: Icons.shopping_cart_outlined,
-                value: '562 (0.24%)',
-                label: 'Added Cart',
+                icon: Icons.monetization_on_outlined,
+                value: formatMoney(analytics.revenue),
+                badge: revenueDelta,
+                label: 'Total Revenue',
               ),
             ),
             const SizedBox(width: DesignTokens.s8),
             Expanded(
               child: _StatCard(
                 icon: Icons.inventory_2_outlined,
-                value: '187',
+                value: '${analytics.unitsSold}',
+                badge: unitsDelta,
                 label: 'Units Sold',
               ),
             ),
           ],
-        ),
-        const SizedBox(height: DesignTokens.s8),
-        // View to Purchase Ratio â€” full width
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
-          decoration: DesignTokens.cardDecoration(),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.remove_red_eye_outlined,
-                      size: 22, color: DesignTokens.textMuted),
-                  SizedBox(width: DesignTokens.s8),
-                  Text(':',
-                      style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 18,
-                          color: DesignTokens.textMuted)),
-                  SizedBox(width: DesignTokens.s8),
-                  Icon(Icons.inventory_2_outlined,
-                      size: 22, color: DesignTokens.textMuted),
-                ],
-              ),
-              const SizedBox(height: DesignTokens.s4),
-              Text('10 : 4',
-                  style: DesignTokens.mediumSemibold.copyWith(fontSize: 18)),
-              const SizedBox(height: 2),
-              Text('View to Purchase Ratio',
-                  style: DesignTokens.tiny
-                      .copyWith(color: DesignTokens.textMuted)),
-            ],
-          ),
         ),
       ],
     );
@@ -362,18 +409,17 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.label,
-    this.fullWidth = false,
+    this.badge,
   });
 
   final IconData icon;
   final String value;
   final String label;
-  final bool fullWidth;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
@@ -389,8 +435,24 @@ class _StatCard extends StatelessWidget {
             child: Icon(icon, size: 20, color: DesignTokens.textMuted),
           ),
           const SizedBox(height: DesignTokens.s8),
-          Text(value,
-              style: DesignTokens.mediumSemibold.copyWith(fontSize: 18)),
+          Row(
+            children: [
+              Text(value,
+                  style: DesignTokens.mediumSemibold.copyWith(fontSize: 18)),
+              if (badge != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  badge!,
+                  style: DesignTokens.tiny.copyWith(
+                    color: badge!.startsWith('-')
+                        ? DesignTokens.colorError
+                        : DesignTokens.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 2),
           Text(label,
               style:
@@ -401,335 +463,221 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// â”€â”€ Age group donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _AgeTrafficSection extends StatelessWidget {
-  const _AgeTrafficSection();
-
-  static const _segments = [
-    _PieSegment('18-24', 0.55, Color(0xFFFB923C)),
-    _PieSegment('25-34', 0.20, Color(0xFF38BDF8)),
-    _PieSegment('35-44', 0.09, Color(0xFF4ADE80)),
-    _PieSegment('45+',   0.16, Color(0xFFFBBF24)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'Traffic Source as per Age group',
-      subtitle: 'Customer Demographic according to different age groups',
-      child: Column(
-        children: [
-          SizedBox(
-            height: 200,
-            child: CustomPaint(
-              painter: _DonutWithLabelsPainter(_segments),
-              size: const Size(double.infinity, 200),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          _LegendRow(segments: _segments),
-        ],
-      ),
-    );
-  }
-}
-
-// â”€â”€ Reviews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Reviews (aggregate only — no per-review content endpoint exists) ────────
 
 class _ReviewsSection extends StatelessWidget {
-  const _ReviewsSection({required this.tabController});
+  const _ReviewsSection({required this.reviews});
 
-  final TabController tabController;
-
-  static const _reelViews = ['12.3m', '408k', '1.5m', '989k', '989k', '12.3m'];
+  final ProductReviewSummary reviews;
 
   @override
   Widget build(BuildContext context) {
+    final maxCount = reviews.starDistribution.values.isEmpty
+        ? 0
+        : reviews.starDistribution.values.reduce(math.max);
+
     return Container(
       decoration: DesignTokens.cardDecoration(),
       padding: const EdgeInsets.all(DesignTokens.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Rating row
           Row(
             children: [
               const Icon(Icons.star, color: DesignTokens.secondaryYellow, size: 16),
               const SizedBox(width: 4),
-              Text('4.9',
+              Text(reviews.averageRating.toStringAsFixed(1),
                   style: DesignTokens.smallRegular
                       .copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(width: 6),
-              Text('Â·  Customer Reviews & Rating (1,275)',
+              Text('· ${reviews.reviewCount} reviews',
                   style: DesignTokens.tiny
                       .copyWith(color: DesignTokens.textMuted)),
             ],
           ),
-          const SizedBox(height: DesignTokens.s12),
-          // Tabs
-          TabBar(
-            controller: tabController,
-            indicatorColor: DesignTokens.primaryGreen,
-            indicatorWeight: 2,
-            labelColor: DesignTokens.primaryGreen,
-            unselectedLabelColor: DesignTokens.textMuted,
-            labelStyle: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w600),
-            unselectedLabelStyle: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w400),
-            dividerColor: DesignTokens.borderDefault,
-            tabs: const [Tab(text: 'Reel Reviews'), Tab(text: 'Written Reviews')],
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          // 3Ã—2 grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: DesignTokens.s6,
-              mainAxisSpacing: DesignTokens.s6,
-              childAspectRatio: 1,
-            ),
-            itemCount: _reelViews.length,
-            itemBuilder: (_, i) => ClipRRect(
-              borderRadius: BorderRadius.circular(DesignTokens.s8),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(color: DesignTokens.bgAppBodyLight),
-                  const Icon(Icons.play_circle_outline,
-                      color: DesignTokens.textMuted),
-                  Positioned(
-                    left: 4,
-                    bottom: 4,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.remove_red_eye_outlined,
-                            size: 10, color: Colors.white70),
-                        const SizedBox(width: 2),
-                        Text(_reelViews[i],
-                            style: const TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 10,
-                                color: Colors.white70)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: DesignTokens.borderDefault),
-                foregroundColor: DesignTokens.textWhite,
-                shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius)),
-              ),
-              child: Text('See all reviews', style: DesignTokens.mediumSemibold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// â”€â”€ Gender bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class _GenderTrafficSection extends StatelessWidget {
-  const _GenderTrafficSection();
-
-  static const _segments = [
-    _PieSegment('Female', 0.54, Color(0xFF38BDF8)),
-    _PieSegment('Male',   0.26, Color(0xFF4ADE80)),
-    _PieSegment('Others', 0.20, Color(0xFFFBBF24)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'Traffic Source as per Gender',
-      subtitle: 'Customer Demographic according to different genders',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Segmented bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 20,
-              child: Row(
-                children: _segments.map((s) {
-                  return Expanded(
-                    flex: (s.value * 100).round(),
-                    child: Container(color: s.color),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          // Labels
-          ..._segments.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+          if (maxCount > 0) ...[
+            const SizedBox(height: DesignTokens.s16),
+            for (var star = 5; star >= 1; star--)
+              Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.s6),
                 child: Row(
                   children: [
-                    Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                            color: s.color, shape: BoxShape.circle)),
+                    SizedBox(
+                      width: 12,
+                      child: Text('$star',
+                          style: DesignTokens.tiny
+                              .copyWith(color: DesignTokens.textMuted)),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.star, size: 10, color: DesignTokens.secondaryYellow),
                     const SizedBox(width: DesignTokens.s8),
                     Expanded(
-                      child: Text(s.label,
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textLight)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (reviews.starDistribution[star] ?? 0) / maxCount,
+                          minHeight: 6,
+                          backgroundColor: DesignTokens.bgAppBodyLight,
+                          valueColor: const AlwaysStoppedAnimation(DesignTokens.secondaryYellow),
+                        ),
+                      ),
                     ),
-                    Text('${(s.value * 100).toStringAsFixed(0)}%',
-                        style: DesignTokens.smallRegular.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: DesignTokens.textWhite)),
+                    const SizedBox(width: DesignTokens.s8),
+                    SizedBox(
+                      width: 24,
+                      child: Text(
+                        '${reviews.starDistribution[star] ?? 0}',
+                        style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
                   ],
                 ),
-              )),
+              ),
+          ],
         ],
       ),
     );
   }
 }
 
-// â”€â”€ Creator list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Creator list ─────────────────────────────────────────────────────────────
 
 class _CreatorTrafficSection extends StatelessWidget {
-  const _CreatorTrafficSection();
+  const _CreatorTrafficSection({required this.creators});
 
-  static const _creators = [
-    _Creator('@rabia.zin',          '23 Sales', '12 Reels'),
-    _Creator('@eljanes',            '18 Sales', '9 Reels'),
-    _Creator('@mikethestoryteller', '15 Sales', '7 Reels'),
-    _Creator('@immovableroyale',    '11 Sales', '6 Reels'),
-    _Creator('@lucassinss',         '9 Sales',  '6 Reels'),
-  ];
+  final List<ProductTopCreator> creators;
+
+  static String _label(String accountId) =>
+      accountId.length >= 8 ? 'Creator ••${accountId.substring(accountId.length - 4)}' : 'Creator';
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
-      title: 'Traffic Source as per Creator',
-      subtitle: 'Customer Demographic according to different creators',
-      child: Column(
-        children: _creators.asMap().entries.map((e) {
-          final i = e.key;
-          final c = e.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  child: Text('${i + 1}',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textMuted)),
-                ),
-                const SizedBox(width: DesignTokens.s8),
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: DesignTokens.bgAppBodyLight,
-                  child: const Icon(Icons.person,
-                      color: DesignTokens.textMuted, size: 20),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      title: 'Top Creators',
+      subtitle: 'Creators driving sales of this product',
+      child: creators.isEmpty
+          ? Text(
+              'No creator-attributed sales in this window.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            )
+          : Column(
+              children: creators.asMap().entries.map((e) {
+                final i = e.key;
+                final c = e.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: DesignTokens.s16),
+                  child: Row(
                     children: [
-                      Text(c.handle,
-                          style: DesignTokens.smallRegular
-                              .copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.shopping_bag_outlined,
-                              size: 12, color: DesignTokens.textMuted),
-                          const SizedBox(width: 4),
-                          Text(c.sales,
-                              style: DesignTokens.tiny
-                                  .copyWith(color: DesignTokens.textMuted)),
-                          const SizedBox(width: DesignTokens.s12),
-                          const Icon(Icons.play_circle_outline,
-                              size: 12, color: DesignTokens.textMuted),
-                          const SizedBox(width: 4),
-                          Text(c.reels,
-                              style: DesignTokens.tiny
-                                  .copyWith(color: DesignTokens.textMuted)),
-                        ],
+                      SizedBox(
+                        width: 20,
+                        child: Text('${i + 1}',
+                            style: DesignTokens.smallRegular
+                                .copyWith(color: DesignTokens.textMuted)),
                       ),
+                      const SizedBox(width: DesignTokens.s8),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        child: const Icon(Icons.person,
+                            color: DesignTokens.textMuted, size: 20),
+                      ),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_label(c.creatorAccountId),
+                                style: DesignTokens.smallRegular
+                                    .copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.shopping_bag_outlined,
+                                    size: 12, color: DesignTokens.textMuted),
+                                const SizedBox(width: 4),
+                                Text('${c.unitsSold} sales',
+                                    style: DesignTokens.tiny
+                                        .copyWith(color: DesignTokens.textMuted)),
+                                const SizedBox(width: DesignTokens.s12),
+                                const Icon(Icons.play_circle_outline,
+                                    size: 12, color: DesignTokens.textMuted),
+                                const SizedBox(width: 4),
+                                Text('${c.distinctReelCount} reels',
+                                    style: DesignTokens.tiny
+                                        .copyWith(color: DesignTokens.textMuted)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(formatMoney(c.attributedRevenue),
+                          style: DesignTokens.tiny.copyWith(color: DesignTokens.textWhite)),
                     ],
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
-          );
-        }).toList(),
-      ),
     );
   }
 }
 
-class _Creator {
-  const _Creator(this.handle, this.sales, this.reels);
-  final String handle;
-  final String sales;
-  final String reels;
-}
-
-// â”€â”€ Location donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Location donut ───────────────────────────────────────────────────────────
 
 class _LocationTrafficSection extends StatelessWidget {
-  const _LocationTrafficSection();
+  const _LocationTrafficSection({required this.locations});
 
-  static const _segments = [
-    _PieSegment('New York', 0.22, Color(0xFF38BDF8)),
-    _PieSegment('Chicago',  0.28, Color(0xFFFB923C)),
-    _PieSegment('Miami',    0.25, Color(0xFFEF4444)),
-    _PieSegment('Berlin',   0.16, Color(0xFFFBBF24)),
-    _PieSegment('Others',   0.09, Color(0xFF4ADE80)),
+  final List<ProductLocationBucket> locations;
+
+  static const _palette = [
+    Color(0xFF38BDF8),
+    Color(0xFFFB923C),
+    Color(0xFFEF4444),
+    Color(0xFFFBBF24),
+    Color(0xFF4ADE80),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final total = locations.fold<double>(0, (a, b) => a + b.revenue.amount);
+    final segments = total <= 0
+        ? const <_PieSegment>[]
+        : locations
+            .asMap()
+            .entries
+            .map((e) => _PieSegment(
+                  e.value.region,
+                  e.value.revenue.amount / total,
+                  _palette[e.key % _palette.length],
+                ))
+            .toList();
+
     return _SectionCard(
-      title: 'Traffic Source as per Location',
-      subtitle: 'Customer Demographic according to different locations',
-      child: Column(
-        children: [
-          SizedBox(
-            height: 200,
-            child: CustomPaint(
-              painter: _DonutWithLabelsPainter(_segments),
-              size: const Size(double.infinity, 200),
+      title: 'Sales by Location',
+      subtitle: 'Where this product\'s orders shipped from in this window',
+      child: segments.isEmpty
+          ? Text(
+              'No location data in this window.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            )
+          : Column(
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: CustomPaint(
+                    painter: _DonutWithLabelsPainter(segments),
+                    size: const Size(double.infinity, 200),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+                _LegendRow(segments: segments),
+              ],
             ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          _LegendRow(segments: _segments),
-        ],
-      ),
     );
   }
 }
 
-// â”€â”€ Shared widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared widgets ───────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard(
@@ -767,7 +715,6 @@ class _LegendRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // arrange in rows of 3
     final rows = <List<_PieSegment>>[];
     for (var i = 0; i < segments.length; i += 3) {
       rows.add(segments.sublist(i, math.min(i + 3, segments.length)));
@@ -805,7 +752,7 @@ class _LegendRow extends StatelessWidget {
   }
 }
 
-// â”€â”€ Data model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Data model ────────────────────────────────────────────────────────────────
 
 class _PieSegment {
   const _PieSegment(this.label, this.value, this.color);
@@ -814,7 +761,7 @@ class _PieSegment {
   final Color color;
 }
 
-// â”€â”€ Painters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Painters ──────────────────────────────────────────────────────────────────
 
 class _DonutWithLabelsPainter extends CustomPainter {
   const _DonutWithLabelsPainter(this.segments);
@@ -833,7 +780,6 @@ class _DonutWithLabelsPainter extends CustomPainter {
     for (final seg in segments) {
       final sweepAngle = seg.value * 2 * math.pi - gap;
 
-      // Arc
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius - strokeW / 2),
         startAngle,
@@ -846,7 +792,6 @@ class _DonutWithLabelsPainter extends CustomPainter {
           ..strokeCap = StrokeCap.butt,
       );
 
-      // Percentage label on arc midpoint
       final midAngle = startAngle + sweepAngle / 2;
       final labelR = radius - strokeW / 2;
       final labelOffset = Offset(
@@ -882,12 +827,12 @@ class _DonutWithLabelsPainter extends CustomPainter {
 }
 
 class _EarningsChartPainter extends CustomPainter {
+  const _EarningsChartPainter(this.points);
+
+  final List<ProductRevenueTrendPoint> points;
+
   @override
   void paint(Canvas canvas, Size size) {
-    const yLabels = ['25k', '20k', '15k', '10k', '5k', '0'];
-    const xLabels = ['Dec 1', 'Dec 7', 'Dec 14', 'Dec 21', 'Dec 28', 'Today'];
-    const yValues = [0.32, 0.42, 0.24, 0.60, 0.40, 0.76];
-
     const leftPad = 36.0;
     const bottomPad = 24.0;
     const topPad = 8.0;
@@ -895,7 +840,9 @@ class _EarningsChartPainter extends CustomPainter {
     final chartW = size.width - leftPad;
     final chartH = size.height - bottomPad - topPad;
 
-    // Grid lines + Y labels
+    final maxAmount = points.fold<double>(0, (a, p) => math.max(a, p.amount.amount));
+    final yMax = maxAmount <= 0 ? 1.0 : maxAmount;
+
     final gridPaint = Paint()
       ..color = DesignTokens.borderDefault.withValues(alpha: 0.4)
       ..strokeWidth = 0.5;
@@ -906,45 +853,48 @@ class _EarningsChartPainter extends CustomPainter {
       color: DesignTokens.textMuted,
     );
 
-    for (var i = 0; i < yLabels.length; i++) {
-      final y = topPad + chartH * i / (yLabels.length - 1);
+    const ySteps = 5;
+    for (var i = 0; i <= ySteps; i++) {
+      final y = topPad + chartH * i / ySteps;
       canvas.drawLine(Offset(leftPad, y), Offset(size.width, y), gridPaint);
 
+      final value = yMax * (ySteps - i) / ySteps;
+      final label = value >= 1000
+          ? '${(value / 1000).toStringAsFixed(0)}k'
+          : value.toStringAsFixed(0);
       final tp = TextPainter(
-        text: TextSpan(text: yLabels[i], style: labelStyle),
+        text: TextSpan(text: label, style: labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    // X labels
-    for (var i = 0; i < xLabels.length; i++) {
-      final x = leftPad + chartW * i / (xLabels.length - 1);
+    // X labels — first, middle, last date only to avoid crowding.
+    final labelIndices = {0, points.length ~/ 2, points.length - 1};
+    for (final i in labelIndices) {
+      final x = leftPad + chartW * i / (points.length - 1);
       final tp = TextPainter(
-        text: TextSpan(text: xLabels[i], style: labelStyle),
+        text: TextSpan(
+          text: DateFormat('MMM d').format(points[i].date.toLocal()),
+          style: labelStyle,
+        ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(
-          canvas,
-          Offset(x - tp.width / 2,
-              topPad + chartH + 6));
+      tp.paint(canvas, Offset(x - tp.width / 2, topPad + chartH + 6));
     }
 
-    // Data points
     final pts = List.generate(
-      yValues.length,
+      points.length,
       (i) => Offset(
-        leftPad + chartW * i / (yValues.length - 1),
-        topPad + chartH * (1 - yValues[i]),
+        leftPad + chartW * i / (points.length - 1),
+        topPad + chartH * (1 - points[i].amount.amount / yMax),
       ),
     );
 
-    // Area fill
     final areaPath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (var i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      areaPath.cubicTo(
-          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      areaPath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
     areaPath
       ..lineTo(pts.last.dx, topPad + chartH)
@@ -964,12 +914,10 @@ class _EarningsChartPainter extends CustomPainter {
         ).createShader(Rect.fromLTWH(leftPad, topPad, chartW, chartH)),
     );
 
-    // Line
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (var i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      linePath.cubicTo(
-          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      linePath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
     canvas.drawPath(
       linePath,
@@ -980,14 +928,10 @@ class _EarningsChartPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    // Dot at last point
-    canvas.drawCircle(
-      pts.last,
-      4,
-      Paint()..color = DesignTokens.primaryGreen,
-    );
+    canvas.drawCircle(pts.last, 4, Paint()..color = DesignTokens.primaryGreen);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _EarningsChartPainter oldDelegate) =>
+      oldDelegate.points != points;
 }

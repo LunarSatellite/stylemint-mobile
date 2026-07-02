@@ -43,6 +43,9 @@ class TopProduct {
   final int rank;
   final String productId;
   final String name;
+
+  /// This window's total revenue for the product — the backend doesn't
+  /// return a per-unit price.
   final double price;
   final String currency;
   final int unitsSold;

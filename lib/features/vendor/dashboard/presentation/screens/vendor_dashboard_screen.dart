@@ -19,13 +19,11 @@ const _navRoutes = [
 ];
 
 final _sampleDashboard = VendorDashboard(
-  totalRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
+  grossSales: const Money(amount: 34512589.98, currency: 'NPR'),
+  grossSalesDeltaPercent: 23,
+  netRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
   totalOrders: 250,
-  totalProducts: 45,
-  averageRating: 4.8,
-  pendingFulfillment: 12,
-  lowStockProducts: 3,
-  recentOrders: [],
+  topProducts: const [],
 );
 
 class VendorDashboardScreen extends ConsumerStatefulWidget {
@@ -186,12 +184,6 @@ class _DashboardContent extends StatelessWidget {
   final VendorDashboard dashboard;
   final VoidCallback onRefresh;
 
-  static final _sampleProducts = [
-    _TopProduct(name: 'Nike Air Max 2025', sales: 45, revenue: 'Rs 1,35,345', creators: 8, brandColor: const Color(0xFFCC2200)),
-    _TopProduct(name: 'Nike Air Jordan Travis Scott Limited Edition', sales: 45, revenue: 'Rs 88,550', creators: 4, brandColor: const Color(0xFF3A3A2A)),
-    _TopProduct(name: 'Adidas Ultraboost 24', sales: 28, revenue: 'Rs 55,200', creators: 3, brandColor: const Color(0xFF1A1A2E)),
-  ];
-
   static final _sampleActivities = [
     _ActivityGroup(date: 'Today', items: [
       _Activity(type: _ActivityType.order, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
@@ -237,7 +229,14 @@ class _DashboardContent extends StatelessWidget {
 
   // ── Revenue card ────────────────────────────────────────────────────────────
 
+  static String? _formatDelta(double? pct) {
+    if (pct == null) return null;
+    final r = pct.round();
+    return '${r >= 0 ? '+' : ''}$r%';
+  }
+
   Widget _buildRevenueCard() {
+    final grossSalesDelta = _formatDelta(dashboard.grossSalesDeltaPercent);
     return Column(
       children: [
         // Dark stats card
@@ -252,8 +251,10 @@ class _DashboardContent extends StatelessWidget {
               _buildRevenueRow(
                 assetIcon: 'assets/images/vendordashboard/icon_gross_sales.png',
                 iconBg: const Color(0xFF1A3A1A),
-                label: 'Gross Sales (+23% vs last)',
-                amount: formatMoney(const Money(amount: 34512589.98, currency: 'NPR')),
+                label: grossSalesDelta != null
+                    ? 'Gross Sales ($grossSalesDelta vs last)'
+                    : 'Gross Sales',
+                amount: formatMoney(dashboard.grossSales),
               ),
               const SizedBox(height: DesignTokens.s16),
               // Net Revenue row
@@ -261,13 +262,16 @@ class _DashboardContent extends StatelessWidget {
                 assetIcon: 'assets/images/vendordashboard/icon_net_revenue.png',
                 iconBg: const Color(0xFF0D2137),
                 label: 'Net Revenue (After fees & commissions)',
-                amount: formatMoney(dashboard.totalRevenue),
+                amount: formatMoney(dashboard.netRevenue),
               ),
               const SizedBox(height: DesignTokens.s16),
               // Stat chips
+              // NOTE: rating/creators/reels aren't part of the
+              // /v1/vendor/analytics/overview payload — placeholders until a
+              // backend field exists.
               Row(
                 children: [
-                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: dashboard.averageRating.toStringAsFixed(1), label: 'Rating'),
+                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: '4.8', label: 'Rating'),
                   const SizedBox(width: DesignTokens.s8),
                   _statChip(assetIcon: 'assets/images/vendordashboard/creator.png', value: '230', label: 'Creators'),
                   const SizedBox(width: DesignTokens.s8),
@@ -390,8 +394,11 @@ class _DashboardContent extends StatelessWidget {
   // ── Pending Actions ──────────────────────────────────────────────────────────
 
   Widget _buildAlertCards(BuildContext context) {
+    // NOTE: none of these counts are part of /v1/vendor/analytics/overview —
+    // placeholders until the sub-orders/inquiries/partnerships count
+    // endpoints are wired.
     final alerts = [
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have 12 orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_chat.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_partnership.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
@@ -470,16 +477,33 @@ class _DashboardContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _sampleProducts.length,
-          separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-          itemBuilder: (_, i) => _ProductCard(product: _sampleProducts[i]),
-        ),
+        if (dashboard.topProducts.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              'No product sales yet this month.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: dashboard.topProducts.length,
+            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
+            itemBuilder: (_, i) => _ProductCard(product: _toTopProduct(dashboard.topProducts[i])),
+          ),
       ],
     );
   }
+
+  static _TopProduct _toTopProduct(VendorTopProduct p) => _TopProduct(
+    name: p.name.isEmpty ? 'Unnamed product' : p.name,
+    sales: p.unitsSold,
+    revenue: formatMoney(p.totalRevenue),
+    creators: p.distinctCreatorCount,
+    thumbnailUrl: p.thumbnailUrl,
+  );
 
   // ── Recent Activity ──────────────────────────────────────────────────────────
 
@@ -539,19 +563,24 @@ class _ProductCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  child: product.assetImage != null
-                      ? Container(
-                          width: 56,
-                          height: 56,
-                          color: const Color(0xFFFFFFFF),
-                          child: Image.asset(product.assetImage!, width: 56, height: 56, fit: BoxFit.cover),
-                        )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          color: product.brandColor,
-                          child: Icon(Icons.shopping_bag_outlined, color: Colors.white.withValues(alpha: 0.6), size: 24),
-                        ),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    color: DesignTokens.bgAppBodyLight,
+                    child: product.thumbnailUrl != null
+                        ? Image.network(
+                            product.thumbnailUrl!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.shopping_bag_outlined,
+                              color: DesignTokens.textMuted,
+                              size: 24,
+                            ),
+                          )
+                        : const Icon(Icons.shopping_bag_outlined, color: DesignTokens.textMuted, size: 24),
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
@@ -698,13 +727,12 @@ class _Alert {
 }
 
 class _TopProduct {
-  const _TopProduct({required this.name, required this.sales, required this.revenue, required this.creators, required this.brandColor, this.assetImage});
+  const _TopProduct({required this.name, required this.sales, required this.revenue, required this.creators, this.thumbnailUrl});
   final String name;
   final int sales;
   final String revenue;
   final int creators;
-  final Color brandColor;
-  final String? assetImage;
+  final String? thumbnailUrl;
 }
 
 enum _ActivityType { order, payout, partnership, shipped }

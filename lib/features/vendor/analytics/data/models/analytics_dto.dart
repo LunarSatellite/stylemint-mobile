@@ -1,214 +1,291 @@
+import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
 
 // ---------------------------------------------------------------------------
-// Revenue overview
+// Matches the backend `GET /v1/vendor/analytics/overview` contract (Vendor
+// §8A) — a single round-trip composite. Every field below comes from that one
+// response.
+//
+// NOTE: this datasource previously fired four additional requests
+// (`/v1/vendor/analytics/earnings`, `/top-products`, `/top-creators`,
+// `/traffic-sources`) that don't exist on the backend — any 404 among them
+// failed the whole `Future.wait`, which is why the screen always showed
+// "Failed to load analytics." `revenueTrend`, `topProducts`, `topCreators`
+// and `trafficSources` are all embedded fields on the overview response.
+// ---------------------------------------------------------------------------
+
+class MoneyDto {
+  const MoneyDto({required this.amount, this.currency = 'NPR'});
+
+  factory MoneyDto.fromJson(Map<String, dynamic>? json) => MoneyDto(
+    amount: (json?['amount'] as num?)?.toDouble() ?? 0,
+    currency: json?['currency'] as String? ?? 'NPR',
+  );
+
+  final double amount;
+  final String currency;
+}
+
+class MoneyDeltaDto {
+  const MoneyDeltaDto({this.current, this.deltaPercent});
+
+  factory MoneyDeltaDto.fromJson(Map<String, dynamic>? json) => MoneyDeltaDto(
+    current: json?['current'] == null
+        ? null
+        : MoneyDto.fromJson(json!['current'] as Map<String, dynamic>),
+    deltaPercent: (json?['deltaPercent'] as num?)?.toDouble(),
+  );
+
+  final MoneyDto? current;
+  final double? deltaPercent;
+}
+
+class NumberDeltaDto {
+  const NumberDeltaDto({this.current = 0, this.deltaPercent});
+
+  factory NumberDeltaDto.fromJson(Map<String, dynamic>? json) =>
+      NumberDeltaDto(
+        current: (json?['current'] as num?) ?? 0,
+        deltaPercent: (json?['deltaPercent'] as num?)?.toDouble(),
+      );
+
+  final num current;
+  final double? deltaPercent;
+}
+
+/// "+23%" / "-5%" / "" (no baseline yet) — the backend sends a raw
+/// `deltaPercent`, not a display string.
+String _formatBadge(double? deltaPercent) {
+  if (deltaPercent == null) return '';
+  final r = deltaPercent.round();
+  return '${r >= 0 ? '+' : ''}$r%';
+}
+
+// ---------------------------------------------------------------------------
+// Revenue overview (`grossSales`, `netRevenue`, `conversionRate`, `totalOrders`)
 // ---------------------------------------------------------------------------
 
 class AnalyticsOverviewDto {
   const AnalyticsOverviewDto({
     required this.grossSales,
-    required this.grossSalesBadge,
     required this.netRevenue,
-    required this.netRevenueBadge,
     required this.conversionRate,
-    required this.conversionRateBadge,
     required this.totalOrders,
-    required this.totalOrdersBadge,
-    required this.currency,
   });
 
   factory AnalyticsOverviewDto.fromJson(Map<String, dynamic> json) =>
       AnalyticsOverviewDto(
-        grossSales: (json['grossSales'] as num).toDouble(),
-        grossSalesBadge: json['grossSalesBadge'] as String? ?? '',
-        netRevenue: (json['netRevenue'] as num).toDouble(),
-        netRevenueBadge: json['netRevenueBadge'] as String? ?? '',
-        conversionRate: (json['conversionRate'] as num).toDouble(),
-        conversionRateBadge: json['conversionRateBadge'] as String? ?? '',
-        totalOrders: json['totalOrders'] as int,
-        totalOrdersBadge: json['totalOrdersBadge'] as String? ?? '',
-        currency: json['currency'] as String? ?? 'NPR',
+        grossSales: MoneyDeltaDto.fromJson(
+          json['grossSales'] as Map<String, dynamic>?,
+        ),
+        netRevenue: MoneyDeltaDto.fromJson(
+          json['netRevenue'] as Map<String, dynamic>?,
+        ),
+        conversionRate: NumberDeltaDto.fromJson(
+          json['conversionRate'] as Map<String, dynamic>?,
+        ),
+        totalOrders: NumberDeltaDto.fromJson(
+          json['totalOrders'] as Map<String, dynamic>?,
+        ),
       );
 
-  final double grossSales;
-  final String grossSalesBadge;
-  final double netRevenue;
-  final String netRevenueBadge;
-  final double conversionRate;
-  final String conversionRateBadge;
-  final int totalOrders;
-  final String totalOrdersBadge;
-  final String currency;
+  final MoneyDeltaDto grossSales;
+  final MoneyDeltaDto netRevenue;
+  final NumberDeltaDto conversionRate;
+  final NumberDeltaDto totalOrders;
 
   RevenueOverview toDomain() => RevenueOverview(
-        grossSales: grossSales,
-        grossSalesBadge: grossSalesBadge,
-        netRevenue: netRevenue,
-        netRevenueBadge: netRevenueBadge,
-        conversionRate: conversionRate,
-        conversionRateBadge: conversionRateBadge,
-        totalOrders: totalOrders,
-        totalOrdersBadge: totalOrdersBadge,
-        currency: currency,
-      );
+    grossSales: grossSales.current?.amount ?? 0,
+    grossSalesBadge: _formatBadge(grossSales.deltaPercent),
+    netRevenue: netRevenue.current?.amount ?? 0,
+    netRevenueBadge: _formatBadge(netRevenue.deltaPercent),
+    conversionRate: conversionRate.current.toDouble(),
+    conversionRateBadge: _formatBadge(conversionRate.deltaPercent),
+    totalOrders: totalOrders.current.round(),
+    totalOrdersBadge: _formatBadge(totalOrders.deltaPercent),
+    currency: grossSales.current?.currency ?? 'NPR',
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Earnings chart point
+// Earnings chart point — from `revenueTrend[]`: `{ date, amount }`
 // ---------------------------------------------------------------------------
 
 class EarningsPointDto {
-  const EarningsPointDto({required this.label, required this.value});
+  const EarningsPointDto({required this.date, required this.amount});
 
   factory EarningsPointDto.fromJson(Map<String, dynamic> json) =>
       EarningsPointDto(
-        label: json['label'] as String,
-        value: (json['value'] as num).toDouble(),
+        date: DateTime.parse(json['date'] as String),
+        amount: MoneyDto.fromJson(json['amount'] as Map<String, dynamic>?),
       );
 
-  final String label;
-  final double value;
+  final DateTime date;
+  final MoneyDto amount;
 
-  EarningsPoint toDomain() => EarningsPoint(label: label, value: value);
+  EarningsPoint toDomain() =>
+      EarningsPoint(label: DateFormat('d MMM').format(date), value: amount.amount);
 }
 
 // ---------------------------------------------------------------------------
-// Top product
+// Top product — from `topProducts[]`: `{ productId, name, thumbnailUrl,
+// unitsSold, totalRevenue, distinctCreatorCount }`. The backend doesn't send
+// a per-unit price or an explicit rank; rank is the list position.
 // ---------------------------------------------------------------------------
 
 class AnalyticsTopProductDto {
   const AnalyticsTopProductDto({
-    required this.rank,
     required this.productId,
-    required this.name,
-    required this.price,
-    required this.currency,
+    this.name,
+    this.thumbnailUrl,
     required this.unitsSold,
-    this.imageUrl,
+    required this.totalRevenue,
   });
 
   factory AnalyticsTopProductDto.fromJson(Map<String, dynamic> json) =>
       AnalyticsTopProductDto(
-        rank: json['rank'] as int,
-        productId: json['productId'] as String,
-        name: json['name'] as String,
-        price: (json['price'] as num).toDouble(),
-        currency: json['currency'] as String? ?? 'NPR',
-        unitsSold: json['unitsSold'] as int,
-        imageUrl: json['imageUrl'] as String?,
+        productId: json['productId'] as String? ?? '',
+        name: json['name'] as String?,
+        thumbnailUrl: json['thumbnailUrl'] as String?,
+        unitsSold: json['unitsSold'] as int? ?? 0,
+        totalRevenue: MoneyDto.fromJson(
+          json['totalRevenue'] as Map<String, dynamic>?,
+        ),
       );
 
-  final int rank;
   final String productId;
-  final String name;
-  final double price;
-  final String currency;
+  final String? name;
+  final String? thumbnailUrl;
   final int unitsSold;
-  final String? imageUrl;
+  final MoneyDto totalRevenue;
 
-  TopProduct toDomain() => TopProduct(
-        rank: rank,
-        productId: productId,
-        name: name,
-        price: price,
-        currency: currency,
-        unitsSold: unitsSold,
-        imageUrl: imageUrl,
-      );
+  /// NOTE: `TopProduct.price` holds this window's `totalRevenue`, not a
+  /// per-unit price — the backend doesn't return one.
+  TopProduct toDomain(int rank) => TopProduct(
+    rank: rank,
+    productId: productId,
+    name: (name?.isNotEmpty ?? false) ? name! : 'Unnamed product',
+    price: totalRevenue.amount,
+    currency: totalRevenue.currency,
+    unitsSold: unitsSold,
+    imageUrl: thumbnailUrl,
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Top creator summary
+// Top creator — from `topCreators[]`: `{ creatorAccountId, unitsSold,
+// attributedRevenue, commissionPaid, distinctReelCount }`. No handle/display
+// name yet (creator identity lookup isn't wired server-side).
 // ---------------------------------------------------------------------------
 
 class AnalyticsTopCreatorDto {
   const AnalyticsTopCreatorDto({
-    required this.rank,
     required this.creatorAccountId,
     required this.attributedRevenue,
-    required this.currency,
     required this.distinctReelCount,
-    this.handle,
-    this.displayName,
   });
 
   factory AnalyticsTopCreatorDto.fromJson(Map<String, dynamic> json) =>
       AnalyticsTopCreatorDto(
-        rank: json['rank'] as int,
-        creatorAccountId: json['creatorAccountId'] as String,
-        attributedRevenue: (json['attributedRevenue'] as num).toDouble(),
-        currency: json['currency'] as String? ?? 'NPR',
+        creatorAccountId: json['creatorAccountId'] as String? ?? '',
+        attributedRevenue: MoneyDto.fromJson(
+          json['attributedRevenue'] as Map<String, dynamic>?,
+        ),
         distinctReelCount: json['distinctReelCount'] as int? ?? 0,
-        handle: json['handle'] as String?,
-        displayName: json['displayName'] as String?,
       );
 
-  final int rank;
   final String creatorAccountId;
-  final double attributedRevenue;
-  final String currency;
+  final MoneyDto attributedRevenue;
   final int distinctReelCount;
-  final String? handle;
-  final String? displayName;
 
-  TopCreatorSummary toDomain() => TopCreatorSummary(
-        rank: rank,
-        creatorAccountId: creatorAccountId,
-        attributedRevenue: attributedRevenue,
-        currency: currency,
-        distinctReelCount: distinctReelCount,
-        handle: handle,
-        displayName: displayName,
-      );
+  TopCreatorSummary toDomain(int rank) => TopCreatorSummary(
+    rank: rank,
+    creatorAccountId: creatorAccountId,
+    attributedRevenue: attributedRevenue.amount,
+    currency: attributedRevenue.currency,
+    distinctReelCount: distinctReelCount,
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Traffic source
+// Traffic source — from `trafficSources[]`: `{ platform, percent }`
 // ---------------------------------------------------------------------------
 
 class AnalyticsTrafficSourceDto {
   const AnalyticsTrafficSourceDto({
     required this.platform,
-    required this.percentage,
+    required this.percent,
   });
 
   factory AnalyticsTrafficSourceDto.fromJson(Map<String, dynamic> json) =>
       AnalyticsTrafficSourceDto(
-        platform: json['platform'] as String,
-        percentage: (json['percentage'] as num).toDouble(),
+        platform: json['platform'] as String? ?? '',
+        percent: (json['percent'] as num?)?.toDouble() ?? 0,
       );
 
   final String platform;
-  final double percentage;
+  final double percent;
 
   TrafficSource toDomain() =>
-      TrafficSource(platform: platform, percentage: percentage);
+      TrafficSource(platform: platform, percentage: percent);
 }
 
 // ---------------------------------------------------------------------------
-// Aggregate DTO — one toDomain() converts everything
+// Aggregate DTO — the whole `/v1/vendor/analytics/overview` response body.
 // ---------------------------------------------------------------------------
 
 class VendorAnalyticsSummaryDto {
   const VendorAnalyticsSummaryDto({
     required this.overview,
-    required this.earningsPoints,
+    required this.revenueTrend,
     required this.topProducts,
     required this.topCreators,
     required this.trafficSources,
   });
 
+  factory VendorAnalyticsSummaryDto.fromJson(Map<String, dynamic> json) =>
+      VendorAnalyticsSummaryDto(
+        overview: AnalyticsOverviewDto.fromJson(json),
+        revenueTrend: (json['revenueTrend'] as List<dynamic>? ?? [])
+            .map((e) => EarningsPointDto.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        topProducts: (json['topProducts'] as List<dynamic>? ?? [])
+            .map(
+              (e) => AnalyticsTopProductDto.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
+        topCreators: (json['topCreators'] as List<dynamic>? ?? [])
+            .map(
+              (e) => AnalyticsTopCreatorDto.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
+        trafficSources: (json['trafficSources'] as List<dynamic>? ?? [])
+            .map(
+              (e) =>
+                  AnalyticsTrafficSourceDto.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
+      );
+
   final AnalyticsOverviewDto overview;
-  final List<EarningsPointDto> earningsPoints;
+  final List<EarningsPointDto> revenueTrend;
   final List<AnalyticsTopProductDto> topProducts;
   final List<AnalyticsTopCreatorDto> topCreators;
   final List<AnalyticsTrafficSourceDto> trafficSources;
 
   VendorAnalyticsSummary toDomain() => VendorAnalyticsSummary(
-        revenueOverview: overview.toDomain(),
-        earningsPoints: earningsPoints.map((e) => e.toDomain()).toList(),
-        topProducts: topProducts.map((e) => e.toDomain()).toList(),
-        topCreators: topCreators.map((e) => e.toDomain()).toList(),
-        trafficSources: trafficSources.map((e) => e.toDomain()).toList(),
-      );
+    revenueOverview: overview.toDomain(),
+    earningsPoints: revenueTrend.map((e) => e.toDomain()).toList(),
+    topProducts: topProducts
+        .asMap()
+        .entries
+        .map((e) => e.value.toDomain(e.key + 1))
+        .toList(),
+    topCreators: topCreators
+        .asMap()
+        .entries
+        .map((e) => e.value.toDomain(e.key + 1))
+        .toList(),
+    trafficSources: trafficSources.map((e) => e.toDomain()).toList(),
+  );
 }
