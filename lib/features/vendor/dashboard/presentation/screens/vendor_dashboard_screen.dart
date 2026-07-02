@@ -1,7 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/domain/entities/vendor_activity_entry.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
@@ -39,6 +43,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vendorDashboardNotifierProvider);
+    final activityState = ref.watch(vendorActivityPreviewNotifierProvider);
 
     return RootBackGuard(
       child: Scaffold(
@@ -79,10 +84,12 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
             loadInProgress: _loader,
             loadSuccess: (dashboard) => _DashboardContent(
               dashboard: dashboard,
+              activityState: activityState,
               onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
             loadFailure: (_) => _DashboardContent(
               dashboard: _sampleDashboard,
+              activityState: activityState,
               onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
           ),
@@ -179,11 +186,18 @@ class _NavItem {
 // ── Main content ──────────────────────────────────────────────────────────────
 
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({required this.dashboard, required this.onRefresh});
+  const _DashboardContent({
+    required this.dashboard,
+    required this.activityState,
+    required this.onRefresh,
+  });
 
   final VendorDashboard dashboard;
+  final VendorActivityState activityState;
   final VoidCallback onRefresh;
 
+  // Fallback shown while the real feed is loading/failed — same pattern as
+  // `_sampleDashboard` above.
   static final _sampleActivities = [
     _ActivityGroup(date: 'Today', items: [
       _Activity(type: _ActivityType.order, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
@@ -527,7 +541,7 @@ class _DashboardContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-        ..._sampleActivities.expand((group) => [
+        ..._activityGroups(context).expand((group) => [
           Padding(
             padding: const EdgeInsets.only(bottom: DesignTokens.s8),
             child: Text(
@@ -540,6 +554,46 @@ class _DashboardContent extends StatelessWidget {
         ]),
       ],
     );
+  }
+
+  /// Real feed on success; `_sampleActivities` fallback otherwise (matches
+  /// `_sampleDashboard`'s pattern above).
+  List<_ActivityGroup> _activityGroups(BuildContext context) {
+    return activityState.maybeWhen(
+      loadSuccess: (entries) {
+        if (entries.isEmpty) return _sampleActivities;
+        final byDate = <String, List<_Activity>>{};
+        for (final e in entries) {
+          final label = _dateGroupLabel(e.occurredUtc);
+          (byDate[label] ??= []).add(
+            _Activity(
+              type: _ActivityType.order,
+              title: e.headline?.isNotEmpty == true ? e.headline! : 'Activity',
+              description: e.body ?? '',
+              time: formatRelative(e.occurredUtc),
+              actionLabel: e.actionUrl != null ? 'View' : null,
+            ),
+          );
+        }
+        return byDate.entries.map((e) => _ActivityGroup(date: e.key, items: e.value)).toList();
+      },
+      orElse: () => _sampleActivities,
+    );
+  }
+
+  static String _dateGroupLabel(DateTime utc) {
+    final local = utc.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    switch (today.difference(day).inDays) {
+      case 0:
+        return 'Today';
+      case 1:
+        return 'Yesterday';
+      default:
+        return DateFormat('EEE d MMM yyyy').format(local);
+    }
   }
 }
 

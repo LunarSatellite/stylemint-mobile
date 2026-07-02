@@ -5,7 +5,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/repositories/vendor_partnerships_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'vendor_partnerships_notifier.freezed.dart';
 
@@ -81,12 +80,12 @@ class CreatorSearchNotifier extends StateNotifier<CreatorSearchState> {
 
   Future<void> searchCreators({
     String? query,
-    List<String>? categories,
+    String? niche,
   }) async {
     state = const CreatorSearchState.loadInProgress();
     final result = await _repository.searchCreators(
       query: query,
-      categories: categories,
+      niche: niche,
     );
     state = result.fold(
       CreatorSearchState.loadFailure,
@@ -100,9 +99,21 @@ class InviteCreatorNotifier extends StateNotifier<InviteState> {
 
   final VendorPartnershipsRepository _repository;
 
-  Future<void> invite(String campaignId, String creatorId) async {
+  Future<void> invite({
+    required String creatorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    String? brandBriefId,
+    String? message,
+  }) async {
     state = const InviteState.submitting();
-    final result = await _repository.inviteCreator(campaignId, creatorId);
+    final result = await _repository.inviteCreator(
+      creatorProfileId: creatorProfileId,
+      commissionMinPercent: commissionMinPercent,
+      commissionMaxPercent: commissionMaxPercent,
+      brandBriefId: brandBriefId,
+      message: message,
+    );
     state = result.fold(InviteState.failure, (_) => const InviteState.success());
   }
 

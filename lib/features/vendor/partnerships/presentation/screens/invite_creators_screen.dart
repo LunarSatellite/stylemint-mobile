@@ -48,6 +48,26 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
     super.dispose();
   }
 
+  Future<void> _promptAndInvite(CreatorInvite creator) async {
+    final range = await showModalBottomSheet<RangeValues>(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _CommissionRangeSheet(creatorLabel: creator.label),
+    );
+    if (range == null || !mounted) return;
+
+    setState(() => _invitedIds.add(creator.creatorAccountId));
+    await ref.read(inviteCreatorNotifierProvider.notifier).invite(
+      creatorProfileId: creator.creatorAccountId,
+      commissionMinPercent: range.start / 100,
+      commissionMaxPercent: range.end / 100,
+      brandBriefId: widget.campaignId.isEmpty ? null : widget.campaignId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(creatorSearchNotifierProvider);
@@ -97,8 +117,7 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
               onChanged: (val) {
                 ref.read(creatorSearchNotifierProvider.notifier).searchCreators(
                   query: val,
-                  categories:
-                      _selectedCategory != null ? [_selectedCategory!] : null,
+                  niche: _selectedCategory,
                 );
               },
             ),
@@ -129,7 +148,7 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
                           .read(creatorSearchNotifierProvider.notifier)
                           .searchCreators(
                             query: _searchCtrl.text,
-                            categories: [cat],
+                            niche: cat,
                           );
                     },
                   ),
@@ -150,10 +169,10 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
                   );
                 }
                 final available = creators
-                    .where((c) => !_invitedIds.contains(c.creatorId))
+                    .where((c) => !_invitedIds.contains(c.creatorAccountId))
                     .toList();
                 final invited = creators
-                    .where((c) => _invitedIds.contains(c.creatorId))
+                    .where((c) => _invitedIds.contains(c.creatorAccountId))
                     .toList();
                 return ListView(
                   children: [
@@ -183,12 +202,7 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
                       (c) => CreatorInviteTile(
                         invite: c,
                         isInviting: isInviting,
-                        onInvite: () {
-                          ref
-                              .read(inviteCreatorNotifierProvider.notifier)
-                              .invite(widget.campaignId, c.creatorId);
-                          setState(() => _invitedIds.add(c.creatorId));
-                        },
+                        onInvite: () => _promptAndInvite(c),
                       ),
                     ),
                   ],
@@ -243,6 +257,74 @@ class _FilterChip extends StatelessWidget {
               color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The backend requires a commission range on every invite
+/// (`POST /v1/vendor/partnerships/invite`) — there's no default.
+class _CommissionRangeSheet extends StatefulWidget {
+  const _CommissionRangeSheet({required this.creatorLabel});
+
+  final String creatorLabel;
+
+  @override
+  State<_CommissionRangeSheet> createState() => _CommissionRangeSheetState();
+}
+
+class _CommissionRangeSheetState extends State<_CommissionRangeSheet> {
+  RangeValues _range = const RangeValues(10, 20);
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Commission for ${widget.creatorLabel}',
+              style: DesignTokens.mediumSemibold,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              '${_range.start.round()}% – ${_range.end.round()}%',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen),
+            ),
+            RangeSlider(
+              values: _range,
+              min: 0,
+              max: 50,
+              divisions: 50,
+              activeColor: DesignTokens.primaryGreen,
+              onChanged: (v) => setState(() => _range = v),
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(_range),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(
+                  'Send Invite',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

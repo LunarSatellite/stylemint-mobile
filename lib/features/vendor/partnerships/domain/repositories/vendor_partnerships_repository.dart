@@ -14,13 +14,14 @@ abstract interface class VendorPartnershipsRepository {
 
   Future<Either<NetworkExceptions, List<CreatorInvite>>> searchCreators({
     String? query,
-    List<String>? categories,
+    String? niche,
   });
 
-  Future<Either<NetworkExceptions, CreatorInvite>> inviteCreator(
-    String campaignId,
-    String creatorId,
-  );
-
-  Future<Either<NetworkExceptions, List<CreatorInvite>>> getInvites(String campaignId);
+  Future<Either<NetworkExceptions, void>> inviteCreator({
+    required String creatorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    String? brandBriefId,
+    String? message,
+  });
 }

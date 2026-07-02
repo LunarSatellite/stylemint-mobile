@@ -1,18 +1,25 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/domain/entities/vendor_activity_entry.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class RecentActivityScreen extends StatefulWidget {
+class RecentActivityScreen extends ConsumerStatefulWidget {
   const RecentActivityScreen({super.key});
 
   @override
-  State<RecentActivityScreen> createState() => _RecentActivityScreenState();
+  ConsumerState<RecentActivityScreen> createState() => _RecentActivityScreenState();
 }
 
-class _RecentActivityScreenState extends State<RecentActivityScreen> {
+class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
   final Set<_ActivityType> _activeFilters = {};
 
-  static final _allGroups = [
+  // Fallback shown while the real feed is loading/failed/empty — same
+  // pattern used on the dashboard's preview card.
+  static final _sampleGroups = [
     _ActivityGroup(date: 'Today', items: [
       _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
       _ActivityItem(type: _ActivityType.payoutReceived, title: 'Payout Completed', description: 'Your Payout of Rs 12,24,575.00 was processed', time: '5h ago · Bank A/C ******8799'),
@@ -33,17 +40,73 @@ class _RecentActivityScreenState extends State<RecentActivityScreen> {
     ]),
   ];
 
-  List<_ActivityGroup> get _filtered {
-    if (_activeFilters.isEmpty) return _allGroups;
-    return _allGroups
+  List<_ActivityGroup> _filtered(List<_ActivityGroup> groups) {
+    if (_activeFilters.isEmpty) return groups;
+    return groups
         .map((g) => _ActivityGroup(date: g.date, items: g.items.where((i) => _activeFilters.contains(i.type)).toList()))
         .where((g) => g.items.isNotEmpty)
         .toList();
   }
 
+  /// Real feed grouped by day on success; `_sampleGroups` fallback
+  /// otherwise.
+  List<_ActivityGroup> _groupsFor(VendorActivityState state) {
+    return state.maybeWhen(
+      loadSuccess: (entries) {
+        if (entries.isEmpty) return _sampleGroups;
+        final byDate = <String, List<_ActivityItem>>{};
+        for (final e in entries) {
+          final label = _dateGroupLabel(e.occurredUtc);
+          (byDate[label] ??= []).add(
+            _ActivityItem(
+              type: _guessActivityType(e.headline),
+              title: e.headline?.isNotEmpty == true ? e.headline! : 'Activity',
+              description: e.body ?? '',
+              time: formatRelative(e.occurredUtc),
+              actionLabel: e.actionUrl != null ? 'View' : null,
+            ),
+          );
+        }
+        return byDate.entries.map((e) => _ActivityGroup(date: e.key, items: e.value)).toList();
+      },
+      orElse: () => _sampleGroups,
+    );
+  }
+
+  static String _dateGroupLabel(DateTime utc) {
+    final local = utc.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    switch (today.difference(day).inDays) {
+      case 0:
+        return 'Today';
+      case 1:
+        return 'Yesterday';
+      default:
+        return DateFormat('EEE d MMM yyyy').format(local);
+    }
+  }
+
+  /// The backend's `VendorActivityKind` has no published int-to-label
+  /// mapping, so this is a best-effort keyword guess purely for choosing an
+  /// icon/color — it never drives filtering logic against real business
+  /// meaning, only cosmetic grouping.
+  static _ActivityType _guessActivityType(String? headline) {
+    final h = (headline ?? '').toLowerCase();
+    if (h.contains('ship')) return _ActivityType.orderShipped;
+    if (h.contains('payout')) return _ActivityType.payoutReceived;
+    if (h.contains('stock') || h.contains('low')) return _ActivityType.inventoryLowAlerts;
+    if (h.contains('product') && h.contains('add')) return _ActivityType.productsAdded;
+    if (h.contains('product')) return _ActivityType.productsUpdated;
+    if (h.contains('inquiry') || h.contains('question')) return _ActivityType.customerInquiry;
+    return _ActivityType.orderReceived;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final groups = _filtered;
+    final activityState = ref.watch(vendorActivityNotifierProvider);
+    final groups = _filtered(_groupsFor(activityState));
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(

@@ -1,113 +1,138 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-enum CampaignStatus { draft, active, paused, completed }
+/// Lifecycle of a `BrandBrief` (Vendor §3): Draft → Locked (first invite
+/// attaches) → Retired. Edits on a Locked brief require a new version via
+/// Fork (not modelled here — the mobile UI doesn't fork briefs yet).
+enum BrandBriefState { draft, locked, retired }
 
+/// Mirrors `BrandBriefDto` from `GET/POST/PATCH /v1/vendor/briefs*` — the
+/// real "campaign" concept on the backend is a Brand Studio brief. Fields
+/// the mobile UI doesn't render yet (roiProjection, the JSONB `body` of
+/// hooks/cadence/recipes, versioning) are intentionally not modelled.
+///
+/// NOTE: previously this entity modelled `description`, a single
+/// `commissionRate`, `startDate`/`endDate`, `targetCreators`, and
+/// `requiredCategories` — none of which exist on the real endpoint.
 class CampaignBrief {
   const CampaignBrief({
     required this.id,
-    required this.title,
-    required this.description,
-    required this.commissionRate,
-    required this.budget,
-    required this.startDate,
-    this.endDate,
-    this.targetCreators = 0,
-    this.requiredCategories = const <String>[],
-    this.status = CampaignStatus.draft,
+    required this.vendorProfileId,
+    this.title,
+    required this.primaryGoal,
+    required this.state,
+    required this.commissionMinPercent,
+    required this.commissionMaxPercent,
+    required this.boostBudget,
     required this.createdAt,
+    required this.updatedAt,
+    this.lockedAt,
   });
 
   final String id;
-  final String title;
-  final String description;
-  final double commissionRate;
-  final Money budget;
-  final DateTime startDate;
-  final DateTime? endDate;
-  final int targetCreators;
-  final List<String> requiredCategories;
-  final CampaignStatus status;
+  final String vendorProfileId;
+  final String? title;
+
+  /// Raw `CampaignGoal` enum value (1-7) — the backend doesn't publish
+  /// display labels for these in the API contract.
+  final int primaryGoal;
+  final BrandBriefState state;
+
+  /// Fraction (0..1), not a whole percent — matches the backend's
+  /// `CommissionRange` convention.
+  final double commissionMinPercent;
+  final double commissionMaxPercent;
+  final Money boostBudget;
   final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? lockedAt;
 
   CampaignBrief copyWith({
     String? id,
+    String? vendorProfileId,
     String? title,
-    String? description,
-    double? commissionRate,
-    Money? budget,
-    DateTime? startDate,
-    DateTime? endDate,
-    int? targetCreators,
-    List<String>? requiredCategories,
-    CampaignStatus? status,
+    int? primaryGoal,
+    BrandBriefState? state,
+    double? commissionMinPercent,
+    double? commissionMaxPercent,
+    Money? boostBudget,
     DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lockedAt,
   }) {
     return CampaignBrief(
       id: id ?? this.id,
+      vendorProfileId: vendorProfileId ?? this.vendorProfileId,
       title: title ?? this.title,
-      description: description ?? this.description,
-      commissionRate: commissionRate ?? this.commissionRate,
-      budget: budget ?? this.budget,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      targetCreators: targetCreators ?? this.targetCreators,
-      requiredCategories: requiredCategories ?? this.requiredCategories,
-      status: status ?? this.status,
+      primaryGoal: primaryGoal ?? this.primaryGoal,
+      state: state ?? this.state,
+      commissionMinPercent: commissionMinPercent ?? this.commissionMinPercent,
+      commissionMaxPercent: commissionMaxPercent ?? this.commissionMaxPercent,
+      boostBudget: boostBudget ?? this.boostBudget,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      lockedAt: lockedAt ?? this.lockedAt,
     );
   }
 }
 
-enum InviteStatus { pending, accepted, declined, expired }
-
+/// Mirrors `CreatorPickerDto` from `GET /v1/vendor/partnerships/creators`
+/// (Vendor §7J — the invite picker). NOTE: previously this entity was
+/// shaped like a `Partnership` record (campaignId, status, invitedAt) —
+/// those fields don't exist on the picker endpoint; a creator's actual
+/// invite/partnership state is a separate resource (`PartnershipDto`) with
+/// no creator display fields at all.
 class CreatorInvite {
   const CreatorInvite({
-    required this.id,
-    required this.campaignId,
-    required this.creatorId,
-    required this.creatorName,
-    required this.creatorAvatarUrl,
-    required this.creatorHandle,
-    required this.creatorCategory,
-    this.followersCount = 0,
-    this.status = InviteStatus.pending,
-    required this.invitedAt,
+    required this.creatorAccountId,
+    this.displayName,
+    this.handle,
+    this.avatarUrl,
+    this.bio,
+    this.followerCount,
+    this.niches = const <String>[],
+    this.hasExistingPartnership = false,
   });
 
-  final String id;
-  final String campaignId;
-  final String creatorId;
-  final String creatorName;
-  final String creatorAvatarUrl;
-  final String creatorHandle;
-  final String creatorCategory;
-  final int followersCount;
-  final InviteStatus status;
-  final DateTime invitedAt;
+  final String creatorAccountId;
+  final String? displayName;
+  final String? handle;
+  final String? avatarUrl;
+  final String? bio;
+  final int? followerCount;
+  final List<String> niches;
+  final bool hasExistingPartnership;
+
+  /// Best available label: display name → @handle → short id fallback.
+  String get label {
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final h = handle?.trim();
+    if (h != null && h.isNotEmpty) return '@$h';
+    return creatorAccountId.length >= 8
+        ? 'Creator ••${creatorAccountId.substring(creatorAccountId.length - 4)}'
+        : 'Creator';
+  }
 
   CreatorInvite copyWith({
-    String? id,
-    String? campaignId,
-    String? creatorId,
-    String? creatorName,
-    String? creatorAvatarUrl,
-    String? creatorHandle,
-    String? creatorCategory,
-    int? followersCount,
-    InviteStatus? status,
-    DateTime? invitedAt,
+    String? creatorAccountId,
+    String? displayName,
+    String? handle,
+    String? avatarUrl,
+    String? bio,
+    int? followerCount,
+    List<String>? niches,
+    bool? hasExistingPartnership,
   }) {
     return CreatorInvite(
-      id: id ?? this.id,
-      campaignId: campaignId ?? this.campaignId,
-      creatorId: creatorId ?? this.creatorId,
-      creatorName: creatorName ?? this.creatorName,
-      creatorAvatarUrl: creatorAvatarUrl ?? this.creatorAvatarUrl,
-      creatorHandle: creatorHandle ?? this.creatorHandle,
-      creatorCategory: creatorCategory ?? this.creatorCategory,
-      followersCount: followersCount ?? this.followersCount,
-      status: status ?? this.status,
-      invitedAt: invitedAt ?? this.invitedAt,
+      creatorAccountId: creatorAccountId ?? this.creatorAccountId,
+      displayName: displayName ?? this.displayName,
+      handle: handle ?? this.handle,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bio: bio ?? this.bio,
+      followerCount: followerCount ?? this.followerCount,
+      niches: niches ?? this.niches,
+      hasExistingPartnership:
+          hasExistingPartnership ?? this.hasExistingPartnership,
     );
   }
 }

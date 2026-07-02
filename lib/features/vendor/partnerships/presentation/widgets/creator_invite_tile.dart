@@ -16,7 +16,8 @@ class CreatorInviteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alreadyInvited = onInvite == null;
+    final alreadyInvited = onInvite == null || invite.hasExistingPartnership;
+    final niche = invite.niches.isNotEmpty ? invite.niches.first : null;
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -32,18 +33,27 @@ class CreatorInviteTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundImage: NetworkImage(invite.creatorAvatarUrl),
+            backgroundImage: invite.avatarUrl != null
+                ? NetworkImage(invite.avatarUrl!)
+                : null,
             backgroundColor: DesignTokens.bgAppBodyLight,
+            child: invite.avatarUrl == null
+                ? const Icon(Icons.person, color: DesignTokens.textMuted)
+                : null,
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(invite.creatorName, style: DesignTokens.mediumSemibold),
+                Text(invite.label, style: DesignTokens.mediumSemibold),
                 const SizedBox(height: DesignTokens.s4),
                 Text(
-                  '@${invite.creatorHandle}  ·  ${invite.creatorCategory}  ·  ${_formatFollowers(invite.followersCount)}',
+                  [
+                    if (invite.handle != null) '@${invite.handle}',
+                    if (niche != null) niche,
+                    _formatFollowers(invite.followerCount ?? 0),
+                  ].join('  ·  '),
                   style: DesignTokens.tiny,
                 ),
               ],
