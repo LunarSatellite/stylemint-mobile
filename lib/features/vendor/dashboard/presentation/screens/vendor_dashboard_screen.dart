@@ -431,32 +431,35 @@ class _DashboardContent extends StatelessWidget {
               final alert = entry.value;
               return Column(
                 children: [
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.bgAppBodyLight,
+                          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                        ),
+                        child: alert.assetIcon != null
+                            ? Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Image.asset(alert.assetIcon!, fit: BoxFit.contain),
+                              )
+                            : Icon(alert.icon, color: DesignTokens.textWhite, size: 20),
                       ),
-                      child: alert.assetIcon != null
-                          ? Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Image.asset(alert.assetIcon!, fit: BoxFit.contain),
-                            )
-                          : Icon(alert.icon, color: DesignTokens.textWhite, size: 20),
+                      title: Text(
+                        alert.title,
+                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        alert.subtitle,
+                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
+                      onTap: alert.route != null ? () => context.push(alert.route!) : null,
                     ),
-                    title: Text(
-                      alert.title,
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      alert.subtitle,
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
-                    onTap: alert.route != null ? () => context.push(alert.route!) : null,
                   ),
                   if (i < alerts.length - 1)
                     const Divider(color: DesignTokens.borderDefault, height: 1, indent: DesignTokens.s16, endIndent: DesignTokens.s16),

@@ -5,6 +5,8 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -126,5 +128,221 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     } else {
       return left(NetworkExceptions.noInternetConnection());
     }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> markReadyToShip(
+    String orderId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.markReadyToShip(
+          orderId,
+          _uuid.v4(),
+        );
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> addTracking(
+    String orderId, {
+    required String carrier,
+    required String trackingNumber,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.addTracking(
+          orderId,
+          carrier,
+          trackingNumber,
+          _uuid.v4(),
+        );
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> markDelivered(
+    String orderId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.markDelivered(orderId, _uuid.v4());
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PackingSlip>> getPackingSlip(
+    String orderId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getPackingSlip(orderId);
+        return right(_parsePackingSlip(orderId, json));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, BulkActionResult>> bulkMarkReadyToShip(
+    List<String> orderIds,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.bulkReadyToShip(
+          orderIds,
+          _uuid.v4(),
+        );
+        return right(_parseBulkResult(json, orderIds));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, BulkActionResult>> bulkPackingSlips(
+    List<String> orderIds,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.bulkPackingSlips(orderIds);
+        return right(_parseBulkResult(json, orderIds));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  /// TODO(swagger): exact packing-slip response shape isn't published —
+  /// parses the same `shipTo`/`lines` shape as the order-detail endpoint,
+  /// falling back gracefully if fields are missing.
+  static PackingSlip _parsePackingSlip(
+    String orderId,
+    Map<String, dynamic> json,
+  ) {
+    final shipTo = json['shipTo'] as Map<String, dynamic>?;
+    final lines = (json['lines'] as List<dynamic>? ??
+            json['items'] as List<dynamic>? ??
+            const <dynamic>[])
+        .cast<Map<String, dynamic>>();
+    return PackingSlip(
+      orderId: orderId,
+      orderNumber: json['orderNumber'] as String? ?? '',
+      receiverName: shipTo?['receiverName'] as String?,
+      shippingAddress: _formatAddress(shipTo),
+      carrier: json['carrier'] as String?,
+      items: lines
+          .map((l) => PackingSlipItem(
+                productName: (l['productTitleSnapshot'] as String?) ??
+                    (l['productName'] as String?) ??
+                    '',
+                quantity: (l['quantity'] as num?)?.toInt() ?? 0,
+              ))
+          .toList(growable: false),
+    );
+  }
+
+  static String? _formatAddress(Map<String, dynamic>? a) {
+    if (a == null) return null;
+    final parts = <String>[
+      (a['addressLine1'] as String?) ?? '',
+      (a['city'] as String?) ?? '',
+      [(a['state'] as String?) ?? '', (a['zipCode'] as String?) ?? '']
+          .where((s) => s.isNotEmpty)
+          .join(' '),
+    ].where((s) => s.isNotEmpty).toList();
+    return parts.isEmpty ? null : parts.join(', ');
+  }
+
+  /// TODO(swagger): exact bulk-result response shape isn't published — reads
+  /// a `results`/`items` list of `{id, success, errorCode}` if present;
+  /// otherwise assumes the outer 200 means every requested id succeeded.
+  static BulkActionResult _parseBulkResult(
+    Map<String, dynamic> json,
+    List<String> requestedIds,
+  ) {
+    final rows = (json['results'] as List<dynamic>? ??
+            json['items'] as List<dynamic>? ??
+            const <dynamic>[])
+        .cast<Map<String, dynamic>>();
+    if (rows.isEmpty) {
+      return BulkActionResult(succeededIds: requestedIds, failed: const {});
+    }
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final row in rows) {
+      final id = (row['id'] as String?) ??
+          (row['subOrderId'] as String?) ??
+          '';
+      final errorCode = row['errorCode'] as String? ?? row['error'] as String?;
+      if (errorCode == null) {
+        succeeded.add(id);
+      } else {
+        failed[id] = errorCode;
+      }
+    }
+    return BulkActionResult(succeededIds: succeeded, failed: failed);
   }
 }

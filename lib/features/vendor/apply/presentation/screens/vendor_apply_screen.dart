@@ -722,7 +722,9 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     orElse: () => null,
                   );
                   id ??= await ref.read(tokenStorageProvider).accountId;
-                  if (id != null && id.isNotEmpty) unawaited(notifier.checkStatus(id));
+                  if (id != null && id.isNotEmpty) {
+                    unawaited(notifier.checkStatus(id, force: true));
+                  }
                 },
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
@@ -763,7 +765,9 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     orElse: () => null,
                   );
                   id ??= await ref.read(tokenStorageProvider).accountId;
-                  if (id != null && id.isNotEmpty) unawaited(notifier.checkStatus(id));
+                  if (id != null && id.isNotEmpty) {
+                    unawaited(notifier.checkStatus(id, force: true));
+                  }
                 },
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
@@ -799,7 +803,8 @@ class _KycUploadTileState extends ConsumerState<_KycUploadTile> {
   Future<void> _pick() async {
     if (_uploading) return;
 
-    final picked = await ImagePicker().pickImage(
+    final picked = 
+    await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );

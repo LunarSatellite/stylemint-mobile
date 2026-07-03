@@ -56,7 +56,16 @@ class VendorApplyNotifier extends StateNotifier<ApplicationState> {
     _kycDocsState = s;
   }
 
-  Future<void> checkStatus(String accountId) async {
+  Future<void> checkStatus(String accountId, {bool force = false}) async {
+    if (!force) {
+      final alreadyLoaded = state.maybeWhen(
+        loadSuccess: (_) => true,
+        loadInProgress: () => true,
+        orElse: () => false,
+      );
+      if (alreadyLoaded) return;
+    }
+
     state = const ApplicationState.loadInProgress();
     final either = await _repository.getApplicationStatus();
     state = either.fold(

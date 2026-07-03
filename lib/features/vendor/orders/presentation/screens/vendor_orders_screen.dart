@@ -1,110 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorOrdersScreen extends StatefulWidget {
+class VendorOrdersScreen extends ConsumerStatefulWidget {
   const VendorOrdersScreen({super.key});
 
   @override
-  State<VendorOrdersScreen> createState() => _VendorOrdersScreenState();
+  ConsumerState<VendorOrdersScreen> createState() => _VendorOrdersScreenState();
 }
 
-class _VendorOrdersScreenState extends State<VendorOrdersScreen>
+class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-
-  static const _toShip = [
-    _Order(
-      id: 'RC20230126',
-      amount: 'Rs 10,000',
-      time: '17:52',
-      date: 'Dec 16, 2024',
-      itemCount: 3,
-      customer: 'John Doe',
-      creator: '@fashion_sarah',
-      commission: 15,
-    ),
-    _Order(
-      id: 'RC20230125',
-      amount: 'Rs 41,000',
-      time: '13:52',
-      date: 'Dec 10, 2024',
-      itemCount: 2,
-      customer: 'Lace James',
-      creator: '@antonio_bandara',
-      commission: 12,
-    ),
-  ];
-
-  static const _inTransit = [
-    _Order(
-      id: 'RC20230124',
-      amount: 'Rs 7,500',
-      time: '09:15',
-      date: 'Dec 12, 2024',
-      itemCount: 1,
-      customer: 'Maria Santos',
-      creator: '@style_queen',
-      commission: 10,
-    ),
-    _Order(
-      id: 'RC20230123',
-      amount: 'Rs 22,000',
-      time: '14:30',
-      date: 'Dec 11, 2024',
-      itemCount: 4,
-      customer: 'Alex Kumar',
-      creator: '@trendy_alex',
-      commission: 18,
-    ),
-  ];
-
-  static const _shipped = [
-    _Order(
-      id: 'RC20230122',
-      amount: 'Rs 5,800',
-      time: '11:00',
-      date: 'Dec 09, 2024',
-      itemCount: 2,
-      customer: 'Priya Sharma',
-      creator: '@priya_styles',
-      commission: 14,
-    ),
-    _Order(
-      id: 'RC20230121',
-      amount: 'Rs 13,400',
-      time: '16:45',
-      date: 'Dec 08, 2024',
-      itemCount: 3,
-      customer: 'Tom Wilson',
-      creator: '@fashion_tom',
-      commission: 11,
-    ),
-  ];
-
-  static const _completed = [
-    _Order(
-      id: 'RC20230120',
-      amount: 'Rs 9,200',
-      time: '08:20',
-      date: 'Dec 05, 2024',
-      itemCount: 2,
-      customer: 'Sarah Lee',
-      creator: '@sarah_fashion',
-      commission: 16,
-    ),
-    _Order(
-      id: 'RC20230119',
-      amount: 'Rs 31,000',
-      time: '12:10',
-      date: 'Dec 03, 2024',
-      itemCount: 5,
-      customer: 'Nina Patel',
-      creator: '@nina_trends',
-      commission: 13,
-    ),
-  ];
 
   @override
   void initState() {
@@ -120,6 +33,20 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(vendorOrdersNotifierProvider);
+    final orders = state.maybeWhen(
+      loadSuccess: (orders, nextCursor, hasMore, activeFilter) => orders,
+      orElse: () => const <VendorOrder>[],
+    );
+
+    final toShip = orders.where((o) => o.status.isToShip).toList(growable: false);
+    final inTransit = orders.where((o) => o.status.isInTransit).toList(growable: false);
+    // NOTE: backend only exposes one intermediate "shipped" status, so
+    // "Shipped" currently mirrors "In Transit" until a finer distinction is
+    // available.
+    final shipped = inTransit;
+    final completed = orders.where((o) => o.status.isCompleted).toList(growable: false);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -178,22 +105,43 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
             fontSize: 13,
             fontWeight: FontWeight.w400,
           ),
-          tabs: const [
-            Tab(text: 'To Ship(2)'),
-            Tab(text: 'In Transit(2)'),
-            Tab(text: 'Shipped(2)'),
-            Tab(text: 'Completed(2)'),
+          tabs: [
+            Tab(text: 'To Ship(${toShip.length})'),
+            Tab(text: 'In Transit(${inTransit.length})'),
+            Tab(text: 'Shipped(${shipped.length})'),
+            Tab(text: 'Completed(${completed.length})'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _OrderList(orders: _toShip),
-          _OrderList(orders: _inTransit),
-          _OrderList(orders: _shipped),
-          _OrderList(orders: _completed),
-        ],
+      body: state.maybeWhen(
+        loadInProgress: () => const Center(
+          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+        ),
+        loadFailure: (_) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Failed to load orders.',
+                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              TextButton(
+                onPressed: () => ref.read(vendorOrdersNotifierProvider.notifier).loadOrders(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        orElse: () => TabBarView(
+          controller: _tabController,
+          children: [
+            _OrderList(orders: toShip),
+            _OrderList(orders: inTransit),
+            _OrderList(orders: shipped),
+            _OrderList(orders: completed),
+          ],
+        ),
       ),
     );
   }
@@ -202,6 +150,10 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
 // ---------------------------------------------------------------------------
 // Filter bottom sheet
 // ---------------------------------------------------------------------------
+// NOTE: Product / Date Range / Order Value / Shipping Method filters here are
+// cosmetic only — the backend's GET /v1/vendor/sub-orders filter parameters
+// beyond `status` aren't confirmed against Swagger, so this sheet doesn't
+// wire into a real query yet.
 
 class _FilterSheet extends StatefulWidget {
   const _FilterSheet();
@@ -584,22 +536,26 @@ class _SectionLabel extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 
-class _OrderList extends StatelessWidget {
+class _OrderList extends ConsumerWidget {
   const _OrderList({required this.orders});
 
-  final List<_Order> orders;
+  final List<VendorOrder> orders;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (orders.isEmpty) {
       return const Center(
         child: Text('No orders', style: TextStyle(color: DesignTokens.textMuted)),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
-      itemCount: orders.length,
-      itemBuilder: (_, i) => _OrderTile(order: orders[i]),
+    return RefreshIndicator(
+      color: DesignTokens.primaryGreen,
+      onRefresh: () => ref.read(vendorOrdersNotifierProvider.notifier).loadOrders(),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 8, bottom: 24),
+        itemCount: orders.length,
+        itemBuilder: (_, i) => _OrderTile(order: orders[i]),
+      ),
     );
   }
 }
@@ -607,7 +563,7 @@ class _OrderList extends StatelessWidget {
 class _OrderTile extends StatelessWidget {
   const _OrderTile({required this.order});
 
-  final _Order order;
+  final VendorOrder order;
 
   @override
   Widget build(BuildContext context) {
@@ -647,7 +603,7 @@ class _OrderTile extends StatelessWidget {
               children: [
                 // Order number — white 14px semibold
                 Text(
-                  'Order #${order.id}',
+                  'Order #${order.orderNumber}',
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 14,
@@ -658,14 +614,16 @@ class _OrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
 
-                // Amount · time · date · items — muted 12px
+                // Amount · date · items — muted 12px
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 0,
                   children: [
-                    _MutedText(order.amount),
-                    _DotSep(),
-                    _MutedText('${order.time} ${order.date}'),
+                    _MutedText(formatMoney(order.total)),
+                    if (order.placedAt != null) ...[
+                      _DotSep(),
+                      _MutedText(_formatDate(order.placedAt!)),
+                    ],
                     _DotSep(),
                     _MutedText('${order.itemCount} items'),
                   ],
@@ -673,48 +631,36 @@ class _OrderTile extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 // Customer chip — #B8E6FE bg, #024A70 text, person icon
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB8E6FE),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.person,
-                        size: 12,
-                        color: Color(0xFF024A70),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Customer: ${order.customer}',
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                if (order.customerName != null)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB8E6FE),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.person,
+                          size: 12,
                           color: Color(0xFF024A70),
-                          height: 1.0,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          'Customer: ${order.customerName}',
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF024A70),
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-
-                // Via @creator(X% Commission) — primary green 12px
-                Text(
-                  'Via ${order.creator}(${order.commission}% Commission)',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: DesignTokens.primaryGreen,
-                    height: 1.3,
-                  ),
-                ),
               ],
             ),
           ),
@@ -730,6 +676,15 @@ class _OrderTile extends StatelessWidget {
       ),
       ),
     );
+  }
+
+  static String _formatDate(DateTime utc) {
+    final local = utc.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
 }
 
@@ -766,26 +721,4 @@ class _DotSep extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Order {
-  const _Order({
-    required this.id,
-    required this.amount,
-    required this.time,
-    required this.date,
-    required this.itemCount,
-    required this.customer,
-    required this.creator,
-    required this.commission,
-  });
-
-  final String id;
-  final String amount;
-  final String time;
-  final String date;
-  final int itemCount;
-  final String customer;
-  final String creator;
-  final int commission;
 }

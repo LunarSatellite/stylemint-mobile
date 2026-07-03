@@ -320,6 +320,16 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
   bool _isActive(List<RoleProfileDto> roles, int role) =>
       roles.any((r) => r.role == role && r.isActivated);
 
+  bool _navigating = false;
+
+  void _pushOnce(String route) {
+    if (_navigating) return;
+    _navigating = true;
+    context.push(route).whenComplete(() {
+      if (mounted) _navigating = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final roles = ref.watch(roleNotifierProvider).maybeWhen(
@@ -334,14 +344,14 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
         ProfileMenuItem(
           icon: Icons.video_camera_back_outlined,
           label: creatorActive ? 'Creator Studio' : 'Become a Creator',
-          onTap: () => context.push(
+          onTap: () => _pushOnce(
             creatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
           ),
         ),
         ProfileMenuItem(
           icon: Icons.storefront_outlined,
           label: vendorActive ? 'Vendor Dashboard' : 'Sell on Style Mint',
-          onTap: () => context.push(
+          onTap: () => _pushOnce(
             vendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
           ),
         ),

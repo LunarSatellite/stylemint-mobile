@@ -14,6 +14,38 @@ enum VendorOrderStatus {
   final String label;
 }
 
+/// Client-side bucketing for the "Your Orders" tabs and the Ready-to-Ship
+/// screen. The backend's list-filter `status` query values aren't confirmed
+/// against Swagger, so screens fetch unfiltered and bucket locally using the
+/// same collapsed status the DTOs already compute.
+extension VendorOrderStatusBucketing on VendorOrderStatus {
+  /// Not yet shipped — candidates for "Mark as Shipped" / Ready to Ship.
+  bool get isToShip =>
+      this == VendorOrderStatus.pending ||
+      this == VendorOrderStatus.confirmed ||
+      this == VendorOrderStatus.processing;
+
+  /// NOTE: the backend only exposes one intermediate "shipped" status, so
+  /// "In Transit" and "Shipped" currently show the same set of orders until
+  /// backend exposes a finer-grained distinction.
+  bool get isInTransit => this == VendorOrderStatus.shipped;
+
+  bool get isCompleted =>
+      this == VendorOrderStatus.delivered ||
+      this == VendorOrderStatus.cancelled ||
+      this == VendorOrderStatus.returned;
+}
+
+extension VendorOrderTrackingBucketing on VendorOrder {
+  /// Vendor has progressed the order into fulfillment but hasn't attached a
+  /// tracking number yet ("Orders Awaiting Tracking"). The backend collapses
+  /// AwaitingFulfillment/ReadyToShip/AwaitingTracking into one `processing`
+  /// status, so this can't be perfectly distinguished from "not yet marked
+  /// ready to ship" — best-effort bucket until backend exposes finer state.
+  bool get isWaitingTracking =>
+      status == VendorOrderStatus.processing && trackingNumber == null;
+}
+
 class VendorOrderItem {
   const VendorOrderItem({
     required this.productId,
