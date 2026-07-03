@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/products/data/models/vendor_product_dto.dart';
 
 class VendorProductsRemoteDataSource {
   VendorProductsRemoteDataSource({required this.apiClient});
@@ -23,36 +22,32 @@ class VendorProductsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  // TODO(swagger): GET /v1/vendor/products/{productId} not found. Use GET /v1/vendor/products with query filter
-  Future<VendorProductDto> getProduct(String productId) async {
-    final response = await apiClient.get('/v1/vendor/products/$productId');
-    return VendorProductDto.fromJson(response as Map<String, dynamic>);
-  }
-
-  // TODO(swagger): PUT /v1/vendor/products/{productId}/status not found. Use PATCH /v1/vendor/products/{productId}/stock or POST /v1/vendor/products/{productId}/archive
-  Future<VendorProductDto> updateProductStatus(
+  // No PUT /status endpoint exists on the backend — the only real
+  // state-changing action is archive (Active|OutOfStock -> Archived,
+  // terminal soft-delete). The lone caller only ever passes
+  // VendorProductStatus.discontinued (the "Deactivate" action), which maps
+  // directly onto it.
+  Future<void> updateProductStatus(
     String productId,
     String status,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.put(
-      '/v1/vendor/products/$productId/status',
-      data: {'status': status},
+    await apiClient.post(
+      '/v1/vendor/products/$productId/archive',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,
       }),
     );
-    return VendorProductDto.fromJson(response as Map<String, dynamic>);
   }
 
-  // TODO(swagger): DELETE /v1/vendor/products/{productId} not found. Use POST /v1/vendor/products/{productId}/archive instead
+  // No DELETE endpoint exists on the backend — archive is the real soft-delete.
   Future<void> deleteProduct(
     String productId,
     String idempotencyKey,
   ) async {
-    await apiClient.authDelete(
-      '/v1/vendor/products/$productId',
+    await apiClient.post(
+      '/v1/vendor/products/$productId/archive',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,
