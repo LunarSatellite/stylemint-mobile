@@ -6,39 +6,63 @@ class SupportRemoteDataSource {
 
   final ApiClient apiClient;
 
-  Future<List<TicketDto>> getTickets() async {
-    final response = await apiClient.get('/v1/support/tickets');
-    final items = (response as List<dynamic>? ?? const <dynamic>[])
+  /// GET `/api/v1/support/tickets`
+  Future<List<TicketDto>> getTickets({int skip = 0, int take = 20}) async {
+    final response = await apiClient.get(
+      '/api/v1/support/tickets',
+      queryParameters: {'skip': skip, 'take': take},
+      
+    );
+    final map = response as Map<String, dynamic>;
+    final items = (map['items'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => TicketDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
     return items;
   }
 
-  Future<TicketDto> getTicketDetail(String ticketId) async {
-    final response = await apiClient.get('/v1/support/tickets/$ticketId');
+  /// GET `/api/v1/support/tickets/{ticketNumber}`
+  Future<TicketDto> getTicketDetail(String ticketNumber) async {
+    final response =
+        await apiClient.get('/api/v1/support/tickets/$ticketNumber');
     return TicketDto.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<TicketDto> createTicket({
-    required String subject,
-    required String message,
-    String? categoryId,
+  /// POST `/api/v1/support/tickets`
+  Future<void> createTicket({
+    required int category,
+    String? subject,
+    String? body,
+    List<String> attachmentUrls = const [],
+    String? orderId,
+    String? subOrderId,
+    String? returnRequestId,
   }) async {
-    final data = <String, dynamic>{
-      'subject': subject,
-      'message': message,
-      if (categoryId != null) 'categoryId': categoryId,
-    };
-    final response = await apiClient.post('/v1/support/tickets', data: data);
-    return TicketDto.fromJson(response as Map<String, dynamic>);
+    await apiClient.post(
+      '/api/v1/support/tickets',
+      data: {
+        'category': category,
+        if (subject != null) 'subject': subject,
+        if (body != null) 'body': body,
+        if (attachmentUrls.isNotEmpty) 'attachmentUrls': attachmentUrls,
+        if (orderId != null) 'orderId': orderId,
+        if (subOrderId != null) 'subOrderId': subOrderId,
+        if (returnRequestId != null) 'returnRequestId': returnRequestId,
+      },
+    );
   }
 
-  /// TODO(swagger): No /v1/support/categories — use /v1/help/categories or keep as-is.
-  Future<List<SupportCategoryDto>> getSupportCategories() async {
-    final response = await apiClient.get('/v1/support/categories');
-    final items = (response as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => SupportCategoryDto.fromJson(e as Map<String, dynamic>))
-        .toList(growable: false);
-    return items;
+  /// POST `/api/v1/support/tickets/{ticketNumber}/replies`
+  Future<void> replyToTicket({
+    required String ticketNumber,
+    required String body,
+    List<String> attachmentUrls = const [],
+  }) async {
+    await apiClient.post(
+      '/api/v1/support/tickets/$ticketNumber/replies',
+      data: {
+        'body': body,
+        if (attachmentUrls.isNotEmpty) 'attachmentUrls': attachmentUrls,
+      },
+    );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -312,38 +313,34 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
     Ticket(
       id: '1',
       ticketNumber: '#ST890087',
+      category: SupportTicketCategory.general,
       subject: 'I cannot add new products to my inventory',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '2',
       ticketNumber: '#ST890086',
+      category: SupportTicketCategory.accountSecurity,
       subject: 'My product analytics screen is not loading',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '3',
       ticketNumber: '#ST890085',
+      category: SupportTicketCategory.payment,
       subject: 'Payout not received for last week',
       status: TicketStatus.inProgress,
       createdAt: DateTime(2025, 9, 20, 10, 30),
-      lastUpdated: DateTime(2025, 9, 20, 10, 30),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '4',
       ticketNumber: '#ST890084',
+      category: SupportTicketCategory.general,
       subject: 'Inventory sync issue with bulk upload',
       status: TicketStatus.resolved,
       createdAt: DateTime(2025, 9, 15, 9, 0),
-      lastUpdated: DateTime(2025, 9, 15, 9, 0),
-      lastMessagePreview: null,
     ),
   ];
 
@@ -754,7 +751,7 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _descController = TextEditingController();
-  String? _selectedCategory;
+  SupportTicketCategory? _selectedCategory;
   final List<XFile> _selectedImages = [];
   final _picker = ImagePicker();
 
@@ -766,16 +763,6 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _removeImage(int index) => setState(() => _selectedImages.removeAt(index));
-
-  static const _categories = [
-    'Product',
-    'Order Fulfillment',
-    'Inventory',
-    'Payment & Payouts',
-    'Creator Partnership',
-    'Account & Settings',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -792,11 +779,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _submit() {
+    if (_selectedCategory == null) return;
     if (_descController.text.trim().isEmpty) return;
     ref.read(createTicketNotifierProvider.notifier).submit(
-      subject: _descController.text.trim(),
-      message: _descController.text.trim(),
-      categoryId: _selectedCategory,
+      category: _selectedCategory!,
+      body: _descController.text.trim(),
     );
     Navigator.of(context).pop();
   }
@@ -840,7 +827,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedCategory ?? 'Issue Category',
+                      _selectedCategory?.label ?? 'Issue Category',
                       style: TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 14,
@@ -962,9 +949,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
             child: Align(alignment: Alignment.centerLeft, child: Text('Issue Category', style: DesignTokens.oneLinerSemibold)),
           ),
           const SizedBox(height: DesignTokens.s8),
-          ..._categories.map(
+          ...SupportTicketCategory.values.map(
             (c) => ListTile(
-              title: Text(c, style: DesignTokens.oneLinerRegular),
+              title: Text(c.label, style: DesignTokens.oneLinerRegular),
               onTap: () { setState(() => _selectedCategory = c); Navigator.of(ctx).pop(); },
             ),
           ),

@@ -6,6 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart' as reels_providers;
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -62,19 +68,6 @@ class _ArcPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
-// ── Data models ───────────────────────────────────────────────────────────────
-
-class _ReelItem {
-  const _ReelItem(this.imagePath, this.duration);
-  final String imagePath;
-  final String duration;
-}
-
-class _BrandDot {
-  const _BrandDot(this.badgePath);
-  final String badgePath;
-}
-
 // ── State ─────────────────────────────────────────────────────────────────────
 
 class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
@@ -104,16 +97,12 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     '🌟', '🔥', '🏆', '✨',
   ];
 
-  // All visible tags: achievement tags + partner labels
-  static const _partnerLabels = [
-    'Nike Creator', 'FastPaced', 'Gadget Obsessed',
-    'Football Lover', 'Fitness Monster', 'Foodie',
-  ];
-
   void _showTagsSheet(List<String> achievementTags) {
+    final active = ref.read(activePartnershipsProvider);
+    final partnerNames = active.map((p) => p.vendorName).toList();
     final combined = <String>[
       ...achievementTags,
-      ..._partnerLabels.where((p) => !achievementTags.contains(p)),
+      ...partnerNames.where((n) => !achievementTags.contains(n)),
     ];
     unawaited(showModalBottomSheet<void>(
       context: context,
@@ -122,25 +111,32 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     ));
   }
 
-  static const _reels = <_ReelItem>[
-    _ReelItem('assets/images/product_nike_air_jordan.png', '00:47'),
-    _ReelItem('assets/images/sample_shoe1.png', '1:20'),
-    _ReelItem('assets/images/attachment_3.png', '00:20'),
-    _ReelItem('assets/images/sample_shoe2.png', '00:58'),
-    _ReelItem('assets/images/attachment_1.png', '00:35'),
-    _ReelItem('assets/images/product_nike_air_max.png', '00:47'),
-  ];
-
-  static const _brands = <_BrandDot>[
-    _BrandDot('assets/images/profile_badges/diamond_badge.png'),
-    _BrandDot('assets/images/profile_badges/golden_badge.png'),
-    _BrandDot('assets/images/profile_badges/red_badge.png'),
-    _BrandDot('assets/images/profile_badges/silver_badge.png'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final sessionId = ref.watch(sessionControllerProvider)
+        .maybeWhen(authenticated: (id) => id, orElse: () => '');
+    final effectiveAccountId =
+        widget.args.accountId.isNotEmpty ? widget.args.accountId : sessionId;
+
+    ref.listen<CreatorProfileState>(
+      creatorProfileNotifierProvider(effectiveAccountId),
+      (_, next) {
+        next.maybeWhen(
+          loadSuccess: (profile) =>
+              ref.read(creatorProfileEditProvider.notifier).seed(profile),
+          orElse: () {},
+        );
+      },
+    );
+
     final profileData = ref.watch(creatorProfileEditProvider);
+    final CreatorProfile? loadedProfile = ref
+        .watch(creatorProfileNotifierProvider(effectiveAccountId))
+        .maybeWhen<CreatorProfile?>(
+          loadSuccess: (p) => p,
+          orElse: () => null,
+        );
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       bottomNavigationBar: const _BottomNav(),
@@ -165,13 +161,13 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _topBar(),
+                    _topBar(effectiveAccountId, loadedProfile),
                     const SizedBox(height: DesignTokens.s12),
                     _avatarSection(),
                     const SizedBox(height: DesignTokens.s12),
-                    _nameRow(profileData),
+                    _nameRow(profileData, loadedProfile),
                     const SizedBox(height: 4),
-                    _handleText(),
+                    _handleText(loadedProfile),
                     const SizedBox(height: DesignTokens.s12),
                     _achievementChips(profileData),
                     const SizedBox(height: DesignTokens.s8),
@@ -179,7 +175,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                     const SizedBox(height: DesignTokens.s16),
                     _brandLogosRow(),
                     const SizedBox(height: DesignTokens.s16),
-                    _statsRow(),
+                    _statsRow(loadedProfile),
                     const SizedBox(height: DesignTokens.s8),
                   ],
                 ),
@@ -202,7 +198,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   // ── Sections ──────────────────────────────────────────────────────────────
 
-  Widget _topBar() {
+  Widget _topBar(String effectiveAccountId, CreatorProfile? loadedProfile) {
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
@@ -222,10 +218,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             onTap: () => context.push(
               RouteNames.creatorProfileSettings,
               extra: CreatorProfileArgs(
-                accountId: widget.args.accountId,
-                displayName: widget.args.displayName,
-                handle: widget.args.handle,
-                avatarUrl: widget.args.avatarUrl,
+                accountId: effectiveAccountId,
+                displayName: loadedProfile?.displayName ?? widget.args.displayName,
+                handle: loadedProfile?.handle ?? widget.args.handle,
+                avatarUrl: loadedProfile?.avatarUrl ?? widget.args.avatarUrl,
               ),
             ),
             child: const Icon(Icons.settings_outlined,
@@ -271,10 +267,14 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             size: 40, color: DesignTokens.iconLight),
       );
 
-  Widget _nameRow(CreatorProfileEditData profileData) {
-    final name = profileData.displayName.isNotEmpty
-        ? profileData.displayName
-        : (widget.args.displayName.isNotEmpty ? widget.args.displayName : 'Danny Perierra');
+  Widget _nameRow(CreatorProfileEditData profileData, CreatorProfile? loaded) {
+    final name = loaded?.displayName.isNotEmpty == true
+        ? loaded!.displayName
+        : (profileData.displayName.isNotEmpty
+            ? profileData.displayName
+            : (widget.args.displayName.isNotEmpty
+                ? widget.args.displayName
+                : 'Creator'));
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -299,10 +299,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _handleText() {
-    final h = widget.args.handle.isNotEmpty
-        ? widget.args.handle
-        : '@wandererperierra';
+  Widget _handleText(CreatorProfile? loaded) {
+    final h = loaded?.handle.isNotEmpty == true
+        ? loaded!.handle
+        : (widget.args.handle.isNotEmpty ? widget.args.handle : '@handle');
     return Text(
       h.startsWith('@') ? h : '@$h',
       style: const TextStyle(
@@ -337,94 +337,118 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   }
 
   Widget _partnerChips(CreatorProfileEditData profileData) {
+    final active = ref.watch(activePartnershipsProvider);
+
+    if (active.isEmpty) return const SizedBox.shrink();
+
+    const emojis = ['🎯', '⚡', '🌟', '💼', '🏆', '✨'];
+    final visible = active.take(2).toList();
+    final remaining = active.length - visible.length;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         children: [
-          const _PartnerChip(emoji: '🎯', label: 'Nike Creator'),
-          const SizedBox(width: DesignTokens.s8),
-          const _PartnerChip(emoji: '⚡', label: 'FastPaced'),
-          const SizedBox(width: DesignTokens.s8),
-          GestureDetector(
-            onTap: () => _showTagsSheet(profileData.tags),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: DesignTokens.bgAppBodyLight,
-                borderRadius:
-                    BorderRadius.circular(DesignTokens.chipRadius),
+          ...visible.asMap().entries.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(right: DesignTokens.s8),
+                  child: _PartnerChip(
+                    emoji: emojis[e.key % emojis.length],
+                    label: e.value.vendorName,
+                  ),
+                ),
               ),
-              child: const Text(
-                '+3 more',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  color: DesignTokens.textMuted,
+          if (remaining > 0)
+            GestureDetector(
+              onTap: () => _showTagsSheet(profileData.tags),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBodyLight,
+                  borderRadius:
+                      BorderRadius.circular(DesignTokens.chipRadius),
+                ),
+                child: Text(
+                  '+$remaining more',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
   Widget _brandLogosRow() {
+    final active = ref.watch(activePartnershipsProvider);
+
+    if (active.isEmpty) return const SizedBox.shrink();
+
+    final visible = active.take(4).toList();
+    final remaining = active.length - visible.length;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ..._brands.map(
-            (b) => GestureDetector(
+          ...visible.map(
+            (p) => GestureDetector(
               onTap: _showBadgesSheet,
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Image.asset(
-                  b.badgePath,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, _e) => Container(
+                child: ClipOval(
+                  child: Image.network(
+                    p.vendorLogoUrl,
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
-                      color: DesignTokens.bgAppBodyLight,
-                      shape: BoxShape.circle,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, _e) => Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: DesignTokens.bgAppBodyLight,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          GestureDetector(
-            onTap: _showBadgesSheet,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: DesignTokens.bgAppBodyLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                '+3',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  color: DesignTokens.textLight,
-                  fontWeight: FontWeight.w600,
+          if (remaining > 0)
+            GestureDetector(
+              onTap: _showBadgesSheet,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBodyLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '+$remaining',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    color: DesignTokens.textLight,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _statsRow() {
+  Widget _statsRow(CreatorProfile? loaded) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
@@ -434,16 +458,34 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       ),
       child: Row(
         children: [
-          const _StatItem(value: '435k', label: 'Followers'),
+          _StatItem(
+            value: loaded != null ? _fmtCount(loaded.followersCount) : '—',
+            label: 'Followers',
+          ),
           _vDivider(),
-          const _StatItem(value: '234', label: 'Partnership'),
+          _StatItem(
+            value: loaded != null ? _fmtCount(loaded.partnershipsCount) : '—',
+            label: 'Partnership',
+          ),
           _vDivider(),
-          const _StatItem(value: '212', label: 'Reels'),
+          _StatItem(
+            value: loaded != null ? _fmtCount(loaded.reelsCount) : '—',
+            label: 'Reels',
+          ),
           _vDivider(),
-          const _StatItem(value: '412k', label: 'Likes'),
+          _StatItem(
+            value: loaded != null ? _fmtCount(loaded.likesCount) : '—',
+            label: 'Likes',
+          ),
         ],
       ),
     );
+  }
+
+  String _fmtCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';
+    return n.toString();
   }
 
   Widget _vDivider() =>
@@ -570,6 +612,15 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   }
 
   Widget _reelsSection() {
+    final (sortBy, order) = switch (_reelFilter) {
+      0 => ('publishedAt', 'asc'),
+      2 => ('views', 'desc'),
+      _ => ('publishedAt', 'desc'),
+    };
+    final reelsAsync = ref.watch(
+      reels_providers.creatorReelSummariesProvider((sortBy, order)),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Column(
@@ -614,14 +665,23 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          GridView.count(
-            crossAxisCount: 2,
-            mainAxisSpacing: DesignTokens.s8,
-            crossAxisSpacing: DesignTokens.s8,
-            childAspectRatio: 0.78,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: _reels.map((r) => _ReelCard(reel: r)).toList(),
+          reelsAsync.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(DesignTokens.s20),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (reels) => GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: DesignTokens.s8,
+              crossAxisSpacing: DesignTokens.s8,
+              childAspectRatio: 0.78,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: reels.map((r) => _ReelCard(reel: r)).toList(),
+            ),
           ),
         ],
       ),
@@ -871,7 +931,7 @@ class _FilterTab extends StatelessWidget {
 
 class _ReelCard extends StatelessWidget {
   const _ReelCard({required this.reel});
-  final _ReelItem reel;
+  final CreatorReelSummary reel;
 
   @override
   Widget build(BuildContext context) {
@@ -880,16 +940,13 @@ class _ReelCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            reel.imagePath,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, _e) => Container(
-              color: DesignTokens.bgAppBodyLight,
-              alignment: Alignment.center,
-              child: const Icon(Icons.play_circle_outline,
-                  color: DesignTokens.textMuted, size: 32),
-            ),
-          ),
+          reel.thumbnailUrl != null
+              ? Image.network(
+                  reel.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, _e) => _placeholder(),
+                )
+              : _placeholder(),
           Positioned(
             left: 0,
             right: 0,
@@ -908,19 +965,39 @@ class _ReelCard extends StatelessWidget {
           Positioned(
             bottom: 6,
             left: 8,
-            child: Text(
-              reel.duration,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 11,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Row(
+              children: [
+                const Icon(Icons.play_arrow_rounded,
+                    size: 13, color: Colors.white),
+                const SizedBox(width: 2),
+                Text(
+                  _fmtCount(reel.views),
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _placeholder() => Container(
+        color: DesignTokens.bgAppBodyLight,
+        alignment: Alignment.center,
+        child: const Icon(Icons.play_circle_outline,
+            color: DesignTokens.textMuted, size: 32),
+      );
+
+  String _fmtCount(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';
+    return n.toString();
   }
 }
 

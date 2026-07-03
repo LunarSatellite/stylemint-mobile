@@ -771,6 +771,14 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const BrandsScreen(),
         routes: [
           GoRoute(
+            path: _subPath(RouteNames.partnerships, RouteNames.activePartnerships),
+            builder: (ctx, state) => const ActivePartnershipsScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.partnerships, RouteNames.partnershipRequests),
+            builder: (ctx, state) => const PartnershipRequestsScreen(),
+          ),
+          GoRoute(
             path: _subPath(RouteNames.partnerships, RouteNames.brandDetail),
             builder: (ctx, state) => BrandDetailScreen(
               partnershipId: state.pathParameters['partnershipId']!,
@@ -786,14 +794,6 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
         ],
-      ),
-      GoRoute(
-        path: RouteNames.activePartnerships,
-        builder: (ctx, state) => const ActivePartnershipsScreen(),
-      ),
-      GoRoute(
-        path: RouteNames.partnershipRequests,
-        builder: (ctx, state) => const PartnershipRequestsScreen(),
       ),
       GoRoute(
         path: RouteNames.brandMessaging,

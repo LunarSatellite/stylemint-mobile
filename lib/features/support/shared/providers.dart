@@ -8,10 +8,6 @@ import 'package:stylemint_mobile_frontend/features/support/data/repositories/sup
 import 'package:stylemint_mobile_frontend/features/support/domain/repositories/support_repository.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 
-// ============================================================================
-// DEPENDENCY INJECTION — support feature
-// ============================================================================
-
 final supportRemoteDataSourceProvider = Provider<SupportRemoteDataSource>(
   (ref) => SupportRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
@@ -25,15 +21,18 @@ final supportRepositoryProvider = Provider<SupportRepository>(
 
 final supportNotifierProvider =
     StateNotifierProvider<SupportNotifier, TicketsState>(
-      (ref) => SupportNotifier(ref.watch(supportRepositoryProvider)),
-    );
-
-final categoriesNotifierProvider =
-    StateNotifierProvider<CategoriesNotifier, CategoriesState>(
-      (ref) => CategoriesNotifier(ref.watch(supportRepositoryProvider)),
-    );
+  (ref) => SupportNotifier(ref.watch(supportRepositoryProvider)),
+);
 
 final createTicketNotifierProvider =
     StateNotifierProvider<CreateTicketNotifier, CreateTicketState>(
-      (ref) => CreateTicketNotifier(ref.watch(supportRepositoryProvider)),
-    );
+  (ref) => CreateTicketNotifier(ref.watch(supportRepositoryProvider)),
+);
+
+final replyTicketNotifierProvider = StateNotifierProvider.family<
+    ReplyTicketNotifier, ReplyTicketState, String>(
+  (ref, ticketNumber) => ReplyTicketNotifier(
+    ref.watch(supportRepositoryProvider),
+    ticketNumber,
+  ),
+);

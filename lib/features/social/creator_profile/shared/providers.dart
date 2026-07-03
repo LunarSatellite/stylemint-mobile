@@ -1,6 +1,63 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/creator_profile_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/repositories/creator_profile_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/repositories/creator_profile_repository.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 
-// ── Avatar ────────────────────────────────────────────────────────────────────
+// ── Infrastructure ────────────────────────────────────────────────────────────
+
+final creatorProfileRemoteDataSourceProvider =
+    Provider<CreatorProfileRemoteDataSource>(
+  (ref) => CreatorProfileRemoteDataSource(
+    apiClient: ref.watch(apiClientProvider),
+  ),
+);
+
+final creatorProfileRepositoryProvider = Provider<CreatorProfileRepository>(
+  (ref) => CreatorProfileRepositoryImpl(
+    remoteDataSource: ref.watch(creatorProfileRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
+);
+
+// ── Profile load (family: one instance per accountId) ─────────────────────────
+
+final creatorProfileNotifierProvider = StateNotifierProvider.family<
+    CreatorProfileNotifier, CreatorProfileState, String>(
+  (ref, accountId) => CreatorProfileNotifier(
+    ref.watch(creatorProfileRepositoryProvider),
+    accountId,
+  ),
+);
+
+/// Derived view: resolved profile for a given accountId, null while loading or
+/// on failure. Consumers don't need to import the notifier to call maybeWhen.
+final resolvedCreatorProfileProvider =
+    Provider.family<CreatorProfile?, String>(
+  (ref, accountId) {
+    if (accountId.isEmpty) return null;
+    return ref.watch(creatorProfileNotifierProvider(accountId)).maybeWhen(
+          loadSuccess: (p) => p,
+          orElse: () => null,
+        );
+  },
+);
+
+// ── Profile update ────────────────────────────────────────────────────────────
+
+final updateCreatorProfileNotifierProvider = StateNotifierProvider<
+    UpdateCreatorProfileNotifier, UpdateCreatorProfileState>(
+  (ref) => UpdateCreatorProfileNotifier(
+    ref.watch(creatorProfileRepositoryProvider),
+  ),
+);
+
+// ── Avatar (local file path, cleared on navigation) ──────────────────────────
 
 class AvatarImageNotifier extends StateNotifier<String?> {
   AvatarImageNotifier() : super(null);
@@ -8,13 +65,12 @@ class AvatarImageNotifier extends StateNotifier<String?> {
   void setPath(String path) => state = path;
 }
 
-/// Local file path of the avatar the user just picked/captured.
 final avatarImagePathProvider =
     StateNotifierProvider<AvatarImageNotifier, String?>(
   (ref) => AvatarImageNotifier(),
 );
 
-// ── Editable profile data ─────────────────────────────────────────────────────
+// ── Editable form state (seeded from loaded profile, mutated locally) ─────────
 
 class CreatorProfileEditData {
   const CreatorProfileEditData({
@@ -47,12 +103,22 @@ class CreatorProfileEditNotifier
     extends StateNotifier<CreatorProfileEditData> {
   CreatorProfileEditNotifier()
       : super(const CreatorProfileEditData(
-          displayName: 'Danny Perierra',
-          bio: 'Kathmandu-based content creator known for blending '
-              'high-energy reels with streetwear aesthetics & movement-based storytelling.',
-          tags: ['50+ Videos with 100K views', 'Marathon Runner'],
-          niches: {'Fashion', 'Accessories', 'Books'},
+          displayName: '',
+          bio: '',
+          tags: [],
+          niches: {},
         ));
+
+  /// Called once the remote profile loads — replaces placeholder defaults with
+  /// real values from the backend.
+  void seed(CreatorProfile profile) {
+    state = CreatorProfileEditData(
+      displayName: profile.displayName,
+      bio: profile.bio,
+      tags: List<String>.from(profile.tags),
+      niches: Set<String>.from(profile.niches),
+    );
+  }
 
   void update({
     required String displayName,

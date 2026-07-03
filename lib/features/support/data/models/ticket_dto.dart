@@ -10,11 +10,11 @@ abstract class TicketDto with _$TicketDto {
   const factory TicketDto({
     required String id,
     required String ticketNumber,
+    required int category,
     required String subject,
-    required String status,
-    required DateTime createdAt,
-    required DateTime lastUpdated,
-    String? lastMessagePreview,
+    required int state,
+    required DateTime openedUtc,
+    DateTime? lastAgentReplyUtc,
   }) = _TicketDto;
 
   const TicketDto._();
@@ -23,41 +23,26 @@ abstract class TicketDto with _$TicketDto {
       _$TicketDtoFromJson(json);
 
   Ticket toDomain() => Ticket(
-    id: id,
-    ticketNumber: ticketNumber,
-    subject: subject,
-    status: _parseStatus(status),
-    createdAt: createdAt,
-    lastUpdated: lastUpdated,
-    lastMessagePreview: lastMessagePreview,
-  );
+        id: id,
+        ticketNumber: ticketNumber,
+        category: _parseCategory(category),
+        subject: subject,
+        status: _parseState(state),
+        createdAt: openedUtc,
+        lastAgentReplyAt: lastAgentReplyUtc,
+      );
 
-  static TicketStatus _parseStatus(String s) => switch (s) {
-    'in_progress' => TicketStatus.inProgress,
-    'resolved' => TicketStatus.resolved,
-    'closed' => TicketStatus.closed,
-    _ => TicketStatus.open,
-  };
-}
+  static SupportTicketCategory _parseCategory(int v) {
+    return SupportTicketCategory.values.firstWhere(
+      (c) => c.value == v,
+      orElse: () => SupportTicketCategory.general,
+    );
+  }
 
-@freezed
-abstract class SupportCategoryDto with _$SupportCategoryDto {
-  const factory SupportCategoryDto({
-    required String id,
-    required String title,
-    required String iconName,
-    @Default('') String description,
-  }) = _SupportCategoryDto;
-
-  const SupportCategoryDto._();
-
-  factory SupportCategoryDto.fromJson(Map<String, dynamic> json) =>
-      _$SupportCategoryDtoFromJson(json);
-
-  SupportCategory toDomain() => SupportCategory(
-    id: id,
-    title: title,
-    iconName: iconName,
-    description: description,
-  );
+  static TicketStatus _parseState(int s) => switch (s) {
+        1 => TicketStatus.inProgress,
+        2 => TicketStatus.resolved,
+        3 => TicketStatus.closed,
+        _ => TicketStatus.open,
+      };
 }

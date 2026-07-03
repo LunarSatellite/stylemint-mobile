@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
@@ -51,11 +52,20 @@ class _CreatorDashboardView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(creatorDashboardNotifierProvider);
+    final accountId = ref.watch(sessionControllerProvider)
+        .maybeWhen(authenticated: (id) => id, orElse: () => '');
+    final profile = ref.watch(resolvedCreatorProfileProvider(accountId));
+    final firstName = profile?.displayName.isNotEmpty == true
+        ? profile!.displayName.split(' ').first
+        : 'Creator';
+
     return state.when(
       initial: _loader,
       loadInProgress: _loader,
       loadSuccess: (dashboard) => _DashboardContent(
         dashboard: dashboard,
+        firstName: firstName,
+        avatarUrl: profile?.avatarUrl,
         onRefresh: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
       loadFailure: (_) => SmErrorView(
@@ -111,13 +121,17 @@ class _BecomeCreatorCta extends StatelessWidget {
 // ── Dashboard content ─────────────────────────────────────────────────────────
 
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({required this.dashboard, required this.onRefresh});
+  const _DashboardContent({
+    required this.dashboard,
+    required this.onRefresh,
+    required this.firstName,
+    this.avatarUrl,
+  });
 
   final CreatorDashboard dashboard;
   final VoidCallback onRefresh;
-
-  // MOCK — replace with profile name once the dashboard payload carries it.
-  static const String _firstName = 'Creator';
+  final String firstName;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -135,14 +149,12 @@ class _DashboardContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _Header(firstName: _firstName),
+            _Header(firstName: firstName, avatarUrl: avatarUrl),
             const SizedBox(height: DesignTokens.s20),
             _QuickMetricsCard(
               earnings: dashboard.earnings,
               deltaPercent: dashboard.earningsDeltaPercent,
               pendingBalance: dashboard.pendingBalance,
-              // MOCK — use a real pendingSalesCount field when the backend exposes it.
-              pendingSalesCount: dashboard.totalSales,
             ),
             const SizedBox(height: DesignTokens.s16),
             _StatsSection(
@@ -164,9 +176,10 @@ class _DashboardContent extends StatelessWidget {
 // ── Header ────────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header({required this.firstName});
+  const _Header({required this.firstName, this.avatarUrl});
 
   final String firstName;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -174,19 +187,20 @@ class _Header extends StatelessWidget {
       children: [
         Consumer(
           builder: (_, ref, __) {
-            final path = ref.watch(avatarImagePathProvider);
+            final localPath = ref.watch(avatarImagePathProvider);
             return ClipOval(
               child: SizedBox(
                 width: 40,
                 height: 40,
-                child: path != null
-                    ? Image.file(File(path), fit: BoxFit.cover)
-                    : Container(
-                        color: DesignTokens.bgAppBodyLight,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.person_rounded,
-                            size: 22, color: DesignTokens.textMuted),
-                      ),
+                child: localPath != null
+                    ? Image.file(File(localPath), fit: BoxFit.cover)
+                    : (avatarUrl != null && avatarUrl!.isNotEmpty)
+                        ? Image.network(
+                            avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+                          )
+                        : _avatarPlaceholder(),
               ),
             );
           },
@@ -232,6 +246,13 @@ class _Header extends StatelessWidget {
       ],
     );
   }
+
+  Widget _avatarPlaceholder() => Container(
+        color: DesignTokens.bgAppBodyLight,
+        alignment: Alignment.center,
+        child: const Icon(Icons.person_rounded,
+            size: 22, color: DesignTokens.textMuted),
+      );
 }
 
 class _HeaderIconBtn extends StatelessWidget {
@@ -265,13 +286,11 @@ class _QuickMetricsCard extends StatelessWidget {
     required this.earnings,
     required this.deltaPercent,
     required this.pendingBalance,
-    required this.pendingSalesCount,
   });
 
   final Money earnings;
   final double? deltaPercent;
   final Money pendingBalance;
-  final int pendingSalesCount;
 
   static String? _formatDelta(double? pct) {
     if (pct == null) return null;
@@ -338,7 +357,7 @@ class _QuickMetricsCard extends StatelessWidget {
                     height: 28,
                   ),
                   labelWidget: Text(
-                    'Pending from $pendingSalesCount sales',
+                    'Pending Balance',
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textLight,
                     ),
@@ -502,12 +521,11 @@ class _StatsSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: DesignTokens.s8),
-            // MOCK — backend click signals pipeline not yet live.
             const Expanded(
               child: _StatCard(
                 imagePath: 'assets/images/creatordash/box-outline-rounded.png',
                 label: 'Clicks',
-                value: '0',
+                value: '—',
               ),
             ),
           ],
@@ -1073,11 +1091,13 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Bottom Navigation Bar ─────────────────────────────────────────────────────
 
-class _CreatorBottomNav extends StatelessWidget {
+class _CreatorBottomNav extends ConsumerWidget {
   const _CreatorBottomNav();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountId = ref.watch(sessionControllerProvider)
+        .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
       height: 68,
       decoration: const BoxDecoration(
@@ -1128,11 +1148,11 @@ class _CreatorBottomNav extends StatelessWidget {
             iconWidget: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
             label: 'Profile',
             onTap: () => context.push(
-              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
-              extra: const CreatorProfileArgs(
-                accountId: 'me',
-                displayName: 'Danny Perierra',
-                handle: '@wandererperierra',
+              RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+              extra: CreatorProfileArgs(
+                accountId: accountId,
+                displayName: '',
+                handle: '',
               ),
             ),
           ),

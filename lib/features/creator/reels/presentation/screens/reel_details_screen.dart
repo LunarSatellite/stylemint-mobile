@@ -1,29 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
-import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Single-reel detail (creator). Pixel-matched to Creator 'Reel Details.pdf'.
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
 /// products). Video is external — the source opens via [CreatorReelDetail.sourceUrl].
-final reelDetailProvider =
-    FutureProvider.autoDispose.family<CreatorReelDetail, String>((ref, id) async {
-  final ApiClient api = ref.watch(apiClientProvider);
-  final response = await api.get('/v1/public/reels/$id');
-  return CreatorReelDetail.fromJson(response as Map<String, dynamic>);
-});
-
 class ReelDetailsScreen extends ConsumerWidget {
-  const ReelDetailsScreen({super.key, required this.reelId});
+  const ReelDetailsScreen({required this.reelId, super.key});
 
   final String reelId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(reelDetailProvider(reelId));
+    final async = ref.watch(creatorReelDetailProvider(reelId));
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -39,8 +31,11 @@ class ReelDetailsScreen extends ConsumerWidget {
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
-        error: (_, __) => Center(
-          child: Text("Couldn't load this reel.", style: DesignTokens.bodyText),
+        error: (_, _e) => const Center(
+          child: Text(
+            "Couldn't load this reel.",
+            style: DesignTokens.bodyText,
+          ),
         ),
         data: (reel) => _Body(reel: reel),
       ),
@@ -72,7 +67,7 @@ class _Body extends StatelessWidget {
                   : Image.network(thumb,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, _e, _s) => const Icon(
                           Icons.play_circle_outline,
                           size: 64,
                           color: DesignTokens.iconLight)),
@@ -117,7 +112,7 @@ class _Body extends StatelessWidget {
         ),
         if (reel.taggedProducts.isNotEmpty) ...[
           const SizedBox(height: DesignTokens.s24),
-          Text('Tagged Products', style: DesignTokens.mediumSemibold),
+          const Text('Tagged Products', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s12),
           for (final p in reel.taggedProducts) ...[
             _ProductRow(product: p),
@@ -177,7 +172,7 @@ class _Metric extends StatelessWidget {
 
 class _ProductRow extends StatelessWidget {
   const _ProductRow({required this.product});
-  final ReelTaggedProductLite product;
+  final ReelTaggedProduct product;
   @override
   Widget build(BuildContext context) {
     final img = product.imageUrl;
@@ -202,7 +197,7 @@ class _ProductRow extends StatelessWidget {
                           color: DesignTokens.iconLight))
                   : Image.network(img,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _e, _s) => Container(
                           color: DesignTokens.bgAppFoundation,
                           alignment: Alignment.center,
                           child: const Icon(Icons.image_outlined,

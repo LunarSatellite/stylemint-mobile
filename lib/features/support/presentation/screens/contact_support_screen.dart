@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -33,38 +34,34 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
     Ticket(
       id: '1',
       ticketNumber: '#ST890087',
+      category: SupportTicketCategory.shipping,
       subject: 'Cannot Add New Shipping Address',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '2',
       ticketNumber: '#ST890086',
+      category: SupportTicketCategory.returnRefund,
       subject: 'Did not get Full Refund for Order #32323',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '3',
       ticketNumber: '#ST890085',
+      category: SupportTicketCategory.orderIssue,
       subject: 'Order delivered to wrong address',
       status: TicketStatus.inProgress,
       createdAt: DateTime(2025, 9, 20, 10, 30),
-      lastUpdated: DateTime(2025, 9, 20, 10, 30),
-      lastMessagePreview: null,
     ),
     Ticket(
       id: '4',
       ticketNumber: '#ST890084',
+      category: SupportTicketCategory.productQuality,
       subject: 'Item arrived damaged — resolved',
       status: TicketStatus.resolved,
       createdAt: DateTime(2025, 9, 15, 9, 0),
-      lastUpdated: DateTime(2025, 9, 15, 9, 0),
-      lastMessagePreview: null,
     ),
   ];
 
@@ -972,21 +969,10 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 }
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
-  final _orderCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  String? _selectedCategory;
+  SupportTicketCategory? _selectedCategory;
   final List<XFile> _images = [];
   final _picker = ImagePicker();
-
-  static const _categories = [
-    'Shipping Address Issue',
-    'Order Cancellation',
-    'Payment Issue',
-    'Returns & Refunds',
-    'Product Quality Issue',
-    'Account & Security',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -998,7 +984,6 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   @override
   void dispose() {
-    _orderCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -1009,11 +994,10 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _submit() {
-    if (_descCtrl.text.trim().isEmpty) return;
+    if (_descCtrl.text.trim().isEmpty || _selectedCategory == null) return;
     ref.read(createTicketNotifierProvider.notifier).submit(
-          subject: _descCtrl.text.trim(),
-          message: _descCtrl.text.trim(),
-          categoryId: _selectedCategory,
+          category: _selectedCategory!,
+          body: _descCtrl.text.trim(),
         );
     Navigator.of(context).pop();
   }
@@ -1073,7 +1057,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(_selectedCategory!,
+                              child: Text(_selectedCategory!.label,
                                   style: DesignTokens.mediumRegular
                                       .copyWith(
                                           color: DesignTokens.inputFieldData)),
@@ -1098,16 +1082,6 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                       ],
                     ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-
-          // Order No. (Optional)
-          TextField(
-            controller: _orderCtrl,
-            style: DesignTokens.mediumRegular
-                .copyWith(color: DesignTokens.inputFieldData),
-            decoration:
-                DesignTokens.inputDecoration(hintText: 'Order No. (Optional)'),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -1243,9 +1217,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          for (final cat in _categories)
+          for (final cat in SupportTicketCategory.values)
             ListTile(
-              title: Text(cat,
+              title: Text(cat.label,
                   style: DesignTokens.mediumRegular
                       .copyWith(color: DesignTokens.textWhite)),
               trailing: _selectedCategory == cat

@@ -17,90 +17,100 @@ class SupportRepositoryImpl implements SupportRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<Ticket>>> getTickets() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dtos = await remoteDataSource.getTickets();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, Ticket>> getTicketDetail(String ticketId) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.getTicketDetail(ticketId);
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, Ticket>> createTicket({
-    required String subject,
-    required String message,
-    String? categoryId,
+  Future<Either<NetworkExceptions, List<Ticket>>> getTickets({
+    int skip = 0,
+    int take = 20,
   }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.createTicket(
-          subject: subject,
-          message: message,
-          categoryId: categoryId,
-        );
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dtos =
+          await remoteDataSource.getTickets(skip: skip, take: take);
+      return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
     }
   }
 
   @override
-  Future<Either<NetworkExceptions, List<SupportCategory>>> getSupportCategories() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dtos = await remoteDataSource.getSupportCategories();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
+  Future<Either<NetworkExceptions, Ticket>> getTicketDetail(
+    String ticketNumber,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dto = await remoteDataSource.getTicketDetail(ticketNumber);
+      return right(dto.toDomain());
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> createTicket({
+    required SupportTicketCategory category,
+    String? subject,
+    String? body,
+    List<String> attachmentUrls = const [],
+    String? orderId,
+    String? subOrderId,
+    String? returnRequestId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.createTicket(
+        category: category.value,
+        subject: subject,
+        body: body,
+        attachmentUrls: attachmentUrls,
+        orderId: orderId,
+        subOrderId: subOrderId,
+        returnRequestId: returnRequestId,
+      );
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> replyToTicket({
+    required String ticketNumber,
+    required String body,
+    List<String> attachmentUrls = const [],
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.replyToTicket(
+        ticketNumber: ticketNumber,
+        body: body,
+        attachmentUrls: attachmentUrls,
+      );
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
     }
   }
 }

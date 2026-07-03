@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -544,34 +546,40 @@ class _BrandsScreenState extends State<BrandsScreen> {
   }
 
   Widget _buildStatCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => context.push(RouteNames.activePartnerships),
-            child: const _StatSummaryCard(
-              bg: DesignTokens.primaryGreen,
-              iconBg: Color(0xFF27AE60),
-              imagePath: 'assets/images/creatordash/Partnership.png',
-              label: 'Active Partnerships',
-              value: '3',
+    return Consumer(
+      builder: (context, ref, _) {
+        final activeCount = ref.watch(activePartnershipsProvider).length;
+        final pendingCount = ref.watch(pendingInvitesCountProvider);
+        return Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => context.push(RouteNames.activePartnerships),
+                child: _StatSummaryCard(
+                  bg: DesignTokens.primaryGreen,
+                  iconBg: const Color(0xFF27AE60),
+                  imagePath: 'assets/images/creatordash/Partnership.png',
+                  label: 'Active Partnerships',
+                  value: activeCount.toString(),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: DesignTokens.s12),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => context.push(RouteNames.partnershipRequests),
-            child: const _StatSummaryCard(
-              bg: DesignTokens.bgAppBody,
-              iconBg: DesignTokens.bgAppBodyLight,
-              imagePath: 'assets/images/creatordash/Pending.png',
-              label: 'Pending Requests',
-              value: '2',
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => context.push(RouteNames.partnershipRequests),
+                child: _StatSummaryCard(
+                  bg: DesignTokens.bgAppBody,
+                  iconBg: DesignTokens.bgAppBodyLight,
+                  imagePath: 'assets/images/creatordash/Pending.png',
+                  label: 'Pending Requests',
+                  value: pendingCount.toString(),
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
@@ -1160,11 +1168,13 @@ class _SephoraLogo extends StatelessWidget {
 
 // ── Bottom Navigation Bar ─────────────────────────────────────────────────────
 
-class _BrandsBottomNav extends StatelessWidget {
+class _BrandsBottomNav extends ConsumerWidget {
   const _BrandsBottomNav();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountId = ref.watch(sessionControllerProvider)
+        .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
       height: 68,
       decoration: const BoxDecoration(
@@ -1213,11 +1223,11 @@ class _BrandsBottomNav extends StatelessWidget {
             icon: Icons.person_rounded,
             label: 'Profile',
             onTap: () => context.push(
-              RouteNames.creatorProfile.replaceFirst(':accountId', 'me'),
-              extra: const CreatorProfileArgs(
-                accountId: 'me',
-                displayName: 'Danny Perierra',
-                handle: '@wandererperierra',
+              RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+              extra: CreatorProfileArgs(
+                accountId: accountId,
+                displayName: '',
+                handle: '',
               ),
             ),
           ),

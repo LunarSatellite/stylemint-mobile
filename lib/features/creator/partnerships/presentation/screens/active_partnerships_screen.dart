@@ -497,9 +497,10 @@ class _PartnershipCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.sell_outlined,
-                          size: 13,
+                        Image.asset(
+                          'assets/images/creatordash/material-symbols_package-2-outline.png',
+                          width: 13,
+                          height: 13,
                           color: DesignTokens.textMuted,
                         ),
                         const SizedBox(width: 4),
@@ -557,13 +558,23 @@ class _PartnershipCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _InfoRow(
-            icon: Icons.monetization_on_outlined,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+              width: 15,
+              height: 15,
+              color: DesignTokens.textMuted,
+            ),
             label: 'Total Earnings',
             trailing: _EarningsChip(totalEarnings),
           ),
           const SizedBox(height: 10),
           _InfoRow(
-            icon: Icons.campaign_outlined,
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_package-2-outline.png',
+              width: 15,
+              height: 15,
+              color: DesignTokens.textMuted,
+            ),
             label: 'Active Campaigns',
             trailingText: '$activeCampaigns',
           ),
@@ -595,13 +606,15 @@ class _PartnershipCard extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.label,
     this.trailingText,
     this.trailing,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final String label;
   final String? trailingText;
   final Widget? trailing;
@@ -610,7 +623,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 15, color: DesignTokens.textMuted),
+        iconWidget ?? Icon(icon!, size: 15, color: DesignTokens.textMuted),
         const SizedBox(width: 6),
         Text(
           label,

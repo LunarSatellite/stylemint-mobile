@@ -9,34 +9,18 @@ import 'package:stylemint_mobile_frontend/features/support/domain/repositories/s
 
 part 'support_notifier.freezed.dart';
 
+// ── Tickets list ──────────────────────────────────────────────────────────────
+
 @freezed
 abstract class TicketsState with _$TicketsState {
   const TicketsState._();
 
   const factory TicketsState.initial() = _TicketsInitial;
   const factory TicketsState.loadInProgress() = _TicketsLoadInProgress;
-  const factory TicketsState.loadSuccess(List<Ticket> tickets) = _TicketsLoadSuccess;
-  const factory TicketsState.loadFailure(NetworkExceptions failure) = _TicketsLoadFailure;
-}
-
-@freezed
-abstract class CategoriesState with _$CategoriesState {
-  const CategoriesState._();
-
-  const factory CategoriesState.initial() = _CatInitial;
-  const factory CategoriesState.loadInProgress() = _CatLoadInProgress;
-  const factory CategoriesState.loadSuccess(List<SupportCategory> categories) = _CatLoadSuccess;
-  const factory CategoriesState.loadFailure(NetworkExceptions failure) = _CatLoadFailure;
-}
-
-@freezed
-abstract class CreateTicketState with _$CreateTicketState {
-  const CreateTicketState._();
-
-  const factory CreateTicketState.initial() = _CreateInitial;
-  const factory CreateTicketState.submitting() = _CreateSubmitting;
-  const factory CreateTicketState.success(Ticket ticket) = _CreateSuccess;
-  const factory CreateTicketState.failure(NetworkExceptions failure) = _CreateFailure;
+  const factory TicketsState.loadSuccess(List<Ticket> tickets) =
+      _TicketsLoadSuccess;
+  const factory TicketsState.loadFailure(NetworkExceptions failure) =
+      _TicketsLoadFailure;
 }
 
 class SupportNotifier extends StateNotifier<TicketsState> {
@@ -44,68 +28,98 @@ class SupportNotifier extends StateNotifier<TicketsState> {
 
   final SupportRepository _repository;
 
-  Future<void> loadTickets() async {
+  Future<void> loadTickets({int skip = 0, int take = 20}) async {
     state = const TicketsState.loadInProgress();
-    final either = await _repository.getTickets();
+    final either =
+        await _repository.getTickets(skip: skip, take: take);
     state = either.fold(
       TicketsState.loadFailure,
       TicketsState.loadSuccess,
     );
   }
-
-  Future<void> createTicket({
-    required String subject,
-    required String message,
-    String? categoryId,
-  }) async {
-    final either = await _repository.createTicket(
-      subject: subject,
-      message: message,
-      categoryId: categoryId,
-    );
-    either.fold(
-      (_) => null,
-      (_) => loadTickets(),
-    );
-  }
 }
 
-class CategoriesNotifier extends StateNotifier<CategoriesState> {
-  CategoriesNotifier(this._repository) : super(const CategoriesState.initial()) {
-    unawaited(load());
-  }
+// ── Create ticket ─────────────────────────────────────────────────────────────
 
-  final SupportRepository _repository;
+@freezed
+abstract class CreateTicketState with _$CreateTicketState {
+  const CreateTicketState._();
 
-  Future<void> load() async {
-    state = const CategoriesState.loadInProgress();
-    final either = await _repository.getSupportCategories();
-    state = either.fold(
-      CategoriesState.loadFailure,
-      CategoriesState.loadSuccess,
-    );
-  }
+  const factory CreateTicketState.initial() = _CreateInitial;
+  const factory CreateTicketState.submitting() = _CreateSubmitting;
+  const factory CreateTicketState.success() = _CreateSuccess;
+  const factory CreateTicketState.failure(NetworkExceptions failure) =
+      _CreateFailure;
 }
 
 class CreateTicketNotifier extends StateNotifier<CreateTicketState> {
-  CreateTicketNotifier(this._repository) : super(const CreateTicketState.initial());
+  CreateTicketNotifier(this._repository)
+      : super(const CreateTicketState.initial());
 
   final SupportRepository _repository;
 
   Future<void> submit({
-    required String subject,
-    required String message,
-    String? categoryId,
+    required SupportTicketCategory category,
+    String? body,
+    List<String> attachmentUrls = const [],
+    String? orderId,
+    String? subOrderId,
+    String? returnRequestId,
   }) async {
     state = const CreateTicketState.submitting();
     final either = await _repository.createTicket(
-      subject: subject,
-      message: message,
-      categoryId: categoryId,
+      category: category,
+      subject: category.label,
+      body: body,
+      attachmentUrls: attachmentUrls,
+      orderId: orderId,
+      subOrderId: subOrderId,
+      returnRequestId: returnRequestId,
     );
     state = either.fold(
       CreateTicketState.failure,
-      CreateTicketState.success,
+      (_) => const CreateTicketState.success(),
     );
   }
+
+  void reset() => state = const CreateTicketState.initial();
+}
+
+// ── Reply to ticket ───────────────────────────────────────────────────────────
+
+@freezed
+abstract class ReplyTicketState with _$ReplyTicketState {
+  const ReplyTicketState._();
+
+  const factory ReplyTicketState.initial() = _ReplyInitial;
+  const factory ReplyTicketState.submitting() = _ReplySubmitting;
+  const factory ReplyTicketState.success() = _ReplySuccess;
+  const factory ReplyTicketState.failure(NetworkExceptions failure) =
+      _ReplyFailure;
+}
+
+class ReplyTicketNotifier extends StateNotifier<ReplyTicketState> {
+  ReplyTicketNotifier(this._repository, this._ticketNumber)
+      : super(const ReplyTicketState.initial());
+
+  final SupportRepository _repository;
+  final String _ticketNumber;
+
+  Future<void> submit({
+    required String body,
+    List<String> attachmentUrls = const [],
+  }) async {
+    state = const ReplyTicketState.submitting();
+    final either = await _repository.replyToTicket(
+      ticketNumber: _ticketNumber,
+      body: body,
+      attachmentUrls: attachmentUrls,
+    );
+    state = either.fold(
+      ReplyTicketState.failure,
+      (_) => const ReplyTicketState.success(),
+    );
+  }
+
+  void reset() => state = const ReplyTicketState.initial();
 }

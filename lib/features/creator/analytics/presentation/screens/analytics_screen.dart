@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/enti
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_dashboard_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_overview_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -1088,11 +1089,13 @@ class _InfoRow extends StatelessWidget {
 
 // ── Bottom Navigation Bar ─────────────────────────────────────────────────────
 
-class _AnalyticsBottomNav extends StatelessWidget {
+class _AnalyticsBottomNav extends ConsumerWidget {
   const _AnalyticsBottomNav();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountId = ref.watch(sessionControllerProvider)
+        .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
       height: 68,
       decoration: const BoxDecoration(
@@ -1150,11 +1153,11 @@ class _AnalyticsBottomNav extends StatelessWidget {
             label: 'Profile',
             onTap: () => context.push(
               RouteNames.creatorProfile
-                  .replaceFirst(':accountId', 'me'),
-              extra: const CreatorProfileArgs(
-                accountId: 'me',
-                displayName: 'Danny Perierra',
-                handle: '@wandererperierra',
+                  .replaceFirst(':accountId', accountId),
+              extra: CreatorProfileArgs(
+                accountId: accountId,
+                displayName: '',
+                handle: '',
               ),
             ),
           ),

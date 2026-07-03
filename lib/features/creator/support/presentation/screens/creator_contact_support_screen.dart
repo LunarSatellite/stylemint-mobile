@@ -2,21 +2,34 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
+import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class CreatorContactSupportScreen extends StatefulWidget {
+class CreatorContactSupportScreen extends ConsumerStatefulWidget {
   const CreatorContactSupportScreen({super.key});
 
   @override
-  State<CreatorContactSupportScreen> createState() =>
+  ConsumerState<CreatorContactSupportScreen> createState() =>
       _CreatorContactSupportScreenState();
 }
 
 class _CreatorContactSupportScreenState
-    extends State<CreatorContactSupportScreen> {
+    extends ConsumerState<CreatorContactSupportScreen> {
   _TicketFilter _activeFilter = _TicketFilter.submitted;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ref.read(supportNotifierProvider.notifier).loadTickets());
+    });
+  }
 
   List<_SupportChannel> _channels(BuildContext context) => [
     const _SupportChannel(
@@ -49,8 +62,6 @@ class _CreatorContactSupportScreenState
     _Topic(icon: Icons.analytics_outlined, label: 'Analytics Issues'),
   ];
 
-  List<_Ticket> _tickets = [];
-
   void _showCreatorResources(BuildContext context) {
     unawaited(showModalBottomSheet<void>(
       context: context,
@@ -62,7 +73,7 @@ class _CreatorContactSupportScreenState
     ));
   }
 
-  void _showTicketDetail(BuildContext context, _Ticket ticket) {
+  void _showTicketDetail(BuildContext context, Ticket ticket) {
     unawaited(showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -82,22 +93,33 @@ class _CreatorContactSupportScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _CreateTicketSheet(
-        onSubmit: (ticket) => setState(() {
-          _tickets = [..._tickets, ticket];
-          _activeFilter = _TicketFilter.submitted;
-        }),
-      ),
+      builder: (_) => const _CreateTicketSheet(),
     ));
   }
 
-  List<_Ticket> get _visibleTickets =>
-      _tickets.where((t) => t.filter == _activeFilter).toList();
+  List<Ticket> _filtered(List<Ticket> tickets) =>
+      tickets.where((t) => t.status.toFilter == _activeFilter).toList();
 
-  int _count(_TicketFilter f) => _tickets.where((t) => t.filter == f).length;
+  int _count(List<Ticket> tickets, _TicketFilter f) =>
+      tickets.where((t) => t.status.toFilter == f).length;
 
   @override
   Widget build(BuildContext context) {
+    final ticketsState = ref.watch(supportNotifierProvider);
+    final isLoading = ticketsState.when(
+      initial: () => false,
+      loadInProgress: () => true,
+      loadSuccess: (_) => false,
+      loadFailure: (_) => false,
+    );
+    final tickets = ticketsState.when(
+      initial: () => <Ticket>[],
+      loadInProgress: () => <Ticket>[],
+      loadSuccess: (t) => t,
+      loadFailure: (_) => <Ticket>[],
+    );
+    final visible = _filtered(tickets);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -133,14 +155,19 @@ class _CreatorContactSupportScreenState
                 _FilterTabs(
                   active: _activeFilter,
                   counts: {
-                    _TicketFilter.submitted: _count(_TicketFilter.submitted),
-                    _TicketFilter.inProgress: _count(_TicketFilter.inProgress),
-                    _TicketFilter.resolved: _count(_TicketFilter.resolved),
+                    _TicketFilter.submitted: _count(tickets, _TicketFilter.submitted),
+                    _TicketFilter.inProgress: _count(tickets, _TicketFilter.inProgress),
+                    _TicketFilter.resolved: _count(tickets, _TicketFilter.resolved),
                   },
                   onChanged: (f) => setState(() => _activeFilter = f),
                 ),
                 const SizedBox(height: DesignTokens.s12),
-                if (_visibleTickets.isEmpty)
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (visible.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
                     child: Center(
@@ -154,7 +181,7 @@ class _CreatorContactSupportScreenState
                     ),
                   )
                 else
-                  ..._visibleTickets.map(
+                  ...visible.map(
                     (t) => _TicketCard(
                       ticket: t,
                       onTap: () => _showTicketDetail(context, t),
@@ -206,7 +233,7 @@ class _WelcomeBanner extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 13,
-                    color: DesignTokens.textDark.withOpacity(0.75),
+                    color: DesignTokens.textDark.withValues(alpha: 0.75),
                   ),
                 ),
               ],
@@ -218,6 +245,15 @@ class _WelcomeBanner extends StatelessWidget {
             width: 72,
             height: 72,
             fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const SizedBox(
+              width: 72,
+              height: 72,
+              child: Icon(
+                Icons.support_agent_rounded,
+                size: 44,
+                color: DesignTokens.textDark,
+              ),
+            ),
           ),
         ],
       ),
@@ -248,8 +284,12 @@ class _ChannelList extends StatelessWidget {
               InkWell(
                 onTap: ch.onTap ?? () {},
                 borderRadius: BorderRadius.vertical(
-                  top: i == 0 ? const Radius.circular(DesignTokens.cardRadius) : Radius.zero,
-                  bottom: isLast ? const Radius.circular(DesignTokens.cardRadius) : Radius.zero,
+                  top: i == 0
+                      ? const Radius.circular(DesignTokens.cardRadius)
+                      : Radius.zero,
+                  bottom: isLast
+                      ? const Radius.circular(DesignTokens.cardRadius)
+                      : Radius.zero,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -300,8 +340,12 @@ class _ChannelList extends StatelessWidget {
               ),
               if (!isLast)
                 const Divider(
-                    height: 1, thickness: 1, color: DesignTokens.borderDefault,
-                    indent: DesignTokens.s16, endIndent: DesignTokens.s16),
+                  height: 1,
+                  thickness: 1,
+                  color: DesignTokens.borderDefault,
+                  indent: DesignTokens.s16,
+                  endIndent: DesignTokens.s16,
+                ),
             ],
           );
         }),
@@ -326,9 +370,7 @@ class _TopicsGrid extends StatelessWidget {
       childAspectRatio: 1.6,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      children: topics
-          .map((t) => _TopicCard(topic: t))
-          .toList(),
+      children: topics.map((t) => _TopicCard(topic: t)).toList(),
     );
   }
 }
@@ -406,7 +448,9 @@ class _FilterTabs extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
                 decoration: BoxDecoration(
-                  color: isActive ? DesignTokens.chipsSelectedFill : Colors.transparent,
+                  color: isActive
+                      ? DesignTokens.chipsSelectedFill
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
                   border: Border.all(
                     color: isActive
@@ -438,7 +482,7 @@ class _FilterTabs extends StatelessWidget {
 // Ticket card
 // ---------------------------------------------------------------------------
 class _TicketCard extends StatelessWidget {
-  final _Ticket ticket;
+  final Ticket ticket;
   final VoidCallback onTap;
   const _TicketCard({required this.ticket, required this.onTap});
 
@@ -447,61 +491,61 @@ class _TicketCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      margin: const EdgeInsets.only(bottom: DesignTokens.s12),
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ticket.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s4),
-                Text(
-                  'Ticket ID: ${ticket.id}',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s4),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 12, color: DesignTokens.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      ticket.date,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 12,
-                        color: DesignTokens.textMuted,
-                      ),
+        margin: const EdgeInsets.only(bottom: DesignTokens.s12),
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ticket.subject,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    'Ticket ID: ${ticket.ticketNumber}',
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 12, color: DesignTokens.textMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatTicketDate(ticket.createdAt),
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 12,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right_rounded,
-              size: 20, color: DesignTokens.textMuted),
-        ],
-      ),
+            const Icon(Icons.chevron_right_rounded,
+                size: 20, color: DesignTokens.textMuted),
+          ],
+        ),
       ),
     );
   }
@@ -549,7 +593,7 @@ class _BottomButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Data models
+// Data models / enums
 // ---------------------------------------------------------------------------
 enum _TicketFilter { submitted, inProgress, resolved }
 
@@ -564,6 +608,26 @@ class _SupportChannel {
     required this.subtitle,
     this.onTap,
   });
+}
+
+class _Topic {
+  final IconData icon;
+  final String label;
+  const _Topic({required this.icon, required this.label});
+}
+
+extension _TicketStatusFilter on TicketStatus {
+  _TicketFilter get toFilter {
+    switch (this) {
+      case TicketStatus.open:
+        return _TicketFilter.submitted;
+      case TicketStatus.inProgress:
+        return _TicketFilter.inProgress;
+      case TicketStatus.resolved:
+      case TicketStatus.closed:
+        return _TicketFilter.resolved;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -637,7 +701,8 @@ class _CreatorResourcesSheet extends StatelessWidget {
             ],
           );
         }),
-        SizedBox(height: MediaQuery.of(context).padding.bottom + DesignTokens.s16),
+        SizedBox(
+            height: MediaQuery.of(context).padding.bottom + DesignTokens.s16),
       ],
     );
   }
@@ -646,28 +711,18 @@ class _CreatorResourcesSheet extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Create Support Ticket bottom sheet
 // ---------------------------------------------------------------------------
-class _CreateTicketSheet extends StatefulWidget {
-  const _CreateTicketSheet({required this.onSubmit});
-  final void Function(_Ticket ticket) onSubmit;
+class _CreateTicketSheet extends ConsumerStatefulWidget {
+  const _CreateTicketSheet();
 
   @override
-  State<_CreateTicketSheet> createState() => _CreateTicketSheetState();
+  ConsumerState<_CreateTicketSheet> createState() => _CreateTicketSheetState();
 }
 
-class _CreateTicketSheetState extends State<_CreateTicketSheet> {
-  String? _selectedCategory;
+class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
+  SupportTicketCategory? _selectedCategory;
   final _descController = TextEditingController();
   final List<XFile> _images = [];
   final _picker = ImagePicker();
-
-  static const _categories = [
-    'Earnings & Payouts',
-    'Brand Partnerships',
-    'Content & Reels',
-    'Analytics Issues',
-    'Account Issues',
-    'Other',
-  ];
 
   @override
   void dispose() {
@@ -680,7 +735,7 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
     if (picked.isNotEmpty) setState(() => _images.addAll(picked));
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select an issue category')),
@@ -694,23 +749,41 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
       );
       return;
     }
-    final now = DateTime.now();
-    final id = '#ST${800000 + now.millisecondsSinceEpoch % 99999}';
-    final ticket = _Ticket(
-      id: id,
-      title: desc.length > 42 ? '${desc.substring(0, 39)}...' : desc,
-      date: _formatTicketDate(now),
-      filter: _TicketFilter.submitted,
+    await ref.read(createTicketNotifierProvider.notifier).submit(
       category: _selectedCategory!,
-      description: desc,
-      images: List<XFile>.from(_images),
+      body: desc,
     );
-    Navigator.pop(context);
-    widget.onSubmit(ticket);
+    if (!mounted) return;
+    ref.read(createTicketNotifierProvider).when(
+      initial: () {},
+      submitting: () {},
+      success: () {
+        ref.read(createTicketNotifierProvider.notifier).reset();
+        unawaited(ref.read(supportNotifierProvider.notifier).loadTickets());
+        Navigator.pop(context);
+      },
+      failure: (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.isNoInternet
+                  ? 'No internet connection'
+                  : 'Failed to submit ticket. Please try again.',
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSubmitting = ref.watch(createTicketNotifierProvider).when(
+      initial: () => false,
+      submitting: () => true,
+      success: () => false,
+      failure: (_) => false,
+    );
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Padding(
@@ -752,7 +825,7 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
           // Category dropdown
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: DropdownButtonFormField<String>(
+            child: DropdownButtonFormField<SupportTicketCategory>(
               value: _selectedCategory,
               hint: const Text(
                 'Issue Category',
@@ -795,10 +868,12 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
                       const BorderSide(color: DesignTokens.primaryGreen),
                 ),
               ),
-              items: _categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+              items: SupportTicketCategory.values
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
                   .toList(),
-              onChanged: (v) => setState(() => _selectedCategory = v),
+              onChanged: isSubmitting
+                  ? null
+                  : (v) => setState(() => _selectedCategory = v),
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
@@ -809,6 +884,7 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
               controller: _descController,
               maxLines: 5,
               minLines: 4,
+              enabled: !isSubmitting,
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 14,
@@ -848,8 +924,8 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
             SizedBox(
               height: 72,
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
                 scrollDirection: Axis.horizontal,
                 itemCount: _images.length,
                 separatorBuilder: (_, __) =>
@@ -869,7 +945,7 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: OutlinedButton.icon(
-                onPressed: _pickImages,
+                onPressed: isSubmitting ? null : _pickImages,
                 icon: const Icon(
                   Icons.upload_outlined,
                   size: 18,
@@ -902,17 +978,26 @@ class _CreateTicketSheetState extends State<_CreateTicketSheet> {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed: _submit,
+                onPressed: isSubmitting ? null : _submit,
                 style: DesignTokens.primaryButtonStyle(),
-                child: const Text(
-                  'Submit Ticket',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.buttonPrimaryText,
-                  ),
-                ),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      )
+                    : const Text(
+                        'Submit Ticket',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -970,62 +1055,49 @@ class _PickedThumb extends StatelessWidget {
 // Ticket detail bottom sheet
 // ---------------------------------------------------------------------------
 class _TicketDetailSheet extends StatelessWidget {
-  final _Ticket ticket;
+  final Ticket ticket;
   const _TicketDetailSheet({required this.ticket});
 
-  static const _maxThumbsShown = 3;
-
-  Color _statusBg(_TicketFilter f) {
-    switch (f) {
-      case _TicketFilter.submitted:
+  Color _statusBg(TicketStatus s) {
+    switch (s) {
+      case TicketStatus.open:
         return DesignTokens.chipsSelectedFill;
-      case _TicketFilter.inProgress:
+      case TicketStatus.inProgress:
         return const Color(0xFF1A2B00);
-      case _TicketFilter.resolved:
+      case TicketStatus.resolved:
+      case TicketStatus.closed:
         return const Color(0xFF0D1F2D);
     }
   }
 
-  Color _statusBorder(_TicketFilter f) {
-    switch (f) {
-      case _TicketFilter.submitted:
+  Color _statusAccent(TicketStatus s) {
+    switch (s) {
+      case TicketStatus.open:
         return DesignTokens.primaryGreen;
-      case _TicketFilter.inProgress:
+      case TicketStatus.inProgress:
         return DesignTokens.secondaryYellow;
-      case _TicketFilter.resolved:
+      case TicketStatus.resolved:
+      case TicketStatus.closed:
         return DesignTokens.colorInfo;
     }
   }
 
-  Color _statusText(_TicketFilter f) {
-    switch (f) {
-      case _TicketFilter.submitted:
-        return DesignTokens.primaryGreen;
-      case _TicketFilter.inProgress:
-        return DesignTokens.secondaryYellow;
-      case _TicketFilter.resolved:
-        return DesignTokens.colorInfo;
-    }
-  }
-
-  String _statusLabel(_TicketFilter f) {
-    switch (f) {
-      case _TicketFilter.submitted:
+  String _statusLabel(TicketStatus s) {
+    switch (s) {
+      case TicketStatus.open:
         return 'Submitted';
-      case _TicketFilter.inProgress:
+      case TicketStatus.inProgress:
         return 'In Progress';
-      case _TicketFilter.resolved:
+      case TicketStatus.resolved:
         return 'Resolved';
+      case TicketStatus.closed:
+        return 'Closed';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    final total = ticket.totalAttachments;
-    final showCount = total.clamp(0, _maxThumbsShown);
-    final overflow = total - _maxThumbsShown;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(
         DesignTokens.s16, DesignTokens.s20,
@@ -1035,12 +1107,11 @@ class _TicketDetailSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Ticket ID: ${ticket.id}',
+                  'Ticket ID: ${ticket.ticketNumber}',
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 18,
@@ -1057,7 +1128,6 @@ class _TicketDetailSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s16),
-          // Issue Category label
           const Text(
             'Issue Category',
             style: TextStyle(
@@ -1067,9 +1137,8 @@ class _TicketDetailSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // Category value
           Text(
-            ticket.category,
+            ticket.subject,
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 15,
@@ -1078,37 +1147,36 @@ class _TicketDetailSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
-          // Status chip
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
-              color: _statusBg(ticket.filter),
+              color: _statusBg(ticket.status),
               borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-              border: Border.all(color: _statusBorder(ticket.filter)),
+              border: Border.all(color: _statusAccent(ticket.status)),
             ),
             child: Text(
-              _statusLabel(ticket.filter),
+              _statusLabel(ticket.status),
               style: TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: _statusText(ticket.filter),
+                color: _statusAccent(ticket.status),
               ),
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
-          // Description
-          Text(
-            ticket.description,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              color: DesignTokens.textWhite,
-              height: 1.5,
+          if (ticket.lastAgentReplyAt != null) ...[
+            const SizedBox(height: DesignTokens.s12),
+            Text(
+              'Last reply: ${_formatTicketDate(ticket.lastAgentReplyAt!)}',
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.textWhite,
+                height: 1.5,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: DesignTokens.s16),
-          // Info box — always shown
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -1119,7 +1187,6 @@ class _TicketDetailSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Created on row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1132,7 +1199,7 @@ class _TicketDetailSheet extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      ticket.date,
+                      _formatTicketDate(ticket.createdAt),
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 13,
@@ -1142,7 +1209,6 @@ class _TicketDetailSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s12),
-                // Attachments label
                 const Text(
                   'Attachments',
                   style: TextStyle(
@@ -1152,36 +1218,15 @@ class _TicketDetailSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
-                // Thumbnail row OR empty state
-                if (total == 0)
-                  const Text(
-                    'No attachments',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 13,
-                      color: DesignTokens.textMuted,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  )
-                else
-                  Row(
-                    children: List.generate(showCount, (i) {
-                      final isLast = i == _maxThumbsShown - 1;
-                      final hasOverflow = isLast && overflow > 0;
-                      final img = i < ticket.images.length
-                          ? ticket.images[i]
-                          : null;
-                      return Padding(
-                        padding: EdgeInsets.only(
-                            right: i < showCount - 1 ? DesignTokens.s8 : 0),
-                        child: _AttachmentThumb(
-                          index: i,
-                          image: img,
-                          overflowCount: hasOverflow ? overflow : 0,
-                        ),
-                      );
-                    }),
+                const Text(
+                  'No attachments',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    color: DesignTokens.textMuted,
+                    fontStyle: FontStyle.italic,
                   ),
+                ),
               ],
             ),
           ),
@@ -1189,91 +1234,6 @@ class _TicketDetailSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AttachmentThumb extends StatelessWidget {
-  final int index;
-  final int overflowCount;
-  final XFile? image;
-  const _AttachmentThumb({
-    required this.index,
-    required this.overflowCount,
-    this.image,
-  });
-
-  static const _thumbColors = [
-    Color(0xFF2A2A2E),
-    Color(0xFF222226),
-    Color(0xFF1E1E22),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = _thumbColors[index % _thumbColors.length];
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: 80,
-        height: 72,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (image != null)
-              Image.file(File(image!.path), fit: BoxFit.cover)
-            else
-              ColoredBox(color: bg),
-            if (overflowCount > 0) ...[
-              ColoredBox(
-                  color:
-                      DesignTokens.bgAppFoundation.withValues(alpha: 0.65)),
-              Center(
-                child: Text(
-                  '+$overflowCount',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Topic {
-  final IconData icon;
-  final String label;
-  const _Topic({required this.icon, required this.label});
-}
-
-class _Ticket {
-  final String id;
-  final String title;
-  final String date;
-  final _TicketFilter filter;
-  final String category;
-  final String description;
-  final int seedAttachmentCount;
-  final List<XFile> images;
-
-  _Ticket({
-    required this.id,
-    required this.title,
-    required this.date,
-    required this.filter,
-    required this.category,
-    required this.description,
-    this.seedAttachmentCount = 0,
-    List<XFile>? images,
-  }) : images = images ?? [];
-
-  int get totalAttachments =>
-      images.isNotEmpty ? images.length : seedAttachmentCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -1294,9 +1254,13 @@ String _formatTicketDate(DateTime dt) {
 String _daySuffix(int d) {
   if (d >= 11 && d <= 13) return 'th';
   switch (d % 10) {
-    case 1: return 'st';
-    case 2: return 'nd';
-    case 3: return 'rd';
-    default: return 'th';
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
   }
 }

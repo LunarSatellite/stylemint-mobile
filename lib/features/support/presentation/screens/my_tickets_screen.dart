@@ -104,20 +104,13 @@ class _TicketTile extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s8),
           Text(ticket.ticketNumber, style: DesignTokens.smallRegular),
-          if (ticket.lastMessagePreview != null) ...[
+          if (ticket.lastAgentReplyAt != null) ...[
             const SizedBox(height: DesignTokens.s8),
             Text(
-              ticket.lastMessagePreview!,
-              style: DesignTokens.smallRegular,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              'Last reply: ${_formatDate(ticket.lastAgentReplyAt!)}',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
             ),
           ],
-          const SizedBox(height: DesignTokens.s8),
-          Text(
-            'Last updated: ${_formatDate(ticket.lastUpdated)}',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-          ),
         ],
       ),
     );

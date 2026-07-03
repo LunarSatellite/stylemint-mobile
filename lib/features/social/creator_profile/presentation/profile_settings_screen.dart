@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_action.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -33,6 +35,18 @@ class _ProfileSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final accountId = ref.watch(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => '',
+    );
+
+    final profile = ref
+        .watch(creatorProfileNotifierProvider(accountId))
+        .maybeWhen(loadSuccess: (p) => p, orElse: () => null);
+
+    final displayName = profile?.displayName ?? widget.displayName;
+    final handle = profile?.handle ?? widget.handle;
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -68,7 +82,7 @@ class _ProfileSettingsScreenState
             ),
             const SizedBox(height: DesignTokens.s12),
             Text(
-              widget.displayName.isNotEmpty ? widget.displayName : 'Danny Perierra',
+              displayName,
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 18,
@@ -78,7 +92,7 @@ class _ProfileSettingsScreenState
             ),
             const SizedBox(height: 4),
             Text(
-              widget.handle.startsWith('@') ? widget.handle : '@${widget.handle}',
+              handle.startsWith('@') ? handle : '@$handle',
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 13,
@@ -107,9 +121,9 @@ class _ProfileSettingsScreenState
                   onTap: () => context.push(
                     RouteNames.creatorEditProfile,
                     extra: CreatorProfileArgs(
-                      accountId: '',
-                      displayName: widget.displayName,
-                      handle: widget.handle,
+                      accountId: accountId,
+                      displayName: displayName,
+                      handle: handle,
                     ),
                   ),
                 ),
@@ -136,8 +150,8 @@ class _ProfileSettingsScreenState
               items: [
                 _MenuItem(
                   icon: Icons.headset_mic_outlined,
-                  label: 'Email Support',
-                  onTap: () {},
+                  label: 'Contact Support',
+                  onTap: () => context.push(RouteNames.creatorSupportContact),
                 ),
                 _MenuItem(
                   icon: Icons.logout_rounded,

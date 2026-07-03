@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/top_reels_sort.dart';
@@ -124,9 +125,14 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
                       itemCount: reels.length,
                       separatorBuilder: (_, _s) =>
                           const SizedBox(height: DesignTokens.s12),
-                      itemBuilder: (_, index) => _RankedReelCard(
-                        rank: index + 1,
-                        reel: reels[index],
+                      itemBuilder: (ctx, index) => GestureDetector(
+                        onTap: () => ctx.push(
+                          '/creator/reels/${reels[index].reelId}',
+                        ),
+                        child: _RankedReelCard(
+                          rank: index + 1,
+                          reel: reels[index],
+                        ),
                       ),
                     ),
             ),

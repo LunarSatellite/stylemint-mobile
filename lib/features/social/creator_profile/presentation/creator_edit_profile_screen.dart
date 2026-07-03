@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -52,10 +57,9 @@ class _CreatorEditProfileScreenState
   @override
   void initState() {
     super.initState();
-    // Controllers initialised with empty strings; seeded in didChangeDependencies
-    // once ref is available (initState runs before first build).
     _nicknameCtrl = TextEditingController();
     _bioCtrl = TextEditingController();
+    ref.read(updateCreatorProfileNotifierProvider.notifier).reset();
   }
 
   @override
@@ -88,19 +92,55 @@ class _CreatorEditProfileScreenState
         }
       });
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
     ref.read(creatorProfileEditProvider.notifier).update(
-          displayName: _nicknameCtrl.text.trim(),
-          bio: _bioCtrl.text.trim(),
-          tags: List<String>.from(_tags),
-          niches: Set<String>.from(_selectedNiches),
-        );
-    context.pop();
+      displayName: _nicknameCtrl.text.trim(),
+      bio: _bioCtrl.text.trim(),
+      tags: List<String>.from(_tags),
+      niches: Set<String>.from(_selectedNiches),
+    );
+
+    final accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (id) => id,
+      orElse: () => null,
+    );
+    if (accountId == null || accountId.isEmpty) return;
+
+    final rowVersion = ref
+        .read(creatorProfileNotifierProvider(accountId))
+        .maybeWhen(loadSuccess: (p) => p.rowVersion, orElse: () => '');
+
+    await ref.read(updateCreatorProfileNotifierProvider.notifier).submit(
+      accountId: accountId,
+      rowVersion: rowVersion,
+      displayName: _nicknameCtrl.text.trim(),
+      bio: _bioCtrl.text.trim(),
+      tags: List<String>.from(_tags),
+      niches: List<String>.from(_selectedNiches),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<UpdateCreatorProfileState>(
+      updateCreatorProfileNotifierProvider,
+      (_, next) {
+        next.maybeWhen(
+          success: (_) => context.pop(),
+          failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+          ),
+          orElse: () {},
+        );
+      },
+    );
+
+    final bool isSubmitting = ref
+        .watch(updateCreatorProfileNotifierProvider)
+        .maybeWhen<bool>(submitting: () => true, orElse: () => false);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -122,7 +162,7 @@ class _CreatorEditProfileScreenState
         ),
         actions: [
           TextButton(
-            onPressed: _save,
+            onPressed: isSubmitting ? null : () => unawaited(_save()),
             child: const Text(
               'Save',
               style: TextStyle(
@@ -243,17 +283,26 @@ class _CreatorEditProfileScreenState
                 width: double.infinity,
                 height: DesignTokens.buttonHeight,
                 child: ElevatedButton(
-                  onPressed: _save,
+                  onPressed: isSubmitting ? null : () => unawaited(_save()),
                   style: DesignTokens.primaryButtonStyle(),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.buttonPrimaryText,
-                    ),
-                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: DesignTokens.s32),
