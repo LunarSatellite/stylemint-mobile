@@ -44,23 +44,14 @@ class VendorPartnershipsRepositoryImpl
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = CampaignBriefDto(
-          id: '',
+        final vm = DraftBriefVm(
+          vendorProfileId: brief.vendorProfileId,
           title: brief.title,
-          description: brief.description,
-          commissionRate: brief.commissionRate,
-          budgetAmount: brief.budget.amount,
-          budgetCurrency: brief.budget.currency,
-          startDate: brief.startDate,
-          endDate: brief.endDate,
-          targetCreators: brief.targetCreators,
-          requiredCategories: brief.requiredCategories,
-          status: brief.status.name,
-          createdAt: brief.createdAt,
+          primaryGoal: brief.primaryGoal,
+          currencyCode: brief.boostBudget.currency,
         );
         final created = await remoteDataSource.createCampaign(
-          data: dto.toRequest(),
-          idempotencyKey: const Uuid().v4(),
+          data: vm.toJson(),
         );
         return right(created.toDomain());
       } catch (e) {
@@ -84,24 +75,19 @@ class VendorPartnershipsRepositoryImpl
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = CampaignBriefDto(
-          id: id,
+        final vm = UpdateBriefVm(
           title: brief.title,
-          description: brief.description,
-          commissionRate: brief.commissionRate,
-          budgetAmount: brief.budget.amount,
-          budgetCurrency: brief.budget.currency,
-          startDate: brief.startDate,
-          endDate: brief.endDate,
-          targetCreators: brief.targetCreators,
-          requiredCategories: brief.requiredCategories,
-          status: brief.status.name,
-          createdAt: brief.createdAt,
+          primaryGoal: brief.primaryGoal,
+          commissionRange: CommissionRangeDto(
+            minPercent: brief.commissionMinPercent,
+            maxPercent: brief.commissionMaxPercent,
+          ),
+          boostBudgetAmount: brief.boostBudget.amount,
+          boostBudgetCurrency: brief.boostBudget.currency,
         );
         final updated = await remoteDataSource.updateCampaign(
           id: id,
-          data: dto.toRequest(),
-          idempotencyKey: const Uuid().v4(),
+          data: vm.toJson(),
         );
         return right(updated.toDomain());
       } catch (e) {
@@ -121,13 +107,13 @@ class VendorPartnershipsRepositoryImpl
   @override
   Future<Either<NetworkExceptions, List<CreatorInvite>>> searchCreators({
     String? query,
-    List<String>? categories,
+    String? niche,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.searchCreators(
           query: query,
-          categories: categories,
+          niche: niche,
         );
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
@@ -145,40 +131,24 @@ class VendorPartnershipsRepositoryImpl
   }
 
   @override
-  Future<Either<NetworkExceptions, CreatorInvite>> inviteCreator(
-    String campaignId,
-    String creatorId,
-  ) async {
+  Future<Either<NetworkExceptions, void>> inviteCreator({
+    required String creatorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    String? brandBriefId,
+    String? message,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.inviteCreator(
-          campaignId: campaignId,
-          creatorId: creatorId,
+        await remoteDataSource.inviteCreator(
+          creatorProfileId: creatorProfileId,
+          commissionMinPercent: commissionMinPercent,
+          commissionMaxPercent: commissionMaxPercent,
+          brandBriefId: brandBriefId,
+          message: message,
           idempotencyKey: const Uuid().v4(),
         );
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, List<CreatorInvite>>> getInvites(
-    String campaignId,
-  ) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dtos = await remoteDataSource.getInvites(campaignId);
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+        return right(null);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

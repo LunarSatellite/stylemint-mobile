@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -163,7 +164,15 @@ class _UserTypeSelectionScreenState
           return;
         }
         setState(() => _loadingRole = true);
-        await ref.read(vendorApplyNotifierProvider.notifier).checkStatus();
+        final vendorAccountId = ref.read(sessionControllerProvider).maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
+        if (vendorAccountId != null) {
+          await ref
+              .read(vendorApplyNotifierProvider.notifier)
+              .checkStatus(vendorAccountId);
+        }
         if (!mounted) return;
         setState(() => _loadingRole = false);
         final vendorStatusState = ref.read(vendorApplyNotifierProvider);
@@ -175,9 +184,9 @@ class _UserTypeSelectionScreenState
               VendorApplicationStatus.approved => RouteNames.vendorApplyApproved,
               VendorApplicationStatus.rejected => RouteNames.vendorApplyRejected,
               VendorApplicationStatus.pending ||
-              VendorApplicationStatus.underReview ||
-              VendorApplicationStatus.kycRequired =>
+              VendorApplicationStatus.underReview =>
                 RouteNames.vendorApplyUnderReview,
+              VendorApplicationStatus.draft => RouteNames.vendorApply,
             };
             rejectionReason = application.rejectionReason;
           },

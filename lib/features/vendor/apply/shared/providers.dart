@@ -9,6 +9,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/repositor
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/notifiers/vendor_apply_notifier.dart';
 
 export 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/notifiers/vendor_apply_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/vendor/apply/shared/form_provider.dart';
+export 'package:stylemint_mobile_frontend/features/vendor/apply/shared/vendor_apply_draft.dart';
 
 final vendorApplyRemoteDataSourceProvider = Provider<VendorRemoteDataSource>(
   (ref) => VendorRemoteDataSource(apiClient: ref.watch(apiClientProvider)),

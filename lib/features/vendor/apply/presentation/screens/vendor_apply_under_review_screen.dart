@@ -15,7 +15,6 @@ class VendorApplyUnderReviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appId = applicationId ?? '#CR2024-52341';
     final email = userEmail ?? 'your email';
 
     return Scaffold(

@@ -1,41 +1,93 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class OrderWaitingTrackingScreen extends StatefulWidget {
+class OrderWaitingTrackingScreen extends ConsumerStatefulWidget {
   const OrderWaitingTrackingScreen({super.key});
 
   @override
-  State<OrderWaitingTrackingScreen> createState() => _OrderWaitingTrackingScreenState();
+  ConsumerState<OrderWaitingTrackingScreen> createState() => _OrderWaitingTrackingScreenState();
 }
 
-class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen> {
-  static final _orders = [
-    _TrackingOrder(
-      id: '1',
-      orderId: '#RC20230126',
-      orderNumber: 'Order #RC20230126',
-      customerName: 'Balendra Shah',
+class _OrderWaitingTrackingScreenState extends ConsumerState<OrderWaitingTrackingScreen> {
+  // Fallback shown while there are genuinely no real orders awaiting
+  // tracking yet — same pattern used on Ready to Ship / Recent Activity.
+  // Disappears automatically once real orders exist. Actions are disabled
+  // on these rows since the ids aren't real sub-orders.
+  static final _sampleOrders = [
+    VendorOrder(
+      id: '_sample-1',
+      orderNumber: 'RC20230126',
       itemCount: 3,
-      shippingMethod: 'FedEx',
-      shipBy: 'Dec 20, 2024',
-      orderDate: 'Dec 15, 2024',
+      total: const Money(amount: 10000, currency: 'NPR'),
+      status: VendorOrderStatus.processing,
+      placedAt: DateTime.utc(2024, 12, 15),
+      customerName: 'Balendra Shah',
     ),
-    _TrackingOrder(
-      id: '2',
-      orderId: '#RC20230125',
-      orderNumber: 'Order #RC20230125',
-      customerName: 'Summendra Pandey',
+    VendorOrder(
+      id: '_sample-2',
+      orderNumber: 'RC20230125',
       itemCount: 2,
-      shippingMethod: 'DHL Express',
-      shipBy: 'Dec 17, 2024',
-      orderDate: 'Dec 15, 2024',
+      total: const Money(amount: 41000, currency: 'NPR'),
+      status: VendorOrderStatus.processing,
+      placedAt: DateTime.utc(2024, 12, 15),
+      customerName: 'Summendra Pandey',
     ),
   ];
 
+  bool _busy = false;
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _assignTracking(String orderId, String carrier, String trackingNumber) async {
+    setState(() => _busy = true);
+    final ok = await ref
+        .read(vendorOrdersNotifierProvider.notifier)
+        .addTracking(orderId, carrier: carrier, trackingNumber: trackingNumber);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    _showSnack(ok ? 'Tracking number assigned and customer notified.' : 'Failed to assign tracking number.');
+  }
+
+  void _showAssignSheet(VendorOrder order) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1C1C1E),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _AssignTrackingSheet(
+        order: order,
+        onAssign: (carrier, trackingNumber) => _assignTracking(order.id, carrier, trackingNumber),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(vendorOrdersNotifierProvider);
+    final orders = state.maybeWhen(
+      loadSuccess: (orders, nextCursor, hasMore, activeFilter) => orders,
+      orElse: () => const <VendorOrder>[],
+    );
+    final realWaiting = orders.where((o) => o.isWaitingTracking).toList(growable: false);
+    final noRealOrdersYet = state.maybeWhen(
+      loadSuccess: (orders, nextCursor, hasMore, activeFilter) => orders.isEmpty,
+      orElse: () => false,
+    );
+    final isSample = noRealOrdersYet && realWaiting.isEmpty;
+    final waiting = isSample ? _sampleOrders : realWaiting;
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -45,42 +97,69 @@ class _OrderWaitingTrackingScreenState extends State<OrderWaitingTrackingScreen>
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: Text('Orders Waiting Tracking (${_orders.length})', style: DesignTokens.oneLinerSemibold),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_outlined, color: DesignTokens.textWhite, size: 22),
-            onPressed: () {},
+        title: Text('Orders Waiting Tracking (${waiting.length})', style: DesignTokens.oneLinerSemibold),
+      ),
+      body: Stack(
+        children: [
+          state.maybeWhen(
+            loadInProgress: () => const Center(
+              child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+            ),
+            orElse: () => Column(
+              children: [
+                if (isSample)
+                  Container(
+                    width: double.infinity,
+                    color: const Color(0xFF2C2C2E),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s8,
+                    ),
+                    child: Text(
+                      'Sample preview — no real orders yet. This will switch to live orders automatically once you have some.',
+                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11),
+                    ),
+                  ),
+                Expanded(
+                  child: waiting.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No orders waiting for tracking.',
+                            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s16,
+                            vertical: DesignTokens.s12,
+                          ),
+                          itemCount: waiting.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s4),
+                          itemBuilder: (context, index) {
+                            final order = waiting[index];
+                            return _OrderCard(
+                              order: order,
+                              actionsEnabled: !isSample,
+                              onTap: () => context.push(
+                                RouteNames.vendorOrderDetail.replaceFirst(':orderId', order.id),
+                              ),
+                              onAssign: () => _showAssignSheet(order),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
+          if (_busy)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+              ),
+            ),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s12,
-        ),
-        itemCount: _orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s4),
-        itemBuilder: (context, index) => _OrderCard(
-          order: _orders[index],
-          onTap: () => context.push(
-            RouteNames.vendorOrderDetail
-                .replaceFirst(':orderId', _orders[index].id),
-          ),
-          onAssign: () => _showAssignSheet(context, _orders[index]),
-        ),
-      ),
-    );
-  }
-
-  void _showAssignSheet(BuildContext context, _TrackingOrder order) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF1C1C1E),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _AssignTrackingSheet(order: order),
     );
   }
 }
@@ -90,11 +169,13 @@ class _OrderCard extends StatelessWidget {
     required this.order,
     required this.onTap,
     required this.onAssign,
+    this.actionsEnabled = true,
   });
 
-  final _TrackingOrder order;
+  final VendorOrder order;
   final VoidCallback onTap;
   final VoidCallback onAssign;
+  final bool actionsEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +213,7 @@ class _OrderCard extends StatelessWidget {
               children: [
                 // Order number — white 14px semibold
                 Text(
-                  order.orderNumber,
+                  'Order #${order.orderNumber}',
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 14,
@@ -147,7 +228,7 @@ class _OrderCard extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      order.customerName,
+                      order.customerName ?? 'Unknown customer',
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 12,
@@ -177,100 +258,55 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: DesignTokens.s8),
-
-                // Shipping Method chip — #B8E6FE bg, #024A70 text, truck icon
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB8E6FE),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        'assets/images/vendordashboard/Tag (3).png',
-                        width: 12,
-                        height: 12,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Shipping Method: ${order.shippingMethod}',
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF024A70),
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s4),
-
-                // Ship By (green) · Order Date (muted) — 11px
-                RichText(
-                  text: TextSpan(
+                if (order.placedAt != null) ...[
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    'Order Date: ${_formatDate(order.placedAt!)}',
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 11,
-                      height: 1.2,
+                      color: DesignTokens.textMuted,
                     ),
-                    children: [
-                      const TextSpan(
-                        text: 'Ship By: ',
-                        style: TextStyle(
-                          color: DesignTokens.primaryGreen,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextSpan(
-                        text: order.shipBy,
-                        style: const TextStyle(
-                          color: DesignTokens.primaryGreen,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const TextSpan(
-                        text: ' • ',
-                        style: TextStyle(color: Color(0xFF71717B)),
-                      ),
-                      TextSpan(
-                        text: 'Order Date: ${order.orderDate}',
-                        style: const TextStyle(color: Color(0xFF9F9FA9)),
-                      ),
-                    ],
                   ),
-                ),
+                ],
               ],
             ),
           ),
 
           // Chevron — opens assign sheet
-          GestureDetector(
-            onTap: onAssign,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 8, top: 4),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                color: Color(0xFF9F9FA9),
-                size: 16,
+          if (actionsEnabled)
+            GestureDetector(
+              onTap: onAssign,
+              child: const Padding(
+                padding: EdgeInsets.only(left: 8, top: 4),
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  color: Color(0xFF9F9FA9),
+                  size: 16,
+                ),
               ),
             ),
-          ),
         ],
       ),
       ),
     );
   }
+
+  static String _formatDate(DateTime utc) {
+    final local = utc.toLocal();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[local.month - 1]} ${local.day}, ${local.year}';
+  }
 }
 
 class _AssignTrackingSheet extends StatefulWidget {
-  const _AssignTrackingSheet({required this.order});
+  const _AssignTrackingSheet({required this.order, required this.onAssign});
 
-  final _TrackingOrder order;
+  final VendorOrder order;
+  final void Function(String carrier, String trackingNumber) onAssign;
 
   @override
   State<_AssignTrackingSheet> createState() => _AssignTrackingSheetState();
@@ -285,6 +321,14 @@ class _AssignTrackingSheetState extends State<_AssignTrackingSheet> {
   void dispose() {
     _trackingController.dispose();
     super.dispose();
+  }
+
+  void _submit() {
+    final carrier = _selectedCarrier;
+    final trackingNumber = _trackingController.text.trim();
+    if (carrier == null || trackingNumber.isEmpty) return;
+    Navigator.pop(context);
+    widget.onAssign(carrier, trackingNumber);
   }
 
   @override
@@ -314,7 +358,7 @@ class _AssignTrackingSheetState extends State<_AssignTrackingSheet> {
             // Order ID
             Text('Order ID', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
             const SizedBox(height: 4),
-            Text(widget.order.orderId, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600)),
+            Text('#${widget.order.orderNumber}', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600)),
             const SizedBox(height: DesignTokens.s16),
             // Carrier dropdown
             Container(
@@ -361,7 +405,7 @@ class _AssignTrackingSheetState extends State<_AssignTrackingSheet> {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -377,26 +421,4 @@ class _AssignTrackingSheetState extends State<_AssignTrackingSheet> {
       ),
     );
   }
-}
-
-class _TrackingOrder {
-  const _TrackingOrder({
-    required this.id,
-    required this.orderId,
-    required this.orderNumber,
-    required this.customerName,
-    required this.itemCount,
-    required this.shippingMethod,
-    required this.shipBy,
-    required this.orderDate,
-  });
-
-  final String id;
-  final String orderId;
-  final String orderNumber;
-  final String customerName;
-  final int itemCount;
-  final String shippingMethod;
-  final String shipBy;
-  final String orderDate;
 }

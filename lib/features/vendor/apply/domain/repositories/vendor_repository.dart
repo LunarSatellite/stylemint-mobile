@@ -9,7 +9,11 @@ abstract class VendorRepository {
   );
   Future<Either<NetworkExceptions, KYCDocument>> uploadKYCDocument(
     String filePath,
-    KYCDocumentType documentType,
-  );
-  Future<Either<NetworkExceptions, List<KYCDocument>>> getKYCDocuments();
+    KYCDocumentType documentType, {
+    required String accountId,
+  });
+  Future<Either<NetworkExceptions, List<KYCDocument>>> getKYCDocuments({
+    required String accountId,
+    required String sessionId,
+  });
 }

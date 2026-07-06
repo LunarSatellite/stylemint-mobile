@@ -1,23 +1,28 @@
-﻿import 'dart:io';
+﻿import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyStep4Screen extends StatefulWidget {
+class VendorApplyStep4Screen extends ConsumerStatefulWidget {
   const VendorApplyStep4Screen({super.key});
 
   @override
-  State<VendorApplyStep4Screen> createState() => _VendorApplyStep4ScreenState();
+  ConsumerState<VendorApplyStep4Screen> createState() =>
+      _VendorApplyStep4ScreenState();
 }
 
-class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
+class _VendorApplyStep4ScreenState
+    extends ConsumerState<VendorApplyStep4Screen> {
   static const int _totalSteps = 6;
   static const int _currentStep = 4;
 
-  static const _accountTypes = ['Checking', 'Savings', 'Business Checking', 'Business Savings'];
+  static const _accountTypes = ['Checking', 'Savings'];
 
   final _accountHolderController = TextEditingController();
   final _bankNameController = TextEditingController();
@@ -159,18 +164,20 @@ class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: DesignTokens.colorError,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   void _proceed() {
-    context.push(RouteNames.vendorApplyStep5);
+    final current = ref.read(vendorApplyDraftProvider);
+    if (current != null) {
+      ref.read(vendorApplyDraftProvider.notifier).draft = current.copyWith(
+        accountHolder: _accountHolderController.text.trim(),
+        bankName: _bankNameController.text.trim(),
+        accountType: _selectedAccountType,
+        routingNumber: _routingController.text.trim(),
+        accountNumber: _accountNumberController.text.trim(),
+        w9FileName: _w9FileName,
+        taxCertified: _taxCertified,
+      );
+    }
+    unawaited(context.push(RouteNames.vendorApplyStep5));
   }
 
   @override
@@ -184,7 +191,9 @@ class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep3),
         ),
       ),
       body: SafeArea(
@@ -552,7 +561,9 @@ class _VendorApplyStep4ScreenState extends State<VendorApplyStep4Screen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep3),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,

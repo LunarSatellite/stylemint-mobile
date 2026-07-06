@@ -6,57 +6,12 @@ class AnalyticsRemoteDataSource {
 
   final ApiClient apiClient;
 
+  /// Single round-trip — `revenueTrend`, `topProducts`, `topCreators` and
+  /// `trafficSources` are all embedded fields on this one response, not
+  /// separate endpoints. The backend has no `window` query param; it
+  /// defaults to the trailing 30 days (use `fromUtc`/`toUtc` to override).
   Future<VendorAnalyticsSummaryDto> getSummary({String? window}) async {
-    final qp = <String, dynamic>{'window': ?window};
-
-    final results = await Future.wait([
-      apiClient.get(
-        '/v1/vendor/analytics/overview',
-        queryParameters: qp,
-      ),
-      apiClient.get(
-        '/v1/vendor/analytics/earnings',
-        queryParameters: qp,
-      ),
-      apiClient.get(
-        '/v1/vendor/analytics/top-products',
-        queryParameters: qp,
-      ),
-      apiClient.get(
-        '/v1/vendor/analytics/top-creators',
-        queryParameters: qp,
-      ),
-      apiClient.get(
-        '/v1/vendor/analytics/traffic-sources',
-        queryParameters: qp,
-      ),
-    ]);
-
-    return VendorAnalyticsSummaryDto(
-      overview: AnalyticsOverviewDto.fromJson(
-        results[0] as Map<String, dynamic>,
-      ),
-      earningsPoints: (results[1] as List)
-          .map(
-            (e) => EarningsPointDto.fromJson(e as Map<String, dynamic>),
-          )
-          .toList(),
-      topProducts: (results[2] as List)
-          .map(
-            (e) => AnalyticsTopProductDto.fromJson(e as Map<String, dynamic>),
-          )
-          .toList(),
-      topCreators: (results[3] as List)
-          .map(
-            (e) => AnalyticsTopCreatorDto.fromJson(e as Map<String, dynamic>),
-          )
-          .toList(),
-      trafficSources: (results[4] as List)
-          .map(
-            (e) =>
-                AnalyticsTrafficSourceDto.fromJson(e as Map<String, dynamic>),
-          )
-          .toList(),
-    );
+    final response = await apiClient.get('/v1/vendor/analytics/overview');
+    return VendorAnalyticsSummaryDto.fromJson(response as Map<String, dynamic>);
   }
 }

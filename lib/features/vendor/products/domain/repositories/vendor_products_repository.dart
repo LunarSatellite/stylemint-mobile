@@ -10,7 +10,6 @@ abstract interface class VendorProductsRepository {
     String? status,
   });
 
-  Future<Either<NetworkExceptions, VendorProduct>> getProduct(String productId);
   Future<Either<NetworkExceptions, Unit>> updateProductStatus(
     String productId,
     VendorProductStatus status,

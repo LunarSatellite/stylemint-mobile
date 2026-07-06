@@ -24,36 +24,34 @@ class CampaignCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    campaign.title,
+                    campaign.title?.isNotEmpty == true
+                        ? campaign.title!
+                        : 'Untitled brief',
                     style: DesignTokens.oneLinerSemibold,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
-                _CommissionBadge(rate: campaign.commissionRate),
+                _CommissionBadge(
+                  minPercent: campaign.commissionMinPercent,
+                  maxPercent: campaign.commissionMaxPercent,
+                ),
               ],
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              campaign.description,
-              style: DesignTokens.smallRegular,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: DesignTokens.s12),
             Row(
               children: [
                 MoneyText(
-                  campaign.budget,
+                  campaign.boostBudget,
                   style: DesignTokens.mediumSemibold.copyWith(
                     color: DesignTokens.primaryGreen,
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
-                Text('budget', style: DesignTokens.tiny),
+                Text('boost budget', style: DesignTokens.tiny),
                 const Spacer(),
-                _StatusBadge(status: campaign.status),
+                _StatusBadge(state: campaign.state),
               ],
             ),
           ],
@@ -64,9 +62,10 @@ class CampaignCard extends StatelessWidget {
 }
 
 class _CommissionBadge extends StatelessWidget {
-  const _CommissionBadge({required this.rate});
+  const _CommissionBadge({required this.minPercent, required this.maxPercent});
 
-  final double rate;
+  final double minPercent;
+  final double maxPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +79,7 @@ class _CommissionBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
       ),
       child: Text(
-        '${rate.toStringAsFixed(0)}%',
+        '${(minPercent * 100).toStringAsFixed(0)}-${(maxPercent * 100).toStringAsFixed(0)}%',
         style: DesignTokens.tiny.copyWith(color: DesignTokens.primaryGreen),
       ),
     );
@@ -88,17 +87,16 @@ class _CommissionBadge extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
+  const _StatusBadge({required this.state});
 
-  final CampaignStatus status;
+  final BrandBriefState state;
 
   @override
   Widget build(BuildContext context) {
-    final (String label, Color color) = switch (status) {
-      CampaignStatus.active => ('Active', DesignTokens.primaryGreen),
-      CampaignStatus.draft => ('Draft', DesignTokens.textMuted),
-      CampaignStatus.paused => ('Paused', DesignTokens.warning500),
-      CampaignStatus.completed => ('Completed', DesignTokens.colorInfo),
+    final (String label, Color color) = switch (state) {
+      BrandBriefState.draft => ('Draft', DesignTokens.textMuted),
+      BrandBriefState.locked => ('Locked', DesignTokens.primaryGreen),
+      BrandBriefState.retired => ('Retired', DesignTokens.colorInfo),
     };
 
     return Container(

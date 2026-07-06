@@ -1,16 +1,20 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyStep3Screen extends StatefulWidget {
+class VendorApplyStep3Screen extends ConsumerStatefulWidget {
   const VendorApplyStep3Screen({super.key});
 
   @override
-  State<VendorApplyStep3Screen> createState() => _VendorApplyStep3ScreenState();
+  ConsumerState<VendorApplyStep3Screen> createState() =>
+      _VendorApplyStep3ScreenState();
 }
 
 enum _DocStatus { success, failed }
@@ -25,7 +29,8 @@ class _DocFile {
       _DocFile(name: name, size: size, status: status ?? this.status);
 }
 
-class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
+class _VendorApplyStep3ScreenState
+    extends ConsumerState<VendorApplyStep3Screen> {
   static const int _totalSteps = 6;
   static const int _currentStep = 3;
 
@@ -120,18 +125,27 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: DesignTokens.colorError,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   void _proceed() {
-    context.push(RouteNames.vendorApplyStep4);
+    final current = ref.read(vendorApplyDraftProvider);
+    if (current != null) {
+      final uploaded = <String>[];
+      if (_licenseFiles.any((f) => f.status == _DocStatus.success)) {
+        uploaded.add('Business License');
+      }
+      if (_taxFiles.any((f) => f.status == _DocStatus.success)) {
+        uploaded.add('Tax Certificate');
+      }
+      if (_addressFiles.any((f) => f.status == _DocStatus.success)) {
+        uploaded.add('Proof of Address');
+      }
+      if (_incorporationFiles.any((f) => f.status == _DocStatus.success)) {
+        uploaded.add('Certificate of Incorporation');
+      }
+      ref.read(vendorApplyDraftProvider.notifier).draft = current.copyWith(
+        uploadedDocCategories: uploaded,
+      );
+    }
+    unawaited(context.push(RouteNames.vendorApplyStep4));
   }
 
   @override
@@ -145,7 +159,9 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep2),
         ),
       ),
       body: SafeArea(
@@ -492,7 +508,9 @@ class _VendorApplyStep3ScreenState extends State<VendorApplyStep3Screen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep2),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,

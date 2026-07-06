@@ -6,8 +6,10 @@ class VendorDashboardRemoteDataSource {
 
   final ApiClient apiClient;
 
-  Future<VendorDashboardDto> getDashboard() async {
-    final response = await apiClient.get('/v1/vendor/dashboard');
-    return VendorDashboardDto.fromJson(response as Map<String, dynamic>);
+  /// `/v1/vendor/dashboard` is a different endpoint (Brand Studio snapshot).
+  /// The vendor home dashboard is served by the analytics overview endpoint.
+  Future<VendorAnalyticsOverviewDto> getDashboard() async {
+    final response = await apiClient.get('/v1/vendor/analytics/overview');
+    return VendorAnalyticsOverviewDto.fromJson(response as Map<String, dynamic>);
   }
 }

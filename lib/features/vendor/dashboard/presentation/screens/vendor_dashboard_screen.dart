@@ -1,7 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/domain/entities/vendor_activity_entry.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
@@ -19,13 +23,11 @@ const _navRoutes = [
 ];
 
 final _sampleDashboard = VendorDashboard(
-  totalRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
+  grossSales: const Money(amount: 34512589.98, currency: 'NPR'),
+  grossSalesDeltaPercent: 23,
+  netRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
   totalOrders: 250,
-  totalProducts: 45,
-  averageRating: 4.8,
-  pendingFulfillment: 12,
-  lowStockProducts: 3,
-  recentOrders: [],
+  topProducts: const [],
 );
 
 class VendorDashboardScreen extends ConsumerStatefulWidget {
@@ -41,6 +43,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vendorDashboardNotifierProvider);
+    final activityState = ref.watch(vendorActivityPreviewNotifierProvider);
 
     return RootBackGuard(
       child: Scaffold(
@@ -81,10 +84,12 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
             loadInProgress: _loader,
             loadSuccess: (dashboard) => _DashboardContent(
               dashboard: dashboard,
+              activityState: activityState,
               onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
             loadFailure: (_) => _DashboardContent(
               dashboard: _sampleDashboard,
+              activityState: activityState,
               onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
           ),
@@ -181,17 +186,18 @@ class _NavItem {
 // ── Main content ──────────────────────────────────────────────────────────────
 
 class _DashboardContent extends StatelessWidget {
-  const _DashboardContent({required this.dashboard, required this.onRefresh});
+  const _DashboardContent({
+    required this.dashboard,
+    required this.activityState,
+    required this.onRefresh,
+  });
 
   final VendorDashboard dashboard;
+  final VendorActivityState activityState;
   final VoidCallback onRefresh;
 
-  static final _sampleProducts = [
-    _TopProduct(name: 'Nike Air Max 2025', sales: 45, revenue: 'Rs 1,35,345', creators: 8, brandColor: const Color(0xFFCC2200)),
-    _TopProduct(name: 'Nike Air Jordan Travis Scott Limited Edition', sales: 45, revenue: 'Rs 88,550', creators: 4, brandColor: const Color(0xFF3A3A2A)),
-    _TopProduct(name: 'Adidas Ultraboost 24', sales: 28, revenue: 'Rs 55,200', creators: 3, brandColor: const Color(0xFF1A1A2E)),
-  ];
-
+  // Fallback shown while the real feed is loading/failed — same pattern as
+  // `_sampleDashboard` above.
   static final _sampleActivities = [
     _ActivityGroup(date: 'Today', items: [
       _Activity(type: _ActivityType.order, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
@@ -237,7 +243,14 @@ class _DashboardContent extends StatelessWidget {
 
   // ── Revenue card ────────────────────────────────────────────────────────────
 
+  static String? _formatDelta(double? pct) {
+    if (pct == null) return null;
+    final r = pct.round();
+    return '${r >= 0 ? '+' : ''}$r%';
+  }
+
   Widget _buildRevenueCard() {
+    final grossSalesDelta = _formatDelta(dashboard.grossSalesDeltaPercent);
     return Column(
       children: [
         // Dark stats card
@@ -252,8 +265,10 @@ class _DashboardContent extends StatelessWidget {
               _buildRevenueRow(
                 assetIcon: 'assets/images/vendordashboard/icon_gross_sales.png',
                 iconBg: const Color(0xFF1A3A1A),
-                label: 'Gross Sales (+23% vs last)',
-                amount: formatMoney(const Money(amount: 34512589.98, currency: 'NPR')),
+                label: grossSalesDelta != null
+                    ? 'Gross Sales ($grossSalesDelta vs last)'
+                    : 'Gross Sales',
+                amount: formatMoney(dashboard.grossSales),
               ),
               const SizedBox(height: DesignTokens.s16),
               // Net Revenue row
@@ -261,13 +276,16 @@ class _DashboardContent extends StatelessWidget {
                 assetIcon: 'assets/images/vendordashboard/icon_net_revenue.png',
                 iconBg: const Color(0xFF0D2137),
                 label: 'Net Revenue (After fees & commissions)',
-                amount: formatMoney(dashboard.totalRevenue),
+                amount: formatMoney(dashboard.netRevenue),
               ),
               const SizedBox(height: DesignTokens.s16),
               // Stat chips
+              // NOTE: rating/creators/reels aren't part of the
+              // /v1/vendor/analytics/overview payload — placeholders until a
+              // backend field exists.
               Row(
                 children: [
-                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: dashboard.averageRating.toStringAsFixed(1), label: 'Rating'),
+                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: '4.8', label: 'Rating'),
                   const SizedBox(width: DesignTokens.s8),
                   _statChip(assetIcon: 'assets/images/vendordashboard/creator.png', value: '230', label: 'Creators'),
                   const SizedBox(width: DesignTokens.s8),
@@ -390,8 +408,11 @@ class _DashboardContent extends StatelessWidget {
   // ── Pending Actions ──────────────────────────────────────────────────────────
 
   Widget _buildAlertCards(BuildContext context) {
+    // NOTE: none of these counts are part of /v1/vendor/analytics/overview —
+    // placeholders until the sub-orders/inquiries/partnerships count
+    // endpoints are wired.
     final alerts = [
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have ${dashboard.pendingFulfillment} orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
+      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have 12 orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_chat.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
       _Alert(assetIcon: 'assets/images/vendordashboard/icon_partnership.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
@@ -410,32 +431,35 @@ class _DashboardContent extends StatelessWidget {
               final alert = entry.value;
               return Column(
                 children: [
-                  ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.bgAppBodyLight,
+                          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                        ),
+                        child: alert.assetIcon != null
+                            ? Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Image.asset(alert.assetIcon!, fit: BoxFit.contain),
+                              )
+                            : Icon(alert.icon, color: DesignTokens.textWhite, size: 20),
                       ),
-                      child: alert.assetIcon != null
-                          ? Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Image.asset(alert.assetIcon!, fit: BoxFit.contain),
-                            )
-                          : Icon(alert.icon, color: DesignTokens.textWhite, size: 20),
+                      title: Text(
+                        alert.title,
+                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        alert.subtitle,
+                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
+                      onTap: alert.route != null ? () => context.push(alert.route!) : null,
                     ),
-                    title: Text(
-                      alert.title,
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Text(
-                      alert.subtitle,
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
-                    onTap: alert.route != null ? () => context.push(alert.route!) : null,
                   ),
                   if (i < alerts.length - 1)
                     const Divider(color: DesignTokens.borderDefault, height: 1, indent: DesignTokens.s16, endIndent: DesignTokens.s16),
@@ -470,16 +494,33 @@ class _DashboardContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _sampleProducts.length,
-          separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-          itemBuilder: (_, i) => _ProductCard(product: _sampleProducts[i]),
-        ),
+        if (dashboard.topProducts.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              'No product sales yet this month.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: dashboard.topProducts.length,
+            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
+            itemBuilder: (_, i) => _ProductCard(product: _toTopProduct(dashboard.topProducts[i])),
+          ),
       ],
     );
   }
+
+  static _TopProduct _toTopProduct(VendorTopProduct p) => _TopProduct(
+    name: p.name.isEmpty ? 'Unnamed product' : p.name,
+    sales: p.unitsSold,
+    revenue: formatMoney(p.totalRevenue),
+    creators: p.distinctCreatorCount,
+    thumbnailUrl: p.thumbnailUrl,
+  );
 
   // ── Recent Activity ──────────────────────────────────────────────────────────
 
@@ -503,7 +544,7 @@ class _DashboardContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-        ..._sampleActivities.expand((group) => [
+        ..._activityGroups(context).expand((group) => [
           Padding(
             padding: const EdgeInsets.only(bottom: DesignTokens.s8),
             child: Text(
@@ -516,6 +557,46 @@ class _DashboardContent extends StatelessWidget {
         ]),
       ],
     );
+  }
+
+  /// Real feed on success; `_sampleActivities` fallback otherwise (matches
+  /// `_sampleDashboard`'s pattern above).
+  List<_ActivityGroup> _activityGroups(BuildContext context) {
+    return activityState.maybeWhen(
+      loadSuccess: (entries) {
+        if (entries.isEmpty) return _sampleActivities;
+        final byDate = <String, List<_Activity>>{};
+        for (final e in entries) {
+          final label = _dateGroupLabel(e.occurredUtc);
+          (byDate[label] ??= []).add(
+            _Activity(
+              type: _ActivityType.order,
+              title: e.headline?.isNotEmpty == true ? e.headline! : 'Activity',
+              description: e.body ?? '',
+              time: formatRelative(e.occurredUtc),
+              actionLabel: e.actionUrl != null ? 'View' : null,
+            ),
+          );
+        }
+        return byDate.entries.map((e) => _ActivityGroup(date: e.key, items: e.value)).toList();
+      },
+      orElse: () => _sampleActivities,
+    );
+  }
+
+  static String _dateGroupLabel(DateTime utc) {
+    final local = utc.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    switch (today.difference(day).inDays) {
+      case 0:
+        return 'Today';
+      case 1:
+        return 'Yesterday';
+      default:
+        return DateFormat('EEE d MMM yyyy').format(local);
+    }
   }
 }
 
@@ -539,19 +620,24 @@ class _ProductCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                  child: product.assetImage != null
-                      ? Container(
-                          width: 56,
-                          height: 56,
-                          color: const Color(0xFFFFFFFF),
-                          child: Image.asset(product.assetImage!, width: 56, height: 56, fit: BoxFit.cover),
-                        )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          color: product.brandColor,
-                          child: Icon(Icons.shopping_bag_outlined, color: Colors.white.withValues(alpha: 0.6), size: 24),
-                        ),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    color: DesignTokens.bgAppBodyLight,
+                    child: product.thumbnailUrl != null
+                        ? Image.network(
+                            product.thumbnailUrl!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.shopping_bag_outlined,
+                              color: DesignTokens.textMuted,
+                              size: 24,
+                            ),
+                          )
+                        : const Icon(Icons.shopping_bag_outlined, color: DesignTokens.textMuted, size: 24),
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
@@ -698,13 +784,12 @@ class _Alert {
 }
 
 class _TopProduct {
-  const _TopProduct({required this.name, required this.sales, required this.revenue, required this.creators, required this.brandColor, this.assetImage});
+  const _TopProduct({required this.name, required this.sales, required this.revenue, required this.creators, this.thumbnailUrl});
   final String name;
   final int sales;
   final String revenue;
   final int creators;
-  final Color brandColor;
-  final String? assetImage;
+  final String? thumbnailUrl;
 }
 
 enum _ActivityType { order, payout, partnership, shipped }

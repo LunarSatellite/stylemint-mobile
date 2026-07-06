@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyStep5Screen extends StatefulWidget {
+class VendorApplyStep5Screen extends ConsumerStatefulWidget {
   const VendorApplyStep5Screen({super.key});
 
   @override
-  State<VendorApplyStep5Screen> createState() => _VendorApplyStep5ScreenState();
+  ConsumerState<VendorApplyStep5Screen> createState() =>
+      _VendorApplyStep5ScreenState();
 }
 
-class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
+class _VendorApplyStep5ScreenState
+    extends ConsumerState<VendorApplyStep5Screen> {
   static const int _totalSteps = 6;
   static const int _currentStep = 5;
 
@@ -36,14 +42,16 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
 
   final _minPriceController = TextEditingController();
   final _maxPriceController = TextEditingController();
-  final _commissionController = TextEditingController();
+  final _commissionMinController = TextEditingController();
+  final _commissionMaxController = TextEditingController();
   final _brandStoryController = TextEditingController();
 
   @override
   void dispose() {
     _minPriceController.dispose();
     _maxPriceController.dispose();
-    _commissionController.dispose();
+    _commissionMinController.dispose();
+    _commissionMaxController.dispose();
     _brandStoryController.dispose();
     super.dispose();
   }
@@ -115,18 +123,25 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
     ).ignore();
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: DesignTokens.colorError,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   void _proceed() {
-    context.push(RouteNames.vendorApplyStep6);
+    final current = ref.read(vendorApplyDraftProvider);
+    if (current != null) {
+      final minP = _minPriceController.text.trim();
+      final maxP = _maxPriceController.text.trim();
+      final commissionMin = _commissionMinController.text.trim();
+      final commissionMax = _commissionMaxController.text.trim();
+      final story = _brandStoryController.text.trim();
+      ref.read(vendorApplyDraftProvider.notifier).draft = current.copyWith(
+        productCategories: _selectedCategories.toList(growable: false),
+        catalogSize: _selectedCatalogSize,
+        minPrice: minP.isEmpty ? null : minP,
+        maxPrice: maxP.isEmpty ? null : maxP,
+        commissionMinRate: commissionMin.isEmpty ? null : commissionMin,
+        commissionMaxRate: commissionMax.isEmpty ? null : commissionMax,
+        brandStory: story.isEmpty ? null : story,
+      );
+    }
+    unawaited(context.push(RouteNames.vendorApplyStep6));
   }
 
   @override
@@ -140,7 +155,9 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep4),
         ),
       ),
       body: SafeArea(
@@ -330,15 +347,40 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
           Text('Creator Commission Settings', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s12),
 
-          TextField(
-            controller: _commissionController,
-            keyboardType: TextInputType.number,
-            style: DesignTokens.oneLinerRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              hintText: 'Default Commission Rate for Creators',
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commissionMinController,
+                  keyboardType: TextInputType.number,
+                  style: DesignTokens.oneLinerRegular.copyWith(
+                    color: DesignTokens.inputFieldData,
+                  ),
+                  decoration: DesignTokens.inputDecoration(hintText: 'Min %'),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                ),
+                child: Text(
+                  '—',
+                  style: DesignTokens.oneLinerRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _commissionMaxController,
+                  keyboardType: TextInputType.number,
+                  style: DesignTokens.oneLinerRegular.copyWith(
+                    color: DesignTokens.inputFieldData,
+                  ),
+                  decoration: DesignTokens.inputDecoration(hintText: 'Max %'),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: DesignTokens.s8),
           Row(
@@ -408,7 +450,9 @@ class _VendorApplyStep5ScreenState extends State<VendorApplyStep5Screen> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.canPop()
+                  ? context.pop()
+                  : context.go(RouteNames.vendorApplyStep4),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,

@@ -1,16 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyStep6Screen extends StatefulWidget {
+class VendorApplyStep6Screen extends ConsumerStatefulWidget {
   const VendorApplyStep6Screen({super.key});
 
   @override
-  State<VendorApplyStep6Screen> createState() => _VendorApplyStep6ScreenState();
+  ConsumerState<VendorApplyStep6Screen> createState() =>
+      _VendorApplyStep6ScreenState();
 }
 
-class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
+class _VendorApplyStep6ScreenState
+    extends ConsumerState<VendorApplyStep6Screen> {
   static const int _totalSteps = 6;
   static const int _currentStep = 6;
 
@@ -18,23 +25,83 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
   bool _agreeCommission = false;
   bool _agreePayout = false;
   bool _agreeInventory = false;
+  bool _isSubmitting = false;
 
   void _submit() {
-    context.go(RouteNames.vendorApplySubmitted);
+    if (!_agreeTerms ||
+        !_agreeCommission ||
+        !_agreePayout ||
+        !_agreeInventory) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to all terms before submitting.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    final draft = ref.read(vendorApplyDraftProvider);
+    if (draft == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please complete Step 1 before submitting.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    unawaited(
+      ref
+          .read(vendorApplyNotifierProvider.notifier)
+          .submit(draft.toForm(), draft.accountId),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final draft = ref.watch(vendorApplyDraftProvider);
+
+    ref.listen(vendorApplyNotifierProvider, (_, next) {
+      if (!_isSubmitting) return;
+      next.whenOrNull(
+        loadSuccess: (_) {
+          setState(() => _isSubmitting = false);
+          context.go(RouteNames.vendorApplySubmitted);
+        },
+        loadFailure: (failure) {
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Submission failed: ${NetworkExceptions.getMessage(failure)}',
+              ),
+              backgroundColor: DesignTokens.colorError,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    });
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
-        title: Text('Vendor Application', style: DesignTokens.oneLinerSemibold),
+        title: Text(
+          'Vendor Application',
+          style: DesignTokens.oneLinerSemibold,
+        ),
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.vendorApplyStep5),
         ),
       ),
       body: SafeArea(
@@ -55,31 +122,31 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
                     _buildSection(
                       title: 'Business Information',
                       stepRoute: RouteNames.vendorApply,
-                      child: _buildBusinessInfo(),
+                      child: _buildBusinessInfo(draft),
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _buildSection(
                       title: 'Contact Information',
                       stepRoute: RouteNames.vendorApplyStep2,
-                      child: _buildContactInfo(),
+                      child: _buildContactInfo(draft),
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _buildSection(
                       title: 'Documents Uploaded',
                       stepRoute: RouteNames.vendorApplyStep3,
-                      child: _buildDocumentsInfo(),
+                      child: _buildDocumentsInfo(draft),
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _buildSection(
                       title: 'Banking & Tax Details',
                       stepRoute: RouteNames.vendorApplyStep4,
-                      child: _buildBankingInfo(),
+                      child: _buildBankingInfo(draft),
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _buildSection(
                       title: 'Product Information',
                       stepRoute: RouteNames.vendorApplyStep5,
-                      child: _buildProductInfo(),
+                      child: _buildProductInfo(draft),
                     ),
                     const SizedBox(height: DesignTokens.s16),
                     _buildTermsSection(),
@@ -131,7 +198,10 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Review Your Application', style: DesignTokens.sectionInnerTitle),
+          Text(
+            'Review Your Application',
+            style: DesignTokens.sectionInnerTitle,
+          ),
           const SizedBox(height: DesignTokens.s4),
           Text(
             'Review the details you entered before submission',
@@ -159,24 +229,26 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
                 child: Text(title, style: DesignTokens.mediumSemibold),
               ),
               GestureDetector(
-                onTap: () => context.go(stepRoute),
+                onTap: () => context.push(stepRoute),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: DesignTokens.s12,
                     vertical: DesignTokens.s6,
                   ),
                   decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreen.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                    color: DesignTokens.primaryGreen.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'Edit',
-                        style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600).copyWith(
-                          color: DesignTokens.primaryGreen,
-                        ),
+                        style: DesignTokens.smallRegular
+                            .copyWith(fontWeight: FontWeight.w600)
+                            .copyWith(color: DesignTokens.primaryGreen),
                       ),
                       const SizedBox(width: DesignTokens.s4),
                       const Icon(
@@ -199,50 +271,76 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
     );
   }
 
-  Widget _buildBusinessInfo() {
+  Widget _placeholder(String text) => Text(
+        text,
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textMuted,
+        ),
+      );
+
+  Widget _buildBusinessInfo(VendorApplyDraft? draft) {
+    if (draft == null) return _placeholder('Not filled — tap Edit');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Nike Official Store LLC', style: DesignTokens.mediumSemibold),
+        Text(draft.brandName, style: DesignTokens.mediumSemibold),
         const SizedBox(height: DesignTokens.s4),
         Text(
-          'Corporation  •  EIN: 12-523637',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          '${draft.businessType.label}  •  Tax ID: ${draft.taxId}',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
         const SizedBox(height: DesignTokens.s4),
         Text(
-          'Beaverton, Oregon, USA',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          '${draft.city}, ${draft.state}, ${draft.country}',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildContactInfo() {
+  Widget _buildContactInfo(VendorApplyDraft? draft) {
+    if (draft == null || draft.contactFullName.isEmpty) {
+      return _placeholder('Not filled — tap Edit');
+    }
+    final nameLine = draft.contactPosition.isEmpty
+        ? draft.contactFullName
+        : '${draft.contactFullName}, ${draft.contactPosition}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('John Smith, VP of E-Commerce', style: DesignTokens.mediumSemibold),
-        const SizedBox(height: DesignTokens.s4),
-        Text(
-          'john@nike.com  •  +1 503-555-1234',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-        ),
-        const SizedBox(height: DesignTokens.s4),
-        Text(
-          'Support: support@nike.com',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-        ),
+        Text(nameLine, style: DesignTokens.mediumSemibold),
+        if (draft.contactEmail.isNotEmpty || draft.contactPhone.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            [
+              if (draft.contactEmail.isNotEmpty) draft.contactEmail,
+              if (draft.contactPhone.isNotEmpty) draft.contactPhone,
+            ].join('  •  '),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
+        if (draft.supportEmail.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Support: ${draft.supportEmail}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildDocumentsInfo() {
-    const docs = [
-      'Business License',
-      'Tax Certificate',
-      'Proof of Address',
-    ];
+  Widget _buildDocumentsInfo(VendorApplyDraft? draft) {
+    final docs = draft?.uploadedDocCategories ?? const [];
+    if (docs.isEmpty) return _placeholder('No documents uploaded');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: docs.map((doc) {
@@ -271,69 +369,91 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
     );
   }
 
-  Widget _buildBankingInfo() {
+  Widget _buildBankingInfo(VendorApplyDraft? draft) {
+    if (draft == null || draft.bankName.isEmpty) {
+      return _placeholder('Not filled — tap Edit');
+    }
+    final bankLine = draft.accountType != null
+        ? '${draft.bankName}  (${draft.accountType})'
+        : draft.bankName;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Chase Bank  (******4532)', style: DesignTokens.mediumSemibold),
-        const SizedBox(height: DesignTokens.s4),
-        Text(
-          'W-9 Form Uploaded',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-        ),
+        Text(bankLine, style: DesignTokens.mediumSemibold),
+        if (draft.w9FileName != null) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'W-9: ${draft.w9FileName}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildProductInfo() {
-    const categoryImages = {
-      'Sports': 'assets/images/vendordashboard/sports.png',
-      'Fitness': 'assets/images/vendordashboard/fitness.png',
-      'Footwear': 'assets/images/vendordashboard/footware.png',
-    };
+  Widget _buildProductInfo(VendorApplyDraft? draft) {
+    final categories = draft?.productCategories ?? const [];
+    final hasData = categories.isNotEmpty ||
+        draft?.catalogSize != null ||
+        draft?.commissionMinRate != null;
+
+    if (!hasData) return _placeholder('Not filled — tap Edit');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Content Categories',
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
-        ),
-        const SizedBox(height: DesignTokens.s8),
-        Wrap(
-          spacing: DesignTokens.s8,
-          runSpacing: DesignTokens.s8,
-          children: categoryImages.entries.map((entry) {
-            return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s12,
-                vertical: DesignTokens.s6,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3F3F46),
-                borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(entry.value, width: 16, height: 16),
-                  const SizedBox(width: DesignTokens.s4),
-                  Text(
-                    entry.key,
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textWhite,
-                    ),
+        if (categories.isNotEmpty) ...[
+          Text(
+            'Categories',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Wrap(
+            spacing: DesignTokens.s8,
+            runSpacing: DesignTokens.s8,
+            children: categories.map((cat) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                  vertical: DesignTokens.s6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3F3F46),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.chipRadius,
                   ),
-                ],
-              ),
-            );
-          }).toList(growable: false),
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        _buildInfoRow('Catalog Size', '100-500 Products'),
-        const SizedBox(height: DesignTokens.s6),
-        _buildInfoRow('Price Range', '\$50 – \$1,200'),
-        const SizedBox(height: DesignTokens.s6),
-        _buildInfoRow('Default Commission', '15%'),
+                ),
+                child: Text(
+                  cat,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              );
+            }).toList(growable: false),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+        ],
+        if (draft?.catalogSize != null)
+          _buildInfoRow('Catalog Size', draft!.catalogSize!),
+        if (draft?.minPrice != null && draft?.maxPrice != null) ...[
+          const SizedBox(height: DesignTokens.s6),
+          _buildInfoRow(
+            'Price Range',
+            '${draft!.minPrice} – ${draft.maxPrice}',
+          ),
+        ],
+        if (draft?.commissionMinRate != null) ...[
+          const SizedBox(height: DesignTokens.s6),
+          _buildInfoRow(
+            'Commission Range',
+            '${draft!.commissionMinRate}% – ${draft.commissionMaxRate ?? '?'}%',
+          ),
+        ],
       ],
     );
   }
@@ -343,7 +463,9 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
       children: [
         Text(
           label,
-          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textWhite,
+          ),
         ),
         Expanded(
           child: Text(
@@ -426,9 +548,12 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
               margin: const EdgeInsets.only(top: 1),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: value ? DesignTokens.primaryGreen : Colors.transparent,
+                color:
+                    value ? DesignTokens.primaryGreen : Colors.transparent,
                 border: Border.all(
-                  color: value ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
+                  color: value
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.borderDefault,
                   width: 1.5,
                 ),
               ),
@@ -467,14 +592,23 @@ class _VendorApplyStep6ScreenState extends State<VendorApplyStep6Screen> {
       width: double.infinity,
       height: DesignTokens.buttonHeight,
       child: ElevatedButton(
-        onPressed: _submit,
+        onPressed: _isSubmitting ? null : _submit,
         style: DesignTokens.primaryButtonStyle(),
-        child: Text(
-          'Submit Application',
-          style: DesignTokens.oneLinerSemibold.copyWith(
-            color: DesignTokens.buttonPrimaryText,
-          ),
-        ),
+        child: _isSubmitting
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: DesignTokens.buttonPrimaryText,
+                ),
+              )
+            : Text(
+                'Submit Application',
+                style: DesignTokens.oneLinerSemibold.copyWith(
+                  color: DesignTokens.buttonPrimaryText,
+                ),
+              ),
       ),
     );
   }
