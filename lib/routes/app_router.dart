@@ -92,6 +92,7 @@ import 'package:stylemint_mobile_frontend/features/onboarding/presentation/scree
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/payment_methods_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/wallet/presentation/screens/wallet_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/following_screen.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_scan_screen.dart';
@@ -1106,6 +1107,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.profileEdit,
         builder: (ctx, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.wallet,
+        builder: (ctx, state) => const WalletScreen(),
       ),
       GoRoute(
         path: RouteNames.profileFollowing,

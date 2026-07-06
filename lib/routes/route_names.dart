@@ -62,6 +62,7 @@ abstract class RouteNames {
   static const qrScan = '/qr-login/scan';
   static const profileFollowing = '/profile/following';
   static const profileSavedItems = '/profile/saved-items';
+  static const wallet = '/wallet';
 
   // Creator
   static const creatorHome = '/creator/home';
