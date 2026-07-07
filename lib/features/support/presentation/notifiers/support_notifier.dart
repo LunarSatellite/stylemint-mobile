@@ -15,8 +15,10 @@ abstract class TicketsState with _$TicketsState {
 
   const factory TicketsState.initial() = _TicketsInitial;
   const factory TicketsState.loadInProgress() = _TicketsLoadInProgress;
-  const factory TicketsState.loadSuccess(List<Ticket> tickets) = _TicketsLoadSuccess;
-  const factory TicketsState.loadFailure(NetworkExceptions failure) = _TicketsLoadFailure;
+  const factory TicketsState.loadSuccess(List<Ticket> tickets) =
+      _TicketsLoadSuccess;
+  const factory TicketsState.loadFailure(NetworkExceptions failure) =
+      _TicketsLoadFailure;
 }
 
 @freezed
@@ -25,8 +27,10 @@ abstract class CategoriesState with _$CategoriesState {
 
   const factory CategoriesState.initial() = _CatInitial;
   const factory CategoriesState.loadInProgress() = _CatLoadInProgress;
-  const factory CategoriesState.loadSuccess(List<SupportCategory> categories) = _CatLoadSuccess;
-  const factory CategoriesState.loadFailure(NetworkExceptions failure) = _CatLoadFailure;
+  const factory CategoriesState.loadSuccess(List<SupportCategory> categories) =
+      _CatLoadSuccess;
+  const factory CategoriesState.loadFailure(NetworkExceptions failure) =
+      _CatLoadFailure;
 }
 
 @freezed
@@ -36,7 +40,8 @@ abstract class CreateTicketState with _$CreateTicketState {
   const factory CreateTicketState.initial() = _CreateInitial;
   const factory CreateTicketState.submitting() = _CreateSubmitting;
   const factory CreateTicketState.success(Ticket ticket) = _CreateSuccess;
-  const factory CreateTicketState.failure(NetworkExceptions failure) = _CreateFailure;
+  const factory CreateTicketState.failure(NetworkExceptions failure) =
+      _CreateFailure;
 }
 
 class SupportNotifier extends StateNotifier<TicketsState> {
@@ -56,12 +61,12 @@ class SupportNotifier extends StateNotifier<TicketsState> {
   Future<void> createTicket({
     required String subject,
     required String message,
-    String? categoryId,
+    required TicketCategory category,
   }) async {
     final either = await _repository.createTicket(
       subject: subject,
       message: message,
-      categoryId: categoryId,
+      category: category,
     );
     either.fold(
       (_) => null,
@@ -71,7 +76,8 @@ class SupportNotifier extends StateNotifier<TicketsState> {
 }
 
 class CategoriesNotifier extends StateNotifier<CategoriesState> {
-  CategoriesNotifier(this._repository) : super(const CategoriesState.initial()) {
+  CategoriesNotifier(this._repository)
+    : super(const CategoriesState.initial()) {
     unawaited(load());
   }
 
@@ -88,20 +94,21 @@ class CategoriesNotifier extends StateNotifier<CategoriesState> {
 }
 
 class CreateTicketNotifier extends StateNotifier<CreateTicketState> {
-  CreateTicketNotifier(this._repository) : super(const CreateTicketState.initial());
+  CreateTicketNotifier(this._repository)
+    : super(const CreateTicketState.initial());
 
   final SupportRepository _repository;
 
   Future<void> submit({
     required String subject,
     required String message,
-    String? categoryId,
+    required TicketCategory category,
   }) async {
     state = const CreateTicketState.submitting();
     final either = await _repository.createTicket(
       subject: subject,
       message: message,
-      categoryId: categoryId,
+      category: category,
     );
     state = either.fold(
       CreateTicketState.failure,

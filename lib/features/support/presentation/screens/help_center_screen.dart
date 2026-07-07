@@ -19,10 +19,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     if (_query.isEmpty) return kHelpTopics;
     final q = _query.toLowerCase();
     return kHelpTopics
-        .where((t) =>
-            t.title.toLowerCase().contains(q) ||
-            t.subtitle.toLowerCase().contains(q) ||
-            t.articles.any((a) => a.title.toLowerCase().contains(q)))
+        .where(
+          (t) =>
+              t.title.toLowerCase().contains(q) ||
+              t.subtitle.toLowerCase().contains(q) ||
+              t.articles.any((a) => a.title.toLowerCase().contains(q)),
+        )
         .toList();
   }
 
@@ -30,9 +32,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
     if (_query.isEmpty) return kFaqs;
     final q = _query.toLowerCase();
     return kFaqs
-        .where((f) =>
-            f.question.toLowerCase().contains(q) ||
-            f.answer.toLowerCase().contains(q))
+        .where(
+          (f) =>
+              f.question.toLowerCase().contains(q) ||
+              f.answer.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -55,7 +59,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           // Subtitle
           Text(
             'How can we help you?',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
 
@@ -70,11 +76,19 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 _query = v;
                 _expandedFaq = null;
               }),
-              style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search for help on any topic',
-                hintStyle: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
-                suffixIcon: const Icon(Icons.search, color: DesignTokens.textMuted, size: 20),
+                hintStyle: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+                suffixIcon: const Icon(
+                  Icons.search,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16,
@@ -88,7 +102,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           // ── Popular Topics ─────────────────────────────────────────────
           Text(
             'Popular Topics',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           _SectionCard(
@@ -102,7 +118,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   ),
                 ),
               ],
-              if (_filteredTopics.isEmpty) _emptyResult('No topics match your search.'),
+              if (_filteredTopics.isEmpty)
+                _emptyResult('No topics match your search.'),
             ],
           ),
           const SizedBox(height: DesignTokens.s24),
@@ -110,7 +127,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           // ── FAQs ───────────────────────────────────────────────────────
           Text(
             "FAQ's",
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           _SectionCard(
@@ -124,7 +143,8 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   }),
                 ),
               ],
-              if (_filteredFaqs.isEmpty) _emptyResult('No FAQs match your search.'),
+              if (_filteredFaqs.isEmpty)
+                _emptyResult('No FAQs match your search.'),
             ],
           ),
           const SizedBox(height: DesignTokens.s24),
@@ -132,7 +152,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           // ── Still need help? ───────────────────────────────────────────
           Text(
             'Still need help?',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           _SectionCard(
@@ -147,17 +169,19 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
   }
 
   Widget _divider() => const Divider(
-        height: 1,
-        color: DesignTokens.borderDefault,
-        indent: DesignTokens.s16,
-        endIndent: DesignTokens.s16,
-      );
+    height: 1,
+    color: DesignTokens.borderDefault,
+    indent: DesignTokens.s16,
+    endIndent: DesignTokens.s16,
+  );
 
   Widget _emptyResult(String msg) => Padding(
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        child: Text(msg,
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
-      );
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    child: Text(
+      msg,
+      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+    ),
+  );
 }
 
 // ── Section card wrapper ──────────────────────────────────────────────────────
@@ -203,24 +227,38 @@ class _TopicTile extends StatelessWidget {
                 color: DesignTokens.bgAppBodyLight,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: Icon(topic.icon, color: DesignTokens.textWhite.withValues(alpha: 0.8), size: 20),
+              child: Icon(
+                topic.icon,
+                color: DesignTokens.textWhite.withValues(alpha: 0.8),
+                size: 20,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(topic.title,
-                      style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.textWhite)),
+                  Text(
+                    topic.title,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(topic.subtitle,
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted)),
+                  Text(
+                    topic.subtitle,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: DesignTokens.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -258,11 +296,14 @@ class _FaqTile extends StatelessWidget {
                   child: Text(
                     item.question,
                     style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite),
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                 ),
                 Icon(
-                  isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
                   color: DesignTokens.textMuted,
                   size: 20,
                 ),
@@ -280,7 +321,9 @@ class _FaqTile extends StatelessWidget {
             ),
             child: Text(
               item.answer,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
           ),
       ],
@@ -312,24 +355,38 @@ class _ContactTile extends StatelessWidget {
                 color: DesignTokens.bgAppBodyLight,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: Icon(option.icon, color: DesignTokens.textWhite.withValues(alpha: 0.8), size: 20),
+              child: Icon(
+                option.icon,
+                color: DesignTokens.textWhite.withValues(alpha: 0.8),
+                size: 20,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(option.title,
-                      style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.textWhite)),
+                  Text(
+                    option.title,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(option.subtitle,
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted)),
+                  Text(
+                    option.subtitle,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: DesignTokens.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),

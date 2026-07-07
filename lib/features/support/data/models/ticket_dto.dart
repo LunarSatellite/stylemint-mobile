@@ -5,16 +5,17 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticke
 part 'ticket_dto.freezed.dart';
 part 'ticket_dto.g.dart';
 
+/// Mirrors `SupportTicketSummaryDto`/`SupportTicketDto` — `state` and
+/// `category` are the backend's int-valued enums (1-based), not strings.
 @freezed
 abstract class TicketDto with _$TicketDto {
   const factory TicketDto({
     required String id,
     required String ticketNumber,
     required String subject,
-    required String status,
-    required DateTime createdAt,
-    required DateTime lastUpdated,
-    String? lastMessagePreview,
+    required int state,
+    required DateTime openedUtc,
+    DateTime? lastAgentReplyUtc,
   }) = _TicketDto;
 
   const TicketDto._();
@@ -26,16 +27,16 @@ abstract class TicketDto with _$TicketDto {
     id: id,
     ticketNumber: ticketNumber,
     subject: subject,
-    status: _parseStatus(status),
-    createdAt: createdAt,
-    lastUpdated: lastUpdated,
-    lastMessagePreview: lastMessagePreview,
+    status: _statusFromWire(state),
+    createdAt: openedUtc,
+    lastUpdated: lastAgentReplyUtc ?? openedUtc,
+    // Backend list/detail projections don't carry a preview snippet.
+    lastMessagePreview: null,
   );
 
-  static TicketStatus _parseStatus(String s) => switch (s) {
-    'in_progress' => TicketStatus.inProgress,
-    'resolved' => TicketStatus.resolved,
-    'closed' => TicketStatus.closed,
+  static TicketStatus _statusFromWire(int state) => switch (state) {
+    2 => TicketStatus.inProgress,
+    3 => TicketStatus.resolved,
     _ => TicketStatus.open,
   };
 }

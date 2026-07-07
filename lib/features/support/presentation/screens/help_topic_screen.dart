@@ -19,9 +19,11 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
     if (_query.isEmpty) return widget.topic.articles;
     final q = _query.toLowerCase();
     return widget.topic.articles
-        .where((a) =>
-            a.title.toLowerCase().contains(q) ||
-            a.preview.toLowerCase().contains(q))
+        .where(
+          (a) =>
+              a.title.toLowerCase().contains(q) ||
+              a.preview.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -43,7 +45,9 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
         children: [
           Text(
             'View articles related to ${widget.topic.title}',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
 
@@ -55,11 +59,19 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
             ),
             child: TextField(
               onChanged: (v) => setState(() => _query = v),
-              style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search for keywords..',
-                hintStyle: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
-                suffixIcon: const Icon(Icons.search, color: DesignTokens.textMuted, size: 20),
+                hintStyle: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+                suffixIcon: const Icon(
+                  Icons.search,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16,
@@ -76,7 +88,9 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s32),
                 child: Text(
                   'No articles found.',
-                  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
             )
@@ -84,7 +98,8 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
             for (final article in _filtered) ...[
               _ArticleCard(
                 article: article,
-                onTap: () => context.push(RouteNames.supportArticle, extra: article),
+                onTap: () =>
+                    context.push(RouteNames.supportArticle, extra: article),
               ),
               const SizedBox(height: DesignTokens.s12),
             ],
@@ -114,17 +129,24 @@ class _ArticleCard extends StatelessWidget {
           children: [
             Text(
               article.title,
-              style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s8),
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   article.date,
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -133,25 +155,37 @@ class _ArticleCard extends StatelessWidget {
               article.preview,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             Row(
               children: [
-                const Icon(Icons.remove_red_eye_outlined,
-                    size: 14, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.remove_red_eye_outlined,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${_formatViews(article.views)} Views',
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s16),
-                const Icon(Icons.access_time_outlined,
-                    size: 14, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.access_time_outlined,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${article.readMinutes} min read',
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -162,7 +196,8 @@ class _ArticleCard extends StatelessWidget {
   }
 
   String _formatViews(int v) {
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(v % 1000 == 0 ? 0 : 3).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')},${(v % 1000).toString().padLeft(3, '0')}';
+    if (v >= 1000)
+      return '${(v / 1000).toStringAsFixed(v % 1000 == 0 ? 0 : 3).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')},${(v % 1000).toString().padLeft(3, '0')}';
     return v.toString();
   }
 }

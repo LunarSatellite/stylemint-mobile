@@ -1,4 +1,22 @@
-enum TicketStatus { open, inProgress, resolved, closed }
+/// 3-state projection the backend exposes — internal WaitingOnUser/Closed
+/// states are rolled into inProgress/resolved server-side (skill §2.3).
+enum TicketStatus { open, inProgress, resolved }
+
+/// Mirrors the backend's `SupportCategory` enum (int-valued, 1-8).
+enum TicketCategory {
+  ordersAndShipping,
+  returnsAndRefunds,
+  accountAndSettings,
+  paymentAndBilling,
+  safetyAndPrivacy,
+  forCreators,
+  forVendors,
+  deliveryAndCouriers,
+}
+
+extension TicketCategoryWireValue on TicketCategory {
+  int get wireValue => TicketCategory.values.indexOf(this) + 1;
+}
 
 class Ticket {
   const Ticket({

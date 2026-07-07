@@ -37,7 +37,9 @@ class SupportRepositoryImpl implements SupportRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Ticket>> getTicketDetail(String ticketId) async {
+  Future<Either<NetworkExceptions, Ticket>> getTicketDetail(
+    String ticketId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getTicketDetail(ticketId);
@@ -60,14 +62,14 @@ class SupportRepositoryImpl implements SupportRepository {
   Future<Either<NetworkExceptions, Ticket>> createTicket({
     required String subject,
     required String message,
-    String? categoryId,
+    required TicketCategory category,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.createTicket(
           subject: subject,
-          message: message,
-          categoryId: categoryId,
+          body: message,
+          category: category.wireValue,
         );
         return right(dto.toDomain());
       } catch (e) {
@@ -85,7 +87,8 @@ class SupportRepositoryImpl implements SupportRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<SupportCategory>>> getSupportCategories() async {
+  Future<Either<NetworkExceptions, List<SupportCategory>>>
+  getSupportCategories() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getSupportCategories();

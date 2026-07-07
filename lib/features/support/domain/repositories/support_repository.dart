@@ -11,8 +11,9 @@ abstract interface class SupportRepository {
   Future<Either<NetworkExceptions, Ticket>> createTicket({
     required String subject,
     required String message,
-    String? categoryId,
+    required TicketCategory category,
   });
 
-  Future<Either<NetworkExceptions, List<SupportCategory>>> getSupportCategories();
+  Future<Either<NetworkExceptions, List<SupportCategory>>>
+  getSupportCategories();
 }
