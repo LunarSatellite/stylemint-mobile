@@ -43,11 +43,10 @@ class MoneyDeltaDto {
 class NumberDeltaDto {
   const NumberDeltaDto({this.current = 0, this.deltaPercent});
 
-  factory NumberDeltaDto.fromJson(Map<String, dynamic>? json) =>
-      NumberDeltaDto(
-        current: (json?['current'] as num?) ?? 0,
-        deltaPercent: (json?['deltaPercent'] as num?)?.toDouble(),
-      );
+  factory NumberDeltaDto.fromJson(Map<String, dynamic>? json) => NumberDeltaDto(
+    current: (json?['current'] as num?) ?? 0,
+    deltaPercent: (json?['deltaPercent'] as num?)?.toDouble(),
+  );
 
   final num current;
   final double? deltaPercent;
@@ -123,8 +122,10 @@ class EarningsPointDto {
   final DateTime date;
   final MoneyDto amount;
 
-  EarningsPoint toDomain() =>
-      EarningsPoint(label: DateFormat('d MMM').format(date), value: amount.amount);
+  EarningsPoint toDomain() => EarningsPoint(
+    label: DateFormat('d MMM').format(date),
+    value: amount.amount,
+  );
 }
 
 // ---------------------------------------------------------------------------

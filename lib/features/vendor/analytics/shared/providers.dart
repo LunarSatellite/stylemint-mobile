@@ -23,5 +23,5 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
 
 final analyticsNotifierProvider =
     StateNotifierProvider<AnalyticsNotifier, AnalyticsState>(
-  (ref) => AnalyticsNotifier(ref.watch(analyticsRepositoryProvider)),
-);
+      (ref) => AnalyticsNotifier(ref.watch(analyticsRepositoryProvider)),
+    );

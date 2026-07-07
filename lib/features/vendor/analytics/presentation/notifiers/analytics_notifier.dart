@@ -19,8 +19,7 @@ abstract class AnalyticsState with _$AnalyticsState {
 }
 
 class AnalyticsNotifier extends StateNotifier<AnalyticsState> {
-  AnalyticsNotifier(this._repository)
-      : super(const AnalyticsState.initial()) {
+  AnalyticsNotifier(this._repository) : super(const AnalyticsState.initial()) {
     unawaited(load());
   }
 
