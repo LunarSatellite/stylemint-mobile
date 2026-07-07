@@ -10,9 +10,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 
 final vendorProductsRemoteDataSourceProvider =
     Provider<VendorProductsRemoteDataSource>(
-  (ref) =>
-      VendorProductsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
+      (ref) => VendorProductsRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final vendorProductsRepositoryProvider = Provider<VendorProductsRepository>(
   (ref) => VendorProductsRepositoryImpl(
@@ -23,6 +24,6 @@ final vendorProductsRepositoryProvider = Provider<VendorProductsRepository>(
 
 final vendorProductsNotifierProvider =
     StateNotifierProvider<VendorProductsNotifier, ProductsState>(
-  (ref) =>
-      VendorProductsNotifier(ref.watch(vendorProductsRepositoryProvider)),
-);
+      (ref) =>
+          VendorProductsNotifier(ref.watch(vendorProductsRepositoryProvider)),
+    );

@@ -34,16 +34,22 @@ class VendorProductsRepositoryImpl implements VendorProductsRepository {
           status: status,
         );
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map((e) => VendorProductDto.fromJson(e as Map<String, dynamic>).toDomain())
+            .map(
+              (e) => VendorProductDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
+            )
             .toList(growable: false);
-        return right(PagedResult(
-          items: items,
-          totalCount: data['totalCount'] as int? ?? items.length,
-          pageSize: data['pageSize'] as int? ?? limit,
-          nextCursor: data['nextCursor'] as String?,
-          previousCursor: data['previousCursor'] as String?,
-          hasMore: data['hasMore'] as bool? ?? false,
-        ));
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? limit,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -86,11 +92,24 @@ class VendorProductsRepositoryImpl implements VendorProductsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> deleteProduct(String productId) async {
+  Future<Either<NetworkExceptions, VendorProduct>> updateStock({
+    required String productId,
+    required String variantId,
+    required int newQuantity,
+    DateTime? restockUtc,
+    required bool alertCustomersOnRestock,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.deleteProduct(productId, _uuid.v4());
-        return right(unit);
+        final data = await remoteDataSource.updateStock(
+          productId: productId,
+          variantId: variantId,
+          quantity: newQuantity,
+          restockUtc: restockUtc,
+          alertCustomersOnRestock: alertCustomersOnRestock,
+          idempotencyKey: _uuid.v4(),
+        );
+        return right(VendorProductDto.fromJson(data).toDomain());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

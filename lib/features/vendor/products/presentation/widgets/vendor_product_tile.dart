@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -21,8 +21,7 @@ class VendorProductTile extends StatelessWidget {
   bool get _isOutOfStock => product.status == VendorProductStatus.outOfStock;
   bool get _isActive => product.status == VendorProductStatus.active;
 
-  bool get _isLowStock =>
-      product.stockCount < _lowStockThreshold && _isActive;
+  bool get _isLowStock => product.stockCount < _lowStockThreshold && _isActive;
 
   String get _stockValue =>
       product.stockCount == 0 ? 'Not Set Yet' : '${product.stockCount} units';
@@ -86,7 +85,9 @@ class VendorProductTile extends StatelessWidget {
                                 onTap: onMore,
                                 behavior: HitTestBehavior.opaque,
                                 child: const Padding(
-                                  padding: EdgeInsets.only(left: DesignTokens.s4),
+                                  padding: EdgeInsets.only(
+                                    left: DesignTokens.s4,
+                                  ),
                                   child: Icon(
                                     Icons.more_vert,
                                     size: 20,
@@ -112,7 +113,11 @@ class VendorProductTile extends StatelessWidget {
                             spacing: DesignTokens.s6,
                             runSpacing: DesignTokens.s4,
                             children: [
-                              _SalesBadge(count: product.totalSales),
+                              // totalSales is null when the backend has no
+                              // bulk sales figure for this row (see
+                              // VendorProductDto.toDomain).
+                              if (product.totalSales != null)
+                                _SalesBadge(count: product.totalSales!),
                               if (_isLowStock) const _LowStockBadge(),
                             ],
                           ),
@@ -157,7 +162,8 @@ class VendorProductTile extends StatelessWidget {
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     _AssetStatRow(
-                      assetIcon: 'assets/images/vendordashboard/icon_featured_in.png',
+                      assetIcon:
+                          'assets/images/vendordashboard/icon_featured_in.png',
                       label: 'Featured in',
                       value: product.reelCount != null
                           ? '${product.reelCount} reels'
@@ -302,7 +308,12 @@ class _AssetStatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Image.asset(assetIcon, width: 14, height: 14, color: DesignTokens.textMuted),
+        Image.asset(
+          assetIcon,
+          width: 14,
+          height: 14,
+          color: DesignTokens.textMuted,
+        ),
         const SizedBox(width: DesignTokens.s6),
         Text(
           label,

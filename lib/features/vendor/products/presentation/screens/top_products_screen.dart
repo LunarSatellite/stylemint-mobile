@@ -75,13 +75,21 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('Top Products', style: DesignTokens.oneLinerSemibold),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: DesignTokens.textWhite, size: 22),
+            icon: const Icon(
+              Icons.search,
+              color: DesignTokens.textWhite,
+              size: 22,
+            ),
             onPressed: () {},
           ),
         ],
@@ -98,13 +106,19 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
                   ? Center(
                       child: Text(
                         'No product sales in this window.',
-                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s12,
+                      ),
                       itemCount: products.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: DesignTokens.s12),
                       itemBuilder: (_, i) => _ProductCard(product: products[i]),
                     ),
               loadFailure: (_) => Center(
@@ -113,7 +127,9 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
                   children: [
                     Text(
                       'Failed to load top products.',
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     TextButton(
@@ -137,15 +153,21 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
   Widget _buildFilterChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s8,
+      ),
       child: Row(
         children: [
           for (final period in _Period.values) ...[
-            if (period != _Period.values.first) const SizedBox(width: DesignTokens.s8),
+            if (period != _Period.values.first)
+              const SizedBox(width: DesignTokens.s8),
             _Chip(
               label: period.label,
               isActive: _period == period,
-              onTap: () => period == _Period.custom ? _pickCustomRange() : _applyPeriod(period),
+              onTap: () => period == _Period.custom
+                  ? _pickCustomRange()
+                  : _applyPeriod(period),
             ),
           ],
         ],
@@ -155,7 +177,11 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.onTap, this.isActive = false});
+  const _Chip({
+    required this.label,
+    required this.onTap,
+    this.isActive = false,
+  });
 
   final String label;
   final VoidCallback onTap;
@@ -167,13 +193,28 @@ class _Chip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s6,
+        ),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFF1A3A1A) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isActive ? DesignTokens.primaryGreen : const Color(0xFF3A3A3C)),
+          border: Border.all(
+            color: isActive
+                ? DesignTokens.primaryGreen
+                : const Color(0xFF3A3A3C),
+          ),
         ),
-        child: Text(label, style: TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 12,
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
@@ -214,7 +255,11 @@ class _ProductCard extends StatelessWidget {
                               size: 28,
                             ),
                           )
-                        : const Icon(Icons.shopping_bag_outlined, color: DesignTokens.textMuted, size: 28),
+                        : const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: DesignTokens.textMuted,
+                            size: 28,
+                          ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
@@ -228,19 +273,29 @@ class _ProductCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               product.name,
-                              style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600, color: DesignTokens.textWhite),
+                              style: DesignTokens.smallRegular.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: DesignTokens.textWhite,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.open_in_new, color: DesignTokens.textMuted, size: 16),
+                          const Icon(
+                            Icons.open_in_new,
+                            color: DesignTokens.textMuted,
+                            size: 16,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Units Sold: ${product.unitsSold}',
-                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
@@ -253,16 +308,35 @@ class _ProductCard extends StatelessWidget {
             icon: Icons.account_balance_wallet_outlined,
             label: 'Total Revenue',
             trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xFFB8E6FE), borderRadius: BorderRadius.circular(999)),
-              child: Text(formatMoney(product.totalRevenue), style: DesignTokens.smallRegular.copyWith(color: const Color(0xFF0D1B2A), fontWeight: FontWeight.w600, fontSize: 12)),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s8,
+                vertical: 3,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB8E6FE),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                formatMoney(product.totalRevenue),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: const Color(0xFF0D1B2A),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
             icon: Icons.person_outline,
             label: 'Sales via',
-            trailing: Text('${product.distinctCreatorCount} creators', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontSize: 12)),
+            trailing: Text(
+              '${product.distinctCreatorCount} creators',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
@@ -271,7 +345,11 @@ class _ProductCard extends StatelessWidget {
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow({required this.icon, required this.label, required this.trailing});
+  const _StatRow({
+    required this.icon,
+    required this.label,
+    required this.trailing,
+  });
   final IconData icon;
   final String label;
   final Widget trailing;
@@ -279,7 +357,10 @@ class _StatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s12,
+        vertical: DesignTokens.s8,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -287,7 +368,13 @@ class _StatRow extends StatelessWidget {
             children: [
               Icon(icon, size: 14, color: DesignTokens.textMuted),
               const SizedBox(width: 6),
-              Text(label, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
+              Text(
+                label,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
           trailing,
@@ -308,12 +395,15 @@ class _DashedDivider extends StatelessWidget {
         const dashSpace = 4.0;
         final count = (constraints.maxWidth / (dashWidth + dashSpace)).floor();
         return Row(
-          children: List.generate(count, (_) => Container(
-            width: dashWidth,
-            height: 1,
-            margin: const EdgeInsets.only(right: dashSpace),
-            color: DesignTokens.borderDefault,
-          )),
+          children: List.generate(
+            count,
+            (_) => Container(
+              width: dashWidth,
+              height: 1,
+              margin: const EdgeInsets.only(right: dashSpace),
+              color: DesignTokens.borderDefault,
+            ),
+          ),
         );
       },
     );

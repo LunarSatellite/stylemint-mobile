@@ -20,7 +20,8 @@ abstract class ProductsState with _$ProductsState {
     required bool hasMore,
     required String? activeFilter,
   }) = _PLoadSuccess;
-  const factory ProductsState.loadFailure(NetworkExceptions failure) = _PLoadFailure;
+  const factory ProductsState.loadFailure(NetworkExceptions failure) =
+      _PLoadFailure;
   const factory ProductsState.actionInProgress(List<VendorProduct> products) =
       _PActionInProgress;
   const factory ProductsState.actionFailure(
@@ -31,7 +32,7 @@ abstract class ProductsState with _$ProductsState {
 
 class VendorProductsNotifier extends StateNotifier<ProductsState> {
   VendorProductsNotifier(this._repository)
-      : super(const ProductsState.initial()) {
+    : super(const ProductsState.initial()) {
     unawaited(loadProducts());
   }
 
@@ -82,7 +83,10 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
     );
   }
 
-  Future<void> updateStatus(String productId, VendorProductStatus status) async {
+  Future<void> updateStatus(
+    String productId,
+    VendorProductStatus status,
+  ) async {
     state.maybeWhen(
       loadSuccess: (products, nextCursor, hasMore, filter) async {
         state = ProductsState.actionInProgress(products);
@@ -93,10 +97,12 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
             return ProductsState.actionFailure(products, f);
           },
           (_) {
-            final updated = products.map((p) {
-              if (p.id == productId) return p.copyWith(status: status);
-              return p;
-            }).toList(growable: false);
+            final updated = products
+                .map((p) {
+                  if (p.id == productId) return p.copyWith(status: status);
+                  return p;
+                })
+                .toList(growable: false);
             return ProductsState.loadSuccess(
               updated,
               nextCursor: nextCursor,
@@ -110,32 +116,29 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
     );
   }
 
-  Future<void> deleteProduct(String productId) async {
+  /// Patches a single product in the current list, e.g. after the standalone
+  /// Update Stock screen updates it directly via the repository.
+  void applyProductUpdate(VendorProduct updated) {
     state.maybeWhen(
-      loadSuccess: (products, nextCursor, hasMore, filter) async {
-        state = ProductsState.actionInProgress(products);
-        final either = await _repository.deleteProduct(productId);
-        state = either.fold(
-          (f) {
-            _onActionFailure(products, f);
-            return ProductsState.actionFailure(products, f);
-          },
-          (_) {
-            final updated = products.where((p) => p.id != productId).toList(growable: false);
-            return ProductsState.loadSuccess(
-              updated,
-              nextCursor: nextCursor,
-              hasMore: hasMore,
-              activeFilter: filter,
-            );
-          },
+      loadSuccess: (products, nextCursor, hasMore, filter) {
+        final list = products
+            .map((p) => p.id == updated.id ? updated : p)
+            .toList(growable: false);
+        state = ProductsState.loadSuccess(
+          list,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+          activeFilter: filter,
         );
       },
       orElse: () {},
     );
   }
 
-  Future<void> _onActionFailure(List<VendorProduct> products, NetworkExceptions failure) async {
+  Future<void> _onActionFailure(
+    List<VendorProduct> products,
+    NetworkExceptions failure,
+  ) async {
     state = ProductsState.actionFailure(products, failure);
     await Future<void>.delayed(const Duration(seconds: 2));
     state.maybeWhen(
