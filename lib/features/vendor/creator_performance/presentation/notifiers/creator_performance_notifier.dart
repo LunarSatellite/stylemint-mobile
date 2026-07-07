@@ -15,15 +15,16 @@ abstract class CreatorPerformanceState with _$CreatorPerformanceState {
   const factory CreatorPerformanceState.initial() = _Initial;
   const factory CreatorPerformanceState.loadInProgress() = _LoadInProgress;
   const factory CreatorPerformanceState.loadSuccess(
-      List<CreatorPerformance> creators) = _LoadSuccess;
-  const factory CreatorPerformanceState.loadFailure(
-      NetworkExceptions failure) = _LoadFailure;
+    List<CreatorPerformance> creators,
+  ) = _LoadSuccess;
+  const factory CreatorPerformanceState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class CreatorPerformanceNotifier
     extends StateNotifier<CreatorPerformanceState> {
   CreatorPerformanceNotifier(this._repository)
-      : super(const CreatorPerformanceState.initial()) {
+    : super(const CreatorPerformanceState.initial()) {
     unawaited(load());
   }
 

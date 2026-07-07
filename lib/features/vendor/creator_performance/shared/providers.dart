@@ -12,22 +12,22 @@ export 'package:stylemint_mobile_frontend/features/vendor/creator_performance/pr
 
 final creatorPerformanceRemoteDataSourceProvider =
     Provider<CreatorPerformanceRemoteDataSource>(
-  (ref) => CreatorPerformanceRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  ),
-);
+      (ref) => CreatorPerformanceRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final creatorPerformanceRepositoryProvider =
     Provider<CreatorPerformanceRepository>(
-  (ref) => CreatorPerformanceRepositoryImpl(
-    remoteDataSource: ref.watch(creatorPerformanceRemoteDataSourceProvider),
-    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-  ),
-);
+      (ref) => CreatorPerformanceRepositoryImpl(
+        remoteDataSource: ref.watch(creatorPerformanceRemoteDataSourceProvider),
+        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+      ),
+    );
 
 final creatorPerformanceNotifierProvider =
     StateNotifierProvider<CreatorPerformanceNotifier, CreatorPerformanceState>(
-  (ref) => CreatorPerformanceNotifier(
-    ref.watch(creatorPerformanceRepositoryProvider),
-  ),
-);
+      (ref) => CreatorPerformanceNotifier(
+        ref.watch(creatorPerformanceRepositoryProvider),
+      ),
+    );

@@ -6,4 +6,7 @@ abstract class AnalyticsRepository {
   Future<Either<NetworkExceptions, VendorAnalyticsSummary>> getSummary({
     String? window,
   });
+
+  Future<Either<NetworkExceptions, CreatorAnalyticsDeepDive>>
+  getCreatorAnalytics(String partnershipId);
 }

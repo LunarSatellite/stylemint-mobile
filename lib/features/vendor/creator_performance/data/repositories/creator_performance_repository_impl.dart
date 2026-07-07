@@ -17,7 +17,7 @@ class CreatorPerformanceRepositoryImpl implements CreatorPerformanceRepository {
 
   @override
   Future<Either<NetworkExceptions, List<CreatorPerformance>>>
-      getCreatorPerformance({
+  getCreatorPerformance({
     String? sortBy,
     String? window,
   }) async {

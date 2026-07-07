@@ -1,142 +1,32 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // ─── Args ─────────────────────────────────────────────────────────────────────
 
 class CreatorAnalyticsArgs {
-  const CreatorAnalyticsArgs({
-    required this.creatorName,
-    required this.handle,
-    required this.followersLabel,
-    required this.commission,
-    this.avatarAsset = '',
-  });
+  const CreatorAnalyticsArgs({required this.partnershipId});
 
-  final String creatorName;
-  final String handle;
-  final String followersLabel;
-  final int commission;
-  final String avatarAsset;
+  final String partnershipId;
 }
-
-// ─── Mock product data ────────────────────────────────────────────────────────
-
-class _MockProduct {
-  const _MockProduct({
-    required this.rank,
-    required this.name,
-    required this.price,
-    required this.sales,
-    required this.imagePath,
-  });
-
-  final int rank;
-  final String name;
-  final String price;
-  final int sales;
-  final String imagePath;
-}
-
-const _mockProducts = [
-  _MockProduct(
-    rank: 1,
-    name: 'Air Force 1 Low',
-    price: '',
-    sales: 245,
-    imagePath: 'assets/images/sample_shoe1.png',
-  ),
-  _MockProduct(
-    rank: 2,
-    name: 'Nike Air Max 270',
-    price: '',
-    sales: 233,
-    imagePath: 'assets/images/sample_shoe2.png',
-  ),
-  _MockProduct(
-    rank: 3,
-    name: 'New Balance 550',
-    price: 'Rs 32,500',
-    sales: 208,
-    imagePath: 'assets/images/sample_shoe3.png',
-  ),
-  _MockProduct(
-    rank: 4,
-    name: 'Nike Air Max Classic',
-    price: '',
-    sales: 178,
-    imagePath: 'assets/images/product_nike_air_max.png',
-  ),
-  _MockProduct(
-    rank: 5,
-    name: 'Air Jordan 1',
-    price: 'Rs 16,000',
-    sales: 148,
-    imagePath: 'assets/images/product_nike_air_jordan.png',
-  ),
-  _MockProduct(
-    rank: 6,
-    name: 'Nike Windshield Jacket',
-    price: 'Rs 12,000',
-    sales: 133,
-    imagePath: 'assets/images/product_nike_windsheeter.png',
-  ),
-  _MockProduct(
-    rank: 7,
-    name: 'Nike Zoom Pegasus',
-    price: 'Rs 18,000',
-    sales: 127,
-    imagePath: 'assets/images/sample_shoe1.png',
-  ),
-  _MockProduct(
-    rank: 8,
-    name: 'Nike Sportswear Tee',
-    price: 'Rs 7,000',
-    sales: 109,
-    imagePath: 'assets/images/sample_shoe2.png',
-  ),
-];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-class CreatorAnalyticsScreen extends StatefulWidget {
+class CreatorAnalyticsScreen extends ConsumerWidget {
   const CreatorAnalyticsScreen({super.key, required this.args});
 
   final CreatorAnalyticsArgs args;
 
   @override
-  State<CreatorAnalyticsScreen> createState() =>
-      _CreatorAnalyticsScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      creatorAnalyticsDeepDiveProvider(args.partnershipId),
+    );
 
-class _CreatorAnalyticsScreenState extends State<CreatorAnalyticsScreen>
-    with SingleTickerProviderStateMixin {
-  static const _filters = [
-    'Custom Date',
-    'Last 7 days',
-    'Last 30 days',
-    'Last 6 months',
-  ];
-  String _selectedFilter = 'Last 7 days';
-  late TabController _tabCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -159,150 +49,97 @@ class _CreatorAnalyticsScreenState extends State<CreatorAnalyticsScreen>
             color: DesignTokens.textWhite,
           ),
         ),
-        actions: [
-          _AppBarIconButton(
-            assetPath: 'assets/images/vendordashboard/icon_file_export.png',
-            onTap: () {},
-          ),
-          const SizedBox(width: 8),
-          _AppBarIconButton(
-            assetPath: 'assets/images/vendordashboard/icon_btn_right.png',
-            onTap: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
-      body: NestedScrollView(
-        headerSliverBuilder: (ctx, _) => [
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, 0),
-              child: Text(
-                'Date Range: Dec 1 - 18, 2025',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: _FilterChips(
-              filters: _filters,
-              selected: _selectedFilter,
-              onSelect: (f) => setState(() => _selectedFilter = f),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16,
-                0,
-                DesignTokens.s16,
-                DesignTokens.s16,
-              ),
-              child: _CreatorCard(args: widget.args),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16,
-                0,
-                DesignTokens.s16,
-                DesignTokens.s16,
-              ),
-              child: const _GraphCard(),
-            ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(tabCtrl: _tabCtrl),
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabCtrl,
-          children: const [
-            _ProductsTab(),
-            _ReelsTab(),
-          ],
+      body: state.when(
+        initial: _loader,
+        loadInProgress: _loader,
+        loadFailure: (_) => SmErrorView(
+          message: 'Failed to load creator analytics.',
+          onRetry: () => ref
+              .read(
+                creatorAnalyticsDeepDiveProvider(args.partnershipId).notifier,
+              )
+              .load(),
         ),
+        loadSuccess: (deepDive) => _DeepDiveBody(deepDive: deepDive),
       ),
     );
   }
+
+  Widget _loader() => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
-// ─── Date filter chips ────────────────────────────────────────────────────────
+// ─── Body ─────────────────────────────────────────────────────────────────────
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({
-    required this.filters,
-    required this.selected,
-    required this.onSelect,
-  });
+class _DeepDiveBody extends StatefulWidget {
+  const _DeepDiveBody({required this.deepDive});
 
-  final List<String> filters;
-  final String selected;
-  final ValueChanged<String> onSelect;
+  final CreatorAnalyticsDeepDive deepDive;
+
+  @override
+  State<_DeepDiveBody> createState() => _DeepDiveBodyState();
+}
+
+class _DeepDiveBodyState extends State<_DeepDiveBody>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
-      child: Row(
-        children: filters.map((f) {
-          final isSelected = f == selected;
-          final isCustom = f == 'Custom Date';
-          return Padding(
-            padding: const EdgeInsets.only(right: DesignTokens.s8),
-            child: GestureDetector(
-              onTap: () => onSelect(f),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? DesignTokens.primaryGreen.withOpacity(0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(
-                    color: isSelected
-                        ? DesignTokens.primaryGreen
-                        : DesignTokens.borderDefault,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    if (isCustom) ...[
-                      Icon(
-                        Icons.calendar_month_outlined,
-                        size: 14,
-                        color: isSelected
-                            ? DesignTokens.primaryGreen
-                            : DesignTokens.textMuted,
-                      ),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      f,
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        color: isSelected
-                            ? DesignTokens.primaryGreen
-                            : DesignTokens.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
+    final d = widget.deepDive;
+    return NestedScrollView(
+      headerSliverBuilder: (ctx, _) => [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s12,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
+            child: _CreatorCard(deepDive: d),
+          ),
+        ),
+        if (d.revenueTrend.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                0,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
+              child: _RevenueTrendCard(
+                points: d.revenueTrend,
+                currency: d.currency,
               ),
             ),
-          );
-        }).toList(),
+          ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _TabBarDelegate(tabCtrl: _tabCtrl),
+        ),
+      ],
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          _ProductsTab(products: d.topProducts, currency: d.currency),
+          _ReelsTab(reels: d.topReels, currency: d.currency),
+        ],
       ),
     );
   }
@@ -311,12 +148,13 @@ class _FilterChips extends StatelessWidget {
 // ─── Creator card ─────────────────────────────────────────────────────────────
 
 class _CreatorCard extends StatelessWidget {
-  const _CreatorCard({required this.args});
+  const _CreatorCard({required this.deepDive});
 
-  final CreatorAnalyticsArgs args;
+  final CreatorAnalyticsDeepDive deepDive;
 
   @override
   Widget build(BuildContext context) {
+    final d = deepDive;
     return Container(
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
@@ -324,34 +162,24 @@ class _CreatorCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Header row
           Padding(
             padding: const EdgeInsets.all(DesignTokens.s16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: Image.asset(
-                    args.avatarAsset,
+                ClipOval(
+                  child: Container(
                     width: 56,
                     height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 56,
-                      height: 56,
-                      color: DesignTokens.bgAppFoundation,
-                      alignment: Alignment.center,
-                      child: Text(
-                        args.creatorName.isNotEmpty
-                            ? args.creatorName[0]
-                            : '?',
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          color: DesignTokens.textWhite,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                        ),
+                    color: DesignTokens.bgAppFoundation,
+                    alignment: Alignment.center,
+                    child: Text(
+                      d.creatorLabel[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        color: DesignTokens.textWhite,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
                       ),
                     ),
                   ),
@@ -362,7 +190,7 @@ class _CreatorCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        args.creatorName,
+                        d.creatorLabel,
                         style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 16,
@@ -370,38 +198,22 @@ class _CreatorCard extends StatelessWidget {
                           color: DesignTokens.textWhite,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.person_outline_rounded,
-                            size: 12,
-                            color: DesignTokens.textMuted,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              '${args.followersLabel} Followers · ${args.handle}',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 12,
-                                color: DesignTokens.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: DesignTokens.s8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: DesignTokens.primaryGreen.withOpacity(0.15),
+                          color: DesignTokens.primaryGreen.withValues(
+                            alpha: 0.15,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'Commission: ${args.commission}%',
+                          'Commission: '
+                          '${(d.commissionMinPercent * 100).round()}%'
+                          '–${(d.commissionMaxPercent * 100).round()}%',
                           style: const TextStyle(
                             fontFamily: DesignTokens.fontFamily,
                             fontSize: 12,
@@ -417,79 +229,46 @@ class _CreatorCard extends StatelessWidget {
             ),
           ),
           const Divider(
-              height: 1, thickness: 1, color: DesignTokens.borderDefault),
-          // Stats
+            height: 1,
+            thickness: 1,
+            color: DesignTokens.borderDefault,
+          ),
           Padding(
             padding: const EdgeInsets.all(DesignTokens.s16),
             child: Column(
               children: [
                 _StatRow(
-                  iconAsset: 'assets/images/vendordashboard/Total Sales.png',
+                  icon: Icons.payments_outlined,
                   iconBgColor: const Color(0xFF1A3A1A),
-                  label: 'Total Sales',
-                  value: '3,45,12,589.98',
+                  label: 'Attributed Revenue',
+                  value:
+                      '${d.currency} ${d.attributedRevenue.current.toStringAsFixed(2)}',
+                  deltaPercent: d.attributedRevenue.deltaPercent,
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  iconAsset: 'assets/images/vendordashboard/icon_net_revenue.png',
+                  icon: Icons.shopping_bag_outlined,
                   iconBgColor: const Color(0xFF0D2137),
-                  label: 'Total Revenue',
-                  value: '2,85,92,677.90',
+                  label: 'Units Sold',
+                  value: '${d.unitsSold.current}',
+                  deltaPercent: d.unitsSold.deltaPercent,
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  iconAsset: 'assets/images/vendordashboard/icon_conversion_rate.png',
-                  iconBgColor: Colors.transparent,
-                  iconAssetFill: true,
-                  label: 'Conversion Rate',
-                  value: '567%',
+                  icon: Icons.account_balance_wallet_outlined,
+                  iconBgColor: const Color(0xFF3A1A2A),
+                  label: 'Commission Paid',
+                  value:
+                      '${d.currency} ${d.commissionPaid.current.toStringAsFixed(2)}',
+                  deltaPercent: d.commissionPaid.deltaPercent,
                 ),
                 const SizedBox(height: DesignTokens.s16),
                 _StatRow(
-                  iconAsset: 'assets/images/vendordashboard/GainLoss.png',
-                  iconBgColor: const Color(0xFF1A3A1A),
-                  label: 'Gain/Loss (ROI Calculation)',
-                  value: '+173%',
-                  valueColor: DesignTokens.textWhite,
-                ),
-              ],
-            ),
-          ),
-          const Divider(
-              height: 1, thickness: 1, color: DesignTokens.borderDefault),
-          // Action buttons
-          Padding(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    label: 'Message Creator',
-                    onTap: () => context.push(
-                      RouteNames.vendorMessageCreator,
-                      extra: MessageCreatorArgs(
-                        creatorName: args.creatorName,
-                        handle: args.handle,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.currency_exchange_rounded,
-                    label: 'Adjust Commission',
-                    onTap: () => context.push(
-                      RouteNames.vendorAdjustCommission,
-                      extra: AdjustCommissionArgs(
-                        creatorName: args.creatorName,
-                        handle: args.handle,
-                        followersLabel: args.followersLabel,
-                        currentCommission: args.commission,
-                      ),
-                    ),
-                  ),
+                  icon: Icons.movie_outlined,
+                  iconBgColor: const Color(0xFF1A2A4A),
+                  label: 'Reels With Sales',
+                  value: '${d.distinctReelCount.current}',
+                  deltaPercent: d.distinctReelCount.deltaPercent,
                 ),
               ],
             ),
@@ -500,28 +279,20 @@ class _CreatorCard extends StatelessWidget {
   }
 }
 
-// ─── Stat row ─────────────────────────────────────────────────────────────────
-
 class _StatRow extends StatelessWidget {
   const _StatRow({
-    this.iconAsset,
-    this.icon,
-    this.iconColor = Colors.white,
+    required this.icon,
     required this.iconBgColor,
     required this.label,
     required this.value,
-    this.valueColor = DesignTokens.textWhite,
-    this.iconAssetFill = false,
+    this.deltaPercent,
   });
 
-  final String? iconAsset;
-  final IconData? icon;
-  final Color iconColor;
+  final IconData icon;
   final Color iconBgColor;
   final String label;
   final String value;
-  final Color valueColor;
-  final bool iconAssetFill;
+  final double? deltaPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -532,21 +303,9 @@ class _StatRow extends StatelessWidget {
           child: Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: iconAsset != null
-                ? iconAssetFill
-                    ? Image.asset(iconAsset!, width: 44, height: 44,
-                        fit: BoxFit.cover)
-                    : Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Image.asset(iconAsset!, fit: BoxFit.contain),
-                      )
-                : Center(
-                    child: Icon(icon, color: iconColor, size: 22),
-                  ),
+            color: iconBgColor,
+            alignment: Alignment.center,
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
@@ -565,68 +324,40 @@ class _StatRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: valueColor,
+                  color: DesignTokens.textWhite,
                 ),
               ),
             ],
           ),
         ),
+        if (deltaPercent != null)
+          Text(
+            '${deltaPercent! >= 0 ? '+' : ''}${deltaPercent!.round()}%',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: deltaPercent! >= 0
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.colorError,
+            ),
+          ),
       ],
     );
   }
 }
 
-// ─── Action button ────────────────────────────────────────────────────────────
+// ─── Revenue trend ────────────────────────────────────────────────────────────
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+class _RevenueTrendCard extends StatelessWidget {
+  const _RevenueTrendCard({required this.points, required this.currency});
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppFoundation,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: DesignTokens.textLight, size: 22),
-            const SizedBox(height: DesignTokens.s6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                color: DesignTokens.textLight,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Performance graph card ───────────────────────────────────────────────────
-
-class _GraphCard extends StatelessWidget {
-  const _GraphCard();
+  final List<DeepDiveRevenuePoint> points;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
@@ -640,7 +371,7 @@ class _GraphCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Performance Trend Graph',
+            'Revenue Trend',
             style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 16,
@@ -648,30 +379,12 @@ class _GraphCard extends StatelessWidget {
               color: DesignTokens.textWhite,
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Performance Trend Graph of Creator according to sales done',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 12,
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          SizedBox(
-            height: 210,
-            child: CustomPaint(
-              painter: _ChartPainter(),
-              child: const SizedBox.expand(),
-            ),
-          ),
           const SizedBox(height: DesignTokens.s12),
-          const Text(
-            'Date Range: Dec 1 - 18, 2025',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 11,
-              color: DesignTokens.textMuted,
+          SizedBox(
+            height: 160,
+            child: CustomPaint(
+              painter: _TrendPainter(points: points),
+              child: const SizedBox.expand(),
             ),
           ),
         ],
@@ -680,108 +393,46 @@ class _GraphCard extends StatelessWidget {
   }
 }
 
-// ─── Chart painter ────────────────────────────────────────────────────────────
+class _TrendPainter extends CustomPainter {
+  _TrendPainter({required this.points});
 
-class _ChartPainter extends CustomPainter {
-  static const _yLabels = ['25k', '20k', '15k', '10k', '5k', '0'];
-  static const _xLabels = ['Dec 1', 'Dec 7', 'Dec 14', 'Dec 21', 'Dec 28', 'Today'];
-  static const _data = [9000.0, 11000.0, 5000.0, 22000.0, 9000.0, 18000.0];
-  static const _maxY = 25000.0;
+  final List<DeepDiveRevenuePoint> points;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const yAxisWidth = 38.0;
-    const xAxisHeight = 22.0;
-    const topPad = 8.0;
+    if (points.isEmpty) return;
+    final maxY = points
+        .map((p) => p.amount)
+        .fold<double>(
+          0,
+          (a, b) => b > a ? b : a,
+        );
+    if (maxY <= 0) return;
 
-    final chartLeft = yAxisWidth;
-    final chartTop = topPad;
-    final chartRight = size.width;
-    final chartBottom = size.height - xAxisHeight;
-    final chartWidth = chartRight - chartLeft;
-    final chartHeight = chartBottom - chartTop;
-
-    final mutedColor = const Color(0xFF9F9FA9).withOpacity(0.5);
-    final labelStyle = TextStyle(
-      color: mutedColor,
-      fontSize: 10,
-      fontFamily: 'Poppins',
-    );
-
-    // Horizontal grid lines + Y-axis labels
-    final gridPaint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
-      ..strokeWidth = 1;
-
-    for (int i = 0; i <= 5; i++) {
-      final yFrac = i / 5.0;
-      final y = chartTop + chartHeight * yFrac;
-      canvas.drawLine(
-          Offset(chartLeft, y), Offset(chartRight, y), gridPaint);
-      final tp = TextPainter(
-        text: TextSpan(text: _yLabels[i], style: labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(0, y - tp.height / 2));
-    }
-
-    // Compute data points
-    final pts = List.generate(_data.length, (i) {
-      final x = chartLeft + chartWidth * i / (_data.length - 1);
-      final y = chartTop + chartHeight * (1.0 - _data[i] / _maxY);
+    final pts = List.generate(points.length, (i) {
+      final x = points.length == 1
+          ? size.width / 2
+          : size.width * i / (points.length - 1);
+      final y = size.height * (1 - points[i].amount / maxY);
       return Offset(x, y);
     });
 
-    // Area fill with gradient
-    final areaPath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) {
-      areaPath.lineTo(pts[i].dx, pts[i].dy);
-    }
-    areaPath.lineTo(pts.last.dx, chartBottom);
-    areaPath.lineTo(chartLeft, chartBottom);
-    areaPath.close();
-
-    canvas.drawPath(
-      areaPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            DesignTokens.primaryGreen.withOpacity(0.45),
-            DesignTokens.primaryGreen.withOpacity(0.0),
-          ],
-        ).createShader(
-          Rect.fromLTWH(chartLeft, chartTop, chartWidth, chartHeight),
-        ),
-    );
-
-    // Line stroke
-    final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) {
-      linePath.lineTo(pts[i].dx, pts[i].dy);
+    final path = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (final p in pts.skip(1)) {
+      path.lineTo(p.dx, p.dy);
     }
     canvas.drawPath(
-      linePath,
+      path,
       Paint()
         ..color = DesignTokens.primaryGreen
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke,
     );
-
-    // X-axis labels
-    for (int i = 0; i < _xLabels.length; i++) {
-      final x = chartLeft + chartWidth * i / (_xLabels.length - 1);
-      final tp = TextPainter(
-        text: TextSpan(text: _xLabels[i], style: labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, chartBottom + 4));
-    }
   }
 
   @override
-  bool shouldRepaint(covariant _ChartPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _TrendPainter oldDelegate) =>
+      oldDelegate.points != points;
 }
 
 // ─── Tab bar delegate (pinned) ────────────────────────────────────────────────
@@ -798,26 +449,22 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: DesignTokens.bgAppFoundation,
       child: TabBar(
         controller: tabCtrl,
-        tabs: const [Tab(text: 'Products'), Tab(text: 'Reels')],
+        tabs: const [
+          Tab(text: 'Products'),
+          Tab(text: 'Reels'),
+        ],
         indicatorColor: DesignTokens.primaryGreen,
         indicatorWeight: 2,
         labelColor: DesignTokens.primaryGreen,
         unselectedLabelColor: DesignTokens.textMuted,
-        labelStyle: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
         dividerColor: DesignTokens.borderDefault,
       ),
     );
@@ -831,39 +478,58 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 // ─── Products tab ─────────────────────────────────────────────────────────────
 
 class _ProductsTab extends StatelessWidget {
-  const _ProductsTab();
+  const _ProductsTab({required this.products, required this.currency});
+
+  final List<DeepDiveTopProduct> products;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
+    if (products.isEmpty) {
+      return Center(
+        child: Text(
+          'No product sales in this window yet.',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+      );
+    }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s16,
         vertical: DesignTokens.s16,
       ),
-      itemCount: _mockProducts.length,
+      itemCount: products.length,
       separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-      itemBuilder: (_, i) => _ProductRow(product: _mockProducts[i]),
+      itemBuilder: (_, i) => _ProductRow(
+        rank: i + 1,
+        product: products[i],
+        currency: currency,
+      ),
     );
   }
 }
 
 class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.product});
+  const _ProductRow({
+    required this.rank,
+    required this.product,
+    required this.currency,
+  });
 
-  final _MockProduct product;
+  final int rank;
+  final DeepDiveTopProduct product;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
-    final hasPriceTag =
-        product.price.isNotEmpty;
-
     return Row(
       children: [
-        // Rank
         SizedBox(
           width: 22,
           child: Text(
-            '${product.rank}',
+            '$rank',
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 14,
@@ -873,26 +539,19 @@ class _ProductRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
-        // Thumbnail
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            product.imagePath,
-            width: 64,
-            height: 64,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 64,
-              height: 64,
-              color: DesignTokens.bgAppBodyLight,
-              alignment: Alignment.center,
-              child: const Icon(Icons.image_outlined,
-                  color: DesignTokens.textMuted, size: 24),
-            ),
-          ),
+          child: product.thumbnailUrl != null
+              ? Image.network(
+                  product.thumbnailUrl!,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _thumbFallback,
+                )
+              : _thumbFallback,
         ),
         const SizedBox(width: DesignTokens.s12),
-        // Info
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -910,9 +569,8 @@ class _ProductRow extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                hasPriceTag
-                    ? '${product.price} · ${product.sales} sales'
-                    : '· ${product.sales} sales',
+                '$currency ${product.totalRevenue.toStringAsFixed(2)} · '
+                '${product.unitsSold} sales',
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 12,
@@ -925,59 +583,94 @@ class _ProductRow extends StatelessWidget {
       ],
     );
   }
-}
 
-// ─── AppBar icon button ───────────────────────────────────────────────────────
-
-class _AppBarIconButton extends StatelessWidget {
-  const _AppBarIconButton({required this.assetPath, required this.onTap});
-
-  final String assetPath;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBodyLight,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.contain,
-          color: DesignTokens.textWhite,
-          colorBlendMode: BlendMode.srcIn,
-          errorBuilder: (_, __, ___) => const Icon(
-            Icons.more_horiz,
-            color: DesignTokens.textWhite,
-            size: 18,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget get _thumbFallback => Container(
+    width: 64,
+    height: 64,
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(
+      Icons.image_outlined,
+      color: DesignTokens.textMuted,
+      size: 24,
+    ),
+  );
 }
 
 // ─── Reels tab ────────────────────────────────────────────────────────────────
 
 class _ReelsTab extends StatelessWidget {
-  const _ReelsTab();
+  const _ReelsTab({required this.reels, required this.currency});
+
+  final List<DeepDiveTopReel> reels;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'No reels data available',
-        style: TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 14,
-          color: DesignTokens.textMuted,
+    if (reels.isEmpty) {
+      return Center(
+        child: Text(
+          'No reels data available',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s16,
+      ),
+      itemCount: reels.length,
+      separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
+      itemBuilder: (_, i) => _ReelRow(reel: reels[i], currency: currency),
+    );
+  }
+}
+
+class _ReelRow extends StatelessWidget {
+  const _ReelRow({required this.reel, required this.currency});
+
+  final DeepDiveTopReel reel;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: DesignTokens.cardDecoration(),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reel.caption?.isNotEmpty ?? false
+                      ? reel.caption!
+                      : reel.sourcePlatform,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s4),
+                Text(
+                  '${reel.viewCount} views · ${reel.unitsSold} sales · '
+                  '$currency ${reel.attributedRevenue.toStringAsFixed(2)}',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -25,3 +25,16 @@ final analyticsNotifierProvider =
     StateNotifierProvider<AnalyticsNotifier, AnalyticsState>(
       (ref) => AnalyticsNotifier(ref.watch(analyticsRepositoryProvider)),
     );
+
+/// Keyed by partnershipId.
+final creatorAnalyticsDeepDiveProvider = StateNotifierProvider.family
+    .autoDispose<
+      CreatorAnalyticsDeepDiveNotifier,
+      CreatorAnalyticsDeepDiveState,
+      String
+    >(
+      (ref, partnershipId) => CreatorAnalyticsDeepDiveNotifier(
+        ref.watch(analyticsRepositoryProvider),
+        partnershipId,
+      ),
+    );

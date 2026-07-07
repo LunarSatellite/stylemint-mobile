@@ -110,3 +110,105 @@ class VendorAnalyticsSummary {
   final List<TopCreatorSummary> topCreators;
   final List<TrafficSource> trafficSources;
 }
+
+/// A KPI tile with a current value plus period-over-period comparison —
+/// mirrors the backend's generic `KpiTileDto<T>`.
+class KpiTile<T> {
+  const KpiTile({required this.current, this.previous, this.deltaPercent});
+
+  final T current;
+  final T? previous;
+  final double? deltaPercent;
+}
+
+class DeepDiveRevenuePoint {
+  const DeepDiveRevenuePoint({required this.date, required this.amount});
+
+  final DateTime date;
+  final double amount;
+}
+
+class DeepDiveTopProduct {
+  const DeepDiveTopProduct({
+    required this.productId,
+    required this.name,
+    required this.unitsSold,
+    required this.totalRevenue,
+    required this.distinctCreatorCount,
+    this.thumbnailUrl,
+  });
+
+  final String productId;
+  final String name;
+  final String? thumbnailUrl;
+  final int unitsSold;
+  final double totalRevenue;
+  final int distinctCreatorCount;
+}
+
+class DeepDiveTopReel {
+  const DeepDiveTopReel({
+    required this.reelId,
+    required this.sourcePlatform,
+    required this.externalUrl,
+    required this.viewCount,
+    required this.unitsSold,
+    required this.attributedRevenue,
+    this.caption,
+  });
+
+  final String reelId;
+  final String sourcePlatform;
+  final String externalUrl;
+  final String? caption;
+  final int viewCount;
+  final int unitsSold;
+  final double attributedRevenue;
+}
+
+/// Mirrors the response of
+/// `GET /v1/vendor/partnerships/{partnershipId}/creator-analytics`.
+class CreatorAnalyticsDeepDive {
+  const CreatorAnalyticsDeepDive({
+    required this.partnershipId,
+    required this.creatorAccountId,
+    required this.commissionMinPercent,
+    required this.commissionMaxPercent,
+    required this.attributedRevenue,
+    required this.unitsSold,
+    required this.commissionPaid,
+    required this.distinctReelCount,
+    required this.revenueTrend,
+    required this.topProducts,
+    required this.topReels,
+    required this.currency,
+    this.displayName,
+    this.avatarUrl,
+  });
+
+  final String partnershipId;
+  final String creatorAccountId;
+  final String? displayName;
+  final String? avatarUrl;
+
+  /// Fractions (0..1), not whole percents.
+  final double commissionMinPercent;
+  final double commissionMaxPercent;
+
+  final KpiTile<double> attributedRevenue;
+  final KpiTile<int> unitsSold;
+  final KpiTile<double> commissionPaid;
+  final KpiTile<int> distinctReelCount;
+  final List<DeepDiveRevenuePoint> revenueTrend;
+  final List<DeepDiveTopProduct> topProducts;
+  final List<DeepDiveTopReel> topReels;
+  final String currency;
+
+  String get creatorLabel {
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return creatorAccountId.length >= 8
+        ? 'Creator ••${creatorAccountId.substring(creatorAccountId.length - 4)}'
+        : 'Creator';
+  }
+}

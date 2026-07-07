@@ -34,4 +34,23 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       return left(const NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, CreatorAnalyticsDeepDive>>
+  getCreatorAnalytics(String partnershipId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.getCreatorAnalytics(partnershipId);
+        return right(dto.toDomain());
+      } on DioException catch (e) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } on NetworkExceptions catch (e) {
+        return left(e);
+      } on Object catch (_) {
+        return left(const NetworkExceptions.unexpectedError());
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
 }
