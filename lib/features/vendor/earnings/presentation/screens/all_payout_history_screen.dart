@@ -1,96 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/statement_details_screen.dart';
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/notifiers/vendor_earnings_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class AllPayoutHistoryScreen extends StatelessWidget {
+class AllPayoutHistoryScreen extends ConsumerWidget {
   const AllPayoutHistoryScreen({super.key});
 
-  static const _groups = [
-    _PayoutGroup(
-      date: 'Jan 2024',
-      items: [
-        _HistoryEntry(
-          id: '1',
-          label: 'Rs 3,400 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 3,400.00',
-          date: 'Jan 23, 2024',
-          status: _Status.completed,
-        ),
-        _HistoryEntry(
-          id: '2',
-          label: 'Rs 12,000 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 12,000.00',
-          date: 'Jan 10, 2024',
-          status: _Status.completed,
-        ),
-      ],
-    ),
-    _PayoutGroup(
-      date: 'Dec 2024',
-      items: [
-        _HistoryEntry(
-          id: '3',
-          label: 'Rs 7,000 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 7,000.00',
-          date: 'Dec 20, 2024',
-          status: _Status.completed,
-        ),
-        _HistoryEntry(
-          id: '4',
-          label: 'Rs 18,500 Payout to eSewa',
-          bankInfo: 'eSewa Account ******4512',
-          amount: 'Rs 18,500.00',
-          date: 'Dec 15, 2024',
-          status: _Status.completed,
-        ),
-        _HistoryEntry(
-          id: '5',
-          label: 'Rs 5,200 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 5,200.00',
-          date: 'Dec 3, 2024',
-          status: _Status.pending,
-        ),
-      ],
-    ),
-    _PayoutGroup(
-      date: 'Nov 2024',
-      items: [
-        _HistoryEntry(
-          id: '6',
-          label: 'Rs 9,800 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 9,800.00',
-          date: 'Nov 28, 2024',
-          status: _Status.completed,
-        ),
-        _HistoryEntry(
-          id: '7',
-          label: 'Rs 4,600 Payout to eSewa',
-          bankInfo: 'eSewa Account ******4512',
-          amount: 'Rs 4,600.00',
-          date: 'Nov 14, 2024',
-          status: _Status.completed,
-        ),
-        _HistoryEntry(
-          id: '8',
-          label: 'Rs 22,000 Payout to Bank A/C',
-          bankInfo: 'Bank of Kathmandu A/C ******8799',
-          amount: 'Rs 22,000.00',
-          date: 'Nov 1, 2024',
-          status: _Status.failed,
-        ),
-      ],
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(payoutHistoryNotifierProvider);
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -105,79 +33,101 @@ class AllPayoutHistoryScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
         title: Text('All Payout History', style: DesignTokens.oneLinerSemibold),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.download_outlined,
-              color: DesignTokens.textWhite,
-              size: 22,
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s12,
+      body: state.when(
+        initial: _loader,
+        loadInProgress: _loader,
+        loadFailure: (failure) => SmErrorView(
+          message: 'Failed to load payout history.',
+          onRetry: () =>
+              ref.read(payoutHistoryNotifierProvider.notifier).load(),
         ),
-        children: _groups
-            .expand(
-              (group) => [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-                  child: Text(
-                    group.date,
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: const Color(0xFFD4D4D8),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                Container(
-                  decoration: DesignTokens.cardDecoration(),
-                  child: Column(
-                    children: group.items.asMap().entries.map((e) {
-                      final item = e.value;
-                      return Column(
-                        children: [
-                          if (e.key > 0)
-                            const Divider(
-                              color: DesignTokens.borderDefault,
-                              height: 1,
-                            ),
-                          _HistoryTile(
-                            entry: item,
-                            onTap: () => context.push(
-                              RouteNames.vendorStatementDetails,
-                              extra: VendorPayoutItem(
-                                id: item.id,
-                                title: item.label,
-                                subtitle: item.bankInfo,
-                              ),
-                            ),
+        loadSuccess: (payouts, hasMore) {
+          if (payouts.isEmpty) {
+            return const SmEmptyState(
+              message: 'No payouts yet.',
+              icon: Icons.account_balance_wallet_outlined,
+            );
+          }
+          final groups = _groupByMonth(payouts);
+          return RefreshIndicator(
+            color: DesignTokens.primaryGreen,
+            onRefresh: () =>
+                ref.read(payoutHistoryNotifierProvider.notifier).load(),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s12,
+              ),
+              children: groups.entries
+                  .expand(
+                    (group) => [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                        child: Text(
+                          group.key,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: const Color(0xFFD4D4D8),
+                            fontSize: 12,
                           ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s12),
-              ],
-            )
-            .toList(),
+                        ),
+                      ),
+                      Container(
+                        decoration: DesignTokens.cardDecoration(),
+                        child: Column(
+                          children: group.value.asMap().entries.map((e) {
+                            return Column(
+                              children: [
+                                if (e.key > 0)
+                                  const Divider(
+                                    color: DesignTokens.borderDefault,
+                                    height: 1,
+                                  ),
+                                _PayoutTile(
+                                  payout: e.value,
+                                  onTap: () => context.push(
+                                    RouteNames.vendorStatementDetails,
+                                    extra: e.value.id,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: DesignTokens.s12),
+                    ],
+                  )
+                  .toList(),
+            ),
+          );
+        },
       ),
     );
   }
+
+  Widget _loader() => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
+
+  Map<String, List<VendorPayout>> _groupByMonth(List<VendorPayout> payouts) {
+    final byMonth = <String, List<VendorPayout>>{};
+    for (final p in payouts) {
+      final label = DateFormat('MMM yyyy').format(p.requestedAt.toLocal());
+      (byMonth[label] ??= []).add(p);
+    }
+    return byMonth;
+  }
 }
 
-class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({required this.entry, required this.onTap});
-  final _HistoryEntry entry;
+class _PayoutTile extends StatelessWidget {
+  const _PayoutTile({required this.payout, required this.onTap});
+  final VendorPayout payout;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final kind = PayoutDestinationKind.fromValue(payout.destinationKind);
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -206,7 +156,7 @@ class _HistoryTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.label,
+                    'Payout to ${kind.label}',
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textWhite,
                       fontWeight: FontWeight.w600,
@@ -217,7 +167,7 @@ class _HistoryTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    entry.bankInfo,
+                    payout.destinationRef,
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textMuted,
                       fontSize: 11,
@@ -230,8 +180,8 @@ class _HistoryTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  entry.amount,
+                MoneyText(
+                  payout.netAmount,
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.primaryGreen,
                     fontWeight: FontWeight.w700,
@@ -245,16 +195,16 @@ class _HistoryTile extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: entry.status.bgColor,
+                    color: payout.state.bgColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    entry.status.label,
+                    payout.state.label,
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: entry.status.textColor,
+                      color: payout.state.textColor,
                     ),
                   ),
                 ),
@@ -267,64 +217,28 @@ class _HistoryTile extends StatelessWidget {
   }
 }
 
-enum _Status {
-  completed,
-  pending,
-  failed;
+extension VendorPayoutStateX on VendorPayoutState {
+  String get label => switch (this) {
+    VendorPayoutState.requested => 'Requested',
+    VendorPayoutState.processing => 'Processing',
+    VendorPayoutState.paid => 'Completed',
+    VendorPayoutState.failed => 'Failed',
+    VendorPayoutState.held => 'Held',
+  };
 
-  String get label {
-    switch (this) {
-      case completed:
-        return 'Completed';
-      case pending:
-        return 'Pending';
-      case failed:
-        return 'Failed';
-    }
-  }
+  Color get textColor => switch (this) {
+    VendorPayoutState.paid => DesignTokens.primaryGreen,
+    VendorPayoutState.failed => DesignTokens.colorError,
+    VendorPayoutState.requested ||
+    VendorPayoutState.processing ||
+    VendorPayoutState.held => const Color(0xFFFFB800),
+  };
 
-  Color get textColor {
-    switch (this) {
-      case completed:
-        return DesignTokens.primaryGreen;
-      case pending:
-        return const Color(0xFFFFB800);
-      case failed:
-        return DesignTokens.colorError;
-    }
-  }
-
-  Color get bgColor {
-    switch (this) {
-      case completed:
-        return const Color(0xFF0D2A0D);
-      case pending:
-        return const Color(0xFF2A2000);
-      case failed:
-        return const Color(0xFF2A0A0A);
-    }
-  }
-}
-
-class _HistoryEntry {
-  const _HistoryEntry({
-    required this.id,
-    required this.label,
-    required this.bankInfo,
-    required this.amount,
-    required this.date,
-    required this.status,
-  });
-  final String id;
-  final String label;
-  final String bankInfo;
-  final String amount;
-  final String date;
-  final _Status status;
-}
-
-class _PayoutGroup {
-  const _PayoutGroup({required this.date, required this.items});
-  final String date;
-  final List<_HistoryEntry> items;
+  Color get bgColor => switch (this) {
+    VendorPayoutState.paid => const Color(0xFF0D2A0D),
+    VendorPayoutState.failed => const Color(0xFF2A0A0A),
+    VendorPayoutState.requested ||
+    VendorPayoutState.processing ||
+    VendorPayoutState.held => const Color(0xFF2A2000),
+  };
 }

@@ -49,6 +49,34 @@ abstract class BalanceState with _$BalanceState {
 }
 
 @freezed
+abstract class PayoutHistoryState with _$PayoutHistoryState {
+  const PayoutHistoryState._();
+
+  const factory PayoutHistoryState.initial() = _PayoutHistoryInitial;
+  const factory PayoutHistoryState.loadInProgress() =
+      _PayoutHistoryLoadInProgress;
+  const factory PayoutHistoryState.loadSuccess({
+    required List<VendorPayout> payouts,
+    required bool hasMore,
+  }) = _PayoutHistoryLoadSuccess;
+  const factory PayoutHistoryState.loadFailure(NetworkExceptions failure) =
+      _PayoutHistoryLoadFailure;
+}
+
+@freezed
+abstract class PayoutInvoiceState with _$PayoutInvoiceState {
+  const PayoutInvoiceState._();
+
+  const factory PayoutInvoiceState.initial() = _PayoutInvoiceInitial;
+  const factory PayoutInvoiceState.loadInProgress() =
+      _PayoutInvoiceLoadInProgress;
+  const factory PayoutInvoiceState.loadSuccess(VendorPayoutInvoice invoice) =
+      _PayoutInvoiceLoadSuccess;
+  const factory PayoutInvoiceState.loadFailure(NetworkExceptions failure) =
+      _PayoutInvoiceLoadFailure;
+}
+
+@freezed
 abstract class PayoutState with _$PayoutState {
   const PayoutState._();
 
@@ -109,6 +137,46 @@ class BalanceNotifier extends StateNotifier<BalanceState> {
     state = const BalanceState.loadInProgress();
     final result = await _repository.getBalance();
     state = result.fold(BalanceState.loadFailure, BalanceState.loadSuccess);
+  }
+}
+
+class PayoutHistoryNotifier extends StateNotifier<PayoutHistoryState> {
+  PayoutHistoryNotifier(this._repository)
+    : super(const PayoutHistoryState.initial()) {
+    unawaited(load());
+  }
+
+  final VendorEarningsRepository _repository;
+
+  Future<void> load({String? cursor}) async {
+    state = const PayoutHistoryState.loadInProgress();
+    final result = await _repository.getPayouts(cursor: cursor);
+    state = result.fold(
+      PayoutHistoryState.loadFailure,
+      (paged) => PayoutHistoryState.loadSuccess(
+        payouts: paged.items,
+        hasMore: paged.hasMore,
+      ),
+    );
+  }
+}
+
+class PayoutInvoiceNotifier extends StateNotifier<PayoutInvoiceState> {
+  PayoutInvoiceNotifier(this._repository, this._payoutId)
+    : super(const PayoutInvoiceState.initial()) {
+    unawaited(load());
+  }
+
+  final VendorEarningsRepository _repository;
+  final String _payoutId;
+
+  Future<void> load() async {
+    state = const PayoutInvoiceState.loadInProgress();
+    final result = await _repository.getPayoutInvoice(_payoutId);
+    state = result.fold(
+      PayoutInvoiceState.loadFailure,
+      PayoutInvoiceState.loadSuccess,
+    );
   }
 }
 

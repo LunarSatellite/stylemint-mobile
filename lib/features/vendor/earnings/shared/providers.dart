@@ -43,6 +43,21 @@ final payoutNotifierProvider =
       ),
     );
 
+final payoutHistoryNotifierProvider =
+    StateNotifierProvider<PayoutHistoryNotifier, PayoutHistoryState>(
+      (ref) => PayoutHistoryNotifier(
+        ref.watch(vendorEarningsRepositoryProvider),
+      ),
+    );
+
+final payoutInvoiceNotifierProvider = StateNotifierProvider.family
+    .autoDispose<PayoutInvoiceNotifier, PayoutInvoiceState, String>(
+      (ref, payoutId) => PayoutInvoiceNotifier(
+        ref.watch(vendorEarningsRepositoryProvider),
+        payoutId,
+      ),
+    );
+
 final vendorBalanceNotifierProvider =
     StateNotifierProvider<BalanceNotifier, BalanceState>(
       (ref) => BalanceNotifier(

@@ -44,6 +44,29 @@ class VendorEarningsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// `GET /v1/payouts?pageSize=&cursor=` — not role-scoped server-side, so
+  /// callers filter the returned `payeeKind` client-side (see
+  /// [VendorPayoutDto.payeeKind]).
+  Future<Map<String, dynamic>> getPayouts({
+    int pageSize = 20,
+    String? cursor,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/payouts',
+      queryParameters: {
+        'pageSize': pageSize,
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// `GET /v1/payouts/{id}/invoice`.
+  Future<VendorPayoutInvoiceDto> getPayoutInvoice(String payoutId) async {
+    final response = await apiClient.get('/v1/payouts/$payoutId/invoice');
+    return VendorPayoutInvoiceDto.fromJson(response as Map<String, dynamic>);
+  }
+
   /// `POST /v1/payouts/on-demand`. `destinationId` is a
   /// `/v1/payout-destinations` id (see `PayoutDestinationsRemoteDataSource`
   /// in `features/payouts` — payout method CRUD is shared with creators,

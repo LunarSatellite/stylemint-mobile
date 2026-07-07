@@ -11,6 +11,15 @@ abstract interface class VendorEarningsRepository {
   Future<Either<NetworkExceptions, PagedResult<VendorEarningsLedger>>>
   getLedger({int pageSize = 20, String? cursor});
 
+  Future<Either<NetworkExceptions, PagedResult<VendorPayout>>> getPayouts({
+    int pageSize = 20,
+    String? cursor,
+  });
+
+  Future<Either<NetworkExceptions, VendorPayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  );
+
   Future<Either<NetworkExceptions, Unit>> requestPayout({
     required double amount,
     required int destinationKind,

@@ -112,7 +112,8 @@ abstract class RouteNames {
   static const vendorOrdersReadyToShip = '/vendor/orders/ready-to-ship';
   static const vendorOrdersWaitingTracking = '/vendor/orders/waiting-tracking';
   static const vendorPendingInquiries = '/vendor/orders/pending-inquiries';
-  static const vendorCreatorPartnershipRequests = '/vendor/partnerships/requests';
+  static const vendorCreatorPartnershipRequests =
+      '/vendor/partnerships/requests';
   static const vendorProducts = '/vendor/products';
   static const vendorUpdateStock = '/vendor/products/update-stock';
   static const vendorProductAnalytics = '/vendor/products/analytics';
@@ -120,7 +121,8 @@ abstract class RouteNames {
   static const vendorRecentActivity = '/vendor/activity';
   static const vendorPartnerships = '/vendor/partnerships';
   static const vendorSendPartnershipRequest = '/vendor/partnerships/send';
-  static const vendorPartnershipsInvite = '/vendor/partnerships/:campaignId/invite';
+  static const vendorPartnershipsInvite =
+      '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';

@@ -115,3 +115,116 @@ abstract class VendorEarningsLedgerDto with _$VendorEarningsLedgerDto {
     occurredAt: occurredUtc,
   );
 }
+
+VendorPayoutState _payoutStateFromWire(int state) => switch (state) {
+  2 => VendorPayoutState.processing,
+  3 => VendorPayoutState.paid,
+  4 => VendorPayoutState.failed,
+  5 => VendorPayoutState.held,
+  _ => VendorPayoutState.requested,
+};
+
+/// Mirrors an item of `GET /v1/payouts` — `payeeKind` (1=Creator, 2=Vendor)
+/// distinguishes rows on the shared payee/payout engine; callers filter to
+/// vendor rows since the endpoint isn't role-scoped server-side.
+@freezed
+abstract class VendorPayoutDto with _$VendorPayoutDto {
+  const factory VendorPayoutDto({
+    required String id,
+    @Default(1) int payeeKind,
+    @Default(1) int destination,
+    @Default('') String destinationRef,
+    @Default(0) double requestedAmountValue,
+    @Default('NPR') String requestedAmountCurrency,
+    @Default(0) double feeAmountValue,
+    @Default('NPR') String feeAmountCurrency,
+    @Default(0) double netAmountValue,
+    @Default('NPR') String netAmountCurrency,
+    required DateTime requestedUtc,
+    @Default(1) int state,
+    DateTime? paidUtc,
+    String? failureMessage,
+  }) = _VendorPayoutDto;
+
+  const VendorPayoutDto._();
+
+  factory VendorPayoutDto.fromJson(Map<String, dynamic> json) =>
+      _$VendorPayoutDtoFromJson(json);
+
+  VendorPayout toDomain() => VendorPayout(
+    id: id,
+    destinationKind: destination,
+    destinationRef: destinationRef,
+    requestedAmount: Money(
+      amount: requestedAmountValue,
+      currency: requestedAmountCurrency,
+    ),
+    feeAmount: Money(amount: feeAmountValue, currency: feeAmountCurrency),
+    netAmount: Money(amount: netAmountValue, currency: netAmountCurrency),
+    requestedAt: requestedUtc,
+    state: _payoutStateFromWire(state),
+    paidAt: paidUtc,
+    failureMessage: failureMessage,
+  );
+}
+
+@freezed
+abstract class VendorPayoutInvoiceLineDto with _$VendorPayoutInvoiceLineDto {
+  const factory VendorPayoutInvoiceLineDto({
+    @Default('') String description,
+    @Default(0) double amount,
+    @Default('NPR') String currency,
+    required DateTime occurredUtc,
+  }) = _VendorPayoutInvoiceLineDto;
+
+  const VendorPayoutInvoiceLineDto._();
+
+  factory VendorPayoutInvoiceLineDto.fromJson(Map<String, dynamic> json) =>
+      _$VendorPayoutInvoiceLineDtoFromJson(json);
+
+  VendorPayoutInvoiceLine toDomain() => VendorPayoutInvoiceLine(
+    description: description,
+    amount: Money(amount: amount, currency: currency),
+    occurredAt: occurredUtc,
+  );
+}
+
+/// Mirrors `GET /v1/payouts/{id}/invoice`.
+@freezed
+abstract class VendorPayoutInvoiceDto with _$VendorPayoutInvoiceDto {
+  const factory VendorPayoutInvoiceDto({
+    required String payoutId,
+    @Default('') String invoiceNumber,
+    @Default(1) int destination,
+    @Default('') String destinationRef,
+    @Default(0) double grossAmount,
+    @Default(0) double feeAmount,
+    @Default(0) double netAmount,
+    @Default('NPR') String currency,
+    required DateTime requestedUtc,
+    @Default(1) int state,
+    DateTime? paidUtc,
+    String? providerPayoutId,
+    @Default([]) List<VendorPayoutInvoiceLineDto> lines,
+  }) = _VendorPayoutInvoiceDto;
+
+  const VendorPayoutInvoiceDto._();
+
+  factory VendorPayoutInvoiceDto.fromJson(Map<String, dynamic> json) =>
+      _$VendorPayoutInvoiceDtoFromJson(json);
+
+  VendorPayoutInvoice toDomain() => VendorPayoutInvoice(
+    payoutId: payoutId,
+    invoiceNumber: invoiceNumber,
+    destinationKind: destination,
+    destinationRef: destinationRef,
+    grossAmount: Money(amount: grossAmount, currency: currency),
+    feeAmount: Money(amount: feeAmount, currency: currency),
+    netAmount: Money(amount: netAmount, currency: currency),
+    requestedAt: requestedUtc,
+    state: _payoutStateFromWire(state),
+    paidAt: paidUtc,
+    providerPayoutId: providerPayoutId,
+    lines: lines.map((l) => l.toDomain()).toList(growable: false),
+  );
+}

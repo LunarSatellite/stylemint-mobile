@@ -9,6 +9,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/reposi
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
+/// The backend's `PayeeKind.Vendor` wire value — `GET /v1/payouts` isn't
+/// role-scoped server-side, so rows are filtered to this kind client-side.
+const _vendorPayeeKind = 2;
+
 class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
   VendorEarningsRepositoryImpl({
     required this.remoteDataSource,
@@ -73,6 +77,58 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
             hasMore: data['hasMore'] as bool? ?? false,
           ),
         );
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PagedResult<VendorPayout>>> getPayouts({
+    int pageSize = 20,
+    String? cursor,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.getPayouts(
+          pageSize: pageSize,
+          cursor: cursor,
+        );
+        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => VendorPayoutDto.fromJson(e as Map<String, dynamic>),
+            )
+            .where((dto) => dto.payeeKind == _vendorPayeeKind)
+            .map((dto) => dto.toDomain())
+            .toList(growable: false);
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? pageSize,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, VendorPayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.getPayoutInvoice(payoutId);
+        return right(dto.toDomain());
       } catch (e) {
         return left(_mapError(e));
       }

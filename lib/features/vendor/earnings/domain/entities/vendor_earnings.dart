@@ -98,3 +98,80 @@ class VendorEarningsLedger {
     );
   }
 }
+
+/// Mirrors the backend's `PayoutState` (skill §12): Requested=1,
+/// Processing=2, Paid=3, Failed=4, Held=5.
+enum VendorPayoutState { requested, processing, paid, failed, held }
+
+/// A single row of `GET /v1/payouts` — one payout request/run, distinct from
+/// [VendorEarningsLedger] which is the underlying per-sale/fee ledger.
+class VendorPayout {
+  const VendorPayout({
+    required this.id,
+    required this.destinationKind,
+    required this.destinationRef,
+    required this.requestedAmount,
+    required this.feeAmount,
+    required this.netAmount,
+    required this.requestedAt,
+    required this.state,
+    this.paidAt,
+    this.failureMessage,
+  });
+
+  final String id;
+  final int destinationKind;
+  final String destinationRef;
+  final Money requestedAmount;
+  final Money feeAmount;
+  final Money netAmount;
+  final DateTime requestedAt;
+  final VendorPayoutState state;
+  final DateTime? paidAt;
+  final String? failureMessage;
+}
+
+class VendorPayoutInvoiceLine {
+  const VendorPayoutInvoiceLine({
+    required this.description,
+    required this.amount,
+    required this.occurredAt,
+  });
+
+  final String description;
+  final Money amount;
+  final DateTime occurredAt;
+}
+
+/// Mirrors `GET /v1/payouts/{id}/invoice` — the printable receipt payload
+/// for a single payout. [lines] is empty when the bridge layer hasn't
+/// wired the earnings-ledger lookup yet; the receipt still renders.
+class VendorPayoutInvoice {
+  const VendorPayoutInvoice({
+    required this.payoutId,
+    required this.invoiceNumber,
+    required this.destinationKind,
+    required this.destinationRef,
+    required this.grossAmount,
+    required this.feeAmount,
+    required this.netAmount,
+    required this.requestedAt,
+    required this.state,
+    this.paidAt,
+    this.providerPayoutId,
+    this.lines = const [],
+  });
+
+  final String payoutId;
+  final String invoiceNumber;
+  final int destinationKind;
+  final String destinationRef;
+  final Money grossAmount;
+  final Money feeAmount;
+  final Money netAmount;
+  final DateTime requestedAt;
+  final VendorPayoutState state;
+  final DateTime? paidAt;
+  final String? providerPayoutId;
+  final List<VendorPayoutInvoiceLine> lines;
+}
