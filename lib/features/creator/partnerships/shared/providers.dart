@@ -31,7 +31,15 @@ final partnershipsNotifierProvider =
 /// Derived view: active partnerships only, empty while loading or on failure.
 final activePartnershipsProvider = Provider<List<ActivePartnership>>((ref) {
   return ref.watch(partnershipsNotifierProvider).maybeWhen(
-        loadSuccess: (_, active) => active,
+        loadSuccess: (_, active, _) => active,
+        orElse: () => const [],
+      );
+});
+
+/// Derived view: ended partnerships only, empty while loading or on failure.
+final endedPartnershipsProvider = Provider<List<EndedPartnership>>((ref) {
+  return ref.watch(partnershipsNotifierProvider).maybeWhen(
+        loadSuccess: (_, _, ended) => ended,
         orElse: () => const [],
       );
 });
@@ -39,7 +47,7 @@ final activePartnershipsProvider = Provider<List<ActivePartnership>>((ref) {
 /// Derived view: count of pending invites, 0 while loading or on failure.
 final pendingInvitesCountProvider = Provider<int>((ref) {
   return ref.watch(partnershipsNotifierProvider).maybeWhen(
-        loadSuccess: (invites, _) => invites
+        loadSuccess: (invites, _, _) => invites
             .where((i) => i.status == PartnershipStatus.pending)
             .length,
         orElse: () => 0,

@@ -85,3 +85,29 @@ class ActivePartnership {
     );
   }
 }
+
+class EndedPartnership {
+  const EndedPartnership({
+    required this.id,
+    required this.vendorName,
+    required this.vendorLogoUrl,
+    required this.commissionRate,
+    required this.totalEarned,
+    required this.totalSales,
+    required this.startedAt,
+    required this.endedAt,
+    required this.productsCount,
+    this.endReason,
+  });
+
+  final String id;
+  final String vendorName;
+  final String vendorLogoUrl;
+  final double commissionRate;
+  final Money totalEarned;
+  final int totalSales;
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final int productsCount;
+  final String? endReason;
+}

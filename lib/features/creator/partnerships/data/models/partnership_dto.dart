@@ -5,70 +5,74 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'partnership_dto.freezed.dart';
 part 'partnership_dto.g.dart';
 
+// PartnershipState: 1=Invited, 2=Active, 3=Declined, 4=Paused, 5=Ended
+// Active filter: states=[2,4]  Invites filter: states=[1]
+
 @freezed
-abstract class PartnershipInviteDto with _$PartnershipInviteDto {
-  const factory PartnershipInviteDto({
+abstract class PartnershipDto with _$PartnershipDto {
+  const factory PartnershipDto({
     required String id,
-    required String vendorName,
-    required String vendorLogoUrl,
-    required String campaignBrief,
-    required double commissionRate,
-    required DateTime expiresAt,
-    required String status,
-  }) = _PartnershipInviteDto;
+    required String vendorProfileId,
+    required String creatorProfileId,
+    required int state,
+    @Default(0.0) double commissionMinPercent,
+    @Default(0.0) double commissionMaxPercent,
+    required DateTime invitedUtc,
+    DateTime? respondedUtc,
+    DateTime? endedUtc,
+    String? endReason,
+    String? requestMessage,
+    double? vendorRating,
+    @Default(false) bool initiatedByCreator,
+    required DateTime createdUtc,
+    required DateTime updatedUtc,
+  }) = _PartnershipDto;
 
-  const PartnershipInviteDto._();
+  const PartnershipDto._();
 
-  factory PartnershipInviteDto.fromJson(Map<String, dynamic> json) =>
-      _$PartnershipInviteDtoFromJson(json);
+  factory PartnershipDto.fromJson(Map<String, dynamic> json) =>
+      _$PartnershipDtoFromJson(json);
 
-  PartnershipInvite toDomain() {
-    final statusEnum = PartnershipStatus.values.firstWhere(
-      (s) => s.name == status,
-      orElse: () => PartnershipStatus.pending,
-    );
+  PartnershipInvite toInviteDomain() {
+    final status = switch (state) {
+      2 => PartnershipStatus.accepted,
+      3 => PartnershipStatus.declined,
+      _ => PartnershipStatus.pending,
+    };
     return PartnershipInvite(
       id: id,
-      vendorName: vendorName,
-      vendorLogoUrl: vendorLogoUrl,
-      campaignBrief: campaignBrief,
-      commissionRate: commissionRate,
-      expiresAt: expiresAt,
-      status: statusEnum,
+      // vendorName/Logo not returned by this endpoint — pending vendor profile
+      // enrichment (PM-P2). Screens that need them must fetch separately.
+      vendorName: '',
+      vendorLogoUrl: '',
+      campaignBrief: requestMessage ?? '',
+      commissionRate: commissionMinPercent,
+      expiresAt: invitedUtc,
+      status: status,
     );
   }
-}
 
-@freezed
-abstract class ActivePartnershipDto with _$ActivePartnershipDto {
-  const factory ActivePartnershipDto({
-    required String id,
-    required String vendorName,
-    required String vendorLogoUrl,
-    required double commissionRate,
-    required double totalEarnedAmount,
-    @Default('NPR') String totalEarnedCurrency,
-    required int totalSales,
-    required DateTime startedAt,
-    @Default(0) int productsCount,
-  }) = _ActivePartnershipDto;
+  ActivePartnership toActiveDomain() => ActivePartnership(
+        id: id,
+        vendorName: '',
+        vendorLogoUrl: '',
+        commissionRate: commissionMinPercent,
+        totalEarned: const Money(amount: 0, currency: 'NPR'),
+        totalSales: 0,
+        startedAt: respondedUtc ?? invitedUtc,
+        productsCount: 0,
+      );
 
-  const ActivePartnershipDto._();
-
-  factory ActivePartnershipDto.fromJson(Map<String, dynamic> json) =>
-      _$ActivePartnershipDtoFromJson(json);
-
-  ActivePartnership toDomain() => ActivePartnership(
-    id: id,
-    vendorName: vendorName,
-    vendorLogoUrl: vendorLogoUrl,
-    commissionRate: commissionRate,
-    totalEarned: Money(
-      amount: totalEarnedAmount,
-      currency: totalEarnedCurrency,
-    ),
-    totalSales: totalSales,
-    startedAt: startedAt,
-    productsCount: productsCount,
-  );
+  EndedPartnership toEndedDomain() => EndedPartnership(
+        id: id,
+        vendorName: '',
+        vendorLogoUrl: '',
+        commissionRate: commissionMinPercent,
+        totalEarned: const Money(amount: 0, currency: 'NPR'),
+        totalSales: 0,
+        startedAt: respondedUtc ?? invitedUtc,
+        endedAt: endedUtc ?? updatedUtc,
+        productsCount: 0,
+        endReason: endReason,
+      );
 }
