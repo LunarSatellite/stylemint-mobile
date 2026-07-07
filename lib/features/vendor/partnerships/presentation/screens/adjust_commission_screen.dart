@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -30,8 +30,7 @@ class AdjustCommissionScreen extends StatefulWidget {
   final AdjustCommissionArgs args;
 
   @override
-  State<AdjustCommissionScreen> createState() =>
-      _AdjustCommissionScreenState();
+  State<AdjustCommissionScreen> createState() => _AdjustCommissionScreenState();
 }
 
 class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
@@ -140,7 +139,11 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, 12, DesignTokens.s16, 16),
+                DesignTokens.s16,
+                12,
+                DesignTokens.s16,
+                16,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -208,9 +211,11 @@ class _DarkIconButton extends StatelessWidget {
                 fit: BoxFit.contain,
                 color: DesignTokens.textWhite,
                 colorBlendMode: BlendMode.srcIn,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.monetization_on_outlined,
-                        color: DesignTokens.textWhite, size: 20),
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.monetization_on_outlined,
+                  color: DesignTokens.textWhite,
+                  size: 20,
+                ),
               )
             : Icon(icon, color: DesignTokens.textWhite, size: 20),
       ),
@@ -245,8 +250,8 @@ class _CreatorCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _InitialAvatar(
-                        name: args.creatorName, size: 48),
+                    errorBuilder: (_, __, ___) =>
+                        _InitialAvatar(name: args.creatorName, size: 48),
                   )
                 : _InitialAvatar(name: args.creatorName, size: 48),
           ),
@@ -288,8 +293,10 @@ class _CreatorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: DesignTokens.s8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.primaryGreen.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -325,7 +332,11 @@ class _SliderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 12),
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        12,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -394,8 +405,7 @@ class _GreenThumb extends SliderComponentShape {
   const _GreenThumb();
 
   @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
-      const Size(20, 20);
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => const Size(20, 20);
 
   @override
   void paint(
@@ -432,7 +442,9 @@ class _DateField extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: 16),
+          horizontal: DesignTokens.s16,
+          vertical: 16,
+        ),
         decoration: BoxDecoration(
           color: DesignTokens.bgAppBodyLight,
           borderRadius: BorderRadius.circular(12),
@@ -495,7 +507,9 @@ class _NotifyCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               side: const BorderSide(
-                  color: DesignTokens.borderDefault, width: 1.5),
+                color: DesignTokens.borderDefault,
+                width: 1.5,
+              ),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),

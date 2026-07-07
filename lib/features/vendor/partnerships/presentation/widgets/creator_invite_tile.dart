@@ -88,7 +88,9 @@ class CreatorInviteTile extends StatelessWidget {
                 ),
                 minimumSize: Size.zero,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
               ),
               child: Text(

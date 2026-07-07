@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -26,16 +26,16 @@ class _ChatItem {
     required this.isSent,
     required this.time,
     this.isSeen = false,
-  })  : isDateDivider = false,
-        dividerLabel = null;
+  }) : isDateDivider = false,
+       dividerLabel = null;
 
   const _ChatItem.divider(String label)
-      : isDateDivider = true,
-        dividerLabel = label,
-        text = '',
-        isSent = false,
-        time = '',
-        isSeen = false;
+    : isDateDivider = true,
+      dividerLabel = label,
+      text = '',
+      isSent = false,
+      time = '',
+      isSeen = false;
 
   final bool isDateDivider;
   final String? dividerLabel;
@@ -122,20 +122,24 @@ class _MessageCreatorScreenState extends State<MessageCreatorScreen> {
     final text = _msgCtrl.text.trim();
     if (text.isEmpty) return;
     setState(() {
-      _messages.add(_ChatItem.message(
-        text: text,
-        isSent: true,
-        time: 'Now',
-      ));
+      _messages.add(
+        _ChatItem.message(
+          text: text,
+          isSent: true,
+          time: 'Now',
+        ),
+      );
       _msgCtrl.clear();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
-        unawaited(_scrollCtrl.animateTo(
-          _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        ));
+        unawaited(
+          _scrollCtrl.animateTo(
+            _scrollCtrl.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          ),
+        );
       }
     });
   }
@@ -151,7 +155,9 @@ class _MessageCreatorScreenState extends State<MessageCreatorScreen> {
             child: ListView.builder(
               controller: _scrollCtrl,
               padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s16,
+              ),
               itemCount: _messages.length,
               itemBuilder: (_, i) {
                 final item = _messages[i];
@@ -419,13 +425,19 @@ class _InputBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, 24, DesignTokens.s16, DesignTokens.s16),
+            DesignTokens.s16,
+            24,
+            DesignTokens.s16,
+            DesignTokens.s16,
+          ),
           child: Row(
             children: [
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16, vertical: 14),
+                    horizontal: DesignTokens.s16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF27272A),
                     borderRadius: BorderRadius.circular(8),

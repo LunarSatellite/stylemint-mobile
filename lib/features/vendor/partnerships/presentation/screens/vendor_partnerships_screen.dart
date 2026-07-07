@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -326,7 +326,10 @@ class _VendorPartnershipsScreenState extends State<VendorPartnershipsScreen>
         elevation: 0,
         leading: const BackButton(color: DesignTokens.textWhite),
         titleSpacing: 0,
-        title: const Text('Creator Partnerships', style: DesignTokens.titleMedium),
+        title: const Text(
+          'Creator Partnerships',
+          style: DesignTokens.titleMedium,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: DesignTokens.textWhite),
@@ -364,8 +367,14 @@ class _VendorPartnershipsScreenState extends State<VendorPartnershipsScreen>
               _PerformanceTab(creators: _activeCreators),
               _PendingTab(),
               _InvitedTab(),
-              _PerformanceTab(creators: _pausedCreators, tabKind: _TabKind.paused),
-              _PerformanceTab(creators: _endedCreators, tabKind: _TabKind.ended),
+              _PerformanceTab(
+                creators: _pausedCreators,
+                tabKind: _TabKind.paused,
+              ),
+              _PerformanceTab(
+                creators: _endedCreators,
+                tabKind: _TabKind.ended,
+              ),
             ],
           ),
           Positioned(
@@ -381,7 +390,8 @@ class _VendorPartnershipsScreenState extends State<VendorPartnershipsScreen>
                   shape: const StadiumBorder(),
                   elevation: 4,
                 ),
-                onPressed: () => context.push(RouteNames.vendorSendPartnershipRequest),
+                onPressed: () =>
+                    context.push(RouteNames.vendorSendPartnershipRequest),
                 child: const Text(
                   'Send Partnership Requests',
                   style: TextStyle(
@@ -991,7 +1001,12 @@ class _PerfRow extends StatelessWidget {
       child: Row(
         children: [
           if (asset != null)
-            Image.asset(asset!, width: 16, height: 16, color: DesignTokens.textMuted)
+            Image.asset(
+              asset!,
+              width: 16,
+              height: 16,
+              color: DesignTokens.textMuted,
+            )
           else if (icon != null)
             Icon(icon, size: 16, color: DesignTokens.textMuted),
           const SizedBox(width: 8),
@@ -1096,15 +1111,15 @@ class _PendingCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Flexible(
-                        child: Text(
-                          '${request.followersLabel} Followers · ${request.handle}',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            color: DesignTokens.textMuted,
-                            fontSize: 12,
+                          child: Text(
+                            '${request.followersLabel} Followers · ${request.handle}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              color: DesignTokens.textMuted,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
                         ),
                       ],
                     ),
@@ -1682,36 +1697,36 @@ class _ActionsSheet extends StatelessWidget {
     // Invited tab has a different, shorter action list
     final actions = switch (tabKind) {
       _TabKind.invited => [
-          (icon: Icons.edit_outlined, label: 'Edit Details'),
-          (
-            icon: Icons.credit_card_outlined,
-            label: 'Change Payment Method',
-          ),
-        ],
+        (icon: Icons.edit_outlined, label: 'Edit Details'),
+        (
+          icon: Icons.credit_card_outlined,
+          label: 'Change Payment Method',
+        ),
+      ],
       _TabKind.paused => [
-          (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
-          (icon: Icons.analytics_outlined, label: 'View Analytics'),
-          (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
-          (
-            icon: Icons.play_circle_outline_rounded,
-            label: 'Resume Partnerships',
-          ),
-        ],
+        (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
+        (icon: Icons.analytics_outlined, label: 'View Analytics'),
+        (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
+        (
+          icon: Icons.play_circle_outline_rounded,
+          label: 'Resume Partnerships',
+        ),
+      ],
       _TabKind.ended => [
-          (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
-          (icon: Icons.analytics_outlined, label: 'View Analytics'),
-          (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
-          (icon: Icons.send_outlined, label: 'Send Request Again'),
-        ],
+        (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
+        (icon: Icons.analytics_outlined, label: 'View Analytics'),
+        (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
+        (icon: Icons.send_outlined, label: 'Send Request Again'),
+      ],
       _ => [
-          (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
-          (icon: Icons.analytics_outlined, label: 'View Analytics'),
-          (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
-          (
-            icon: Icons.pause_circle_outline_rounded,
-            label: 'Pause Partnerships',
-          ),
-        ],
+        (icon: Icons.currency_exchange_rounded, label: 'Adjust Commission'),
+        (icon: Icons.analytics_outlined, label: 'View Analytics'),
+        (icon: Icons.chat_bubble_outline_rounded, label: 'Message'),
+        (
+          icon: Icons.pause_circle_outline_rounded,
+          label: 'Pause Partnerships',
+        ),
+      ],
     };
 
     return Container(

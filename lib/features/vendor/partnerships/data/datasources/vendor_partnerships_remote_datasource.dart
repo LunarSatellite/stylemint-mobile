@@ -10,9 +10,11 @@ class VendorPartnershipsRemoteDataSource {
   /// `GET /v1/vendor/briefs` (Vendor §3 — Brand Studio briefs list).
   Future<List<CampaignBriefDto>> getCampaigns() async {
     final response = await apiClient.get('/v1/vendor/briefs');
-    final items = ((response as Map<String, dynamic>)['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => CampaignBriefDto.fromJson(e as Map<String, dynamic>))
-        .toList(growable: false);
+    final items =
+        ((response as Map<String, dynamic>)['items'] as List<dynamic>? ??
+                const <dynamic>[])
+            .map((e) => CampaignBriefDto.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false);
     return items;
   }
 
@@ -49,9 +51,11 @@ class VendorPartnershipsRemoteDataSource {
       '/v1/vendor/partnerships/creators',
       queryParameters: params.isEmpty ? null : params,
     );
-    final items = ((response as Map<String, dynamic>)['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => CreatorInviteDto.fromJson(e as Map<String, dynamic>))
-        .toList(growable: false);
+    final items =
+        ((response as Map<String, dynamic>)['items'] as List<dynamic>? ??
+                const <dynamic>[])
+            .map((e) => CreatorInviteDto.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false);
     return items;
   }
 
@@ -81,10 +85,91 @@ class VendorPartnershipsRemoteDataSource {
         // Undocumented — see method doc comment.
         if (message != null && message.isNotEmpty) 'requestMessage': message,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
+    );
+  }
+
+  /// `GET /v1/vendor/partnerships`. `states` is a comma-separated list of
+  /// the numeric `PartnershipState` values (1-5), matching the query
+  /// binding style used elsewhere (e.g. products' `state` filter).
+  Future<Map<String, dynamic>> getPartnerships({
+    List<int>? states,
+    String? cursor,
+    int pageSize = 20,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/vendor/partnerships',
+      queryParameters: {
+        'pageSize': pageSize,
+        if (states != null && states.isNotEmpty) 'states': states.join(','),
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  Future<void> acceptRequest(String id, String idempotencyKey) =>
+      _action(id, 'accept-request', idempotencyKey);
+
+  Future<void> declineRequest(String id, String idempotencyKey) =>
+      _action(id, 'decline-request', idempotencyKey);
+
+  Future<void> resume(String id, String idempotencyKey) =>
+      _action(id, 'resume', idempotencyKey);
+
+  Future<void> pause(String id, String idempotencyKey, {String? reason}) =>
+      _action(
+        id,
+        'pause',
+        idempotencyKey,
+        data: {if (reason != null) 'reason': reason},
+      );
+
+  Future<void> end(String id, String idempotencyKey, {String? reason}) =>
+      _action(
+        id,
+        'end',
+        idempotencyKey,
+        data: {if (reason != null) 'reason': reason},
+      );
+
+  Future<void> adjustCommission(
+    String id,
+    String idempotencyKey, {
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    String? reason,
+  }) => _action(
+    id,
+    'adjust-commission',
+    idempotencyKey,
+    data: {
+      'commissionMinPercent': commissionMinPercent,
+      'commissionMaxPercent': commissionMaxPercent,
+      if (reason != null) 'reason': reason,
+    },
+  );
+
+  Future<void> _action(
+    String id,
+    String action,
+    String idempotencyKey, {
+    Map<String, dynamic>? data,
+  }) async {
+    await apiClient.post(
+      '/v1/vendor/partnerships/$id/$action',
+      data: data,
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 }

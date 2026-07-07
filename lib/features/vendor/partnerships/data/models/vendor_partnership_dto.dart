@@ -32,11 +32,15 @@ abstract class CampaignBriefDto with _$CampaignBriefDto {
     vendorProfileId: vendorProfileId,
     title: title,
     primaryGoal: primaryGoal,
-    state: BrandBriefState.values.elementAtOrNull(state - 1) ??
+    state:
+        BrandBriefState.values.elementAtOrNull(state - 1) ??
         BrandBriefState.draft,
     commissionMinPercent: commissionRange?.minPercent ?? 0,
     commissionMaxPercent: commissionRange?.maxPercent ?? 0,
-    boostBudget: Money(amount: boostBudgetAmount, currency: boostBudgetCurrency),
+    boostBudget: Money(
+      amount: boostBudgetAmount,
+      currency: boostBudgetCurrency,
+    ),
     createdAt: createdUtc,
     updatedAt: updatedUtc,
     lockedAt: lockedUtc,
@@ -114,5 +118,50 @@ abstract class CreatorInviteDto with _$CreatorInviteDto {
     followerCount: followerCount,
     niches: niches,
     hasExistingPartnership: hasExistingPartnership,
+  );
+}
+
+/// Mirrors `PartnershipDto` from `GET /v1/vendor/partnerships`.
+@freezed
+abstract class VendorPartnershipDto with _$VendorPartnershipDto {
+  const factory VendorPartnershipDto({
+    required String id,
+    required String vendorProfileId,
+    required String creatorProfileId,
+    required int state,
+    @Default(0) double commissionMinPercent,
+    @Default(0) double commissionMaxPercent,
+    required DateTime invitedUtc,
+    DateTime? respondedUtc,
+    DateTime? endedUtc,
+    String? endReason,
+    String? brandBriefId,
+    @Default(false) bool initiatedByCreator,
+    String? requestMessage,
+    double? vendorRating,
+  }) = _VendorPartnershipDto;
+
+  const VendorPartnershipDto._();
+
+  factory VendorPartnershipDto.fromJson(Map<String, dynamic> json) =>
+      _$VendorPartnershipDtoFromJson(json);
+
+  VendorPartnership toDomain() => VendorPartnership(
+    id: id,
+    vendorProfileId: vendorProfileId,
+    creatorProfileId: creatorProfileId,
+    state:
+        PartnershipState.values.elementAtOrNull(state - 1) ??
+        PartnershipState.invited,
+    commissionMinPercent: commissionMinPercent,
+    commissionMaxPercent: commissionMaxPercent,
+    invitedAt: invitedUtc,
+    respondedAt: respondedUtc,
+    endedAt: endedUtc,
+    endReason: endReason,
+    brandBriefId: brandBriefId,
+    initiatedByCreator: initiatedByCreator,
+    requestMessage: requestMessage,
+    vendorRating: vendorRating,
   );
 }

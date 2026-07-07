@@ -74,12 +74,16 @@ class _SendPartnershipRequestScreenState
     final creator = _selectedCreator;
     final rate = double.tryParse(_commissionCtrl.text);
     if (creator == null || rate == null) return;
-    ref.read(inviteCreatorNotifierProvider.notifier).invite(
-      creatorProfileId: creator.creatorAccountId,
-      commissionMinPercent: rate / 100,
-      commissionMaxPercent: rate / 100,
-      message: _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
-    );
+    ref
+        .read(inviteCreatorNotifierProvider.notifier)
+        .invite(
+          creatorProfileId: creator.creatorAccountId,
+          commissionMinPercent: rate / 100,
+          commissionMaxPercent: rate / 100,
+          message: _messageCtrl.text.trim().isEmpty
+              ? null
+              : _messageCtrl.text.trim(),
+        );
   }
 
   @override
@@ -101,7 +105,9 @@ class _SendPartnershipRequestScreenState
         },
         failure: (_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to send partnership request.')),
+            const SnackBar(
+              content: Text('Failed to send partnership request.'),
+            ),
           );
         },
         orElse: () {},
@@ -114,10 +120,17 @@ class _SendPartnershipRequestScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Send Partnership Request', style: DesignTokens.oneLinerSemibold),
+        title: const Text(
+          'Send Partnership Request',
+          style: DesignTokens.oneLinerSemibold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(DesignTokens.s16),
@@ -139,7 +152,11 @@ class _SendPartnershipRequestScreenState
                           ? NetworkImage(_selectedCreator!.avatarUrl!)
                           : null,
                       child: _selectedCreator?.avatarUrl == null
-                          ? const Icon(Icons.person, color: DesignTokens.textMuted, size: 28)
+                          ? const Icon(
+                              Icons.person,
+                              color: DesignTokens.textMuted,
+                              size: 28,
+                            )
                           : null,
                     ),
                     const SizedBox(width: DesignTokens.s12),
@@ -161,7 +178,9 @@ class _SendPartnershipRequestScreenState
                                       _selectedCreator!.niches.join(', '),
                                   ].join(' • ')
                                 : 'Search and select the creator you want send a partnership request',
-                            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textMuted,
+                            ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -169,11 +188,17 @@ class _SendPartnershipRequestScreenState
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                const Icon(Icons.person_outline, size: 14, color: DesignTokens.textMuted),
+                                const Icon(
+                                  Icons.person_outline,
+                                  size: 14,
+                                  color: DesignTokens.textMuted,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${_formatFollowers(_selectedCreator!.followerCount ?? 0)} Followers',
-                                  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textMuted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -181,7 +206,10 @@ class _SendPartnershipRequestScreenState
                         ],
                       ),
                     ),
-                    const Icon(Icons.keyboard_arrow_down_rounded, color: DesignTokens.textMuted),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: DesignTokens.textMuted,
+                    ),
                   ],
                 ),
               ),
@@ -189,9 +217,13 @@ class _SendPartnershipRequestScreenState
             const SizedBox(height: DesignTokens.s16),
             TextField(
               controller: _commissionCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               style: DesignTokens.oneLinerRegular,
-              decoration: DesignTokens.inputDecoration(labelText: 'Proposed Commission Rate'),
+              decoration: DesignTokens.inputDecoration(
+                labelText: 'Proposed Commission Rate',
+              ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -199,7 +231,9 @@ class _SendPartnershipRequestScreenState
               controller: _messageCtrl,
               maxLines: 6,
               style: DesignTokens.oneLinerRegular,
-              decoration: DesignTokens.inputDecoration(labelText: 'Why this partnership message'),
+              decoration: DesignTokens.inputDecoration(
+                labelText: 'Why this partnership message',
+              ),
             ),
             const SizedBox(height: DesignTokens.s20),
             Text('Partnership Terms', style: DesignTokens.mediumSemibold),
@@ -214,11 +248,20 @@ class _SendPartnershipRequestScreenState
                 onPressed: _pickDocument,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: DesignTokens.borderDefault),
-                  minimumSize: const Size(double.infinity, DesignTokens.buttonHeight),
+                  minimumSize: const Size(
+                    double.infinity,
+                    DesignTokens.buttonHeight,
+                  ),
                   shape: const StadiumBorder(),
                 ),
-                icon: const Icon(Icons.upload_outlined, color: DesignTokens.textWhite),
-                label: Text('Upload Document', style: DesignTokens.mediumSemibold),
+                icon: const Icon(
+                  Icons.upload_outlined,
+                  color: DesignTokens.textWhite,
+                ),
+                label: Text(
+                  'Upload Document',
+                  style: DesignTokens.mediumSemibold,
+                ),
               ),
           ],
         ),
@@ -237,14 +280,19 @@ class _SendPartnershipRequestScreenState
               onPressed: _canSubmit && !isSubmitting ? _submit : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
-                disabledBackgroundColor: DesignTokens.primaryGreen.withValues(alpha: 0.4),
+                disabledBackgroundColor: DesignTokens.primaryGreen.withValues(
+                  alpha: 0.4,
+                ),
                 shape: const StadiumBorder(),
               ),
               child: isSubmitting
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -257,7 +305,11 @@ class _SendPartnershipRequestScreenState
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward, color: Colors.black, size: 18),
+                        const Icon(
+                          Icons.arrow_forward,
+                          color: Colors.black,
+                          size: 18,
+                        ),
                       ],
                     ),
             ),
@@ -300,7 +352,11 @@ class _DocumentChip extends StatelessWidget {
               color: DesignTokens.bgAppBodyLight,
               borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
             ),
-            child: const Icon(Icons.description_outlined, color: DesignTokens.textWhite, size: 20),
+            child: const Icon(
+              Icons.description_outlined,
+              color: DesignTokens.textWhite,
+              size: 20,
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
@@ -314,12 +370,20 @@ class _DocumentChip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(_sizeLabel, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
+                Text(
+                  _sizeLabel,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.cancel_outlined, color: DesignTokens.textMuted),
+            icon: const Icon(
+              Icons.cancel_outlined,
+              color: DesignTokens.textMuted,
+            ),
             onPressed: onRemove,
           ),
         ],
@@ -336,7 +400,8 @@ class _CreatorPickerSheet extends ConsumerStatefulWidget {
   final String? selectedCreatorId;
 
   @override
-  ConsumerState<_CreatorPickerSheet> createState() => _CreatorPickerSheetState();
+  ConsumerState<_CreatorPickerSheet> createState() =>
+      _CreatorPickerSheetState();
 }
 
 class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
@@ -383,9 +448,15 @@ class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Search & Select Creator', style: DesignTokens.mediumSemibold),
+                  Text(
+                    'Search & Select Creator',
+                    style: DesignTokens.mediumSemibold,
+                  ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: DesignTokens.textWhite),
+                    icon: const Icon(
+                      Icons.close,
+                      color: DesignTokens.textWhite,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -401,10 +472,14 @@ class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
                 style: DesignTokens.oneLinerRegular,
                 decoration: DesignTokens.inputDecoration(
                   hintText: 'Search Creator Name or Handle',
-                  suffixIcon: const Icon(Icons.search, color: DesignTokens.inputFieldPlaceholder),
+                  suffixIcon: const Icon(
+                    Icons.search,
+                    color: DesignTokens.inputFieldPlaceholder,
+                  ),
                 ),
-                onChanged: (val) =>
-                    ref.read(creatorSearchNotifierProvider.notifier).searchCreators(query: val),
+                onChanged: (val) => ref
+                    .read(creatorSearchNotifierProvider.notifier)
+                    .searchCreators(query: val),
               ),
             ),
             const SizedBox(height: DesignTokens.s8),
@@ -416,17 +491,25 @@ class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
                     ? Center(
                         child: Text(
                           'No creators found.',
-                          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s16,
+                        ),
                         itemCount: creators.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s4),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: DesignTokens.s4),
                         itemBuilder: (_, i) {
                           final c = creators[i];
-                          final isSelected = c.creatorAccountId == widget.selectedCreatorId;
-                          final niche = c.niches.isNotEmpty ? c.niches.join(', ') : null;
+                          final isSelected =
+                              c.creatorAccountId == widget.selectedCreatorId;
+                          final niche = c.niches.isNotEmpty
+                              ? c.niches.join(', ')
+                              : null;
                           return _CreatorPickerRow(
                             creator: c,
                             niche: niche,
@@ -438,7 +521,9 @@ class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
                 loadFailure: (_) => Center(
                   child: Text(
                     'Failed to load creators.',
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ),
               ),
@@ -503,7 +588,9 @@ class _CreatorPickerRow extends StatelessWidget {
                   children: [
                     Text(
                       creator.label,
-                      style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -511,16 +598,24 @@ class _CreatorPickerRow extends StatelessWidget {
                         if (creator.handle != null) '@${creator.handle}',
                         if (niche != null) niche,
                       ].join(' • '),
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 14, color: DesignTokens.textMuted),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 14,
+                          color: DesignTokens.textMuted,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${_formatFollowers(creator.followerCount ?? 0)} Followers',
-                          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -530,7 +625,11 @@ class _CreatorPickerRow extends StatelessWidget {
               if (isSelected)
                 const Padding(
                   padding: EdgeInsets.only(top: 4),
-                  child: Icon(Icons.check_circle, color: DesignTokens.primaryGreen, size: 22),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: DesignTokens.primaryGreen,
+                    size: 22,
+                  ),
                 ),
             ],
           ),

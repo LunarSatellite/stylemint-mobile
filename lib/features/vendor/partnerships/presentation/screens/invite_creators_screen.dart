@@ -60,12 +60,14 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
     if (range == null || !mounted) return;
 
     setState(() => _invitedIds.add(creator.creatorAccountId));
-    await ref.read(inviteCreatorNotifierProvider.notifier).invite(
-      creatorProfileId: creator.creatorAccountId,
-      commissionMinPercent: range.start / 100,
-      commissionMaxPercent: range.end / 100,
-      brandBriefId: widget.campaignId.isEmpty ? null : widget.campaignId,
-    );
+    await ref
+        .read(inviteCreatorNotifierProvider.notifier)
+        .invite(
+          creatorProfileId: creator.creatorAccountId,
+          commissionMinPercent: range.start / 100,
+          commissionMaxPercent: range.end / 100,
+          brandBriefId: widget.campaignId.isEmpty ? null : widget.campaignId,
+        );
   }
 
   @override
@@ -115,10 +117,12 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
                 ),
               ),
               onChanged: (val) {
-                ref.read(creatorSearchNotifierProvider.notifier).searchCreators(
-                  query: val,
-                  niche: _selectedCategory,
-                );
+                ref
+                    .read(creatorSearchNotifierProvider.notifier)
+                    .searchCreators(
+                      query: val,
+                      niche: _selectedCategory,
+                    );
               },
             ),
           ),
@@ -222,8 +226,8 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 class _FilterChip extends StatelessWidget {
@@ -254,7 +258,9 @@ class _FilterChip extends StatelessWidget {
           child: Text(
             label,
             style: DesignTokens.smallRegular.copyWith(
-              color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
+              color: selected
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.textMuted,
             ),
           ),
         ),
@@ -293,7 +299,9 @@ class _CommissionRangeSheetState extends State<_CommissionRangeSheet> {
             const SizedBox(height: DesignTokens.s8),
             Text(
               '${_range.start.round()}% – ${_range.end.round()}%',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.primaryGreen,
+              ),
             ),
             RangeSlider(
               values: _range,

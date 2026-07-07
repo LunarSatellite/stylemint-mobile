@@ -136,3 +136,53 @@ class CreatorInvite {
     );
   }
 }
+
+/// Skill §2 + §11 — 5-state machine. `Invited` → `Active`/`Declined`
+/// (terminal); `Active` ⇄ `Paused`; `Active`/`Paused` → `Ended` (terminal).
+enum PartnershipState { invited, declined, active, paused, ended }
+
+/// Mirrors `PartnershipDto` from `GET /v1/vendor/partnerships`. The backend
+/// does not publish creator display name/handle/avatar on this resource —
+/// only `creatorProfileId` — so screens can only show a short id fallback
+/// unless a separate creator lookup is added (see [CreatorInvite.label] for
+/// the same fallback pattern used by the invite picker).
+class VendorPartnership {
+  const VendorPartnership({
+    required this.id,
+    required this.vendorProfileId,
+    required this.creatorProfileId,
+    required this.state,
+    required this.commissionMinPercent,
+    required this.commissionMaxPercent,
+    required this.invitedAt,
+    this.respondedAt,
+    this.endedAt,
+    this.endReason,
+    this.brandBriefId,
+    required this.initiatedByCreator,
+    this.requestMessage,
+    this.vendorRating,
+  });
+
+  final String id;
+  final String vendorProfileId;
+  final String creatorProfileId;
+  final PartnershipState state;
+
+  /// Fractions (0..1), not whole percents.
+  final double commissionMinPercent;
+  final double commissionMaxPercent;
+  final DateTime invitedAt;
+  final DateTime? respondedAt;
+  final DateTime? endedAt;
+  final String? endReason;
+  final String? brandBriefId;
+  final bool initiatedByCreator;
+  final String? requestMessage;
+  final double? vendorRating;
+
+  /// Best available label until the backend exposes creator display fields.
+  String get creatorLabel => creatorProfileId.length >= 8
+      ? 'Creator ••${creatorProfileId.substring(creatorProfileId.length - 4)}'
+      : 'Creator';
+}
