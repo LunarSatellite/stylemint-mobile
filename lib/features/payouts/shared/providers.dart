@@ -6,15 +6,16 @@ import 'package:stylemint_mobile_frontend/features/payouts/presentation/notifier
 
 final payoutDestinationsDataSourceProvider =
     Provider<PayoutDestinationsRemoteDataSource>(
-  (ref) => PayoutDestinationsRemoteDataSource(
-      apiClient: ref.watch(apiClientProvider)),
-);
+      (ref) => PayoutDestinationsRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 /// Keyed by PayeeKind int value (1 = creator, 2 = vendor).
 final payoutDestinationsControllerProvider = StateNotifierProvider.family
     .autoDispose<PayoutDestinationsController, PayoutDestinationsState, int>(
-  (ref, role) => PayoutDestinationsController(
-    ref.watch(payoutDestinationsDataSourceProvider),
-    role,
-  ),
-);
+      (ref, role) => PayoutDestinationsController(
+        ref.watch(payoutDestinationsDataSourceProvider),
+        role,
+      ),
+    );

@@ -43,9 +43,9 @@ final payoutNotifierProvider =
       ),
     );
 
-final payoutMethodsNotifierProvider =
-    StateNotifierProvider<PayoutMethodsNotifier, PayoutMethodsState>(
-      (ref) => PayoutMethodsNotifier(
+final vendorBalanceNotifierProvider =
+    StateNotifierProvider<BalanceNotifier, BalanceState>(
+      (ref) => BalanceNotifier(
         ref.watch(vendorEarningsRepositoryProvider),
       ),
     );

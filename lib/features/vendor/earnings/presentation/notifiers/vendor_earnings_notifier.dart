@@ -5,7 +5,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/repositories/vendor_earnings_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'vendor_earnings_notifier.freezed.dart';
 
@@ -14,7 +13,8 @@ abstract class EarningsSummaryState with _$EarningsSummaryState {
   const EarningsSummaryState._();
 
   const factory EarningsSummaryState.initial() = _EarningsSummaryInitial;
-  const factory EarningsSummaryState.loadInProgress() = _EarningsSummaryLoadInProgress;
+  const factory EarningsSummaryState.loadInProgress() =
+      _EarningsSummaryLoadInProgress;
   const factory EarningsSummaryState.loadSuccess({
     required VendorEarningsSummary summary,
   }) = _EarningsSummaryLoadSuccess;
@@ -32,7 +32,20 @@ abstract class LedgerState with _$LedgerState {
     required List<VendorEarningsLedger> entries,
     required bool hasMore,
   }) = _LedgerLoadSuccess;
-  const factory LedgerState.loadFailure(NetworkExceptions failure) = _LedgerLoadFailure;
+  const factory LedgerState.loadFailure(NetworkExceptions failure) =
+      _LedgerLoadFailure;
+}
+
+@freezed
+abstract class BalanceState with _$BalanceState {
+  const BalanceState._();
+
+  const factory BalanceState.initial() = _BalanceInitial;
+  const factory BalanceState.loadInProgress() = _BalanceLoadInProgress;
+  const factory BalanceState.loadSuccess(VendorEarningsBalance balance) =
+      _BalanceLoadSuccess;
+  const factory BalanceState.loadFailure(NetworkExceptions failure) =
+      _BalanceLoadFailure;
 }
 
 @freezed
@@ -41,7 +54,8 @@ abstract class PayoutState with _$PayoutState {
 
   const factory PayoutState.editing({
     @Default(0) double amount,
-    String? selectedMethodId,
+    String? selectedDestinationId,
+    int? selectedDestinationKind,
   }) = _PayoutEditing;
   const factory PayoutState.submitting() = _PayoutSubmitting;
   const factory PayoutState.success() = _PayoutSuccess;
@@ -50,7 +64,7 @@ abstract class PayoutState with _$PayoutState {
 
 class VendorEarningsNotifier extends StateNotifier<EarningsSummaryState> {
   VendorEarningsNotifier(this._repository)
-      : super(const EarningsSummaryState.initial()) {
+    : super(const EarningsSummaryState.initial()) {
     unawaited(loadSummary());
   }
 
@@ -62,16 +76,6 @@ class VendorEarningsNotifier extends StateNotifier<EarningsSummaryState> {
     state = result.fold(
       EarningsSummaryState.loadFailure,
       (summary) => EarningsSummaryState.loadSuccess(summary: summary),
-    );
-  }
-
-  Future<void> loadLedger({String? cursor}) async {
-    final result = await _repository.getLedger(cursor: cursor);
-    result.fold(
-      (_) {},
-      (paged) {
-        // Handled in LedgerNotifier for pagination
-      },
     );
   }
 }
@@ -88,42 +92,23 @@ class LedgerNotifier extends StateNotifier<LedgerState> {
     final result = await _repository.getLedger(cursor: cursor);
     state = result.fold(
       LedgerState.loadFailure,
-      (paged) => LedgerState.loadSuccess(
-        entries: paged.items,
-        hasMore: paged.hasMore,
-      ),
+      (paged) =>
+          LedgerState.loadSuccess(entries: paged.items, hasMore: paged.hasMore),
     );
   }
 }
 
-@freezed
-abstract class PayoutMethodsState with _$PayoutMethodsState {
-  const PayoutMethodsState._();
-
-  const factory PayoutMethodsState.initial() = _PayoutMethodsInitial;
-  const factory PayoutMethodsState.loadInProgress() = _PayoutMethodsLoadInProgress;
-  const factory PayoutMethodsState.loadSuccess({
-    required List<VendorPayoutMethod> methods,
-  }) = _PayoutMethodsLoadSuccess;
-  const factory PayoutMethodsState.loadFailure(NetworkExceptions failure) =
-      _PayoutMethodsLoadFailure;
-}
-
-class PayoutMethodsNotifier extends StateNotifier<PayoutMethodsState> {
-  PayoutMethodsNotifier(this._repository)
-      : super(const PayoutMethodsState.initial()) {
-    load();
+class BalanceNotifier extends StateNotifier<BalanceState> {
+  BalanceNotifier(this._repository) : super(const BalanceState.initial()) {
+    unawaited(load());
   }
 
   final VendorEarningsRepository _repository;
 
   Future<void> load() async {
-    state = const PayoutMethodsState.loadInProgress();
-    final result = await _repository.getPayoutMethods();
-    state = result.fold(
-      PayoutMethodsState.loadFailure,
-      (methods) => PayoutMethodsState.loadSuccess(methods: methods),
-    );
+    state = const BalanceState.loadInProgress();
+    final result = await _repository.getBalance();
+    state = result.fold(BalanceState.loadFailure, BalanceState.loadSuccess);
   }
 }
 
@@ -134,19 +119,21 @@ class PayoutNotifier extends StateNotifier<PayoutState> {
 
   void setAmount(double amount) {
     state = state.maybeWhen(
-      editing: (_, selectedMethodId) => PayoutState.editing(
+      editing: (_, destinationId, destinationKind) => PayoutState.editing(
         amount: amount,
-        selectedMethodId: selectedMethodId,
+        selectedDestinationId: destinationId,
+        selectedDestinationKind: destinationKind,
       ),
       orElse: () => state,
     );
   }
 
-  void setSelectedMethod(String methodId) {
+  void setSelectedDestination(String destinationId, int destinationKind) {
     state = state.maybeWhen(
-      editing: (amount, _) => PayoutState.editing(
+      editing: (amount, _, __) => PayoutState.editing(
         amount: amount,
-        selectedMethodId: methodId,
+        selectedDestinationId: destinationId,
+        selectedDestinationKind: destinationKind,
       ),
       orElse: () => state,
     );
@@ -155,14 +142,23 @@ class PayoutNotifier extends StateNotifier<PayoutState> {
   Future<void> submit() async {
     final editing = state;
     if (editing is! _PayoutEditing) return;
-    final selectedMethodId = editing.selectedMethodId;
-    if (selectedMethodId == null || editing.amount <= 0) return;
+    final destinationId = editing.selectedDestinationId;
+    final destinationKind = editing.selectedDestinationKind;
+    if (destinationId == null ||
+        destinationKind == null ||
+        editing.amount <= 0) {
+      return;
+    }
 
     state = const PayoutState.submitting();
     final either = await _repository.requestPayout(
-      amount: Money(amount: editing.amount, currency: 'NPR'),
-      methodId: selectedMethodId,
+      amount: editing.amount,
+      destinationKind: destinationKind,
+      destinationId: destinationId,
     );
-    state = either.fold(PayoutState.failure, (_) => const PayoutState.success());
+    state = either.fold(
+      PayoutState.failure,
+      (_) => const PayoutState.success(),
+    );
   }
 }

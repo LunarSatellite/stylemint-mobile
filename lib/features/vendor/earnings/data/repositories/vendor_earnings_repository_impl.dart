@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/datasour
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/models/vendor_earnings_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/repositories/vendor_earnings_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
@@ -20,143 +19,95 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, VendorEarningsSummary>> getEarningsSummary() async {
+  Future<Either<NetworkExceptions, VendorEarningsSummary>>
+  getEarningsSummary() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getEarningsSummary();
         return right(dto.toDomain());
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapError(e));
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<NetworkExceptions, PagedResult<VendorEarningsLedger>>> getLedger({
-    int limit = 20,
-    String? cursor,
-  }) async {
+  Future<Either<NetworkExceptions, VendorEarningsBalance>> getBalance() async {
     if (await networkInfo.isConnected) {
       try {
-        final response = await remoteDataSource.getLedger(
-          limit: limit,
+        final dto = await remoteDataSource.getBalance();
+        return right(dto.toDomain());
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PagedResult<VendorEarningsLedger>>>
+  getLedger({int pageSize = 20, String? cursor}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.getLedger(
+          pageSize: pageSize,
           cursor: cursor,
         );
-        final items =
-            (response['items'] as List<dynamic>? ?? const <dynamic>[])
-                .map(
-                  (e) =>
-                      VendorEarningsLedgerDto.fromJson(
-                        e as Map<String, dynamic>,
-                      ),
-                )
-                .toList(growable: false);
+        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => VendorEarningsLedgerDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
+            )
+            .toList(growable: false);
         return right(
           PagedResult(
-            items: items.map((dto) => dto.toDomain()).toList(growable: false),
-            totalCount: response['totalCount'] as int? ?? items.length,
-            pageSize: response['pageSize'] as int? ?? limit,
-            nextCursor: response['nextCursor'] as String?,
-            previousCursor: response['previousCursor'] as String?,
-            hasMore: response['hasMore'] as bool? ?? false,
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? pageSize,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
           ),
         );
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapError(e));
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, List<VendorPayoutMethod>>> getPayoutMethods() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dtos = await remoteDataSource.getPayoutMethods();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, VendorPayoutMethod>> addPayoutMethod({
-    required VendorPayoutMethodType type,
-    required String label,
-    required String accountInfo,
-  }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.addPayoutMethod(
-          type: type.name,
-          label: label,
-          accountInfo: accountInfo,
-          idempotencyKey: const Uuid().v4(),
-        );
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
   Future<Either<NetworkExceptions, Unit>> requestPayout({
-    required Money amount,
-    required String methodId,
+    required double amount,
+    required int destinationKind,
+    required String destinationId,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.requestPayout(
-          amount: amount.amount,
-          currency: amount.currency,
-          methodId: methodId,
+          amount: amount,
+          destinationKind: destinationKind,
+          destinationId: destinationId,
           idempotencyKey: const Uuid().v4(),
         );
         return right(unit);
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapError(e));
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
+  }
+
+  NetworkExceptions _mapError(Object e) {
+    if (e is DioException)
+      return NetworkExceptions.server(e.message.toString());
+    if (e is NetworkExceptions) return e;
+    return const NetworkExceptions.unexpectedError();
   }
 }

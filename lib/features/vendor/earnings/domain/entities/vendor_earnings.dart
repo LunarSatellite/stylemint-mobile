@@ -44,78 +44,57 @@ class VendorEarningsSummary {
   }
 }
 
+/// Mirrors `GET /v1/earnings/balance` — the true payout-eligible ledger
+/// balance (distinct from [VendorEarningsSummary.availableBalance], which
+/// comes from the Brand Studio analytics rollup, not the Payouts ledger).
+class VendorEarningsBalance {
+  const VendorEarningsBalance({
+    required this.available,
+    required this.pending,
+    required this.lifetime,
+  });
+
+  final Money available;
+  final Money pending;
+  final Money lifetime;
+}
+
+/// Mirrors the backend's `LedgerEntryKind` (skill §2): Commission=1,
+/// VendorNet=2, Reversal=3, PayoutDebit=4, FeeDebit=5, BoostFeeDebit=6.
 enum VendorLedgerType { sale, refund, payout, fee }
 
 class VendorEarningsLedger {
   const VendorEarningsLedger({
     required this.id,
     required this.type,
-    this.orderNumber,
-    this.description = '',
+    this.orderId,
+    this.note,
     required this.amount,
-    required this.balance,
-    required this.createdAt,
+    required this.occurredAt,
   });
 
   final String id;
   final VendorLedgerType type;
-  final String? orderNumber;
-  final String description;
+  final String? orderId;
+  final String? note;
   final Money amount;
-  final Money balance;
-  final DateTime createdAt;
+  final DateTime occurredAt;
 
   VendorEarningsLedger copyWith({
     String? id,
     VendorLedgerType? type,
-    String? orderNumber,
-    String? description,
+    String? orderId,
+    String? note,
     Money? amount,
-    Money? balance,
-    DateTime? createdAt,
+    DateTime? occurredAt,
   }) {
     return VendorEarningsLedger(
       id: id ?? this.id,
       type: type ?? this.type,
-      orderNumber: orderNumber ?? this.orderNumber,
-      description: description ?? this.description,
+      orderId: orderId ?? this.orderId,
+      note: note ?? this.note,
       amount: amount ?? this.amount,
-      balance: balance ?? this.balance,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-}
-
-enum VendorPayoutMethodType { bank, eSewa, PayPal }
-
-class VendorPayoutMethod {
-  const VendorPayoutMethod({
-    required this.id,
-    required this.type,
-    required this.label,
-    required this.accountInfo,
-    this.isDefault = false,
-  });
-
-  final String id;
-  final VendorPayoutMethodType type;
-  final String label;
-  final String accountInfo;
-  final bool isDefault;
-
-  VendorPayoutMethod copyWith({
-    String? id,
-    VendorPayoutMethodType? type,
-    String? label,
-    String? accountInfo,
-    bool? isDefault,
-  }) {
-    return VendorPayoutMethod(
-      id: id ?? this.id,
-      type: type ?? this.type,
-      label: label ?? this.label,
-      accountInfo: accountInfo ?? this.accountInfo,
-      isDefault: isDefault ?? this.isDefault,
+      occurredAt: occurredAt ?? this.occurredAt,
     );
   }
 }

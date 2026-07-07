@@ -35,7 +35,7 @@ class PayoutDestinationsState {
 class PayoutDestinationsController
     extends StateNotifier<PayoutDestinationsState> {
   PayoutDestinationsController(this._ds, this._role)
-      : super(const PayoutDestinationsState()) {
+    : super(const PayoutDestinationsState()) {
     load();
   }
 
@@ -91,7 +91,9 @@ class PayoutDestinationsController
       await load();
     } catch (_) {
       state = state.copyWith(
-          isMutating: false, errorMessage: 'Could not set default.');
+        isMutating: false,
+        errorMessage: 'Could not set default.',
+      );
     }
     state = state.copyWith(isMutating: false);
   }
@@ -103,7 +105,9 @@ class PayoutDestinationsController
       await load();
     } catch (_) {
       state = state.copyWith(
-          isMutating: false, errorMessage: 'Could not remove this method.');
+        isMutating: false,
+        errorMessage: 'Could not remove this method.',
+      );
     }
     state = state.copyWith(isMutating: false);
   }

@@ -59,18 +59,41 @@ abstract class VendorEarningsSummaryDto with _$VendorEarningsSummaryDto {
   );
 }
 
+/// Mirrors `GET /v1/earnings/balance`.
+@freezed
+abstract class VendorEarningsBalanceDto with _$VendorEarningsBalanceDto {
+  const factory VendorEarningsBalanceDto({
+    @Default(0) double availableValue,
+    @Default(0) double pendingValue,
+    @Default(0) double lifetimeValue,
+    @Default('NPR') String currency,
+  }) = _VendorEarningsBalanceDto;
+
+  const VendorEarningsBalanceDto._();
+
+  factory VendorEarningsBalanceDto.fromJson(Map<String, dynamic> json) =>
+      _$VendorEarningsBalanceDtoFromJson(json);
+
+  VendorEarningsBalance toDomain() => VendorEarningsBalance(
+    available: Money(amount: availableValue, currency: currency),
+    pending: Money(amount: pendingValue, currency: currency),
+    lifetime: Money(amount: lifetimeValue, currency: currency),
+  );
+}
+
+/// Mirrors an item of `GET /v1/earnings/entries` — `kind` is the backend's
+/// int-valued `LedgerEntryKind` (1=Commission, 2=VendorNet, 3=Reversal,
+/// 4=PayoutDebit, 5=FeeDebit, 6=BoostFeeDebit), not a string.
 @freezed
 abstract class VendorEarningsLedgerDto with _$VendorEarningsLedgerDto {
   const factory VendorEarningsLedgerDto({
     required String id,
-    required String type,
-    String? orderNumber,
-    @Default('') String description,
-    required double amountAmount,
+    required int kind,
+    String? orderId,
+    String? note,
+    @Default(0) double amountValue,
     @Default('NPR') String amountCurrency,
-    required double balanceAmount,
-    @Default('NPR') String balanceCurrency,
-    required DateTime createdAt,
+    required DateTime occurredUtc,
   }) = _VendorEarningsLedgerDto;
 
   const VendorEarningsLedgerDto._();
@@ -78,49 +101,17 @@ abstract class VendorEarningsLedgerDto with _$VendorEarningsLedgerDto {
   factory VendorEarningsLedgerDto.fromJson(Map<String, dynamic> json) =>
       _$VendorEarningsLedgerDtoFromJson(json);
 
-  VendorEarningsLedger toDomain() {
-    final typeEnum = VendorLedgerType.values.firstWhere(
-      (t) => t.name == type,
-      orElse: () => VendorLedgerType.sale,
-    );
-    return VendorEarningsLedger(
-      id: id,
-      type: typeEnum,
-      orderNumber: orderNumber,
-      description: description,
-      amount: Money(amount: amountAmount, currency: amountCurrency),
-      balance: Money(amount: balanceAmount, currency: balanceCurrency),
-      createdAt: createdAt,
-    );
-  }
-}
-
-@freezed
-abstract class VendorPayoutMethodDto with _$VendorPayoutMethodDto {
-  const factory VendorPayoutMethodDto({
-    required String id,
-    required String type,
-    required String label,
-    @Default('') String accountInfo,
-    @Default(false) bool isDefault,
-  }) = _VendorPayoutMethodDto;
-
-  const VendorPayoutMethodDto._();
-
-  factory VendorPayoutMethodDto.fromJson(Map<String, dynamic> json) =>
-      _$VendorPayoutMethodDtoFromJson(json);
-
-  VendorPayoutMethod toDomain() {
-    final typeEnum = VendorPayoutMethodType.values.firstWhere(
-      (t) => t.name == type,
-      orElse: () => VendorPayoutMethodType.bank,
-    );
-    return VendorPayoutMethod(
-      id: id,
-      type: typeEnum,
-      label: label,
-      accountInfo: accountInfo,
-      isDefault: isDefault,
-    );
-  }
+  VendorEarningsLedger toDomain() => VendorEarningsLedger(
+    id: id,
+    type: switch (kind) {
+      3 => VendorLedgerType.refund,
+      4 => VendorLedgerType.payout,
+      5 || 6 => VendorLedgerType.fee,
+      _ => VendorLedgerType.sale,
+    },
+    orderId: orderId,
+    note: note,
+    amount: Money(amount: amountValue, currency: amountCurrency),
+    occurredAt: occurredUtc,
+  );
 }
