@@ -92,7 +92,8 @@ class VendorDashboard {
   }) {
     return VendorDashboard(
       grossSales: grossSales ?? this.grossSales,
-      grossSalesDeltaPercent: grossSalesDeltaPercent ?? this.grossSalesDeltaPercent,
+      grossSalesDeltaPercent:
+          grossSalesDeltaPercent ?? this.grossSalesDeltaPercent,
       netRevenue: netRevenue ?? this.netRevenue,
       totalOrders: totalOrders ?? this.totalOrders,
       topProducts: topProducts ?? this.topProducts,

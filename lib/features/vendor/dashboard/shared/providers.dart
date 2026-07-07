@@ -17,13 +17,12 @@ final vendorDashboardRemoteDataSourceProvider =
       ),
     );
 
-final vendorDashboardRepositoryProvider =
-    Provider<VendorDashboardRepository>(
-      (ref) => VendorDashboardRepositoryImpl(
-        remoteDataSource: ref.watch(vendorDashboardRemoteDataSourceProvider),
-        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-      ),
-    );
+final vendorDashboardRepositoryProvider = Provider<VendorDashboardRepository>(
+  (ref) => VendorDashboardRepositoryImpl(
+    remoteDataSource: ref.watch(vendorDashboardRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
+);
 
 final vendorDashboardNotifierProvider =
     StateNotifierProvider<VendorDashboardNotifier, VendorDashboardState>(

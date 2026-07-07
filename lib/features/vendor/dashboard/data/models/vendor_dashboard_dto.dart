@@ -93,7 +93,8 @@ abstract class TopProductDto with _$TopProductDto {
     name: name ?? '',
     thumbnailUrl: thumbnailUrl,
     unitsSold: unitsSold,
-    totalRevenue: totalRevenue?.toDomain() ?? const Money(amount: 0, currency: 'NPR'),
+    totalRevenue:
+        totalRevenue?.toDomain() ?? const Money(amount: 0, currency: 'NPR'),
     distinctCreatorCount: distinctCreatorCount,
   );
 }
@@ -114,10 +115,12 @@ abstract class VendorAnalyticsOverviewDto with _$VendorAnalyticsOverviewDto {
 
   VendorDashboard toDomain() => VendorDashboard(
     grossSales:
-        grossSales?.current?.toDomain() ?? const Money(amount: 0, currency: 'NPR'),
+        grossSales?.current?.toDomain() ??
+        const Money(amount: 0, currency: 'NPR'),
     grossSalesDeltaPercent: grossSales?.deltaPercent,
     netRevenue:
-        netRevenue?.current?.toDomain() ?? const Money(amount: 0, currency: 'NPR'),
+        netRevenue?.current?.toDomain() ??
+        const Money(amount: 0, currency: 'NPR'),
     totalOrders: (totalOrders?.current ?? 0).round(),
     topProducts: topProducts.map((p) => p.toDomain()).toList(growable: false),
   );

@@ -13,9 +13,12 @@ abstract class VendorDashboardState with _$VendorDashboardState {
   const VendorDashboardState._();
 
   const factory VendorDashboardState.initial() = _DashboardInitial;
-  const factory VendorDashboardState.loadInProgress() = _DashboardLoadInProgress;
-  const factory VendorDashboardState.loadSuccess(VendorDashboard dashboard) = _DashboardLoadSuccess;
-  const factory VendorDashboardState.loadFailure(NetworkExceptions failure) = _DashboardLoadFailure;
+  const factory VendorDashboardState.loadInProgress() =
+      _DashboardLoadInProgress;
+  const factory VendorDashboardState.loadSuccess(VendorDashboard dashboard) =
+      _DashboardLoadSuccess;
+  const factory VendorDashboardState.loadFailure(NetworkExceptions failure) =
+      _DashboardLoadFailure;
 }
 
 class VendorDashboardNotifier extends StateNotifier<VendorDashboardState> {

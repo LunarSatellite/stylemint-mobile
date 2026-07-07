@@ -1,59 +1,41 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/activity/domain/entities/vendor_activity_entry.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class RecentActivityScreen extends ConsumerStatefulWidget {
   const RecentActivityScreen({super.key});
 
   @override
-  ConsumerState<RecentActivityScreen> createState() => _RecentActivityScreenState();
+  ConsumerState<RecentActivityScreen> createState() =>
+      _RecentActivityScreenState();
 }
 
 class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
   final Set<_ActivityType> _activeFilters = {};
 
-  // Fallback shown while the real feed is loading/failed/empty — same
-  // pattern used on the dashboard's preview card.
-  static final _sampleGroups = [
-    _ActivityGroup(date: 'Today', items: [
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
-      _ActivityItem(type: _ActivityType.payoutReceived, title: 'Payout Completed', description: 'Your Payout of Rs 12,24,575.00 was processed', time: '5h ago · Bank A/C ******8799'),
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'Creator Partnership Request', description: 'New Creator Partnership: @style_guru applied to promote your products', time: '5h ago', actionLabel: 'Review Application'),
-    ]),
-    _ActivityGroup(date: 'Yesterday', items: [
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8911 - Rs 44,909 via @fashion_sarah', time: 'Yesterday at 11:45 PM', actionLabel: 'View Order'),
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8910 - Rs 18,904 via @fashion_sarah', time: 'Yesterday at 09:32 PM', actionLabel: 'View Order'),
-    ]),
-    _ActivityGroup(date: 'Thu 23 Jan 2026', items: [
-      _ActivityItem(type: _ActivityType.payoutReceived, title: 'Payout Completed', description: 'Your Payout of Rs 12,24,575.00 was processed', time: '23 Jan · Bank A/C ******8799'),
-      _ActivityItem(type: _ActivityType.orderShipped, title: 'Order Shipped', description: 'New Order #NK2024-8905 - Rs 44,909 has been shipped via FedEx', time: '23 Jan at 11:45 PM', actionLabel: 'View Order'),
-      _ActivityItem(type: _ActivityType.orderReceived, title: 'New Order', description: 'New Order #NK2024-8909 - Rs 18,904 via @fashion_sarah', time: '23 Jan at 06:07 PM', actionLabel: 'View Order'),
-    ]),
-    _ActivityGroup(date: 'Wed 22 Jan 2026', items: [
-      _ActivityItem(type: _ActivityType.productsUpdated, title: 'Products Updated', description: 'Nike Air Max 2025 stock updated to 124 units', time: '22 Jan at 03:12 PM'),
-      _ActivityItem(type: _ActivityType.customerInquiry, title: 'Customer Inquiry', description: 'Alex Lama asked about Nike Air Jordan sizing', time: '22 Jan at 02:30 PM', actionLabel: 'Reply'),
-    ]),
-  ];
-
   List<_ActivityGroup> _filtered(List<_ActivityGroup> groups) {
     if (_activeFilters.isEmpty) return groups;
     return groups
-        .map((g) => _ActivityGroup(date: g.date, items: g.items.where((i) => _activeFilters.contains(i.type)).toList()))
+        .map(
+          (g) => _ActivityGroup(
+            date: g.date,
+            items: g.items
+                .where((i) => _activeFilters.contains(i.type))
+                .toList(),
+          ),
+        )
         .where((g) => g.items.isNotEmpty)
         .toList();
   }
 
-  /// Real feed grouped by day on success; `_sampleGroups` fallback
-  /// otherwise.
   List<_ActivityGroup> _groupsFor(VendorActivityState state) {
     return state.maybeWhen(
       loadSuccess: (entries) {
-        if (entries.isEmpty) return _sampleGroups;
         final byDate = <String, List<_ActivityItem>>{};
         for (final e in entries) {
           final label = _dateGroupLabel(e.occurredUtc);
@@ -67,9 +49,11 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
             ),
           );
         }
-        return byDate.entries.map((e) => _ActivityGroup(date: e.key, items: e.value)).toList();
+        return byDate.entries
+            .map((e) => _ActivityGroup(date: e.key, items: e.value))
+            .toList();
       },
-      orElse: () => _sampleGroups,
+      orElse: () => const [],
     );
   }
 
@@ -96,10 +80,13 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
     final h = (headline ?? '').toLowerCase();
     if (h.contains('ship')) return _ActivityType.orderShipped;
     if (h.contains('payout')) return _ActivityType.payoutReceived;
-    if (h.contains('stock') || h.contains('low')) return _ActivityType.inventoryLowAlerts;
-    if (h.contains('product') && h.contains('add')) return _ActivityType.productsAdded;
+    if (h.contains('stock') || h.contains('low'))
+      return _ActivityType.inventoryLowAlerts;
+    if (h.contains('product') && h.contains('add'))
+      return _ActivityType.productsAdded;
     if (h.contains('product')) return _ActivityType.productsUpdated;
-    if (h.contains('inquiry') || h.contains('question')) return _ActivityType.customerInquiry;
+    if (h.contains('inquiry') || h.contains('question'))
+      return _ActivityType.customerInquiry;
     return _ActivityType.orderReceived;
   }
 
@@ -113,17 +100,29 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text('Recent Activity', style: DesignTokens.oneLinerSemibold),
         actions: [
           IconButton(
-            icon: Image.asset('assets/images/vendordashboard/icon_filter_alt.png', width: 22, height: 22),
+            icon: Image.asset(
+              'assets/images/vendordashboard/icon_filter_alt.png',
+              width: 22,
+              height: 22,
+            ),
             onPressed: _showFilterSheet,
           ),
           IconButton(
-            icon: Image.asset('assets/images/vendordashboard/icon_file_export.png', width: 22, height: 22),
+            icon: Image.asset(
+              'assets/images/vendordashboard/icon_file_export.png',
+              width: 22,
+              height: 22,
+            ),
             onPressed: () {},
           ),
         ],
@@ -132,50 +131,95 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_activeFilters.isNotEmpty) _buildActiveFilterChips(),
-          Expanded(
-            child: groups.isEmpty
-                ? const Center(
-                    child: Text('No activity matches the selected filters.',
-                        style: TextStyle(color: DesignTokens.textMuted)))
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
-                    itemCount: groups.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-                    itemBuilder: (_, gi) => _ActivityGroupCard(group: groups[gi]),
-                  ),
-          ),
+          Expanded(child: _buildBody(activityState, groups)),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(
+    VendorActivityState activityState,
+    List<_ActivityGroup> groups,
+  ) {
+    return activityState.maybeWhen(
+      loadInProgress: () => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      ),
+      loadFailure: (_) => SmErrorView(
+        message: 'Failed to load recent activity.',
+        onRetry: () => ref.read(vendorActivityNotifierProvider.notifier).load(),
+      ),
+      orElse: () => groups.isEmpty
+          ? Center(
+              child: Text(
+                _activeFilters.isEmpty
+                    ? 'No recent activity yet.'
+                    : 'No activity matches the selected filters.',
+                style: const TextStyle(color: DesignTokens.textMuted),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s12,
+              ),
+              itemCount: groups.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: DesignTokens.s12),
+              itemBuilder: (_, gi) => _ActivityGroupCard(group: groups[gi]),
+            ),
     );
   }
 
   Widget _buildActiveFilterChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s6,
+      ),
       child: Row(
-        children: _activeFilters.map((f) => Padding(
-          padding: const EdgeInsets.only(right: DesignTokens.s8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A3A1A),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: DesignTokens.primaryGreen),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(f.label, style: const TextStyle(fontFamily: DesignTokens.fontFamily, fontSize: 11, color: DesignTokens.primaryGreen, fontWeight: FontWeight.w500)),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => setState(() => _activeFilters.remove(f)),
-                  child: const Icon(Icons.close, size: 12, color: DesignTokens.primaryGreen),
+        children: _activeFilters
+            .map(
+              (f) => Padding(
+                padding: const EdgeInsets.only(right: DesignTokens.s8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A3A1A),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: DesignTokens.primaryGreen),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        f.label,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 11,
+                          color: DesignTokens.primaryGreen,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () => setState(() => _activeFilters.remove(f)),
+                        child: const Icon(
+                          Icons.close,
+                          size: 12,
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-        )).toList(),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -184,10 +228,15 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1C1C1E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => _FilterSheet(
         selected: Set.from(_activeFilters),
-        onApply: (filters) => setState(() { _activeFilters.clear(); _activeFilters.addAll(filters); }),
+        onApply: (filters) => setState(() {
+          _activeFilters.clear();
+          _activeFilters.addAll(filters);
+        }),
         onClear: () => setState(() => _activeFilters.clear()),
       ),
     );
@@ -205,15 +254,30 @@ class _ActivityGroupCard extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-          child: Text(group.date, style: DesignTokens.smallRegular.copyWith(color: const Color(0xFFD4D4D8), fontSize: 12)),
+          child: Text(
+            group.date,
+            style: DesignTokens.smallRegular.copyWith(
+              color: const Color(0xFFD4D4D8),
+              fontSize: 12,
+            ),
+          ),
         ),
         Container(
           decoration: DesignTokens.cardDecoration(),
           child: Column(
             children: [
               for (int i = 0; i < group.items.length; i++) ...[
-                if (i > 0) const Divider(color: DesignTokens.borderDefault, height: 1, indent: 16, endIndent: 16),
-                _ActivityRow(item: group.items[i], isLast: i == group.items.length - 1),
+                if (i > 0)
+                  const Divider(
+                    color: DesignTokens.borderDefault,
+                    height: 1,
+                    indent: 16,
+                    endIndent: 16,
+                  ),
+                _ActivityRow(
+                  item: group.items[i],
+                  isLast: i == group.items.length - 1,
+                ),
               ],
             ],
           ),
@@ -231,7 +295,10 @@ class _ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s12,
+        vertical: DesignTokens.s12,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -244,14 +311,25 @@ class _ActivityRow extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    border: Border.all(color: item.type.iconColor.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: item.type.iconColor.withValues(alpha: 0.3),
+                    ),
                     shape: BoxShape.circle,
                     color: item.type.iconColor.withValues(alpha: 0.1),
                   ),
-                  child: Icon(item.type.icon, color: item.type.iconColor, size: 18),
+                  child: Icon(
+                    item.type.icon,
+                    color: item.type.iconColor,
+                    size: 18,
+                  ),
                 ),
                 if (!isLast)
-                  Container(width: 1, height: 24, color: DesignTokens.borderDefault, margin: const EdgeInsets.only(top: 4)),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: DesignTokens.borderDefault,
+                    margin: const EdgeInsets.only(top: 4),
+                  ),
               ],
             ),
           ),
@@ -260,14 +338,39 @@ class _ActivityRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.title, style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600, color: DesignTokens.textWhite)),
+                Text(
+                  item.title,
+                  style: DesignTokens.smallRegular.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(item.description, style: DesignTokens.smallRegular.copyWith(color: const Color(0xFFD4D4D8), fontSize: 12)),
+                Text(
+                  item.description,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: const Color(0xFFD4D4D8),
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(item.time, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11)),
+                Text(
+                  item.time,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
                 if (item.actionLabel != null) ...[
                   const SizedBox(height: 4),
-                  Text(item.actionLabel!, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen, fontWeight: FontWeight.w600, fontSize: 12)),
+                  Text(
+                    item.actionLabel!,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -279,7 +382,11 @@ class _ActivityRow extends StatelessWidget {
 }
 
 class _FilterSheet extends StatefulWidget {
-  const _FilterSheet({required this.selected, required this.onApply, required this.onClear});
+  const _FilterSheet({
+    required this.selected,
+    required this.onApply,
+    required this.onClear,
+  });
   final Set<_ActivityType> selected;
   final ValueChanged<Set<_ActivityType>> onApply;
   final VoidCallback onClear;
@@ -309,9 +416,16 @@ class _FilterSheetState extends State<_FilterSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Filter Recent Activity', style: DesignTokens.mediumSemibold),
+                Text(
+                  'Filter Recent Activity',
+                  style: DesignTokens.mediumSemibold,
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: DesignTokens.textMuted, size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: DesignTokens.textMuted,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -319,15 +433,24 @@ class _FilterSheetState extends State<_FilterSheet> {
               ],
             ),
             const SizedBox(height: DesignTokens.s8),
-            ..._ActivityType.values.map((type) => CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              value: _current.contains(type),
-              activeColor: DesignTokens.primaryGreen,
-              checkColor: Colors.black,
-              title: Text(type.label, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite)),
-              onChanged: (v) => setState(() => v! ? _current.add(type) : _current.remove(type)),
-            )),
+            ..._ActivityType.values.map(
+              (type) => CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: _current.contains(type),
+                activeColor: DesignTokens.primaryGreen,
+                checkColor: Colors.black,
+                title: Text(
+                  type.label,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                onChanged: (v) => setState(
+                  () => v! ? _current.add(type) : _current.remove(type),
+                ),
+              ),
+            ),
             const SizedBox(height: DesignTokens.s12),
             Row(
               children: [
@@ -335,13 +458,24 @@ class _FilterSheetState extends State<_FilterSheet> {
                   child: SizedBox(
                     height: DesignTokens.buttonHeight,
                     child: OutlinedButton(
-                      onPressed: () { widget.onClear(); Navigator.pop(context); },
+                      onPressed: () {
+                        widget.onClear();
+                        Navigator.pop(context);
+                      },
                       style: OutlinedButton.styleFrom(
                         backgroundColor: const Color(0xFF2C2C2E),
                         side: BorderSide.none,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
-                      child: Text('Clear', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        'Clear',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -350,12 +484,23 @@ class _FilterSheetState extends State<_FilterSheet> {
                   child: SizedBox(
                     height: DesignTokens.buttonHeight,
                     child: ElevatedButton(
-                      onPressed: () { widget.onApply(_current); Navigator.pop(context); },
+                      onPressed: () {
+                        widget.onApply(_current);
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: DesignTokens.primaryGreen,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
-                      child: Text('Apply', style: DesignTokens.smallRegular.copyWith(color: Colors.black, fontWeight: FontWeight.w700)),
+                      child: Text(
+                        'Apply',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -370,47 +515,80 @@ class _FilterSheetState extends State<_FilterSheet> {
 }
 
 enum _ActivityType {
-  orderReceived, orderShipped, productsAdded, productsUpdated, payoutReceived, inventoryLowAlerts, customerInquiry;
+  orderReceived,
+  orderShipped,
+  productsAdded,
+  productsUpdated,
+  payoutReceived,
+  inventoryLowAlerts,
+  customerInquiry;
 
   String get label {
     switch (this) {
-      case orderReceived: return 'Orders Received';
-      case orderShipped: return 'Orders Shipped';
-      case productsAdded: return 'Products Added';
-      case productsUpdated: return 'Products Updated';
-      case payoutReceived: return 'Payout Received';
-      case inventoryLowAlerts: return 'Inventory Low Alerts';
-      case customerInquiry: return 'Customer Inquiries';
+      case orderReceived:
+        return 'Orders Received';
+      case orderShipped:
+        return 'Orders Shipped';
+      case productsAdded:
+        return 'Products Added';
+      case productsUpdated:
+        return 'Products Updated';
+      case payoutReceived:
+        return 'Payout Received';
+      case inventoryLowAlerts:
+        return 'Inventory Low Alerts';
+      case customerInquiry:
+        return 'Customer Inquiries';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case orderReceived: return Icons.shopping_bag_outlined;
-      case orderShipped: return Icons.local_shipping_outlined;
-      case productsAdded: return Icons.add_box_outlined;
-      case productsUpdated: return Icons.inventory_2_outlined;
-      case payoutReceived: return Icons.account_balance_wallet_outlined;
-      case inventoryLowAlerts: return Icons.warning_amber_outlined;
-      case customerInquiry: return Icons.chat_bubble_outline;
+      case orderReceived:
+        return Icons.shopping_bag_outlined;
+      case orderShipped:
+        return Icons.local_shipping_outlined;
+      case productsAdded:
+        return Icons.add_box_outlined;
+      case productsUpdated:
+        return Icons.inventory_2_outlined;
+      case payoutReceived:
+        return Icons.account_balance_wallet_outlined;
+      case inventoryLowAlerts:
+        return Icons.warning_amber_outlined;
+      case customerInquiry:
+        return Icons.chat_bubble_outline;
     }
   }
 
   Color get iconColor {
     switch (this) {
-      case orderReceived: return DesignTokens.primaryGreen;
-      case orderShipped: return const Color(0xFF4DA6FF);
-      case productsAdded: return DesignTokens.primaryGreen;
-      case productsUpdated: return const Color(0xFFFFB800);
-      case payoutReceived: return const Color(0xFF4DA6FF);
-      case inventoryLowAlerts: return DesignTokens.colorError;
-      case customerInquiry: return const Color(0xFFFFB800);
+      case orderReceived:
+        return DesignTokens.primaryGreen;
+      case orderShipped:
+        return const Color(0xFF4DA6FF);
+      case productsAdded:
+        return DesignTokens.primaryGreen;
+      case productsUpdated:
+        return const Color(0xFFFFB800);
+      case payoutReceived:
+        return const Color(0xFF4DA6FF);
+      case inventoryLowAlerts:
+        return DesignTokens.colorError;
+      case customerInquiry:
+        return const Color(0xFFFFB800);
     }
   }
 }
 
 class _ActivityItem {
-  const _ActivityItem({required this.type, required this.title, required this.description, required this.time, this.actionLabel});
+  const _ActivityItem({
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.time,
+    this.actionLabel,
+  });
   final _ActivityType type;
   final String title;
   final String description;

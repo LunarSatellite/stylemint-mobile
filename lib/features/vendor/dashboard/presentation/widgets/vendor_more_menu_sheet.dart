@@ -43,7 +43,9 @@ class _VendorMoreMenu extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s8,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -127,9 +129,12 @@ class _MoreItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? DesignTokens.colorError : DesignTokens.iconLight;
-    final titleColor =
-        destructive ? DesignTokens.colorError : DesignTokens.textWhite;
+    final color = destructive
+        ? DesignTokens.colorError
+        : DesignTokens.iconLight;
+    final titleColor = destructive
+        ? DesignTokens.colorError
+        : DesignTokens.textWhite;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -139,13 +144,17 @@ class _MoreItem extends StatelessWidget {
             Icon(icon, size: 24, color: color),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
-              child: Text(title,
-                  style: DesignTokens.mediumRegular
-                      .copyWith(color: titleColor)),
+              child: Text(
+                title,
+                style: DesignTokens.mediumRegular.copyWith(color: titleColor),
+              ),
             ),
             if (!destructive)
-              const Icon(Icons.chevron_right,
-                  size: 16, color: DesignTokens.iconLight),
+              const Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: DesignTokens.iconLight,
+              ),
           ],
         ),
       ),
