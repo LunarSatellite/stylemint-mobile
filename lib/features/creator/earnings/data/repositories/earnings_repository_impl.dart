@@ -124,19 +124,108 @@ class EarningsRepositoryImpl implements EarningsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> addPayoutMethod({
-    required PayoutMethodType type,
+  Future<Either<NetworkExceptions, Unit>> addBankPayoutMethod({
+    required int kind,
     required String label,
-    required Map<String, String> details,
+    String? maskedAccountNumber,
+    String? beneficiaryName,
+    String? processorReference,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.addPayoutMethod(
-          type: type.name,
+        await remoteDataSource.addBankPayoutMethod(
+          kind: kind,
           label: label,
-          details: details,
           idempotencyKey: const Uuid().v4(),
+          maskedAccountNumber: maskedAccountNumber,
+          beneficiaryName: beneficiaryName,
+          processorReference: processorReference,
         );
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> addExternalWalletPayoutMethod({
+    required int kind,
+    required String label,
+    String? externalIdentifier,
+    String? processorReference,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.addExternalWalletPayoutMethod(
+          kind: kind,
+          label: label,
+          idempotencyKey: const Uuid().v4(),
+          externalIdentifier: externalIdentifier,
+          processorReference: processorReference,
+        );
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<PayoutRecord>>> getPayouts({
+    int pageSize = 25,
+    String? cursor,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final response = await remoteDataSource.getPayouts(
+          pageSize: pageSize,
+          cursor: cursor,
+        );
+        final items =
+            (response['items'] as List<dynamic>? ?? const <dynamic>[])
+                .map((e) => PayoutDto.fromJson(e as Map<String, dynamic>))
+                .toList(growable: false);
+        return right(
+          items.map((dto) => dto.toDomain()).toList(growable: false),
+        );
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> removePayoutMethod(
+    String methodId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.removePayoutMethod(methodId);
         return right(unit);
       } catch (e) {
         if (e is DioException) {

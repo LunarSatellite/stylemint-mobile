@@ -510,6 +510,7 @@ class _PaymentMethodRow extends StatelessWidget {
         PayoutMethodType.bankTransfer => 'Bank A/C',
         PayoutMethodType.esewa => 'Wallet',
         PayoutMethodType.paypal => 'Wallet',
+        PayoutMethodType.venmo => 'Wallet',
       };
 
   void _showActions(BuildContext context) {
@@ -569,7 +570,7 @@ class _PaymentMethodRow extends StatelessWidget {
                     Text(_typeLabel,
                         style: DesignTokens.mediumSemibold
                             .copyWith(color: DesignTokens.textWhite)),
-                    if (method.isDefault) ...[
+                    if (method.isPrimary) ...[
                       const SizedBox(width: DesignTokens.s8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -660,7 +661,7 @@ class _PaymentMethodActionsSheet extends StatelessWidget {
   }
 }
 
-class _RemovePaymentMethodSheet extends StatelessWidget {
+class _RemovePaymentMethodSheet extends ConsumerWidget {
   const _RemovePaymentMethodSheet({required this.method});
 
   final PayoutMethod method;
@@ -669,10 +670,25 @@ class _RemovePaymentMethodSheet extends StatelessWidget {
         PayoutMethodType.bankTransfer => 'Bank A/C',
         PayoutMethodType.esewa => 'Wallet',
         PayoutMethodType.paypal => 'Wallet',
+        PayoutMethodType.venmo => 'Wallet',
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(addPayoutMethodNotifierProvider);
+
+    ref.listen<AsyncValue<void>>(addPayoutMethodNotifierProvider, (_, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(earningsNotifierProvider.notifier).load();
+          Navigator.of(context).pop();
+        },
+        error: (e, __) => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        ),
+      );
+    });
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -753,7 +769,11 @@ class _RemovePaymentMethodSheet extends StatelessWidget {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: state.isLoading
+                    ? null
+                    : () => ref
+                        .read(addPayoutMethodNotifierProvider.notifier)
+                        .remove(method.id),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   elevation: 0,
@@ -762,9 +782,18 @@ class _RemovePaymentMethodSheet extends StatelessWidget {
                         BorderRadius.circular(DesignTokens.buttonRadius),
                   ),
                 ),
-                child: Text('Remove Payment Method',
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.buttonPrimaryText)),
+                child: state.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      )
+                    : Text('Remove Payment Method',
+                        style: DesignTokens.mediumSemibold
+                            .copyWith(color: DesignTokens.buttonPrimaryText)),
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
@@ -772,7 +801,8 @@ class _RemovePaymentMethodSheet extends StatelessWidget {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed:
+                    state.isLoading ? null : () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.bgAppBody,
                   elevation: 0,

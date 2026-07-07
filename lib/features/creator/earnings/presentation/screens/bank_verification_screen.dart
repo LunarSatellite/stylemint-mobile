@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class BankVerificationScreen extends StatefulWidget {
@@ -178,7 +179,7 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
             height: DesignTokens.buttonHeight,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isFilled ? () => context.pop() : null,
+              onPressed: _isFilled ? () => context.go(RouteNames.earnings) : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
                 disabledBackgroundColor:

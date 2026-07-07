@@ -74,32 +74,62 @@ class EarningsLedgerEntry {
   }
 }
 
-enum PayoutMethodType { bankTransfer, esewa, paypal }
+enum PayoutMethodType { bankTransfer, esewa, paypal, venmo }
+
+enum PayoutState { requested, processing, paid, failed, held }
+
+enum PayoutMode { automaticWeekly, onDemand }
+
+class PayoutRecord {
+  const PayoutRecord({
+    required this.id,
+    required this.requestedAmount,
+    required this.feeAmount,
+    required this.netAmount,
+    required this.state,
+    required this.mode,
+    required this.destinationLabel,
+    required this.requestedAt,
+    this.destinationRef,
+    this.paidAt,
+  });
+
+  final String id;
+  final Money requestedAmount;
+  final Money feeAmount;
+  final Money netAmount;
+  final PayoutState state;
+  final PayoutMode mode;
+  final String destinationLabel;
+  final String? destinationRef;
+  final DateTime requestedAt;
+  final DateTime? paidAt;
+}
 
 class PayoutMethod {
   const PayoutMethod({
     required this.id,
     required this.type,
     required this.label,
-    required this.isDefault,
+    required this.isPrimary,
   });
 
   final String id;
   final PayoutMethodType type;
   final String label;
-  final bool isDefault;
+  final bool isPrimary;
 
   PayoutMethod copyWith({
     String? id,
     PayoutMethodType? type,
     String? label,
-    bool? isDefault,
+    bool? isPrimary,
   }) {
     return PayoutMethod(
       id: id ?? this.id,
       type: type ?? this.type,
       label: label ?? this.label,
-      isDefault: isDefault ?? this.isDefault,
+      isPrimary: isPrimary ?? this.isPrimary,
     );
   }
 }
