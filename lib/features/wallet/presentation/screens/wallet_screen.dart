@@ -78,7 +78,8 @@ class _LoadedBody extends ConsumerWidget {
     return RefreshIndicator(
       color: DesignTokens.primaryGreen,
       backgroundColor: DesignTokens.bgAppBody,
-      onRefresh: () => ref.read(walletNotifierProvider.notifier).load(),
+      onRefresh: () async =>
+          ref.read(walletNotifierProvider.notifier).load(),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
