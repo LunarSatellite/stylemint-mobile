@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/data/datas
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/data/models/matchmaking_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/entities/matchmaking.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/repositories/matchmaking_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
 class MatchmakingRepositoryImpl implements MatchmakingRepository {
@@ -17,83 +18,83 @@ class MatchmakingRepositoryImpl implements MatchmakingRepository {
   final MatchmakingRemoteDataSource remoteDataSource;
   final NetworkInfoConnectivity networkInfo;
 
+  static const _uuid = Uuid();
+
   @override
-  Future<Either<NetworkExceptions, List<MatchRecommendation>>> getRecommendations({
-    MatchmakingFilter? filters,
-  }) async {
+  Future<Either<NetworkExceptions, PagedResult<MatchRecommendation>>>
+  getRecommendations({required int pageSize, String? cursor}) async {
     if (await networkInfo.isConnected) {
       try {
-        final params = filters != null
-            ? MatchmakingFilterDto(
-                categories: filters.categories,
-                minFollowers: filters.minFollowers,
-                maxFollowers: filters.maxFollowers,
-                minEngagementRate: filters.minEngagementRate,
-                budgetRange: filters.budgetRange,
-              ).toQueryParams()
-            : null;
-        final dtos = await remoteDataSource.getRecommendations(
-          queryParams: params,
+        final data = await remoteDataSource.getRecommendations(
+          pageSize: pageSize,
+          cursor: cursor,
         );
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => MatchRecommendationDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
+            )
+            .toList(growable: false);
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? pageSize,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
+      } on Object catch (e) {
+        return left(_mapError(e));
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
   @override
-  Future<Either<NetworkExceptions, int>> getCompatibilityScore(String creatorId) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final score = await remoteDataSource.getCompatibilityScore(creatorId);
-        return right(score);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, Unit>> inviteToCampaign(
-    String campaignId,
-    String creatorId,
+  Future<Either<NetworkExceptions, PartnershipPrefill>> invite(
+    String matchId,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.inviteToCampaign(
-          campaignId: campaignId,
-          creatorId: creatorId,
-          idempotencyKey: const Uuid().v4(),
+        final data = await remoteDataSource.invite(
+          matchId: matchId,
+          idempotencyKey: _uuid.v4(),
         );
-        return right(unit);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return right(PartnershipPrefillDto.fromJson(data).toDomain());
+      } on Object catch (e) {
+        return left(_mapError(e));
       }
     } else {
-      return left(NetworkExceptions.noInternetConnection());
+      return left(const NetworkExceptions.noInternetConnection());
     }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> dismissMatch(String matchId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.dismiss(
+          matchId: matchId,
+          idempotencyKey: _uuid.v4(),
+        );
+        return right(unit);
+      } on Object catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  NetworkExceptions _mapError(Object e) {
+    if (e is DioException) {
+      return NetworkExceptions.server(e.message.toString());
+    }
+    if (e is NetworkExceptions) return e;
+    return const NetworkExceptions.unexpectedError();
   }
 }

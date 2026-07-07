@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/entities/matchmaking.dart';
@@ -16,29 +18,7 @@ class MatchmakingScreen extends ConsumerStatefulWidget {
 }
 
 class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
-  String? _selectedCategory;
-  int? _minFollowers;
-  int? _maxFollowers;
-  String? _selectedCampaignId;
-
-  static const _categories = [
-    'Fashion',
-    'Beauty',
-    'Lifestyle',
-    'Fitness',
-    'Food',
-    'Tech',
-    'Travel',
-    'Home',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(matchmakingNotifierProvider.notifier).loadRecommendations();
-    });
-  }
+  String? _invitingMatchId;
 
   @override
   Widget build(BuildContext context) {
@@ -47,16 +27,25 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
 
     ref.listen<InviteState>(inviteCreatorNotifierProvider, (_, next) {
       next.maybeWhen(
-        success: () {
+        success: (prefill) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Creator invited!')),
+            SnackBar(
+              content: Text(
+                'Creator invited! Suggested commission: '
+                '${prefill.proposedCommissionPercent.toStringAsFixed(0)}% '
+                '(range ${prefill.brandCommissionMinPercent.toStringAsFixed(0)}'
+                '–${prefill.brandCommissionMaxPercent.toStringAsFixed(0)}%)',
+              ),
+            ),
           );
           ref.read(inviteCreatorNotifierProvider.notifier).reset();
+          setState(() => _invitingMatchId = null);
         },
         failure: (_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to invite creator')),
           );
+          setState(() => _invitingMatchId = null);
         },
         orElse: () {},
       );
@@ -68,95 +57,70 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Matchmaking', style: DesignTokens.titleMedium),
       ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          Expanded(
-            child: state.when(
-              initial: _loader,
-              loadInProgress: _loader,
-              loadSuccess: (recommendations) {
-                if (recommendations.isEmpty) {
-                  return const SmEmptyState(
-                    message: 'No match recommendations found.',
-                    icon: Icons.people_outline,
-                  );
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(DesignTokens.s16),
-                  itemCount: recommendations.length,
-                  itemBuilder: (_, i) => _buildMatchCard(
-                    recommendations[i],
-                    inviteState,
-                  ),
-                );
-              },
-              loadFailure: (failure) => SmErrorView(
-                message: 'Failed to load matchmaking.',
-                onRetry: () => ref
-                    .read(matchmakingNotifierProvider.notifier)
-                    .loadRecommendations(),
-              ),
-            ),
-          ),
-        ],
+      body: state.when(
+        initial: _loader,
+        loadInProgress: _loader,
+        loadSuccess: (recommendations, hasMore, loadMoreInProgress) {
+          if (recommendations.isEmpty) {
+            return const SmEmptyState(
+              message: 'No match recommendations found.',
+              icon: Icons.people_outline,
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            itemCount: recommendations.length + (hasMore ? 1 : 0),
+            itemBuilder: (_, i) {
+              if (i >= recommendations.length) {
+                return _buildLoadMore(loadMoreInProgress);
+              }
+              return _buildMatchCard(
+                recommendations[i],
+                inviteState,
+              );
+            },
+          );
+        },
+        loadFailure: (failure) => SmErrorView(
+          message: 'Failed to load matchmaking.',
+          onRetry: () => ref
+              .read(matchmakingNotifierProvider.notifier)
+              .loadRecommendations(),
+        ),
       ),
     );
   }
 
-  Widget _buildFilterBar() {
+  Widget _buildLoadMore(bool loadMoreInProgress) {
+    if (loadMoreInProgress) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+        child: Center(
+          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+        ),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: _selectedCategory == null,
-                  onTap: () {
-                    setState(() => _selectedCategory = null);
-                    _applyFilters();
-                  },
-                ),
-                ..._categories.map(
-                  (cat) => _FilterChip(
-                    label: cat,
-                    selected: _selectedCategory == cat,
-                    onTap: () {
-                      setState(() => _selectedCategory = cat);
-                      _applyFilters();
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+      child: Center(
+        child: TextButton(
+          onPressed: () =>
+              ref.read(matchmakingNotifierProvider.notifier).loadMore(),
+          child: const Text('Load more'),
+        ),
       ),
     );
-  }
-
-  void _applyFilters() {
-    final filter = MatchmakingFilter(
-      categories:
-          _selectedCategory != null ? [_selectedCategory!] : null,
-      minFollowers: _minFollowers,
-      maxFollowers: _maxFollowers,
-    );
-    ref
-        .read(matchmakingNotifierProvider.notifier)
-        .loadRecommendations(filters: filter);
   }
 
   Widget _buildMatchCard(
     MatchRecommendation recommendation,
     InviteState inviteState,
   ) {
+    final isInvitingThis = _invitingMatchId == recommendation.id;
+    final isSubmitting =
+        isInvitingThis &&
+        inviteState.maybeWhen(submitting: () => true, orElse: () => false);
+
     return Container(
       margin: const EdgeInsets.only(bottom: DesignTokens.s12),
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -168,24 +132,19 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundImage: NetworkImage(recommendation.avatarUrl),
                 backgroundColor: DesignTokens.bgAppBodyLight,
+                child: Text(
+                  recommendation.creatorHandle.isNotEmpty
+                      ? recommendation.creatorHandle[0].toUpperCase()
+                      : '?',
+                  style: DesignTokens.oneLinerSemibold,
+                ),
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      recommendation.creatorName,
-                      style: DesignTokens.oneLinerSemibold,
-                    ),
-                    const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      '@${recommendation.handle}  ·  ${recommendation.category}',
-                      style: DesignTokens.tiny,
-                    ),
-                  ],
+                child: Text(
+                  '@${recommendation.creatorHandle}',
+                  style: DesignTokens.oneLinerSemibold,
                 ),
               ),
               CompatibilityScoreWidget(
@@ -193,53 +152,61 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
               ),
             ],
           ),
+          if (recommendation.reasonSummary.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  size: 14,
+                  color: DesignTokens.primaryGreen,
+                ),
+                const SizedBox(width: DesignTokens.s6),
+                Expanded(
+                  child: Text(
+                    recommendation.reasonSummary,
+                    style: DesignTokens.smallRegular,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: DesignTokens.s12),
-          if (recommendation.reasons.isNotEmpty) ...[
-            ...recommendation.reasons.map(
-              (reason) => Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        size: 14, color: DesignTokens.primaryGreen),
-                    const SizedBox(width: DesignTokens.s6),
-                    Expanded(
-                      child: Text(reason, style: DesignTokens.smallRegular),
-                    ),
-                  ],
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => _dismiss(recommendation.id),
+                  child: const Text('Dismiss'),
                 ),
               ),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-          ],
-          if (recommendation.sampleReelThumbnail != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(DesignTokens.s8),
-              child: Image.network(
-                recommendation.sampleReelThumbnail!,
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: DesignTokens.buttonHeight,
+                  child: ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => _inviteCreator(recommendation),
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Invite to Partnership'),
+                  ),
+                ),
               ),
-            ),
-          const SizedBox(height: DesignTokens.s12),
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: inviteState.maybeWhen(
-                submitting: () => false,
-                orElse: () => true,
-              )
-                  ? () => _inviteCreator(recommendation)
-                  : null,
-              style: DesignTokens.primaryButtonStyle(),
-              child: inviteState.maybeWhen(
-                submitting: () =>
-                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                orElse: () => const Text('Invite to Campaign'),
-              ),
-            ),
+            ],
           ),
         ],
       ),
@@ -247,49 +214,28 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
   }
 
   void _inviteCreator(MatchRecommendation recommendation) {
-    ref
-        .read(inviteCreatorNotifierProvider.notifier)
-        .invite('', recommendation.creatorId);
+    setState(() => _invitingMatchId = recommendation.id);
+    unawaited(
+      ref
+          .read(inviteCreatorNotifierProvider.notifier)
+          .invite(
+            recommendation.id,
+          ),
+    );
+  }
+
+  Future<void> _dismiss(String matchId) async {
+    final success = await ref
+        .read(matchmakingNotifierProvider.notifier)
+        .dismissMatch(matchId);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to dismiss match')),
+      );
+    }
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: DesignTokens.s8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16,
-            vertical: DesignTokens.s6,
-          ),
-          decoration: selected
-              ? DesignTokens.chipDecorationSelected()
-              : DesignTokens.chipDecorationDefault(),
-          child: Text(
-            label,
-            style: DesignTokens.smallRegular.copyWith(
-              color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }

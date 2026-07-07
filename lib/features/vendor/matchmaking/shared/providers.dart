@@ -7,8 +7,6 @@ import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/data/datas
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/data/repositories/matchmaking_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/repositories/matchmaking_repository.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/notifiers/matchmaking_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart'
-    as partnerships;
 
 final matchmakingRemoteDataSourceProvider =
     Provider<MatchmakingRemoteDataSource>(
@@ -37,6 +35,3 @@ final inviteCreatorNotifierProvider =
         ref.watch(matchmakingRepositoryProvider),
       ),
     );
-
-final vendorCampaignsProvider =
-    partnerships.vendorPartnershipsNotifierProvider;
