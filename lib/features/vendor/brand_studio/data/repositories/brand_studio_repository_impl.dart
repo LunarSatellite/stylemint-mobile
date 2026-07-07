@@ -16,55 +16,15 @@ class BrandStudioRepositoryImpl implements BrandStudioRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<CampaignTemplate>>> getTemplates({
-    String? industry,
+  Future<Either<NetworkExceptions, BrandStudioInsights>> getInsights({
+    int? windowDays,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.getTemplates(industry: industry);
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, CampaignAnalytics>> getCampaignAnalytics(
-    String campaignId,
-  ) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.getCampaignAnalytics(campaignId);
+        final dto = await remoteDataSource.getInsights(
+          windowDays: windowDays,
+        );
         return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
-  Future<Either<NetworkExceptions, List<MarketInsight>>> getMarketInsights() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dtos = await remoteDataSource.getMarketInsights();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
