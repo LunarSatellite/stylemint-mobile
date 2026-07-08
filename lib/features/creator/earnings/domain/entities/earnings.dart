@@ -76,6 +76,23 @@ class EarningsLedgerEntry {
 
 enum PayoutMethodType { bankTransfer, esewa, paypal }
 
+/// The 4 payout destinations the backend actually supports (locked v1.1
+/// spec — `Identity.Enums.PayoutMethodKind`). Distinct from
+/// [PayoutMethodType]: that's the display bucket for an *existing* method;
+/// this is what the caller must pick when *adding* one, since NimbBank and
+/// LaxmiBank are different backend kinds even though both display as
+/// "Bank A/C".
+enum PayoutDestinationKind {
+  nimbBank(1),
+  laxmiBank(2),
+  paypal(3),
+  esewa(4);
+
+  const PayoutDestinationKind(this.code);
+
+  final int code;
+}
+
 class PayoutMethod {
   const PayoutMethod({
     required this.id,

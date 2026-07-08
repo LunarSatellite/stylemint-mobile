@@ -124,20 +124,51 @@ class EarningsRepositoryImpl implements EarningsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> addPayoutMethod({
-    required PayoutMethodType type,
+  Future<Either<NetworkExceptions, PayoutMethod>> addBankPayoutMethod({
+    required PayoutDestinationKind kind,
     required String label,
-    required Map<String, String> details,
+    required String maskedAccountNumber,
+    required String beneficiaryName,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.addPayoutMethod(
-          type: type.name,
+        final dto = await remoteDataSource.addBankPayoutMethod(
+          kind: kind,
           label: label,
-          details: details,
+          maskedAccountNumber: maskedAccountNumber,
+          beneficiaryName: beneficiaryName,
           idempotencyKey: const Uuid().v4(),
         );
-        return right(unit);
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PayoutMethod>> addExternalWalletPayoutMethod({
+    required PayoutDestinationKind kind,
+    required String label,
+    required String externalIdentifier,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.addExternalWalletPayoutMethod(
+          kind: kind,
+          label: label,
+          externalIdentifier: externalIdentifier,
+          idempotencyKey: const Uuid().v4(),
+        );
+        return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

@@ -19,9 +19,20 @@ abstract interface class EarningsRepository {
     required String payoutMethodId,
   });
 
-  Future<Either<NetworkExceptions, Unit>> addPayoutMethod({
-    required PayoutMethodType type,
+  /// [kind] must be [PayoutDestinationKind.nimbBank] or
+  /// [PayoutDestinationKind.laxmiBank].
+  Future<Either<NetworkExceptions, PayoutMethod>> addBankPayoutMethod({
+    required PayoutDestinationKind kind,
     required String label,
-    required Map<String, String> details,
+    required String maskedAccountNumber,
+    required String beneficiaryName,
+  });
+
+  /// [kind] must be [PayoutDestinationKind.paypal] or
+  /// [PayoutDestinationKind.esewa].
+  Future<Either<NetworkExceptions, PayoutMethod>> addExternalWalletPayoutMethod({
+    required PayoutDestinationKind kind,
+    required String label,
+    required String externalIdentifier,
   });
 }

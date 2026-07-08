@@ -84,30 +84,44 @@ abstract class EarningsLedgerEntryDto with _$EarningsLedgerEntryDto {
   }
 }
 
-@freezed
-abstract class PayoutMethodDto with _$PayoutMethodDto {
-  const factory PayoutMethodDto({
-    required String id,
-    required String type,
-    required String label,
-    @Default(false) bool isDefault,
-  }) = _PayoutMethodDto;
-
-  const PayoutMethodDto._();
+/// Wire shape for the backend's `PayoutMethodDto` (Identity module).
+/// `kind` is the backend's int enum `PayoutMethodKind`: NimbBank=1,
+/// LaxmiBank=2, PayPal=3, Esewa=4 (locked v1.1 spec — exactly these four).
+/// `isPrimary` maps to the domain's `isDefault`.
+class PayoutMethodDto {
+  const PayoutMethodDto({
+    required this.id,
+    required this.kind,
+    required this.label,
+    this.isPrimary = false,
+  });
 
   factory PayoutMethodDto.fromJson(Map<String, dynamic> json) =>
-      _$PayoutMethodDtoFromJson(json);
+      PayoutMethodDto(
+        id: json['id'] as String,
+        kind: json['kind'] as int,
+        label: json['label'] as String? ?? '',
+        isPrimary: json['isPrimary'] as bool? ?? false,
+      );
 
-  PayoutMethod toDomain() {
-    final typeEnum = PayoutMethodType.values.firstWhere(
-      (t) => t.name == type,
-      orElse: () => PayoutMethodType.bankTransfer,
-    );
-    return PayoutMethod(
-      id: id,
-      type: typeEnum,
-      label: label,
-      isDefault: isDefault,
-    );
-  }
+  final String id;
+  final int kind;
+  final String label;
+  final bool isPrimary;
+
+  PayoutMethod toDomain() => PayoutMethod(
+    id: id,
+    type: _typeFromKind(kind),
+    label: label,
+    isDefault: isPrimary,
+  );
+
+  /// Both bank kinds (NimbBank=1, LaxmiBank=2) collapse to
+  /// [PayoutMethodType.bankTransfer] — the app doesn't yet distinguish
+  /// which bank a payout method targets in its display model.
+  static PayoutMethodType _typeFromKind(int kind) => switch (kind) {
+    3 => PayoutMethodType.paypal,
+    4 => PayoutMethodType.esewa,
+    _ => PayoutMethodType.bankTransfer,
+  };
 }

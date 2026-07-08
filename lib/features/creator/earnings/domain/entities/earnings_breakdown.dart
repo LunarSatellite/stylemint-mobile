@@ -1,9 +1,8 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-/// Per-reel earnings breakdown derived from the creator analytics dashboard
-/// (GET /v1/creator/analytics/dashboard). Distinct from the balance summary:
-/// the balance endpoint has no per-reel metrics, so these come from the
-/// dashboard's TotalSales + TopReels.
+/// Month-to-date earnings breakdown (SM-BG-4), from
+/// GET /v1/earnings/summary. Distinct from the balance summary: the balance
+/// endpoint has no per-sale/per-reel metrics.
 class EarningsBreakdown {
   const EarningsBreakdown({
     required this.salesCount,
@@ -12,16 +11,15 @@ class EarningsBreakdown {
     required this.highestReelEarnings,
   });
 
-  /// Total sales in the window (dashboard TotalSales.current).
+  /// This calendar month's Settled sales count.
   final int salesCount;
 
-  /// Number of top-performing reels returned by the dashboard. The dashboard
-  /// exposes no total-reel count, so this reflects TopReels.length.
+  /// Distinct reels with attributed earnings this month.
   final int reelCount;
 
   /// Total earnings / sales count (0 when no sales).
   final Money avgPerSale;
 
-  /// Highest single-reel earnings among TopReels.
+  /// The single highest-earning reel's net commission this month.
   final Money highestReelEarnings;
 }

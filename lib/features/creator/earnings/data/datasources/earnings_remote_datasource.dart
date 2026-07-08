@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/models/earnings_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -14,43 +15,27 @@ class EarningsRemoteDataSource {
     return EarningsSummaryDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// Derives the per-reel earnings breakdown from the creator analytics
-  /// dashboard. Parsed manually — the payload nests generic KPI tiles
-  /// (`{current, previous, deltaPercent}`) and Money (`{amount, currency}`),
-  /// which don't map cleanly to a flat freezed DTO.
-  Future<EarningsBreakdown> getDashboardBreakdown() async {
-    final r = await apiClient.get('/v1/creator/analytics/dashboard')
+  /// Month-to-date earnings breakdown for the "Earnings Breakdown This
+  /// Month" card. Real figures (SM-BG-4) — sales count, average per sale,
+  /// distinct reel count, and the single highest-earning reel are all
+  /// computed server-side from the ledger, not approximated from the
+  /// creator analytics dashboard.
+  Future<EarningsBreakdown> getMonthlyBreakdown() async {
+    final r = await apiClient.get('/v1/earnings/summary')
         as Map<String, dynamic>;
-
-    final salesCount =
-        ((r['totalSales'] as Map<String, dynamic>?)?['current'] as num? ?? 0)
-            .toInt();
-
-    final totalEarnings =
-        (r['totalEarnings'] as Map<String, dynamic>?)?['current']
-            as Map<String, dynamic>?;
-    final currency = totalEarnings?['currency'] as String? ?? 'NPR';
-    final totalEarningsAmount =
-        (totalEarnings?['amount'] as num? ?? 0).toDouble();
-
-    final reels = (r['topReels'] as List<dynamic>? ?? const <dynamic>[])
-        .cast<Map<String, dynamic>>();
-    var highest = 0.0;
-    for (final reel in reels) {
-      final amount = (reel['earnings'] as Map<String, dynamic>?)?['amount'];
-      if (amount is num && amount.toDouble() > highest) {
-        highest = amount.toDouble();
-      }
-    }
+    final currency = r['currency'] as String? ?? 'NPR';
 
     return EarningsBreakdown(
-      salesCount: salesCount,
-      reelCount: reels.length,
+      salesCount: r['thisMonthSalesCount'] as int? ?? 0,
+      reelCount: r['thisMonthReelCount'] as int? ?? 0,
       avgPerSale: Money(
-        amount: salesCount > 0 ? totalEarningsAmount / salesCount : 0,
+        amount: (r['avgEarningsPerSaleAmount'] as num? ?? 0).toDouble(),
         currency: currency,
       ),
-      highestReelEarnings: Money(amount: highest, currency: currency),
+      highestReelEarnings: Money(
+        amount: (r['highestReelEarningsAmount'] as num? ?? 0).toDouble(),
+        currency: currency,
+      ),
     );
   }
 
@@ -68,8 +53,9 @@ class EarningsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// GET /v1/creator/earnings/payout-methods (creator-scoped alias,
+  /// resolves accountId from the JWT — SM-BG-5).
   Future<List<PayoutMethodDto>> getPayoutMethods() async {
-    // TODO(swagger): needs accountId path param; Swagger: GET /v1/accounts/{accountId}/payout-methods
     final response = await apiClient.get('/v1/creator/earnings/payout-methods');
     final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => PayoutMethodDto.fromJson(e as Map<String, dynamic>))
@@ -97,19 +83,45 @@ class EarningsRemoteDataSource {
     );
   }
 
-  Future<PayoutMethodDto> addPayoutMethod({
-    required String type,
+  /// POST /v1/creator/earnings/payout-methods/bank (SM-BG-5). [kind] must
+  /// be nimbBank or laxmiBank.
+  Future<PayoutMethodDto> addBankPayoutMethod({
+    required PayoutDestinationKind kind,
     required String label,
-    required Map<String, String> details,
+    required String maskedAccountNumber,
+    required String beneficiaryName,
     required String idempotencyKey,
   }) async {
-    // TODO(swagger): needs accountId path param; Swagger: POST /v1/accounts/{accountId}/payout-methods/bank
     final response = await apiClient.post(
-      '/v1/creator/earnings/payout-methods',
+      '/v1/creator/earnings/payout-methods/bank',
       data: {
-        'type': type,
+        'kind': kind.code,
         'label': label,
-        'details': details,
+        'maskedAccountNumber': maskedAccountNumber,
+        'beneficiaryName': beneficiaryName,
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return PayoutMethodDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// POST /v1/creator/earnings/payout-methods/external-wallet (SM-BG-5).
+  /// [kind] must be paypal or esewa.
+  Future<PayoutMethodDto> addExternalWalletPayoutMethod({
+    required PayoutDestinationKind kind,
+    required String label,
+    required String externalIdentifier,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/earnings/payout-methods/external-wallet',
+      data: {
+        'kind': kind.code,
+        'label': label,
+        'externalIdentifier': externalIdentifier,
       },
       options: Options(headers: {
         'requiresToken': true,

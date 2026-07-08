@@ -13,10 +13,10 @@ final earningsRemoteDataSourceProvider = Provider<EarningsRemoteDataSource>(
   (ref) => EarningsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
-/// Per-reel earnings breakdown (creator analytics dashboard). Separate from
-/// the balance summary because the metrics live on a different endpoint.
+/// Month-to-date earnings breakdown (SM-BG-4). Separate from the balance
+/// summary because the metrics live on a different endpoint.
 final earningsBreakdownProvider = FutureProvider<EarningsBreakdown>((ref) {
-  return ref.watch(earningsRemoteDataSourceProvider).getDashboardBreakdown();
+  return ref.watch(earningsRemoteDataSourceProvider).getMonthlyBreakdown();
 });
 
 final earningsRepositoryProvider = Provider<EarningsRepository>(
