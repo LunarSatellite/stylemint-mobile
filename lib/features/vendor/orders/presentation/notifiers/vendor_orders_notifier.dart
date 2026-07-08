@@ -171,25 +171,6 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
     );
   }
 
-  Future<void> handleReturn(String action) async {
-    state.maybeWhen(
-      loadSuccess: (order) async {
-        state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.handleReturn(order.id, action);
-        state = either.fold(
-          (f) {
-            _onActionFailure(order, f);
-            return OrderDetailState.actionFailure(order, f);
-          },
-          (_) => OrderDetailState.loadSuccess(
-            order.copyWith(status: VendorOrderStatus.returned),
-          ),
-        );
-      },
-      orElse: () {},
-    );
-  }
-
   /// "Mark as Shipped" from the order detail screen.
   Future<void> markReadyToShip() async {
     state.maybeWhen(

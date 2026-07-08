@@ -136,15 +136,46 @@ class VendorOrdersRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  // TODO(swagger): POST /v1/vendor/orders/{orderId}/return not found in Swagger
-  Future<Map<String, dynamic>> handleReturn(
-    String orderId,
-    String action,
+  /// GET /v1/vendor/returns — Vendor §8.1 paged list of return requests
+  /// awaiting (or past) the vendor's accept/reject decision.
+  Future<Map<String, dynamic>> listReturns({
+    int? state,
+    String? cursor,
+    int pageSize = 25,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/vendor/returns',
+      queryParameters: {
+        'pageSize': pageSize,
+        if (state != null) 'state': state,
+        if (cursor != null) 'cursor': cursor,
+      },
+      options: Options(headers: {'requiresToken': true}),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// POST /v1/vendor/returns/{id}/accept — Submitted -> Approved.
+  Future<Map<String, dynamic>> acceptReturn(
+    String returnRequestId,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
-      '/v1/vendor/orders/$orderId/return',
-      data: {'action': action},
+      '/v1/vendor/returns/$returnRequestId/accept',
+      options: _idempotent(idempotencyKey),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// POST /v1/vendor/returns/{id}/reject — Submitted -> Rejected (terminal).
+  Future<Map<String, dynamic>> rejectReturn(
+    String returnRequestId,
+    String reason,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/vendor/returns/$returnRequestId/reject',
+      data: {'reason': reason},
       options: _idempotent(idempotencyKey),
     );
     return response as Map<String, dynamic>;
