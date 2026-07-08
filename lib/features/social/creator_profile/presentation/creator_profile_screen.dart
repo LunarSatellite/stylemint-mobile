@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart' as reels_providers;
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
@@ -74,40 +75,13 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   bool _expanded = false;
   int _reelFilter = 1;
 
-  static const _allBadges = [
-    'assets/images/profile_badges/diamond_badge.png',
-    'assets/images/profile_badges/red_badge.png',
-    'assets/images/profile_badges/golden_badge.png',
-    'assets/images/profile_badges/silver_badge.png',
-    'assets/images/profile_badges/badge_5.png',
-    'assets/images/profile_badges/badge_6.png',
-    'assets/images/profile_badges/badge_7.png',
-  ];
-
   void _showBadgesSheet() {
+    final showcased = ref.read(showcasedBadgesProvider);
+    if (showcased.isEmpty) return;
     unawaited(showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _BadgesSheet(badges: _allBadges),
-    ));
-  }
-
-  static const _tagEmojis = [
-    '🚀', '👟', '🎯', '⚡', '📱', '⚽', '💪', '🍕',
-    '🌟', '🔥', '🏆', '✨',
-  ];
-
-  void _showTagsSheet(List<String> achievementTags) {
-    final active = ref.read(activePartnershipsProvider);
-    final partnerNames = active.map((p) => p.vendorName).toList();
-    final combined = <String>[
-      ...achievementTags,
-      ...partnerNames.where((n) => !achievementTags.contains(n)),
-    ];
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _TagsSheet(tags: combined, emojis: _tagEmojis),
+      builder: (_) => _BadgesSheet(badges: showcased),
     ));
   }
 
@@ -169,9 +143,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                     const SizedBox(height: 4),
                     _handleText(loadedProfile),
                     const SizedBox(height: DesignTokens.s12),
-                    _achievementChips(profileData),
+                    _achievementChips(profileData.tags),
                     const SizedBox(height: DesignTokens.s8),
-                    _partnerChips(profileData),
+                    _badgesRow(),
+                    const SizedBox(height: DesignTokens.s8),
+                    _partnerChips(),
                     const SizedBox(height: DesignTokens.s16),
                     _brandLogosRow(),
                     const SizedBox(height: DesignTokens.s16),
@@ -183,9 +159,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               const SizedBox(height: DesignTokens.s20),
               _socialPlatforms(),
               const SizedBox(height: DesignTokens.s20),
-              _aboutMe(profileData),
+              _aboutMe(loadedProfile),
               const SizedBox(height: DesignTokens.s20),
-              _categoryNiche(profileData),
+              _categoryNiche(effectiveAccountId),
               const SizedBox(height: DesignTokens.s20),
               _reelsSection(),
               const SizedBox(height: DesignTokens.s16),
@@ -313,22 +289,22 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _achievementChips(CreatorProfileEditData profileData) {
-    if (profileData.tags.isEmpty) return const SizedBox.shrink();
+  Widget _achievementChips(List<String> tags) {
+    if (tags.isEmpty) return const SizedBox.shrink();
     const emojis = ['🚀', '👟', '🌟', '🎯', '💪', '🔥'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
-        children: List.generate(profileData.tags.length, (i) {
+        children: List.generate(tags.length, (i) {
           return Padding(
-            padding: EdgeInsets.only(
-                right: i < profileData.tags.length - 1 ? DesignTokens.s8 : 0),
+            padding: const EdgeInsets.only(right: DesignTokens.s8),
             child: _AchievementChip(
               emoji: emojis[i % emojis.length],
-              label: profileData.tags[i],
-              bg: i == 0 ? const Color(0xFF3A2F00) : DesignTokens.bgAppBodyLight,
-              onTap: () => _showTagsSheet(profileData.tags),
+              label: tags[i],
+              bg: i == 0
+                  ? const Color(0xFF3A2F00)
+                  : DesignTokens.bgAppBodyLight,
             ),
           );
         }),
@@ -336,7 +312,67 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _partnerChips(CreatorProfileEditData profileData) {
+  Widget _badgesRow() {
+    final showcased = ref.watch(showcasedBadgesProvider);
+    if (showcased.isEmpty) return const SizedBox.shrink();
+
+    const maxVisible = 4;
+    final visible = showcased.take(maxVisible).toList();
+    final overflow = showcased.length - maxVisible;
+
+    return GestureDetector(
+      onTap: _showBadgesSheet,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ...visible.map(
+              (badge) => Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: DesignTokens.s4),
+                child: Image.network(
+                  badge.badgeIconUrl,
+                  width: 36,
+                  height: 36,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.verified_outlined,
+                    color: DesignTokens.textMuted,
+                    size: 36,
+                  ),
+                ),
+              ),
+            ),
+            if (overflow > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: DesignTokens.s4),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: DesignTokens.bgAppBodyLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: DesignTokens.borderDefault),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '+$overflow',
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _partnerChips() {
     final active = ref.watch(activePartnershipsProvider);
 
     if (active.isEmpty) return const SizedBox.shrink();
@@ -360,23 +396,18 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 ),
               ),
           if (remaining > 0)
-            GestureDetector(
-              onTap: () => _showTagsSheet(profileData.tags),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBodyLight,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.chipRadius),
-                ),
-                child: Text(
-                  '+$remaining more',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+              ),
+              child: Text(
+                '+$remaining more',
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  color: DesignTokens.textMuted,
                 ),
               ),
             ),
@@ -509,19 +540,13 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _aboutMe(CreatorProfileEditData profileData) {
+  Widget _aboutMe(CreatorProfile? loadedProfile) {
     const truncateAt = 120;
-    final fullBio = profileData.bio;
+    final fullBio = loadedProfile?.bio ?? '';
     final needsTruncation = fullBio.length > truncateAt;
     final truncated = needsTruncation ? fullBio.substring(0, truncateAt) : fullBio;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -535,79 +560,96 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          if (_expanded || !needsTruncation)
-            Text(
-              fullBio,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
-                color: DesignTokens.textMuted,
-                height: 1.5,
-              ),
-            )
-          else
-            Text.rich(
-              TextSpan(
-                text: truncated,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.textMuted,
-                  height: 1.5,
-                ),
-                children: [
-                  const TextSpan(text: '... '),
-                  WidgetSpan(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _expanded = true),
-                      child: const Text(
-                        'Read More',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 13,
-                          color: DesignTokens.primaryGreen,
-                          fontWeight: FontWeight.w600,
-                        ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppBody,
+              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+            ),
+            child: (_expanded || !needsTruncation)
+                ? Text(
+                    fullBio,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      color: DesignTokens.textMuted,
+                      height: 1.5,
+                    ),
+                  )
+                : Text.rich(
+                    TextSpan(
+                      text: truncated,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 13,
+                        color: DesignTokens.textMuted,
+                        height: 1.5,
                       ),
+                      children: [
+                        const TextSpan(text: '... '),
+                        WidgetSpan(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _expanded = true),
+                            child: const Text(
+                              'Read More',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 13,
+                                color: DesignTokens.primaryGreen,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _categoryNiche(CreatorProfileEditData profileData) {
-    if (profileData.niches.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Category Niche',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
-            ),
+  Widget _categoryNiche(String accountId) {
+    final nichesAsync = ref.watch(creatorNicheNamesProvider(accountId));
+    return nichesAsync.maybeWhen(
+      data: (niches) {
+        if (niches.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Category Niche',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(DesignTokens.s16),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBody,
+                  borderRadius:
+                      BorderRadius.circular(DesignTokens.cardRadius),
+                ),
+                child: Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s8,
+                  children: niches.map((n) => _NicheChip(label: n)).toList(),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: DesignTokens.s12),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
-            children: profileData.niches
-                .map((niche) => _NicheChip(
-                      svgPath: 'assets/images/interests/$niche.svg',
-                      label: niche,
-                    ))
-                .toList(),
-          ),
-        ],
-      ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
@@ -642,7 +684,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                   color: DesignTokens.textMuted, size: 20),
             ],
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s8),
           Row(
             children: [
               _FilterTab(
@@ -696,39 +738,34 @@ class _AchievementChip extends StatelessWidget {
     required this.emoji,
     required this.label,
     required this.bg,
-    this.onTap,
   });
   final String emoji;
   final String label;
   final Color bg;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-          border: Border.all(color: DesignTokens.borderDefault),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 13)),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                color: DesignTokens.textMuted,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 12,
+              color: DesignTokens.textMuted,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -851,39 +888,25 @@ class _SocialIcon extends StatelessWidget {
 }
 
 class _NicheChip extends StatelessWidget {
-  const _NicheChip({required this.svgPath, required this.label});
-  final String svgPath;
+  const _NicheChip({required this.label});
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
         border: Border.all(color: DesignTokens.borderDefault),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            svgPath,
-            width: 16,
-            height: 16,
-            colorFilter: const ColorFilter.mode(
-                DesignTokens.textLight, BlendMode.srcIn),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 12,
-              color: DesignTokens.textLight,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 12,
+          color: DesignTokens.textLight,
+        ),
       ),
     );
   }
@@ -1005,7 +1028,7 @@ class _ReelCard extends StatelessWidget {
 
 class _BadgesSheet extends StatelessWidget {
   const _BadgesSheet({required this.badges});
-  final List<String> badges;
+  final List<BadgeAward> badges;
 
   @override
   Widget build(BuildContext context) {
@@ -1071,7 +1094,7 @@ class _BadgesSheet extends StatelessWidget {
               mainAxisSpacing: DesignTokens.s12,
               crossAxisSpacing: DesignTokens.s12,
             ),
-            itemBuilder: (_, i) => _BadgeDisplayTile(asset: badges[i]),
+            itemBuilder: (_, i) => _BadgeDisplayTile(badge: badges[i]),
           ),
         ],
       ),
@@ -1080,8 +1103,8 @@ class _BadgesSheet extends StatelessWidget {
 }
 
 class _BadgeDisplayTile extends StatelessWidget {
-  const _BadgeDisplayTile({required this.asset});
-  final String asset;
+  const _BadgeDisplayTile({required this.badge});
+  final BadgeAward badge;
 
   @override
   Widget build(BuildContext context) {
@@ -1091,124 +1114,13 @@ class _BadgeDisplayTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       padding: const EdgeInsets.all(10),
-      child: Image.asset(
-        asset,
+      child: Image.network(
+        badge.badgeIconUrl,
         fit: BoxFit.contain,
-        errorBuilder: (_, _, _) => const Icon(
+        errorBuilder: (_, __, ___) => const Icon(
           Icons.verified_outlined,
           color: DesignTokens.textMuted,
         ),
-      ),
-    );
-  }
-}
-
-// ── Tags bottom sheet ─────────────────────────────────────────────────────────
-
-class _TagsSheet extends StatelessWidget {
-  const _TagsSheet({required this.tags, required this.emojis});
-  final List<String> tags;
-  final List<String> emojis;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomPadding =
-        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s12,
-        DesignTokens.s16,
-        bottomPadding,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Row(
-            children: [
-              const Text(
-                'Your Tags',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: DesignTokens.textWhite,
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: DesignTokens.textMuted,
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
-            children: List.generate(tags.length, (i) {
-              return _SheetTagChip(
-                emoji: emojis[i % emojis.length],
-                label: tags[i],
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SheetTagChip extends StatelessWidget {
-  const _SheetTagChip({required this.emoji, required this.label});
-  final String emoji;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
-        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: DesignTokens.borderDefault),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 13,
-              color: DesignTokens.textLight,
-            ),
-          ),
-        ],
       ),
     );
   }

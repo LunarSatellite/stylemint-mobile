@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -35,45 +34,34 @@ class _CreatorEditProfileScreenState
   late final TextEditingController _bioCtrl;
 
   late List<String> _tags;
-  late Set<String> _selectedNiches;
-
-  static const _allNiches = <_NicheOption>[
-    _NicheOption('Fashion', 'assets/images/interests/Fashion.svg'),
-    _NicheOption('Accessories', 'assets/images/interests/Accessories.svg'),
-    _NicheOption('Beauty', 'assets/images/interests/Beauty.svg'),
-    _NicheOption('Books', 'assets/images/interests/Books.svg'),
-    _NicheOption('Fitness', 'assets/images/interests/Fitness.svg'),
-    _NicheOption('Food', 'assets/images/interests/Food.svg'),
-    _NicheOption('Footwear', 'assets/images/interests/Footwear.svg'),
-    _NicheOption('Gaming', 'assets/images/interests/Gaming.svg'),
-    _NicheOption('Home', 'assets/images/interests/Home.svg'),
-    _NicheOption('Outdoor', 'assets/images/interests/Outdoor.svg'),
-    _NicheOption('Pets', 'assets/images/interests/Pets.svg'),
-    _NicheOption('Tech', 'assets/images/interests/Tech.svg'),
-    _NicheOption('Travel', 'assets/images/interests/Travel.svg'),
-    _NicheOption('Wellness', 'assets/images/interests/Wellness.svg'),
-  ];
 
   @override
   void initState() {
     super.initState();
     _nicknameCtrl = TextEditingController();
     _bioCtrl = TextEditingController();
+    _tags = [];
     ref.read(updateCreatorProfileNotifierProvider.notifier).reset();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Seed from provider only on first call.
-    if (_nicknameCtrl.text.isEmpty && _bioCtrl.text.isEmpty) {
-      final data = ref.read(creatorProfileEditProvider);
+    _seedFromProvider();
+  }
+
+  void _seedFromProvider() {
+    final data = ref.read(creatorProfileEditProvider);
+    if (_nicknameCtrl.text.isEmpty) {
       _nicknameCtrl.text = widget.initialDisplayName.isNotEmpty
           ? widget.initialDisplayName
           : data.displayName;
+    }
+    if (_bioCtrl.text.isEmpty && data.bio.isNotEmpty) {
       _bioCtrl.text = data.bio;
+    }
+    if (_tags.isEmpty && data.tags.isNotEmpty) {
       _tags = List<String>.from(data.tags);
-      _selectedNiches = Set<String>.from(data.niches);
     }
   }
 
@@ -84,14 +72,6 @@ class _CreatorEditProfileScreenState
     super.dispose();
   }
 
-  void _toggleNiche(String niche) => setState(() {
-        if (_selectedNiches.contains(niche)) {
-          _selectedNiches.remove(niche);
-        } else {
-          _selectedNiches.add(niche);
-        }
-      });
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -99,7 +79,7 @@ class _CreatorEditProfileScreenState
       displayName: _nicknameCtrl.text.trim(),
       bio: _bioCtrl.text.trim(),
       tags: List<String>.from(_tags),
-      niches: Set<String>.from(_selectedNiches),
+      niches: ref.read(creatorProfileEditProvider).niches,
     );
 
     final accountId = ref.read(sessionControllerProvider).maybeWhen(
@@ -118,24 +98,51 @@ class _CreatorEditProfileScreenState
       displayName: _nicknameCtrl.text.trim(),
       bio: _bioCtrl.text.trim(),
       tags: List<String>.from(_tags),
-      niches: List<String>.from(_selectedNiches),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<UpdateCreatorProfileState>(
-      updateCreatorProfileNotifierProvider,
-      (_, next) {
-        next.maybeWhen(
-          success: (_) => context.pop(),
-          failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(NetworkExceptions.getMessage(f))),
-          ),
-          orElse: () {},
-        );
-      },
-    );
+    ref
+      ..listen<UpdateCreatorProfileState>(
+        updateCreatorProfileNotifierProvider,
+        (_, next) {
+          next.maybeWhen(
+            success: (_) {
+              final id = ref.read(sessionControllerProvider).maybeWhen(
+                authenticated: (id) => id,
+                orElse: () => null,
+              );
+              if (id != null) {
+                unawaited(
+                  ref
+                      .read(creatorProfileNotifierProvider(id).notifier)
+                      .load(),
+                );
+              }
+              context.pop();
+            },
+            failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+            ),
+            orElse: () {},
+          );
+        },
+      )
+      ..listen<CreatorProfileEditData>(
+        creatorProfileEditProvider,
+        (_, data) {
+          if (_nicknameCtrl.text.isEmpty && data.displayName.isNotEmpty) {
+            _nicknameCtrl.text = data.displayName;
+          }
+          if (_bioCtrl.text.isEmpty && data.bio.isNotEmpty) {
+            _bioCtrl.text = data.bio;
+          }
+          if (_tags.isEmpty && data.tags.isNotEmpty) {
+            setState(() => _tags = List<String>.from(data.tags));
+          }
+        },
+      );
 
     final bool isSubmitting = ref
         .watch(updateCreatorProfileNotifierProvider)
@@ -250,32 +257,6 @@ class _CreatorEditProfileScreenState
                   if (result != null) setState(() => _tags = result);
                 },
               ),
-              const SizedBox(height: DesignTokens.s24),
-
-              // ── Category Niche ─────────────────────────────────────────────
-              _SectionLabel('Category Niche'),
-              const SizedBox(height: DesignTokens.s4),
-              const Text(
-                'Select the niches that best describe your content.',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Wrap(
-                spacing: DesignTokens.s8,
-                runSpacing: DesignTokens.s8,
-                children: _allNiches.map((n) {
-                  final selected = _selectedNiches.contains(n.label);
-                  return _NicheChip(
-                    option: n,
-                    selected: selected,
-                    onTap: () => _toggleNiche(n.label),
-                  );
-                }).toList(),
-              ),
               const SizedBox(height: DesignTokens.s32),
 
               // ── Save button ────────────────────────────────────────────────
@@ -318,14 +299,6 @@ class _CreatorEditProfileScreenState
     fontSize: 14,
     color: DesignTokens.textWhite,
   );
-}
-
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-class _NicheOption {
-  const _NicheOption(this.label, this.svgPath);
-  final String label;
-  final String svgPath;
 }
 
 // ── Widgets ───────────────────────────────────────────────────────────────────
@@ -398,60 +371,6 @@ class _TagsRow extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right_rounded,
                 size: 18, color: DesignTokens.textMuted),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NicheChip extends StatelessWidget {
-  const _NicheChip({
-    required this.option,
-    required this.selected,
-    required this.onTap,
-  });
-  final _NicheOption option;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: selected
-            ? DesignTokens.chipDecorationSelected()
-            : DesignTokens.chipDecorationDefault(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              option.svgPath,
-              width: 16,
-              height: 16,
-              colorFilter: ColorFilter.mode(
-                selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.textMuted,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              option.label,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w400,
-                color: selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.textMuted,
-              ),
-            ),
           ],
         ),
       ),

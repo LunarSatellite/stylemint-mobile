@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/repositories/creator_profile_repository.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
@@ -50,6 +51,35 @@ class _FakeCreatorProfileRepository implements CreatorProfileRepository {
     if (shouldFail) return left(const NetworkExceptions.unexpectedError());
     return right(_profile);
   }
+
+  @override
+  Future<NetworkEither<List<BadgeAward>>> listMyBadges() async => right(const []);
+
+  @override
+  Future<NetworkEither<List<BadgeAward>>> updateBadgeShowcase(
+    List<String> awardIdsInOrder,
+  ) async =>
+      right(const []);
+
+  @override
+  Future<NetworkEither<List<String>>> listSpecializationCategoryIds(
+    String accountId,
+  ) async =>
+      right(const []);
+
+  @override
+  Future<NetworkEither<void>> addSpecialization(
+    String accountId,
+    String categoryId,
+  ) async =>
+      right(null);
+
+  @override
+  Future<NetworkEither<void>> removeSpecialization(
+    String accountId,
+    String categoryId,
+  ) async =>
+      right(null);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

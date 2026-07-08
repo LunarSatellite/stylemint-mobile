@@ -13,16 +13,14 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class _Platform {
   final String id;
   final String label;
-  final Color bgColor;
-  final Color iconColor;
-  const _Platform(this.id, this.label, this.bgColor, this.iconColor);
+  const _Platform(this.id, this.label);
 }
 
 const _kPlatforms = [
-  _Platform('youtube',   'YouTube',   Color(0xFFFF0000), Colors.white),
-  _Platform('instagram', 'Instagram', Color(0xFFE1306C), Colors.white),
-  _Platform('facebook',  'Facebook',  Color(0xFF1877F2), Colors.white),
-  _Platform('tiktok',    'TikTok',    Color(0xFF1A1A1A), Colors.white),
+  _Platform('youtube',   'YouTube'),
+  _Platform('instagram', 'Instagram'),
+  _Platform('facebook',  'Facebook'),
+  _Platform('tiktok',    'TikTok'),
 ];
 
 const _kEngagementRates = ['<1%', '1–3%', '3–6%', '6–10%', '10–20%', '>20%'];
@@ -320,12 +318,13 @@ class _PlatformIcon extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             width: 64,
             height: 64,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: platform.bgColor,
+              color: DesignTokens.bgAppBodyLight,
               boxShadow: connected
                   ? [BoxShadow(
-                      color: platform.bgColor.withOpacity(0.4),
+                      color: DesignTokens.bgAppBodyLight.withOpacity(0.6),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     )]
@@ -355,23 +354,13 @@ class _PlatformIcon extends StatelessWidget {
   }
 
   Widget _platformIcon(_Platform p) {
-    switch (p.id) {
-      case 'facebook':
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: SvgPicture.asset('assets/icons/facebook.svg',
-              colorFilter: const ColorFilter.mode(
-                  Colors.white, BlendMode.srcIn)),
-        );
-      case 'youtube':
-        return const Icon(Icons.play_circle_fill, color: Colors.white, size: 32);
-      case 'instagram':
-        return const Icon(Icons.camera_alt, color: Colors.white, size: 28);
-      case 'tiktok':
-        return const Icon(Icons.music_note, color: Colors.white, size: 28);
-      default:
-        return const SizedBox.shrink();
-    }
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: SvgPicture.asset(
+        'assets/icons/${p.id}.svg',
+        fit: BoxFit.contain,
+      ),
+    );
   }
 }
 
