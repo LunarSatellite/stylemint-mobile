@@ -117,10 +117,13 @@ class VendorRepositoryImpl implements VendorRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.uploadKYCDocument(
+        final sessionId = await _ensureActiveKycSessionId(accountId);
+        final blob = await remoteDataSource.uploadKycBlob(accountId, filePath);
+        final dto = await remoteDataSource.registerKycDocument(
           accountId: accountId,
-          filePath: filePath,
-          documentType: documentType.name,
+          sessionId: sessionId,
+          documentType: _documentTypeCode(documentType),
+          blob: blob,
           idempotencyKey: _uuid.v4(),
         );
         return right(dto.toDomain());
@@ -163,4 +166,44 @@ class VendorRepositoryImpl implements VendorRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, String?>> getActiveKycSessionId({
+    required String accountId,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final session = await remoteDataSource.getActiveKycSession(accountId);
+        return right(session?['id'] as String?);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  /// Returns the account's active KYC session id, starting a new one
+  /// (Pending, backend-default lifetime) if none exists yet.
+  Future<String> _ensureActiveKycSessionId(String accountId) async {
+    final active = await remoteDataSource.getActiveKycSession(accountId);
+    if (active != null) return active['id'] as String;
+    final started = await remoteDataSource.startKycSession(accountId, _uuid.v4());
+    return started['id'] as String;
+  }
+
+  /// Vendor-facing subset of the backend `VerificationDocumentType` enum
+  /// (7-10 — see StyleMint.Modules.Identity.Enums.VerificationDocumentType).
+  static int _documentTypeCode(KYCDocumentType type) => switch (type) {
+    KYCDocumentType.pan => 7,
+    KYCDocumentType.citizenship => 8,
+    KYCDocumentType.businessReg => 9,
+    KYCDocumentType.taxDoc => 10,
+  };
 }

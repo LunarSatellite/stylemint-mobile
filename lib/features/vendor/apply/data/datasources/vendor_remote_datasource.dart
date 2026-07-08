@@ -140,32 +140,78 @@ class VendorRemoteDataSource {
     return VendorApplicationDto.fromJson(response as Map<String, dynamic>);
   }
 
-  // NOTE: this endpoint is Identity's personal-KYC verification-documents
-  // flow (expects a pre-uploaded `blobReference`, not raw file bytes) — it
-  // is the wrong endpoint for vendor business documents, and there is
-  // currently no blob/upload endpoint in the API to produce a storage
-  // reference from a picked file either way. Left as-is (non-functional)
-  // until backend exposes an upload mechanism.
-  Future<KYCDocumentDto> uploadKYCDocument({
-    required String accountId,
-    required String filePath,
-    required String documentType,
-    required String idempotencyKey,
-  }) async {
+  /// GET /v1/accounts/{accountId}/kyc-sessions/active — returns the raw
+  /// session map, or `null` when the account has no active session yet
+  /// (the backend returns `Ok(null)`, not a 404, for that case).
+  Future<Map<String, dynamic>?> getActiveKycSession(String accountId) async {
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/kyc-sessions/active',
+      options: Options(headers: {'requiresToken': true}),
+    );
+    return response as Map<String, dynamic>?;
+  }
+
+  /// POST /v1/accounts/{accountId}/kyc-sessions — starts a new session.
+  /// "Manual" reflects that Style Mint has no automated ID-verification
+  /// provider wired up yet — sessions are reviewed by an admin.
+  Future<Map<String, dynamic>> startKycSession(
+    String accountId,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/accounts/$accountId/kyc-sessions',
+      data: {'provider': 'Manual'},
+      options: _idempotent(idempotencyKey),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// POST .../verification-documents/upload-blob (multipart) — stores the
+  /// raw file and returns {blobReference, contentHash, contentSizeBytes,
+  /// contentType, originalFilename} to feed into [registerKycDocument].
+  Future<Map<String, dynamic>> uploadKycBlob(
+    String accountId,
+    String filePath,
+  ) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath),
-      'documentType': documentType,
     });
     final response = await apiClient.rawPost(
-      '/v1/accounts/$accountId/verification-documents',
+      '/v1/accounts/$accountId/verification-documents/upload-blob',
       data: formData,
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(headers: {'requiresToken': true}),
     );
-    final data = response.data as Map<String, dynamic>;
-    return KYCDocumentDto.fromJson(data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// POST /v1/accounts/{accountId}/verification-documents — registers a
+  /// previously-uploaded blob against a KYC session. `documentType` is the
+  /// backend `VerificationDocumentType` int (Pan=7, Citizenship=8,
+  /// BusinessRegistration=9, TaxDocument=10 for vendor docs); `side` is
+  /// always NotApplicable(1) — these are single-page documents.
+  Future<KYCDocumentDto> registerKycDocument({
+    required String accountId,
+    required String sessionId,
+    required int documentType,
+    required Map<String, dynamic> blob,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/accounts/$accountId/verification-documents',
+      data: {
+        'sessionId': sessionId,
+        'documentType': documentType,
+        'side': 1, // NotApplicable
+        'blobReference': blob['blobReference'],
+        'contentHash': blob['contentHash'],
+        'contentSizeBytes': blob['contentSizeBytes'],
+        'contentType': blob['contentType'],
+        if (blob['originalFilename'] != null)
+          'originalFilename': blob['originalFilename'],
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return KYCDocumentDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<List<KYCDocumentDto>> getKYCDocuments({
@@ -175,6 +221,7 @@ class VendorRemoteDataSource {
     final response = await apiClient.get(
       '/v1/accounts/$accountId/verification-documents'
       '/by-session/$sessionId',
+      options: Options(headers: {'requiresToken': true}),
     );
     final list = response as List<dynamic>;
     return list

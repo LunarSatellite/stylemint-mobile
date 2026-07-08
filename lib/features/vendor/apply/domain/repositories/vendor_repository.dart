@@ -16,4 +16,10 @@ abstract class VendorRepository {
     required String accountId,
     required String sessionId,
   });
+
+  /// The account's current KYC session id, or `null` if none exists yet
+  /// (no documents have ever been uploaded).
+  Future<Either<NetworkExceptions, String?>> getActiveKycSessionId({
+    required String accountId,
+  });
 }
