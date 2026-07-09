@@ -384,21 +384,19 @@ class _MockReelImportRepository implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
-    String platformPostId,
-    String caption,
-    List<String> taggedProductIds,
+    ImportableReel reel,
   ) async =>
       right(
         ImportedReel(
-          id: 'imported-$platformPostId',
+          id: 'imported-${reel.platformPostId}',
           status: ImportStatus.processing,
-          reelReelId: 'reel-$platformPostId',
+          reelReelId: 'reel-${reel.platformPostId}',
           tags: const [],
           importedAt: DateTime.now(),
-          caption: caption,
+          caption: reel.caption,
           thumbnailUrl: '',
           platform: SocialPlatform.instagram,
-          platformPostId: platformPostId,
+          platformPostId: reel.platformPostId,
         ),
       );
 
@@ -458,7 +456,7 @@ class _MockReelImportRepository implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, List<ImportedReel>>> getImportHistory({
-    int limit = 20,
+    int pageSize = 20,
     String? cursor,
   }) async =>
       right([]);

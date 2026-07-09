@@ -48,6 +48,91 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
     unawaited(context.push(route, extra: reel));
   }
 
+  void _showUrlPasteSheet() {
+    final controller = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.s16),
+        ),
+      ),
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.only(
+          left: DesignTokens.s16,
+          right: DesignTokens.s16,
+          top: DesignTokens.s24,
+          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom +
+              DesignTokens.s24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste a Reel URL',
+              style: DesignTokens.titleMedium,
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              'Paste the link to your ${_selectedPlatform.displayName} reel.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
+              decoration: InputDecoration(
+                hintText: 'https://',
+                hintStyle: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+                filled: true,
+                fillColor: DesignTokens.bgAppFoundation,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                  vertical: DesignTokens.s12,
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                style: DesignTokens.primaryButtonStyle(),
+                onPressed: () {
+                  final url = controller.text.trim();
+                  if (url.isEmpty) return;
+                  Navigator.of(sheetCtx).pop();
+                  unawaited(context.push(
+                    RouteNames.reelImportPreview,
+                    extra: {
+                      'url': url,
+                      'platform': _selectedPlatform,
+                    },
+                  ));
+                },
+                child: const Text('Continue'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(controller.dispose).ignore();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(reelImportNotifierProvider);
@@ -103,8 +188,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                 if (reels.isEmpty) {
                   return _EmptyState(
                     platform: _selectedPlatform,
-                    onPasteUrl: () =>
-                        context.push(RouteNames.reelImportPreview),
+                    onPasteUrl: _showUrlPasteSheet,
                   );
                 }
                 return GridView.builder(
@@ -148,7 +232,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                 DesignTokens.s16,
               ),
               child: GestureDetector(
-                onTap: () => context.push(RouteNames.reelImportPreview),
+                onTap: _showUrlPasteSheet,
                 child: Text(
                   "Can't see your posts? Paste a URL instead",
                   textAlign: TextAlign.center,
