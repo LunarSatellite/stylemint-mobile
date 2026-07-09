@@ -1,9 +1,16 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class VendorApplyUnderReviewScreen extends StatelessWidget {
+class VendorApplyUnderReviewScreen extends ConsumerStatefulWidget {
   const VendorApplyUnderReviewScreen({
     super.key,
     this.applicationId,
@@ -14,8 +21,61 @@ class VendorApplyUnderReviewScreen extends StatelessWidget {
   final String? userEmail;
 
   @override
+  ConsumerState<VendorApplyUnderReviewScreen> createState() =>
+      _VendorApplyUnderReviewScreenState();
+}
+
+class _VendorApplyUnderReviewScreenState
+    extends ConsumerState<VendorApplyUnderReviewScreen> {
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_startPolling());
+  }
+
+  Future<void> _startPolling() async {
+    var accountId = ref.read(sessionControllerProvider).maybeWhen(
+      authenticated: (v) => v,
+      orElse: () => null,
+    );
+    accountId ??= await ref.read(tokenStorageProvider).accountId;
+    if (!mounted || accountId == null || accountId.isEmpty) return;
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      unawaited(
+        ref
+            .read(vendorApplyNotifierProvider.notifier)
+            .checkStatus(accountId!, force: true),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final email = userEmail ?? 'your email';
+    ref.listen(vendorApplyNotifierProvider, (prev, next) {
+      next.whenOrNull(
+        loadSuccess: (app) {
+          if (app.status == VendorApplicationStatus.approved) {
+            context.pushReplacement(RouteNames.vendorApplyApproved);
+          } else if (app.status == VendorApplicationStatus.rejected) {
+            context.pushReplacement(
+              RouteNames.vendorApplyRejected,
+              extra: app.rejectionReason,
+            );
+          }
+        },
+      );
+    });
+
+    final email = widget.userEmail ?? 'your email';
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
