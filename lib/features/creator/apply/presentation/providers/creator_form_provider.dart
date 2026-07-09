@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 /// Holds all form data across the 3-step Creator Application flow.
@@ -9,7 +8,12 @@ class CreatorFormData {
   final String email;
   final String phone;
   final String country;
+
+  /// Display names of the selected content categories (for the review screen).
   final Set<String> categories;
+
+  /// Backend category GUIDs (parallel to [categories]) — what the API needs.
+  final Set<String> categoryIds;
   final String whyJoin;
 
   // Step 2 — Social Media Profiles
@@ -25,6 +29,7 @@ class CreatorFormData {
     this.phone = '',
     this.country = '',
     this.categories = const {},
+    this.categoryIds = const {},
     this.whyJoin = '',
     this.connectedPlatforms = const {},
     this.totalFollowers = '',
@@ -39,6 +44,7 @@ class CreatorFormData {
     String? phone,
     String? country,
     Set<String>? categories,
+    Set<String>? categoryIds,
     String? whyJoin,
     Set<String>? connectedPlatforms,
     String? totalFollowers,
@@ -52,6 +58,7 @@ class CreatorFormData {
         phone: phone ?? this.phone,
         country: country ?? this.country,
         categories: categories ?? this.categories,
+        categoryIds: categoryIds ?? this.categoryIds,
         whyJoin: whyJoin ?? this.whyJoin,
         connectedPlatforms: connectedPlatforms ?? this.connectedPlatforms,
         totalFollowers: totalFollowers ?? this.totalFollowers,
@@ -70,6 +77,7 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
     required String phone,
     required String country,
     required Set<String> categories,
+    required Set<String> categoryIds,
     required String whyJoin,
   }) {
     state = state.copyWith(
@@ -78,6 +86,7 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
       phone: phone,
       country: country,
       categories: Set.unmodifiable(categories),
+      categoryIds: Set.unmodifiable(categoryIds),
       whyJoin: whyJoin,
     );
   }

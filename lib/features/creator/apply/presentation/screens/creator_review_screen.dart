@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -144,9 +148,82 @@ class CreatorReviewScreen extends ConsumerWidget {
     );
   }
 
-  void _submit(BuildContext context, WidgetRef ref) {
-    // TODO: wire up actual submission API call
-    context.go(RouteNames.creatorApplySubmitted);
+  Future<void> _submit(BuildContext context, WidgetRef ref) async {
+    final data = ref.read(creatorFormProvider);
+
+    final categoryIds = data.categoryIds.toList();
+    if (categoryIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one content category.'),
+        ),
+      );
+      return;
+    }
+
+    final followers = _parseFollowers(data.totalFollowers);
+    // Build the API payload from the collected wizard data. Fields the
+    // /v1/creator/apply contract doesn't accept (email, phone, country,
+    // engagement rate, content types, sample URLs) are intentionally not sent.
+    final form = CreatorApplicationForm(
+      fullName: data.fullName,
+      handle: '',
+      platforms: data.connectedPlatforms
+          .map((id) => Platform(
+                id: id,
+                name: id,
+                handle: '',
+                followerCount: followers,
+              ))
+          .toList(),
+      contentCategoryIds: categoryIds,
+      audienceBand: _audienceBand(followers),
+      bio: data.whyJoin,
+    );
+
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      ),
+    ));
+
+    await ref.read(creatorApplyNotifierProvider.notifier).submit(form);
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // dismiss the progress spinner
+
+    ref.read(creatorApplyNotifierProvider.notifier).submitState.maybeWhen(
+          success: (_) {
+            ref.read(creatorFormProvider.notifier).reset();
+            context.go(RouteNames.creatorApplySubmitted);
+          },
+          failure: (_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Couldn’t submit your application. Please try again.',
+                ),
+              ),
+            );
+          },
+          orElse: () {},
+        );
+  }
+
+  /// Pulls a follower count out of the free-text field ("12,000" → 12000).
+  int _parseFollowers(String raw) {
+    final digits = raw.replaceAll(RegExp('[^0-9]'), '');
+    return int.tryParse(digits) ?? 0;
+  }
+
+  /// Maps a self-reported follower count to the backend AudienceSizeBand (1..5).
+  int _audienceBand(int followers) {
+    if (followers >= 1000000) return 5; // 1M+
+    if (followers >= 100000) return 4; // 100k–1M
+    if (followers >= 10000) return 3; // 10k–100k
+    if (followers >= 1000) return 2; // 1k–10k
+    return 1; // <1k
   }
 
   String _platformLabel(String id) {

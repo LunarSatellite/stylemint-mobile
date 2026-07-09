@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -9,30 +10,6 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 // ---------------------------------------------------------------------------
 // Data
 // ---------------------------------------------------------------------------
-
-class _Category {
-  final String label;
-  final String emoji;
-  const _Category(this.label, this.emoji);
-}
-
-const _kCategories = [
-  _Category('Fashion', '🔥'),
-  _Category('Sports', '⚽'),
-  _Category('Outdoors', '🏔️'),
-  _Category('Tech', '💻'),
-  _Category('Accessories', '💍'),
-  _Category('Home', '🏠'),
-  _Category('Footwear', '👟'),
-  _Category('Fitness', '💪'),
-  _Category('Wellness', '🌿'),
-  _Category('Food', '🍕'),
-  _Category('Gaming', '🎮'),
-  _Category('Pets', '🐾'),
-  _Category('Books', '📚'),
-  _Category('Travel', '✈️'),
-  _Category('Other', ''),
-];
 
 const _kCountries = [
   'Nepal', 'United States', 'India', 'United Kingdom',
@@ -57,7 +34,9 @@ class _CreatorApplyScreenState extends ConsumerState<CreatorApplyScreen> {
   final _whyController   = TextEditingController();
 
   String? _selectedCountry;
-  final Set<String> _selectedCategories = {};
+
+  /// Selected content categories, keyed by backend GUID → display name.
+  final Map<String, String> _selectedCategories = {};
 
   static const int _maxWhy = 500;
 
@@ -83,7 +62,8 @@ class _CreatorApplyScreenState extends ConsumerState<CreatorApplyScreen> {
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),
           country: _selectedCountry ?? '',
-          categories: _selectedCategories,
+          categories: _selectedCategories.values.toSet(),
+          categoryIds: _selectedCategories.keys.toSet(),
           whyJoin: _whyController.text.trim(),
         );
     context.push(RouteNames.creatorApplySocial);
@@ -138,25 +118,49 @@ class _CreatorApplyScreenState extends ConsumerState<CreatorApplyScreen> {
 
           const SizedBox(height: DesignTokens.s24),
 
-          // Content Categories
+          // Content Categories — loaded live from the backend so we submit
+          // the real category GUIDs the API expects.
           const Text('Content Categories', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s12),
-          Wrap(
-            spacing: DesignTokens.s8,
-            runSpacing: DesignTokens.s8,
-            children: _kCategories.map((cat) {
-              final selected = _selectedCategories.contains(cat.label);
-              return _CategoryChip(
-                category: cat,
-                selected: selected,
-                onTap: () => setState(() {
-                          selected
-                              ? _selectedCategories.remove(cat.label)
-                              : _selectedCategories.add(cat.label);
-                        }),
-              );
-            }).toList(),
-          ),
+          ref.watch(creatorContentCategoriesProvider).when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                        color: DesignTokens.primaryGreen),
+                  ),
+                ),
+                error: (_, _) => Row(
+                  children: [
+                    Expanded(
+                      child: Text('Couldn’t load categories.',
+                          style: DesignTokens.smallDescription),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          ref.invalidate(creatorContentCategoriesProvider),
+                      child: const Text('Retry',
+                          style: TextStyle(color: DesignTokens.primaryGreen)),
+                    ),
+                  ],
+                ),
+                data: (cats) => Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s8,
+                  children: cats.map((cat) {
+                    final selected = _selectedCategories.containsKey(cat.id);
+                    return _CategoryChip(
+                      label: cat.name,
+                      selected: selected,
+                      onTap: () => setState(() {
+                        selected
+                            ? _selectedCategories.remove(cat.id)
+                            : _selectedCategories[cat.id] = cat.name;
+                      }),
+                    );
+                  }).toList(),
+                ),
+              ),
 
           const SizedBox(height: DesignTokens.s24),
 
@@ -346,11 +350,11 @@ class _SectionCard extends StatelessWidget {
 // Category chip
 // ---------------------------------------------------------------------------
 class _CategoryChip extends StatelessWidget {
-  final _Category category;
+  final String label;
   final bool selected;
   final VoidCallback? onTap;
   const _CategoryChip({
-    required this.category,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
@@ -374,25 +378,16 @@ class _CategoryChip extends StatelessWidget {
                 : DesignTokens.chipsDefaultBorder,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (category.emoji.isNotEmpty) ...[
-              Text(category.emoji, style: const TextStyle(fontSize: 14)),
-              const SizedBox(width: DesignTokens.s6),
-            ],
-            Text(
-              category.label,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: selected
-                    ? DesignTokens.primaryGreen
-                    : DesignTokens.chipsDefaultText,
-              ),
-            ),
-          ],
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: selected
+                ? DesignTokens.primaryGreen
+                : DesignTokens.chipsDefaultText,
+          ),
         ),
       ),
     );
