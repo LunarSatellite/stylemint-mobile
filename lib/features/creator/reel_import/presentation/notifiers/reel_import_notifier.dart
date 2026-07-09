@@ -27,7 +27,8 @@ abstract class ImportHistoryState with _$ImportHistoryState {
   const ImportHistoryState._();
 
   const factory ImportHistoryState.initial() = _ImportHistoryInitial;
-  const factory ImportHistoryState.loadInProgress() = _ImportHistoryLoadInProgress;
+  const factory ImportHistoryState.loadInProgress() =
+      _ImportHistoryLoadInProgress;
   const factory ImportHistoryState.loadSuccess(
     List<ImportedReel> reels,
   ) = _ImportHistoryLoadSuccess;
@@ -40,7 +41,8 @@ abstract class ProductSearchState with _$ProductSearchState {
   const ProductSearchState._();
 
   const factory ProductSearchState.initial() = _ProductSearchInitial;
-  const factory ProductSearchState.loadInProgress() = _ProductSearchLoadInProgress;
+  const factory ProductSearchState.loadInProgress() =
+      _ProductSearchLoadInProgress;
   const factory ProductSearchState.loadSuccess(
     List<TaggedProductForImport> products,
   ) = _ProductSearchLoadSuccess;
@@ -62,16 +64,8 @@ class ReelImportNotifier extends StateNotifier<ReelImportState> {
     );
   }
 
-  Future<void> importReel(
-    String platformPostId,
-    String caption,
-    List<String> taggedProductIds,
-  ) async {
-    final either = await _repository.importReel(
-      platformPostId,
-      caption,
-      taggedProductIds,
-    );
+  Future<void> importReel(ImportableReel reel) async {
+    final either = await _repository.importReel(reel);
     either.fold((_) => null, (_) => null);
   }
 }
@@ -84,10 +78,10 @@ class ImportHistoryNotifier extends StateNotifier<ImportHistoryState> {
 
   final ReelImportRepository _repository;
 
-  Future<void> load({int limit = 20, String? cursor}) async {
+  Future<void> load({int pageSize = 20, String? cursor}) async {
     state = const ImportHistoryState.loadInProgress();
     final either = await _repository.getImportHistory(
-      limit: limit,
+      pageSize: pageSize,
       cursor: cursor,
     );
     state = either.fold(
