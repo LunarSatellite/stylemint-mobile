@@ -1,0 +1,497 @@
+<title>StyleMint Mobile — API Integration Status</title>
+<style>
+  :root {
+    --ground: #FBFBFC;
+    --panel: #FFFFFF;
+    --panel-alt: #F5F7F6;
+    --ink: #14181C;
+    --muted: #5B6771;
+    --faint: #8A949C;
+    --line: #E5E9EA;
+    --brand: #147E52;
+    --brand-soft: #E7F3EC;
+
+    --done-fg: #15803D;  --done-bg: #E6F4EA;
+    --prog-fg: #B4590A;  --prog-bg: #FBEFDD;
+    --todo-fg: #5A6672;  --todo-bg: #EEF1F4;
+    --park-fg: #6B6470;  --park-bg: #EFECF1;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  .doc {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--ground);
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 28px 64px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--brand);
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+
+  .lede {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+    max-width: 60ch;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--faint);
+  }
+  .meta b { color: var(--muted); font-weight: 600; }
+
+  hr.rule {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 30px 0;
+  }
+
+  /* rollup */
+  .rollup {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 16px 14px;
+  }
+  .stat .n {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat .l {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .stat.done .n { color: var(--done-fg); }
+  .stat.prog .n { color: var(--prog-fg); }
+  .stat.todo .n { color: var(--todo-fg); }
+  .stat.total .n { color: var(--ink); }
+
+  .bar {
+    display: flex;
+    height: 14px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .bar span { display: block; height: 100%; }
+  .bar .s-done { background: #34A56B; }
+  .bar .s-prog { background: #E4A13C; }
+  .bar .s-todo { background: #C3CCD4; }
+  .bar .s-park { background: #C9C1CF; }
+  .barcap {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .barcap b { color: var(--ink); font-weight: 600; }
+
+  /* takeaway */
+  .callout {
+    background: var(--brand-soft);
+    border: 1px solid #CFE7D8;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin: 24px 0 8px;
+  }
+  .callout h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    color: var(--brand);
+    letter-spacing: -0.01em;
+  }
+  .callout p { margin: 0 0 8px; font-size: 14px; color: #234A38; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout b { font-weight: 700; }
+
+  h2.section {
+    font-size: 13px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    margin: 34px 0 14px;
+  }
+
+  /* role card */
+  .role {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 4px 0 6px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .role-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 16px 20px 12px;
+  }
+  .role-head .name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .role-head .tally {
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .role-head .tally b { color: var(--done-fg); }
+
+  .tbl-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 520px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td {
+    padding: 11px 20px;
+    border-bottom: 1px solid #F0F2F3;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.area { font-weight: 600; color: var(--ink); }
+  td.area .id {
+    font-size: 11px;
+    color: var(--faint);
+    font-weight: 500;
+    margin-left: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  td.note { color: var(--muted); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .pill.done { color: var(--done-fg); background: var(--done-bg); }
+  .pill.prog { color: var(--prog-fg); background: var(--prog-bg); }
+  .pill.todo { color: var(--todo-fg); background: var(--todo-bg); }
+  .pill.park { color: var(--park-fg); background: var(--park-bg); }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .tag.fe { color: #1D4ED8; background: #E7EEFD; }
+  .tag.be { color: #92400E; background: #FBF0DB; }
+
+  /* two-column next steps */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .nextcard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .nextcard h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nextcard .sub { font-size: 12px; color: var(--faint); margin: 0 0 12px; }
+  .nextcard ul { margin: 0; padding-left: 18px; }
+  .nextcard li { font-size: 13.5px; margin-bottom: 7px; color: var(--ink); }
+  .nextcard li:last-child { margin-bottom: 0; }
+  .nextcard li span { color: var(--muted); }
+  .dotfe, .dotbe { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dotfe { background:#1D4ED8; }
+  .dotbe { background:#B4590A; }
+
+  .week.done-week { border-top: 3px solid #34A56B; }
+  .week.plan-week { border-top: 3px solid var(--brand); }
+  .wk-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-right: 4px;
+  }
+  .wk-badge.done { color: var(--done-fg); background: var(--done-bg); }
+  .wk-badge.plan { color: var(--brand); background: var(--brand-soft); }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 14px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend .pill { cursor: default; }
+
+  .footnote {
+    margin-top: 30px;
+    padding: 14px 16px;
+    background: var(--panel-alt);
+    border-radius: 10px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .footnote b { color: var(--ink); }
+
+  @media (max-width: 640px) {
+    .rollup { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+    h1 { font-size: 25px; }
+  }
+</style>
+
+<div class="doc">
+  <p class="eyebrow">Status Report · Prepared for Senior Management</p>
+  <h1>StyleMint Mobile — API Integration Progress</h1>
+  <p class="lede">Where the Creator, Customer, and Vendor apps stand against the planned integration backlog, and what the remaining work depends on.</p>
+  <div class="meta">
+    <span><b>Date:</b> 6 July 2026</span>
+    <span><b>Scope:</b> 36 planned items across 3 roles</span>
+    <span><b>Basis:</b> code audit of the <code>dev</code> branch</span>
+  </div>
+
+  <hr class="rule" />
+
+  <!-- ROLLUP -->
+  <div class="rollup">
+    <div class="stat done"><div class="n">14</div><div class="l">Complete</div></div>
+    <div class="stat prog"><div class="n">10</div><div class="l">In progress</div></div>
+    <div class="stat todo"><div class="n">11</div><div class="l">Not started</div></div>
+    <div class="stat total"><div class="n">39<span style="font-size:16px;color:var(--faint)">%</span></div><div class="l">Fully done</div></div>
+  </div>
+
+  <div class="bar" role="img" aria-label="39 percent complete, 28 percent in progress, 31 percent not started, 3 percent parked">
+    <span class="s-done" style="width:38.9%"></span>
+    <span class="s-prog" style="width:27.8%"></span>
+    <span class="s-todo" style="width:30.5%"></span>
+    <span class="s-park" style="width:2.8%"></span>
+  </div>
+  <div class="barcap">
+    <span><b>14</b> complete</span>
+    <span><b>10</b> in progress</span>
+    <span><b>11</b> not started</span>
+    <span><b>1</b> parked</span>
+  </div>
+
+  <!-- TAKEAWAY -->
+  <div class="callout">
+    <h3>The headline</h3>
+    <p>The frontend team has finished <b>almost everything that can be built without backend support</b>. The whole customer shopping path — orders, payments, saved items, shipping — is live on real APIs, and every new data layer for all three roles is built.</p>
+    <p>Of the 21 items still open, <b>18 are waiting on the backend</b> to confirm or expose endpoints — not on frontend effort. Only <b>3 remaining items are ours to finish now</b>.</p>
+  </div>
+
+  <!-- WEEKLY -->
+  <h2 class="section">Last week &rarr; this week</h2>
+  <div class="cols">
+    <div class="nextcard week done-week">
+      <h4><span class="wk-badge done">Delivered</span> Last week</h4>
+      <p class="sub">30 Jun – 5 Jul · 14 backlog items completed</p>
+      <ul>
+        <li><b>Customer:</b> orders, payments, saved items and shipping switched to live APIs; notifications confirmed <span>(C1, C3–C5, C11)</span></li>
+        <li><b>Creator:</b> analytics, profile and reels data layers built &amp; wired <span>(CR1, CR3, CR4)</span></li>
+        <li><b>Vendor:</b> inquiries, analytics and creator-performance layers built; partnerships, products and KYC endpoints corrected <span>(V1–V3, V5, V6, V8)</span></li>
+      </ul>
+    </div>
+    <div class="nextcard week plan-week">
+      <h4><span class="wk-badge plan">Planned</span> This week</h4>
+      <p class="sub">From 6 Jul</p>
+      <ul>
+        <li>Finish the 3 frontend-only items — Creator support, Vendor support, profile avatar upload <span>(CR2, V4, C6)</span></li>
+        <li>Backend coordination session to confirm the flagged endpoints — unblocks ~18 items at once</li>
+        <li>Apply path fixes as endpoints are confirmed — payouts, matchmaking, discovery, reviews, settings <span>(Sprint 2)</span></li>
+        <li>End-to-end test the completed flows against the dev backend</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CREATOR -->
+  <h2 class="section">By role</h2>
+
+  <div class="role">
+    <div class="role-head">
+      <span class="name">Creator app</span>
+      <span class="tally"><b>3 complete</b> · 1 in progress · 6 not started</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Status</th><th>Depends on / note</th></tr></thead>
+        <tbody>
+          <tr><td class="area">Analytics <span class="id">CR1</span></td><td><span class="pill done">Done</span></td><td class="note">Data layer built &amp; wired</td></tr>
+          <tr><td class="area">Creator profile <span class="id">CR3</span></td><td><span class="pill done">Done</span></td><td class="note">View / edit wired to real API</td></tr>
+          <tr><td class="area">Reels data <span class="id">CR4</span></td><td><span class="pill done">Done</span></td><td class="note">Own data layer built</td></tr>
+          <tr><td class="area">Tips: history &amp; balance <span class="id">CR9</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> endpoints unconfirmed</td></tr>
+          <tr><td class="area">Support / help tickets <span class="id">CR2</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag fe">Frontend</span> data layer to build</td></tr>
+          <tr><td class="area">Apply: identity doc upload <span class="id">CR5</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> endpoint missing</td></tr>
+          <tr><td class="area">Payout methods <span class="id">CR6</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> path to confirm</td></tr>
+          <tr><td class="area">Active partnerships filter <span class="id">CR7</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> endpoint to confirm</td></tr>
+          <tr><td class="area">Reel studio: delete draft <span class="id">CR8</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> path mismatch</td></tr>
+          <tr><td class="area">Reel import: tagging &amp; history <span class="id">CR10</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> new endpoints needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CUSTOMER -->
+  <div class="role">
+    <div class="role-head">
+      <span class="name">Customer app</span>
+      <span class="tally"><b>5 complete</b> · 4 in progress · 4 not started · 1 parked</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Status</th><th>Depends on / note</th></tr></thead>
+        <tbody>
+          <tr><td class="area">Orders <span class="id">C1</span></td><td><span class="pill done">Done</span></td><td class="note">Live on real API</td></tr>
+          <tr><td class="area">Payment methods <span class="id">C3</span></td><td><span class="pill done">Done</span></td><td class="note">Live on real API</td></tr>
+          <tr><td class="area">Saved items <span class="id">C4</span></td><td><span class="pill done">Done</span></td><td class="note">Live on real API</td></tr>
+          <tr><td class="area">Shipping addresses <span class="id">C5</span></td><td><span class="pill done">Done</span></td><td class="note">Live on real API</td></tr>
+          <tr><td class="area">Notifications inbox <span class="id">C11</span></td><td><span class="pill done">Done</span></td><td class="note">Wired &amp; confirmed</td></tr>
+          <tr><td class="area">Profile: avatar &amp; cleanup <span class="id">C6</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag fe">Frontend</span> avatar upload to wire</td></tr>
+          <tr><td class="area">Discovery: related / save <span class="id">C7</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> one path to confirm</td></tr>
+          <tr><td class="area">Social: feed / stories / drops <span class="id">C12</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> endpoints to confirm</td></tr>
+          <tr><td class="area">Social: group cart / co-watch <span class="id">C13</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> endpoints to confirm</td></tr>
+          <tr><td class="area">Reviews summary <span class="id">C8</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> no summary endpoint</td></tr>
+          <tr><td class="area">Settings: language <span class="id">C9</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> endpoint missing</td></tr>
+          <tr><td class="area">Support categories <span class="id">C10</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> path to confirm</td></tr>
+          <tr><td class="area">First-run profile gating <span class="id">C14</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag be">Backend</span> signal needed</td></tr>
+          <tr><td class="area">Reels feed <span class="id">C2</span></td><td><span class="pill park">Parked</span></td><td class="note">Deferred by decision — stays on sample data this cycle</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VENDOR -->
+  <div class="role">
+    <div class="role-head">
+      <span class="name">Vendor app</span>
+      <span class="tally"><b>6 complete</b> · 5 in progress · 1 not started</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Status</th><th>Depends on / note</th></tr></thead>
+        <tbody>
+          <tr><td class="area">Inquiries <span class="id">V1</span></td><td><span class="pill done">Done</span></td><td class="note">Data layer built &amp; wired</td></tr>
+          <tr><td class="area">Analytics <span class="id">V2</span></td><td><span class="pill done">Done</span></td><td class="note">Data layer built &amp; wired</td></tr>
+          <tr><td class="area">Creator performance <span class="id">V3</span></td><td><span class="pill done">Done</span></td><td class="note">Data layer built &amp; wired</td></tr>
+          <tr><td class="area">Partnerships <span class="id">V5</span></td><td><span class="pill done">Done</span></td><td class="note">Endpoints remapped</td></tr>
+          <tr><td class="area">Products <span class="id">V6</span></td><td><span class="pill done">Done</span></td><td class="note">Endpoints corrected</td></tr>
+          <tr><td class="area">Apply / KYC documents <span class="id">V8</span></td><td><span class="pill done">Done</span></td><td class="note">Endpoints corrected</td></tr>
+          <tr><td class="area">Earnings: ledger &amp; payouts <span class="id">V7</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> paths to confirm</td></tr>
+          <tr><td class="area">Matchmaking <span class="id">V9</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> paths to confirm</td></tr>
+          <tr><td class="area">Add product: image upload <span class="id">V10</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> endpoint missing</td></tr>
+          <tr><td class="area">Order returns <span class="id">V11</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> endpoint missing</td></tr>
+          <tr><td class="area">Brand studio <span class="id">V12</span></td><td><span class="pill prog">In progress</span></td><td class="note"><span class="tag be">Backend</span> 3 endpoints missing</td></tr>
+          <tr><td class="area">Support / tickets <span class="id">V4</span></td><td><span class="pill todo">Not started</span></td><td class="note"><span class="tag fe">Frontend</span> data layer to build</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="pill done">Done</span>
+    <span class="pill prog">In progress</span>
+    <span class="pill todo">Not started</span>
+    <span class="pill park">Parked</span>
+    <span><span class="tag fe">Frontend</span> our team can finish</span>
+    <span><span class="tag be">Backend</span> waiting on backend</span>
+  </div>
+
+  <!-- NEXT -->
+  <h2 class="section">What happens next</h2>
+  <div class="cols">
+    <div class="nextcard">
+      <h4><span class="dotfe"></span> Frontend can finish now</h4>
+      <p class="sub">3 items · no backend dependency</p>
+      <ul>
+        <li>Creator support screen — data layer <span>(CR2)</span></li>
+        <li>Vendor support screen — data layer <span>(V4)</span></li>
+        <li>Profile avatar upload &amp; final cleanup <span>(C6)</span></li>
+      </ul>
+    </div>
+    <div class="nextcard">
+      <h4><span class="dotbe"></span> Needs backend to unblock</h4>
+      <p class="sub">18 items · gated on backend</p>
+      <ul>
+        <li>Most are one confirmed path away from done — the code is built and waiting.</li>
+        <li><b>The ask:</b> one backend session to confirm/expose the flagged endpoints would unblock the bulk of these at once.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>How to read this:</b> status reflects what is built in the code today. “Done” means the feature is wired to a real endpoint; items marked <b>Backend</b> are held up waiting on the backend team to confirm a path or add an endpoint (flagged in code), not on frontend work. Final sign-off still requires an end-to-end test against the live dev backend, which this audit did not run.
+  </div>
+</div>
