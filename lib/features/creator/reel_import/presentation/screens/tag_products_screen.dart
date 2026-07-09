@@ -104,11 +104,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
 
   void _handleContinue() {
     if (_reel != null) {
-      ref.read(reelImportNotifierProvider.notifier).importReel(
-            _reel!.platformPostId,
-            _reel!.caption,
-            _taggedProducts.keys.toList(growable: false),
-          );
+      ref.read(reelImportNotifierProvider.notifier).importReel(_reel!);
     }
     context.push(
       RouteNames.reelImportReview,

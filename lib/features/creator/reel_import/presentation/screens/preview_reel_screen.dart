@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +29,18 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
   void dispose() {
     _captionController.dispose();
     super.dispose();
+  }
+
+  String _extractExternalId(String url) {
+    try {
+      final segments = Uri.parse(url)
+          .pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
+      return segments.isNotEmpty ? segments.last : url;
+    } on Exception catch (_) {
+      return url;
+    }
   }
 
   @override
@@ -109,21 +123,22 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
                 onPressed: () {
+                  final externalId = _extractExternalId(widget.url);
                   final reel = ImportableReel(
-                    id: 'preview-post',
+                    id: externalId,
                     platform: widget.platform,
-                    platformPostId: 'preview-post',
+                    platformPostId: externalId,
                     sourceUrl: widget.url,
                     thumbnailUrl: '',
                     caption: _captionController.text,
                     createdAt: DateTime.now(),
                     videoDuration: 55,
                   );
-                  context.push(
+                  unawaited(context.push(
                     RouteNames.reelImportTagProducts
-                        .replaceFirst(':postId', 'preview-post'),
+                        .replaceFirst(':postId', externalId),
                     extra: reel,
-                  );
+                  ));
                 },
                 style: DesignTokens.primaryButtonStyle(),
                 child: const Row(

@@ -9,17 +9,16 @@ abstract interface class ReelImportRepository {
   );
 
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
-    String platformPostId,
-    String caption,
-    List<String> taggedProductIds,
+    ImportableReel reel,
   );
 
-  Future<Either<NetworkExceptions, List<TaggedProductForImport>>> searchProducts(
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      searchProducts(
     String query,
   );
 
   Future<Either<NetworkExceptions, List<ImportedReel>>> getImportHistory({
-    int limit,
+    int pageSize,
     String? cursor,
   });
 }
