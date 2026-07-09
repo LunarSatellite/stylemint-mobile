@@ -50,59 +50,63 @@ abstract class VendorApplicationDto with _$VendorApplicationDto {
   }
 }
 
-@freezed
-abstract class KYCDocumentDto with _$KYCDocumentDto {
-  const factory KYCDocumentDto({
-    required String id,
-    required String type,
-    required String fileName,
-    required String fileUrl,
-    required String status,
-    required DateTime uploadedAt,
-  }) = _KYCDocumentDto;
-
-  const KYCDocumentDto._();
+/// Wire shape for the backend's `VerificationDocumentDto` (Identity module).
+/// `documentType`/`status` are the backend's int enums — see
+/// `VerificationDocumentType` (Pan=7, Citizenship=8, BusinessRegistration=9,
+/// TaxDocument=10 for vendor docs) and `VerificationDocumentStatus`
+/// (Uploaded=1, UnderReview=2, Approved=3, Rejected=4, Expired=5).
+/// `fileUrl` is NOT projected by the backend (internal storage detail) —
+/// left empty; nothing in the UI currently renders it.
+class KYCDocumentDto {
+  const KYCDocumentDto({
+    required this.id,
+    required this.documentType,
+    required this.status,
+    required this.uploadedUtc,
+    this.originalFilename,
+  });
 
   factory KYCDocumentDto.fromJson(Map<String, dynamic> json) =>
-      _$KYCDocumentDtoFromJson(json);
+      KYCDocumentDto(
+        id: json['id'] as String,
+        documentType: json['documentType'] as int,
+        status: json['status'] as int,
+        uploadedUtc: DateTime.parse(json['uploadedUtc'] as String),
+        originalFilename: json['originalFilename'] as String?,
+      );
+
+  final String id;
+  final int documentType;
+  final int status;
+  final DateTime uploadedUtc;
+  final String? originalFilename;
 
   KYCDocument toDomain() => KYCDocument(
     id: id,
-    type: _docTypeFromCode(type),
-    fileName: fileName,
-    fileUrl: fileUrl,
+    type: _docTypeFromCode(documentType),
+    fileName: originalFilename ?? _labelForCode(documentType),
+    fileUrl: '',
     status: _docStatusFromCode(status),
-    uploadedAt: uploadedAt,
+    uploadedAt: uploadedUtc,
   );
 
-  static KYCDocumentType _docTypeFromCode(String code) {
-    switch (code.toLowerCase()) {
-      case 'pan':
-        return KYCDocumentType.pan;
-      case 'citizenship':
-        return KYCDocumentType.citizenship;
-      case 'business_reg':
-      case 'businessreg':
-      case 'business_registration':
-        return KYCDocumentType.businessReg;
-      case 'tax_doc':
-      case 'taxdoc':
-      case 'tax_document':
-        return KYCDocumentType.taxDoc;
-      default:
-        return KYCDocumentType.pan;
-    }
-  }
+  static KYCDocumentType _docTypeFromCode(int code) => switch (code) {
+    8 => KYCDocumentType.citizenship,
+    9 => KYCDocumentType.businessReg,
+    10 => KYCDocumentType.taxDoc,
+    _ => KYCDocumentType.pan,
+  };
 
-  static KYCDocumentStatus _docStatusFromCode(String code) {
-    switch (code.toLowerCase()) {
-      case 'verified':
-        return KYCDocumentStatus.verified;
-      case 'rejected':
-        return KYCDocumentStatus.rejected;
-      case 'pending':
-      default:
-        return KYCDocumentStatus.pending;
-    }
-  }
+  static String _labelForCode(int code) => switch (code) {
+    8 => 'Citizenship',
+    9 => 'Business Registration',
+    10 => 'Tax Document',
+    _ => 'PAN Card',
+  };
+
+  static KYCDocumentStatus _docStatusFromCode(int code) => switch (code) {
+    3 => KYCDocumentStatus.verified, // Approved
+    4 || 5 => KYCDocumentStatus.rejected, // Rejected | Expired
+    _ => KYCDocumentStatus.pending, // Uploaded | UnderReview
+  };
 }

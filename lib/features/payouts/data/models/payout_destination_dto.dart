@@ -25,7 +25,9 @@ class PayoutDestinationDto {
   factory PayoutDestinationDto.fromJson(Map<String, dynamic> json) {
     return PayoutDestinationDto(
       id: (json['id'] as String?) ?? '',
-      kind: PayoutDestinationKind.fromValue((json['kind'] as num?)?.toInt() ?? 1),
+      kind: PayoutDestinationKind.fromValue(
+        (json['kind'] as num?)?.toInt() ?? 1,
+      ),
       label: (json['label'] as String?) ?? '',
       accountIdentifierMasked:
           (json['accountIdentifierMasked'] as String?) ?? '',

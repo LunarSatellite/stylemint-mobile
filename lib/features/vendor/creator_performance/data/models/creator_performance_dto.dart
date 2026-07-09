@@ -55,14 +55,14 @@ class CreatorPerformanceDto {
   }
 
   CreatorPerformance toDomain() => CreatorPerformance(
-        creatorAccountId: creatorAccountId,
-        unitsSold: unitsSold,
-        attributedRevenue: attributedRevenue,
-        commissionPaid: commissionPaid,
-        currency: currency,
-        distinctReelCount: distinctReelCount,
-        creatorHandle: creatorHandle,
-        creatorDisplayName: creatorDisplayName,
-        creatorAvatarUrl: creatorAvatarUrl,
-      );
+    creatorAccountId: creatorAccountId,
+    unitsSold: unitsSold,
+    attributedRevenue: attributedRevenue,
+    commissionPaid: commissionPaid,
+    currency: currency,
+    distinctReelCount: distinctReelCount,
+    creatorHandle: creatorHandle,
+    creatorDisplayName: creatorDisplayName,
+    creatorAvatarUrl: creatorAvatarUrl,
+  );
 }

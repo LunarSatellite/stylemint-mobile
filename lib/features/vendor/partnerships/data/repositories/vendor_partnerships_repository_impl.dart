@@ -6,10 +6,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/data
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/models/vendor_partnership_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/repositories/vendor_partnerships_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
-class VendorPartnershipsRepositoryImpl
-    implements VendorPartnershipsRepository {
+class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   VendorPartnershipsRepositoryImpl({
     required this.remoteDataSource,
     required this.networkInfo,
@@ -161,5 +161,103 @@ class VendorPartnershipsRepositoryImpl
     } else {
       return left(NetworkExceptions.noInternetConnection());
     }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PagedResult<VendorPartnership>>>
+  getPartnerships({List<PartnershipState>? states, String? cursor}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.getPartnerships(
+          states: states
+              ?.map((s) => PartnershipState.values.indexOf(s) + 1)
+              .toList(growable: false),
+          cursor: cursor,
+        );
+        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => VendorPartnershipDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
+            )
+            .toList(growable: false);
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? 20,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> acceptRequest(String id) =>
+      _runAction(() => remoteDataSource.acceptRequest(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> declineRequest(String id) =>
+      _runAction(() => remoteDataSource.declineRequest(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> resume(String id) =>
+      _runAction(() => remoteDataSource.resume(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> pause(String id, {String? reason}) =>
+      _runAction(
+        () => remoteDataSource.pause(id, const Uuid().v4(), reason: reason),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> end(String id, {String? reason}) =>
+      _runAction(
+        () => remoteDataSource.end(id, const Uuid().v4(), reason: reason),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> adjustCommission(
+    String id, {
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    String? reason,
+  }) => _runAction(
+    () => remoteDataSource.adjustCommission(
+      id,
+      const Uuid().v4(),
+      commissionMinPercent: commissionMinPercent,
+      commissionMaxPercent: commissionMaxPercent,
+      reason: reason,
+    ),
+  );
+
+  Future<Either<NetworkExceptions, Unit>> _runAction(
+    Future<void> Function() action,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await action();
+        return right(unit);
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  NetworkExceptions _mapError(Object e) {
+    if (e is DioException)
+      return NetworkExceptions.server(e.message.toString());
+    if (e is NetworkExceptions) return e;
+    return NetworkExceptions.unexpectedError();
   }
 }

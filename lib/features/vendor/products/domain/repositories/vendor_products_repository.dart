@@ -14,5 +14,12 @@ abstract interface class VendorProductsRepository {
     String productId,
     VendorProductStatus status,
   );
-  Future<Either<NetworkExceptions, Unit>> deleteProduct(String productId);
+
+  Future<Either<NetworkExceptions, VendorProduct>> updateStock({
+    required String productId,
+    required String variantId,
+    required int newQuantity,
+    DateTime? restockUtc,
+    required bool alertCustomersOnRestock,
+  });
 }

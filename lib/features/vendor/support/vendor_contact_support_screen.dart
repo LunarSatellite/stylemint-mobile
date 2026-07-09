@@ -1,14 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VendorContactSupportScreen extends ConsumerStatefulWidget {
   const VendorContactSupportScreen({super.key});
@@ -18,7 +20,8 @@ class VendorContactSupportScreen extends ConsumerStatefulWidget {
       _VendorContactSupportScreenState();
 }
 
-class _VendorContactSupportScreenState extends ConsumerState<VendorContactSupportScreen> {
+class _VendorContactSupportScreenState
+    extends ConsumerState<VendorContactSupportScreen> {
   int _selectedTab = 0; // 0=Submitted, 1=In Progress, 2=Resolved
 
   @override
@@ -127,7 +130,7 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
         icon: Icons.chat_outlined,
         title: 'Vendor Support Chat',
         subtitle: 'Available · Wait: 1min',
-        onTap: () {},
+        onTap: () => SmSnackbar.info(context, 'Live chat is coming soon.'),
         customIcon: 'assets/images/vendordashboard/icon_chat.png',
         subtitleColor: const Color(0xFF9F9FA9),
       ),
@@ -135,14 +138,20 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
         icon: Icons.mail_outline,
         title: 'Email Support',
         subtitle: 'Response within 15 min',
-        onTap: () {},
+        onTap: () => unawaited(
+          launchUrl(
+            Uri(scheme: 'mailto', path: 'vendor-support@stylemint.com'),
+          ),
+        ),
         customIcon: 'assets/images/vendordashboard/icon_email.png',
       ),
       _Channel(
         icon: Icons.phone_outlined,
         title: 'Creator Hotline (1-800-VENDOR)',
         subtitle: 'Mon-Fri, 9 AM – 6 PM EST',
-        onTap: () {},
+        onTap: () => unawaited(
+          launchUrl(Uri(scheme: 'tel', path: '1-800-836-3667')),
+        ),
         customIcon: 'assets/images/vendordashboard/icon_phone.png',
       ),
       _Channel(
@@ -170,9 +179,15 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
                         height: 40,
                         decoration: BoxDecoration(
                           color: DesignTokens.bgAppBodyLight,
-                          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.inputRadius,
+                          ),
                         ),
-                        child: Icon(ch.icon, color: DesignTokens.textWhite, size: 20),
+                        child: Icon(
+                          ch.icon,
+                          color: DesignTokens.textWhite,
+                          size: 20,
+                        ),
                       ),
                 title: Text(
                   ch.title,
@@ -239,18 +254,29 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
             padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Vendor Resources', style: DesignTokens.oneLinerSemibold),
+              child: Text(
+                'Vendor Resources',
+                style: DesignTokens.oneLinerSemibold,
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          ...['Vendor Guidelines', 'Earnings FAQ', 'Partnership Best Practices', 'Sales Tips & Tricks']
-              .map(
-                (r) => ListTile(
-                  title: Text(r, style: DesignTokens.oneLinerRegular),
-                  trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
-                  onTap: () => Navigator.of(ctx).pop(),
-                ),
+          ...[
+            'Vendor Guidelines',
+            'Earnings FAQ',
+            'Partnership Best Practices',
+            'Sales Tips & Tricks',
+          ].map(
+            (r) => ListTile(
+              title: Text(r, style: DesignTokens.oneLinerRegular),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                color: DesignTokens.textMuted,
+                size: 14,
               ),
+              onTap: () => Navigator.of(ctx).pop(),
+            ),
+          ),
           const SizedBox(height: DesignTokens.s16),
         ],
       ),
@@ -261,10 +287,27 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
 
   Widget _buildQuickActions() {
     final actions = [
-      _QuickAction(icon: Icons.local_shipping_outlined, label: 'Order Fulfillment Issues', customIcon: 'assets/images/vendordashboard/icon_truck.png'),
-      _QuickAction(icon: Icons.inventory_2_outlined, label: 'Inventory Sync Problems', customIcon: 'assets/images/vendordashboard/icon_resources.png'),
-      _QuickAction(icon: Icons.monetization_on_outlined, label: 'Payment/Payout Questions', customIcon: 'assets/images/vendordashboard/icon_payment.png'),
-      _QuickAction(icon: Icons.handshake_outlined, label: 'Creator Partnership Help', customIcon: 'assets/images/vendordashboard/Creator Partnership Help.png'),
+      _QuickAction(
+        icon: Icons.local_shipping_outlined,
+        label: 'Order Fulfillment Issues',
+        customIcon: 'assets/images/vendordashboard/icon_truck.png',
+      ),
+      _QuickAction(
+        icon: Icons.inventory_2_outlined,
+        label: 'Inventory Sync Problems',
+        customIcon: 'assets/images/vendordashboard/icon_resources.png',
+      ),
+      _QuickAction(
+        icon: Icons.monetization_on_outlined,
+        label: 'Payment/Payout Questions',
+        customIcon: 'assets/images/vendordashboard/icon_payment.png',
+      ),
+      _QuickAction(
+        icon: Icons.handshake_outlined,
+        label: 'Creator Partnership Help',
+        customIcon:
+            'assets/images/vendordashboard/Creator Partnership Help.png',
+      ),
     ];
 
     return GridView.count(
@@ -285,8 +328,8 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     a.customIcon != null
-                      ? Image.asset(a.customIcon!, width: 28, height: 28)
-                      : Icon(a.icon, color: DesignTokens.textWhite, size: 28),
+                        ? Image.asset(a.customIcon!, width: 28, height: 28)
+                        : Icon(a.icon, color: DesignTokens.textWhite, size: 28),
                     const SizedBox(height: DesignTokens.s8),
                     Text(
                       a.label,
@@ -309,56 +352,22 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
 
   // ── Your Tickets ──────────────────────────────────────────────────────────
 
-  static final _sampleTickets = [
-    Ticket(
-      id: '1',
-      ticketNumber: '#ST890087',
-      category: SupportTicketCategory.general,
-      subject: 'I cannot add new products to my inventory',
-      status: TicketStatus.open,
-      createdAt: DateTime(2025, 9, 25, 16, 53),
-    ),
-    Ticket(
-      id: '2',
-      ticketNumber: '#ST890086',
-      category: SupportTicketCategory.accountSecurity,
-      subject: 'My product analytics screen is not loading',
-      status: TicketStatus.open,
-      createdAt: DateTime(2025, 9, 25, 16, 53),
-    ),
-    Ticket(
-      id: '3',
-      ticketNumber: '#ST890085',
-      category: SupportTicketCategory.payment,
-      subject: 'Payout not received for last week',
-      status: TicketStatus.inProgress,
-      createdAt: DateTime(2025, 9, 20, 10, 30),
-    ),
-    Ticket(
-      id: '4',
-      ticketNumber: '#ST890084',
-      category: SupportTicketCategory.general,
-      subject: 'Inventory sync issue with bulk upload',
-      status: TicketStatus.resolved,
-      createdAt: DateTime(2025, 9, 15, 9, 0),
-    ),
-  ];
-
   Widget _buildYourTickets() {
     final state = ref.watch(supportNotifierProvider);
 
-    final apiTickets = state.maybeWhen(
+    final allTickets = state.maybeWhen(
       loadSuccess: (t) => t,
       orElse: () => <Ticket>[],
     );
 
-    // Use sample tickets when API returns empty (for preview/testing)
-    final allTickets = apiTickets.isEmpty ? _sampleTickets : apiTickets;
-
-    final submitted = allTickets.where((t) => t.status == TicketStatus.open).toList();
-    final inProgress = allTickets.where((t) => t.status == TicketStatus.inProgress).toList();
+    final submitted = allTickets
+        .where((t) => t.status == TicketStatus.open)
+        .toList();
+    final inProgress = allTickets
+        .where((t) => t.status == TicketStatus.inProgress)
+        .toList();
     final resolved = allTickets
-        .where((t) => t.status == TicketStatus.resolved || t.status == TicketStatus.closed)
+        .where((t) => t.status == TicketStatus.resolved)
         .toList();
 
     final tabs = [
@@ -381,7 +390,9 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
             final tab = entry.value;
             final selected = _selectedTab == i;
             return Padding(
-              padding: EdgeInsets.only(right: i < tabs.length - 1 ? DesignTokens.s8 : 0),
+              padding: EdgeInsets.only(
+                right: i < tabs.length - 1 ? DesignTokens.s8 : 0,
+              ),
               child: GestureDetector(
                 onTap: () => setState(() => _selectedTab = i),
                 child: Container(
@@ -390,16 +401,22 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
                     vertical: DesignTokens.s8,
                   ),
                   decoration: BoxDecoration(
-                    color: selected ? DesignTokens.primaryGreen : Colors.transparent,
+                    color: selected
+                        ? DesignTokens.primaryGreen
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: selected ? DesignTokens.primaryGreen : DesignTokens.borderDefault,
+                      color: selected
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.borderDefault,
                     ),
                   ),
                   child: Text(
                     '${tab.label}(${tab.count})',
                     style: DesignTokens.smallRegular.copyWith(
-                      color: selected ? DesignTokens.textWhite : DesignTokens.textMuted,
+                      color: selected
+                          ? DesignTokens.textWhite
+                          : DesignTokens.textMuted,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),
@@ -410,14 +427,18 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
         ),
         const SizedBox(height: DesignTokens.s12),
         if (state.maybeWhen(loadInProgress: () => true, orElse: () => false))
-          const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen))
+          const Center(
+            child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+          )
         else if (currentTickets.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
             child: Center(
               child: Text(
                 'No tickets',
-                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           )
@@ -426,7 +447,8 @@ class _VendorContactSupportScreenState extends ConsumerState<VendorContactSuppor
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: currentTickets.length,
-            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s8),
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: DesignTokens.s8),
             itemBuilder: (_, i) => _TicketTile(
               ticket: currentTickets[i],
               onTap: () => _showTicketDetail(currentTickets[i]),
@@ -526,7 +548,9 @@ class _TicketTile extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     'Ticket ID: ${ticket.ticketNumber}',
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s4),
                   Row(
@@ -549,7 +573,11 @@ class _TicketTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: DesignTokens.textMuted,
+              size: 14,
+            ),
           ],
         ),
       ),
@@ -557,7 +585,11 @@ class _TicketTile extends StatelessWidget {
   }
 
   String _formatDateTime(DateTime dt) {
-    final h = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+    final h = dt.hour > 12
+        ? dt.hour - 12
+        : dt.hour == 0
+        ? 12
+        : dt.hour;
     final m = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period, ${_dayOrdinal(dt.day)} ${_monthName(dt.month)} ${dt.year}';
@@ -565,12 +597,28 @@ class _TicketTile extends StatelessWidget {
 
   String _dayOrdinal(int d) {
     if (d >= 11 && d <= 13) return '${d}th';
-    return switch (d % 10) { 1 => '${d}st', 2 => '${d}nd', 3 => '${d}rd', _ => '${d}th' };
+    return switch (d % 10) {
+      1 => '${d}st',
+      2 => '${d}nd',
+      3 => '${d}rd',
+      _ => '${d}th',
+    };
   }
 
   String _monthName(int m) => const [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ][m];
 }
 
@@ -606,7 +654,11 @@ class _TicketDetailSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close, color: DesignTokens.textWhite, size: 22),
+                child: const Icon(
+                  Icons.close,
+                  color: DesignTokens.textWhite,
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -614,21 +666,28 @@ class _TicketDetailSheet extends StatelessWidget {
           // Issue Category
           Text(
             'Issue Category',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s4),
           Text('Product', style: DesignTokens.oneLinerRegular),
           const SizedBox(height: DesignTokens.s12),
           // Status pill
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s6),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s12,
+              vertical: DesignTokens.s6,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFF2A2A2A),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _statusLabel(ticket.status),
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
@@ -641,7 +700,9 @@ class _TicketDetailSheet extends StatelessWidget {
             children: [
               Text(
                 'Created On',
-                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
               Row(
                 children: [
@@ -651,7 +712,10 @@ class _TicketDetailSheet extends StatelessWidget {
                     height: 12,
                   ),
                   const SizedBox(width: 4),
-                  Text(_formatDateTime(ticket.createdAt), style: DesignTokens.smallRegular),
+                  Text(
+                    _formatDateTime(ticket.createdAt),
+                    style: DesignTokens.smallRegular,
+                  ),
                 ],
               ),
             ],
@@ -660,7 +724,9 @@ class _TicketDetailSheet extends StatelessWidget {
           // Attachments
           Text(
             'Attachments',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           Row(
@@ -669,7 +735,10 @@ class _TicketDetailSheet extends StatelessWidget {
               const SizedBox(width: DesignTokens.s8),
               _buildThumbnail('assets/images/attachment_2.png', false),
               const SizedBox(width: DesignTokens.s8),
-              _buildThumbnail('assets/images/vendordashboard/attachment_3.png', true),
+              _buildThumbnail(
+                'assets/images/vendordashboard/attachment_3.png',
+                true,
+              ),
             ],
           ),
         ],
@@ -717,11 +786,14 @@ class _TicketDetailSheet extends StatelessWidget {
     TicketStatus.open => 'Submitted',
     TicketStatus.inProgress => 'In Progress',
     TicketStatus.resolved => 'Resolved',
-    TicketStatus.closed => 'Closed',
   };
 
   String _formatDateTime(DateTime dt) {
-    final h = dt.hour > 12 ? dt.hour - 12 : dt.hour == 0 ? 12 : dt.hour;
+    final h = dt.hour > 12
+        ? dt.hour - 12
+        : dt.hour == 0
+        ? 12
+        : dt.hour;
     final m = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period, ${_dayOrdinal(dt.day)} ${_monthName(dt.month)} ${dt.year}';
@@ -729,12 +801,28 @@ class _TicketDetailSheet extends StatelessWidget {
 
   String _dayOrdinal(int d) {
     if (d >= 11 && d <= 13) return '${d}th';
-    return switch (d % 10) { 1 => '${d}st', 2 => '${d}nd', 3 => '${d}rd', _ => '${d}th' };
+    return switch (d % 10) {
+      1 => '${d}st',
+      2 => '${d}nd',
+      3 => '${d}rd',
+      _ => '${d}th',
+    };
   }
 
   String _monthName(int m) => const [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ][m];
 }
 
@@ -751,7 +839,7 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _descController = TextEditingController();
-  SupportTicketCategory? _selectedCategory;
+  String? _selectedCategory;
   final List<XFile> _selectedImages = [];
   final _picker = ImagePicker();
 
@@ -762,7 +850,29 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     }
   }
 
-  void _removeImage(int index) => setState(() => _selectedImages.removeAt(index));
+  void _removeImage(int index) =>
+      setState(() => _selectedImages.removeAt(index));
+
+  static const _categories = [
+    'Product',
+    'Order Fulfillment',
+    'Inventory',
+    'Payment & Payouts',
+    'Creator Partnership',
+    'Account & Settings',
+    'Other',
+  ];
+
+  /// Maps the display label to the backend's `SupportCategory` enum, which
+  /// has no vendor-specific sub-categories — everything without a direct
+  /// match (Product/Inventory/Creator Partnership/Other) falls back to
+  /// [TicketCategory.forVendors].
+  static TicketCategory _categoryFor(String? label) => switch (label) {
+    'Order Fulfillment' => TicketCategory.ordersAndShipping,
+    'Payment & Payouts' => TicketCategory.paymentAndBilling,
+    'Account & Settings' => TicketCategory.accountAndSettings,
+    _ => TicketCategory.forVendors,
+  };
 
   @override
   void initState() {
@@ -779,11 +889,19 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _submit() {
-    if (_selectedCategory == null) return;
     if (_descController.text.trim().isEmpty) return;
-    ref.read(createTicketNotifierProvider.notifier).submit(
-      category: _selectedCategory!,
-      body: _descController.text.trim(),
+    // Attachments aren't sent: the backend only accepts pre-uploaded
+    // attachmentUrls and there is no blob/file upload endpoint anywhere in
+    // the API (see stylemint-support skill / API_INTEGRATION_GUIDE.md) — the
+    // picker above is left in place for when that endpoint exists.
+    unawaited(
+      ref
+          .read(createTicketNotifierProvider.notifier)
+          .submit(
+            subject: _descController.text.trim(),
+            message: _descController.text.trim(),
+            category: _categoryFor(_selectedCategory),
+          ),
     );
     Navigator.of(context).pop();
   }
@@ -803,9 +921,18 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Create Support Ticket', style: DesignTokens.mediumSemibold)),
+              Expanded(
+                child: Text(
+                  'Create Support Ticket',
+                  style: DesignTokens.mediumSemibold,
+                ),
+              ),
               IconButton(
-                icon: const Icon(Icons.close, color: DesignTokens.textMuted, size: 20),
+                icon: const Icon(
+                  Icons.close,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -827,7 +954,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedCategory?.label ?? 'Issue Category',
+                      _selectedCategory ?? 'Issue Category',
                       style: TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 14,
@@ -837,7 +964,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.keyboard_arrow_down, color: DesignTokens.inputFieldDropdownIcon, size: 20),
+                  const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: DesignTokens.inputFieldDropdownIcon,
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -846,8 +977,12 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           TextField(
             controller: _descController,
             maxLines: 4,
-            style: DesignTokens.oneLinerRegular.copyWith(color: DesignTokens.inputFieldData),
-            decoration: DesignTokens.inputDecoration(hintText: 'Describe Issue'),
+            style: DesignTokens.oneLinerRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Describe Issue',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
           if (_selectedImages.isNotEmpty) ...[
@@ -856,11 +991,14 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _selectedImages.length,
-                separatorBuilder: (_, __) => const SizedBox(width: DesignTokens.s8),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: DesignTokens.s8),
                 itemBuilder: (_, i) => Stack(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.inputRadius,
+                      ),
                       child: Image.file(
                         File(_selectedImages[i].path),
                         width: 80,
@@ -880,7 +1018,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                             color: Colors.black54,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.close, color: Colors.white, size: 12),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -903,7 +1045,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.upload_outlined, color: DesignTokens.textWhite, size: 20),
+                  const Icon(
+                    Icons.upload_outlined,
+                    color: DesignTokens.textWhite,
+                    size: 20,
+                  ),
                   const SizedBox(width: DesignTokens.s8),
                   Text('Upload Images', style: DesignTokens.oneLinerSemibold),
                 ],
@@ -919,7 +1065,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               style: DesignTokens.primaryButtonStyle(),
               child: Text(
                 'Submit Ticket',
-                style: DesignTokens.oneLinerSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
+                style: DesignTokens.oneLinerSemibold.copyWith(
+                  color: DesignTokens.buttonPrimaryText,
+                ),
               ),
             ),
           ),
@@ -933,26 +1081,41 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.cardRadius)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.cardRadius),
+        ),
       ),
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: DesignTokens.s12),
           Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: DesignTokens.borderDefault, borderRadius: BorderRadius.circular(2)),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: DesignTokens.borderDefault,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: Align(alignment: Alignment.centerLeft, child: Text('Issue Category', style: DesignTokens.oneLinerSemibold)),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Issue Category',
+                style: DesignTokens.oneLinerSemibold,
+              ),
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          ...SupportTicketCategory.values.map(
+          ..._categories.map(
             (c) => ListTile(
-              title: Text(c.label, style: DesignTokens.oneLinerRegular),
-              onTap: () { setState(() => _selectedCategory = c); Navigator.of(ctx).pop(); },
+              title: Text(c, style: DesignTokens.oneLinerRegular),
+              onTap: () {
+                setState(() => _selectedCategory = c);
+                Navigator.of(ctx).pop();
+              },
             ),
           ),
           const SizedBox(height: DesignTokens.s16),
@@ -965,7 +1128,14 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 // ── Data models ───────────────────────────────────────────────────────────────
 
 class _Channel {
-  const _Channel({required this.icon, required this.title, required this.subtitle, required this.onTap, this.customIcon, this.subtitleColor});
+  const _Channel({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.customIcon,
+    this.subtitleColor,
+  });
   final IconData icon;
   final String title;
   final String subtitle;
@@ -975,7 +1145,11 @@ class _Channel {
 }
 
 class _QuickAction {
-  const _QuickAction({required this.icon, required this.label, this.customIcon});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    this.customIcon,
+  });
   final IconData icon;
   final String label;
   final String? customIcon;

@@ -58,7 +58,9 @@ class _UserTypeSelectionScreenState
   late bool _deciding;
 
   /// Account id from the active (authenticated) session.
-  String? get _accountId => ref.read(sessionControllerProvider).maybeWhen(
+  String? get _accountId => ref
+      .read(sessionControllerProvider)
+      .maybeWhen(
         authenticated: (id) => id,
         orElse: () => null,
       );
@@ -149,8 +151,10 @@ class _UserTypeSelectionScreenState
         final statusState = ref.read(creatorApplyNotifierProvider);
         final route = statusState.maybeWhen(
           loadSuccess: (application) => switch (application.status) {
-            CreatorApplicationStatus.approved => RouteNames.creatorApplyApproved,
-            CreatorApplicationStatus.rejected => RouteNames.creatorApplyRejected,
+            CreatorApplicationStatus.approved =>
+              RouteNames.creatorApplyApproved,
+            CreatorApplicationStatus.rejected =>
+              RouteNames.creatorApplyRejected,
             CreatorApplicationStatus.pending ||
             CreatorApplicationStatus.underReview =>
               RouteNames.creatorApplyUnderReview,
@@ -164,10 +168,12 @@ class _UserTypeSelectionScreenState
           return;
         }
         setState(() => _loadingRole = true);
-        final vendorAccountId = ref.read(sessionControllerProvider).maybeWhen(
-          authenticated: (id) => id,
-          orElse: () => null,
-        );
+        final vendorAccountId = ref
+            .read(sessionControllerProvider)
+            .maybeWhen(
+              authenticated: (id) => id,
+              orElse: () => null,
+            );
         if (vendorAccountId != null) {
           await ref
               .read(vendorApplyNotifierProvider.notifier)
@@ -181,8 +187,10 @@ class _UserTypeSelectionScreenState
         vendorStatusState.maybeWhen(
           loadSuccess: (application) {
             vendorRoute = switch (application.status) {
-              VendorApplicationStatus.approved => RouteNames.vendorApplyApproved,
-              VendorApplicationStatus.rejected => RouteNames.vendorApplyRejected,
+              VendorApplicationStatus.approved =>
+                RouteNames.vendorApplyApproved,
+              VendorApplicationStatus.rejected =>
+                RouteNames.vendorApplyRejected,
               VendorApplicationStatus.pending ||
               VendorApplicationStatus.underReview =>
                 RouteNames.vendorApplyUnderReview,
@@ -280,11 +288,11 @@ class _UserTypeSelectionScreenState
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Image.asset(
-                                     'assets/images/stylemint-logo.png',
+                                      'assets/images/stylemint-logo.png',
                                       width: 100,
                                       height: 75,
                                       fit: BoxFit.contain,
-                                     ),
+                                    ),
                                     const SizedBox(height: DesignTokens.s4),
                                     // Text(
                                     //   'STYLE MINT',
@@ -420,7 +428,11 @@ class _RoleRow extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: isActivated
-                  ? const Icon(Icons.check, color: DesignTokens.textWhite, size: 20)
+                  ? const Icon(
+                      Icons.check,
+                      color: DesignTokens.textWhite,
+                      size: 20,
+                    )
                   : Text(
                       '$number',
                       style: const TextStyle(

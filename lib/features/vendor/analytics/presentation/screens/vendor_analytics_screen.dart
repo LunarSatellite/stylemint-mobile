@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class VendorAnalyticsScreen extends ConsumerWidget {
@@ -20,8 +22,11 @@ class VendorAnalyticsScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: DesignTokens.textWhite, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+            size: 18,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -46,15 +51,10 @@ class VendorAnalyticsScreen extends ConsumerWidget {
                 ),
               ),
               loadSuccess: (summary) => _AnalyticsBody(summary: summary),
-              loadFailure: (_) => const Center(
-                child: Text(
-                  'Failed to load analytics.',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    color: Color(0xFF9F9FA9),
-                  ),
-                ),
+              loadFailure: (_) => SmErrorView(
+                message: 'Failed to load analytics.',
+                onRetry: () =>
+                    ref.read(analyticsNotifierProvider.notifier).load(),
               ),
             ),
           ),
@@ -65,16 +65,23 @@ class VendorAnalyticsScreen extends ConsumerWidget {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => SmSnackbar.info(
+                  context,
+                  'Report export is coming soon.',
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: Colors.black,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
-                icon: const Icon(Icons.download_outlined,
-                    color: Colors.black, size: 20),
+                icon: const Icon(
+                  Icons.download_outlined,
+                  color: Colors.black,
+                  size: 20,
+                ),
                 label: const Text(
                   'Download Full Report',
                   style: TextStyle(
@@ -221,8 +228,11 @@ class _RevenueOverviewCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(Icons.arrow_drop_up,
-                              size: 18, color: Colors.black87),
+                          const Icon(
+                            Icons.arrow_drop_up,
+                            size: 18,
+                            color: Colors.black87,
+                          ),
                           Text(
                             overview.totalOrdersBadge,
                             style: const TextStyle(
@@ -296,7 +306,9 @@ class _MetricRow extends StatelessWidget {
                   if (badge.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: badgeColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(99),
@@ -463,14 +475,16 @@ class _LineChart extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: xLabels
-                      .map((l) => Text(
-                            l,
-                            style: const TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 9,
-                              color: Color(0xFF9F9FA9),
-                            ),
-                          ))
+                      .map(
+                        (l) => Text(
+                          l,
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 9,
+                            color: Color(0xFF9F9FA9),
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -514,8 +528,7 @@ class _ChartPainter extends CustomPainter {
 
     final offsets = List.generate(points.length, toOffset);
 
-    final fillPath = Path()
-      ..moveTo(offsets.first.dx, h);
+    final fillPath = Path()..moveTo(offsets.first.dx, h);
     for (final o in offsets) {
       fillPath.lineTo(o.dx, o.dy);
     }
@@ -541,8 +554,7 @@ class _ChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
 
-    final linePath = Path()
-      ..moveTo(offsets.first.dx, offsets.first.dy);
+    final linePath = Path()..moveTo(offsets.first.dx, offsets.first.dy);
     for (var i = 1; i < offsets.length; i++) {
       final prev = offsets[i - 1];
       final curr = offsets[i];
@@ -692,12 +704,15 @@ class _ProductRow extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        width: 48,
-        height: 48,
-        color: const Color(0xFF2C2C2E),
-        child: const Icon(Icons.inventory_2_outlined,
-            color: Color(0xFF9F9FA9), size: 24),
-      );
+    width: 48,
+    height: 48,
+    color: const Color(0xFF2C2C2E),
+    child: const Icon(
+      Icons.inventory_2_outlined,
+      color: Color(0xFF9F9FA9),
+      size: 24,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

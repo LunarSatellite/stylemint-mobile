@@ -2,6 +2,10 @@ import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/models/vendor_earnings_dto.dart';
 
+/// The backend's `PayeeKind.Vendor` wire value — earnings/payouts are a
+/// shared ledger between creators (1) and vendors (2).
+const _vendorRole = 2;
+
 class VendorEarningsRemoteDataSource {
   VendorEarningsRemoteDataSource({required this.apiClient});
 
@@ -14,69 +18,79 @@ class VendorEarningsRemoteDataSource {
     );
   }
 
-  // TODO(swagger): GET /v1/vendor/earnings/ledger not found. Use GET /v1/vendor/analytics/products or GET /v1/payouts
+  /// `GET /v1/earnings/balance?role=2` — the true payout-eligible ledger
+  /// balance (distinct from the analytics-derived summary above).
+  Future<VendorEarningsBalanceDto> getBalance() async {
+    final response = await apiClient.get(
+      '/v1/earnings/balance',
+      queryParameters: {'role': _vendorRole},
+    );
+    return VendorEarningsBalanceDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// `GET /v1/earnings/entries?role=2`.
   Future<Map<String, dynamic>> getLedger({
-    int limit = 20,
+    int pageSize = 20,
     String? cursor,
   }) async {
     final response = await apiClient.get(
-      '/v1/vendor/earnings/ledger',
+      '/v1/earnings/entries',
       queryParameters: {
-        'limit': limit,
+        'role': _vendorRole,
+        'pageSize': pageSize,
         if (cursor != null) 'cursor': cursor,
       },
     );
     return response as Map<String, dynamic>;
   }
 
-  // TODO(swagger): GET /v1/vendor/payout-methods not found. Use GET /v1/accounts/{accountId}/payout-methods
-  Future<List<VendorPayoutMethodDto>> getPayoutMethods() async {
-    final response = await apiClient.get('/v1/vendor/payout-methods');
-    final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => VendorPayoutMethodDto.fromJson(e as Map<String, dynamic>))
-        .toList(growable: false);
-    return items;
-  }
-
-  // TODO(swagger): POST /v1/vendor/payout-methods not found. Use POST /v1/accounts/{accountId}/payout-methods/bank or /external-wallet
-  Future<VendorPayoutMethodDto> addPayoutMethod({
-    required String type,
-    required String label,
-    required String accountInfo,
-    required String idempotencyKey,
+  /// `GET /v1/payouts?pageSize=&cursor=` — not role-scoped server-side, so
+  /// callers filter the returned `payeeKind` client-side (see
+  /// [VendorPayoutDto.payeeKind]).
+  Future<Map<String, dynamic>> getPayouts({
+    int pageSize = 20,
+    String? cursor,
   }) async {
-    final response = await apiClient.post(
-      '/v1/vendor/payout-methods',
-      data: {
-        'type': type,
-        'label': label,
-        'accountInfo': accountInfo,
+    final response = await apiClient.get(
+      '/v1/payouts',
+      queryParameters: {
+        'pageSize': pageSize,
+        if (cursor != null) 'cursor': cursor,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
     );
-    return VendorPayoutMethodDto.fromJson(response as Map<String, dynamic>);
+    return response as Map<String, dynamic>;
   }
 
+  /// `GET /v1/payouts/{id}/invoice`.
+  Future<VendorPayoutInvoiceDto> getPayoutInvoice(String payoutId) async {
+    final response = await apiClient.get('/v1/payouts/$payoutId/invoice');
+    return VendorPayoutInvoiceDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// `POST /v1/payouts/on-demand`. `destinationId` is a
+  /// `/v1/payout-destinations` id (see `PayoutDestinationsRemoteDataSource`
+  /// in `features/payouts` — payout method CRUD is shared with creators,
+  /// not a vendor-specific system).
   Future<void> requestPayout({
     required double amount,
-    required String currency,
-    required String methodId,
+    required int destinationKind,
+    required String destinationId,
     required String idempotencyKey,
   }) async {
     await apiClient.post(
       '/v1/payouts/on-demand',
       data: {
-        'amount': amount,
-        'currency': currency,
-        'payoutMethodId': methodId,
+        'role': _vendorRole,
+        'destination': destinationKind,
+        'destinationRef': destinationId,
+        'requestedAmount': amount,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 }

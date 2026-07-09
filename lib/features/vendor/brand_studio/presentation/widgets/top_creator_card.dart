@@ -3,10 +3,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/domain/en
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class TemplateCard extends StatelessWidget {
-  const TemplateCard({super.key, required this.template});
+class TopCreatorCard extends StatelessWidget {
+  const TopCreatorCard({required this.creator, super.key});
 
-  final CampaignTemplate template;
+  final TopCreatorByAttributedSales creator;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class TemplateCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  template.title,
+                  creator.creatorAccountId,
                   style: DesignTokens.mediumSemibold,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -34,10 +34,12 @@ class TemplateCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.chipRadius,
+                  ),
                 ),
                 child: Text(
-                  '${template.recommendedCommission.toStringAsFixed(0)}%',
+                  '${creator.roiRatio.toStringAsFixed(1)}x ROI',
                   style: DesignTokens.tiny.copyWith(
                     color: DesignTokens.primaryGreen,
                   ),
@@ -47,32 +49,33 @@ class TemplateCard extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s6),
           Text(
-            template.description,
+            '${creator.reelsInWindow} reels · ${creator.attributedUnitsSold} units sold',
             style: DesignTokens.smallRegular,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: DesignTokens.s8),
           Row(
             children: [
-              Icon(Icons.lightbulb_outline, size: 14, color: DesignTokens.warning500),
-              const SizedBox(width: DesignTokens.s4),
               Expanded(
-                child: Text(
-                  template.tips.firstOrNull ?? '',
-                  style: DesignTokens.tiny,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: MoneyText(
+                  creator.attributedRevenue,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
+              ),
+              Text(
+                'commission ',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              MoneyText(
+                creator.commissionPaid,
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          MoneyText(
-            template.recommendedBudget,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.primaryGreen,
-            ),
           ),
         ],
       ),

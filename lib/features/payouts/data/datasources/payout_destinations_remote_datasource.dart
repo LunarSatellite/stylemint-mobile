@@ -42,7 +42,9 @@ class PayoutDestinationsRemoteDataSource {
   }
 
   Future<PayoutDestinationDto> setDefault(String id) async {
-    final response = await apiClient.post('/v1/payout-destinations/$id/default');
+    final response = await apiClient.post(
+      '/v1/payout-destinations/$id/default',
+    );
     return PayoutDestinationDto.fromJson(response as Map<String, dynamic>);
   }
 

@@ -1,27 +1,59 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class UpdateProductStockScreen extends StatefulWidget {
+class UpdateProductStockScreen extends ConsumerStatefulWidget {
   const UpdateProductStockScreen({required this.product, super.key});
 
   final VendorProduct product;
 
   @override
-  State<UpdateProductStockScreen> createState() =>
+  ConsumerState<UpdateProductStockScreen> createState() =>
       _UpdateProductStockScreenState();
 }
 
-class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
+class _UpdateProductStockScreenState
+    extends ConsumerState<UpdateProductStockScreen> {
   final _addQtyController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _restockDate;
   bool _alertCustomers = true;
+  bool _submitting = false;
 
   int get _addQty => int.tryParse(_addQtyController.text) ?? 0;
   int get _newStock => widget.product.stockCount + _addQty;
+
+  Future<void> _submit() async {
+    if (widget.product.variantId.isEmpty || _addQty <= 0) return;
+    setState(() => _submitting = true);
+    final either = await ref
+        .read(vendorProductsRepositoryProvider)
+        .updateStock(
+          productId: widget.product.id,
+          variantId: widget.product.variantId,
+          newQuantity: _newStock,
+          restockUtc: _restockDate,
+          alertCustomersOnRestock: _alertCustomers,
+        );
+    if (!mounted) return;
+    either.fold(
+      (failure) {
+        setState(() => _submitting = false);
+        SmSnackbar.error(context, 'Failed to update stock. Please try again.');
+      },
+      (updated) {
+        ref
+            .read(vendorProductsNotifierProvider.notifier)
+            .applyProductUpdate(updated);
+        Navigator.pop(context);
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -68,12 +100,17 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Update Product Stock',
-            style: DesignTokens.oneLinerSemibold),
+        title: Text(
+          'Update Product Stock',
+          style: DesignTokens.oneLinerSemibold,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -91,8 +128,9 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                       child: Row(
                         children: [
                           ClipRRect(
-                            borderRadius:
-                                BorderRadius.circular(DesignTokens.s8),
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.s8,
+                            ),
                             child: Image.network(
                               widget.product.imageUrl,
                               width: 56,
@@ -102,8 +140,10 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                                 width: 56,
                                 height: 56,
                                 color: DesignTokens.bgAppBodyLight,
-                                child: const Icon(Icons.image,
-                                    color: DesignTokens.textMuted),
+                                child: const Icon(
+                                  Icons.image,
+                                  color: DesignTokens.textMuted,
+                                ),
                               ),
                             ),
                           ),
@@ -121,11 +161,13 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                                 const SizedBox(height: DesignTokens.s6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: DesignTokens.s8,
-                                      vertical: 3),
+                                    horizontal: DesignTokens.s8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: DesignTokens.primaryGreen
-                                        .withValues(alpha: 0.15),
+                                    color: DesignTokens.primaryGreen.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
@@ -150,18 +192,21 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                         controller: _addQtyController,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
-                        style: DesignTokens.mediumRegular
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.mediumRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Add Qty.',
-                          hintStyle: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          hintStyle: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s16,
-                              vertical: DesignTokens.s12),
+                            horizontal: DesignTokens.s16,
+                            vertical: DesignTokens.s12,
+                          ),
                         ),
                       ),
                     ),
@@ -170,15 +215,20 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                     // New stock formula
                     Text(
                       'New Stock Qty. (Current Stock + Add Qty.)',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textMuted),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s12, vertical: 6),
+                        horizontal: DesignTokens.s12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+                        color: DesignTokens.primaryGreen.withValues(
+                          alpha: 0.15,
+                        ),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -197,8 +247,9 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                       child: _inputDecoration(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s16,
-                              vertical: DesignTokens.s12),
+                            horizontal: DesignTokens.s16,
+                            vertical: DesignTokens.s12,
+                          ),
                           child: Row(
                             children: [
                               Expanded(
@@ -213,8 +264,11 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                                   ),
                                 ),
                               ),
-                              const Icon(Icons.calendar_month_outlined,
-                                  size: 18, color: DesignTokens.textMuted),
+                              const Icon(
+                                Icons.calendar_month_outlined,
+                                size: 18,
+                                color: DesignTokens.textMuted,
+                              ),
                             ],
                           ),
                         ),
@@ -227,16 +281,19 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                       child: TextField(
                         controller: _notesController,
                         maxLines: 4,
-                        style: DesignTokens.mediumRegular
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.mediumRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Notes (Optional)',
-                          hintStyle: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          hintStyle: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s16,
-                              vertical: DesignTokens.s12),
+                            horizontal: DesignTokens.s16,
+                            vertical: DesignTokens.s12,
+                          ),
                         ),
                       ),
                     ),
@@ -256,7 +313,8 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                             activeColor: DesignTokens.primaryGreen,
                             checkColor: Colors.black,
                             side: const BorderSide(
-                                color: DesignTokens.primaryGreen),
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                           const SizedBox(width: DesignTokens.s4),
                           Expanded(
@@ -272,7 +330,8 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
                                   Text(
                                     'Notify customers on wait list',
                                     style: DesignTokens.smallRegular.copyWith(
-                                        color: DesignTokens.textMuted),
+                                      color: DesignTokens.textMuted,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -289,12 +348,20 @@ class _UpdateProductStockScreenState extends State<UpdateProductStockScreen> {
             // Bottom button
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s16),
+                DesignTokens.s16,
+                0,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
               child: SmPrimaryButton(
                 label: 'Update Stock',
                 height: DesignTokens.buttonHeight,
                 borderRadius: DesignTokens.buttonRadius,
-                onPressed: () async => Navigator.pop(context),
+                disabled:
+                    _submitting ||
+                    widget.product.variantId.isEmpty ||
+                    _addQty <= 0,
+                onPressed: _submit,
               ),
             ),
           ],

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
@@ -7,26 +7,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_tile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-
-final _sampleProducts = {
-  'active': [
-    VendorProduct(id: '1', name: 'Nike Sportswear Lightweight Synthetic Fill', imageUrl: '', price: const Money(amount: 18000, currency: 'NPR'), stockCount: 56, status: VendorProductStatus.active, totalSales: 47, rating: 4.8, createdAt: DateTime(2025, 1, 1), commissionRate: 20, reviewCount: 234, reelCount: 12),
-    VendorProduct(id: '2', name: 'Nike Air Jordan Travis Scott Limited Edition', imageUrl: '', price: const Money(amount: 25000, currency: 'NPR'), stockCount: 20000, status: VendorProductStatus.active, totalSales: 45, rating: 4.9, createdAt: DateTime(2025, 1, 1), commissionRate: 15, reviewCount: 234, reelCount: 88),
-    VendorProduct(id: '3', name: 'Nike Air Max 2025', imageUrl: '', price: const Money(amount: 18000, currency: 'NPR'), stockCount: 12787, status: VendorProductStatus.active, totalSales: 45, rating: 4.4, createdAt: DateTime(2025, 1, 1), commissionRate: 18, reviewCount: 234, reelCount: 109),
-    VendorProduct(id: '4', name: 'Nike Sportswear Tech Fleece', imageUrl: '', price: const Money(amount: 12500, currency: 'NPR'), stockCount: 690, status: VendorProductStatus.active, totalSales: 45, rating: 4.6, createdAt: DateTime(2025, 1, 1), commissionRate: 12, reviewCount: 234, reelCount: 22),
-  ],
-  'draft': [
-    VendorProduct(id: '5', name: 'Nike Dri-FIT Training T-Shirt', imageUrl: '', price: const Money(amount: 4500, currency: 'NPR'), stockCount: 0, status: VendorProductStatus.draft, totalSales: 0, rating: 0, createdAt: DateTime(2025, 1, 1)),
-    VendorProduct(id: '6', name: 'Nike Air Force 1 Low White', imageUrl: '', price: const Money(amount: 15000, currency: 'NPR'), stockCount: 0, status: VendorProductStatus.draft, totalSales: 0, rating: 0, createdAt: DateTime(2025, 1, 1)),
-  ],
-  'out_of_stock': [
-    VendorProduct(id: '7', name: 'Nike React Infinity Run Flyknit 3', imageUrl: '', price: const Money(amount: 22000, currency: 'NPR'), stockCount: 0, status: VendorProductStatus.outOfStock, totalSales: 38, rating: 4.7, createdAt: DateTime(2025, 1, 1), reviewCount: 189, reelCount: 45),
-  ],
-};
 
 class VendorProductsScreen extends ConsumerStatefulWidget {
   const VendorProductsScreen({super.key});
@@ -149,14 +133,11 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
               .loadMoreProducts(),
           onMore: (p) => showVendorProductActions(context, ref, p),
         ),
-        loadFailure: (_) => _ProductList(
-          products: _sampleProducts[_tabs[_tabController.index].$1] ?? [],
-          hasMore: false,
-          onRefresh: () => ref
+        loadFailure: (_) => SmErrorView(
+          message: 'Failed to load products.',
+          onRetry: () => ref
               .read(vendorProductsNotifierProvider.notifier)
               .loadProducts(status: _tabs[_tabController.index].$1),
-          onLoadMore: () {},
-          onMore: (p) => showVendorProductActions(context, ref, p),
         ),
         actionInProgress: (products) => _ProductList(
           products: products,
@@ -197,8 +178,8 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ── Product list ──────────────────────────────────────────────────────────────
@@ -283,10 +264,23 @@ class _VendorBottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    _NavItem(icon: Icons.home_outlined,       activeIcon: Icons.home,        label: 'Home'),
-    _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Orders'),
-    _NavItem(icon: Icons.grid_view_outlined,   activeIcon: Icons.grid_view,   label: 'Products', assetIcon: 'assets/images/vendordashboard/nav_products.png'),
-    _NavItem(icon: Icons.person_outline,       activeIcon: Icons.person,      label: 'Profile'),
+    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
+    _NavItem(
+      icon: Icons.inventory_2_outlined,
+      activeIcon: Icons.inventory_2,
+      label: 'Orders',
+    ),
+    _NavItem(
+      icon: Icons.grid_view_outlined,
+      activeIcon: Icons.grid_view,
+      label: 'Products',
+      assetIcon: 'assets/images/vendordashboard/nav_products.png',
+    ),
+    _NavItem(
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'Profile',
+    ),
   ];
 
   @override

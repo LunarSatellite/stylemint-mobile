@@ -63,7 +63,8 @@ class AddProductRemoteDataSource {
       apiClient.patch('/v1/vendor/products/$id/step-4',
           data: body, options: _authed());
 
-  // TODO(swagger): POST /v1/vendor/products/images not found in Swagger
+  /// POST /v1/vendor/products/images (SM-BG-3) — multipart upload, returns
+  /// the CDN URL to submit via `PATCH .../step-2`'s `ImageInputVm.CdnUrl`.
   Future<String> uploadImage(String filePath) async {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath, filename: 'image.jpg'),

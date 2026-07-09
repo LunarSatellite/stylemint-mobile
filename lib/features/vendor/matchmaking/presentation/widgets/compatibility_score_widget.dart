@@ -1,10 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class CompatibilityScoreWidget extends StatelessWidget {
-  const CompatibilityScoreWidget({super.key, required this.score});
+  const CompatibilityScoreWidget({required this.score, super.key});
 
   final int score;
 

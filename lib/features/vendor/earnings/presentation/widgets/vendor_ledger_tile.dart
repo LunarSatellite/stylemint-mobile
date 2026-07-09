@@ -13,7 +13,10 @@ class VendorLedgerTile extends StatelessWidget {
     final (IconData icon, Color color) = switch (entry.type) {
       VendorLedgerType.sale => (Icons.shopping_bag, DesignTokens.primaryGreen),
       VendorLedgerType.refund => (Icons.undo, DesignTokens.colorError),
-      VendorLedgerType.payout => (Icons.account_balance_wallet, DesignTokens.colorInfo),
+      VendorLedgerType.payout => (
+        Icons.account_balance_wallet,
+        DesignTokens.colorInfo,
+      ),
       VendorLedgerType.fee => (Icons.receipt_long, DesignTokens.warning500),
     };
 
@@ -37,14 +40,14 @@ class VendorLedgerTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  entry.description.isNotEmpty
-                      ? entry.description
+                  entry.note?.isNotEmpty ?? false
+                      ? entry.note!
                       : entry.type.name,
                   style: DesignTokens.mediumSemibold,
                 ),
                 const SizedBox(height: DesignTokens.s4),
                 Text(
-                  _formatDate(entry.createdAt),
+                  _formatDate(entry.occurredAt),
                   style: DesignTokens.tiny,
                 ),
               ],

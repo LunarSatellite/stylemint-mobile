@@ -24,9 +24,11 @@ class PayoutMethodsScreen extends ConsumerWidget {
     final state = ref.watch(provider);
 
     ref.listen<PayoutDestinationsState>(provider, (prev, next) {
-      if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+      if (next.errorMessage != null &&
+          next.errorMessage != prev?.errorMessage) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
@@ -36,16 +38,24 @@ class PayoutMethodsScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title:
-            const Text('Payment Methods', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Payment Methods',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: DesignTokens.primaryGreen))
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            )
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
               onRefresh: () => ref.read(provider.notifier).load(),
@@ -53,12 +63,17 @@ class PayoutMethodsScreen extends ConsumerWidget {
                   ? ListView(
                       children: const [
                         SizedBox(height: 120),
-                        Icon(Icons.account_balance_wallet_outlined,
-                            size: 48, color: DesignTokens.textMuted),
+                        Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 48,
+                          color: DesignTokens.textMuted,
+                        ),
                         SizedBox(height: DesignTokens.s12),
                         Center(
-                          child: Text('No payment methods yet',
-                              style: DesignTokens.bodyText),
+                          child: Text(
+                            'No payment methods yet',
+                            style: DesignTokens.bodyText,
+                          ),
                         ),
                       ],
                     )
@@ -72,8 +87,9 @@ class PayoutMethodsScreen extends ConsumerWidget {
                         onSetDefault: () => ref
                             .read(provider.notifier)
                             .makeDefault(state.items[i].id),
-                        onRemove: () =>
-                            ref.read(provider.notifier).remove(state.items[i].id),
+                        onRemove: () => ref
+                            .read(provider.notifier)
+                            .remove(state.items[i].id),
                       ),
                     ),
             ),
@@ -98,7 +114,7 @@ class PayoutMethodsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     StateNotifierProvider<PayoutDestinationsController, PayoutDestinationsState>
-        provider,
+    provider,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -109,7 +125,9 @@ class PayoutMethodsScreen extends ConsumerWidget {
       ),
       builder: (sheetCtx) => _AddDestinationSheet(
         onSubmit: (kind, label, identifier, branch, makeDefault) async {
-          final ok = await ref.read(provider.notifier).add(
+          final ok = await ref
+              .read(provider.notifier)
+              .add(
                 kind: kind.value,
                 label: label,
                 accountIdentifier: identifier,
@@ -149,8 +167,10 @@ class _DestinationCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_outlined,
-              color: DesignTokens.primaryGreen),
+          const Icon(
+            Icons.account_balance_outlined,
+            color: DesignTokens.primaryGreen,
+          ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
@@ -159,10 +179,12 @@ class _DestinationCard extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(destination.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.mediumSemibold),
+                      child: Text(
+                        destination.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.mediumSemibold,
+                      ),
                     ),
                     if (destination.isDefault) ...[
                       const SizedBox(width: DesignTokens.s8),
@@ -173,8 +195,9 @@ class _DestinationCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   '${destination.kind.label} • ${destination.accountIdentifierMasked}',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -190,13 +213,17 @@ class _DestinationCard extends StatelessWidget {
               if (!destination.isDefault)
                 const PopupMenuItem(
                   value: 'default',
-                  child: Text('Set as default',
-                      style: TextStyle(color: DesignTokens.textWhite)),
+                  child: Text(
+                    'Set as default',
+                    style: TextStyle(color: DesignTokens.textWhite),
+                  ),
                 ),
               const PopupMenuItem(
                 value: 'remove',
-                child: Text('Remove',
-                    style: TextStyle(color: DesignTokens.colorError)),
+                child: Text(
+                  'Remove',
+                  style: TextStyle(color: DesignTokens.colorError),
+                ),
               ),
             ],
           ),
@@ -215,8 +242,10 @@ class _DefaultBadge extends StatelessWidget {
         color: DesignTokens.chipsSelectedFill,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text('Default',
-          style: DesignTokens.tiny.copyWith(color: DesignTokens.primaryGreen)),
+      child: Text(
+        'Default',
+        style: DesignTokens.tiny.copyWith(color: DesignTokens.primaryGreen),
+      ),
     );
   }
 }
@@ -230,7 +259,8 @@ class _AddDestinationSheet extends StatefulWidget {
     String accountIdentifier,
     String? branchOrIfsc,
     bool makeDefault,
-  ) onSubmit;
+  )
+  onSubmit;
 
   @override
   State<_AddDestinationSheet> createState() => _AddDestinationSheetState();
@@ -343,7 +373,9 @@ class _AddDestinationSheetState extends State<_AddDestinationSheet> {
       cursorColor: DesignTokens.primaryGreen,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: DesignTokens.bodyText.copyWith(color: DesignTokens.textMuted),
+        hintStyle: DesignTokens.bodyText.copyWith(
+          color: DesignTokens.textMuted,
+        ),
         filled: true,
         fillColor: DesignTokens.inputFieldFill,
         contentPadding: const EdgeInsets.all(DesignTokens.s12),

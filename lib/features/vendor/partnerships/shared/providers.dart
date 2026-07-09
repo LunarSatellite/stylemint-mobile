@@ -45,3 +45,10 @@ final inviteCreatorNotifierProvider =
         ref.watch(vendorPartnershipsRepositoryProvider),
       ),
     );
+
+final partnershipsListNotifierProvider =
+    StateNotifierProvider<PartnershipsListNotifier, PartnershipsState>(
+      (ref) => PartnershipsListNotifier(
+        ref.watch(vendorPartnershipsRepositoryProvider),
+      ),
+    );

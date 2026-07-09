@@ -1,10 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -34,34 +34,38 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
     Ticket(
       id: '1',
       ticketNumber: '#ST890087',
-      category: SupportTicketCategory.shipping,
       subject: 'Cannot Add New Shipping Address',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
+      lastUpdated: DateTime(2025, 9, 25, 16, 53),
+      lastMessagePreview: null,
     ),
     Ticket(
       id: '2',
       ticketNumber: '#ST890086',
-      category: SupportTicketCategory.returnRefund,
       subject: 'Did not get Full Refund for Order #32323',
       status: TicketStatus.open,
       createdAt: DateTime(2025, 9, 25, 16, 53),
+      lastUpdated: DateTime(2025, 9, 25, 16, 53),
+      lastMessagePreview: null,
     ),
     Ticket(
       id: '3',
       ticketNumber: '#ST890085',
-      category: SupportTicketCategory.orderIssue,
       subject: 'Order delivered to wrong address',
       status: TicketStatus.inProgress,
       createdAt: DateTime(2025, 9, 20, 10, 30),
+      lastUpdated: DateTime(2025, 9, 20, 10, 30),
+      lastMessagePreview: null,
     ),
     Ticket(
       id: '4',
       ticketNumber: '#ST890084',
-      category: SupportTicketCategory.productQuality,
       subject: 'Item arrived damaged — resolved',
       status: TicketStatus.resolved,
       createdAt: DateTime(2025, 9, 15, 9, 0),
+      lastUpdated: DateTime(2025, 9, 15, 9, 0),
+      lastMessagePreview: null,
     ),
   ];
 
@@ -75,14 +79,14 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
     );
     final allTickets = apiTickets.isEmpty ? _sampleTickets : apiTickets;
 
-    final submitted =
-        allTickets.where((t) => t.status == TicketStatus.open).toList();
-    final inProgress =
-        allTickets.where((t) => t.status == TicketStatus.inProgress).toList();
+    final submitted = allTickets
+        .where((t) => t.status == TicketStatus.open)
+        .toList();
+    final inProgress = allTickets
+        .where((t) => t.status == TicketStatus.inProgress)
+        .toList();
     final resolved = allTickets
-        .where((t) =>
-            t.status == TicketStatus.resolved ||
-            t.status == TicketStatus.closed)
+        .where((t) => t.status == TicketStatus.resolved)
         .toList();
 
     final tabs = [
@@ -98,12 +102,14 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
+          icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
           style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
-        title: const Text('Contact Support', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Contact Support',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: Column(
         children: [
@@ -152,13 +158,17 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
 
                   // Ticket list or empty state
                   if (state.maybeWhen(
-                      loadInProgress: () => true, orElse: () => false))
+                    loadInProgress: () => true,
+                    orElse: () => false,
+                  ))
                     const Center(
                       child: Padding(
-                        padding:
-                            EdgeInsets.symmetric(vertical: DesignTokens.s32),
+                        padding: EdgeInsets.symmetric(
+                          vertical: DesignTokens.s32,
+                        ),
                         child: CircularProgressIndicator(
-                            color: DesignTokens.primaryGreen),
+                          color: DesignTokens.primaryGreen,
+                        ),
                       ),
                     )
                   else if (currentTickets.isEmpty)
@@ -199,8 +209,9 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Create Support Ticket',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.buttonPrimaryText),
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                 ),
               ),
             ),
@@ -234,8 +245,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) =>
-          _CreateTicketSheet(prefilledIssue: prefilledIssue),
+      builder: (ctx) => _CreateTicketSheet(prefilledIssue: prefilledIssue),
     ).ignore();
   }
 }
@@ -291,8 +301,11 @@ class _WelcomeBanner extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.smartphone_outlined,
-                        color: Colors.white, size: 28),
+                    child: const Icon(
+                      Icons.smartphone_outlined,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                 ),
                 Positioned(
@@ -305,8 +318,11 @@ class _WelcomeBanner extends StatelessWidget {
                       color: Colors.black.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.chat_bubble_outline,
-                        color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.chat_bubble_outline,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
@@ -396,9 +412,11 @@ class _ChannelTile extends StatelessWidget {
                 color: DesignTokens.bgAppBodyLight,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: Icon(icon,
-                  color: DesignTokens.textWhite.withValues(alpha: 0.8),
-                  size: 20),
+              child: Icon(
+                icon,
+                color: DesignTokens.textWhite.withValues(alpha: 0.8),
+                size: 20,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -407,20 +425,25 @@ class _ChannelTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right,
-                color: DesignTokens.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -485,14 +508,17 @@ class _QuickTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                color: DesignTokens.textWhite.withValues(alpha: 0.8),
-                size: 26),
+            Icon(
+              icon,
+              color: DesignTokens.textWhite.withValues(alpha: 0.8),
+              size: 26,
+            ),
             const SizedBox(height: DesignTokens.s8),
             Text(
               label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -602,8 +628,9 @@ class _EmptyTickets extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           Text(
             'When you create a support ticket you will\nbe able to view it here',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -696,35 +723,44 @@ class _TicketTile extends StatelessWidget {
                 children: [
                   Text(
                     ticket.subject,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     'Ticket ID: ${ticket.ticketNumber}',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s4),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 12, color: DesignTokens.textMuted),
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 12,
+                        color: DesignTokens.textMuted,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _fmt(ticket.createdAt),
-                        style: DesignTokens.tiny
-                            .copyWith(color: DesignTokens.textMuted),
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right,
-                color: DesignTokens.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -735,8 +771,8 @@ class _TicketTile extends StatelessWidget {
     final h = dt.hour > 12
         ? dt.hour - 12
         : dt.hour == 0
-            ? 12
-            : dt.hour;
+        ? 12
+        : dt.hour;
     final m = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period, ${_ord(dt.day)} ${_mon(dt.month)} ${dt.year}';
@@ -753,10 +789,20 @@ class _TicketTile extends StatelessWidget {
   }
 
   String _mon(int m) => const [
-        '',
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ][m];
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][m];
 }
 
 // ── Ticket detail sheet ───────────────────────────────────────────────────────
@@ -789,20 +835,28 @@ class _TicketDetailSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close,
-                    color: DesignTokens.textWhite, size: 22),
+                child: const Icon(
+                  Icons.close,
+                  color: DesignTokens.textWhite,
+                  size: 22,
+                ),
               ),
             ],
           ),
           const SizedBox(height: DesignTokens.s16),
 
           // Issue Category
-          Text('Issue Category',
-              style:
-                  DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
+          Text(
+            'Issue Category',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
           const SizedBox(height: DesignTokens.s4),
-          Text(_issueCategory(ticket.subject),
-              style: DesignTokens.mediumRegular),
+          Text(
+            _issueCategory(ticket.subject),
+            style: DesignTokens.mediumRegular,
+          ),
           const SizedBox(height: DesignTokens.s12),
 
           // Status chip
@@ -817,16 +871,20 @@ class _TicketDetailSheet extends StatelessWidget {
             ),
             child: Text(
               _statusLabel(ticket.status),
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
           // Description
-          Text(ticket.subject,
-              style:
-                  DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight)),
+          Text(
+            ticket.subject,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
           const SizedBox(height: DesignTokens.s16),
 
           // Info card: Created On + Attachments
@@ -843,17 +901,25 @@ class _TicketDetailSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Created On',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textMuted)),
-                    Text(_fmt(ticket.createdAt),
-                        style: DesignTokens.smallRegular),
+                    Text(
+                      'Created On',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                    Text(
+                      _fmt(ticket.createdAt),
+                      style: DesignTokens.smallRegular,
+                    ),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s12),
-                Text('Attachments',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted)),
+                Text(
+                  'Attachments',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s8),
                 // Placeholder attachment thumbnails
                 Row(
@@ -884,18 +950,17 @@ class _TicketDetailSheet extends StatelessWidget {
   }
 
   String _statusLabel(TicketStatus s) => switch (s) {
-        TicketStatus.open => 'Submitted',
-        TicketStatus.inProgress => 'In Progress',
-        TicketStatus.resolved => 'Resolved',
-        TicketStatus.closed => 'Closed',
-      };
+    TicketStatus.open => 'Submitted',
+    TicketStatus.inProgress => 'In Progress',
+    TicketStatus.resolved => 'Resolved',
+  };
 
   String _fmt(DateTime dt) {
     final h = dt.hour > 12
         ? dt.hour - 12
         : dt.hour == 0
-            ? 12
-            : dt.hour;
+        ? 12
+        : dt.hour;
     final m = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $period, ${_ord(dt.day)} ${_mon(dt.month)} ${dt.year}';
@@ -912,10 +977,20 @@ class _TicketDetailSheet extends StatelessWidget {
   }
 
   String _mon(int m) => const [
-        '',
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-      ][m];
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][m];
 }
 
 class _Thumbnail extends StatelessWidget {
@@ -933,16 +1008,18 @@ class _Thumbnail extends StatelessWidget {
             color: DesignTokens.bgAppBodyLight,
             borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
           ),
-          child: const Icon(Icons.image_outlined,
-              color: DesignTokens.textMuted, size: 28),
+          child: const Icon(
+            Icons.image_outlined,
+            color: DesignTokens.textMuted,
+            size: 28,
+          ),
         ),
         if (overflow != null)
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
-                borderRadius:
-                    BorderRadius.circular(DesignTokens.inputRadius),
+                borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
               ),
               child: Center(
                 child: Text(
@@ -964,15 +1041,35 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
   final String? prefilledIssue;
 
   @override
-  ConsumerState<_CreateTicketSheet> createState() =>
-      _CreateTicketSheetState();
+  ConsumerState<_CreateTicketSheet> createState() => _CreateTicketSheetState();
 }
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
+  final _orderCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  SupportTicketCategory? _selectedCategory;
+  String? _selectedCategory;
   final List<XFile> _images = [];
   final _picker = ImagePicker();
+
+  static const _categories = [
+    'Shipping Address Issue',
+    'Order Cancellation',
+    'Payment Issue',
+    'Returns & Refunds',
+    'Product Quality Issue',
+    'Account & Security',
+    'Other',
+  ];
+
+  /// Maps the display label to the backend's `SupportCategory` enum.
+  static TicketCategory _categoryFor(String? label) => switch (label) {
+    'Shipping Address Issue' ||
+    'Order Cancellation' => TicketCategory.ordersAndShipping,
+    'Payment Issue' => TicketCategory.paymentAndBilling,
+    'Returns & Refunds' => TicketCategory.returnsAndRefunds,
+    'Account & Security' => TicketCategory.accountAndSettings,
+    _ => TicketCategory.safetyAndPrivacy,
+  };
 
   @override
   void initState() {
@@ -984,6 +1081,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   @override
   void dispose() {
+    _orderCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -994,11 +1092,18 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _submit() {
-    if (_descCtrl.text.trim().isEmpty || _selectedCategory == null) return;
-    ref.read(createTicketNotifierProvider.notifier).submit(
-          category: _selectedCategory!,
-          body: _descCtrl.text.trim(),
-        );
+    if (_descCtrl.text.trim().isEmpty) return;
+    // Attachments aren't sent — see the vendor Contact Support screen's
+    // _submit() for why (no blob/file upload endpoint in the backend yet).
+    unawaited(
+      ref
+          .read(createTicketNotifierProvider.notifier)
+          .submit(
+            subject: _descCtrl.text.trim(),
+            message: _descCtrl.text.trim(),
+            category: _categoryFor(_selectedCategory),
+          ),
+    );
     Navigator.of(context).pop();
   }
 
@@ -1019,13 +1124,18 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           Row(
             children: [
               Expanded(
-                child: Text('Create Support Ticket',
-                    style: DesignTokens.sectionInnerTitle),
+                child: Text(
+                  'Create Support Ticket',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
               ),
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close,
-                    color: DesignTokens.textMuted, size: 22),
+                child: const Icon(
+                  Icons.close,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
               ),
             ],
           ),
@@ -1036,7 +1146,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
             onTap: _showCategoryPicker,
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s16,
+              ),
               decoration: BoxDecoration(
                 color: DesignTokens.inputFieldFill,
                 borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
@@ -1050,21 +1162,28 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Issue Category',
-                            style: DesignTokens.tiny
-                                .copyWith(color: DesignTokens.primaryGreen)),
+                        Text(
+                          'Issue Category',
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
                             Expanded(
-                              child: Text(_selectedCategory!.label,
-                                  style: DesignTokens.mediumRegular
-                                      .copyWith(
-                                          color: DesignTokens.inputFieldData)),
+                              child: Text(
+                                _selectedCategory!,
+                                style: DesignTokens.mediumRegular.copyWith(
+                                  color: DesignTokens.inputFieldData,
+                                ),
+                              ),
                             ),
-                            const Icon(Icons.keyboard_arrow_down,
-                                color: DesignTokens.inputFieldDropdownIcon,
-                                size: 20),
+                            const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: DesignTokens.inputFieldDropdownIcon,
+                              size: 20,
+                            ),
                           ],
                         ),
                       ],
@@ -1072,15 +1191,32 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                   : Row(
                       children: [
                         Expanded(
-                          child: Text('Issue Category',
-                              style: DesignTokens.mediumRegular.copyWith(
-                                  color: DesignTokens.inputFieldPlaceholder)),
+                          child: Text(
+                            'Issue Category',
+                            style: DesignTokens.mediumRegular.copyWith(
+                              color: DesignTokens.inputFieldPlaceholder,
+                            ),
+                          ),
                         ),
-                        const Icon(Icons.keyboard_arrow_down,
-                            color: DesignTokens.inputFieldDropdownIcon,
-                            size: 20),
+                        const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: DesignTokens.inputFieldDropdownIcon,
+                          size: 20,
+                        ),
                       ],
                     ),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+
+          // Order No. (Optional)
+          TextField(
+            controller: _orderCtrl,
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Order No. (Optional)',
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
@@ -1089,10 +1225,12 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           TextField(
             controller: _descCtrl,
             maxLines: 5,
-            style: DesignTokens.mediumRegular
-                .copyWith(color: DesignTokens.inputFieldData),
-            decoration:
-                DesignTokens.inputDecoration(hintText: 'Describe Issue'),
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.inputFieldData,
+            ),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Describe Issue',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -1108,8 +1246,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 itemBuilder: (_, i) => Stack(
                   children: [
                     ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.inputRadius,
+                      ),
                       child: Image.file(
                         File(_images[i].path),
                         width: 80,
@@ -1121,8 +1260,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                       top: 4,
                       right: 4,
                       child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _images.removeAt(i)),
+                        onTap: () => setState(() => _images.removeAt(i)),
                         child: Container(
                           width: 20,
                           height: 20,
@@ -1130,8 +1268,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                             color: Colors.black54,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.close,
-                              color: Colors.white, size: 12),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -1150,15 +1291,17 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               height: DesignTokens.buttonHeight,
               decoration: BoxDecoration(
                 color: Colors.transparent,
-                borderRadius:
-                    BorderRadius.circular(DesignTokens.buttonRadius),
+                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
                 border: Border.all(color: DesignTokens.borderDefault),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.upload_outlined,
-                      color: DesignTokens.textWhite, size: 20),
+                  const Icon(
+                    Icons.upload_outlined,
+                    color: DesignTokens.textWhite,
+                    size: 20,
+                  ),
                   const SizedBox(width: DesignTokens.s8),
                   Text('Upload Images', style: DesignTokens.mediumSemibold),
                 ],
@@ -1176,8 +1319,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               style: DesignTokens.primaryButtonStyle(),
               child: Text(
                 'Submit Ticket',
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.buttonPrimaryText),
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.buttonPrimaryText,
+                ),
               ),
             ),
           ),
@@ -1192,7 +1336,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-            top: Radius.circular(DesignTokens.cardRadius)),
+          top: Radius.circular(DesignTokens.cardRadius),
+        ),
       ),
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -1208,23 +1353,30 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           ),
           const SizedBox(height: DesignTokens.s16),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Issue Category',
-                  style: DesignTokens.sectionInnerTitle),
+              child: Text(
+                'Issue Category',
+                style: DesignTokens.sectionInnerTitle,
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          for (final cat in SupportTicketCategory.values)
+          for (final cat in _categories)
             ListTile(
-              title: Text(cat.label,
-                  style: DesignTokens.mediumRegular
-                      .copyWith(color: DesignTokens.textWhite)),
+              title: Text(
+                cat,
+                style: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
               trailing: _selectedCategory == cat
-                  ? const Icon(Icons.check,
-                      color: DesignTokens.primaryGreen, size: 18)
+                  ? const Icon(
+                      Icons.check,
+                      color: DesignTokens.primaryGreen,
+                      size: 18,
+                    )
                   : null,
               onTap: () {
                 setState(() => _selectedCategory = cat);

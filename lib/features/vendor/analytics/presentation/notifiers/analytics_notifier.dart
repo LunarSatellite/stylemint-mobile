@@ -19,8 +19,7 @@ abstract class AnalyticsState with _$AnalyticsState {
 }
 
 class AnalyticsNotifier extends StateNotifier<AnalyticsState> {
-  AnalyticsNotifier(this._repository)
-      : super(const AnalyticsState.initial()) {
+  AnalyticsNotifier(this._repository) : super(const AnalyticsState.initial()) {
     unawaited(load());
   }
 
@@ -32,6 +31,40 @@ class AnalyticsNotifier extends StateNotifier<AnalyticsState> {
     state = either.fold(
       AnalyticsState.loadFailure,
       AnalyticsState.loadSuccess,
+    );
+  }
+}
+
+@freezed
+abstract class CreatorAnalyticsDeepDiveState
+    with _$CreatorAnalyticsDeepDiveState {
+  const factory CreatorAnalyticsDeepDiveState.initial() = _DeepDiveInitial;
+  const factory CreatorAnalyticsDeepDiveState.loadInProgress() =
+      _DeepDiveLoadInProgress;
+  const factory CreatorAnalyticsDeepDiveState.loadSuccess(
+    CreatorAnalyticsDeepDive deepDive,
+  ) = _DeepDiveLoadSuccess;
+  const factory CreatorAnalyticsDeepDiveState.loadFailure(
+    NetworkExceptions failure,
+  ) = _DeepDiveLoadFailure;
+}
+
+class CreatorAnalyticsDeepDiveNotifier
+    extends StateNotifier<CreatorAnalyticsDeepDiveState> {
+  CreatorAnalyticsDeepDiveNotifier(this._repository, this._partnershipId)
+    : super(const CreatorAnalyticsDeepDiveState.initial()) {
+    unawaited(load());
+  }
+
+  final AnalyticsRepository _repository;
+  final String _partnershipId;
+
+  Future<void> load() async {
+    state = const CreatorAnalyticsDeepDiveState.loadInProgress();
+    final either = await _repository.getCreatorAnalytics(_partnershipId);
+    state = either.fold(
+      CreatorAnalyticsDeepDiveState.loadFailure,
+      CreatorAnalyticsDeepDiveState.loadSuccess,
     );
   }
 }

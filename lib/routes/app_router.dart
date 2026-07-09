@@ -33,8 +33,10 @@ import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/add_payment_method_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/bank_verification_screen.dart' as creator_verify;
-import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/all_payout_history_screen.dart' as creator_history;
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/bank_verification_screen.dart'
+    as creator_verify;
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/all_payout_history_screen.dart'
+    as creator_history;
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_invoice_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/active_partnerships_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_requests_screen.dart';
@@ -149,11 +151,13 @@ import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_performance_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart'
-as vendor_dashboard_activity;
+    as vendor_dashboard_activity;
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/add_bank_account_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/all_payout_history_screen.dart' as vendor_history;
-import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/bank_verification_screen.dart' as vendor_verify;
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/all_payout_history_screen.dart'
+    as vendor_history;
+import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/bank_verification_screen.dart'
+    as vendor_verify;
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/change_payment_method_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/statement_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
@@ -279,8 +283,7 @@ GoRouter appRouter(Ref ref) {
       // user off splash. Splash itself only kicks off bootstrap().
       return session.when(
         unknown: () => atSplash ? null : RouteNames.splash,
-        authenticated: (_) =>
-            (atSplash || isAuthOnly) ? RouteNames.home : null,
+        authenticated: (_) => (atSplash || isAuthOnly) ? RouteNames.home : null,
         unauthenticated: () => atSplash
             ? RouteNames.userTypeSelection
             : (isPublic ? null : RouteNames.signInMethod),
@@ -554,7 +557,8 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.paymentEditCard,
-        builder: (ctx, state) => AddCardScreen(card: state.extra! as PaymentMethod),
+        builder: (ctx, state) =>
+            AddCardScreen(card: state.extra! as PaymentMethod),
       ),
 
       // Creator
@@ -567,27 +571,45 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const CreatorApplyScreen(),
         routes: [
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySocial),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplySocial,
+            ),
             builder: (ctx, state) => const CreatorSocialMediaScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyReview),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplyReview,
+            ),
             builder: (ctx, state) => const CreatorReviewScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplySubmitted),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplySubmitted,
+            ),
             builder: (ctx, state) => const CreatorSubmittedScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyUnderReview),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplyUnderReview,
+            ),
             builder: (ctx, state) => const CreatorUnderReviewScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyApproved),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplyApproved,
+            ),
             builder: (ctx, state) => const CreatorApprovedScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.creatorApply, RouteNames.creatorApplyRejected),
+            path: _subPath(
+              RouteNames.creatorApply,
+              RouteNames.creatorApplyRejected,
+            ),
             builder: (ctx, state) => const CreatorRejectedScreen(),
           ),
         ],
@@ -711,7 +733,10 @@ GoRouter appRouter(Ref ref) {
           final extra = state.extra is CreatorProfileArgs
               ? state.extra! as CreatorProfileArgs
               : CreatorProfileArgs(
-                  accountId: accountId, displayName: '', handle: '');
+                  accountId: accountId,
+                  displayName: '',
+                  handle: '',
+                );
           return CreatorProfileScreen(args: extra);
         },
       ),
@@ -721,7 +746,10 @@ GoRouter appRouter(Ref ref) {
           final extra = state.extra is CreatorProfileArgs
               ? state.extra! as CreatorProfileArgs
               : const CreatorProfileArgs(
-                  accountId: '', displayName: '', handle: '');
+                  accountId: '',
+                  displayName: '',
+                  handle: '',
+                );
           return ProfileSettingsScreen(
             displayName: extra.displayName,
             handle: extra.handle,
@@ -735,7 +763,10 @@ GoRouter appRouter(Ref ref) {
           final extra = state.extra is CreatorProfileArgs
               ? state.extra! as CreatorProfileArgs
               : const CreatorProfileArgs(
-                  accountId: '', displayName: '', handle: '');
+                  accountId: '',
+                  displayName: '',
+                  handle: '',
+                );
           return CreatorEditProfileScreen(
             initialDisplayName: extra.displayName,
             initialHandle: extra.handle,
@@ -787,7 +818,9 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: _subPath(
-                    RouteNames.brandDetail, RouteNames.partnershipApply),
+                  RouteNames.brandDetail,
+                  RouteNames.partnershipApply,
+                ),
                 builder: (ctx, state) => PartnershipRequestScreen(
                   args: state.extra! as PartnershipApplyArgs,
                 ),
@@ -965,7 +998,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorStatementDetails,
         builder: (ctx, state) => StatementDetailsScreen(
-          item: state.extra as VendorPayoutItem,
+          payoutId: state.extra as String,
         ),
       ),
       GoRoute(
@@ -1127,7 +1160,10 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const SettingsScreen(),
         routes: [
           GoRoute(
-            path: _subPath(RouteNames.settings, RouteNames.settingsNotifications),
+            path: _subPath(
+              RouteNames.settings,
+              RouteNames.settingsNotifications,
+            ),
             builder: (ctx, state) => const NotificationPrefsScreen(),
           ),
           GoRoute(
@@ -1215,30 +1251,38 @@ GoRouter appRouter(Ref ref) {
               branches: children,
             ),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: RouteNames.home,
-              builder: (ctx, state) => const ReelsFeedScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: RouteNames.search,
-              builder: (ctx, state) => const SearchScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: RouteNames.orders,
-              builder: (ctx, state) => const TrackOrdersScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: RouteNames.profile,
-              builder: (ctx, state) => const ProfileScreen(),
-            ),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RouteNames.home,
+                builder: (ctx, state) => const ReelsFeedScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RouteNames.search,
+                builder: (ctx, state) => const SearchScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RouteNames.orders,
+                builder: (ctx, state) => const TrackOrdersScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RouteNames.profile,
+                builder: (ctx, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
         ],
       ),
     ],

@@ -20,7 +20,11 @@ class MyTicketsScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('My Tickets', style: DesignTokens.sectionInnerTitle),
@@ -29,7 +33,10 @@ class MyTicketsScreen extends ConsumerWidget {
         initial: _loader,
         loadInProgress: _loader,
         loadFailure: (failure) => Center(
-          child: Text('Failed to load: ${failure.toString()}', style: DesignTokens.smallRegular),
+          child: Text(
+            'Failed to load: ${failure.toString()}',
+            style: DesignTokens.smallRegular,
+          ),
         ),
         loadSuccess: (tickets) {
           if (tickets.isEmpty) {
@@ -41,7 +48,8 @@ class MyTicketsScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(DesignTokens.s16),
             itemCount: tickets.length,
-            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s8),
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: DesignTokens.s8),
             itemBuilder: (_, i) => _TicketTile(ticket: tickets[i]),
           );
         },
@@ -63,14 +71,12 @@ class _TicketTile extends StatelessWidget {
     TicketStatus.open => DesignTokens.primaryGreen,
     TicketStatus.inProgress => DesignTokens.colorInfo,
     TicketStatus.resolved => DesignTokens.colorSuccess,
-    TicketStatus.closed => DesignTokens.textMuted,
   };
 
   String _statusLabel() => switch (ticket.status) {
     TicketStatus.open => 'Open',
     TicketStatus.inProgress => 'In Progress',
     TicketStatus.resolved => 'Resolved',
-    TicketStatus.closed => 'Closed',
   };
 
   @override
@@ -90,7 +96,10 @@ class _TicketTile extends StatelessWidget {
                 child: Text(ticket.subject, style: DesignTokens.mediumSemibold),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s8,
+                  vertical: DesignTokens.s4,
+                ),
                 decoration: BoxDecoration(
                   color: _statusColor().withOpacity(0.15),
                   borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
@@ -104,13 +113,22 @@ class _TicketTile extends StatelessWidget {
           ),
           const SizedBox(height: DesignTokens.s8),
           Text(ticket.ticketNumber, style: DesignTokens.smallRegular),
-          if (ticket.lastAgentReplyAt != null) ...[
+          if (ticket.lastMessagePreview != null) ...[
             const SizedBox(height: DesignTokens.s8),
             Text(
-              'Last reply: ${_formatDate(ticket.lastAgentReplyAt!)}',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              ticket.lastMessagePreview!,
+              style: DesignTokens.smallRegular,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'Last updated: ${_formatDate(ticket.lastUpdated)}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
         ],
       ),
     );

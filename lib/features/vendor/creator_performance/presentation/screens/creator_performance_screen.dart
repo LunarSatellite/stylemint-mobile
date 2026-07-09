@@ -35,7 +35,9 @@ class _CreatorPerformanceScreenState
 
   void _reload() {
     unawaited(
-      ref.read(creatorPerformanceNotifierProvider.notifier).load(
+      ref
+          .read(creatorPerformanceNotifierProvider.notifier)
+          .load(
             sortBy: _sortApiMap[_sortBy],
             window: _windowApiMap[_metric],
           ),
@@ -52,16 +54,24 @@ class _CreatorPerformanceScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Creator Performance',
-            style: DesignTokens.oneLinerSemibold),
+        title: const Text(
+          'Creator Performance',
+          style: DesignTokens.oneLinerSemibold,
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search,
-                color: DesignTokens.textWhite, size: 22),
+            icon: const Icon(
+              Icons.search,
+              color: DesignTokens.textWhite,
+              size: 22,
+            ),
             onPressed: () {},
           ),
         ],
@@ -86,13 +96,13 @@ class _CreatorPerformanceScreenState
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s16,
-                          vertical: DesignTokens.s12),
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s12,
+                      ),
                       itemCount: creators.length,
                       separatorBuilder: (_, _) =>
                           const SizedBox(height: DesignTokens.s12),
-                      itemBuilder: (_, i) =>
-                          _CreatorCard(creator: creators[i]),
+                      itemBuilder: (_, i) => _CreatorCard(creator: creators[i]),
                     ),
               loadFailure: (failure) => Center(
                 child: Column(
@@ -127,7 +137,9 @@ class _CreatorPerformanceScreenState
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s8,
+      ),
       child: Row(
         children: [
           _Chip(label: 'Filter', leadingIcon: Icons.tune, onTap: () {}),
@@ -154,7 +166,8 @@ class _CreatorPerformanceScreenState
         context: context,
         backgroundColor: const Color(0xFF1C1C1E),
         shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         builder: (_) => _PickSheet(
           title: 'Sort By',
           options: const ['Revenue', 'Sales', 'Views', 'Commission'],
@@ -174,7 +187,8 @@ class _CreatorPerformanceScreenState
         context: context,
         backgroundColor: const Color(0xFF1C1C1E),
         shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         builder: (_) => _PickSheet(
           title: 'Metric',
           options: const ['Performance', 'Last 30 days', 'Last 90 days'],
@@ -245,8 +259,11 @@ class _CreatorCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert,
-                      color: Color(0xFF9F9FA9), size: 20),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Color(0xFF9F9FA9),
+                    size: 20,
+                  ),
                   onPressed: () {},
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -261,7 +278,8 @@ class _CreatorCard extends StatelessWidget {
             assetIcon: 'assets/images/vendordashboard/Revenue.png',
             label: 'Revenue Generated',
             trailing: _blueChip(
-                _formatMoney(creator.attributedRevenue, creator.currency)),
+              _formatMoney(creator.attributedRevenue, creator.currency),
+            ),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
@@ -281,7 +299,8 @@ class _CreatorCard extends StatelessWidget {
                 'assets/images/vendordashboard/icon_pending_inquiries.png',
             label: 'Commission Paid',
             trailing: _plainValue(
-                _formatMoney(creator.commissionPaid, creator.currency)),
+              _formatMoney(creator.commissionPaid, creator.currency),
+            ),
           ),
         ],
       ),
@@ -320,28 +339,34 @@ class _CreatorCard extends StatelessWidget {
   }
 
   Widget _dashedDivider() {
-    return LayoutBuilder(builder: (_, constraints) {
-      const dashW = 6.0;
-      const dashGap = 4.0;
-      final count = (constraints.maxWidth / (dashW + dashGap)).floor();
-      return Row(
-        children: List.generate(
-          count,
-          (_) => Container(
-            width: dashW,
-            height: 1,
-            margin: const EdgeInsets.only(right: dashGap),
-            color: DesignTokens.borderDefault,
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        const dashW = 6.0;
+        const dashGap = 4.0;
+        final count = (constraints.maxWidth / (dashW + dashGap)).floor();
+        return Row(
+          children: List.generate(
+            count,
+            (_) => Container(
+              width: dashW,
+              height: 1,
+              margin: const EdgeInsets.only(right: dashGap),
+              color: DesignTokens.borderDefault,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow(
-      {required this.label, required this.trailing, this.icon, this.assetIcon});
+  const _StatRow({
+    required this.label,
+    required this.trailing,
+    this.icon,
+    this.assetIcon,
+  });
   final IconData? icon;
   final String? assetIcon;
   final String label;
@@ -414,11 +439,12 @@ class _Avatar extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _Chip extends StatelessWidget {
-  const _Chip(
-      {required this.label,
-      required this.onTap,
-      this.leadingIcon,
-      this.trailingIcon});
+  const _Chip({
+    required this.label,
+    required this.onTap,
+    this.leadingIcon,
+    this.trailingIcon,
+  });
   final String label;
   final VoidCallback onTap;
   final IconData? leadingIcon;
@@ -490,16 +516,21 @@ class _PickSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textWhite,
-                    )),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close,
-                      color: Color(0xFF9F9FA9), size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFF9F9FA9),
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -507,25 +538,29 @@ class _PickSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ...options.map((opt) => RadioListTile<String>(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  value: opt,
-                  groupValue: selected,
-                  activeColor: DesignTokens.primaryGreen,
-                  title: Text(opt,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        color: DesignTokens.textWhite,
-                      )),
-                  onChanged: (v) {
-                    if (v != null) {
-                      onPick(v);
-                      Navigator.pop(context);
-                    }
-                  },
-                )),
+            ...options.map(
+              (opt) => RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: opt,
+                groupValue: selected,
+                activeColor: DesignTokens.primaryGreen,
+                title: Text(
+                  opt,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                onChanged: (v) {
+                  if (v != null) {
+                    onPick(v);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ),
             const SizedBox(height: 8),
           ],
         ),

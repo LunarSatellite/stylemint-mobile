@@ -27,7 +27,8 @@ enum PayoutDestinationKind {
   final String identifierHint;
   final bool requiresBranch;
 
-  static PayoutDestinationKind fromValue(int v) =>
-      values.firstWhere((e) => e.value == v,
-          orElse: () => PayoutDestinationKind.nimbBank);
+  static PayoutDestinationKind fromValue(int v) => values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => PayoutDestinationKind.nimbBank,
+  );
 }

@@ -14,4 +14,16 @@ class AnalyticsRemoteDataSource {
     final response = await apiClient.get('/v1/vendor/analytics/overview');
     return VendorAnalyticsSummaryDto.fromJson(response as Map<String, dynamic>);
   }
+
+  /// `GET /v1/vendor/partnerships/{partnershipId}/creator-analytics`.
+  Future<CreatorAnalyticsDeepDiveDto> getCreatorAnalytics(
+    String partnershipId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/vendor/partnerships/$partnershipId/creator-analytics',
+    );
+    return CreatorAnalyticsDeepDiveDto.fromJson(
+      response as Map<String, dynamic>,
+    );
+  }
 }

@@ -43,15 +43,11 @@ class ProfileScreen extends ConsumerWidget {
           initial: _loader,
           loadInProgress: _loader,
           loadSuccess: (summary) => _ProfileBody(summary: summary),
-          loadFailure:
-              (failure) => SmErrorView(
-                message: 'Failed to load your profile.',
-                onRetry:
-                    () =>
-                        ref
-                            .read(profileNotifierProvider.notifier)
-                            .fetchProfile(),
-              ),
+          loadFailure: (failure) => SmErrorView(
+            message: 'Failed to load your profile.',
+            onRetry: () =>
+                ref.read(profileNotifierProvider.notifier).fetchProfile(),
+          ),
         ),
       ),
     );
@@ -312,7 +308,9 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final accountId = ref.read(sessionControllerProvider).maybeWhen(
+      final accountId = ref
+          .read(sessionControllerProvider)
+          .maybeWhen(
             authenticated: (id) => id,
             orElse: () => null,
           );
@@ -337,7 +335,9 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
 
   @override
   Widget build(BuildContext context) {
-    final roles = ref.watch(roleNotifierProvider).maybeWhen(
+    final roles = ref
+        .watch(roleNotifierProvider)
+        .maybeWhen(
           loadSuccess: (r) => r,
           orElse: () => const <RoleProfileDto>[],
         );

@@ -5,12 +5,13 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticke
 part 'ticket_dto.freezed.dart';
 part 'ticket_dto.g.dart';
 
+/// Mirrors `SupportTicketSummaryDto`/`SupportTicketDto` — `state` and
+/// `category` are the backend's int-valued enums (1-based), not strings.
 @freezed
 abstract class TicketDto with _$TicketDto {
   const factory TicketDto({
     required String id,
     required String ticketNumber,
-    required int category,
     required String subject,
     required int state,
     required DateTime openedUtc,
@@ -23,26 +24,41 @@ abstract class TicketDto with _$TicketDto {
       _$TicketDtoFromJson(json);
 
   Ticket toDomain() => Ticket(
-        id: id,
-        ticketNumber: ticketNumber,
-        category: _parseCategory(category),
-        subject: subject,
-        status: _parseState(state),
-        createdAt: openedUtc,
-        lastAgentReplyAt: lastAgentReplyUtc,
-      );
+    id: id,
+    ticketNumber: ticketNumber,
+    subject: subject,
+    status: _statusFromWire(state),
+    createdAt: openedUtc,
+    lastUpdated: lastAgentReplyUtc ?? openedUtc,
+    // Backend list/detail projections don't carry a preview snippet.
+    lastMessagePreview: null,
+  );
 
-  static SupportTicketCategory _parseCategory(int v) {
-    return SupportTicketCategory.values.firstWhere(
-      (c) => c.value == v,
-      orElse: () => SupportTicketCategory.general,
-    );
-  }
+  static TicketStatus _statusFromWire(int state) => switch (state) {
+    2 => TicketStatus.inProgress,
+    3 => TicketStatus.resolved,
+    _ => TicketStatus.open,
+  };
+}
 
-  static TicketStatus _parseState(int s) => switch (s) {
-        1 => TicketStatus.inProgress,
-        2 => TicketStatus.resolved,
-        3 => TicketStatus.closed,
-        _ => TicketStatus.open,
-      };
+@freezed
+abstract class SupportCategoryDto with _$SupportCategoryDto {
+  const factory SupportCategoryDto({
+    required String id,
+    required String title,
+    required String iconName,
+    @Default('') String description,
+  }) = _SupportCategoryDto;
+
+  const SupportCategoryDto._();
+
+  factory SupportCategoryDto.fromJson(Map<String, dynamic> json) =>
+      _$SupportCategoryDtoFromJson(json);
+
+  SupportCategory toDomain() => SupportCategory(
+    id: id,
+    title: title,
+    iconName: iconName,
+    description: description,
+  );
 }

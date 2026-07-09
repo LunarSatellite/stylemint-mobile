@@ -16,8 +16,10 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
 
   List<HelpArticle> get _related {
     final sameTopicArticles = kHelpTopics
-        .firstWhere((t) => t.id == widget.article.topicId,
-            orElse: () => kHelpTopics.first)
+        .firstWhere(
+          (t) => t.id == widget.article.topicId,
+          orElse: () => kHelpTopics.first,
+        )
         .articles
         .where((a) => a.id != widget.article.id)
         .take(2)
@@ -49,13 +51,18 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
           // Meta row
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined,
-                  size: 13, color: DesignTokens.textMuted),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 13,
+                color: DesignTokens.textMuted,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   'Last Updated: ${article.date}',
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
             ],
@@ -63,20 +70,30 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
           const SizedBox(height: DesignTokens.s4),
           Row(
             children: [
-              const Icon(Icons.remove_red_eye_outlined,
-                  size: 14, color: DesignTokens.textMuted),
+              const Icon(
+                Icons.remove_red_eye_outlined,
+                size: 14,
+                color: DesignTokens.textMuted,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${article.views.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')} Views',
-                style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
               const SizedBox(width: DesignTokens.s16),
-              const Icon(Icons.access_time_outlined,
-                  size: 14, color: DesignTokens.textMuted),
+              const Icon(
+                Icons.access_time_outlined,
+                size: 14,
+                color: DesignTokens.textMuted,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${article.readMinutes} min read',
-                style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ],
           ),
@@ -90,7 +107,9 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
           // Was this article helpful?
           Text(
             'Was this article helpful?',
-            style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.textWhite,
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
           Row(
@@ -100,7 +119,8 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
                   icon: Icons.thumb_up_outlined,
                   label: 'Liked (234)',
                   isSelected: _helpful == true,
-                  onTap: () => setState(() => _helpful = _helpful == true ? null : true),
+                  onTap: () =>
+                      setState(() => _helpful = _helpful == true ? null : true),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
@@ -109,7 +129,9 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
                   icon: Icons.thumb_down_outlined,
                   label: 'No (88)',
                   isSelected: _helpful == false,
-                  onTap: () => setState(() => _helpful = _helpful == false ? null : false),
+                  onTap: () => setState(
+                    () => _helpful = _helpful == false ? null : false,
+                  ),
                 ),
               ),
             ],
@@ -120,7 +142,9 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
           if (_related.isNotEmpty) ...[
             Text(
               'Related Articles',
-              style: DesignTokens.sectionInnerTitle.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.sectionInnerTitle.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             for (final rel in _related) ...[
@@ -140,7 +164,9 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
           // Still need help?
           Text(
             'Still need help?',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           Container(
@@ -185,10 +211,15 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
 
       case HelpBlockType.sectionHeader:
         return Padding(
-          padding: const EdgeInsets.only(bottom: DesignTokens.s12, top: DesignTokens.s4),
+          padding: const EdgeInsets.only(
+            bottom: DesignTokens.s12,
+            top: DesignTokens.s4,
+          ),
           child: Text(
             block.text ?? '',
-            style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.textWhite,
+            ),
           ),
         );
 
@@ -248,8 +279,11 @@ class _HelpArticleScreenState extends State<HelpArticleScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          size: 18, color: DesignTokens.primaryGreen),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: DesignTokens.primaryGreen,
+                      ),
                       const SizedBox(width: DesignTokens.s8),
                       Expanded(
                         child: Text(
@@ -305,13 +339,17 @@ class _HelpfulButton extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? DesignTokens.primaryGreen : DesignTokens.textLight,
+              color: isSelected
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.textLight,
             ),
             const SizedBox(width: DesignTokens.s8),
             Text(
               label,
               style: DesignTokens.smallRegular.copyWith(
-                color: isSelected ? DesignTokens.primaryGreen : DesignTokens.textLight,
+                color: isSelected
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.textLight,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -344,18 +382,25 @@ class _RelatedArticleCard extends StatelessWidget {
           children: [
             Text(
               article.title,
-              style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s8),
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     article.date,
-                    style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ),
               ],
@@ -365,25 +410,37 @@ class _RelatedArticleCard extends StatelessWidget {
               article.preview,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             Row(
               children: [
-                const Icon(Icons.remove_red_eye_outlined,
-                    size: 14, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.remove_red_eye_outlined,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${article.views.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')} Views',
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s16),
-                const Icon(Icons.access_time_outlined,
-                    size: 14, color: DesignTokens.textMuted),
+                const Icon(
+                  Icons.access_time_outlined,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${article.readMinutes} min read',
-                  style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.tiny.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -425,17 +482,27 @@ class _ContactRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(option.title,
-                      style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.textWhite)),
+                  Text(
+                    option.title,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(option.subtitle,
-                      style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted)),
+                  Text(
+                    option.subtitle,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: DesignTokens.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),

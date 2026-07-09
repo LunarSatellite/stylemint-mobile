@@ -5,9 +5,11 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_order_dto.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/data/models/vendor_return_request_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/repositories/vendor_orders_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
@@ -108,14 +110,34 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> handleReturn(
-    String orderId,
-    String action,
-  ) async {
+  Future<Either<NetworkExceptions, PagedResult<VendorReturnRequest>>>
+  listReturns({
+    VendorReturnRequestState? state,
+    String? cursor,
+    int pageSize = 25,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.handleReturn(orderId, action, _uuid.v4());
-        return right(unit);
+        final data = await remoteDataSource.listReturns(
+          state: state == null ? null : _stateToCode(state),
+          cursor: cursor,
+          pageSize: pageSize,
+        );
+        final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => VendorReturnRequestDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
+            )
+            .toList(growable: false);
+        return right(PagedResult(
+          items: items,
+          totalCount: data['totalCount'] as int? ?? items.length,
+          pageSize: data['pageSize'] as int? ?? pageSize,
+          nextCursor: data['nextCursor'] as String?,
+          previousCursor: data['previousCursor'] as String?,
+          hasMore: data['hasMore'] as bool? ?? false,
+        ));
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -129,6 +151,67 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, VendorReturnRequest>> acceptReturn(
+    String returnRequestId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.acceptReturn(
+          returnRequestId,
+          _uuid.v4(),
+        );
+        return right(VendorReturnRequestDto.fromJson(data).toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, VendorReturnRequest>> rejectReturn(
+    String returnRequestId,
+    String reason,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final data = await remoteDataSource.rejectReturn(
+          returnRequestId,
+          reason,
+          _uuid.v4(),
+        );
+        return right(VendorReturnRequestDto.fromJson(data).toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  /// Inverse of [VendorReturnRequestDto._stateFromCode] — backend
+  /// `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3, Completed=4.
+  static int _stateToCode(VendorReturnRequestState state) => switch (state) {
+    VendorReturnRequestState.submitted => 1,
+    VendorReturnRequestState.approved => 2,
+    VendorReturnRequestState.rejected => 3,
+    VendorReturnRequestState.completed => 4,
+  };
 
   @override
   Future<Either<NetworkExceptions, VendorOrder>> markReadyToShip(

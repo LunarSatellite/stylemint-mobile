@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
@@ -14,7 +14,10 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// OutOfStock → Edit / View Analytics / Update Stock              (3 items)
 /// Draft      → Edit / View Analytics / Update Stock              (3 items)
 Future<void> showVendorProductActions(
-    BuildContext context, WidgetRef ref, VendorProduct product) {
+  BuildContext context,
+  WidgetRef ref,
+  VendorProduct product,
+) {
   final isActive = product.status == VendorProductStatus.active;
   return showModalBottomSheet<void>(
     context: context,
@@ -72,7 +75,9 @@ Future<void> showVendorProductActions(
                   await ref
                       .read(vendorProductsNotifierProvider.notifier)
                       .updateStatus(
-                          product.id, VendorProductStatus.discontinued);
+                        product.id,
+                        VendorProductStatus.discontinued,
+                      );
                 }
               },
             ),
@@ -159,9 +164,9 @@ class _ActionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-        child: Divider(color: DesignTokens.borderDefault, height: 1),
-      );
+    padding: EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+    child: Divider(color: DesignTokens.borderDefault, height: 1),
+  );
 }
 
 // ── Confirm deactivate sheet ──────────────────────────────────────────────────
@@ -193,7 +198,11 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s24),
+          DesignTokens.s16,
+          DesignTokens.s12,
+          DesignTokens.s16,
+          DesignTokens.s24,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -209,7 +218,11 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
             const SizedBox(height: DesignTokens.s20),
 
             // Info icon
-            Image.asset('assets/images/vendordashboard/infoicon.png', width: 52, height: 52),
+            Image.asset(
+              'assets/images/vendordashboard/infoicon.png',
+              width: 52,
+              height: 52,
+            ),
             const SizedBox(height: DesignTokens.s16),
 
             // Title
@@ -223,8 +236,9 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
             // Body text
             Text(
               'Are your sure you want to Deactivate this product? Once deactivated the product will be removed from search and product list but the orders will be fulfilled',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -246,8 +260,10 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
                         width: 52,
                         height: 52,
                         color: DesignTokens.bgAppBodyLight,
-                        child: const Icon(Icons.image,
-                            color: DesignTokens.textMuted),
+                        child: const Icon(
+                          Icons.image,
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     ),
                   ),
@@ -258,21 +274,26 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
                       children: [
                         Text(
                           widget.product.name,
-                          style: DesignTokens.smallRegular
-                              .copyWith(fontWeight: FontWeight.w600),
+                          style: DesignTokens.smallRegular.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: DesignTokens.s6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s8, vertical: 3),
+                            horizontal: DesignTokens.s8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+                            color: DesignTokens.primaryGreen.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'Active Orders: ${widget.product.totalSales}',
+                            'Active Orders: ${widget.product.totalSales ?? '—'}',
                             style: DesignTokens.tiny.copyWith(
                               color: DesignTokens.primaryGreen,
                               fontWeight: FontWeight.w600,
@@ -298,15 +319,21 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _reason,
-                  hint: Text('Reason',
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textMuted)),
+                  hint: Text(
+                    'Reason',
+                    style: DesignTokens.mediumRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                   isExpanded: true,
                   dropdownColor: DesignTokens.bgAppBodyLight,
-                  icon: const Icon(Icons.keyboard_arrow_down,
-                      color: DesignTokens.textMuted),
-                  style: DesignTokens.mediumRegular
-                      .copyWith(color: DesignTokens.textWhite),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: DesignTokens.textMuted,
+                  ),
+                  style: DesignTokens.mediumRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
                   items: _reasons
                       .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                       .toList(),
@@ -332,8 +359,9 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
                   Expanded(
                     child: Text(
                       'I understand this product will be delisted',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                   ),
                 ],
@@ -362,8 +390,9 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
                   foregroundColor: DesignTokens.textWhite,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 child: Text('Cancel', style: DesignTokens.mediumSemibold),

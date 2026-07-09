@@ -1,40 +1,32 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/activity/domain/entities/vendor_activity_entry.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // Bottom nav tap destinations (null = current screen, stay)
 const _navRoutes = [
-  null,                       // 0 Home (current)
-  RouteNames.vendorOrders,    // 1 Orders
-  RouteNames.vendorProducts,  // 2 Products
-  RouteNames.settings,        // 3 Profile
+  null, // 0 Home (current)
+  RouteNames.vendorOrders, // 1 Orders
+  RouteNames.vendorProducts, // 2 Products
+  RouteNames.settings, // 3 Profile
 ];
-
-final _sampleDashboard = VendorDashboard(
-  grossSales: const Money(amount: 34512589.98, currency: 'NPR'),
-  grossSalesDeltaPercent: 23,
-  netRevenue: const Money(amount: 24512569.98, currency: 'NPR'),
-  totalOrders: 250,
-  topProducts: const [],
-);
 
 class VendorDashboardScreen extends ConsumerStatefulWidget {
   const VendorDashboardScreen({super.key});
 
   @override
-  ConsumerState<VendorDashboardScreen> createState() => _VendorDashboardScreenState();
+  ConsumerState<VendorDashboardScreen> createState() =>
+      _VendorDashboardScreenState();
 }
 
 class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
@@ -63,16 +55,28 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.search_rounded, color: DesignTokens.textWhite, size: 22),
+              icon: const Icon(
+                Icons.search_rounded,
+                color: DesignTokens.textWhite,
+                size: 22,
+              ),
               onPressed: () {},
             ),
             IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: DesignTokens.textWhite, size: 22),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: DesignTokens.textWhite,
+                size: 22,
+              ),
               onPressed: () {},
             ),
             Consumer(
               builder: (ctx, ref, _) => IconButton(
-                icon: const Icon(Icons.menu_rounded, color: DesignTokens.textWhite, size: 22),
+                icon: const Icon(
+                  Icons.menu_rounded,
+                  color: DesignTokens.textWhite,
+                  size: 22,
+                ),
                 onPressed: () => showVendorMoreMenu(ctx, ref),
               ),
             ),
@@ -85,12 +89,13 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
             loadSuccess: (dashboard) => _DashboardContent(
               dashboard: dashboard,
               activityState: activityState,
-              onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
+              onRefresh: () =>
+                  ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
-            loadFailure: (_) => _DashboardContent(
-              dashboard: _sampleDashboard,
-              activityState: activityState,
-              onRefresh: () => ref.read(vendorDashboardNotifierProvider.notifier).load(),
+            loadFailure: (_) => SmErrorView(
+              message: 'Failed to load dashboard.',
+              onRetry: () =>
+                  ref.read(vendorDashboardNotifierProvider.notifier).load(),
             ),
           ),
         ),
@@ -101,16 +106,39 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
 
   Widget _buildBottomNav() {
     const items = [
-      _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-      _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Orders', assetIcon: 'assets/images/vendordashboard/nav_orders.png'),
-      _NavItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view, label: 'Products', assetIcon: 'assets/images/vendordashboard/nav_products.png'),
-      _NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile', assetIcon: 'assets/images/vendordashboard/nav_profile.png'),
+      _NavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: 'Home',
+      ),
+      _NavItem(
+        icon: Icons.inventory_2_outlined,
+        activeIcon: Icons.inventory_2,
+        label: 'Orders',
+        assetIcon: 'assets/images/vendordashboard/nav_orders.png',
+      ),
+      _NavItem(
+        icon: Icons.grid_view_outlined,
+        activeIcon: Icons.grid_view,
+        label: 'Products',
+        assetIcon: 'assets/images/vendordashboard/nav_products.png',
+      ),
+      _NavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Profile',
+        assetIcon: 'assets/images/vendordashboard/nav_profile.png',
+      ),
     ];
 
     return Container(
       decoration: BoxDecoration(
         color: DesignTokens.bgAppFoundation,
-        border: Border(top: BorderSide(color: DesignTokens.borderDefault.withValues(alpha: 0.3))),
+        border: Border(
+          top: BorderSide(
+            color: DesignTokens.borderDefault.withValues(alpha: 0.3),
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -142,11 +170,15 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                               item.assetIcon!,
                               width: 24,
                               height: 24,
-                              color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
+                              color: selected
+                                  ? DesignTokens.primaryGreen
+                                  : DesignTokens.textMuted,
                             )
                           : Icon(
                               selected ? item.activeIcon : item.icon,
-                              color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
+                              color: selected
+                                  ? DesignTokens.primaryGreen
+                                  : DesignTokens.textMuted,
                               size: 24,
                             ),
                       const SizedBox(height: 4),
@@ -155,8 +187,12 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                         style: TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 11,
-                          color: selected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                          color: selected
+                              ? DesignTokens.primaryGreen
+                              : DesignTokens.textMuted,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                         ),
                       ),
                     ],
@@ -176,7 +212,12 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
 }
 
 class _NavItem {
-  const _NavItem({required this.icon, required this.activeIcon, required this.label, this.assetIcon});
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    this.assetIcon,
+  });
   final IconData icon;
   final IconData activeIcon;
   final String label;
@@ -196,20 +237,6 @@ class _DashboardContent extends StatelessWidget {
   final VendorActivityState activityState;
   final VoidCallback onRefresh;
 
-  // Fallback shown while the real feed is loading/failed — same pattern as
-  // `_sampleDashboard` above.
-  static final _sampleActivities = [
-    _ActivityGroup(date: 'Today', items: [
-      _Activity(type: _ActivityType.order, title: 'New Order', description: 'New Order #NK2024-8912 - Rs 12,909 via @fashion_sarah', time: '5h ago', actionLabel: 'View Order'),
-      _Activity(type: _ActivityType.payout, title: 'Payout Completed', description: 'Your Payout of Rs 12,24,575.00 was processed', time: '5h ago · Bank A/C ******8799', actionLabel: null),
-      _Activity(type: _ActivityType.partnership, title: 'Creator Partnership Request', description: 'New Creator Partnership: @style_guru applied to promote your products', time: '5h ago · Bank A/C ******8799', actionLabel: 'Review Application'),
-    ]),
-    _ActivityGroup(date: 'Wed 23 Jan 2026', items: [
-      _Activity(type: _ActivityType.shipped, title: 'Order Shipped', description: 'New Order #NK2024-8905 - Rs 44,909 has been shipped via FedEx', time: '23 Jan at 11:45 PM', actionLabel: 'View Order'),
-      _Activity(type: _ActivityType.order, title: 'New Order', description: 'New Order #NK2024-8909 - Rs 18,904 via @fashion_sarah', time: '23 Jan at 06:07 PM', actionLabel: 'View Order'),
-    ]),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -224,7 +251,10 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: DesignTokens.s4),
             Text(
               'Quick insights to your progress and earnings of last 30 days',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             _buildRevenueCard(),
@@ -278,20 +308,6 @@ class _DashboardContent extends StatelessWidget {
                 label: 'Net Revenue (After fees & commissions)',
                 amount: formatMoney(dashboard.netRevenue),
               ),
-              const SizedBox(height: DesignTokens.s16),
-              // Stat chips
-              // NOTE: rating/creators/reels aren't part of the
-              // /v1/vendor/analytics/overview payload — placeholders until a
-              // backend field exists.
-              Row(
-                children: [
-                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_star.png', value: '4.8', label: 'Rating'),
-                  const SizedBox(width: DesignTokens.s8),
-                  _statChip(assetIcon: 'assets/images/vendordashboard/creator.png', value: '230', label: 'Creators'),
-                  const SizedBox(width: DesignTokens.s8),
-                  _statChip(assetIcon: 'assets/images/vendordashboard/icon_reels.png', value: '89', label: 'Reels'),
-                ],
-              ),
             ],
           ),
         ),
@@ -312,7 +328,10 @@ class _DashboardContent extends StatelessWidget {
                   children: [
                     Text(
                       'Total Orders Completed',
-                      style: DesignTokens.smallRegular.copyWith(color: Colors.black87, fontSize: 13),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: Colors.black87,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
                     Text(
@@ -327,7 +346,11 @@ class _DashboardContent extends StatelessWidget {
                   ],
                 ),
               ),
-              Image.asset('assets/images/vendordashboard/total order completed.png', width: 64, height: 64),
+              Image.asset(
+                'assets/images/vendordashboard/total order completed.png',
+                width: 64,
+                height: 64,
+              ),
             ],
           ),
         ),
@@ -362,7 +385,10 @@ class _DashboardContent extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                  fontSize: 11,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -381,41 +407,38 @@ class _DashboardContent extends StatelessWidget {
     return count.toString();
   }
 
-  Widget _statChip({String? assetIcon, IconData? icon, required String value, required String label}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBodyLight,
-          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (assetIcon != null)
-              Image.asset(assetIcon, width: 22, height: 22)
-            else if (icon != null)
-              Icon(icon, color: DesignTokens.textWhite, size: 22),
-            const SizedBox(height: DesignTokens.s4),
-            Text(value, style: DesignTokens.mediumSemibold.copyWith(fontSize: 16)),
-            Text(label, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11)),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── Pending Actions ──────────────────────────────────────────────────────────
 
   Widget _buildAlertCards(BuildContext context) {
-    // NOTE: none of these counts are part of /v1/vendor/analytics/overview —
-    // placeholders until the sub-orders/inquiries/partnerships count
-    // endpoints are wired.
+    // NOTE: no backend endpoint returns these counts in one composite call
+    // (the mobile-first API convention is one round-trip per screen, and no
+    // such summary endpoint exists) — subtitles stay generic rather than
+    // showing a fabricated number. Each still links to its real screen.
     final alerts = [
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_ship.png', title: 'Orders Ready to Ship', subtitle: 'You have 12 orders ready to ship', route: RouteNames.vendorOrdersReadyToShip),
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png', title: 'Order Waiting Tracking Numbers', subtitle: 'You have 5 orders waiting tracking numbers', route: RouteNames.vendorOrdersWaitingTracking),
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_chat.png', title: 'Pending Customer Inquiries', subtitle: 'You have 3 customer enquiries pending', route: RouteNames.vendorPendingInquiries),
-      _Alert(assetIcon: 'assets/images/vendordashboard/icon_partnership.png', title: 'Creator Partnership Requests', subtitle: 'You have 2 Creator Partnership Requests', route: RouteNames.vendorCreatorPartnershipRequests),
+      _Alert(
+        assetIcon: 'assets/images/vendordashboard/icon_order_ship.png',
+        title: 'Orders Ready to Ship',
+        subtitle: 'Review and ship pending orders',
+        route: RouteNames.vendorOrdersReadyToShip,
+      ),
+      _Alert(
+        assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png',
+        title: 'Order Waiting Tracking Numbers',
+        subtitle: 'Assign tracking numbers to shipped orders',
+        route: RouteNames.vendorOrdersWaitingTracking,
+      ),
+      _Alert(
+        assetIcon: 'assets/images/vendordashboard/icon_chat.png',
+        title: 'Pending Customer Inquiries',
+        subtitle: 'Reply to open product questions',
+        route: RouteNames.vendorPendingInquiries,
+      ),
+      _Alert(
+        assetIcon: 'assets/images/vendordashboard/icon_partnership.png',
+        title: 'Creator Partnership Requests',
+        subtitle: 'Review requests from creators',
+        route: RouteNames.vendorCreatorPartnershipRequests,
+      ),
     ];
 
     return Column(
@@ -439,30 +462,59 @@ class _DashboardContent extends StatelessWidget {
                         height: 40,
                         decoration: BoxDecoration(
                           color: DesignTokens.bgAppBodyLight,
-                          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.inputRadius,
+                          ),
                         ),
                         child: alert.assetIcon != null
                             ? Padding(
                                 padding: const EdgeInsets.all(8),
-                                child: Image.asset(alert.assetIcon!, fit: BoxFit.contain),
+                                child: Image.asset(
+                                  alert.assetIcon!,
+                                  fit: BoxFit.contain,
+                                ),
                               )
-                            : Icon(alert.icon, color: DesignTokens.textWhite, size: 20),
+                            : const Icon(
+                                Icons.notifications_outlined,
+                                color: DesignTokens.textWhite,
+                                size: 20,
+                              ),
                       ),
                       title: Text(
                         alert.title,
-                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite, fontWeight: FontWeight.w600),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       subtitle: Text(
                         alert.subtitle,
-                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios, color: DesignTokens.textMuted, size: 14),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
-                      onTap: alert.route != null ? () => context.push(alert.route!) : null,
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: DesignTokens.textMuted,
+                        size: 14,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s4,
+                      ),
+                      onTap: alert.route != null
+                          ? () => context.push(alert.route!)
+                          : null,
                     ),
                   ),
                   if (i < alerts.length - 1)
-                    const Divider(color: DesignTokens.borderDefault, height: 1, indent: DesignTokens.s16, endIndent: DesignTokens.s16),
+                    const Divider(
+                      color: DesignTokens.borderDefault,
+                      height: 1,
+                      indent: DesignTokens.s16,
+                      endIndent: DesignTokens.s16,
+                    ),
                 ],
               );
             }).toList(),
@@ -481,13 +533,25 @@ class _DashboardContent extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Top Products (This Month)', style: DesignTokens.mediumSemibold),
+            Text(
+              'Top Products (This Month)',
+              style: DesignTokens.mediumSemibold,
+            ),
             GestureDetector(
               onTap: () => context.push(RouteNames.vendorTopProducts),
               child: Row(
                 children: [
-                  Text('View All', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen)),
-                  const Icon(Icons.arrow_forward_ios, color: DesignTokens.primaryGreen, size: 12),
+                  Text(
+                    'View All',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: DesignTokens.primaryGreen,
+                    size: 12,
+                  ),
                 ],
               ),
             ),
@@ -499,7 +563,9 @@ class _DashboardContent extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
             child: Text(
               'No product sales yet this month.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           )
         else
@@ -507,8 +573,10 @@ class _DashboardContent extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: dashboard.topProducts.length,
-            separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-            itemBuilder: (_, i) => _ProductCard(product: _toTopProduct(dashboard.topProducts[i])),
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: DesignTokens.s12),
+            itemBuilder: (_, i) =>
+                _ProductCard(product: _toTopProduct(dashboard.topProducts[i])),
           ),
       ],
     );
@@ -531,46 +599,72 @@ class _DashboardContent extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Recent Activity', style: DesignTokens.mediumSemibold.copyWith(color: const Color(0xFFD4D4D8))),
+            Text(
+              'Recent Activity',
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: const Color(0xFFD4D4D8),
+              ),
+            ),
             GestureDetector(
               onTap: () => context.push(RouteNames.vendorRecentActivity),
               child: Row(
                 children: [
-                  Text('View All', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen)),
-                  const Icon(Icons.arrow_forward_ios, color: DesignTokens.primaryGreen, size: 12),
+                  Text(
+                    'View All',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: DesignTokens.primaryGreen,
+                    size: 12,
+                  ),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: DesignTokens.s12),
-        ..._activityGroups(context).expand((group) => [
+        if (_activityGroups().isEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
             child: Text(
-              group.date,
-              style: DesignTokens.smallRegular.copyWith(color: const Color(0xFFD4D4D8), fontSize: 12),
+              'No recent activity yet.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
+          )
+        else
+          ..._activityGroups().expand(
+            (group) => [
+              Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                child: Text(
+                  group.date,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: const Color(0xFFD4D4D8),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              ...group.items.map((a) => _ActivityTile(activity: a)),
+              const SizedBox(height: DesignTokens.s8),
+            ],
           ),
-          ...group.items.map((a) => _ActivityTile(activity: a)),
-          const SizedBox(height: DesignTokens.s8),
-        ]),
       ],
     );
   }
 
-  /// Real feed on success; `_sampleActivities` fallback otherwise (matches
-  /// `_sampleDashboard`'s pattern above).
-  List<_ActivityGroup> _activityGroups(BuildContext context) {
+  List<_ActivityGroup> _activityGroups() {
     return activityState.maybeWhen(
       loadSuccess: (entries) {
-        if (entries.isEmpty) return _sampleActivities;
         final byDate = <String, List<_Activity>>{};
         for (final e in entries) {
           final label = _dateGroupLabel(e.occurredUtc);
           (byDate[label] ??= []).add(
             _Activity(
-              type: _ActivityType.order,
               title: e.headline?.isNotEmpty == true ? e.headline! : 'Activity',
               description: e.body ?? '',
               time: formatRelative(e.occurredUtc),
@@ -578,9 +672,11 @@ class _DashboardContent extends StatelessWidget {
             ),
           );
         }
-        return byDate.entries.map((e) => _ActivityGroup(date: e.key, items: e.value)).toList();
+        return byDate.entries
+            .map((e) => _ActivityGroup(date: e.key, items: e.value))
+            .toList();
       },
-      orElse: () => _sampleActivities,
+      orElse: () => const [],
     );
   }
 
@@ -636,7 +732,11 @@ class _ProductCard extends StatelessWidget {
                               size: 24,
                             ),
                           )
-                        : const Icon(Icons.shopping_bag_outlined, color: DesignTokens.textMuted, size: 24),
+                        : const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: DesignTokens.textMuted,
+                            size: 24,
+                          ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s12),
@@ -646,45 +746,74 @@ class _ProductCard extends StatelessWidget {
                     children: [
                       Text(
                         product.name,
-                        style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+                        style: DesignTokens.smallRegular.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Total Sales: ${product.sales}',
-                        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.open_in_new, color: DesignTokens.textMuted, size: 16),
+                const Icon(
+                  Icons.open_in_new,
+                  color: DesignTokens.textMuted,
+                  size: 16,
+                ),
               ],
             ),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           // Revenue + creators row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s12,
+              vertical: DesignTokens.s8,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.savings_outlined, color: DesignTokens.textMuted, size: 14),
+                    const Icon(
+                      Icons.savings_outlined,
+                      color: DesignTokens.textMuted,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
-                    Text('Total Revenue', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
+                    Text(
+                      'Total Revenue',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D2A3A),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     product.revenue,
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.colorInfo, fontWeight: FontWeight.w600, fontSize: 12),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.colorInfo,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -692,15 +821,28 @@ class _ProductCard extends StatelessWidget {
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s12,
+              vertical: DesignTokens.s8,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, color: DesignTokens.textMuted, size: 14),
+                    const Icon(
+                      Icons.person_outline,
+                      color: DesignTokens.textMuted,
+                      size: 14,
+                    ),
                     const SizedBox(width: 4),
-                    Text('Sales via', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 12)),
+                    Text(
+                      'Sales via',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
                 Text(
@@ -740,26 +882,49 @@ class _ActivityTile extends StatelessWidget {
                 border: Border.all(color: DesignTokens.borderDefault),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.access_time_outlined, color: DesignTokens.textMuted, size: 18),
+              child: const Icon(
+                Icons.access_time_outlined,
+                color: DesignTokens.textMuted,
+                size: 18,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(activity.title, style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFFFFFFFF))),
+                  Text(
+                    activity.title,
+                    style: DesignTokens.smallRegular.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFFFFFFF),
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     activity.description,
-                    style: DesignTokens.smallRegular.copyWith(color: const Color(0xFFD4D4D8), fontSize: 12),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: const Color(0xFFD4D4D8),
+                      fontSize: 12,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text(activity.time, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted, fontSize: 11)),
+                  Text(
+                    activity.time,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
                   if (activity.actionLabel != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       activity.actionLabel!,
-                      style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen, fontWeight: FontWeight.w600, fontSize: 12),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
@@ -775,8 +940,12 @@ class _ActivityTile extends StatelessWidget {
 // ── Data models ───────────────────────────────────────────────────────────────
 
 class _Alert {
-  const _Alert({this.icon, this.assetIcon, required this.title, required this.subtitle, this.route});
-  final IconData? icon;
+  const _Alert({
+    required this.title,
+    required this.subtitle,
+    this.assetIcon,
+    this.route,
+  });
   final String? assetIcon;
   final String title;
   final String subtitle;
@@ -784,7 +953,13 @@ class _Alert {
 }
 
 class _TopProduct {
-  const _TopProduct({required this.name, required this.sales, required this.revenue, required this.creators, this.thumbnailUrl});
+  const _TopProduct({
+    required this.name,
+    required this.sales,
+    required this.revenue,
+    required this.creators,
+    this.thumbnailUrl,
+  });
   final String name;
   final int sales;
   final String revenue;
@@ -792,11 +967,13 @@ class _TopProduct {
   final String? thumbnailUrl;
 }
 
-enum _ActivityType { order, payout, partnership, shipped }
-
 class _Activity {
-  const _Activity({required this.type, required this.title, required this.description, required this.time, this.actionLabel});
-  final _ActivityType type;
+  const _Activity({
+    required this.title,
+    required this.description,
+    required this.time,
+    this.actionLabel,
+  });
   final String title;
   final String description;
   final String time;
@@ -807,26 +984,4 @@ class _ActivityGroup {
   const _ActivityGroup({required this.date, required this.items});
   final String date;
   final List<_Activity> items;
-}
-
-class _AppBarIconButton extends StatelessWidget {
-  const _AppBarIconButton({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBodyLight,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: DesignTokens.textWhite, size: 18),
-      ),
-    );
-  }
 }

@@ -1,79 +1,48 @@
+/// A surfaced brand↔creator match (`GET /v1/vendor/matches`).
 class MatchRecommendation {
   const MatchRecommendation({
-    required this.creatorId,
-    required this.creatorName,
-    required this.avatarUrl,
-    required this.handle,
-    required this.category,
-    required this.followersCount,
+    required this.id,
+    required this.creatorAccountId,
+    required this.creatorHandle,
     required this.compatibilityScore,
-    required this.reasons,
-    this.sampleReelThumbnail,
+    required this.reasonSummary,
   });
 
-  final String creatorId;
-  final String creatorName;
-  final String avatarUrl;
-  final String handle;
-  final String category;
-  final int followersCount;
-  final int compatibilityScore;
-  final List<String> reasons;
-  final String? sampleReelThumbnail;
+  final String id;
+  final String creatorAccountId;
+  final String creatorHandle;
 
-  MatchRecommendation copyWith({
-    String? creatorId,
-    String? creatorName,
-    String? avatarUrl,
-    String? handle,
-    String? category,
-    int? followersCount,
-    int? compatibilityScore,
-    List<String>? reasons,
-    String? sampleReelThumbnail,
-  }) {
-    return MatchRecommendation(
-      creatorId: creatorId ?? this.creatorId,
-      creatorName: creatorName ?? this.creatorName,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      handle: handle ?? this.handle,
-      category: category ?? this.category,
-      followersCount: followersCount ?? this.followersCount,
-      compatibilityScore: compatibilityScore ?? this.compatibilityScore,
-      reasons: reasons ?? this.reasons,
-      sampleReelThumbnail: sampleReelThumbnail ?? this.sampleReelThumbnail,
-    );
-  }
+  /// 0-100, derived from the API's 0-1 `score`.
+  final int compatibilityScore;
+  final String reasonSummary;
 }
 
-class MatchmakingFilter {
-  const MatchmakingFilter({
-    this.categories,
-    this.minFollowers,
-    this.maxFollowers,
-    this.minEngagementRate,
-    this.budgetRange,
+/// Returned by `POST /v1/vendor/matches/{id}/invite` — pre-fills a
+/// partnership creation flow with the match's suggested commission.
+class PartnershipPrefill {
+  const PartnershipPrefill({
+    required this.matchSnapshotId,
+    required this.creatorAccountId,
+    required this.creatorHandle,
+    required this.proposedCommissionBps,
+    required this.brandCommissionMinBps,
+    required this.brandCommissionMaxBps,
+    required this.matchScore,
+    required this.reasonSummary,
+    this.brandBriefId,
   });
 
-  final List<String>? categories;
-  final int? minFollowers;
-  final int? maxFollowers;
-  final double? minEngagementRate;
-  final double? budgetRange;
+  final String matchSnapshotId;
+  final String creatorAccountId;
+  final String creatorHandle;
+  final int proposedCommissionBps;
+  final int brandCommissionMinBps;
+  final int brandCommissionMaxBps;
+  final double matchScore;
+  final String reasonSummary;
+  final String? brandBriefId;
 
-  MatchmakingFilter copyWith({
-    List<String>? categories,
-    int? minFollowers,
-    int? maxFollowers,
-    double? minEngagementRate,
-    double? budgetRange,
-  }) {
-    return MatchmakingFilter(
-      categories: categories ?? this.categories,
-      minFollowers: minFollowers ?? this.minFollowers,
-      maxFollowers: maxFollowers ?? this.maxFollowers,
-      minEngagementRate: minEngagementRate ?? this.minEngagementRate,
-      budgetRange: budgetRange ?? this.budgetRange,
-    );
-  }
+  double get proposedCommissionPercent => proposedCommissionBps / 100;
+  double get brandCommissionMinPercent => brandCommissionMinBps / 100;
+  double get brandCommissionMaxPercent => brandCommissionMaxBps / 100;
 }

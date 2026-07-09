@@ -93,12 +93,14 @@ class _ProductAnalyticsScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title:
-            Text('Product Analytics', style: DesignTokens.oneLinerSemibold),
+        title: Text('Product Analytics', style: DesignTokens.oneLinerSemibold),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -111,7 +113,9 @@ class _ProductAnalyticsScreenState
             ),
             Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16, vertical: DesignTokens.s4),
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s4,
+              ),
               child: Text(
                 'Date Range: ${DateFormat('MMM d').format(fromUtc.toLocal())} - '
                 '${DateFormat('MMM d, yyyy').format(toUtc.toLocal())}',
@@ -149,7 +153,9 @@ class _ProductAnalyticsScreenState
 
   Widget _loader() => const Padding(
     padding: EdgeInsets.symmetric(vertical: DesignTokens.s32),
-    child: Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
+    child: Center(
+      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+    ),
   );
 }
 
@@ -166,7 +172,9 @@ class _FailureView extends StatelessWidget {
         children: [
           Text(
             'Failed to load product analytics.',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s8),
           TextButton(onPressed: onRetry, child: const Text('Retry')),
@@ -228,7 +236,9 @@ class _DateFilterRow extends StatelessWidget {
             onTap: () => onSelected(i),
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s12, vertical: DesignTokens.s6),
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s6,
+              ),
               decoration: BoxDecoration(
                 color: isSelected
                     ? DesignTokens.primaryGreen.withValues(alpha: 0.15)
@@ -244,8 +254,11 @@ class _DateFilterRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (i == 0) ...[
-                    const Icon(Icons.calendar_month_outlined,
-                        size: 14, color: DesignTokens.textMuted),
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      size: 14,
+                      color: DesignTokens.textMuted,
+                    ),
                     const SizedBox(width: 4),
                   ],
                   Text(
@@ -305,17 +318,20 @@ class _ProductHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name,
-                    style: DesignTokens.mediumSemibold,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  product.name,
+                  style: DesignTokens.mediumSemibold,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   product.commissionRate != null
                       ? '${formatMoney(product.price)} · ${product.commissionRate!.toStringAsFixed(0)}% Commission'
                       : formatMoney(product.price),
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -355,9 +371,12 @@ class _EarningsSection extends StatelessWidget {
             children: [
               Text('Earnings Overview', style: DesignTokens.mediumSemibold),
               const SizedBox(height: 2),
-              Text('Revenue Trend',
-                  style: DesignTokens.tiny
-                      .copyWith(color: DesignTokens.textMuted)),
+              Text(
+                'Revenue Trend',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
               const SizedBox(height: DesignTokens.s16),
               SizedBox(
                 height: 160,
@@ -365,8 +384,9 @@ class _EarningsSection extends StatelessWidget {
                     ? Center(
                         child: Text(
                           'Not enough data for this window.',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       )
                     : CustomPaint(
@@ -437,8 +457,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           Row(
             children: [
-              Text(value,
-                  style: DesignTokens.mediumSemibold.copyWith(fontSize: 18)),
+              Text(
+                value,
+                style: DesignTokens.mediumSemibold.copyWith(fontSize: 18),
+              ),
               if (badge != null) ...[
                 const SizedBox(width: 6),
                 Text(
@@ -454,9 +476,10 @@ class _StatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 2),
-          Text(label,
-              style:
-                  DesignTokens.tiny.copyWith(color: DesignTokens.textMuted)),
+          Text(
+            label,
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
         ],
       ),
     );
@@ -484,15 +507,25 @@ class _ReviewsSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.star, color: DesignTokens.secondaryYellow, size: 16),
+              const Icon(
+                Icons.star,
+                color: DesignTokens.secondaryYellow,
+                size: 16,
+              ),
               const SizedBox(width: 4),
-              Text(reviews.averageRating.toStringAsFixed(1),
-                  style: DesignTokens.smallRegular
-                      .copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                reviews.averageRating.toStringAsFixed(1),
+                style: DesignTokens.smallRegular.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(width: 6),
-              Text('· ${reviews.reviewCount} reviews',
-                  style: DesignTokens.tiny
-                      .copyWith(color: DesignTokens.textMuted)),
+              Text(
+                '· ${reviews.reviewCount} reviews',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
             ],
           ),
           if (maxCount > 0) ...[
@@ -504,21 +537,31 @@ class _ReviewsSection extends StatelessWidget {
                   children: [
                     SizedBox(
                       width: 12,
-                      child: Text('$star',
-                          style: DesignTokens.tiny
-                              .copyWith(color: DesignTokens.textMuted)),
+                      child: Text(
+                        '$star',
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.star, size: 10, color: DesignTokens.secondaryYellow),
+                    const Icon(
+                      Icons.star,
+                      size: 10,
+                      color: DesignTokens.secondaryYellow,
+                    ),
                     const SizedBox(width: DesignTokens.s8),
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: (reviews.starDistribution[star] ?? 0) / maxCount,
+                          value:
+                              (reviews.starDistribution[star] ?? 0) / maxCount,
                           minHeight: 6,
                           backgroundColor: DesignTokens.bgAppBodyLight,
-                          valueColor: const AlwaysStoppedAnimation(DesignTokens.secondaryYellow),
+                          valueColor: const AlwaysStoppedAnimation(
+                            DesignTokens.secondaryYellow,
+                          ),
                         ),
                       ),
                     ),
@@ -527,7 +570,9 @@ class _ReviewsSection extends StatelessWidget {
                       width: 24,
                       child: Text(
                         '${reviews.starDistribution[star] ?? 0}',
-                        style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
                         textAlign: TextAlign.end,
                       ),
                     ),
@@ -548,8 +593,9 @@ class _CreatorTrafficSection extends StatelessWidget {
 
   final List<ProductTopCreator> creators;
 
-  static String _label(String accountId) =>
-      accountId.length >= 8 ? 'Creator ••${accountId.substring(accountId.length - 4)}' : 'Creator';
+  static String _label(String accountId) => accountId.length >= 8
+      ? 'Creator ••${accountId.substring(accountId.length - 4)}'
+      : 'Creator';
 
   @override
   Widget build(BuildContext context) {
@@ -559,7 +605,9 @@ class _CreatorTrafficSection extends StatelessWidget {
       child: creators.isEmpty
           ? Text(
               'No creator-attributed sales in this window.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             )
           : Column(
               children: creators.asMap().entries.map((e) {
@@ -571,48 +619,73 @@ class _CreatorTrafficSection extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 20,
-                        child: Text('${i + 1}',
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textMuted)),
+                        child: Text(
+                          '${i + 1}',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: DesignTokens.s8),
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: DesignTokens.bgAppBodyLight,
-                        child: const Icon(Icons.person,
-                            color: DesignTokens.textMuted, size: 20),
+                        child: const Icon(
+                          Icons.person,
+                          color: DesignTokens.textMuted,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: DesignTokens.s12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_label(c.creatorAccountId),
-                                style: DesignTokens.smallRegular
-                                    .copyWith(fontWeight: FontWeight.w600)),
+                            Text(
+                              _label(c.creatorAccountId),
+                              style: DesignTokens.smallRegular.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.shopping_bag_outlined,
-                                    size: 12, color: DesignTokens.textMuted),
+                                const Icon(
+                                  Icons.shopping_bag_outlined,
+                                  size: 12,
+                                  color: DesignTokens.textMuted,
+                                ),
                                 const SizedBox(width: 4),
-                                Text('${c.unitsSold} sales',
-                                    style: DesignTokens.tiny
-                                        .copyWith(color: DesignTokens.textMuted)),
+                                Text(
+                                  '${c.unitsSold} sales',
+                                  style: DesignTokens.tiny.copyWith(
+                                    color: DesignTokens.textMuted,
+                                  ),
+                                ),
                                 const SizedBox(width: DesignTokens.s12),
-                                const Icon(Icons.play_circle_outline,
-                                    size: 12, color: DesignTokens.textMuted),
+                                const Icon(
+                                  Icons.play_circle_outline,
+                                  size: 12,
+                                  color: DesignTokens.textMuted,
+                                ),
                                 const SizedBox(width: 4),
-                                Text('${c.distinctReelCount} reels',
-                                    style: DesignTokens.tiny
-                                        .copyWith(color: DesignTokens.textMuted)),
+                                Text(
+                                  '${c.distinctReelCount} reels',
+                                  style: DesignTokens.tiny.copyWith(
+                                    color: DesignTokens.textMuted,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      Text(formatMoney(c.attributedRevenue),
-                          style: DesignTokens.tiny.copyWith(color: DesignTokens.textWhite)),
+                      Text(
+                        formatMoney(c.attributedRevenue),
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -643,14 +716,16 @@ class _LocationTrafficSection extends StatelessWidget {
     final segments = total <= 0
         ? const <_PieSegment>[]
         : locations
-            .asMap()
-            .entries
-            .map((e) => _PieSegment(
+              .asMap()
+              .entries
+              .map(
+                (e) => _PieSegment(
                   e.value.region,
                   e.value.revenue.amount / total,
                   _palette[e.key % _palette.length],
-                ))
-            .toList();
+                ),
+              )
+              .toList();
 
     return _SectionCard(
       title: 'Sales by Location',
@@ -658,7 +733,9 @@ class _LocationTrafficSection extends StatelessWidget {
       child: segments.isEmpty
           ? Text(
               'No location data in this window.',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             )
           : Column(
               children: [
@@ -680,8 +757,11 @@ class _LocationTrafficSection extends StatelessWidget {
 // ── Shared widgets ───────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard(
-      {required this.title, required this.subtitle, required this.child});
+  const _SectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String subtitle;
@@ -694,8 +774,10 @@ class _SectionCard extends StatelessWidget {
       children: [
         Text(title, style: DesignTokens.mediumSemibold),
         const SizedBox(height: 2),
-        Text(subtitle,
-            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted)),
+        Text(
+          subtitle,
+          style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+        ),
         const SizedBox(height: DesignTokens.s12),
         Container(
           width: double.infinity,
@@ -721,32 +803,41 @@ class _LegendRow extends StatelessWidget {
     }
     return Column(
       children: rows
-          .map((row) => Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s6),
-                child: Row(
-                  children: row
-                      .map((s) => Expanded(
-                            child: Row(
-                              children: [
-                                Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                        color: s.color,
-                                        shape: BoxShape.circle)),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(s.label,
-                                      style: DesignTokens.tiny.copyWith(
-                                          color: DesignTokens.textLight),
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
+          .map(
+            (row) => Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s6),
+              child: Row(
+                children: row
+                    .map(
+                      (s) => Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: s.color,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ))
-                      .toList(),
-                ),
-              ))
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                s.label,
+                                style: DesignTokens.tiny.copyWith(
+                                  color: DesignTokens.textLight,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          )
           .toList(),
     );
   }
@@ -840,7 +931,10 @@ class _EarningsChartPainter extends CustomPainter {
     final chartW = size.width - leftPad;
     final chartH = size.height - bottomPad - topPad;
 
-    final maxAmount = points.fold<double>(0, (a, p) => math.max(a, p.amount.amount));
+    final maxAmount = points.fold<double>(
+      0,
+      (a, p) => math.max(a, p.amount.amount),
+    );
     final yMax = maxAmount <= 0 ? 1.0 : maxAmount;
 
     final gridPaint = Paint()

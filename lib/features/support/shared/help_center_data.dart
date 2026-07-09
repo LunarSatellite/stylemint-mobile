@@ -195,7 +195,10 @@ const _ordersArticles = <HelpArticle>[
           'Press the Track Order button to see the live status.',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'Using a Tracking Number'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'Using a Tracking Number',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
@@ -238,7 +241,10 @@ const _ordersArticles = <HelpArticle>[
           'A confirmation email will be sent to your registered address.',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'After the 1-Hour Window'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'After the 1-Hour Window',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
@@ -364,7 +370,10 @@ const _returnsArticles = <HelpArticle>[
           'Choose between drop-off or courier pickup.',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'After Submitting a Return'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'After Submitting a Return',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
@@ -404,7 +413,10 @@ const _returnsArticles = <HelpArticle>[
           'Original payment method credits within the stated window.',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'Tracking Your Refund'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'Tracking Your Refund',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
@@ -517,7 +529,10 @@ const _accountArticles = <HelpArticle>[
           'Tap "Update Password".',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'Forgot Your Password?'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'Forgot Your Password?',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
@@ -812,7 +827,10 @@ const _creatorArticles = <HelpArticle>[
           'Submit the application and await approval.',
         ],
       ),
-      HelpBlock(type: HelpBlockType.sectionHeader, text: 'Eligibility Requirements'),
+      HelpBlock(
+        type: HelpBlockType.sectionHeader,
+        text: 'Eligibility Requirements',
+      ),
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:

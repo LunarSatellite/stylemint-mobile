@@ -3,6 +3,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 abstract interface class VendorOrdersRepository {
@@ -19,9 +20,22 @@ abstract interface class VendorOrdersRepository {
     VendorOrderStatus newStatus,
   );
 
-  Future<Either<NetworkExceptions, Unit>> handleReturn(
-    String orderId,
-    String action,
+  /// Vendor §8.1 — paged return requests awaiting/past the vendor's
+  /// accept/reject decision.
+  Future<Either<NetworkExceptions, PagedResult<VendorReturnRequest>>>
+  listReturns({
+    VendorReturnRequestState? state,
+    String? cursor,
+    int pageSize,
+  });
+
+  Future<Either<NetworkExceptions, VendorReturnRequest>> acceptReturn(
+    String returnRequestId,
+  );
+
+  Future<Either<NetworkExceptions, VendorReturnRequest>> rejectReturn(
+    String returnRequestId,
+    String reason,
   );
 
   /// Vendor §3B single-id "Mark as Shipped".

@@ -77,14 +77,14 @@ class CreatorPerformance {
 
   @override
   int get hashCode => Object.hash(
-        creatorAccountId,
-        unitsSold,
-        attributedRevenue,
-        commissionPaid,
-        currency,
-        distinctReelCount,
-        creatorHandle,
-        creatorDisplayName,
-        creatorAvatarUrl,
-      );
+    creatorAccountId,
+    unitsSold,
+    attributedRevenue,
+    commissionPaid,
+    currency,
+    distinctReelCount,
+    creatorHandle,
+    creatorDisplayName,
+    creatorAvatarUrl,
+  );
 }

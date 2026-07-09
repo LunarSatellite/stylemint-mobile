@@ -1,79 +1,86 @@
-﻿import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // ─── Args ─────────────────────────────────────────────────────────────────────
 
 class AdjustCommissionArgs {
   const AdjustCommissionArgs({
-    required this.creatorName,
-    required this.handle,
-    required this.followersLabel,
-    required this.currentCommission,
-    this.avatarAsset = '',
+    required this.partnershipId,
+    required this.creatorLabel,
+    required this.currentMinPercent,
+    required this.currentMaxPercent,
   });
 
-  final String creatorName;
-  final String handle;
-  final String followersLabel;
-  final int currentCommission;
-  final String avatarAsset;
+  final String partnershipId;
+  final String creatorLabel;
+
+  /// Fractions (0..1), matching the backend convention.
+  final double currentMinPercent;
+  final double currentMaxPercent;
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-class AdjustCommissionScreen extends StatefulWidget {
+class AdjustCommissionScreen extends ConsumerStatefulWidget {
   const AdjustCommissionScreen({super.key, required this.args});
 
   final AdjustCommissionArgs args;
 
   @override
-  State<AdjustCommissionScreen> createState() =>
+  ConsumerState<AdjustCommissionScreen> createState() =>
       _AdjustCommissionScreenState();
 }
 
-class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
-  late double _rate;
-  bool _notifyCreator = false;
-  final _dateCtrl = TextEditingController();
+class _AdjustCommissionScreenState
+    extends ConsumerState<AdjustCommissionScreen> {
+  late RangeValues _range;
+  final _reasonCtrl = TextEditingController();
+  bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
-    _rate = widget.args.currentCommission.toDouble();
+    _range = RangeValues(
+      (widget.args.currentMinPercent * 100).clamp(0, 100),
+      (widget.args.currentMaxPercent * 100).clamp(0, 100),
+    );
   }
 
   @override
   void dispose() {
-    _dateCtrl.dispose();
+    _reasonCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: DesignTokens.primaryGreen,
-            surface: DesignTokens.bgAppBodyLight,
-            onSurface: DesignTokens.textWhite,
-          ),
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    final ok = await ref
+        .read(partnershipsListNotifierProvider.notifier)
+        .adjustCommission(
+          widget.args.partnershipId,
+          commissionMinPercent: _range.start / 100,
+          commissionMaxPercent: _range.end / 100,
+          reason: _reasonCtrl.text.trim().isEmpty
+              ? null
+              : _reasonCtrl.text.trim(),
+        );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? 'Commission rate updated!' : 'Failed to update commission.',
         ),
-        child: child!,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ok
+            ? DesignTokens.primaryGreen
+            : DesignTokens.colorError,
       ),
     );
-    if (picked != null && mounted) {
-      setState(() {
-        _dateCtrl.text =
-            '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
-      });
-    }
+    if (ok) context.pop();
   }
 
   @override
@@ -100,13 +107,6 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
             color: DesignTokens.textWhite,
           ),
         ),
-        actions: [
-          _DarkIconButton(
-            assetPath: 'assets/images/vendordashboard/icon_payment.png',
-            onTap: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Column(
         children: [
@@ -116,21 +116,64 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _CreatorCard(args: widget.args),
-                  const SizedBox(height: DesignTokens.s16),
-                  _SliderCard(
-                    rate: _rate,
-                    onChanged: (v) => setState(() => _rate = v),
+                  _CreatorCard(
+                    label: widget.args.creatorLabel,
+                    currentMinPercent: widget.args.currentMinPercent,
+                    currentMaxPercent: widget.args.currentMaxPercent,
                   ),
                   const SizedBox(height: DesignTokens.s16),
-                  _DateField(
-                    controller: _dateCtrl,
-                    onTap: _pickDate,
+                  _RangeCard(
+                    range: _range,
+                    onChanged: (v) => setState(() => _range = v),
                   ),
                   const SizedBox(height: DesignTokens.s16),
-                  _NotifyCard(
-                    value: _notifyCreator,
-                    onChanged: (v) => setState(() => _notifyCreator = v),
+                  Container(
+                    padding: const EdgeInsets.all(DesignTokens.s16),
+                    decoration: BoxDecoration(
+                      color: DesignTokens.bgAppBodyLight,
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.cardRadius,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Reason (optional)',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.s8),
+                        TextField(
+                          controller: _reasonCtrl,
+                          maxLines: 3,
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            color: DesignTokens.textWhite,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Why are you adjusting this rate?',
+                            hintStyle: const TextStyle(
+                              color: DesignTokens.textMuted,
+                            ),
+                            filled: true,
+                            fillColor: DesignTokens.bgAppFoundation,
+                            contentPadding: const EdgeInsets.all(
+                              DesignTokens.s12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -140,21 +183,16 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, 12, DesignTokens.s16, 16),
+                DesignTokens.s16,
+                12,
+                DesignTokens.s16,
+                16,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Commission rate updated!'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: DesignTokens.primaryGreen,
-                      ),
-                    );
-                    context.pop();
-                  },
+                  onPressed: _submitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DesignTokens.primaryGreen,
                     foregroundColor: Colors.black,
@@ -163,14 +201,23 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Update Commission Rate',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Update Commission Rate',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -181,54 +228,21 @@ class _AdjustCommissionScreenState extends State<AdjustCommissionScreen> {
   }
 }
 
-// ─── Dark icon button (AppBar action) ────────────────────────────────────────
-
-class _DarkIconButton extends StatelessWidget {
-  const _DarkIconButton({this.icon, this.assetPath, required this.onTap});
-
-  final IconData? icon;
-  final String? assetPath;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFF27272A),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: assetPath != null ? const EdgeInsets.all(8) : EdgeInsets.zero,
-        child: assetPath != null
-            ? Image.asset(
-                assetPath!,
-                fit: BoxFit.contain,
-                color: DesignTokens.textWhite,
-                colorBlendMode: BlendMode.srcIn,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.monetization_on_outlined,
-                        color: DesignTokens.textWhite, size: 20),
-              )
-            : Icon(icon, color: DesignTokens.textWhite, size: 20),
-      ),
-    );
-  }
-}
-
 // ─── Creator card ─────────────────────────────────────────────────────────────
 
 class _CreatorCard extends StatelessWidget {
-  const _CreatorCard({required this.args});
+  const _CreatorCard({
+    required this.label,
+    required this.currentMinPercent,
+    required this.currentMaxPercent,
+  });
 
-  final AdjustCommissionArgs args;
+  final String label;
+  final double currentMinPercent;
+  final double currentMaxPercent;
 
   @override
   Widget build(BuildContext context) {
-    final hasAsset = args.avatarAsset.isNotEmpty;
-
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
@@ -239,16 +253,21 @@ class _CreatorCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ClipOval(
-            child: hasAsset
-                ? Image.asset(
-                    args.avatarAsset,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _InitialAvatar(
-                        name: args.creatorName, size: 48),
-                  )
-                : _InitialAvatar(name: args.creatorName, size: 48),
+            child: Container(
+              width: 48,
+              height: 48,
+              color: DesignTokens.bgAppFoundation,
+              alignment: Alignment.center,
+              child: Text(
+                label.isNotEmpty ? label[0].toUpperCase() : '?',
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  color: DesignTokens.textWhite,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
@@ -256,7 +275,7 @@ class _CreatorCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  args.creatorName,
+                  label,
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 15,
@@ -264,38 +283,19 @@ class _CreatorCard extends StatelessWidget {
                     color: DesignTokens.textWhite,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.person_outline_rounded,
-                      size: 12,
-                      color: DesignTokens.textMuted,
-                    ),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        '${args.followersLabel} Followers · ${args.handle}',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: DesignTokens.s8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreen.withOpacity(0.15),
+                    color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Current Commission: ${args.currentCommission}%',
+                    'Current: ${(currentMinPercent * 100).round()}%'
+                    '–${(currentMaxPercent * 100).round()}%',
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
@@ -313,19 +313,23 @@ class _CreatorCard extends StatelessWidget {
   }
 }
 
-// ─── Slider card ──────────────────────────────────────────────────────────────
+// ─── Range card ───────────────────────────────────────────────────────────────
 
-class _SliderCard extends StatelessWidget {
-  const _SliderCard({required this.rate, required this.onChanged});
+class _RangeCard extends StatelessWidget {
+  const _RangeCard({required this.range, required this.onChanged});
 
-  final double rate;
-  final ValueChanged<double> onChanged;
+  final RangeValues range;
+  final ValueChanged<RangeValues> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 12),
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        12,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -334,7 +338,8 @@ class _SliderCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'New Commission Rate: ${rate.round()}%',
+            'New Commission Range: '
+            '${range.start.round()}%–${range.end.round()}%',
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 14,
@@ -342,180 +347,30 @@ class _SliderCard extends StatelessWidget {
               color: DesignTokens.textWhite,
             ),
           ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: DesignTokens.primaryGreen,
-              inactiveTrackColor: DesignTokens.borderDefault,
-              overlayColor: DesignTokens.primaryGreen.withOpacity(0.1),
-              trackHeight: 4,
-              thumbShape: const _GreenThumb(),
-            ),
-            child: Slider(
-              value: rate,
-              min: 5,
-              max: 25,
-              divisions: 20,
-              onChanged: onChanged,
-            ),
+          RangeSlider(
+            values: range,
+            min: 0,
+            max: 50,
+            divisions: 50,
+            activeColor: DesignTokens.primaryGreen,
+            inactiveColor: DesignTokens.borderDefault,
+            onChanged: onChanged,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text(
-                  '5%',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-                Text(
-                  '25%',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Custom slider thumb ──────────────────────────────────────────────────────
-
-class _GreenThumb extends SliderComponentShape {
-  const _GreenThumb();
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
-      const Size(20, 20);
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset center, {
-    required Animation<double> activationAnimation,
-    required Animation<double> enableAnimation,
-    required bool isDiscrete,
-    required TextPainter labelPainter,
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required TextDirection textDirection,
-    required double value,
-    required double textScaleFactor,
-    required Size sizeWithOverflow,
-  }) {
-    final canvas = context.canvas;
-    canvas.drawCircle(center, 10, Paint()..color = Colors.white);
-    canvas.drawCircle(center, 6.7, Paint()..color = DesignTokens.primaryGreen);
-  }
-}
-
-// ─── Effective date field ─────────────────────────────────────────────────────
-
-class _DateField extends StatelessWidget {
-  const _DateField({required this.controller, required this.onTap});
-
-  final TextEditingController controller;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: 16),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBodyLight,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: DesignTokens.borderDefault),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                controller.text.isEmpty ? 'Effective Date' : controller.text,
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: controller.text.isEmpty
-                      ? DesignTokens.textMuted
-                      : DesignTokens.textWhite,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.calendar_month_outlined,
-              color: DesignTokens.textMuted,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Notify creator card ──────────────────────────────────────────────────────
-
-class _NotifyCard extends StatelessWidget {
-  const _NotifyCard({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-              activeColor: DesignTokens.primaryGreen,
-              checkColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              side: const BorderSide(
-                  color: DesignTokens.borderDefault, width: 1.5),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-          const SizedBox(width: DesignTokens.s12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notify Creator',
+                  '0%',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
+                    fontSize: 12,
+                    color: DesignTokens.textMuted,
                   ),
                 ),
-                SizedBox(height: 4),
                 Text(
-                  'Notify the creator about the change in commission rates',
+                  '50%',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 12,
@@ -526,34 +381,6 @@ class _NotifyCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Initial avatar helper ────────────────────────────────────────────────────
-
-class _InitialAvatar extends StatelessWidget {
-  const _InitialAvatar({required this.name, required this.size});
-
-  final String name;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      color: DesignTokens.bgAppFoundation,
-      alignment: Alignment.center,
-      child: Text(
-        name.isNotEmpty ? name[0].toUpperCase() : '?',
-        style: TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: size * 0.38,
-          fontWeight: FontWeight.w600,
-          color: DesignTokens.textWhite,
-        ),
       ),
     );
   }

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -624,7 +623,6 @@ extension _TicketStatusFilter on TicketStatus {
       case TicketStatus.inProgress:
         return _TicketFilter.inProgress;
       case TicketStatus.resolved:
-      case TicketStatus.closed:
         return _TicketFilter.resolved;
     }
   }
@@ -711,6 +709,28 @@ class _CreatorResourcesSheet extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Create Support Ticket bottom sheet
 // ---------------------------------------------------------------------------
+/// Display label for the backend-aligned support category taxonomy.
+String _ticketCategoryLabel(TicketCategory c) {
+  switch (c) {
+    case TicketCategory.ordersAndShipping:
+      return 'Orders & Shipping';
+    case TicketCategory.returnsAndRefunds:
+      return 'Returns & Refunds';
+    case TicketCategory.accountAndSettings:
+      return 'Account & Settings';
+    case TicketCategory.paymentAndBilling:
+      return 'Payment & Billing';
+    case TicketCategory.safetyAndPrivacy:
+      return 'Safety & Privacy';
+    case TicketCategory.forCreators:
+      return 'For Creators';
+    case TicketCategory.forVendors:
+      return 'For Vendors';
+    case TicketCategory.deliveryAndCouriers:
+      return 'Delivery & Couriers';
+  }
+}
+
 class _CreateTicketSheet extends ConsumerStatefulWidget {
   const _CreateTicketSheet();
 
@@ -719,7 +739,7 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 }
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
-  SupportTicketCategory? _selectedCategory;
+  TicketCategory? _selectedCategory;
   final _descController = TextEditingController();
   final List<XFile> _images = [];
   final _picker = ImagePicker();
@@ -751,14 +771,14 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     }
     await ref.read(createTicketNotifierProvider.notifier).submit(
       category: _selectedCategory!,
-      body: desc,
+      subject: _ticketCategoryLabel(_selectedCategory!),
+      message: desc,
     );
     if (!mounted) return;
     ref.read(createTicketNotifierProvider).when(
       initial: () {},
       submitting: () {},
-      success: () {
-        ref.read(createTicketNotifierProvider.notifier).reset();
+      success: (_) {
         unawaited(ref.read(supportNotifierProvider.notifier).loadTickets());
         Navigator.pop(context);
       },
@@ -781,7 +801,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     final isSubmitting = ref.watch(createTicketNotifierProvider).when(
       initial: () => false,
       submitting: () => true,
-      success: () => false,
+      success: (_) => false,
       failure: (_) => false,
     );
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -825,7 +845,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           // Category dropdown
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: DropdownButtonFormField<SupportTicketCategory>(
+            child: DropdownButtonFormField<TicketCategory>(
               value: _selectedCategory,
               hint: const Text(
                 'Issue Category',
@@ -868,8 +888,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                       const BorderSide(color: DesignTokens.primaryGreen),
                 ),
               ),
-              items: SupportTicketCategory.values
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
+              items: TicketCategory.values
+                  .map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(_ticketCategoryLabel(c)),
+                      ))
                   .toList(),
               onChanged: isSubmitting
                   ? null
@@ -1065,7 +1088,6 @@ class _TicketDetailSheet extends StatelessWidget {
       case TicketStatus.inProgress:
         return const Color(0xFF1A2B00);
       case TicketStatus.resolved:
-      case TicketStatus.closed:
         return const Color(0xFF0D1F2D);
     }
   }
@@ -1077,7 +1099,6 @@ class _TicketDetailSheet extends StatelessWidget {
       case TicketStatus.inProgress:
         return DesignTokens.secondaryYellow;
       case TicketStatus.resolved:
-      case TicketStatus.closed:
         return DesignTokens.colorInfo;
     }
   }
@@ -1090,8 +1111,6 @@ class _TicketDetailSheet extends StatelessWidget {
         return 'In Progress';
       case TicketStatus.resolved:
         return 'Resolved';
-      case TicketStatus.closed:
-        return 'Closed';
     }
   }
 
@@ -1164,10 +1183,10 @@ class _TicketDetailSheet extends StatelessWidget {
               ),
             ),
           ),
-          if (ticket.lastAgentReplyAt != null) ...[
+          ...[
             const SizedBox(height: DesignTokens.s12),
             Text(
-              'Last reply: ${_formatTicketDate(ticket.lastAgentReplyAt!)}',
+              'Last update: ${_formatTicketDate(ticket.lastUpdated)}',
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 14,

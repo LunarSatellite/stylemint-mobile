@@ -4,18 +4,18 @@ import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/ent
 part 'matchmaking_dto.freezed.dart';
 part 'matchmaking_dto.g.dart';
 
+/// Mirrors `MatchSnapshotDto` (`GET /v1/vendor/matches`). Only the fields
+/// the vendor match card actually needs are modeled — the backend also
+/// returns `origin`/`state`/`contributionByFeatureJson`/timestamps/etc,
+/// which json_serializable ignores since they aren't declared here.
 @freezed
 abstract class MatchRecommendationDto with _$MatchRecommendationDto {
   const factory MatchRecommendationDto({
-    required String creatorId,
-    required String creatorName,
-    required String avatarUrl,
-    required String handle,
-    required String category,
-    @Default(0) int followersCount,
-    @Default(0) int compatibilityScore,
-    @Default([]) List<String> reasons,
-    String? sampleReelThumbnail,
+    required String id,
+    required String creatorAccountId,
+    required String creatorHandle,
+    required double score,
+    required String reasonSummary,
   }) = _MatchRecommendationDto;
 
   const MatchRecommendationDto._();
@@ -24,42 +24,43 @@ abstract class MatchRecommendationDto with _$MatchRecommendationDto {
       _$MatchRecommendationDtoFromJson(json);
 
   MatchRecommendation toDomain() => MatchRecommendation(
-    creatorId: creatorId,
-    creatorName: creatorName,
-    avatarUrl: avatarUrl,
-    handle: handle,
-    category: category,
-    followersCount: followersCount,
-    compatibilityScore: compatibilityScore,
-    reasons: reasons,
-    sampleReelThumbnail: sampleReelThumbnail,
+    id: id,
+    creatorAccountId: creatorAccountId,
+    creatorHandle: creatorHandle,
+    compatibilityScore: (score * 100).round().clamp(0, 100),
+    reasonSummary: reasonSummary,
   );
 }
 
+/// Mirrors `PartnershipPrefillDto` (`POST /v1/vendor/matches/{id}/invite`).
 @freezed
-abstract class MatchmakingFilterDto with _$MatchmakingFilterDto {
-  const factory MatchmakingFilterDto({
-    List<String>? categories,
-    int? minFollowers,
-    int? maxFollowers,
-    double? minEngagementRate,
-    double? budgetRange,
-  }) = _MatchmakingFilterDto;
+abstract class PartnershipPrefillDto with _$PartnershipPrefillDto {
+  const factory PartnershipPrefillDto({
+    required String matchSnapshotId,
+    required String creatorAccountId,
+    required String creatorHandle,
+    required int proposedCommissionBps,
+    required int brandCommissionMinBps,
+    required int brandCommissionMaxBps,
+    required double matchScore,
+    required String reasonSummary,
+    String? brandBriefId,
+  }) = _PartnershipPrefillDto;
 
-  const MatchmakingFilterDto._();
+  const PartnershipPrefillDto._();
 
-  factory MatchmakingFilterDto.fromJson(Map<String, dynamic> json) =>
-      _$MatchmakingFilterDtoFromJson(json);
+  factory PartnershipPrefillDto.fromJson(Map<String, dynamic> json) =>
+      _$PartnershipPrefillDtoFromJson(json);
 
-  Map<String, dynamic> toQueryParams() {
-    final params = <String, dynamic>{};
-    if (categories != null && categories!.isNotEmpty) {
-      params['categories'] = categories!.join(',');
-    }
-    if (minFollowers != null) params['minFollowers'] = minFollowers;
-    if (maxFollowers != null) params['maxFollowers'] = maxFollowers;
-    if (minEngagementRate != null) params['minEngagementRate'] = minEngagementRate;
-    if (budgetRange != null) params['budgetRange'] = budgetRange;
-    return params;
-  }
+  PartnershipPrefill toDomain() => PartnershipPrefill(
+    matchSnapshotId: matchSnapshotId,
+    creatorAccountId: creatorAccountId,
+    creatorHandle: creatorHandle,
+    proposedCommissionBps: proposedCommissionBps,
+    brandCommissionMinBps: brandCommissionMinBps,
+    brandCommissionMaxBps: brandCommissionMaxBps,
+    matchScore: matchScore,
+    reasonSummary: reasonSummary,
+    brandBriefId: brandBriefId,
+  );
 }

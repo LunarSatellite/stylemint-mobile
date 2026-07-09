@@ -1,165 +1,141 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-class CampaignTemplate {
-  const CampaignTemplate({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.industry,
-    required this.recommendedCommission,
-    required this.recommendedBudget,
-    required this.tips,
-    required this.successMetrics,
+/// A row of `topCreatorsByAttributedSales` on the Intelligence Dashboard.
+class TopCreatorByAttributedSales {
+  const TopCreatorByAttributedSales({
+    required this.creatorAccountId,
+    required this.reelsInWindow,
+    required this.attributedUnitsSold,
+    required this.attributedRevenue,
+    required this.commissionPaid,
+    required this.roiRatio,
   });
 
-  final String id;
-  final String title;
-  final String description;
-  final String industry;
-  final double recommendedCommission;
-  final Money recommendedBudget;
-  final List<String> tips;
-  final List<String> successMetrics;
-
-  CampaignTemplate copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? industry,
-    double? recommendedCommission,
-    Money? recommendedBudget,
-    List<String>? tips,
-    List<String>? successMetrics,
-  }) {
-    return CampaignTemplate(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      industry: industry ?? this.industry,
-      recommendedCommission: recommendedCommission ?? this.recommendedCommission,
-      recommendedBudget: recommendedBudget ?? this.recommendedBudget,
-      tips: tips ?? this.tips,
-      successMetrics: successMetrics ?? this.successMetrics,
-    );
-  }
+  final String creatorAccountId;
+  final int reelsInWindow;
+  final int attributedUnitsSold;
+  final Money attributedRevenue;
+  final Money commissionPaid;
+  final double roiRatio;
 }
 
-enum TrendDirection { up, down, flat }
-
-class CreatorPerformance {
-  const CreatorPerformance({
-    required this.creatorId,
-    required this.creatorName,
-    required this.avatarUrl,
-    required this.salesGenerated,
-    required this.impressions,
-    required this.clicks,
-    required this.conversionRate,
+class ReachDiagnosticsSummary {
+  const ReachDiagnosticsSummary({
+    required this.totalImpressions,
+    required this.uniqueAudience,
+    required this.topRegions,
+    required this.underperformingRegions,
+    required this.audienceGrowthRate,
   });
 
-  final String creatorId;
-  final String creatorName;
-  final String avatarUrl;
-  final Money salesGenerated;
-  final int impressions;
-  final int clicks;
-  final double conversionRate;
-
-  CreatorPerformance copyWith({
-    String? creatorId,
-    String? creatorName,
-    String? avatarUrl,
-    Money? salesGenerated,
-    int? impressions,
-    int? clicks,
-    double? conversionRate,
-  }) {
-    return CreatorPerformance(
-      creatorId: creatorId ?? this.creatorId,
-      creatorName: creatorName ?? this.creatorName,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      salesGenerated: salesGenerated ?? this.salesGenerated,
-      impressions: impressions ?? this.impressions,
-      clicks: clicks ?? this.clicks,
-      conversionRate: conversionRate ?? this.conversionRate,
-    );
-  }
+  final int totalImpressions;
+  final int uniqueAudience;
+  final List<String> topRegions;
+  final List<String> underperformingRegions;
+  final double audienceGrowthRate;
 }
 
-class CampaignAnalytics {
-  const CampaignAnalytics({
-    required this.campaignId,
-    required this.impressions,
-    required this.clicks,
-    required this.conversions,
-    required this.conversionRate,
-    required this.roi,
+class FormatLearning {
+  const FormatLearning({
+    required this.formatLabel,
+    required this.count,
+    required this.avgCompletionRate,
+    required this.avgConversionRate,
+    required this.takeaway,
+  });
+
+  final String formatLabel;
+  final int count;
+  final double avgCompletionRate;
+  final double avgConversionRate;
+  final String takeaway;
+}
+
+/// `benchmark` is `null` on the wire when the cohort has fewer than 5
+/// members (skill's privacy floor) — callers must hide the card entirely
+/// in that case, never render "n/a".
+class CompetitiveBenchmarkSummary {
+  const CompetitiveBenchmarkSummary({
+    required this.yourAvgConversion,
+    required this.cohortMedianConversion,
+    required this.cohortTopQuartileConversion,
+    required this.cohortLabel,
+    required this.cohortMemberCount,
+    required this.takeaway,
+  });
+
+  final double yourAvgConversion;
+  final double cohortMedianConversion;
+  final double cohortTopQuartileConversion;
+  final String cohortLabel;
+  final int cohortMemberCount;
+  final String takeaway;
+}
+
+class SuggestedCreator {
+  const SuggestedCreator({
+    required this.creatorAccountId,
+    required this.creatorHandle,
+    required this.matchScore,
+    required this.topThreeReasons,
+  });
+
+  final String creatorAccountId;
+  final String creatorHandle;
+  final double matchScore;
+
+  /// Free-text summary from the matching model, not a structured list on
+  /// the wire — render as-is.
+  final String topThreeReasons;
+}
+
+class RecipePerformance {
+  const RecipePerformance({
+    required this.recipeId,
+    required this.recipeVersion,
+    required this.citingCreatorCount,
+    required this.citedReelCount,
+    required this.attributedUnits,
+    required this.attributedRevenue,
+    this.bestReelId,
+    this.bestReelRevenue,
+  });
+
+  final String recipeId;
+  final int recipeVersion;
+  final int citingCreatorCount;
+  final int citedReelCount;
+  final int attributedUnits;
+  final Money attributedRevenue;
+  final String? bestReelId;
+  final double? bestReelRevenue;
+}
+
+/// Mirrors `GET /v1/vendor/dashboard` — the Brand Studio Intelligence
+/// Dashboard (materialized, refreshed every 30 min). Distinct from
+/// `/v1/vendor/analytics/overview` (gross sales / net revenue / top
+/// products), which the plain vendor home screen uses.
+class BrandStudioInsights {
+  const BrandStudioInsights({
+    required this.windowStart,
+    required this.windowEndExclusive,
     required this.topCreators,
-    required this.trend,
+    required this.reach,
+    required this.formatLearnings,
+    required this.suggestedCreators,
+    required this.byRecipe,
+    this.benchmark,
   });
 
-  final String campaignId;
-  final int impressions;
-  final int clicks;
-  final int conversions;
-  final double conversionRate;
-  final double roi;
-  final List<CreatorPerformance> topCreators;
-  final TrendDirection trend;
+  final DateTime windowStart;
+  final DateTime windowEndExclusive;
+  final List<TopCreatorByAttributedSales> topCreators;
+  final ReachDiagnosticsSummary reach;
+  final List<FormatLearning> formatLearnings;
 
-  CampaignAnalytics copyWith({
-    String? campaignId,
-    int? impressions,
-    int? clicks,
-    int? conversions,
-    double? conversionRate,
-    double? roi,
-    List<CreatorPerformance>? topCreators,
-    TrendDirection? trend,
-  }) {
-    return CampaignAnalytics(
-      campaignId: campaignId ?? this.campaignId,
-      impressions: impressions ?? this.impressions,
-      clicks: clicks ?? this.clicks,
-      conversions: conversions ?? this.conversions,
-      conversionRate: conversionRate ?? this.conversionRate,
-      roi: roi ?? this.roi,
-      topCreators: topCreators ?? this.topCreators,
-      trend: trend ?? this.trend,
-    );
-  }
-}
-
-enum CompetitionLevel { low, medium, high }
-
-class MarketInsight {
-  const MarketInsight({
-    required this.category,
-    required this.trending,
-    required this.averageCommission,
-    required this.competitionLevel,
-    required this.recommendedActions,
-  });
-
-  final String category;
-  final bool trending;
-  final double averageCommission;
-  final CompetitionLevel competitionLevel;
-  final List<String> recommendedActions;
-
-  MarketInsight copyWith({
-    String? category,
-    bool? trending,
-    double? averageCommission,
-    CompetitionLevel? competitionLevel,
-    List<String>? recommendedActions,
-  }) {
-    return MarketInsight(
-      category: category ?? this.category,
-      trending: trending ?? this.trending,
-      averageCommission: averageCommission ?? this.averageCommission,
-      competitionLevel: competitionLevel ?? this.competitionLevel,
-      recommendedActions: recommendedActions ?? this.recommendedActions,
-    );
-  }
+  /// `null` when the cohort has fewer than 5 members — hide the benchmark
+  /// card entirely rather than showing a placeholder.
+  final CompetitiveBenchmarkSummary? benchmark;
+  final List<SuggestedCreator> suggestedCreators;
+  final List<RecipePerformance> byRecipe;
 }
