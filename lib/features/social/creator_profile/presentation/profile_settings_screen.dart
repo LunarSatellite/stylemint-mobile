@@ -361,13 +361,19 @@ class _BecomeBrandBanner extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(DesignTokens.s16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
+                vertical: DesignTokens.s12,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: const [
                   Text(
                     'Become a Brand !',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 15,
@@ -377,7 +383,9 @@ class _BecomeBrandBanner extends StatelessWidget {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Become a Brand User and start\nselling your products',
+                    'Become a Brand User and start selling your products',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 11,

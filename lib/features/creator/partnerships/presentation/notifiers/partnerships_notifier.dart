@@ -17,6 +17,7 @@ abstract class PartnershipsState with _$PartnershipsState {
   const factory PartnershipsState.loadSuccess({
     required List<PartnershipInvite> invites,
     required List<ActivePartnership> active,
+    required List<EndedPartnership> ended,
   }) = _PartnershipsLoadSuccess;
   const factory PartnershipsState.loadFailure(NetworkExceptions failure) =
       _PartnershipsLoadFailure;
@@ -34,12 +35,16 @@ class PartnershipsNotifier extends StateNotifier<PartnershipsState> {
     state = const PartnershipsState.loadInProgress();
     final invites = await _repository.getInvites();
     final active = await _repository.getActivePartnerships();
+    final ended = await _repository.getEndedPartnerships();
 
     state = invites.fold(
       (f) => PartnershipsState.loadFailure(f),
       (i) => active.fold(
         (f) => PartnershipsState.loadFailure(f),
-        (a) => PartnershipsState.loadSuccess(invites: i, active: a),
+        (a) => ended.fold(
+          (f) => PartnershipsState.loadFailure(f),
+          (e) => PartnershipsState.loadSuccess(invites: i, active: a, ended: e),
+        ),
       ),
     );
   }

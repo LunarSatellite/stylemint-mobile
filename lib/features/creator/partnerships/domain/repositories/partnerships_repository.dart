@@ -10,4 +10,6 @@ abstract interface class PartnershipsRepository {
   Future<Either<NetworkExceptions, Unit>> declineInvite(String inviteId);
 
   Future<Either<NetworkExceptions, List<ActivePartnership>>> getActivePartnerships();
+
+  Future<Either<NetworkExceptions, List<EndedPartnership>>> getEndedPartnerships();
 }

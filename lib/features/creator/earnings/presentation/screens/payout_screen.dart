@@ -744,6 +744,24 @@ class _PaymentMethodSheet extends StatelessWidget {
             ),
           ),
         );
+      case PayoutMethodType.venmo:
+        return Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF008CFF),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'V',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
     }
   }
 

@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart' show FormData, MultipartFile, Options;
+import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/data/models/creator_application_dto.dart';
 
@@ -64,23 +64,6 @@ class CreatorRemoteDataSource {
       options: _idempotent(idempotencyKey),
     );
     return CreatorApplicationDto.fromJson(response as Map<String, dynamic>);
-  }
-
-  // TODO(swagger): /v1/creator/documents not found; re-evaluate identity doc upload path
-  Future<String> uploadIdentityDoc(String filePath, String idempotencyKey) async {
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath),
-    });
-    final response = await apiClient.rawPost(
-      '/v1/creator/documents',
-      data: formData,
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
-    );
-    final data = response.data as Map<String, dynamic>;
-    return data['url'] as String;
   }
 
   Options _idempotent(String idempotencyKey) => Options(

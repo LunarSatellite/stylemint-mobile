@@ -191,25 +191,25 @@ class _MockEarningsRepository implements EarningsRepository {
           id: 'bank-1',
           type: PayoutMethodType.bankTransfer,
           label: 'NIMB Bank a/c — ****8909',
-          isDefault: false,
+          isPrimary: false,
         ),
         const PayoutMethod(
           id: 'bank-2',
           type: PayoutMethodType.bankTransfer,
           label: 'Laxmi Bank a/c — ****7787',
-          isDefault: false,
+          isPrimary: false,
         ),
         const PayoutMethod(
           id: 'paypal-1',
           type: PayoutMethodType.paypal,
           label: 'Paypal — @shreeteen123',
-          isDefault: true,
+          isPrimary: true,
         ),
         const PayoutMethod(
           id: 'esewa-1',
           type: PayoutMethodType.esewa,
           label: 'eSewa — 9840098522',
-          isDefault: false,
+          isPrimary: false,
         ),
       ]);
 
@@ -221,12 +221,60 @@ class _MockEarningsRepository implements EarningsRepository {
       right(unit);
 
   @override
-  Future<Either<NetworkExceptions, Unit>> addPayoutMethod({
-    required PayoutMethodType type,
+  Future<Either<NetworkExceptions, Unit>> addBankPayoutMethod({
+    required int kind,
     required String label,
-    required Map<String, String> details,
+    String? maskedAccountNumber,
+    String? beneficiaryName,
+    String? processorReference,
   }) async =>
       right(unit);
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> addExternalWalletPayoutMethod({
+    required int kind,
+    required String label,
+    String? externalIdentifier,
+    String? processorReference,
+  }) async =>
+      right(unit);
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> removePayoutMethod(
+    String methodId,
+  ) async =>
+      right(unit);
+
+  @override
+  Future<Either<NetworkExceptions, List<PayoutRecord>>> getPayouts({
+    int pageSize = 25,
+    String? cursor,
+  }) async =>
+      right([
+        PayoutRecord(
+          id: 'pay-001',
+          requestedAmount: const Money(amount: 17000, currency: 'NPR'),
+          feeAmount: const Money(amount: 340, currency: 'NPR'),
+          netAmount: const Money(amount: 16660, currency: 'NPR'),
+          state: PayoutState.paid,
+          mode: PayoutMode.onDemand,
+          destinationLabel: 'eSewa',
+          destinationRef: '9840098522',
+          requestedAt: DateTime.now().subtract(const Duration(days: 1)),
+          paidAt: DateTime.now().subtract(const Duration(hours: 10)),
+        ),
+        PayoutRecord(
+          id: 'pay-002',
+          requestedAmount: const Money(amount: 12500, currency: 'NPR'),
+          feeAmount: const Money(amount: 0, currency: 'NPR'),
+          netAmount: const Money(amount: 12500, currency: 'NPR'),
+          state: PayoutState.requested,
+          mode: PayoutMode.automaticWeekly,
+          destinationLabel: 'NIMB Bank',
+          destinationRef: '****8909',
+          requestedAt: DateTime.now().subtract(const Duration(days: 3)),
+        ),
+      ]);
 }
 
 class _MockNotificationsRepository implements NotificationsRepository {

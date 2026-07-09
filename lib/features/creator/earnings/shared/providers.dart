@@ -3,14 +3,19 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/datasources/earnings_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/repositories/earnings_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/repositories/earnings_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 
 final earningsRemoteDataSourceProvider = Provider<EarningsRemoteDataSource>(
-  (ref) => EarningsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+  (ref) => EarningsRemoteDataSource(
+    apiClient: ref.watch(apiClientProvider),
+    tokenStorage: ref.watch(tokenStorageProvider),
+  ),
 );
 
 /// Per-reel earnings breakdown (creator analytics dashboard). Separate from
@@ -34,4 +39,15 @@ final earningsNotifierProvider =
 final requestPayoutNotifierProvider =
     StateNotifierProvider<RequestPayoutNotifier, RequestPayoutState>(
       (ref) => RequestPayoutNotifier(ref.watch(earningsRepositoryProvider)),
+    );
+
+final payoutHistoryProvider =
+    FutureProvider.autoDispose<List<PayoutRecord>>((ref) async {
+  final result = await ref.watch(earningsRepositoryProvider).getPayouts();
+  return result.fold((f) => throw f, (records) => records);
+});
+
+final addPayoutMethodNotifierProvider =
+    StateNotifierProvider.autoDispose<AddPayoutMethodNotifier, AsyncValue<void>>(
+      (ref) => AddPayoutMethodNotifier(ref.watch(earningsRepositoryProvider)),
     );

@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/full_analytics_report_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/reel_detail_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/profile_settings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
@@ -23,6 +31,17 @@ void main() {
         overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
         child: MaterialApp(home: child),
       );
+
+  // For screens that read GoRouter from context during build.
+  Widget wrapWithRouter(Widget child) {
+    final router = GoRouter(
+      routes: [GoRoute(path: '/', builder: (_, __) => child)],
+    );
+    return ProviderScope(
+      overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
+      child: MaterialApp.router(routerConfig: router),
+    );
+  }
 
   Future<void> pumpAndCheck(WidgetTester tester, Widget screen) async {
     await tester.pumpWidget(wrap(screen));
@@ -72,5 +91,52 @@ void main() {
 
   testWidgets('CreatorPerformanceScreen renders', (t) async {
     await pumpAndCheck(t, const CreatorPerformanceScreen());
+  });
+
+  testWidgets('AnalyticsScreen renders', (t) async {
+    await pumpAndCheck(t, const AnalyticsScreen());
+  });
+
+  testWidgets('FullAnalyticsReportScreen renders', (t) async {
+    await pumpAndCheck(t, const FullAnalyticsReportScreen());
+  });
+
+  testWidgets('ReelDetailAnalyticsScreen renders', (t) async {
+    await pumpAndCheck(t, const ReelDetailAnalyticsScreen(reelId: 'r1'));
+  });
+
+  testWidgets('CreatorContactSupportScreen renders', (t) async {
+    await pumpAndCheck(t, const CreatorContactSupportScreen());
+  });
+
+  testWidgets('CreatorProfileScreen renders', (t) async {
+    await t.pumpWidget(
+      wrapWithRouter(
+        const CreatorProfileScreen(
+          args: CreatorProfileArgs(
+            accountId: 'acc-1',
+            displayName: 'Alice',
+            handle: '@alice',
+          ),
+        ),
+      ),
+    );
+    await t.pump(const Duration(milliseconds: 50));
+    await t.pump(const Duration(milliseconds: 50));
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('CreatorEditProfileScreen renders', (t) async {
+    await pumpAndCheck(t, const CreatorEditProfileScreen());
+  });
+
+  testWidgets('ProfileSettingsScreen renders', (t) async {
+    await pumpAndCheck(
+      t,
+      const ProfileSettingsScreen(
+        displayName: 'Alice',
+        handle: '@alice',
+      ),
+    );
   });
 }

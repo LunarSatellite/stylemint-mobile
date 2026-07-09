@@ -8,7 +8,7 @@ part 'creator_profile_dto.g.dart';
 abstract class CreatorProfileDto with _$CreatorProfileDto {
   const factory CreatorProfileDto({
     required String id,
-    required String displayName,
+    @Default('') String displayName,
     @Default('') String handle,
     String? avatarUrl,
     @Default('') String bio,

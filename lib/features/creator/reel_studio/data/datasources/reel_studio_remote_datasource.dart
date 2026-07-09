@@ -86,10 +86,9 @@ class ReelStudioRemoteDataSource {
     return items;
   }
 
-  // TODO(swagger): DELETE /v1/creator/recipes/draft/{id} not found; re-evaluate draft deletion path
   Future<void> deleteDraft(String draftId, String idempotencyKey) async {
     await apiClient.authDelete(
-      '/v1/creator/reel-studio/drafts/$draftId',
+      '/v1/creator/recipes/$draftId',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,

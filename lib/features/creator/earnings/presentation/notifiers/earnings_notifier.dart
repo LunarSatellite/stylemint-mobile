@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -64,6 +65,58 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class AddPayoutMethodNotifier extends StateNotifier<AsyncValue<void>> {
+  AddPayoutMethodNotifier(this._repository) : super(const AsyncValue.data(null));
+  final EarningsRepository _repository;
+
+  Future<void> addBank({
+    required int kind,
+    required String label,
+    String? maskedAccountNumber,
+    String? beneficiaryName,
+    String? processorReference,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _repository.addBankPayoutMethod(
+      kind: kind,
+      label: label,
+      maskedAccountNumber: maskedAccountNumber,
+      beneficiaryName: beneficiaryName,
+      processorReference: processorReference,
+    );
+    state = result.fold(
+      (f) => AsyncValue.error(f, StackTrace.current),
+      (_) => const AsyncValue.data(null),
+    );
+  }
+
+  Future<void> addExternalWallet({
+    required int kind,
+    required String label,
+    String? externalIdentifier,
+  }) async {
+    state = const AsyncValue.loading();
+    final result = await _repository.addExternalWalletPayoutMethod(
+      kind: kind,
+      label: label,
+      externalIdentifier: externalIdentifier,
+    );
+    state = result.fold(
+      (f) => AsyncValue.error(f, StackTrace.current),
+      (_) => const AsyncValue.data(null),
+    );
+  }
+
+  Future<void> remove(String methodId) async {
+    state = const AsyncValue.loading();
+    final result = await _repository.removePayoutMethod(methodId);
+    state = result.fold(
+      (f) => AsyncValue.error(f, StackTrace.current),
+      (_) => const AsyncValue.data(null),
     );
   }
 }

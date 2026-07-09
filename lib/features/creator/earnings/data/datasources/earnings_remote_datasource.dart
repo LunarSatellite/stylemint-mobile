@@ -1,13 +1,25 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/models/earnings_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class EarningsRemoteDataSource {
-  EarningsRemoteDataSource({required this.apiClient});
+  EarningsRemoteDataSource({
+    required this.apiClient,
+    required this.tokenStorage,
+  });
 
   final ApiClient apiClient;
+  final TokenStorage tokenStorage;
+
+  Future<String> _accountId() async {
+    final id = await tokenStorage.accountId;
+    if (id == null || id.isEmpty) throw const NetworkExceptions.auth();
+    return id;
+  }
 
   Future<EarningsSummaryDto> getSummary() async {
     final response = await apiClient.get('/v1/earnings/balance');
@@ -69,12 +81,13 @@ class EarningsRemoteDataSource {
   }
 
   Future<List<PayoutMethodDto>> getPayoutMethods() async {
-    // TODO(swagger): needs accountId path param; Swagger: GET /v1/accounts/{accountId}/payout-methods
-    final response = await apiClient.get('/v1/creator/earnings/payout-methods');
-    final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
+    final accountId = await _accountId();
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/payout-methods',
+    );
+    return (response as List<dynamic>)
         .map((e) => PayoutMethodDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
-    return items;
   }
 
   Future<void> requestPayout({
@@ -97,19 +110,25 @@ class EarningsRemoteDataSource {
     );
   }
 
-  Future<PayoutMethodDto> addPayoutMethod({
-    required String type,
+  Future<PayoutMethodDto> addBankPayoutMethod({
+    required int kind,
     required String label,
-    required Map<String, String> details,
     required String idempotencyKey,
+    String? maskedAccountNumber,
+    String? beneficiaryName,
+    String? processorReference,
   }) async {
-    // TODO(swagger): needs accountId path param; Swagger: POST /v1/accounts/{accountId}/payout-methods/bank
+    final accountId = await _accountId();
     final response = await apiClient.post(
-      '/v1/creator/earnings/payout-methods',
+      '/v1/accounts/$accountId/payout-methods/bank',
       data: {
-        'type': type,
+        'kind': kind,
         'label': label,
-        'details': details,
+        if (maskedAccountNumber != null)
+          'maskedAccountNumber': maskedAccountNumber,
+        if (beneficiaryName != null) 'beneficiaryName': beneficiaryName,
+        if (processorReference != null)
+          'processorReference': processorReference,
       },
       options: Options(headers: {
         'requiresToken': true,
@@ -117,5 +136,52 @@ class EarningsRemoteDataSource {
       }),
     );
     return PayoutMethodDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<PayoutMethodDto> addExternalWalletPayoutMethod({
+    required int kind,
+    required String label,
+    required String idempotencyKey,
+    String? externalIdentifier,
+    String? processorReference,
+  }) async {
+    final accountId = await _accountId();
+    final response = await apiClient.post(
+      '/v1/accounts/$accountId/payout-methods/external-wallet',
+      data: {
+        'kind': kind,
+        'label': label,
+        if (externalIdentifier != null)
+          'externalIdentifier': externalIdentifier,
+        if (processorReference != null)
+          'processorReference': processorReference,
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return PayoutMethodDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> getPayouts({
+    int pageSize = 25,
+    String? cursor,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/payouts',
+      queryParameters: {
+        'pageSize': pageSize,
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  Future<void> removePayoutMethod(String methodId) async {
+    final accountId = await _accountId();
+    await apiClient.authDelete(
+      '/v1/accounts/$accountId/payout-methods/$methodId',
+    );
   }
 }

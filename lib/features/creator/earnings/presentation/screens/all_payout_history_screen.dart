@@ -1,122 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_invoice_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
+// ── PayoutRecord → PayoutHistoryEntry ─────────────────────────────────────────
 
-List<PayoutHistoryEntry> _buildMockEntries() {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-
-  return [
-    // Today — 2 entries
-    PayoutHistoryEntry(
-      id: 'pay-001',
-      title: 'Rs 17,000 Payout to Esewa Wallet',
-      accountMask: '****8522',
-      dateTime: today.add(const Duration(hours: 10, minutes: 15)),
-      status: PayoutStatus.completed,
-      subTotalAmount: 17000,
-      receiptNo: 'RCP-2026-001',
-      txnId: 'TXN-2026-A001',
-      payoutTo: 'eSewa — 9840098522',
-    ),
-    PayoutHistoryEntry(
-      id: 'pay-002',
-      title: 'Rs 12,500 Payout to NIMB Bank',
-      accountMask: '****8909',
-      dateTime: today.add(const Duration(hours: 8, minutes: 45)),
-      status: PayoutStatus.pending,
-      subTotalAmount: 12500,
-      receiptNo: 'RCP-2026-002',
-      txnId: 'TXN-2026-A002',
-      payoutTo: 'NIMB Bank a/c — ****8909',
-    ),
-    // Yesterday — 2 entries
-    PayoutHistoryEntry(
-      id: 'pay-003',
-      title: 'Rs 10,989.99 Payout to PayPal',
-      accountMask: '@shreeteen123',
-      dateTime: today
-          .subtract(const Duration(days: 1))
-          .add(const Duration(hours: 14, minutes: 30)),
-      status: PayoutStatus.completed,
-      subTotalAmount: 10989.99,
-      receiptNo: 'RCP-2026-003',
-      txnId: 'TXN-2026-B001',
-      payoutTo: 'PayPal — @shreeteen123',
-    ),
-    PayoutHistoryEntry(
-      id: 'pay-004',
-      title: 'Rs 8,500 Payout to Laxmi Bank',
-      accountMask: '****7787',
-      dateTime: today
-          .subtract(const Duration(days: 1))
-          .add(const Duration(hours: 9, minutes: 10)),
-      status: PayoutStatus.failed,
-      subTotalAmount: 8500,
-      receiptNo: 'RCP-2026-004',
-      txnId: 'TXN-2026-B002',
-      payoutTo: 'Laxmi Bank a/c — ****7787',
-    ),
-    // 3 days ago — 2 entries
-    PayoutHistoryEntry(
-      id: 'pay-005',
-      title: 'Rs 17,000 Payout to Esewa Wallet',
-      accountMask: '****8522',
-      dateTime: today
-          .subtract(const Duration(days: 3))
-          .add(const Duration(hours: 11, minutes: 0)),
-      status: PayoutStatus.completed,
-      subTotalAmount: 17000,
-      receiptNo: 'RCP-2026-005',
-      txnId: 'TXN-2026-C001',
-      payoutTo: 'eSewa — 9840098522',
-    ),
-    PayoutHistoryEntry(
-      id: 'pay-006',
-      title: 'Rs 5,000 Payout to NIMB Bank',
-      accountMask: '****8909',
-      dateTime: today
-          .subtract(const Duration(days: 3))
-          .add(const Duration(hours: 7, minutes: 50)),
-      status: PayoutStatus.pending,
-      subTotalAmount: 5000,
-      receiptNo: 'RCP-2026-006',
-      txnId: 'TXN-2026-C002',
-      payoutTo: 'NIMB Bank a/c — ****8909',
-    ),
-    // 11 days ago — 2 entries
-    PayoutHistoryEntry(
-      id: 'pay-007',
-      title: 'Rs 12,500 Payout to PayPal',
-      accountMask: '@shreeteen123',
-      dateTime: today
-          .subtract(const Duration(days: 11))
-          .add(const Duration(hours: 16, minutes: 20)),
-      status: PayoutStatus.completed,
-      subTotalAmount: 12500,
-      receiptNo: 'RCP-2026-007',
-      txnId: 'TXN-2026-D001',
-      payoutTo: 'PayPal — @shreeteen123',
-    ),
-    PayoutHistoryEntry(
-      id: 'pay-008',
-      title: 'Rs 9,200 Payout to Laxmi Bank',
-      accountMask: '****7787',
-      dateTime: today
-          .subtract(const Duration(days: 11))
-          .add(const Duration(hours: 10, minutes: 5)),
-      status: PayoutStatus.failed,
-      subTotalAmount: 9200,
-      receiptNo: 'RCP-2026-008',
-      txnId: 'TXN-2026-D002',
-      payoutTo: 'Laxmi Bank a/c — ****7787',
-    ),
-  ];
+PayoutHistoryEntry _toEntry(PayoutRecord r) {
+  final feePercent = r.requestedAmount.amount > 0
+      ? (r.feeAmount.amount / r.requestedAmount.amount * 100)
+      : 0.0;
+  final status = switch (r.state) {
+    PayoutState.paid => PayoutStatus.completed,
+    PayoutState.failed => PayoutStatus.failed,
+    _ => PayoutStatus.pending,
+  };
+  final fmt = NumberFormat('#,##0.##', 'en_US');
+  final amountStr = 'Rs ${fmt.format(r.requestedAmount.amount)}';
+  return PayoutHistoryEntry(
+    id: r.id,
+    title: '$amountStr Payout to ${r.destinationLabel}',
+    accountMask: r.destinationRef ?? '',
+    dateTime: r.paidAt ?? r.requestedAt,
+    status: status,
+    subTotalAmount: r.requestedAmount.amount,
+    processingFeePercent: feePercent,
+    receiptNo: r.id,
+    txnId: r.id,
+    payoutTo: r.destinationRef != null
+        ? '${r.destinationLabel} — ${r.destinationRef}'
+        : r.destinationLabel,
+  );
 }
 
 // ── Grouping helpers ──────────────────────────────────────────────────────────
@@ -131,44 +50,39 @@ String _groupLabel(DateTime dt) {
   return DateFormat('EEE d MMM yyyy').format(dt);
 }
 
-String _groupKey(DateTime dt) {
-  return DateFormat('yyyy-MM-dd').format(dt);
-}
+String _groupKey(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
 
 // ── AllPayoutHistoryScreen ────────────────────────────────────────────────────
 
-class AllPayoutHistoryScreen extends StatefulWidget {
+class AllPayoutHistoryScreen extends ConsumerStatefulWidget {
   const AllPayoutHistoryScreen({super.key});
 
   @override
-  State<AllPayoutHistoryScreen> createState() => _AllPayoutHistoryScreenState();
+  ConsumerState<AllPayoutHistoryScreen> createState() =>
+      _AllPayoutHistoryScreenState();
 }
 
-class _AllPayoutHistoryScreenState extends State<AllPayoutHistoryScreen> {
-  final List<PayoutHistoryEntry> _allEntries = _buildMockEntries();
+class _AllPayoutHistoryScreenState
+    extends ConsumerState<AllPayoutHistoryScreen> {
   PayoutStatus? _activeStatusFilter;
 
-  List<PayoutHistoryEntry> get _filtered {
-    if (_activeStatusFilter == null) return _allEntries;
-    return _allEntries
-        .where((e) => e.status == _activeStatusFilter)
-        .toList();
+  List<PayoutHistoryEntry> _filter(List<PayoutHistoryEntry> all) {
+    if (_activeStatusFilter == null) return all;
+    return all.where((e) => e.status == _activeStatusFilter).toList();
   }
 
-  Map<String, List<PayoutHistoryEntry>> get _grouped {
+  Map<String, List<PayoutHistoryEntry>> _group(
+      List<PayoutHistoryEntry> entries) {
     final map = <String, List<PayoutHistoryEntry>>{};
-    for (final entry in _filtered) {
-      final key = _groupKey(entry.dateTime);
-      map.putIfAbsent(key, () => []).add(entry);
+    for (final entry in entries) {
+      map.putIfAbsent(_groupKey(entry.dateTime), () => []).add(entry);
     }
-    // Sort keys descending (most recent first)
-    final sortedKeys = map.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
+    final sortedKeys = map.keys.toList()..sort((a, b) => b.compareTo(a));
     return {for (final k in sortedKeys) k: map[k]!};
   }
 
   void _openFilterSheet() {
-    showModalBottomSheet<PayoutStatus?>(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
@@ -193,7 +107,7 @@ class _AllPayoutHistoryScreenState extends State<AllPayoutHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final grouped = _grouped;
+    final historyAsync = ref.watch(payoutHistoryProvider);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -214,77 +128,133 @@ class _AllPayoutHistoryScreenState extends State<AllPayoutHistoryScreen> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s8,
-            ),
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: 'Filter',
-                  leadingIcon: Icons.filter_list_rounded,
-                  isActive: _activeStatusFilter != null,
-                  onTap: _openFilterSheet,
+      body: historyAsync.when(
+        loading: () => const Center(
+          child:
+              CircularProgressIndicator(color: DesignTokens.primaryGreen),
+        ),
+        error: (e, _) => _ErrorView(
+          message: e is NetworkExceptions
+              ? NetworkExceptions.getMessage(e)
+              : 'Failed to load payout history.',
+          onRetry: () => ref.invalidate(payoutHistoryProvider),
+        ),
+        data: (records) {
+          final entries = records.map(_toEntry).toList();
+          final filtered = _filter(entries);
+          final grouped = _group(filtered);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s12,
+                  DesignTokens.s16,
+                  DesignTokens.s8,
                 ),
-                const SizedBox(width: DesignTokens.s8),
-                _FilterChip(
-                  label: 'Status',
-                  trailingIcon: Icons.keyboard_arrow_down_rounded,
-                  isActive: _activeStatusFilter != null,
-                  onTap: _openFilterSheet,
+                child: Row(
+                  children: [
+                    _FilterChip(
+                      label: 'Filter',
+                      leadingIcon: Icons.filter_list_rounded,
+                      isActive: _activeStatusFilter != null,
+                      onTap: _openFilterSheet,
+                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    _FilterChip(
+                      label: 'Status',
+                      trailingIcon: Icons.keyboard_arrow_down_rounded,
+                      isActive: _activeStatusFilter != null,
+                      onTap: _openFilterSheet,
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              Expanded(
+                child: grouped.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No payouts found.',
+                          style: DesignTokens.mediumRegular
+                              .copyWith(color: DesignTokens.textMuted),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: DesignTokens.primaryGreen,
+                        onRefresh: () async =>
+                            ref.invalidate(payoutHistoryProvider),
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                            DesignTokens.s16,
+                            DesignTokens.s8,
+                            DesignTokens.s16,
+                            DesignTokens.s24,
+                          ),
+                          children: [
+                            for (final key in grouped.keys) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: DesignTokens.s16,
+                                  bottom: DesignTokens.s8,
+                                ),
+                                child: Text(
+                                  _groupLabel(grouped[key]!.first.dateTime),
+                                  style: DesignTokens.smallRegular
+                                      .copyWith(color: DesignTokens.textMuted),
+                                ),
+                              ),
+                              _DateGroupCard(
+                                entries: grouped[key]!,
+                                onTap: (entry) => context.push(
+                                  RouteNames.creatorPayoutInvoice,
+                                  extra: PayoutInvoiceArgs(entry: entry),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Error view ────────────────────────────────────────────────────────────────
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style:
+                  DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
             ),
-          ),
-          // List
-          Expanded(
-            child: grouped.isEmpty
-                ? Center(
-                    child: Text(
-                      'No payouts found.',
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textMuted),
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(
-                      DesignTokens.s16,
-                      DesignTokens.s8,
-                      DesignTokens.s16,
-                      DesignTokens.s24,
-                    ),
-                    children: [
-                      for (final key in grouped.keys) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: DesignTokens.s16,
-                            bottom: DesignTokens.s8,
-                          ),
-                          child: Text(
-                            _groupLabel(grouped[key]!.first.dateTime),
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textMuted),
-                          ),
-                        ),
-                        _DateGroupCard(
-                          entries: grouped[key]!,
-                          onTap: (entry) => context.push(
-                            RouteNames.creatorPayoutInvoice,
-                            extra: PayoutInvoiceArgs(entry: entry),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-          ),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: DesignTokens.primaryButtonStyle(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -363,10 +333,7 @@ class _FilterChip extends StatelessWidget {
 // ── Date group card ───────────────────────────────────────────────────────────
 
 class _DateGroupCard extends StatelessWidget {
-  const _DateGroupCard({
-    required this.entries,
-    required this.onTap,
-  });
+  const _DateGroupCard({required this.entries, required this.onTap});
 
   final List<PayoutHistoryEntry> entries;
   final void Function(PayoutHistoryEntry) onTap;
@@ -533,7 +500,6 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -547,7 +513,6 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               ],
             ),
             const SizedBox(height: DesignTokens.s20),
-            // Date range
             Text(
               'Date Range',
               style: DesignTokens.mediumSemibold
@@ -574,7 +539,6 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               ],
             ),
             const SizedBox(height: DesignTokens.s20),
-            // Status
             Text(
               'Status',
               style: DesignTokens.mediumSemibold
@@ -588,7 +552,6 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 onChanged: (v) => setState(() => _selectedStatus = v),
               ),
             const SizedBox(height: DesignTokens.s20),
-            // Buttons
             Row(
               children: [
                 Expanded(
@@ -596,10 +559,11 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                     onPressed: widget.onClear,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: DesignTokens.textWhite,
-                      side: const BorderSide(color: DesignTokens.borderDefault),
+                      side:
+                          const BorderSide(color: DesignTokens.borderDefault),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            DesignTokens.buttonRadius),
+                        borderRadius:
+                            BorderRadius.circular(DesignTokens.buttonRadius),
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: DesignTokens.s12),
@@ -625,11 +589,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 }
 
 class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.label,
-    required this.date,
-    required this.onTap,
-  });
+  const _DateField({required this.label, required this.date, required this.onTap});
 
   final String label;
   final DateTime? date;
@@ -651,13 +611,10 @@ class _DateField extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                date != null
-                    ? DateFormat('MMM d, yyyy').format(date!)
-                    : label,
+                date != null ? DateFormat('MMM d, yyyy').format(date!) : label,
                 style: DesignTokens.smallRegular.copyWith(
-                  color: date != null
-                      ? DesignTokens.textWhite
-                      : DesignTokens.textMuted,
+                  color:
+                      date != null ? DesignTokens.textWhite : DesignTokens.textMuted,
                 ),
               ),
             ),
@@ -696,9 +653,7 @@ class _StatusRadioTile extends StatelessWidget {
       activeColor: DesignTokens.primaryGreen,
       title: Text(
         _label,
-        style: DesignTokens.mediumRegular.copyWith(
-          color: DesignTokens.textWhite,
-        ),
+        style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
       ),
       contentPadding: EdgeInsets.zero,
       dense: true,
@@ -706,7 +661,7 @@ class _StatusRadioTile extends StatelessWidget {
   }
 }
 
-// ── Re-export status badge for reuse in this file ─────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});

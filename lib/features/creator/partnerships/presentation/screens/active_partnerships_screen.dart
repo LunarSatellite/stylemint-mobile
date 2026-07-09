@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class ActivePartnershipsScreen extends StatefulWidget {
+class ActivePartnershipsScreen extends ConsumerStatefulWidget {
   const ActivePartnershipsScreen({super.key});
 
   @override
-  State<ActivePartnershipsScreen> createState() =>
+  ConsumerState<ActivePartnershipsScreen> createState() =>
       _ActivePartnershipsScreenState();
 }
 
-class _ActivePartnershipsScreenState extends State<ActivePartnershipsScreen>
+class _ActivePartnershipsScreenState
+    extends ConsumerState<ActivePartnershipsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
@@ -43,7 +51,7 @@ class _ActivePartnershipsScreenState extends State<ActivePartnershipsScreen>
           onPressed: () => context.pop(),
         ),
         title: const Text(
-          'Active Partnerhips',
+          'Active Partnerships',
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 18,
@@ -73,8 +81,8 @@ class _ActivePartnershipsScreenState extends State<ActivePartnershipsScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _ActiveTab(),
-          _EndedTab(),
+          _ActiveTab(state: ref.watch(partnershipsNotifierProvider)),
+          _EndedTab(state: ref.watch(partnershipsNotifierProvider)),
         ],
       ),
     );
@@ -84,6 +92,10 @@ class _ActivePartnershipsScreenState extends State<ActivePartnershipsScreen>
 // ── Active tab ────────────────────────────────────────────────────────────────
 
 class _ActiveTab extends StatelessWidget {
+  const _ActiveTab({required this.state});
+
+  final PartnershipsState state;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -92,38 +104,148 @@ class _ActiveTab extends StatelessWidget {
           onFilter: () => _showFilterSheet(context),
           onSort: () => _showSortSheet(context),
         ),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s32,
+        Expanded(child: _body()),
+      ],
+    );
+  }
+
+  Widget _body() {
+    return state.when(
+      initial: _loader,
+      loadInProgress: _loader,
+      loadSuccess: (_, active, _) => active.isEmpty
+          ? const _EmptyPartnerships()
+          : RefreshIndicator(
+              color: DesignTokens.primaryGreen,
+              onRefresh: () async {},
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s12,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
+                ),
+                itemCount: active.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: DesignTokens.s12),
+                itemBuilder: (_, i) => _PartnershipCard(
+                  logo: _VendorAvatar(
+                    url: active[i].vendorLogoUrl,
+                    name: active[i].vendorName,
+                  ),
+                  name: active[i].vendorName.isNotEmpty
+                      ? active[i].vendorName
+                      : 'Partnership ${active[i].id.substring(0, 8)}',
+                  productsTagged: active[i].productsCount,
+                  commissionPct: active[i].commissionRate.round(),
+                  startDate: DateFormat('d MMM, yyyy').format(
+                    active[i].startedAt,
+                  ),
+                  totalEarnings: formatMoney(active[i].totalEarned),
+                  activeCampaigns: 0,
+                ),
+              ),
             ),
-            children: const [
-              _PartnershipCard(
-                logo: _NikeLogo(),
-                name: 'Nike Official Store',
-                productsTagged: 46,
-                commissionPct: 18,
-                startDate: '7 Aug, 2025',
-                totalEarnings: 'Rs 64,909.23',
-                activeCampaigns: 4,
-              ),
-              SizedBox(height: DesignTokens.s12),
-              _PartnershipCard(
-                logo: _UltimaLogo(),
-                name: 'Ultima Lifestyle',
-                productsTagged: 27,
-                commissionPct: 20,
-                startDate: '22 Nov, 2025',
-                totalEarnings: 'Rs 1,23,342.98',
-                activeCampaigns: 4,
-              ),
-            ],
+      loadFailure: (f) => _ErrorBody(
+        message: NetworkExceptions.getMessage(f),
+      ),
+    );
+  }
+
+  Widget _loader() => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      );
+}
+
+class _EmptyPartnerships extends StatelessWidget {
+  const _EmptyPartnerships();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.handshake_outlined,
+              size: 48, color: DesignTokens.textMuted),
+          SizedBox(height: DesignTokens.s12),
+          Text(
+            'No active partnerships.',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBody extends StatelessWidget {
+  const _ErrorBody({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: DesignTokens.textMuted,
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+// ── Vendor avatar ─────────────────────────────────────────────────────────────
+
+class _VendorAvatar extends StatelessWidget {
+  const _VendorAvatar({required this.url, required this.name});
+
+  final String url;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    if (url.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() {
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Container(
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        shape: BoxShape.circle,
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: DesignTokens.textWhite,
+        ),
+      ),
     );
   }
 }
@@ -131,22 +253,173 @@ class _ActiveTab extends StatelessWidget {
 // ── Ended tab ─────────────────────────────────────────────────────────────────
 
 class _EndedTab extends StatelessWidget {
+  const _EndedTab({required this.state});
+
+  final PartnershipsState state;
+
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return _body();
+  }
+
+  Widget _body() {
+    return state.when(
+      initial: _loader,
+      loadInProgress: _loader,
+      loadSuccess: (_, _, ended) => ended.isEmpty
+          ? _empty()
+          : RefreshIndicator(
+              color: DesignTokens.primaryGreen,
+              onRefresh: () async {},
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s12,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
+                ),
+                itemCount: ended.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: DesignTokens.s12),
+                itemBuilder: (_, i) => _EndedPartnershipCard(ended[i]),
+              ),
+            ),
+      loadFailure: (f) => _ErrorBody(
+        message: NetworkExceptions.getMessage(f),
+      ),
+    );
+  }
+
+  Widget _loader() => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      );
+
+  Widget _empty() => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.handshake_outlined,
+                size: 48, color: DesignTokens.textMuted),
+            SizedBox(height: DesignTokens.s12),
+            Text(
+              'No ended partnerships.',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _EndedPartnershipCard extends StatelessWidget {
+  const _EndedPartnershipCard(this.partnership);
+
+  final EndedPartnership partnership;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.handshake_outlined, size: 48, color: DesignTokens.textMuted),
-          SizedBox(height: DesignTokens.s12),
-          Text(
-            'No ended partnerships.',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
+          Row(
+            children: [
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: _VendorAvatar(
+                  url: partnership.vendorLogoUrl,
+                  name: partnership.vendorName,
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      partnership.vendorName.isNotEmpty
+                          ? partnership.vendorName
+                          : 'Partnership ${partnership.id.substring(0, 8)}',
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${partnership.commissionRate.round()}% commission',
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DesignTokens.bgAppBodyLight,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Ended',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          const _DashedDivider(),
+          const SizedBox(height: DesignTokens.s12),
+          _InfoRow(
+            icon: Icons.calendar_today_outlined,
+            label: 'Start Date',
+            trailingText: DateFormat('d MMM, yyyy').format(partnership.startedAt),
+          ),
+          const SizedBox(height: 10),
+          _InfoRow(
+            icon: Icons.calendar_today_outlined,
+            label: 'Ended On',
+            trailingText: DateFormat('d MMM, yyyy').format(partnership.endedAt),
+          ),
+          const SizedBox(height: 10),
+          _InfoRow(
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+              width: 15,
+              height: 15,
               color: DesignTokens.textMuted,
             ),
+            label: 'Total Earnings',
+            trailing: _EarningsChip(formatMoney(partnership.totalEarned)),
           ),
+          if (partnership.endReason != null) ...[
+            const SizedBox(height: 10),
+            _InfoRow(
+              icon: Icons.info_outline_rounded,
+              label: 'Reason',
+              trailingText: partnership.endReason!,
+            ),
+          ],
         ],
       ),
     );
@@ -189,8 +462,8 @@ class _FilterSortRow extends StatelessWidget {
   }
 }
 
-void _showFilterSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+Future<void> _showFilterSheet(BuildContext context) async {
+  await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
@@ -198,8 +471,8 @@ void _showFilterSheet(BuildContext context) {
   );
 }
 
-void _showSortSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+Future<void> _showSortSheet(BuildContext context) async {
+  await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
@@ -606,16 +879,16 @@ class _PartnershipCard extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
+    required this.label,
     this.icon,
     this.iconWidget,
-    required this.label,
     this.trailingText,
     this.trailing,
   });
 
+  final String label;
   final IconData? icon;
   final Widget? iconWidget;
-  final String label;
   final String? trailingText;
   final Widget? trailing;
 
@@ -623,7 +896,8 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        iconWidget ?? Icon(icon!, size: 15, color: DesignTokens.textMuted),
+        iconWidget ??
+            Icon(icon ?? Icons.circle, size: 15, color: DesignTokens.textMuted),
         const SizedBox(width: 6),
         Text(
           label,
@@ -644,7 +918,7 @@ class _InfoRow extends StatelessWidget {
               color: DesignTokens.textWhite,
             ),
           ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }
@@ -1048,58 +1322,6 @@ class _RangeField extends StatelessWidget {
           borderSide: const BorderSide(
             color: DesignTokens.primaryGreen,
             width: 1.5,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Logo widgets ──────────────────────────────────────────────────────────────
-
-class _NikeLogo extends StatelessWidget {
-  const _NikeLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Text(
-          '✓',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UltimaLogo extends StatelessWidget {
-  const _UltimaLogo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C2E),
-        shape: BoxShape.circle,
-        border: Border.all(color: DesignTokens.borderDefault),
-      ),
-      child: const Center(
-        child: Text(
-          'ULTIM',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 7,
-            letterSpacing: 0.3,
           ),
         ),
       ),

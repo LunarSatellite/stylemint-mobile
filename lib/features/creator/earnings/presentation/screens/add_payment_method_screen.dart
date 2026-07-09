@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+// TODO(backend-confirm): verify _kindBank and _kindVenmo with backend
+const int _kindBank = 1;
+const int _kindVenmo = 2;
+const int _kindPayPal = 3;
+const int _kindEsewa = 4;
+
 enum _Platform { bank, paypal, venmo, esewa }
 
-class AddPaymentMethodScreen extends StatefulWidget {
+class AddPaymentMethodScreen extends ConsumerStatefulWidget {
   const AddPaymentMethodScreen({super.key});
 
   @override
-  State<AddPaymentMethodScreen> createState() => _AddPaymentMethodScreenState();
+  ConsumerState<AddPaymentMethodScreen> createState() =>
+      _AddPaymentMethodScreenState();
 }
 
-class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
+class _AddPaymentMethodScreenState
+    extends ConsumerState<AddPaymentMethodScreen> {
   _Platform _selected = _Platform.bank;
 
   // Bank A/C
@@ -84,8 +95,81 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
     }
   }
 
+  String _buildLabel() {
+    switch (_selected) {
+      case _Platform.bank:
+        final acct = _accountCtrl.text.trim();
+        final last4 = acct.length >= 4 ? acct.substring(acct.length - 4) : acct;
+        return '${_bankName!} — ****$last4';
+      case _Platform.paypal:
+        return 'PayPal — ${_paypalCtrl.text.trim()}';
+      case _Platform.venmo:
+        return 'Venmo — ${_venmoCtrl.text.trim()}';
+      case _Platform.esewa:
+        return 'eSewa — ${_esewaCtrl.text.trim()}';
+    }
+  }
+
+  Future<void> _onProceed() async {
+    final notifier = ref.read(addPayoutMethodNotifierProvider.notifier);
+    switch (_selected) {
+      case _Platform.bank:
+        final acct = _accountCtrl.text.trim();
+        final last4 =
+            acct.length >= 4 ? acct.substring(acct.length - 4) : acct;
+        await notifier.addBank(
+          kind: _kindBank,
+          label: _buildLabel(),
+          maskedAccountNumber: '****$last4',
+          beneficiaryName: _holderCtrl.text.trim(),
+          processorReference: _routingCtrl.text.trim(),
+        );
+      case _Platform.paypal:
+        await notifier.addExternalWallet(
+          kind: _kindPayPal,
+          label: _buildLabel(),
+          externalIdentifier: _paypalCtrl.text.trim(),
+        );
+      case _Platform.venmo:
+        await notifier.addExternalWallet(
+          kind: _kindVenmo,
+          label: _buildLabel(),
+          externalIdentifier: _venmoCtrl.text.trim(),
+        );
+      case _Platform.esewa:
+        await notifier.addExternalWallet(
+          kind: _kindEsewa,
+          label: _buildLabel(),
+          externalIdentifier: _esewaCtrl.text.trim(),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<void>>(addPayoutMethodNotifierProvider, (_, next) {
+      next.whenOrNull(
+        data: (_) {
+          ref.read(earningsNotifierProvider.notifier).load();
+          if (_selected == _Platform.bank) {
+            context.push(RouteNames.creatorBankVerification);
+          } else {
+            context.pop();
+          }
+        },
+        error: (error, _) {
+          final msg = error is NetworkExceptions
+              ? NetworkExceptions.getMessage(error)
+              : 'Failed to add payment method.';
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(msg)));
+        },
+      );
+    });
+
+    final addState = ref.watch(addPayoutMethodNotifierProvider);
+    final isLoading = addState.isLoading;
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -144,11 +228,7 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
             height: DesignTokens.buttonHeight,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _canProceed
-                  ? () => _selected == _Platform.bank
-                      ? context.push(RouteNames.creatorBankVerification)
-                      : context.pop()
-                  : null,
+              onPressed: (_canProceed && !isLoading) ? _onProceed : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
                 disabledBackgroundColor:
@@ -159,17 +239,26 @@ class _AddPaymentMethodScreenState extends State<AddPaymentMethodScreen> {
                       BorderRadius.circular(DesignTokens.buttonRadius),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Proceed',
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.buttonPrimaryText)),
-                  const SizedBox(width: DesignTokens.s8),
-                  Icon(Icons.arrow_forward_rounded,
-                      color: DesignTokens.buttonPrimaryText, size: 18),
-                ],
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Proceed',
+                            style: DesignTokens.mediumSemibold
+                                .copyWith(color: DesignTokens.buttonPrimaryText)),
+                        const SizedBox(width: DesignTokens.s8),
+                        Icon(Icons.arrow_forward_rounded,
+                            color: DesignTokens.buttonPrimaryText, size: 18),
+                      ],
+                    ),
             ),
           ),
         ),

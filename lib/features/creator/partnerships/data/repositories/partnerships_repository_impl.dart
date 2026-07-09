@@ -17,11 +17,14 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<PartnershipInvite>>> getInvites() async {
+  Future<Either<NetworkExceptions, List<PartnershipInvite>>>
+      getInvites() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getInvites();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+        return right(
+          dtos.map((d) => d.toInviteDomain()).toList(growable: false),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -46,7 +49,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
           inviteId,
           const Uuid().v4(),
         );
-        return right(dto.toDomain());
+        return right(dto.toInviteDomain());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -62,7 +65,9 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> declineInvite(String inviteId) async {
+  Future<Either<NetworkExceptions, Unit>> declineInvite(
+    String inviteId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.declineInvite(inviteId, const Uuid().v4());
@@ -82,11 +87,37 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<ActivePartnership>>> getActivePartnerships() async {
+  Future<Either<NetworkExceptions, List<ActivePartnership>>>
+      getActivePartnerships() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getActivePartnerships();
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+        return right(
+          dtos.map((d) => d.toActiveDomain()).toList(growable: false),
+        );
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<EndedPartnership>>>
+      getEndedPartnerships() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dtos = await remoteDataSource.getEndedPartnerships();
+        return right(
+          dtos.map((d) => d.toEndedDomain()).toList(growable: false),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

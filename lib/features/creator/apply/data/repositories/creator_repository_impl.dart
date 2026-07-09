@@ -155,23 +155,4 @@ class CreatorRepositoryImpl implements CreatorRepository {
     }
   }
 
-  @override
-  Future<Either<NetworkExceptions, String>> uploadIdentityDoc(String filePath) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final url = await remoteDataSource.uploadIdentityDoc(filePath, _uuid.v4());
-        return right(url);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(const NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(const NetworkExceptions.noInternetConnection());
-    }
-  }
 }

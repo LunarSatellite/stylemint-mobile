@@ -20,5 +20,4 @@ abstract class CreatorRepository {
   Future<Either<NetworkExceptions, CreatorApplication>> submitApplication(
     CreatorApplicationForm form,
   );
-  Future<Either<NetworkExceptions, String>> uploadIdentityDoc(String filePath);
 }
