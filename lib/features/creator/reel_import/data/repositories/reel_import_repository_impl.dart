@@ -28,6 +28,9 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       final dtos = await remoteDataSource.getImportableReels(platform);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return left(const NetworkExceptions.notFound());
+      }
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {
       return left(e);

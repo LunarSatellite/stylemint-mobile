@@ -49,8 +49,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
   }
 
   void _showUrlPasteSheet() {
-    final controller = TextEditingController();
-    showModalBottomSheet<void>(
+    showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
@@ -59,78 +58,14 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           top: Radius.circular(DesignTokens.s16),
         ),
       ),
-      builder: (sheetCtx) => Padding(
-        padding: EdgeInsets.only(
-          left: DesignTokens.s16,
-          right: DesignTokens.s16,
-          top: DesignTokens.s24,
-          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom +
-              DesignTokens.s24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Paste a Reel URL',
-              style: DesignTokens.titleMedium,
-            ),
-            const SizedBox(height: DesignTokens.s4),
-            Text(
-              'Paste the link to your ${_selectedPlatform.displayName} reel.',
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textWhite,
-              ),
-              decoration: InputDecoration(
-                hintText: 'https://',
-                hintStyle: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
-                filled: true,
-                fillColor: DesignTokens.bgAppFoundation,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.s8),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s12,
-                  vertical: DesignTokens.s12,
-                ),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                style: DesignTokens.primaryButtonStyle(),
-                onPressed: () {
-                  final url = controller.text.trim();
-                  if (url.isEmpty) return;
-                  Navigator.of(sheetCtx).pop();
-                  unawaited(context.push(
-                    RouteNames.reelImportPreview,
-                    extra: {
-                      'url': url,
-                      'platform': _selectedPlatform,
-                    },
-                  ));
-                },
-                child: const Text('Continue'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).whenComplete(controller.dispose).ignore();
+      builder: (_) => _UrlPasteSheet(platform: _selectedPlatform),
+    ).then((url) {
+      if (url == null || url.isEmpty || !mounted) return;
+      unawaited(context.push(
+        RouteNames.reelImportPreview,
+        extra: {'url': url, 'platform': _selectedPlatform},
+      ));
+    }).ignore();
   }
 
   @override
@@ -212,13 +147,19 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                   ),
                 );
               },
-              loadFailure: (_) => _ErrorState(
-                onRetry: () => unawaited(
-                  ref
-                      .read(reelImportNotifierProvider.notifier)
-                      .load(_selectedPlatform),
-                ),
-              ),
+              loadFailure: (failure) => failure.isNotFound
+                  ? _NotConnectedState(
+                      platform: _selectedPlatform,
+                      onConnect: () =>
+                          context.push(RouteNames.socialConnect),
+                    )
+                  : _ErrorState(
+                      onRetry: () => unawaited(
+                        ref
+                            .read(reelImportNotifierProvider.notifier)
+                            .load(_selectedPlatform),
+                      ),
+                    ),
             ),
           ),
 
@@ -346,50 +287,58 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.video_library_outlined,
-              size: 56,
-              color: DesignTokens.textMuted,
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            Text(
-              'No posts found on ${platform.displayName}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: DesignTokens.textWhite,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(DesignTokens.s32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.video_library_outlined,
+                    size: 56,
+                    color: DesignTokens.textMuted,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  Text(
+                    'No posts found on ${platform.displayName}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  Text(
+                    'Make sure your account is connected '
+                    'and has published posts.',
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  TextButton(
+                    onPressed: onPasteUrl,
+                    child: Text(
+                      'Paste a URL instead',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.primaryGreen,
+                        decoration: TextDecoration.underline,
+                        decorationColor: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              'Make sure your account is connected and has published posts.',
-              textAlign: TextAlign.center,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s24),
-            TextButton(
-              onPressed: onPasteUrl,
-              child: Text(
-                'Paste a URL instead',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.primaryGreen,
-                  decoration: TextDecoration.underline,
-                  decorationColor: DesignTokens.primaryGreen,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -405,45 +354,197 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.cloud_off_rounded,
-              size: 56,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(DesignTokens.s32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    size: 56,
+                    color: DesignTokens.textMuted,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  const Text(
+                    'Could not load your posts',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  Text(
+                    'Check your connection and make sure your '
+                    'social account is connected.',
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  ElevatedButton(
+                    onPressed: onRetry,
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Not connected state ──────────────────────────────────────────────────────
+
+class _NotConnectedState extends StatelessWidget {
+  const _NotConnectedState({required this.platform, required this.onConnect});
+
+  final SocialPlatform platform;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(DesignTokens.s32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.link_off_rounded,
+                    size: 56,
+                    color: DesignTokens.textMuted,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
+                  Text(
+                    '${platform.displayName} not connected',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  Text(
+                    'Connect your ${platform.displayName} account '
+                    'to import your reels.',
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  ElevatedButton(
+                    onPressed: onConnect,
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: const Text('Connect Account'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── URL paste sheet ──────────────────────────────────────────────────────────
+
+class _UrlPasteSheet extends StatefulWidget {
+  const _UrlPasteSheet({required this.platform});
+
+  final SocialPlatform platform;
+
+  @override
+  State<_UrlPasteSheet> createState() => _UrlPasteSheetState();
+}
+
+class _UrlPasteSheetState extends State<_UrlPasteSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: DesignTokens.s16,
+        right: DesignTokens.s16,
+        top: DesignTokens.s24,
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Paste a Reel URL', style: DesignTokens.titleMedium),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Paste the link to your ${widget.platform.displayName} reel.',
+            style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textMuted,
             ),
-            const SizedBox(height: DesignTokens.s16),
-            const Text(
-              'Could not load your posts',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: DesignTokens.textWhite,
-              ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
             ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              'Check your connection and make sure your '
-              'social account is connected.',
-              textAlign: TextAlign.center,
-              style: DesignTokens.smallRegular.copyWith(
+            decoration: InputDecoration(
+              hintText: 'https://',
+              hintStyle: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.textMuted,
-                height: 1.5,
+              ),
+              filled: true,
+              fillColor: DesignTokens.bgAppFoundation,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s12,
               ),
             ),
-            const SizedBox(height: DesignTokens.s24),
-            ElevatedButton(
-              onPressed: onRetry,
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          SizedBox(
+            width: double.infinity,
+            height: DesignTokens.buttonHeight,
+            child: ElevatedButton(
               style: DesignTokens.primaryButtonStyle(),
-              child: const Text('Try Again'),
+              onPressed: () =>
+                  Navigator.of(context).pop(_controller.text.trim()),
+              child: const Text('Continue'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
