@@ -166,6 +166,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
@@ -950,6 +952,16 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorBrandStudio,
         builder: (ctx, state) => const BrandStudioScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCampaignBriefs,
+        builder: (ctx, state) => const CampaignBriefsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCampaignBriefDetail,
+        builder: (ctx, state) => CampaignBriefDetailScreen(
+          briefId: state.pathParameters['briefId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorMatchmaking,

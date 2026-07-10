@@ -105,6 +105,69 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, CampaignBrief>> getCampaign(
+    String id,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.getCampaign(id);
+        return right(dto.toDomain());
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, CampaignBrief>> lockCampaign(
+    String id,
+  ) => _briefAction(() => remoteDataSource.lockCampaign(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, CampaignBrief>> forkCampaign(
+    String id,
+  ) => _briefAction(() => remoteDataSource.forkCampaign(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, CampaignBrief>> retireCampaign(
+    String id,
+  ) =>
+      _briefAction(() => remoteDataSource.retireCampaign(id, const Uuid().v4()));
+
+  @override
+  Future<Either<NetworkExceptions, RoiProjectionSummary>> recomputeRoi(
+    String id,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.recomputeRoi(id, const Uuid().v4());
+        return right(dto.toDomain());
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  Future<Either<NetworkExceptions, CampaignBrief>> _briefAction(
+    Future<CampaignBriefDto> Function() action,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await action();
+        return right(dto.toDomain());
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, List<CreatorInvite>>> searchCreators({
     String? query,
     String? niche,
@@ -191,6 +254,21 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
             hasMore: data['hasMore'] as bool? ?? false,
           ),
         );
+      } catch (e) {
+        return left(_mapError(e));
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, int>>
+  getPendingCreatorRequestCount() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final count = await remoteDataSource.getPendingCreatorRequestCount();
+        return right(count);
       } catch (e) {
         return left(_mapError(e));
       }

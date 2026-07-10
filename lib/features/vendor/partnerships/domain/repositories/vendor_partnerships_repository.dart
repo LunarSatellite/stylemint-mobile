@@ -7,6 +7,10 @@ abstract interface class VendorPartnershipsRepository {
   Future<Either<NetworkExceptions, PagedResult<VendorPartnership>>>
   getPartnerships({List<PartnershipState>? states, String? cursor});
 
+  /// `totalCount` of pending creator-initiated partnership requests —
+  /// dashboard tile count.
+  Future<Either<NetworkExceptions, int>> getPendingCreatorRequestCount();
+
   Future<Either<NetworkExceptions, Unit>> acceptRequest(String id);
 
   Future<Either<NetworkExceptions, Unit>> declineRequest(String id);
@@ -33,6 +37,18 @@ abstract interface class VendorPartnershipsRepository {
   Future<Either<NetworkExceptions, CampaignBrief>> updateCampaign(
     String id,
     CampaignBrief brief,
+  );
+
+  Future<Either<NetworkExceptions, CampaignBrief>> getCampaign(String id);
+
+  Future<Either<NetworkExceptions, CampaignBrief>> lockCampaign(String id);
+
+  Future<Either<NetworkExceptions, CampaignBrief>> forkCampaign(String id);
+
+  Future<Either<NetworkExceptions, CampaignBrief>> retireCampaign(String id);
+
+  Future<Either<NetworkExceptions, RoiProjectionSummary>> recomputeRoi(
+    String id,
   );
 
   Future<Either<NetworkExceptions, List<CreatorInvite>>> searchCreators({

@@ -5,7 +5,49 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'vendor_partnership_dto.freezed.dart';
 part 'vendor_partnership_dto.g.dart';
 
-/// Matches `BrandBriefDto` from `GET/POST/PATCH /v1/vendor/briefs*`.
+/// Matches `RoiProjectionSummary` (Vendor §5.4) — inline on `BrandBriefDto`
+/// and standalone from `POST /v1/vendor/briefs/{id}/recompute-roi`.
+@freezed
+abstract class RoiProjectionSummaryDto with _$RoiProjectionSummaryDto {
+  const factory RoiProjectionSummaryDto({
+    @Default(0) double estimatedReachCostAmount,
+    @Default('NPR') String estimatedReachCostCurrency,
+    @Default(0) int estimatedReachLow,
+    @Default(0) int estimatedReachHigh,
+    @Default(0) int estimatedSalesLow,
+    @Default(0) int estimatedSalesHigh,
+    @Default(0) double estimatedRevenueLowAmount,
+    @Default(0) double estimatedRevenueHighAmount,
+    @Default('NPR') String estimatedRevenueCurrency,
+  }) = _RoiProjectionSummaryDto;
+
+  const RoiProjectionSummaryDto._();
+
+  factory RoiProjectionSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$RoiProjectionSummaryDtoFromJson(json);
+
+  RoiProjectionSummary toDomain() => RoiProjectionSummary(
+    estimatedReachCost: Money(
+      amount: estimatedReachCostAmount,
+      currency: estimatedReachCostCurrency,
+    ),
+    estimatedReachLow: estimatedReachLow,
+    estimatedReachHigh: estimatedReachHigh,
+    estimatedSalesLow: estimatedSalesLow,
+    estimatedSalesHigh: estimatedSalesHigh,
+    estimatedRevenueLow: Money(
+      amount: estimatedRevenueLowAmount,
+      currency: estimatedRevenueCurrency,
+    ),
+    estimatedRevenueHigh: Money(
+      amount: estimatedRevenueHighAmount,
+      currency: estimatedRevenueCurrency,
+    ),
+  );
+}
+
+/// Matches `BrandBriefDto` from `GET/POST/PATCH /v1/vendor/briefs*` and the
+/// lifecycle actions (`lock`/`fork`/`retire`/`recompute-roi`).
 @freezed
 abstract class CampaignBriefDto with _$CampaignBriefDto {
   const factory CampaignBriefDto({
@@ -14,9 +56,13 @@ abstract class CampaignBriefDto with _$CampaignBriefDto {
     String? title,
     @Default(0) int primaryGoal,
     @Default(1) int state,
+    @Default(1) int version,
+    String? rootBriefId,
+    String? parentBriefId,
     CommissionRangeDto? commissionRange,
     @Default(0) double boostBudgetAmount,
     @Default('NPR') String boostBudgetCurrency,
+    RoiProjectionSummaryDto? roiProjection,
     required DateTime createdUtc,
     required DateTime updatedUtc,
     DateTime? lockedUtc,
@@ -35,12 +81,16 @@ abstract class CampaignBriefDto with _$CampaignBriefDto {
     state:
         BrandBriefState.values.elementAtOrNull(state - 1) ??
         BrandBriefState.draft,
+    version: version,
+    rootBriefId: rootBriefId ?? id,
+    parentBriefId: parentBriefId,
     commissionMinPercent: commissionRange?.minPercent ?? 0,
     commissionMaxPercent: commissionRange?.maxPercent ?? 0,
     boostBudget: Money(
       amount: boostBudgetAmount,
       currency: boostBudgetCurrency,
     ),
+    roiProjection: roiProjection?.toDomain(),
     createdAt: createdUtc,
     updatedAt: updatedUtc,
     lockedAt: lockedUtc,
