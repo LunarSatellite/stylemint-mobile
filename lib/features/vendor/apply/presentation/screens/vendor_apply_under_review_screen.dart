@@ -1,10 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
-import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -27,37 +23,6 @@ class VendorApplyUnderReviewScreen extends ConsumerStatefulWidget {
 
 class _VendorApplyUnderReviewScreenState
     extends ConsumerState<VendorApplyUnderReviewScreen> {
-  Timer? _pollTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_startPolling());
-  }
-
-  Future<void> _startPolling() async {
-    var accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (v) => v,
-      orElse: () => null,
-    );
-    accountId ??= await ref.read(tokenStorageProvider).accountId;
-    if (!mounted || accountId == null || accountId.isEmpty) return;
-
-    _pollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
-      unawaited(
-        ref
-            .read(vendorApplyNotifierProvider.notifier)
-            .checkStatus(accountId!, force: true),
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.listen(vendorApplyNotifierProvider, (prev, next) {

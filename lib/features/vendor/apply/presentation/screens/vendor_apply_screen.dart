@@ -86,7 +86,6 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
 
   bool _hasCheckedStatus = false;
   String? _accountId;
-  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -96,7 +95,6 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
 
   @override
   void dispose() {
-    _pollTimer?.cancel();
     _brandNameController.dispose();
     _legalBusinessNameController.dispose();
     _taxIdController.dispose();
@@ -106,24 +104,6 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     _cityController.dispose();
     _zipCodeController.dispose();
     super.dispose();
-  }
-
-  // While the application sits in Pending, poll for the admin's decision
-  // instead of waiting for the user to hit "Refresh Status" or reopen the
-  // screen. Stops as soon as the status moves on (or the screen is disposed).
-  void _managePolling(VendorApplicationStatus status) {
-    if (status != VendorApplicationStatus.pending) {
-      _pollTimer?.cancel();
-      _pollTimer = null;
-      return;
-    }
-    _pollTimer ??= Timer.periodic(const Duration(seconds: 12), (_) {
-      final id = _accountId;
-      if (id == null) return;
-      unawaited(
-        ref.read(vendorApplyNotifierProvider.notifier).checkStatus(id, force: true),
-      );
-    });
   }
 
   Future<void> _checkStatus() async {
@@ -294,7 +274,6 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     ref.listen(vendorApplyNotifierProvider, (prev, next) {
       next.whenOrNull(
         loadSuccess: (app) {
-          _managePolling(app.status);
           if (app.status == VendorApplicationStatus.approved) {
             context.pushReplacement(RouteNames.vendorApplyApproved);
           }
