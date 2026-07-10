@@ -7,8 +7,12 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/data/datasou
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/data/repositories/vendor_dashboard_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/repositories/vendor_dashboard_repository.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_dashboard_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_pending_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 
 export 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_dashboard_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_pending_actions_notifier.dart';
 
 final vendorDashboardRemoteDataSourceProvider =
     Provider<VendorDashboardRemoteDataSource>(
@@ -28,5 +32,16 @@ final vendorDashboardNotifierProvider =
     StateNotifierProvider<VendorDashboardNotifier, VendorDashboardState>(
       (ref) => VendorDashboardNotifier(
         ref.watch(vendorDashboardRepositoryProvider),
+      ),
+    );
+
+/// Live counts for the "Pending Actions" tiles — composes the orders and
+/// inquiries repositories rather than the dashboard's own (analytics-only)
+/// data source.
+final vendorPendingActionsNotifierProvider =
+    StateNotifierProvider<VendorPendingActionsNotifier, VendorPendingActionCounts>(
+      (ref) => VendorPendingActionsNotifier(
+        ref.watch(vendorOrdersRepositoryProvider),
+        ref.watch(inquiriesRepositoryProvider),
       ),
     );

@@ -11,4 +11,7 @@ abstract class InquiriesRepository {
     String inquiryId,
     String text,
   );
+
+  /// `totalCount` of open vendor inquiries — dashboard tile count.
+  Future<Either<NetworkExceptions, int>> getVendorInquiryCount();
 }

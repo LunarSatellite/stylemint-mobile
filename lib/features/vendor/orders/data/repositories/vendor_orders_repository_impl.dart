@@ -63,6 +63,26 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, int>> getSubOrderCount(int state) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final count = await remoteDataSource.getSubOrderCount(state);
+        return right(count);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, VendorOrder>> getOrderDetail(String orderId) async {
     if (await networkInfo.isConnected) {
       try {
