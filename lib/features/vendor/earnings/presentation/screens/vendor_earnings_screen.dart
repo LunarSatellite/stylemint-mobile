@@ -70,6 +70,8 @@ class VendorEarningsScreen extends ConsumerWidget {
             Text('Total Balance', style: DesignTokens.mediumSemibold),
             const SizedBox(height: DesignTokens.s12),
             _buildBalanceCard(balanceState),
+            const SizedBox(height: DesignTokens.s12),
+            _buildNextPayoutBanner(summaryState, destinationsState),
             const SizedBox(height: DesignTokens.s20),
             _buildSummarySection(summaryState),
             const SizedBox(height: DesignTokens.s20),
@@ -125,6 +127,27 @@ class VendorEarningsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildNextPayoutBanner(
+    EarningsSummaryState summaryState,
+    PayoutDestinationsState destinationsState,
+  ) {
+    final nextPayoutDate = summaryState.maybeWhen(
+      loadSuccess: (summary) => summary.nextPayoutDate,
+      orElse: () => null,
+    );
+    if (nextPayoutDate == null) return const SizedBox.shrink();
+
+    final items = destinationsState.items;
+    final destination = items.isEmpty
+        ? null
+        : items.firstWhere(
+            (d) => d.isDefault,
+            orElse: () => items.first,
+          );
+
+    return _NextPayoutBanner(date: nextPayoutDate, destination: destination);
   }
 
   Widget _buildSummarySection(EarningsSummaryState state) {
@@ -391,6 +414,112 @@ class _BalanceRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Next payout banner ───────────────────────────────────────────────────────
+
+class _NextPayoutBanner extends StatelessWidget {
+  const _NextPayoutBanner({required this.date, this.destination});
+
+  final DateTime date;
+  final PayoutDestinationDto? destination;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheduleText = destination != null
+        ? 'Payouts are processed automatically every Friday & transferred '
+              'to your ${destination!.label} '
+              '${destination!.accountIdentifierMasked}.'
+        : 'Payouts are processed automatically every Friday to your '
+              'default payment method.';
+
+    return ClipPath(
+      clipper: const _ScallopTopClipper(),
+      child: Container(
+        width: double.infinity,
+        color: DesignTokens.secondaryYellow,
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s20,
+          DesignTokens.s16,
+          DesignTokens.s16,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Image.asset(
+              'assets/images/vendordashboard/Next payout.png',
+              width: 36,
+              height: 36,
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Next Payout: '
+                    '${DateFormat('EEE MMM d, yyyy').format(date.toLocal())}',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    scheduleText,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textDark.withValues(alpha: 0.75),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Clips a wavy/scalloped top edge (ticket-stub look) with rounded bottom
+/// corners, matching the payout-schedule banner design.
+class _ScallopTopClipper extends CustomClipper<Path> {
+  const _ScallopTopClipper();
+
+  static const _bumpWidth = 20.0;
+  static const _bumpHeight = 8.0;
+  static const _cornerRadius = 16.0;
+
+  @override
+  Path getClip(Size size) {
+    final count = (size.width / _bumpWidth).round().clamp(1, 1000);
+    final segmentWidth = size.width / count;
+
+    final path = Path()..moveTo(0, _bumpHeight);
+    for (var i = 0; i < count; i++) {
+      final midX = segmentWidth * i + segmentWidth / 2;
+      final endX = segmentWidth * (i + 1);
+      path.quadraticBezierTo(midX, 0, endX, _bumpHeight);
+    }
+    path
+      ..lineTo(size.width, size.height - _cornerRadius)
+      ..arcToPoint(
+        Offset(size.width - _cornerRadius, size.height),
+        radius: const Radius.circular(_cornerRadius),
+      )
+      ..lineTo(_cornerRadius, size.height)
+      ..arcToPoint(
+        Offset(0, size.height - _cornerRadius),
+        radius: const Radius.circular(_cornerRadius),
+      )
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
