@@ -1,10 +1,13 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// Derived from `GET /v1/vendor/analytics/overview` (Vendor §8A) — that
+/// endpoint has no available-balance/pending-payout fields (those live on
+/// [VendorEarningsBalance], from the real Payouts ledger) and no
+/// next-payout-date field ([nextPayoutDate] is computed client-side from the
+/// fixed Auto-Weekly Friday schedule).
 class VendorEarningsSummary {
   const VendorEarningsSummary({
     required this.totalRevenue,
-    required this.pendingPayout,
-    required this.availableBalance,
     required this.thisMonth,
     required this.lastMonth,
     required this.totalOrders,
@@ -13,8 +16,6 @@ class VendorEarningsSummary {
   });
 
   final Money totalRevenue;
-  final Money pendingPayout;
-  final Money availableBalance;
   final Money thisMonth;
   final Money lastMonth;
   final int totalOrders;
@@ -23,8 +24,6 @@ class VendorEarningsSummary {
 
   VendorEarningsSummary copyWith({
     Money? totalRevenue,
-    Money? pendingPayout,
-    Money? availableBalance,
     Money? thisMonth,
     Money? lastMonth,
     int? totalOrders,
@@ -33,8 +32,6 @@ class VendorEarningsSummary {
   }) {
     return VendorEarningsSummary(
       totalRevenue: totalRevenue ?? this.totalRevenue,
-      pendingPayout: pendingPayout ?? this.pendingPayout,
-      availableBalance: availableBalance ?? this.availableBalance,
       thisMonth: thisMonth ?? this.thisMonth,
       lastMonth: lastMonth ?? this.lastMonth,
       totalOrders: totalOrders ?? this.totalOrders,
@@ -45,8 +42,7 @@ class VendorEarningsSummary {
 }
 
 /// Mirrors `GET /v1/earnings/balance` — the true payout-eligible ledger
-/// balance (distinct from [VendorEarningsSummary.availableBalance], which
-/// comes from the Brand Studio analytics rollup, not the Payouts ledger).
+/// balance from the Payouts module.
 class VendorEarningsBalance {
   const VendorEarningsBalance({
     required this.available,

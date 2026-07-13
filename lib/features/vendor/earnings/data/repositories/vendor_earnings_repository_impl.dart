@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/datasour
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/data/models/vendor_earnings_dto.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/repositories/vendor_earnings_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
@@ -27,14 +28,57 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
   getEarningsSummary() async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getEarningsSummary();
-        return right(dto.toDomain());
+        final now = DateTime.now().toUtc();
+        final thisMonthStart = DateTime.utc(now.year, now.month);
+        final lastMonthStart = DateTime.utc(now.year, now.month - 1);
+
+        final results = await Future.wait([
+          remoteDataSource.getAnalyticsOverview(),
+          remoteDataSource.getAnalyticsOverview(
+            fromUtc: thisMonthStart,
+            toUtc: now,
+          ),
+          remoteDataSource.getAnalyticsOverview(
+            fromUtc: lastMonthStart,
+            toUtc: thisMonthStart,
+          ),
+        ]);
+        final overview = results[0];
+        final thisMonth = results[1];
+        final lastMonth = results[2];
+
+        return right(
+          VendorEarningsSummary(
+            totalRevenue: overview.grossSales,
+            platformFees: Money(
+              amount: overview.grossSales.amount - overview.netRevenue.amount,
+              currency: overview.grossSales.currency,
+            ),
+            totalOrders: overview.totalOrders,
+            thisMonth: thisMonth.grossSales,
+            lastMonth: lastMonth.grossSales,
+            nextPayoutDate: _nextWeeklyPayoutDate(now),
+          ),
+        );
       } catch (e) {
         return left(_mapError(e));
       }
     } else {
       return left(const NetworkExceptions.noInternetConnection());
     }
+  }
+
+  /// Auto-Weekly payouts run every Friday (skill §payouts — no fee, vs.
+  /// On-Demand's 2% fee). No backend field supplies this date, so it's
+  /// derived from that fixed schedule; today counts as "next" if it's
+  /// already Friday.
+  DateTime _nextWeeklyPayoutDate(DateTime fromUtc) {
+    final daysUntilFriday = (DateTime.friday - fromUtc.weekday) % 7;
+    return DateTime.utc(
+      fromUtc.year,
+      fromUtc.month,
+      fromUtc.day + daysUntilFriday,
+    );
   }
 
   @override

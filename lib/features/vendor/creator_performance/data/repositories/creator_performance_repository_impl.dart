@@ -17,17 +17,14 @@ class CreatorPerformanceRepositoryImpl implements CreatorPerformanceRepository {
 
   @override
   Future<Either<NetworkExceptions, List<CreatorPerformance>>>
-  getCreatorPerformance({
-    String? sortBy,
-    String? window,
-  }) async {
+  getCreatorPerformance({int? windowDays, int limit = 50}) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.getCreatorPerformance(
-          sortBy: sortBy,
-          window: window,
+        final page = await remoteDataSource.getCreatorPerformance(
+          windowDays: windowDays,
+          limit: limit,
         );
-        return right(dtos.map((d) => d.toDomain()).toList());
+        return right(page.items.map((d) => d.toDomain()).toList());
       } on DioException catch (e) {
         return left(NetworkExceptions.server(e.message.toString()));
       } on NetworkExceptions catch (e) {
