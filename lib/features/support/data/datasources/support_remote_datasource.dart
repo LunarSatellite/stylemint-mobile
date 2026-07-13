@@ -38,11 +38,21 @@ class SupportRemoteDataSource {
     return TicketDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No /v1/support/categories — use /v1/help/categories or keep as-is.
+  /// `GET /v1/help/categories` — there is no `/v1/support/categories`.
+  /// Response rows are `HelpCategoryDto` (`id`, `code`, `name`,
+  /// `publishedArticleCount`), not the `SupportCategoryDto` shape, so this
+  /// maps fields explicitly instead of calling `SupportCategoryDto.fromJson`.
   Future<List<SupportCategoryDto>> getSupportCategories() async {
-    final response = await apiClient.get('/v1/support/categories');
+    final response = await apiClient.get('/v1/help/categories');
     final items = (response as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => SupportCategoryDto.fromJson(e as Map<String, dynamic>))
+        .map((e) {
+          final json = e as Map<String, dynamic>;
+          return SupportCategoryDto(
+            id: json['id'].toString(),
+            title: json['name'] as String,
+            iconName: json['code'] as String,
+          );
+        })
         .toList(growable: false);
     return items;
   }

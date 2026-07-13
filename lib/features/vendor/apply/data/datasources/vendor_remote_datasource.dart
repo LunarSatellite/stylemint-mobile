@@ -148,7 +148,12 @@ class VendorRemoteDataSource {
       '/v1/accounts/$accountId/kyc-sessions/active',
       options: Options(headers: {'requiresToken': true}),
     );
-    return response as Map<String, dynamic>?;
+    // The 204-No-Content case can surface here as `null` or as an empty
+    // string depending on the Dio transformer, not just `null` — a forced
+    // `as Map<String, dynamic>?` cast throws on the empty-string case,
+    // which was silently killing the upload flow before it ever reached
+    // startKycSession.
+    return response is Map<String, dynamic> ? response : null;
   }
 
   /// POST /v1/accounts/{accountId}/kyc-sessions — starts a new session.

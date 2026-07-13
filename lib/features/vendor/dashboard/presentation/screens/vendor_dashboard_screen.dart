@@ -416,9 +416,6 @@ class _DashboardContent extends StatelessWidget {
   // ── Pending Actions ──────────────────────────────────────────────────────────
 
   Widget _buildAlertCards(BuildContext context) {
-    // Creator Partnership Requests has no backend filter to isolate
-    // creator-initiated requests from vendor-sent invites yet, so it stays
-    // on a generic subtitle. The other three now show a live count.
     final alerts = [
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_order_ship.png',
@@ -459,7 +456,13 @@ class _DashboardContent extends StatelessWidget {
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_partnership.png',
         title: 'Creator Partnership Requests',
-        subtitle: 'Review requests from creators',
+        subtitle: _countSubtitle(
+          pendingActionCounts.pendingCreatorRequests,
+          singular: 'Creator Partnership Request',
+          plural: 'Creator Partnership Requests',
+          zero: 'No pending requests from creators',
+          fallback: 'Review requests from creators',
+        ),
         route: RouteNames.vendorCreatorPartnershipRequests,
       ),
     ];

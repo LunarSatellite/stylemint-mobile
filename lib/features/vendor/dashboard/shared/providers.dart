@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_pending_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
 
 export 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_dashboard_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/notifiers/vendor_pending_actions_notifier.dart';
@@ -35,13 +36,14 @@ final vendorDashboardNotifierProvider =
       ),
     );
 
-/// Live counts for the "Pending Actions" tiles — composes the orders and
-/// inquiries repositories rather than the dashboard's own (analytics-only)
-/// data source.
+/// Live counts for the "Pending Actions" tiles — composes the orders,
+/// inquiries, and partnerships repositories rather than the dashboard's own
+/// (analytics-only) data source.
 final vendorPendingActionsNotifierProvider =
     StateNotifierProvider<VendorPendingActionsNotifier, VendorPendingActionCounts>(
       (ref) => VendorPendingActionsNotifier(
         ref.watch(vendorOrdersRepositoryProvider),
         ref.watch(inquiriesRepositoryProvider),
+        ref.watch(vendorPartnershipsRepositoryProvider),
       ),
     );
