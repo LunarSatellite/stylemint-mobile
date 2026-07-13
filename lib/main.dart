@@ -383,7 +383,13 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     // the notifier, which closes the in-app browser and refreshes on success.
     if (uri.scheme == 'stylemint' && uri.host == 'social-connected') {
       final ok = uri.queryParameters['status'] == 'ok';
-      ref.read(socialConnectNotifierProvider.notifier).onConnectReturn(ok: ok);
+      // On failure the backend appends `&error=<reason>` (e.g. invalid_grant,
+      // provider_unavailable). Pass it through so the reason is logged/surfaced
+      // instead of the browser silently closing with no feedback.
+      ref.read(socialConnectNotifierProvider.notifier).onConnectReturn(
+            ok: ok,
+            errorCode: uri.queryParameters['error'],
+          );
       return;
     }
 

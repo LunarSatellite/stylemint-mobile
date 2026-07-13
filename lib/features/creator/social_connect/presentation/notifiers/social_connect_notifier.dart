@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -78,9 +79,22 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
   /// Invoked by the deep-link handler when the backend's
   /// `stylemint://social-connected` redirect arrives. Dismisses the in-app
   /// browser and refreshes the account list on success.
-  Future<void> onConnectReturn({required bool ok}) async {
+  Future<void> onConnectReturn({required bool ok, String? errorCode}) async {
     await closeInAppWebView();
-    if (ok) await load();
+    if (ok) {
+      await load();
+      return;
+    }
+    // The connect failed server-side (token exchange or profile fetch). Surface
+    // the backend's reason instead of silently closing — otherwise the user
+    // only discovers the failure later as a 404 when listing reels.
+    final reason = errorCode?.trim().isNotEmpty ?? false
+        ? errorCode!.trim()
+        : 'unknown';
+    debugPrint('Social connect failed: errorCode=$reason');
+    state = SocialConnectState.loadFailure(
+      NetworkExceptions.server('Connection failed ($reason).'),
+    );
   }
 
   Future<void> disconnect(SocialPlatform platform) async {
