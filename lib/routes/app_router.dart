@@ -124,7 +124,6 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/s
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/screens/story_viewer_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
-import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_article_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_topic_screen.dart';
