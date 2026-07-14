@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show Options;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,11 +6,12 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:uuid/uuid.dart';
 
 /// Data passed from BrandDetailScreen via router `extra`.
 class PartnershipApplyArgs {
   const PartnershipApplyArgs({
-    required this.partnershipId,
+    required this.vendorProfileId,
     required this.vendorName,
     this.vendorLogoUrl,
     this.vendorRating,
@@ -18,7 +20,7 @@ class PartnershipApplyArgs {
     required this.commissionMax,
   });
 
-  final String partnershipId;
+  final String vendorProfileId;
   final String vendorName;
   final String? vendorLogoUrl;
   final double? vendorRating;
@@ -26,20 +28,6 @@ class PartnershipApplyArgs {
   final double commissionMin;
   final double commissionMax;
 }
-
-const _niches = [
-  'Fashion',
-  'Tech',
-  'Lifestyle',
-  'Beauty',
-  'Fitness',
-  'Food',
-  'Travel',
-  'Gaming',
-  'Music',
-  'Sports',
-  'Other',
-];
 
 class PartnershipRequestScreen extends ConsumerStatefulWidget {
   const PartnershipRequestScreen({super.key, required this.args});
@@ -55,9 +43,6 @@ class _PartnershipRequestScreenState
     extends ConsumerState<PartnershipRequestScreen> {
   late RangeValues _range;
   final _messageCtrl = TextEditingController();
-  String? _niche;
-  final _audienceCtrl = TextEditingController();
-  final List<TextEditingController> _urlCtrls = [TextEditingController()];
   bool _agreed = false;
   bool _submitting = false;
 
@@ -73,14 +58,14 @@ class _PartnershipRequestScreenState
   @override
   void dispose() {
     _messageCtrl.dispose();
-    _audienceCtrl.dispose();
-    for (final c in _urlCtrls) {
-      c.dispose();
-    }
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (widget.args.vendorProfileId.isEmpty) {
+      SmSnackbar.error(context, 'Brand profile unavailable. Please try again later.');
+      return;
+    }
     if (!_agreed) {
       SmSnackbar.error(context, 'Please agree to the Partnership Terms.');
       return;
@@ -94,19 +79,17 @@ class _PartnershipRequestScreenState
     try {
       final api = ref.read(apiClientProvider);
       await api.post(
-        '/v1/partnerships/${widget.args.partnershipId}/request',
+        '/v1/creator/partnerships/request',
         data: {
+          'vendorProfileId': widget.args.vendorProfileId,
           'commissionMinPercent': _range.start,
           'commissionMaxPercent': _range.end,
           'message': _messageCtrl.text.trim(),
-          if (_niche != null) 'niche': _niche,
-          if (_audienceCtrl.text.trim().isNotEmpty)
-            'audienceGroup': _audienceCtrl.text.trim(),
-          'sampleContentUrls': _urlCtrls
-              .map((c) => c.text.trim())
-              .where((u) => u.isNotEmpty)
-              .toList(),
         },
+        options: Options(headers: {
+          'requiresToken': true,
+          'Idempotency-Key': const Uuid().v4(),
+        }),
       );
       if (!mounted) return;
       SmSnackbar.info(context, 'Partnership request sent!');
@@ -212,105 +195,7 @@ class _PartnershipRequestScreenState
                 ],
               ),
             ),
-            const SizedBox(height: DesignTokens.s12),
-
-            // Niche dropdown
-            DropdownButtonFormField<String>(
-              value: _niche,
-              dropdownColor: DesignTokens.inputFieldFill,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                  color: DesignTokens.inputFieldDropdownIcon),
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.inputFieldData,
-              ),
-              decoration: DesignTokens.inputDecoration(
-                hintText: 'Your Niche',
-              ),
-              hint: Text(
-                'Your Niche',
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.inputFieldPlaceholder,
-                ),
-              ),
-              items: _niches
-                  .map((n) => DropdownMenuItem(
-                        value: n,
-                        child: Text(n),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _niche = v),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-
-            // Audience group
-            TextField(
-              controller: _audienceCtrl,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.inputFieldData,
-              ),
-              decoration: DesignTokens.inputDecoration(
-                hintText: 'Your Audience Group',
-              ),
-            ),
             const SizedBox(height: DesignTokens.s24),
-
-            // Sample content URLs
-            Text(
-              'Sample Content (Optional)',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textWhite),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Share 3-5 of your best performing reels that match our brand',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            for (final ctrl in _urlCtrls) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: ctrl,
-                      keyboardType: TextInputType.url,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 14,
-                        color: DesignTokens.inputFieldData,
-                      ),
-                      decoration: DesignTokens.inputDecoration(
-                        hintText: 'Post URL',
-                      ),
-                    ),
-                  ),
-                  if (ctrl == _urlCtrls.last) ...[
-                    const SizedBox(width: DesignTokens.s8),
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                          _urlCtrls.add(TextEditingController())),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: DesignTokens.bgAppBodyLight,
-                        ),
-                        child: const Icon(Icons.add,
-                            color: DesignTokens.textWhite, size: 20),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: DesignTokens.s8),
-            ],
           ],
         ),
       ),

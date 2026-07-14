@@ -103,7 +103,7 @@ class BrandDetailScreen extends ConsumerWidget {
                   context.push(
                     '/creator/partnerships/${p.id}/apply',
                     extra: PartnershipApplyArgs(
-                      partnershipId: p.id,
+                      vendorProfileId: p.vendorProfileId,
                       vendorName: p.vendorName,
                       vendorLogoUrl: p.vendorLogoUrl,
                       vendorRating: p.vendorRating,

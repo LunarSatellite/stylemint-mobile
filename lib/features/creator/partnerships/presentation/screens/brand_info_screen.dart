@@ -17,6 +17,7 @@ class BrandInfoData {
     required this.avgOrderValue,
     required this.successRate,
     required this.products,
+    this.vendorProfileId = '',
   });
 
   final String name;
@@ -28,6 +29,7 @@ class BrandInfoData {
   final String avgOrderValue;
   final String successRate;
   final List<BrandProduct> products;
+  final String vendorProfileId;
 }
 
 class BrandProduct {
@@ -832,6 +834,7 @@ class _ApplyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canApply = data.vendorProfileId.isNotEmpty;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -841,26 +844,30 @@ class _ApplyButton extends StatelessWidget {
           DesignTokens.s16,
         ),
         child: GestureDetector(
-          onTap: () {
-            final min = _parseMin(data.commission);
-            final max = _parseMax(data.commission);
-            context.push(
-              RouteNames.partnershipApply
-                  .replaceFirst(':partnershipId', _slugify(data.name)),
-              extra: PartnershipApplyArgs(
-                partnershipId: _slugify(data.name),
-                vendorName: data.name,
-                vendorRating: data.stars,
-                vendorCategory: data.category,
-                commissionMin: min,
-                commissionMax: max,
-              ),
-            );
-          },
+          onTap: canApply
+              ? () {
+                  final min = _parseMin(data.commission);
+                  final max = _parseMax(data.commission);
+                  context.push(
+                    RouteNames.partnershipApply
+                        .replaceFirst(':partnershipId', _slugify(data.name)),
+                    extra: PartnershipApplyArgs(
+                      vendorProfileId: data.vendorProfileId,
+                      vendorName: data.name,
+                      vendorRating: data.stars,
+                      vendorCategory: data.category,
+                      commissionMin: min,
+                      commissionMax: max,
+                    ),
+                  );
+                }
+              : null,
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              color: DesignTokens.primaryGreen,
+              color: canApply
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.primaryGreen.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
             ),
             alignment: Alignment.center,

@@ -36,3 +36,8 @@ final productSearchNotifierProvider =
     StateNotifierProvider<ProductSearchNotifier, ProductSearchState>(
       (ref) => ProductSearchNotifier(ref.watch(reelImportRepositoryProvider)),
     );
+
+final reelSubmitNotifierProvider =
+    StateNotifierProvider.autoDispose<ReelSubmitNotifier, ReelSubmitState>(
+      (ref) => ReelSubmitNotifier(ref.watch(reelImportRepositoryProvider)),
+    );

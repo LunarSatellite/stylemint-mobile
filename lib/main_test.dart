@@ -395,6 +395,7 @@ class _MockReelImportRepository implements ReelImportRepository {
           importedAt: DateTime.now(),
           caption: reel.caption,
           thumbnailUrl: '',
+          sourceUrl: reel.sourceUrl,
           platform: SocialPlatform.instagram,
           platformPostId: reel.platformPostId,
         ),
@@ -453,6 +454,19 @@ class _MockReelImportRepository implements ReelImportRepository {
           .toList(),
     );
   }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> publishReel({
+    required String reelId,
+  }) async =>
+      right(unit);
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> tagProduct({
+    required String reelId,
+    required String productId,
+  }) async =>
+      right(unit);
 
   @override
   Future<Either<NetworkExceptions, List<ImportedReel>>> getImportHistory({

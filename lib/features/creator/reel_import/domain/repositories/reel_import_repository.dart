@@ -17,6 +17,15 @@ abstract interface class ReelImportRepository {
     String query,
   );
 
+  Future<Either<NetworkExceptions, Unit>> publishReel({
+    required String reelId,
+  });
+
+  Future<Either<NetworkExceptions, Unit>> tagProduct({
+    required String reelId,
+    required String productId,
+  });
+
   Future<Either<NetworkExceptions, List<ImportedReel>>> getImportHistory({
     int pageSize,
     String? cursor,

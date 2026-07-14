@@ -2,6 +2,7 @@
 class PartnershipDetailDto {
   const PartnershipDetailDto({
     required this.id,
+    required this.vendorProfileId,
     required this.stateLabel,
     required this.commissionMinPercent,
     required this.commissionMaxPercent,
@@ -16,6 +17,7 @@ class PartnershipDetailDto {
   });
 
   final String id;
+  final String vendorProfileId;
   final String stateLabel;
   final double commissionMinPercent;
   final double commissionMaxPercent;
@@ -39,6 +41,7 @@ class PartnershipDetailDto {
   factory PartnershipDetailDto.fromJson(Map<String, dynamic> json) {
     return PartnershipDetailDto(
       id: (json['id'] as String?) ?? '',
+      vendorProfileId: (json['vendorProfileId'] as String?) ?? '',
       stateLabel: _states[(json['state'] as num?)?.toInt() ?? 0] ?? 'Unknown',
       commissionMinPercent:
           (json['commissionMinPercent'] as num?)?.toDouble() ?? 0,
