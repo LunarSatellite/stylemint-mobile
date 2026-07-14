@@ -21,6 +21,16 @@ class InquiriesRemoteDataSource {
         .toList(growable: false);
   }
 
+  /// `totalCount` of vendor inquiries in a given `ProductInquiryState`
+  /// (backend enum int; `Open = 1`) — used for dashboard tile counts.
+  Future<int> getVendorInquiryCount({int state = 1}) async {
+    final response = await apiClient.get(
+      '/v1/product-inquiries/vendor',
+      queryParameters: {'state': state, 'pageSize': 1},
+    );
+    return (response as Map<String, dynamic>)['totalCount'] as int? ?? 0;
+  }
+
   /// POST a reply to an inquiry; returns the updated inquiry.
   Future<ProductInquiryDto> reply(String inquiryId, String reply) async {
     final response = await apiClient.post(

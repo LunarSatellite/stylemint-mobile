@@ -176,10 +176,11 @@ enum _PlatformType {
   Widget buildIcon() {
     switch (this) {
       case bank:
-        return const Icon(
-          Icons.account_balance,
-          color: Color(0xFFB8A48A),
-          size: 28,
+        return Image.asset(
+          'assets/images/vendordashboard/bank.png',
+          width: 36,
+          height: 36,
+          fit: BoxFit.contain,
         );
       case paypal:
         return Image.asset(
@@ -196,24 +197,11 @@ enum _PlatformType {
           fit: BoxFit.contain,
         );
       case esewa:
-        return Container(
-          width: 32,
-          height: 32,
-          decoration: const BoxDecoration(
-            color: Color(0xFF60BB46),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Text(
-              'e',
-              style: TextStyle(
-                fontFamily: 'sans-serif',
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ),
+        return Image.asset(
+          'assets/images/vendordashboard/esewa.png',
+          width: 36,
+          height: 36,
+          fit: BoxFit.contain,
         );
     }
   }

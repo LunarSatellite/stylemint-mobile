@@ -5,58 +5,42 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'vendor_earnings_dto.freezed.dart';
 part 'vendor_earnings_dto.g.dart';
 
-@freezed
-abstract class VendorEarningsSummaryDto with _$VendorEarningsSummaryDto {
-  const factory VendorEarningsSummaryDto({
-    required double totalRevenueAmount,
-    @Default('NPR') String totalRevenueCurrency,
-    required double pendingPayoutAmount,
-    @Default('NPR') String pendingPayoutCurrency,
-    required double availableBalanceAmount,
-    @Default('NPR') String availableBalanceCurrency,
-    required double thisMonthAmount,
-    @Default('NPR') String thisMonthCurrency,
-    required double lastMonthAmount,
-    @Default('NPR') String lastMonthCurrency,
-    required int totalOrders,
-    required double platformFeesAmount,
-    @Default('NPR') String platformFeesCurrency,
-    DateTime? nextPayoutDate,
-  }) = _VendorEarningsSummaryDto;
+/// A minimal parse of `GET /v1/vendor/analytics/overview` (Vendor §8A) — just
+/// the fields the earnings summary derives from (gross sales, net revenue,
+/// order count for whatever window was requested). Hand-written, not
+/// `@freezed`: the full contract (window, conversion rate, trend, top
+/// products/creators, traffic sources) lives in the `vendor/dashboard`
+/// feature's own DTO, which owns the complete mirror of this endpoint.
+class VendorAnalyticsOverviewSnapshotDto {
+  const VendorAnalyticsOverviewSnapshotDto({
+    required this.grossSales,
+    required this.netRevenue,
+    required this.totalOrders,
+  });
 
-  const VendorEarningsSummaryDto._();
+  final Money grossSales;
+  final Money netRevenue;
+  final int totalOrders;
 
-  factory VendorEarningsSummaryDto.fromJson(Map<String, dynamic> json) =>
-      _$VendorEarningsSummaryDtoFromJson(json);
+  factory VendorAnalyticsOverviewSnapshotDto.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    Money current(String key) {
+      final metric = json[key] as Map<String, dynamic>?;
+      final money = metric?['current'] as Map<String, dynamic>?;
+      return Money(
+        amount: (money?['amount'] as num?)?.toDouble() ?? 0,
+        currency: money?['currency'] as String? ?? 'NPR',
+      );
+    }
 
-  VendorEarningsSummary toDomain() => VendorEarningsSummary(
-    totalRevenue: Money(
-      amount: totalRevenueAmount,
-      currency: totalRevenueCurrency,
-    ),
-    pendingPayout: Money(
-      amount: pendingPayoutAmount,
-      currency: pendingPayoutCurrency,
-    ),
-    availableBalance: Money(
-      amount: availableBalanceAmount,
-      currency: availableBalanceCurrency,
-    ),
-    thisMonth: Money(
-      amount: thisMonthAmount,
-      currency: thisMonthCurrency,
-    ),
-    lastMonth: Money(
-      amount: lastMonthAmount,
-      currency: lastMonthCurrency,
-    ),
-    totalOrders: totalOrders,
-    platformFees: Money(
-      amount: platformFeesAmount,
-      currency: platformFeesCurrency,
-    ),
-    nextPayoutDate: nextPayoutDate,
-  );
+    final totalOrdersMetric = json['totalOrders'] as Map<String, dynamic>?;
+    return VendorAnalyticsOverviewSnapshotDto(
+      grossSales: current('grossSales'),
+      netRevenue: current('netRevenue'),
+      totalOrders: (totalOrdersMetric?['current'] as num?)?.toInt() ?? 0,
+    );
+  }
 }
 
 /// Mirrors `GET /v1/earnings/balance`.

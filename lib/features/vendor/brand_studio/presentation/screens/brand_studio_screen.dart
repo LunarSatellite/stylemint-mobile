@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/domain/entities/brand_studio.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/notifiers/brand_studio_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/widgets/format_learning_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/presentation/widgets/top_creator_card.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/brand_studio/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -29,6 +31,16 @@ class BrandStudioScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Brand Studio', style: DesignTokens.titleMedium),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.description_outlined,
+              color: DesignTokens.textWhite,
+            ),
+            tooltip: 'Campaign Briefs',
+            onPressed: () => context.push(RouteNames.vendorCampaignBriefs),
+          ),
+        ],
       ),
       body: state.when(
         initial: _loader,

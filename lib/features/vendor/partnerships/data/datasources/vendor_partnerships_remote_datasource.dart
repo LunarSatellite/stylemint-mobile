@@ -38,6 +38,61 @@ class VendorPartnershipsRemoteDataSource {
     return CampaignBriefDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// `GET /v1/vendor/briefs/{id}`.
+  Future<CampaignBriefDto> getCampaign(String id) async {
+    final response = await apiClient.get('/v1/vendor/briefs/$id');
+    return CampaignBriefDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// `POST /v1/vendor/briefs/{id}/lock` — makes the brief immutable so it
+  /// can be attached to partnership invites. Edit via [forkCampaign] instead.
+  Future<CampaignBriefDto> lockCampaign(String id, String idempotencyKey) =>
+      _briefAction(id, 'lock', idempotencyKey);
+
+  /// `POST /v1/vendor/briefs/{id}/fork` — clones the brief (locked included)
+  /// into a new Draft with `version + 1`.
+  Future<CampaignBriefDto> forkCampaign(String id, String idempotencyKey) =>
+      _briefAction(id, 'fork', idempotencyKey);
+
+  /// `POST /v1/vendor/briefs/{id}/retire` — soft-archive; idempotent.
+  Future<CampaignBriefDto> retireCampaign(String id, String idempotencyKey) =>
+      _briefAction(id, 'retire', idempotencyKey);
+
+  Future<CampaignBriefDto> _briefAction(
+    String id,
+    String action,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/vendor/briefs/$id/$action',
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
+    );
+    return CampaignBriefDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// `POST /v1/vendor/briefs/{id}/recompute-roi` — returns just the
+  /// refreshed projection, not the full brief.
+  Future<RoiProjectionSummaryDto> recomputeRoi(
+    String id,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/vendor/briefs/$id/recompute-roi',
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
+    );
+    return RoiProjectionSummaryDto.fromJson(response as Map<String, dynamic>);
+  }
+
   /// `GET /v1/vendor/partnerships/creators` (Vendor §7J — invite picker).
   /// Real query params are `q` and `niche` (not `/search` + `category`).
   Future<List<CreatorInviteDto>> searchCreators({
@@ -111,6 +166,21 @@ class VendorPartnershipsRemoteDataSource {
       },
     );
     return response as Map<String, dynamic>;
+  }
+
+  /// `GET /v1/vendor/partnerships` scoped to pending creator-initiated
+  /// requests (`states=1` i.e. Invited, `initiatedByCreator=true`,
+  /// `pageSize=1`) — used for the dashboard tile count.
+  Future<int> getPendingCreatorRequestCount() async {
+    final response = await apiClient.get(
+      '/v1/vendor/partnerships',
+      queryParameters: {
+        'states': '1',
+        'initiatedByCreator': true,
+        'pageSize': 1,
+      },
+    );
+    return (response as Map<String, dynamic>)['totalCount'] as int? ?? 0;
   }
 
   Future<void> acceptRequest(String id, String idempotencyKey) =>

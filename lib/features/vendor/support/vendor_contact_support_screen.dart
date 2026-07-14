@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -839,7 +840,7 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _descController = TextEditingController();
-  String? _selectedCategory;
+  SupportCategory? _selectedCategory;
   final List<XFile> _selectedImages = [];
   final _picker = ImagePicker();
 
@@ -853,26 +854,15 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   void _removeImage(int index) =>
       setState(() => _selectedImages.removeAt(index));
 
-  static const _categories = [
-    'Product',
-    'Order Fulfillment',
-    'Inventory',
-    'Payment & Payouts',
-    'Creator Partnership',
-    'Account & Settings',
-    'Other',
-  ];
-
-  /// Maps the display label to the backend's `SupportCategory` enum, which
-  /// has no vendor-specific sub-categories — everything without a direct
-  /// match (Product/Inventory/Creator Partnership/Other) falls back to
-  /// [TicketCategory.forVendors].
-  static TicketCategory _categoryFor(String? label) => switch (label) {
-    'Order Fulfillment' => TicketCategory.ordersAndShipping,
-    'Payment & Payouts' => TicketCategory.paymentAndBilling,
-    'Account & Settings' => TicketCategory.accountAndSettings,
-    _ => TicketCategory.forVendors,
-  };
+  /// `SupportCategory.id` is the backend's 1-based `SupportCategory` enum
+  /// value as a string (see `HelpCategoryDto.Id`), matching the order of
+  /// `TicketCategory.values` — so this is a direct index lookup, not a
+  /// label guess. Falls back to [TicketCategory.forVendors] when nothing
+  /// is selected.
+  static TicketCategory _categoryFor(SupportCategory? category) =>
+      category == null
+          ? TicketCategory.forVendors
+          : TicketCategory.values[int.parse(category.id) - 1];
 
   @override
   void initState() {
@@ -880,6 +870,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     if (widget.prefilledIssue != null) {
       _descController.text = widget.prefilledIssue!;
     }
+    // Warm the categories load so the picker has data by the time it's opened.
+    ref.read(categoriesNotifierProvider);
   }
 
   @override
@@ -954,7 +946,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      _selectedCategory ?? 'Issue Category',
+                      _selectedCategory?.title ?? 'Issue Category',
                       style: TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 14,
@@ -1085,44 +1077,86 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: DesignTokens.s12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: DesignTokens.borderDefault,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Issue Category',
-                style: DesignTokens.oneLinerSemibold,
+      builder: (ctx) => Consumer(
+        builder: (ctx, ref, _) {
+          final categoriesState = ref.watch(categoriesNotifierProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: DesignTokens.s12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          ..._categories.map(
-            (c) => ListTile(
-              title: Text(c, style: DesignTokens.oneLinerRegular),
-              onTap: () {
-                setState(() => _selectedCategory = c);
-                Navigator.of(ctx).pop();
-              },
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-        ],
+              const SizedBox(height: DesignTokens.s16),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Issue Category',
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              categoriesState.when(
+                initial: _categoryPickerLoader,
+                loadInProgress: _categoryPickerLoader,
+                loadFailure: (failure) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s16,
+                  ),
+                  child: Text(
+                    'Could not load categories.',
+                    style: DesignTokens.oneLinerRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                ),
+                loadSuccess: (categories) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final cat in categories)
+                      ListTile(
+                        title: Text(
+                          cat.title,
+                          style: DesignTokens.oneLinerRegular,
+                        ),
+                        trailing: _selectedCategory?.id == cat.id
+                            ? const Icon(
+                                Icons.check,
+                                color: DesignTokens.primaryGreen,
+                                size: 18,
+                              )
+                            : null,
+                        onTap: () {
+                          setState(() => _selectedCategory = cat);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          );
+        },
       ),
     ).ignore();
   }
+
+  Widget _categoryPickerLoader() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }
 
 // ── Data models ───────────────────────────────────────────────────────────────

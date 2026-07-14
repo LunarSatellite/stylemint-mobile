@@ -130,13 +130,14 @@ import 'package:stylemint_mobile_frontend/features/social/stories/presentation/s
 import 'package:stylemint_mobile_frontend/features/social/stories/presentation/screens/story_viewer_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
-import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_article_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_topic_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/add_product_wizard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_rejected_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_screen.dart';
@@ -170,6 +171,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
@@ -254,6 +257,25 @@ const _authOnlyPaths = {
   RouteNames.magicLink,
 };
 
+// Vendor management screens (dashboard, orders, products, earnings, ...) all
+// live under /vendor/ but are distinct from the /vendor/apply status flow,
+// which owns routing an unapproved vendor to the correct pending/rejected/
+// under-review screen. Gate the former on approval so a vendor can't reach
+// the dashboard by deep-linking or by holding a stale nav stack from before
+// their application was reviewed.
+String? _vendorManagementRedirect(Ref ref, String path) {
+  final isVendorManagementRoute =
+      path.startsWith('/vendor/') && !path.startsWith(RouteNames.vendorApply);
+  if (!isVendorManagementRoute) return null;
+
+  final isApprovedVendor = ref.read(vendorApplyNotifierProvider).maybeWhen(
+    loadSuccess: (application) =>
+        application.status == VendorApplicationStatus.approved,
+    orElse: () => false,
+  );
+  return isApprovedVendor ? null : RouteNames.vendorApply;
+}
+
 @riverpod
 GoRouter appRouter(Ref ref) {
   // The router is built ONCE. We do NOT `ref.watch` the session here — that
@@ -283,7 +305,10 @@ GoRouter appRouter(Ref ref) {
       // user off splash. Splash itself only kicks off bootstrap().
       return session.when(
         unknown: () => atSplash ? null : RouteNames.splash,
-        authenticated: (_) => (atSplash || isAuthOnly) ? RouteNames.home : null,
+        authenticated: (_) {
+          if (atSplash || isAuthOnly) return RouteNames.home;
+          return _vendorManagementRedirect(ref, path);
+        },
         unauthenticated: () => atSplash
             ? RouteNames.userTypeSelection
             : (isPublic ? null : RouteNames.signInMethod),
@@ -974,6 +999,16 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorBrandStudio,
         builder: (ctx, state) => const BrandStudioScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCampaignBriefs,
+        builder: (ctx, state) => const CampaignBriefsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCampaignBriefDetail,
+        builder: (ctx, state) => CampaignBriefDetailScreen(
+          briefId: state.pathParameters['briefId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.vendorMatchmaking,

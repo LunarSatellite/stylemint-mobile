@@ -36,6 +36,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(vendorDashboardNotifierProvider);
     final activityState = ref.watch(vendorActivityPreviewNotifierProvider);
+    final pendingActionCounts = ref.watch(vendorPendingActionsNotifierProvider);
 
     return RootBackGuard(
       child: Scaffold(
@@ -89,8 +90,11 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
             loadSuccess: (dashboard) => _DashboardContent(
               dashboard: dashboard,
               activityState: activityState,
-              onRefresh: () =>
-                  ref.read(vendorDashboardNotifierProvider.notifier).load(),
+              pendingActionCounts: pendingActionCounts,
+              onRefresh: () {
+                ref.read(vendorDashboardNotifierProvider.notifier).load();
+                ref.read(vendorPendingActionsNotifierProvider.notifier).load();
+              },
             ),
             loadFailure: (_) => SmErrorView(
               message: 'Failed to load dashboard.',
@@ -230,11 +234,13 @@ class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.dashboard,
     required this.activityState,
+    required this.pendingActionCounts,
     required this.onRefresh,
   });
 
   final VendorDashboard dashboard;
   final VendorActivityState activityState;
+  final VendorPendingActionCounts pendingActionCounts;
   final VoidCallback onRefresh;
 
   @override
@@ -410,33 +416,53 @@ class _DashboardContent extends StatelessWidget {
   // ── Pending Actions ──────────────────────────────────────────────────────────
 
   Widget _buildAlertCards(BuildContext context) {
-    // NOTE: no backend endpoint returns these counts in one composite call
-    // (the mobile-first API convention is one round-trip per screen, and no
-    // such summary endpoint exists) — subtitles stay generic rather than
-    // showing a fabricated number. Each still links to its real screen.
     final alerts = [
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_order_ship.png',
         title: 'Orders Ready to Ship',
-        subtitle: 'Review and ship pending orders',
+        subtitle: _countSubtitle(
+          pendingActionCounts.readyToShip,
+          singular: 'order ready to ship',
+          plural: 'orders ready to ship',
+          zero: 'No orders ready to ship',
+          fallback: 'Review and ship pending orders',
+        ),
         route: RouteNames.vendorOrdersReadyToShip,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_order_waiting.png',
         title: 'Order Waiting Tracking Numbers',
-        subtitle: 'Assign tracking numbers to shipped orders',
+        subtitle: _countSubtitle(
+          pendingActionCounts.waitingTracking,
+          singular: 'order waiting for a tracking number',
+          plural: 'orders waiting for tracking numbers',
+          zero: 'No orders waiting for tracking numbers',
+          fallback: 'Assign tracking numbers to shipped orders',
+        ),
         route: RouteNames.vendorOrdersWaitingTracking,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_chat.png',
         title: 'Pending Customer Inquiries',
-        subtitle: 'Reply to open product questions',
+        subtitle: _countSubtitle(
+          pendingActionCounts.pendingInquiries,
+          singular: 'open product question',
+          plural: 'open product questions',
+          zero: 'No open product questions',
+          fallback: 'Reply to open product questions',
+        ),
         route: RouteNames.vendorPendingInquiries,
       ),
       _Alert(
         assetIcon: 'assets/images/vendordashboard/icon_partnership.png',
         title: 'Creator Partnership Requests',
-        subtitle: 'Review requests from creators',
+        subtitle: _countSubtitle(
+          pendingActionCounts.pendingCreatorRequests,
+          singular: 'Creator Partnership Request',
+          plural: 'Creator Partnership Requests',
+          zero: 'No pending requests from creators',
+          fallback: 'Review requests from creators',
+        ),
         route: RouteNames.vendorCreatorPartnershipRequests,
       ),
     ];
@@ -522,6 +548,21 @@ class _DashboardContent extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// `null` (still loading, or the count call failed) falls back to a
+  /// generic description rather than showing a stale/fabricated number.
+  static String _countSubtitle(
+    int? count, {
+    required String singular,
+    required String plural,
+    required String zero,
+    required String fallback,
+  }) {
+    if (count == null) return fallback;
+    if (count == 0) return zero;
+    if (count == 1) return '1 $singular';
+    return '$count $plural';
   }
 
   // ── Top Products ────────────────────────────────────────────────────────────

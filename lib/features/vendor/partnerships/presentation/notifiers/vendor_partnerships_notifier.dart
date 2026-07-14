@@ -74,6 +74,105 @@ class VendorPartnershipsNotifier extends StateNotifier<CampaignsState> {
   }
 }
 
+@freezed
+abstract class CampaignDetailState with _$CampaignDetailState {
+  const CampaignDetailState._();
+
+  const factory CampaignDetailState.initial() = _CampaignDetailInitial;
+  const factory CampaignDetailState.loadInProgress() =
+      _CampaignDetailLoadInProgress;
+  const factory CampaignDetailState.loadSuccess(CampaignBrief brief) =
+      _CampaignDetailLoadSuccess;
+  const factory CampaignDetailState.loadFailure(NetworkExceptions failure) =
+      _CampaignDetailLoadFailure;
+  const factory CampaignDetailState.actionInProgress(CampaignBrief brief) =
+      _CampaignDetailActionInProgress;
+  const factory CampaignDetailState.actionFailure(
+    CampaignBrief brief,
+    NetworkExceptions failure,
+  ) = _CampaignDetailActionFailure;
+
+  /// Emitted once after a successful fork — `brief` is the NEW draft
+  /// (`version + 1`), distinct from the source brief being viewed.
+  const factory CampaignDetailState.forked(CampaignBrief brief) =
+      _CampaignDetailForked;
+}
+
+/// Drives the lifecycle actions on a single brief: lock (Vendor §3.1),
+/// fork, retire, and recompute-roi. List/create/update stay on
+/// [VendorPartnershipsNotifier]; this notifier is scoped to one brief id.
+class CampaignDetailNotifier extends StateNotifier<CampaignDetailState> {
+  CampaignDetailNotifier(this._repository, this.briefId)
+    : super(const CampaignDetailState.initial()) {
+    unawaited(load());
+  }
+
+  final VendorPartnershipsRepository _repository;
+  final String briefId;
+
+  Future<void> load() async {
+    state = const CampaignDetailState.loadInProgress();
+    final result = await _repository.getCampaign(briefId);
+    state = result.fold(
+      CampaignDetailState.loadFailure,
+      CampaignDetailState.loadSuccess,
+    );
+  }
+
+  Future<void> lock() =>
+      _mutate((b) => _repository.lockCampaign(b.id));
+
+  Future<void> retire() =>
+      _mutate((b) => _repository.retireCampaign(b.id));
+
+  Future<void> recomputeRoi() async {
+    final current = _currentBrief;
+    if (current == null) return;
+    state = CampaignDetailState.actionInProgress(current);
+    final result = await _repository.recomputeRoi(current.id);
+    state = result.fold(
+      (f) => CampaignDetailState.actionFailure(current, f),
+      (roi) => CampaignDetailState.loadSuccess(
+        current.copyWith(roiProjection: roi),
+      ),
+    );
+  }
+
+  /// On success the returned state carries the NEW forked draft — the
+  /// screen should navigate to it, not keep showing the source brief.
+  Future<void> fork() async {
+    final current = _currentBrief;
+    if (current == null) return;
+    state = CampaignDetailState.actionInProgress(current);
+    final result = await _repository.forkCampaign(current.id);
+    state = result.fold(
+      (f) => CampaignDetailState.actionFailure(current, f),
+      CampaignDetailState.forked,
+    );
+  }
+
+  CampaignBrief? get _currentBrief => state.maybeWhen(
+    loadSuccess: (b) => b,
+    actionFailure: (b, _) => b,
+    forked: (b) => b,
+    orElse: () => null,
+  );
+
+  Future<void> _mutate(
+    Future<Either<NetworkExceptions, CampaignBrief>> Function(CampaignBrief)
+    action,
+  ) async {
+    final current = _currentBrief;
+    if (current == null) return;
+    state = CampaignDetailState.actionInProgress(current);
+    final result = await action(current);
+    state = result.fold(
+      (f) => CampaignDetailState.actionFailure(current, f),
+      CampaignDetailState.loadSuccess,
+    );
+  }
+}
+
 class CreatorSearchNotifier extends StateNotifier<CreatorSearchState> {
   CreatorSearchNotifier(this._repository)
     : super(const CreatorSearchState.initial());

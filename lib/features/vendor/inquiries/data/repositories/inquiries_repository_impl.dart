@@ -36,6 +36,24 @@ class InquiriesRepositoryImpl implements InquiriesRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, int>> getVendorInquiryCount() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final count = await remoteDataSource.getVendorInquiryCount();
+        return right(count);
+      } on DioException catch (e) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } on NetworkExceptions catch (e) {
+        return left(e);
+      } on Object catch (_) {
+        return left(const NetworkExceptions.unexpectedError());
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, ProductInquiry>> reply(
     String inquiryId,
     String text,

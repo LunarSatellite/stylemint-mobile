@@ -31,6 +31,18 @@ class VendorOrdersRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// `totalCount` for a single `SubOrderState` — used for dashboard tile
+  /// counts. Filters server-side via the (correctly-named) `state` int
+  /// query param; `pageSize: 1` keeps the payload minimal since only the
+  /// count is read.
+  Future<int> getSubOrderCount(int state) async {
+    final response = await apiClient.get(
+      '/v1/vendor/sub-orders',
+      queryParameters: {'state': state, 'pageSize': 1},
+    );
+    return (response as Map<String, dynamic>)['totalCount'] as int? ?? 0;
+  }
+
   /// GET /v1/vendor/sub-orders/{subOrderId} — vendor sub-order detail
   /// (SM-BG-2). `orderId` here is the sub-order id (the list row's `id`).
   /// Requires backend PR #53 deployed.

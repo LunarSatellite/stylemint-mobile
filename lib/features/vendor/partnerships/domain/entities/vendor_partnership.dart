@@ -5,10 +5,36 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 /// Fork (not modelled here — the mobile UI doesn't fork briefs yet).
 enum BrandBriefState { draft, locked, retired }
 
-/// Mirrors `BrandBriefDto` from `GET/POST/PATCH /v1/vendor/briefs*` — the
-/// real "campaign" concept on the backend is a Brand Studio brief. Fields
-/// the mobile UI doesn't render yet (roiProjection, the JSONB `body` of
-/// hooks/cadence/recipes, versioning) are intentionally not modelled.
+/// Mirrors `RoiProjectionSummary` (Vendor §5.4) — returned inline on
+/// `BrandBriefDto.roiProjection` and standalone from
+/// `POST /v1/vendor/briefs/{id}/recompute-roi`.
+class RoiProjectionSummary {
+  const RoiProjectionSummary({
+    required this.estimatedReachCost,
+    required this.estimatedReachLow,
+    required this.estimatedReachHigh,
+    required this.estimatedSalesLow,
+    required this.estimatedSalesHigh,
+    required this.estimatedRevenueLow,
+    required this.estimatedRevenueHigh,
+  });
+
+  final Money estimatedReachCost;
+  final int estimatedReachLow;
+  final int estimatedReachHigh;
+  final int estimatedSalesLow;
+  final int estimatedSalesHigh;
+
+  /// Same currency as [estimatedRevenueHigh] — render as a `Low–High` range.
+  final Money estimatedRevenueLow;
+  final Money estimatedRevenueHigh;
+}
+
+/// Mirrors `BrandBriefDto` from `GET/POST/PATCH /v1/vendor/briefs*` plus the
+/// lifecycle actions (`lock`/`fork`/`retire`/`recompute-roi`) — the real
+/// "campaign" concept on the backend is a Brand Studio brief. The JSONB
+/// `body` of hooks/cadence/recipes is intentionally not modelled — the
+/// mobile UI doesn't render it yet.
 ///
 /// NOTE: previously this entity modelled `description`, a single
 /// `commissionRate`, `startDate`/`endDate`, `targetCreators`, and
@@ -20,9 +46,13 @@ class CampaignBrief {
     this.title,
     required this.primaryGoal,
     required this.state,
+    required this.version,
+    required this.rootBriefId,
+    this.parentBriefId,
     required this.commissionMinPercent,
     required this.commissionMaxPercent,
     required this.boostBudget,
+    this.roiProjection,
     required this.createdAt,
     required this.updatedAt,
     this.lockedAt,
@@ -37,11 +67,23 @@ class CampaignBrief {
   final int primaryGoal;
   final BrandBriefState state;
 
+  /// Increments by one per fork; 1 for the original draft.
+  final int version;
+
+  /// Id of the original draft in this brief's lineage (`id` itself when
+  /// `version == 1`).
+  final String rootBriefId;
+
+  /// Null for the original draft; the source brief's id when this version
+  /// was created by forking that source brief.
+  final String? parentBriefId;
+
   /// Fraction (0..1), not a whole percent — matches the backend's
   /// `CommissionRange` convention.
   final double commissionMinPercent;
   final double commissionMaxPercent;
   final Money boostBudget;
+  final RoiProjectionSummary? roiProjection;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? lockedAt;
@@ -52,9 +94,13 @@ class CampaignBrief {
     String? title,
     int? primaryGoal,
     BrandBriefState? state,
+    int? version,
+    String? rootBriefId,
+    String? parentBriefId,
     double? commissionMinPercent,
     double? commissionMaxPercent,
     Money? boostBudget,
+    RoiProjectionSummary? roiProjection,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lockedAt,
@@ -65,9 +111,13 @@ class CampaignBrief {
       title: title ?? this.title,
       primaryGoal: primaryGoal ?? this.primaryGoal,
       state: state ?? this.state,
+      version: version ?? this.version,
+      rootBriefId: rootBriefId ?? this.rootBriefId,
+      parentBriefId: parentBriefId ?? this.parentBriefId,
       commissionMinPercent: commissionMinPercent ?? this.commissionMinPercent,
       commissionMaxPercent: commissionMaxPercent ?? this.commissionMaxPercent,
       boostBudget: boostBudget ?? this.boostBudget,
+      roiProjection: roiProjection ?? this.roiProjection,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lockedAt: lockedAt ?? this.lockedAt,

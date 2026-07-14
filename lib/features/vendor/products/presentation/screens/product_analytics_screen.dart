@@ -196,10 +196,14 @@ class _AnalyticsBody extends StatelessWidget {
       children: [
         _EarningsSection(analytics: analytics),
         const SizedBox(height: DesignTokens.s20),
+        const _AgeGroupTrafficSection(),
+        const SizedBox(height: DesignTokens.s20),
         if (analytics.reviews != null) ...[
           _ReviewsSection(reviews: analytics.reviews!),
           const SizedBox(height: DesignTokens.s20),
         ],
+        const _GenderTrafficSection(),
+        const SizedBox(height: DesignTokens.s20),
         _CreatorTrafficSection(creators: analytics.topCreators),
         const SizedBox(height: DesignTokens.s20),
         _LocationTrafficSection(locations: analytics.locations),
@@ -398,14 +402,44 @@ class _EarningsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-        Row(
+        _RevenueHeroCard(
+          value: formatMoney(analytics.revenue),
+          badge: revenueDelta,
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        // Conversion rate, AOV, and cart adds have no backing field on this
+        // endpoint (see the note on VendorProductAnalytics) — shown as
+        // explicit placeholders rather than fabricated numbers.
+        const Row(
           children: [
             Expanded(
               child: _StatCard(
-                icon: Icons.monetization_on_outlined,
-                value: formatMoney(analytics.revenue),
-                badge: revenueDelta,
-                label: 'Total Revenue',
+                icon: Icons.percent_outlined,
+                value: '—',
+                label: 'Conversion Rate',
+                unavailable: true,
+              ),
+            ),
+            SizedBox(width: DesignTokens.s8),
+            Expanded(
+              child: _StatCard(
+                icon: Icons.receipt_outlined,
+                value: '—',
+                label: 'Avg. Order Value',
+                unavailable: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        Row(
+          children: [
+            const Expanded(
+              child: _StatCard(
+                icon: Icons.add_shopping_cart_outlined,
+                value: '—',
+                label: 'Added to Cart',
+                unavailable: true,
               ),
             ),
             const SizedBox(width: DesignTokens.s8),
@@ -419,7 +453,133 @@ class _EarningsSection extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: DesignTokens.s12),
+        const _ViewToPurchaseRatioCard(),
       ],
+    );
+  }
+}
+
+class _RevenueHeroCard extends StatelessWidget {
+  const _RevenueHeroCard({required this.value, this.badge});
+
+  final String value;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppBodyLight,
+              borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+            ),
+            child: const Icon(
+              Icons.monetization_on_outlined,
+              size: 20,
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    value,
+                    style: DesignTokens.mediumSemibold.copyWith(fontSize: 20),
+                  ),
+                  if (badge != null) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      badge!,
+                      style: DesignTokens.tiny.copyWith(
+                        color: badge!.startsWith('-')
+                            ? DesignTokens.colorError
+                            : DesignTokens.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Total Revenue',
+                style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The backend doesn't compute a view-to-purchase ratio anywhere — this
+/// always renders the empty state (see the note on VendorProductAnalytics).
+class _ViewToPurchaseRatioCard extends StatelessWidget {
+  const _ViewToPurchaseRatioCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                size: 18,
+                color: DesignTokens.textMuted,
+              ),
+              SizedBox(width: DesignTokens.s8),
+              Text(
+                ':',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontWeight: FontWeight.w700,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              SizedBox(width: DesignTokens.s8),
+              Icon(
+                Icons.description_outlined,
+                size: 18,
+                color: DesignTokens.textMuted,
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Text('—', style: DesignTokens.mediumSemibold.copyWith(fontSize: 18)),
+          const SizedBox(height: 2),
+          Text(
+            'View to Purchase Ratio',
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Not available yet',
+            style: DesignTokens.tiny.copyWith(
+              color: DesignTokens.textMuted,
+              fontStyle: FontStyle.italic,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -430,12 +590,18 @@ class _StatCard extends StatelessWidget {
     required this.value,
     required this.label,
     this.badge,
+    this.unavailable = false,
   });
 
   final IconData icon;
   final String value;
   final String label;
   final String? badge;
+
+  /// The backend doesn't provide this metric yet — render the placeholder
+  /// value/label but skip the badge and add a muted note so vendors don't
+  /// mistake "—" for a real zero.
+  final bool unavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -480,21 +646,45 @@ class _StatCard extends StatelessWidget {
             label,
             style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
           ),
+          if (unavailable) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Not available yet',
+              style: DesignTokens.tiny.copyWith(
+                color: DesignTokens.textMuted,
+                fontStyle: FontStyle.italic,
+                fontSize: 10,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Reviews (aggregate only — no per-review content endpoint exists) ────────
+// ── Reviews — Reel Reviews / Written Reviews tabs ───────────────────────────
+//
+// "Written Reviews" renders the real star-distribution aggregate from
+// GET /v1/vendor/products/{id}/analytics. "Reel Reviews" has no backing
+// endpoint (no per-review reel media anywhere in the API) — it shows an
+// honest placeholder instead of fabricated thumbnails/view counts.
 
-class _ReviewsSection extends StatelessWidget {
+class _ReviewsSection extends StatefulWidget {
   const _ReviewsSection({required this.reviews});
 
   final ProductReviewSummary reviews;
 
   @override
+  State<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends State<_ReviewsSection> {
+  bool _showReelReviews = true;
+
+  @override
   Widget build(BuildContext context) {
+    final reviews = widget.reviews;
     final maxCount = reviews.starDistribution.values.isEmpty
         ? 0
         : reviews.starDistribution.values.reduce(math.max);
@@ -521,15 +711,36 @@ class _ReviewsSection extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                '· ${reviews.reviewCount} reviews',
+                '· Customer Reviews & Rating (${reviews.reviewCount})',
                 style: DesignTokens.tiny.copyWith(
                   color: DesignTokens.textMuted,
                 ),
               ),
             ],
           ),
-          if (maxCount > 0) ...[
-            const SizedBox(height: DesignTokens.s16),
+          const SizedBox(height: DesignTokens.s12),
+          Row(
+            children: [
+              _ReviewTabButton(
+                label: 'Reel Reviews',
+                selected: _showReelReviews,
+                onTap: () => setState(() => _showReelReviews = true),
+              ),
+              const SizedBox(width: DesignTokens.s20),
+              _ReviewTabButton(
+                label: 'Written Reviews',
+                selected: !_showReelReviews,
+                onTap: () => setState(() => _showReelReviews = false),
+              ),
+            ],
+          ),
+          const Divider(
+            color: DesignTokens.borderDefault,
+            height: DesignTokens.s20,
+          ),
+          if (_showReelReviews)
+            _unavailableNote('Not available yet.')
+          else if (maxCount > 0)
             for (var star = 5; star >= 1; star--)
               Padding(
                 padding: const EdgeInsets.only(bottom: DesignTokens.s6),
@@ -578,10 +789,110 @@ class _ReviewsSection extends StatelessWidget {
                     ),
                   ],
                 ),
+              )
+          else
+            _unavailableNote('No written reviews yet.'),
+          const SizedBox(height: DesignTokens.s16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: DesignTokens.borderDefault),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  vertical: DesignTokens.s12,
+                ),
               ),
-          ],
+              child: Text(
+                'See all reviews',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ReviewTabButton extends StatelessWidget {
+  const _ReviewTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: selected
+                  ? DesignTokens.primaryGreen
+                  : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: selected
+                ? DesignTokens.primaryGreen
+                : DesignTokens.textMuted,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Demographic + reel-review placeholders ──────────────────────────────────
+//
+// None of these have a backing field on the product analytics endpoint (see
+// the note on VendorProductAnalytics) — the sections are built to match the
+// design and light up the moment the backend adds the data, but show an
+// honest "not available" state rather than fabricated numbers.
+
+Widget _unavailableNote(String message) => Text(
+  message,
+  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+);
+
+class _AgeGroupTrafficSection extends StatelessWidget {
+  const _AgeGroupTrafficSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'Traffic Source as per Age Group',
+      subtitle: 'Customer demographic according to different age groups',
+      child: _unavailableNote('Not available yet.'),
+    );
+  }
+}
+
+class _GenderTrafficSection extends StatelessWidget {
+  const _GenderTrafficSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'Traffic Source as per Gender',
+      subtitle: 'Customer demographic according to different genders',
+      child: _unavailableNote('Not available yet.'),
     );
   }
 }

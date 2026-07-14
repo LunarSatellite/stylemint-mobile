@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/domain/entities/creator_performance.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -20,17 +21,16 @@ class _CreatorPerformanceScreenState
   String _sortBy = 'Revenue';
   String _metric = 'Performance';
 
-  static const Map<String, String> _sortApiMap = {
-    'Revenue': 'revenue',
-    'Sales': 'sales',
-    'Views': 'views',
-    'Commission': 'commission',
+  static const Map<String, CreatorPerformanceSortBy> _sortApiMap = {
+    'Revenue': CreatorPerformanceSortBy.revenue,
+    'Sales': CreatorPerformanceSortBy.sales,
+    'Commission': CreatorPerformanceSortBy.commission,
   };
 
-  static const Map<String, String?> _windowApiMap = {
+  static const Map<String, int?> _windowApiMap = {
     'Performance': null,
-    'Last 30 days': '30d',
-    'Last 90 days': '90d',
+    'Last 30 days': 30,
+    'Last 90 days': 90,
   };
 
   void _reload() {
@@ -38,8 +38,8 @@ class _CreatorPerformanceScreenState
       ref
           .read(creatorPerformanceNotifierProvider.notifier)
           .load(
-            sortBy: _sortApiMap[_sortBy],
-            window: _windowApiMap[_metric],
+            sortBy: _sortApiMap[_sortBy]!,
+            windowDays: _windowApiMap[_metric],
           ),
     );
   }
@@ -65,16 +65,6 @@ class _CreatorPerformanceScreenState
           'Creator Performance',
           style: DesignTokens.oneLinerSemibold,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.search,
-              color: DesignTokens.textWhite,
-              size: 22,
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -142,8 +132,6 @@ class _CreatorPerformanceScreenState
       ),
       child: Row(
         children: [
-          _Chip(label: 'Filter', leadingIcon: Icons.tune, onTap: () {}),
-          const SizedBox(width: DesignTokens.s8),
           _Chip(
             label: 'Sort By',
             trailingIcon: Icons.keyboard_arrow_down,
@@ -170,7 +158,7 @@ class _CreatorPerformanceScreenState
         ),
         builder: (_) => _PickSheet(
           title: 'Sort By',
-          options: const ['Revenue', 'Sales', 'Views', 'Commission'],
+          options: const ['Revenue', 'Sales', 'Commission'],
           selected: _sortBy,
           onPick: (v) {
             setState(() => _sortBy = v);
@@ -190,7 +178,7 @@ class _CreatorPerformanceScreenState
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
         builder: (_) => _PickSheet(
-          title: 'Metric',
+          title: 'Window',
           options: const ['Performance', 'Last 30 days', 'Last 90 days'],
           selected: _metric,
           onPick: (v) {
@@ -211,11 +199,6 @@ class _CreatorCard extends StatelessWidget {
   const _CreatorCard({required this.creator});
   final CreatorPerformance creator;
 
-  String _formatMoney(double amount, String currency) {
-    final prefix = currency == 'NPR' ? 'Rs ' : '$currency ';
-    return '$prefix${amount.toStringAsFixed(2)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -226,47 +209,23 @@ class _CreatorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: avatar + name/handle + 3-dot
+          // Header: avatar + label
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
             child: Row(
               children: [
-                _Avatar(url: creator.creatorAvatarUrl),
+                const _Avatar(),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        creator.label,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        creator.formattedHandle,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          color: Color(0xFF9F9FA9),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    creator.label,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: Color(0xFF9F9FA9),
-                    size: 20,
-                  ),
-                  onPressed: () {},
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -277,9 +236,7 @@ class _CreatorCard extends StatelessWidget {
           _StatRow(
             assetIcon: 'assets/images/vendordashboard/Revenue.png',
             label: 'Revenue Generated',
-            trailing: _blueChip(
-              _formatMoney(creator.attributedRevenue, creator.currency),
-            ),
+            trailing: _blueChip(formatMoney(creator.attributedRevenue)),
           ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           _StatRow(
@@ -298,9 +255,7 @@ class _CreatorCard extends StatelessWidget {
             assetIcon:
                 'assets/images/vendordashboard/icon_pending_inquiries.png',
             label: 'Commission Paid',
-            trailing: _plainValue(
-              _formatMoney(creator.commissionPaid, creator.currency),
-            ),
+            trailing: _plainValue(formatMoney(creator.commissionPaid)),
           ),
         ],
       ),
@@ -400,36 +355,21 @@ class _StatRow extends StatelessWidget {
   }
 }
 
+/// Backend doesn't return creator handle/display-name/avatar for this list,
+/// so this is always the generic placeholder.
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.url});
-  final String? url;
+  const _Avatar();
 
   @override
   Widget build(BuildContext context) {
-    if (url == null || url!.isEmpty) {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(0xFF2C2C2E),
-        ),
-        child: const Icon(Icons.person, color: Color(0xFF9F9FA9), size: 24),
-      );
-    }
-    return ClipOval(
-      child: Image.network(
-        url!,
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          width: 48,
-          height: 48,
-          color: const Color(0xFF2C2C2E),
-          child: const Icon(Icons.person, color: Color(0xFF9F9FA9), size: 24),
-        ),
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFF2C2C2E),
       ),
+      child: const Icon(Icons.person, color: Color(0xFF9F9FA9), size: 24),
     );
   }
 }
@@ -439,15 +379,9 @@ class _Avatar extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.onTap,
-    this.leadingIcon,
-    this.trailingIcon,
-  });
+  const _Chip({required this.label, required this.onTap, this.trailingIcon});
   final String label;
   final VoidCallback onTap;
-  final IconData? leadingIcon;
   final IconData? trailingIcon;
 
   @override
@@ -464,10 +398,6 @@ class _Chip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (leadingIcon != null) ...[
-              Icon(leadingIcon, size: 14, color: DesignTokens.textMuted),
-              const SizedBox(width: 4),
-            ],
             Text(
               label,
               style: const TextStyle(

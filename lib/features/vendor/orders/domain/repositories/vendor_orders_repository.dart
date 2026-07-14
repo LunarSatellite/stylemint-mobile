@@ -13,6 +13,10 @@ abstract interface class VendorOrdersRepository {
     String? status,
   });
 
+  /// `totalCount` of sub-orders in a given `SubOrderState` (backend enum
+  /// int) — used for dashboard "Pending Actions" tile counts.
+  Future<Either<NetworkExceptions, int>> getSubOrderCount(int state);
+
   Future<Either<NetworkExceptions, VendorOrder>> getOrderDetail(String orderId);
 
   Future<Either<NetworkExceptions, VendorOrder>> updateOrderStatus(

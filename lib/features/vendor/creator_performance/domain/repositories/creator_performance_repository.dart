@@ -4,8 +4,5 @@ import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/do
 
 abstract class CreatorPerformanceRepository {
   Future<Either<NetworkExceptions, List<CreatorPerformance>>>
-  getCreatorPerformance({
-    String? sortBy,
-    String? window,
-  });
+  getCreatorPerformance({int? windowDays, int limit = 50});
 }

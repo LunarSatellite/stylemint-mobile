@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -1047,29 +1048,18 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _orderCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  String? _selectedCategory;
+  SupportCategory? _selectedCategory;
   final List<XFile> _images = [];
   final _picker = ImagePicker();
 
-  static const _categories = [
-    'Shipping Address Issue',
-    'Order Cancellation',
-    'Payment Issue',
-    'Returns & Refunds',
-    'Product Quality Issue',
-    'Account & Security',
-    'Other',
-  ];
-
-  /// Maps the display label to the backend's `SupportCategory` enum.
-  static TicketCategory _categoryFor(String? label) => switch (label) {
-    'Shipping Address Issue' ||
-    'Order Cancellation' => TicketCategory.ordersAndShipping,
-    'Payment Issue' => TicketCategory.paymentAndBilling,
-    'Returns & Refunds' => TicketCategory.returnsAndRefunds,
-    'Account & Security' => TicketCategory.accountAndSettings,
-    _ => TicketCategory.safetyAndPrivacy,
-  };
+  /// `SupportCategory.id` is the backend's 1-based `SupportCategory` enum
+  /// value as a string (see `HelpCategoryDto.Id`), matching the order of
+  /// `TicketCategory.values` — so this is a direct index lookup, not a
+  /// label guess.
+  static TicketCategory _categoryFor(SupportCategory? category) =>
+      category == null
+          ? TicketCategory.safetyAndPrivacy
+          : TicketCategory.values[int.parse(category.id) - 1];
 
   @override
   void initState() {
@@ -1077,6 +1067,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     if (widget.prefilledIssue != null) {
       _descCtrl.text = widget.prefilledIssue!;
     }
+    // Warm the categories load so the picker has data by the time it's opened.
+    ref.read(categoriesNotifierProvider);
   }
 
   @override
@@ -1173,7 +1165,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                           children: [
                             Expanded(
                               child: Text(
-                                _selectedCategory!,
+                                _selectedCategory!.title,
                                 style: DesignTokens.mediumRegular.copyWith(
                                   color: DesignTokens.inputFieldData,
                                 ),
@@ -1339,53 +1331,86 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: DesignTokens.s12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: DesignTokens.borderDefault,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Issue Category',
-                style: DesignTokens.sectionInnerTitle,
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          for (final cat in _categories)
-            ListTile(
-              title: Text(
-                cat,
-                style: DesignTokens.mediumRegular.copyWith(
-                  color: DesignTokens.textWhite,
+      builder: (ctx) => Consumer(
+        builder: (ctx, ref, _) {
+          final categoriesState = ref.watch(categoriesNotifierProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: DesignTokens.s12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              trailing: _selectedCategory == cat
-                  ? const Icon(
-                      Icons.check,
-                      color: DesignTokens.primaryGreen,
-                      size: 18,
-                    )
-                  : null,
-              onTap: () {
-                setState(() => _selectedCategory = cat);
-                Navigator.of(ctx).pop();
-              },
-            ),
-          const SizedBox(height: DesignTokens.s16),
-        ],
+              const SizedBox(height: DesignTokens.s16),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Issue Category',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              categoriesState.when(
+                initial: _categoryPickerLoader,
+                loadInProgress: _categoryPickerLoader,
+                loadFailure: (failure) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s16,
+                  ),
+                  child: Text(
+                    'Could not load categories.',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                ),
+                loadSuccess: (categories) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final cat in categories)
+                      ListTile(
+                        title: Text(
+                          cat.title,
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
+                        trailing: _selectedCategory?.id == cat.id
+                            ? const Icon(
+                                Icons.check,
+                                color: DesignTokens.primaryGreen,
+                                size: 18,
+                              )
+                            : null,
+                        onTap: () {
+                          setState(() => _selectedCategory = cat);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          );
+        },
       ),
     ).ignore();
   }
+
+  Widget _categoryPickerLoader() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }

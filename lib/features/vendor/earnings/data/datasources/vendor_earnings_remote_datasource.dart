@@ -11,9 +11,22 @@ class VendorEarningsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  Future<VendorEarningsSummaryDto> getEarningsSummary() async {
-    final response = await apiClient.get('/v1/vendor/analytics/overview');
-    return VendorEarningsSummaryDto.fromJson(
+  /// `GET /v1/vendor/analytics/overview` (Vendor §8A) — the same endpoint
+  /// `vendor/dashboard` consumes, scoped here to just gross sales/net
+  /// revenue/order count. Omitting [fromUtc]/[toUtc] lets the backend apply
+  /// its own default (trailing 30 days).
+  Future<VendorAnalyticsOverviewSnapshotDto> getAnalyticsOverview({
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/vendor/analytics/overview',
+      queryParameters: {
+        if (fromUtc != null) 'fromUtc': fromUtc.toIso8601String(),
+        if (toUtc != null) 'toUtc': toUtc.toIso8601String(),
+      },
+    );
+    return VendorAnalyticsOverviewSnapshotDto.fromJson(
       response as Map<String, dynamic>,
     );
   }

@@ -21,6 +21,11 @@ abstract class CreatorPerformanceState with _$CreatorPerformanceState {
       _LoadFailure;
 }
 
+/// The backend has no server-side sort parameter for
+/// `GET /v1/vendor/analytics/creators` (it returns items ordered by revenue
+/// desc) — these are applied client-side after fetch.
+enum CreatorPerformanceSortBy { revenue, sales, commission }
+
 class CreatorPerformanceNotifier
     extends StateNotifier<CreatorPerformanceState> {
   CreatorPerformanceNotifier(this._repository)
@@ -30,15 +35,42 @@ class CreatorPerformanceNotifier
 
   final CreatorPerformanceRepository _repository;
 
-  Future<void> load({String? sortBy, String? window}) async {
+  Future<void> load({
+    int? windowDays,
+    CreatorPerformanceSortBy sortBy = CreatorPerformanceSortBy.revenue,
+  }) async {
     state = const CreatorPerformanceState.loadInProgress();
     final either = await _repository.getCreatorPerformance(
-      sortBy: sortBy,
-      window: window,
+      windowDays: windowDays,
     );
     state = either.fold(
       CreatorPerformanceState.loadFailure,
-      CreatorPerformanceState.loadSuccess,
+      (creators) => CreatorPerformanceState.loadSuccess(
+        _sorted(creators, sortBy),
+      ),
     );
+  }
+
+  List<CreatorPerformance> _sorted(
+    List<CreatorPerformance> creators,
+    CreatorPerformanceSortBy sortBy,
+  ) {
+    final sorted = [...creators];
+    switch (sortBy) {
+      case CreatorPerformanceSortBy.revenue:
+        sorted.sort(
+          (a, b) => b.attributedRevenue.amount.compareTo(
+            a.attributedRevenue.amount,
+          ),
+        );
+      case CreatorPerformanceSortBy.sales:
+        sorted.sort((a, b) => b.unitsSold.compareTo(a.unitsSold));
+      case CreatorPerformanceSortBy.commission:
+        sorted.sort(
+          (a, b) =>
+              b.commissionPaid.amount.compareTo(a.commissionPaid.amount),
+        );
+    }
+    return sorted;
   }
 }

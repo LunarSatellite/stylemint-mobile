@@ -131,6 +131,8 @@ abstract class RouteNames {
   static const vendorPartnershipsInvite =
       '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
+  static const vendorCampaignBriefs = '/vendor/briefs';
+  static const vendorCampaignBriefDetail = '/vendor/briefs/:briefId';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';
   static const vendorEarningsPayout = '/vendor/earnings/payout';
