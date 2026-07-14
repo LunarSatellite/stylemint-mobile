@@ -419,15 +419,17 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     return parts.isEmpty ? null : parts.join(', ');
   }
 
-  /// TODO(swagger): exact bulk-result response shape isn't published — reads
-  /// a `results`/`items` list of `{id, success, errorCode}` if present;
-  /// otherwise assumes the outer 200 means every requested id succeeded.
+  /// Confirmed against `BulkResult<T>` (backend `Shared.Core.Results`): each
+  /// row is `{index, success, value, errorCode, errorMessage, field}` — the
+  /// requested sub-order id is NOT echoed back directly, so rows are
+  /// correlated to `requestedIds` by their submitted `index`, falling back to
+  /// `value.subOrderId` if the index is ever missing or out of range.
   static BulkActionResult _parseBulkResult(
     Map<String, dynamic> json,
     List<String> requestedIds,
   ) {
-    final rows = (json['results'] as List<dynamic>? ??
-            json['items'] as List<dynamic>? ??
+    final rows = (json['items'] as List<dynamic>? ??
+            json['results'] as List<dynamic>? ??
             const <dynamic>[])
         .cast<Map<String, dynamic>>();
     if (rows.isEmpty) {
@@ -436,9 +438,14 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     final succeeded = <String>[];
     final failed = <String, String>{};
     for (final row in rows) {
-      final id = (row['id'] as String?) ??
-          (row['subOrderId'] as String?) ??
-          '';
+      final index = row['index'] as int?;
+      final value = row['value'] as Map<String, dynamic>?;
+      final id = (index != null && index >= 0 && index < requestedIds.length)
+          ? requestedIds[index]
+          : (value?['subOrderId'] as String?) ??
+              (row['id'] as String?) ??
+              (row['subOrderId'] as String?) ??
+              '';
       final errorCode = row['errorCode'] as String? ?? row['error'] as String?;
       if (errorCode == null) {
         succeeded.add(id);
