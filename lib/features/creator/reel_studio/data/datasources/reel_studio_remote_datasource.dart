@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/data/models/reel_studio_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_studio/data/models/reel_studio_extras_dto.dart';
 
 class ReelStudioRemoteDataSource {
   ReelStudioRemoteDataSource({required this.apiClient});
@@ -31,6 +32,41 @@ class ReelStudioRemoteDataSource {
       '/v1/creator/studio/coaching/insight',
     );
     return CoachingFeedbackDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<CoachingTipDto>> getCoachingTips(String draftId) async {
+    final response = await apiClient.get(
+      '/v1/creator/studio/coaching/tips',
+      queryParameters: {'draftId': draftId},
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .map((e) => CoachingTipDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<List<CollabSuggestionDto>> getCollabSuggestions() async {
+    final response = await apiClient.get(
+      '/v1/creator/studio/collab-suggestions',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .map((e) => CollabSuggestionDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  Future<DropPartyPromptDto> getDropPartyPrompt() async {
+    final response = await apiClient.get(
+      '/v1/creator/studio/drop-party-prompt',
+    );
+    return DropPartyPromptDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<TagNudgeDto>> getTagNudges() async {
+    final response = await apiClient.get(
+      '/v1/creator/studio/tag-nudges',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .map((e) => TagNudgeDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
   }
 
   Future<ReelDraftDto> createDraft({
@@ -102,7 +138,7 @@ class ReelStudioRemoteDataSource {
   ) async {
     final response = await apiClient.post(
       '/v1/creator/studio/analyze',
-      data: {},
+      data: {'reelDraftId': draftId},
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,

@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasources/creator_reels_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/creator_reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
@@ -57,4 +58,13 @@ final creatorReelSummariesProvider = FutureProvider.autoDispose
       (reels) => reels,
     );
   },
+);
+
+// ── Tagged products for a reel (auto-disposed, keyed by reelId) ───────────────
+
+// ignore: specify_nonobvious_property_types
+final reelTaggedProductsProvider =
+    FutureProvider.autoDispose.family<List<ReelTagManagementDto>, String>(
+  (ref, reelId) =>
+      ref.watch(creatorReelsRemoteDataSourceProvider).listTaggedProducts(reelId),
 );

@@ -81,11 +81,14 @@ class UpdateCreatorProfileNotifier
       tags: tags,
       niches: niches,
     );
-    state = either.fold(
-      UpdateCreatorProfileState.failure,
-      UpdateCreatorProfileState.success,
-    );
+    // Guard against the user navigating back while the request was in-flight.
+    // autoDispose disposes this notifier when the screen leaves the tree, so
+    // writing state on a disposed notifier would throw.
+    if (mounted) {
+      state = either.fold(
+        UpdateCreatorProfileState.failure,
+        UpdateCreatorProfileState.success,
+      );
+    }
   }
-
-  void reset() => state = const UpdateCreatorProfileState.initial();
 }

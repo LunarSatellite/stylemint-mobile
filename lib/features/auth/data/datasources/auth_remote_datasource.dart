@@ -750,11 +750,16 @@ class AuthRemoteDataSource {
   // ==========================================================================
 
   /// GET `/v1/accounts/{accountId}/interests`
+  /// Returns link records — name is empty; callers only use categoryId.
   Future<List<InterestDto>> listInterests(String accountId) async {
     final response = await apiClient.get('/v1/accounts/$accountId/interests');
-    return (response as List)
-        .map((e) => InterestDto.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return (response as List).map((e) {
+      final map = e as Map<String, dynamic>;
+      return InterestDto(
+        categoryId: map['categoryId'] as String,
+        name: '',
+      );
+    }).toList();
   }
 
   /// GET `/v1/public/interests` — available interests for onboarding.

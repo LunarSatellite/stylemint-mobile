@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
@@ -129,6 +130,7 @@ class _ActiveTab extends StatelessWidget {
                 separatorBuilder: (_, __) =>
                     const SizedBox(height: DesignTokens.s12),
                 itemBuilder: (_, i) => _PartnershipCard(
+                  partnershipId: active[i].id,
                   logo: _VendorAvatar(
                     url: active[i].vendorLogoUrl,
                     name: active[i].vendorName,
@@ -721,6 +723,7 @@ class _PillButton extends StatelessWidget {
 
 class _PartnershipCard extends StatelessWidget {
   const _PartnershipCard({
+    required this.partnershipId,
     required this.logo,
     required this.name,
     required this.productsTagged,
@@ -730,6 +733,7 @@ class _PartnershipCard extends StatelessWidget {
     required this.activeCampaigns,
   });
 
+  final String partnershipId;
   final Widget logo;
   final String name;
   final int productsTagged;
@@ -807,19 +811,47 @@ class _PartnershipCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
-          GestureDetector(
-            onTap: () {},
-            child: const Text(
-              'Message',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: DesignTokens.primaryGreen,
-                decoration: TextDecoration.underline,
-                decorationColor: DesignTokens.primaryGreen,
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {},
+                child: const Text(
+                  'Message',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.primaryGreen,
+                    decoration: TextDecoration.underline,
+                    decorationColor: DesignTokens.primaryGreen,
+                  ),
+                ),
               ),
-            ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+                child: Text(
+                  '·',
+                  style: TextStyle(
+                    color: DesignTokens.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _showTermsSheet(context, partnershipId),
+                child: const Text(
+                  'View Terms',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.primaryGreen,
+                    decoration: TextDecoration.underline,
+                    decorationColor: DesignTokens.primaryGreen,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: DesignTokens.s12),
           const _DashedDivider(),
@@ -873,6 +905,168 @@ class _PartnershipCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _showTermsSheet(BuildContext context, String partnershipId) {
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _TermsBottomSheet(partnershipId: partnershipId),
+  );
+}
+
+class _TermsBottomSheet extends ConsumerWidget {
+  const _TermsBottomSheet({required this.partnershipId});
+
+  final String partnershipId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final termsAsync = ref.watch(partnershipTermsProvider(partnershipId));
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E1E22),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DesignTokens.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 12, 16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Partnership Terms',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded,
+                      color: DesignTokens.textLight, size: 22),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          termsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: CircularProgressIndicator(
+                    color: DesignTokens.primaryGreen),
+              ),
+            ),
+            error: (_, __) => const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: Text(
+                'Could not load terms.',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ),
+            data: (terms) => ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TermsSection(index: 1, section: terms.whoCanJoin),
+                    const SizedBox(height: DesignTokens.s24),
+                    _TermsSection(index: 2, section: terms.reelContentRules),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermsSection extends StatelessWidget {
+  const _TermsSection({required this.index, required this.section});
+  final int index;
+  final TermsSection section;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$index. ${section.heading}',
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (section.bullets.isEmpty)
+          const Text('—',
+              style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 13,
+                  color: DesignTokens.textMuted))
+        else
+          for (final b in section.bullets)
+            Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6, right: DesignTokens.s8),
+                    child: Icon(Icons.circle,
+                        size: 6, color: DesignTokens.textLight),
+                  ),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 13,
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
     );
   }
 }

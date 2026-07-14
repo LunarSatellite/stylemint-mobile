@@ -119,3 +119,70 @@ class CreatorReelDetailDto {
             taggedProducts.map((p) => p.toDomain()).toList(growable: false),
       );
 }
+
+/// DTO for `GET /v1/creator/reels/{id}/tagged-products` and
+/// `POST /v1/creator/reels/{id}/tagged-products` (management endpoints).
+class ReelTagManagementDto {
+  const ReelTagManagementDto({
+    required this.id,
+    required this.reelId,
+    required this.productId,
+    this.partnershipIdSnapshot,
+    required this.commissionRateSnapshotPercent,
+    required this.productPriceSnapshotAmount,
+    this.productPriceSnapshotCurrency,
+    required this.commissionPerSaleSnapshotAmount,
+    this.commissionPerSaleSnapshotCurrency,
+    required this.overlayPositionX,
+    required this.overlayPositionY,
+    this.createdUtc,
+    this.productName,
+    this.productPrimaryImageUrl,
+    this.vendorAccountId,
+    this.vendorDisplayName,
+  });
+
+  final String id;
+  final String reelId;
+  final String productId;
+  final String? partnershipIdSnapshot;
+  final double commissionRateSnapshotPercent;
+  final double productPriceSnapshotAmount;
+  final String? productPriceSnapshotCurrency;
+  final double commissionPerSaleSnapshotAmount;
+  final String? commissionPerSaleSnapshotCurrency;
+  final double overlayPositionX;
+  final double overlayPositionY;
+  final DateTime? createdUtc;
+  final String? productName;
+  final String? productPrimaryImageUrl;
+  final String? vendorAccountId;
+  final String? vendorDisplayName;
+
+  factory ReelTagManagementDto.fromJson(Map<String, dynamic> json) =>
+      ReelTagManagementDto(
+        id: (json['id'] as String?) ?? '',
+        reelId: (json['reelId'] as String?) ?? '',
+        productId: (json['productId'] as String?) ?? '',
+        partnershipIdSnapshot: json['partnershipIdSnapshot'] as String?,
+        commissionRateSnapshotPercent:
+            (json['commissionRateSnapshotPercent'] as num?)?.toDouble() ?? 0,
+        productPriceSnapshotAmount:
+            (json['productPriceSnapshotAmount'] as num?)?.toDouble() ?? 0,
+        productPriceSnapshotCurrency:
+            json['productPriceSnapshotCurrency'] as String?,
+        commissionPerSaleSnapshotAmount:
+            (json['commissionPerSaleSnapshotAmount'] as num?)?.toDouble() ?? 0,
+        commissionPerSaleSnapshotCurrency:
+            json['commissionPerSaleSnapshotCurrency'] as String?,
+        overlayPositionX:
+            (json['overlayPositionX'] as num?)?.toDouble() ?? 0,
+        overlayPositionY:
+            (json['overlayPositionY'] as num?)?.toDouble() ?? 0,
+        createdUtc: DateTime.tryParse(json['createdUtc'] as String? ?? ''),
+        productName: json['productName'] as String?,
+        productPrimaryImageUrl: json['productPrimaryImageUrl'] as String?,
+        vendorAccountId: json['vendorAccountId'] as String?,
+        vendorDisplayName: json['vendorDisplayName'] as String?,
+      );
+}
