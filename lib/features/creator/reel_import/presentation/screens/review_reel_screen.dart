@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -19,22 +22,42 @@ class ReviewReelArgs {
   final int potentialEarningsPerSale;
 }
 
-class ReviewReelScreen extends StatefulWidget {
+class ReviewReelScreen extends ConsumerStatefulWidget {
   const ReviewReelScreen({super.key, required this.args});
 
   final ReviewReelArgs args;
 
   @override
-  State<ReviewReelScreen> createState() => _ReviewReelScreenState();
+  ConsumerState<ReviewReelScreen> createState() => _ReviewReelScreenState();
 }
 
-class _ReviewReelScreenState extends State<ReviewReelScreen> {
+class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
   late final List<TaggedProductForImport> _taggedProducts;
 
   @override
   void initState() {
     super.initState();
     _taggedProducts = List.from(widget.args.taggedProducts);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    ref.listenManual<ReelSubmitState>(
+      reelSubmitNotifierProvider,
+      (previous, next) {
+        if (next is ReelSubmitSuccess) {
+          context.pushReplacement(RouteNames.reelPublished, extra: widget.args);
+        } else if (next is ReelSubmitFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.message),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      },
+    );
   }
 
   String _formatDuration(int seconds) {
@@ -207,26 +230,44 @@ class _ReviewReelScreenState extends State<ReviewReelScreen> {
           ),
 
           // ── Share Reel button ────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s8,
-              DesignTokens.s16, DesignTokens.s24,
-            ),
-            color: DesignTokens.bgAppFoundation,
-            child: SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                onPressed: () {
-                  context.push(
-                    RouteNames.reelPublished,
-                    extra: widget.args,
-                  );
-                },
-                style: DesignTokens.primaryButtonStyle(),
-                child: const Text('Share Reel'),
-              ),
-            ),
+          Consumer(
+            builder: (context, ref, _) {
+              final submitState = ref.watch(reelSubmitNotifierProvider);
+              final isLoading = submitState is ReelSubmitInProgress;
+              return Container(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16, DesignTokens.s8,
+                  DesignTokens.s16, DesignTokens.s24,
+                ),
+                color: DesignTokens.bgAppFoundation,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: DesignTokens.buttonHeight,
+                  child: ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            final reel = widget.args.reel;
+                            if (reel == null) return;
+                            ref
+                                .read(reelSubmitNotifierProvider.notifier)
+                                .submit(reel, _taggedProducts);
+                          },
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : const Text('Share Reel'),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

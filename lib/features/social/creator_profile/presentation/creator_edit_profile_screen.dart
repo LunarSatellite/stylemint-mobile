@@ -34,6 +34,7 @@ class _CreatorEditProfileScreenState
   late final TextEditingController _bioCtrl;
 
   late List<String> _tags;
+  String _originalBio = '';
 
   @override
   void initState() {
@@ -41,7 +42,6 @@ class _CreatorEditProfileScreenState
     _nicknameCtrl = TextEditingController();
     _bioCtrl = TextEditingController();
     _tags = [];
-    ref.read(updateCreatorProfileNotifierProvider.notifier).reset();
   }
 
   @override
@@ -59,6 +59,7 @@ class _CreatorEditProfileScreenState
     }
     if (_bioCtrl.text.isEmpty && data.bio.isNotEmpty) {
       _bioCtrl.text = data.bio;
+      _originalBio = data.bio;
     }
     if (_tags.isEmpty && data.tags.isNotEmpty) {
       _tags = List<String>.from(data.tags);
@@ -75,9 +76,12 @@ class _CreatorEditProfileScreenState
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final trimmedBio = _bioCtrl.text.trim();
+    final bioChanged = trimmedBio != _originalBio;
+
     ref.read(creatorProfileEditProvider.notifier).update(
       displayName: _nicknameCtrl.text.trim(),
-      bio: _bioCtrl.text.trim(),
+      bio: bioChanged ? trimmedBio : _originalBio,
       tags: List<String>.from(_tags),
       niches: ref.read(creatorProfileEditProvider).niches,
     );
@@ -96,7 +100,7 @@ class _CreatorEditProfileScreenState
       accountId: accountId,
       rowVersion: rowVersion,
       displayName: _nicknameCtrl.text.trim(),
-      bio: _bioCtrl.text.trim(),
+      bio: bioChanged ? trimmedBio : null,
       tags: List<String>.from(_tags),
     );
   }
@@ -120,11 +124,15 @@ class _CreatorEditProfileScreenState
                       .load(),
                 );
               }
-              context.pop();
+              if (mounted) context.pop();
             },
-            failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(NetworkExceptions.getMessage(f))),
-            ),
+            failure: (f) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+                );
+              }
+            },
             orElse: () {},
           );
         },
@@ -132,14 +140,19 @@ class _CreatorEditProfileScreenState
       ..listen<CreatorProfileEditData>(
         creatorProfileEditProvider,
         (_, data) {
+          if (!mounted) return;
           if (_nicknameCtrl.text.isEmpty && data.displayName.isNotEmpty) {
             _nicknameCtrl.text = data.displayName;
           }
           if (_bioCtrl.text.isEmpty && data.bio.isNotEmpty) {
             _bioCtrl.text = data.bio;
+            _originalBio = data.bio;
           }
           if (_tags.isEmpty && data.tags.isNotEmpty) {
-            setState(() => _tags = List<String>.from(data.tags));
+            // Defer setState to avoid calling it during the current build frame.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _tags = List<String>.from(data.tags));
+            });
           }
         },
       );

@@ -98,11 +98,81 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
   final ReelImportRepository _repository;
 
   Future<void> search(String query) async {
+    if (query.trim().isEmpty) {
+      state = const ProductSearchState.loadSuccess([]);
+      return;
+    }
     state = const ProductSearchState.loadInProgress();
-    final either = await _repository.searchProducts(query);
+    final either = await _repository.searchProducts(query.trim());
     state = either.fold(
       ProductSearchState.loadFailure,
       ProductSearchState.loadSuccess,
     );
+  }
+}
+
+// ── Submit state (plain sealed — no codegen required) ────────────────────────
+
+sealed class ReelSubmitState {}
+
+class ReelSubmitIdle extends ReelSubmitState {}
+
+class ReelSubmitInProgress extends ReelSubmitState {}
+
+class ReelSubmitSuccess extends ReelSubmitState {}
+
+class ReelSubmitFailure extends ReelSubmitState {
+  ReelSubmitFailure(this.message);
+  final String message;
+}
+
+class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
+  ReelSubmitNotifier(this._repository) : super(ReelSubmitIdle());
+
+  final ReelImportRepository _repository;
+
+  Future<void> submit(
+    ImportableReel reel,
+    List<TaggedProductForImport> taggedProducts,
+  ) async {
+    state = ReelSubmitInProgress();
+
+    final importResult = await _repository.importReel(reel);
+    if (importResult.isLeft()) {
+      final failure = importResult.getLeft().toNullable()!;
+      // 409 means this reel was already imported — treat as success
+      final alreadyImported = failure.maybeWhen(
+        conflict: () => true,
+        orElse: () => false,
+      );
+      if (alreadyImported) {
+        state = ReelSubmitSuccess();
+        return;
+      }
+      state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
+      return;
+    }
+    final importedReel = importResult.getRight().toNullable()!;
+
+    for (final product in taggedProducts) {
+      final tagResult = await _repository.tagProduct(
+        reelId: importedReel.id,
+        productId: product.productId,
+      );
+      if (tagResult.isLeft()) {
+        final failure = tagResult.getLeft().toNullable()!;
+        state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
+        return;
+      }
+    }
+
+    final publishResult = await _repository.publishReel(reelId: importedReel.id);
+    if (publishResult.isLeft()) {
+      final failure = publishResult.getLeft().toNullable()!;
+      state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
+      return;
+    }
+
+    state = ReelSubmitSuccess();
   }
 }

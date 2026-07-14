@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 final _partnershipProvider = FutureProvider.autoDispose
@@ -12,13 +13,6 @@ final _partnershipProvider = FutureProvider.autoDispose
   final ApiClient api = ref.watch(apiClientProvider);
   final res = await api.get('/v1/partnerships/$id');
   return PartnershipDetailDto.fromJson(res as Map<String, dynamic>);
-});
-
-final _termsProvider =
-    FutureProvider.autoDispose.family<PartnershipTermsDto, String>((ref, id) async {
-  final ApiClient api = ref.watch(apiClientProvider);
-  final res = await api.get('/v1/partnerships/$id/terms/active');
-  return PartnershipTermsDto.fromJson(res as Map<String, dynamic>);
 });
 
 final _campaignsProvider = FutureProvider.autoDispose
@@ -41,7 +35,7 @@ class BrandDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final partnershipAsync = ref.watch(_partnershipProvider(partnershipId));
-    final termsAsync = ref.watch(_termsProvider(partnershipId));
+    final termsAsync = ref.watch(partnershipTermsProvider(partnershipId));
     final campaignsAsync = ref.watch(_campaignsProvider(partnershipId));
 
     return DefaultTabController(
@@ -109,7 +103,7 @@ class BrandDetailScreen extends ConsumerWidget {
                   context.push(
                     '/creator/partnerships/${p.id}/apply',
                     extra: PartnershipApplyArgs(
-                      partnershipId: p.id,
+                      vendorProfileId: p.vendorProfileId,
                       vendorName: p.vendorName,
                       vendorLogoUrl: p.vendorLogoUrl,
                       vendorRating: p.vendorRating,

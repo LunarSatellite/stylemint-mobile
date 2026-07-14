@@ -58,6 +58,9 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        return left(const NetworkExceptions.conflict());
+      }
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {
       return left(e);
@@ -77,6 +80,52 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
     try {
       final dtos = await remoteDataSource.searchProducts(query);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> publishReel({
+    required String reelId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.publishReel(
+        reelId: reelId,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> tagProduct({
+    required String reelId,
+    required String productId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.tagProduct(
+        reelId: reelId,
+        productId: productId,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(unit);
     } on DioException catch (e) {
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {

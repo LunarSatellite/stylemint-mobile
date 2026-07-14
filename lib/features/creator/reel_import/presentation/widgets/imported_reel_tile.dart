@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ImportedReelTile extends StatelessWidget {
   const ImportedReelTile({super.key, required this.reel});
@@ -10,7 +11,14 @@ class ImportedReelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: reel.sourceUrl.isNotEmpty
+          ? () => launchUrl(
+                Uri.parse(reel.sourceUrl),
+                mode: LaunchMode.externalApplication,
+              )
+          : null,
+      child: Container(
       margin: const EdgeInsets.only(bottom: DesignTokens.s8),
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: BoxDecoration(
@@ -71,6 +79,7 @@ class ImportedReelTile extends StatelessWidget {
           Icon(reel.platform.icon, color: reel.platform.color, size: 20),
         ],
       ),
+    ),
     );
   }
 

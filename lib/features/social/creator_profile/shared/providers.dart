@@ -54,8 +54,9 @@ final resolvedCreatorProfileProvider =
 
 // ── Profile update ────────────────────────────────────────────────────────────
 
-final updateCreatorProfileNotifierProvider = StateNotifierProvider<
-    UpdateCreatorProfileNotifier, UpdateCreatorProfileState>(
+final updateCreatorProfileNotifierProvider =
+    StateNotifierProvider.autoDispose<
+        UpdateCreatorProfileNotifier, UpdateCreatorProfileState>(
   (ref) => UpdateCreatorProfileNotifier(
     ref.watch(creatorProfileRepositoryProvider),
   ),

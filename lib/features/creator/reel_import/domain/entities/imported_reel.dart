@@ -76,6 +76,7 @@ class ImportedReel {
     required this.importedAt,
     required this.caption,
     required this.thumbnailUrl,
+    required this.sourceUrl,
     required this.platform,
     required this.platformPostId,
   });
@@ -87,6 +88,7 @@ class ImportedReel {
   final DateTime importedAt;
   final String caption;
   final String thumbnailUrl;
+  final String sourceUrl;
   final SocialPlatform platform;
   final String platformPostId;
 
@@ -98,6 +100,7 @@ class ImportedReel {
     DateTime? importedAt,
     String? caption,
     String? thumbnailUrl,
+    String? sourceUrl,
     SocialPlatform? platform,
     String? platformPostId,
   }) {
@@ -109,6 +112,7 @@ class ImportedReel {
       importedAt: importedAt ?? this.importedAt,
       caption: caption ?? this.caption,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
       platform: platform ?? this.platform,
       platformPostId: platformPostId ?? this.platformPostId,
     );

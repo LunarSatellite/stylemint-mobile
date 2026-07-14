@@ -58,7 +58,9 @@ class CreatorRemoteDataSource {
         'bio': bio,
         'audienceBand': audienceBand,
         'contentCategoryIds': contentCategoryIds,
-        'otherCategoryDescription': ?otherCategoryDescription,
+        if (otherCategoryDescription != null &&
+          otherCategoryDescription.trim().isNotEmpty)
+          'otherCategoryDescription': otherCategoryDescription,
         if (socials.isNotEmpty) 'socials': socials,
       },
       options: _idempotent(idempotencyKey),

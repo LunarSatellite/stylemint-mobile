@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReelPublishedScreen extends StatelessWidget {
   const ReelPublishedScreen({super.key, required this.args});
@@ -317,7 +318,12 @@ class ReelPublishedScreen extends StatelessWidget {
                             height: 24,
                           ),
                           label: 'View\nAnalytics',
-                          onTap: () => context.go(RouteNames.creatorReelAnalyticsDetail),
+                          onTap: args.reel?.id.isNotEmpty == true
+                              ? () => context.go(
+                                    RouteNames.creatorReelAnalyticsDetail
+                                        .replaceFirst(':reelId', args.reel!.id),
+                                  )
+                              : null,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -331,13 +337,14 @@ class ReelPublishedScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _ActionButton(
-                          iconWidget: const Icon(Icons.share_rounded, color: DesignTokens.textMuted, size: 24),
-                          label: 'Share this\nReel',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Sharing reel...')),
-                            );
-                          },
+                          iconWidget: const Icon(Icons.play_circle_outline_rounded, color: DesignTokens.textMuted, size: 24),
+                          label: 'Watch\nReel',
+                          onTap: args.reel?.sourceUrl.isNotEmpty == true
+                              ? () => launchUrl(
+                                    Uri.parse(args.reel!.sourceUrl),
+                                    mode: LaunchMode.externalApplication,
+                                  )
+                              : null,
                         ),
                       ),
                     ],
@@ -442,12 +449,12 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.iconWidget,
     required this.label,
-    required this.onTap,
+    this.onTap,
   });
 
   final Widget iconWidget;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

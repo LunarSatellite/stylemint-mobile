@@ -4,10 +4,15 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
+
+// Re-export new DTO types consumed by UI widgets
+export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
+    show PotentialEarningsDto, RecipeAttachmentInfoDto, MoneyDto;
 
 final partnershipsRemoteDataSourceProvider =
     Provider<PartnershipsRemoteDataSource>(
@@ -52,4 +57,38 @@ final pendingInvitesCountProvider = Provider<int>((ref) {
             .length,
         orElse: () => 0,
       );
+});
+
+/// Active terms for a given partnership id.
+final partnershipTermsProvider = FutureProvider.autoDispose
+    .family<PartnershipTermsDto, String>((ref, partnershipId) {
+  return ref
+      .watch(partnershipsRemoteDataSourceProvider)
+      .getPartnershipTerms(partnershipId);
+});
+
+/// All terms versions for a given partnership id.
+final partnershipTermsVersionsProvider = FutureProvider.autoDispose
+    .family<List<PartnershipTermsDto>, String>((ref, partnershipId) {
+  return ref
+      .watch(partnershipsRemoteDataSourceProvider)
+      .getTermsVersions(partnershipId);
+});
+
+/// Potential earnings projection for a given partnership (and optional variant).
+final potentialEarningsProvider = FutureProvider.autoDispose
+    .family<PotentialEarningsDto, (String partnershipId, String? variantId)>(
+  (ref, args) {
+    return ref
+        .watch(partnershipsRemoteDataSourceProvider)
+        .getPotentialEarnings(args.$1, variantId: args.$2);
+  },
+);
+
+/// Recipes attached to a partnership brief.
+final partnershipRecipesProvider = FutureProvider.autoDispose
+    .family<List<RecipeAttachmentInfoDto>, String>((ref, partnershipId) {
+  return ref
+      .watch(partnershipsRemoteDataSourceProvider)
+      .getPartnershipRecipes(partnershipId);
 });

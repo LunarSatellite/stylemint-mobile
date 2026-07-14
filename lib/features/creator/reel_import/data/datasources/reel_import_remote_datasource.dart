@@ -70,7 +70,9 @@ class ReelImportRemoteDataSource {
         'externalId': externalId,
         'durationSeconds': durationSeconds > 0 ? durationSeconds : 30,
         if (caption != null && caption.isNotEmpty) 'caption': caption,
-        if (thumbnailCdnUrl != null && thumbnailCdnUrl.isNotEmpty)
+        if (thumbnailCdnUrl != null &&
+            thumbnailCdnUrl.isNotEmpty &&
+            thumbnailCdnUrl.length <= 2048)
           'thumbnailCdnUrl': thumbnailCdnUrl,
       },
       options: Options(headers: {
@@ -103,6 +105,40 @@ class ReelImportRemoteDataSource {
     }).toList(growable: false);
   }
 
+  // POST /v1/creator/reels/{reelId}/publish
+  Future<void> publishReel({
+    required String reelId,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/creator/reels/$reelId/publish',
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
+  // POST /v1/creator/reels/{reelId}/tagged-products
+  Future<void> tagProduct({
+    required String reelId,
+    required String productId,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/creator/reels/$reelId/tagged-products',
+      data: {
+        'productId': productId,
+        'overlayPositionX': 0.5,
+        'overlayPositionY': 0.5,
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
   // GET /v1/creator/reels?pageSize=...&cursor=...
   // Returns the creator's imported reels (paginated).
   Future<List<ImportedReelDto>> getImportHistory({
@@ -132,11 +168,12 @@ class ReelImportRemoteDataSource {
         ? _platformName(platformInt)
         : (platformHint?.name ?? 'instagram');
 
-    // ReelState: 0=Draft→pending, 1=Published→live, 2=Flagged→flagged
+    // ReelState enum: Draft=1, Processing=2, Published=3, Unpublished=4, ExternalDeleted=5
     final stateInt = m['state'] as int? ?? 0;
     final statusName = switch (stateInt) {
-      1 => 'live',
-      2 => 'flagged',
+      3 => 'live',
+      2 => 'processing',
+      5 => 'flagged',
       _ => 'pending',
     };
 
@@ -164,6 +201,7 @@ class ReelImportRemoteDataSource {
           : DateTime.now(),
       caption: m['caption'] as String? ?? '',
       thumbnailUrl: m['thumbnailCdnUrl'] as String? ?? '',
+      sourceUrl: m['sourceUrl'] as String? ?? '',
       platform: platformName,
       platformPostId: m['externalId'] as String? ?? '',
     );

@@ -2,6 +2,7 @@
 class PartnershipDetailDto {
   const PartnershipDetailDto({
     required this.id,
+    required this.vendorProfileId,
     required this.stateLabel,
     required this.commissionMinPercent,
     required this.commissionMaxPercent,
@@ -16,6 +17,7 @@ class PartnershipDetailDto {
   });
 
   final String id;
+  final String vendorProfileId;
   final String stateLabel;
   final double commissionMinPercent;
   final double commissionMaxPercent;
@@ -39,6 +41,7 @@ class PartnershipDetailDto {
   factory PartnershipDetailDto.fromJson(Map<String, dynamic> json) {
     return PartnershipDetailDto(
       id: (json['id'] as String?) ?? '',
+      vendorProfileId: (json['vendorProfileId'] as String?) ?? '',
       stateLabel: _states[(json['state'] as num?)?.toInt() ?? 0] ?? 'Unknown',
       commissionMinPercent:
           (json['commissionMinPercent'] as num?)?.toDouble() ?? 0,
@@ -115,6 +118,89 @@ class PartnershipTermsDto {
       bullets: bullets,
     );
   }
+}
+
+/// Money value representation from the backend API.
+class MoneyDto {
+  const MoneyDto({required this.amount, required this.currency});
+
+  final double amount;
+  final String currency;
+
+  factory MoneyDto.fromJson(Map<String, dynamic> json) => MoneyDto(
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+        currency: (json['currency'] as String?) ?? 'NPR',
+      );
+
+  String get label {
+    final symbol = currency.toUpperCase() == 'NPR' ? 'Rs' : currency;
+    return '$symbol ${amount.toStringAsFixed(0)}';
+  }
+}
+
+/// Potential earnings projection — `GET /v1/partnerships/{id}/potential-earnings`.
+class PotentialEarningsDto {
+  const PotentialEarningsDto({
+    required this.partnershipId,
+    required this.productVariantId,
+    required this.commissionRate,
+    required this.unitPrice,
+    required this.perSale,
+    required this.perFiftySales,
+    required this.salesAssumed,
+  });
+
+  final String partnershipId;
+  final String productVariantId;
+  final double commissionRate;
+  final MoneyDto unitPrice;
+  final MoneyDto perSale;
+  final MoneyDto perFiftySales;
+  final int salesAssumed;
+
+  factory PotentialEarningsDto.fromJson(Map<String, dynamic> json) {
+    MoneyDto money(String key) {
+      final raw = json[key];
+      if (raw is Map<String, dynamic>) return MoneyDto.fromJson(raw);
+      return const MoneyDto(amount: 0, currency: 'NPR');
+    }
+
+    return PotentialEarningsDto(
+      partnershipId: (json['partnershipId'] as String?) ?? '',
+      productVariantId: (json['productVariantId'] as String?) ?? '',
+      commissionRate: (json['commissionRate'] as num?)?.toDouble() ?? 0,
+      unitPrice: money('unitPrice'),
+      perSale: money('perSale'),
+      perFiftySales: money('perFiftySales'),
+      salesAssumed: (json['salesAssumed'] as num?)?.toInt() ?? 50,
+    );
+  }
+}
+
+/// A recipe attached to a partnership brief — `GET /v1/creator/partnerships/{id}/recipes`.
+class RecipeAttachmentInfoDto {
+  const RecipeAttachmentInfoDto({
+    required this.recipeId,
+    required this.recipeVersion,
+    this.title,
+    this.thumbnailUrl,
+    required this.isHidden,
+  });
+
+  final String recipeId;
+  final int recipeVersion;
+  final String? title;
+  final String? thumbnailUrl;
+  final bool isHidden;
+
+  factory RecipeAttachmentInfoDto.fromJson(Map<String, dynamic> json) =>
+      RecipeAttachmentInfoDto(
+        recipeId: (json['recipeId'] as String?) ?? '',
+        recipeVersion: (json['recipeVersion'] as num?)?.toInt() ?? 1,
+        title: json['title'] as String?,
+        thumbnailUrl: json['thumbnailUrl'] as String?,
+        isHidden: (json['isHidden'] as bool?) ?? false,
+      );
 }
 
 /// A single sample campaign — backend `GET /v1/partnerships/{id}/campaigns`.

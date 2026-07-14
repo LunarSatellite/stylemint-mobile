@@ -514,9 +514,6 @@ class _TopReelCard extends StatefulWidget {
   const _TopReelCard({required this.reel});
   final TopReelSummary reel;
 
-  static void _openDetail(BuildContext context) =>
-      context.push(RouteNames.creatorReelAnalyticsDetail);
-
   @override
   State<_TopReelCard> createState() => _TopReelCardState();
 }
@@ -587,7 +584,12 @@ class _TopReelCardState extends State<_TopReelCard> {
                 ),
               ),
               GestureDetector(
-                onTap: () => _TopReelCard._openDetail(context),
+                onTap: () => context.push(
+                  RouteNames.creatorReelAnalyticsDetail.replaceFirst(
+                    ':reelId',
+                    widget.reel.reelId,
+                  ),
+                ),
                 child: const Icon(
                   Icons.open_in_new_rounded,
                   size: 16,

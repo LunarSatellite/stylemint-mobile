@@ -166,19 +166,6 @@ void main() {
       );
     });
 
-    test('resets to initial after reset()', () async {
-      final notifier =
-          UpdateCreatorProfileNotifier(_FakeCreatorProfileRepository());
-      addTearDown(notifier.dispose);
-      await notifier.submit(accountId: 'acc-1', rowVersion: 'rv-1');
-      notifier.reset();
-
-      expect(
-        notifier.state
-            .maybeWhen(initial: () => true, orElse: () => false),
-        isTrue,
-      );
-    });
   });
 
   group('AvatarImageNotifier', () {

@@ -80,6 +80,7 @@ abstract class ImportedReelDto with _$ImportedReelDto {
     required DateTime importedAt,
     required String caption,
     required String thumbnailUrl,
+    @Default('') String sourceUrl,
     required String platform,
     required String platformPostId,
   }) = _ImportedReelDto;
@@ -108,6 +109,7 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       importedAt: importedAt,
       caption: caption,
       thumbnailUrl: thumbnailUrl,
+      sourceUrl: sourceUrl,
       platform: platformEnum,
       platformPostId: platformPostId,
     );
