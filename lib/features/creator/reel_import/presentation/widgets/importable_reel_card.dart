@@ -3,10 +3,18 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/en
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ImportableReelCard extends StatelessWidget {
-  const ImportableReelCard({super.key, required this.reel, required this.onTap});
+  const ImportableReelCard({
+    super.key,
+    required this.reel,
+    required this.onTap,
+    this.isSelected = false,
+    this.isSelectMode = false,
+  });
 
   final ImportableReel reel;
   final VoidCallback onTap;
+  final bool isSelected;
+  final bool isSelectMode;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +64,49 @@ class ImportableReelCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Selection overlay
+                  if (isSelectMode)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? DesignTokens.primaryGreen
+                                  .withValues(alpha: 0.35)
+                              : Colors.transparent,
+                          border: isSelected
+                              ? Border.all(
+                                  color: DesignTokens.primaryGreen,
+                                  width: 2,
+                                )
+                              : null,
+                        ),
+                      ),
+                    ),
+                  if (isSelectMode)
+                    Positioned(
+                      top: DesignTokens.s6,
+                      right: DesignTokens.s6,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected
+                              ? DesignTokens.primaryGreen
+                              : DesignTokens.baseBlack.withValues(alpha: 0.5),
+                          border: Border.all(
+                            color: isSelected
+                                ? DesignTokens.primaryGreen
+                                : Colors.white,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check,
+                                size: 14, color: Colors.black)
+                            : null,
+                      ),
+                    ),
                 ],
               ),
             ),

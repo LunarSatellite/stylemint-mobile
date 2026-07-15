@@ -41,14 +41,16 @@ abstract class PartnershipDto with _$PartnershipDto {
     };
     return PartnershipInvite(
       id: id,
-      // vendorName/Logo not returned by this endpoint — pending vendor profile
-      // enrichment (PM-P2). Screens that need them must fetch separately.
       vendorName: '',
       vendorLogoUrl: '',
       campaignBrief: requestMessage ?? '',
       commissionRate: commissionMinPercent,
+      commissionMax: commissionMaxPercent > commissionMinPercent
+          ? commissionMaxPercent
+          : null,
       expiresAt: invitedUtc,
       status: status,
+      vendorRating: vendorRating,
     );
   }
 

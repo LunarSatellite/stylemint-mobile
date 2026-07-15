@@ -65,7 +65,41 @@ class TaggedProductForImport {
   final String vendorName;
 }
 
+class BulkImportResult {
+  const BulkImportResult({
+    required this.successCount,
+    required this.failureCount,
+    required this.allSucceeded,
+  });
+
+  final int successCount;
+  final int failureCount;
+  final bool allSucceeded;
+}
+
 enum ImportStatus { pending, processing, live, flagged }
+
+// ── Reel intent ───────────────────────────────────────────────────────────────
+
+enum ReelIntentState { launched, completed, abandoned }
+
+class ReelIntent {
+  const ReelIntent({
+    required this.id,
+    required this.targetPlatform,
+    required this.launchedAtUtc,
+    required this.expiresAtUtc,
+    required this.state,
+    this.resultingReelId,
+  });
+
+  final String id;
+  final SocialPlatform targetPlatform;
+  final DateTime launchedAtUtc;
+  final DateTime expiresAtUtc;
+  final ReelIntentState state;
+  final String? resultingReelId;
+}
 
 class ImportedReel {
   const ImportedReel({

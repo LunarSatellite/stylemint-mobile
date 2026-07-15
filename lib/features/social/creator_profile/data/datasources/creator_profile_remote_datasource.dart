@@ -116,4 +116,31 @@ class CreatorProfileRemoteDataSource {
       '/v1/accounts/$accountId/creator-specializations/$categoryId',
     );
   }
+
+  /// GET /v1/accounts/{accountId}/creator-specializations
+  /// Returns {categoryId → isPrimary} for all active specializations.
+  Future<Map<String, bool>> listSpecializationsWithPrimary(
+      String accountId) async {
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/creator-specializations',
+    );
+    final list = response as List<dynamic>? ?? const [];
+    final result = <String, bool>{};
+    for (final e in list) {
+      final map = e as Map<String, dynamic>;
+      final id = map['categoryId'] as String? ?? '';
+      if (id.isNotEmpty) {
+        result[id] = map['isPrimary'] as bool? ?? false;
+      }
+    }
+    return result;
+  }
+
+  /// POST /v1/accounts/{accountId}/creator-specializations/{categoryId}/primary
+  Future<void> setPrimarySpecialization(
+      String accountId, String categoryId) async {
+    await apiClient.post(
+      '/v1/accounts/$accountId/creator-specializations/$categoryId/primary',
+    );
+  }
 }

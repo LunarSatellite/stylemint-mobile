@@ -157,4 +157,100 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       return left(const NetworkExceptions.unexpectedError());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, BulkImportResult>> importBulk(
+    List<ImportableReel> reels,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final result = await remoteDataSource.importBulk(
+        reels,
+        const Uuid().v4(),
+      );
+      return right(result);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, ReelIntent>> launchReelIntent(
+    SocialPlatform platform,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final response = await remoteDataSource.launchReelIntent(
+        platform: platform,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(_parseReelIntent(response));
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, ReelIntent>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final response = await remoteDataSource.completeReelIntent(
+        intentId: intentId,
+        resultingReelId: resultingReelId,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(_parseReelIntent(response));
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  static ReelIntent _parseReelIntent(Map<String, dynamic> m) {
+    final stateInt = m['state'] as int? ?? 1;
+    final state = switch (stateInt) {
+      2 => ReelIntentState.completed,
+      3 => ReelIntentState.abandoned,
+      _ => ReelIntentState.launched,
+    };
+    final platformInt = m['targetPlatform'] as int? ?? 1;
+    final platform = switch (platformInt) {
+      2 => SocialPlatform.tiktok,
+      3 => SocialPlatform.youtube,
+      4 => SocialPlatform.facebook,
+      _ => SocialPlatform.instagram,
+    };
+    return ReelIntent(
+      id: m['id'] as String? ?? '',
+      targetPlatform: platform,
+      launchedAtUtc: m['launchedAtUtc'] != null
+          ? DateTime.parse(m['launchedAtUtc'] as String)
+          : DateTime.now(),
+      expiresAtUtc: m['expiresAtUtc'] != null
+          ? DateTime.parse(m['expiresAtUtc'] as String)
+          : DateTime.now().add(const Duration(hours: 24)),
+      state: state,
+      resultingReelId: m['resultingReelId'] as String?,
+    );
+  }
 }

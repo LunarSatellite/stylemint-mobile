@@ -1,5 +1,21 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+class MonthlySummary {
+  const MonthlySummary({
+    required this.thisMonthEarnings,
+    required this.salesCount,
+    required this.reelCount,
+    required this.avgPerSale,
+    required this.highestReelEarnings,
+  });
+
+  final Money thisMonthEarnings;
+  final int salesCount;
+  final int reelCount;
+  final Money avgPerSale;
+  final Money highestReelEarnings;
+}
+
 class EarningsSummary {
   const EarningsSummary({
     required this.totalEarnings,
@@ -132,4 +148,46 @@ class PayoutMethod {
       isPrimary: isPrimary ?? this.isPrimary,
     );
   }
+}
+
+class PayoutInvoiceLine {
+  const PayoutInvoiceLine({
+    required this.description,
+    required this.amount,
+    required this.occurredAt,
+  });
+
+  final String description;
+  final Money amount;
+  final DateTime occurredAt;
+}
+
+class PayoutInvoice {
+  const PayoutInvoice({
+    required this.payoutId,
+    required this.invoiceNumber,
+    required this.destinationLabel,
+    required this.grossAmount,
+    required this.feeAmount,
+    required this.netAmount,
+    required this.requestedAt,
+    required this.state,
+    this.destinationRef,
+    this.paidAt,
+    this.providerPayoutId,
+    this.lines = const [],
+  });
+
+  final String payoutId;
+  final String invoiceNumber;
+  final String destinationLabel;
+  final String? destinationRef;
+  final Money grossAmount;
+  final Money feeAmount;
+  final Money netAmount;
+  final DateTime requestedAt;
+  final DateTime? paidAt;
+  final PayoutState state;
+  final String? providerPayoutId;
+  final List<PayoutInvoiceLine> lines;
 }

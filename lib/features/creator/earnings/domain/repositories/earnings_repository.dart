@@ -39,4 +39,10 @@ abstract interface class EarningsRepository {
     int pageSize = 25,
     String? cursor,
   });
+
+  Future<Either<NetworkExceptions, PayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  );
+
+  Future<Either<NetworkExceptions, Unit>> cancelPayout(String payoutId);
 }

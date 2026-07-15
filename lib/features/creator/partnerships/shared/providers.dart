@@ -7,12 +7,15 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/dat
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 
-// Re-export new DTO types consumed by UI widgets
+// Re-export DTO and domain types consumed by UI widgets
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
     show PotentialEarningsDto, RecipeAttachmentInfoDto, MoneyDto;
+export 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart'
+    show CreatorRateCard, RateTier;
 
 final partnershipsRemoteDataSourceProvider =
     Provider<PartnershipsRemoteDataSource>(
@@ -91,4 +94,12 @@ final partnershipRecipesProvider = FutureProvider.autoDispose
   return ref
       .watch(partnershipsRemoteDataSourceProvider)
       .getPartnershipRecipes(partnershipId);
+});
+
+/// Authenticated creator's active rate card. Returns null if none exists (404).
+final rateCardProvider =
+    FutureProvider.autoDispose<CreatorRateCard?>((ref) async {
+  final result =
+      await ref.watch(partnershipsRepositoryProvider).getMyRateCard();
+  return result.fold((_) => null, (rc) => rc);
 });

@@ -240,4 +240,50 @@ class EarningsRepositoryImpl implements EarningsRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, PayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final response = await remoteDataSource.getPayoutInvoice(payoutId);
+        final dto = PayoutInvoiceApiDto.fromJson(response);
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> cancelPayout(String payoutId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.cancelPayout(
+          payoutId: payoutId,
+          idempotencyKey: const Uuid().v4(),
+        );
+        return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
 }

@@ -36,10 +36,13 @@ class BrandDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final partnershipAsync = ref.watch(_partnershipProvider(partnershipId));
     final termsAsync = ref.watch(partnershipTermsProvider(partnershipId));
+    final versionsAsync =
+        ref.watch(partnershipTermsVersionsProvider(partnershipId));
     final campaignsAsync = ref.watch(_campaignsProvider(partnershipId));
+    final recipesAsync = ref.watch(partnershipRecipesProvider(partnershipId));
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: DesignTokens.bgAppFoundation,
         appBar: AppBar(
@@ -82,7 +85,8 @@ class BrandDetailScreen extends ConsumerWidget {
                   tabs: const [
                     Tab(text: 'Top Products'),
                     Tab(text: 'Sample Campaigns'),
-                    Tab(text: 'Partnership Terms'),
+                    Tab(text: 'Terms'),
+                    Tab(text: 'Recipes'),
                   ],
                 ),
               ),
@@ -92,7 +96,9 @@ class BrandDetailScreen extends ConsumerWidget {
             children: [
               _TopProductsTab(),
               _SampleCampaignsTab(campaignsAsync: campaignsAsync),
-              _PartnershipTab(termsAsync: termsAsync),
+              _PartnershipTab(
+                  termsAsync: termsAsync, versionsAsync: versionsAsync),
+              _RecipesTab(recipesAsync: recipesAsync),
             ],
           ),
         ),
@@ -540,8 +546,12 @@ class _ImagePlaceholder extends StatelessWidget {
 }
 
 class _PartnershipTab extends StatelessWidget {
-  const _PartnershipTab({required this.termsAsync});
+  const _PartnershipTab({
+    required this.termsAsync,
+    required this.versionsAsync,
+  });
   final AsyncValue<PartnershipTermsDto> termsAsync;
+  final AsyncValue<List<PartnershipTermsDto>> versionsAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -559,8 +569,93 @@ class _PartnershipTab extends StatelessWidget {
           _TermsSection(index: 1, section: t.whoCanJoin),
           const SizedBox(height: DesignTokens.s24),
           _TermsSection(index: 2, section: t.reelContentRules),
+          const SizedBox(height: DesignTokens.s32),
+          const Divider(
+              height: 1, thickness: 1, color: DesignTokens.borderDefault),
+          const SizedBox(height: DesignTokens.s16),
+          _VersionHistorySection(
+            currentVersion: t.versionNumber,
+            versionsAsync: versionsAsync,
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _VersionHistorySection extends StatelessWidget {
+  const _VersionHistorySection({
+    required this.currentVersion,
+    required this.versionsAsync,
+  });
+  final int currentVersion;
+  final AsyncValue<List<PartnershipTermsDto>> versionsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Version History',
+          style: DesignTokens.mediumSemibold
+              .copyWith(color: DesignTokens.textWhite),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        versionsAsync.when(
+          loading: () => const SizedBox(
+            height: 24,
+            child: Center(
+              child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen, strokeWidth: 2),
+            ),
+          ),
+          error: (_, __) => Text(
+            'Could not load version history.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textMuted),
+          ),
+          data: (versions) {
+            if (versions.isEmpty) {
+              return Text(
+                'v$currentVersion (current)',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textLight),
+              );
+            }
+            return Wrap(
+              spacing: DesignTokens.s8,
+              runSpacing: DesignTokens.s8,
+              children: versions.map((v) {
+                final isCurrent = v.versionNumber == currentVersion;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCurrent
+                        ? DesignTokens.chipsSelectedFill
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: isCurrent
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.borderDefault,
+                    ),
+                  ),
+                  child: Text(
+                    isCurrent ? 'v${v.versionNumber} · current' : 'v${v.versionNumber}',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: isCurrent
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textLight,
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -609,6 +704,111 @@ class _ApplyButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Recipes tab ──────────────────────────────────────────────────────────────
+
+class _RecipesTab extends StatelessWidget {
+  const _RecipesTab({required this.recipesAsync});
+  final AsyncValue<List<RecipeAttachmentInfoDto>> recipesAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return recipesAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      ),
+      error: (_, __) => Center(
+        child: Text("Couldn't load recipes.", style: DesignTokens.bodyText),
+      ),
+      data: (recipes) {
+        final visible = recipes.where((r) => !r.isHidden).toList();
+        if (visible.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            children: [
+              const SizedBox(height: DesignTokens.s24),
+              const Icon(Icons.auto_awesome_outlined,
+                  size: 48, color: DesignTokens.textLight),
+              const SizedBox(height: DesignTokens.s12),
+              Text(
+                'No recipes attached',
+                textAlign: TextAlign.center,
+                style: DesignTokens.bodyText
+                    .copyWith(color: DesignTokens.textLight),
+              ),
+            ],
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
+              DesignTokens.s16, DesignTokens.s16, DesignTokens.s24),
+          itemCount: visible.length,
+          itemBuilder: (_, i) => _RecipeCard(recipe: visible[i]),
+        );
+      },
+    );
+  }
+}
+
+class _RecipeCard extends StatelessWidget {
+  const _RecipeCard({required this.recipe});
+  final RecipeAttachmentInfoDto recipe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+            child: SizedBox(
+              width: 72,
+              height: 72,
+              child: recipe.thumbnailUrl != null
+                  ? Image.network(recipe.thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _RecipePlaceholder())
+                  : _RecipePlaceholder(),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recipe.title ?? 'Recipe',
+                  style: DesignTokens.mediumSemibold
+                      .copyWith(color: DesignTokens.textWhite),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'v${recipe.recipeVersion}',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.textMuted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecipePlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+        color: DesignTokens.bgAppBodyLight,
+        child: const Center(
+          child: Icon(Icons.auto_awesome_outlined,
+              color: DesignTokens.textLight, size: 28),
+        ),
+      );
 }
 
 // ── Shared widgets ───────────────────────────────────────────────────────────

@@ -98,6 +98,7 @@ abstract class RouteNames {
   static const partnershipRequests = '/creator/partnerships/requests';
   static const brandMessaging = '/creator/brand-messaging';
   static const brandInfo = '/creator/brand-info';
+  static const creatorRateCard = '/creator/rate-card';
   static const reach = '/creator/reach';
 
   // Vendor

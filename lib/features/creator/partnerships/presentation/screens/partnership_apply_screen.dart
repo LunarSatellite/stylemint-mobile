@@ -1,12 +1,11 @@
-import 'package:dio/dio.dart' show Options;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:uuid/uuid.dart';
 
 /// Data passed from BrandDetailScreen via router `extra`.
 class PartnershipApplyArgs {
@@ -76,30 +75,23 @@ class _PartnershipRequestScreenState
     }
 
     setState(() => _submitting = true);
-    try {
-      final api = ref.read(apiClientProvider);
-      await api.post(
-        '/v1/creator/partnerships/request',
-        data: {
-          'vendorProfileId': widget.args.vendorProfileId,
-          'commissionMinPercent': _range.start,
-          'commissionMaxPercent': _range.end,
-          'message': _messageCtrl.text.trim(),
-        },
-        options: Options(headers: {
-          'requiresToken': true,
-          'Idempotency-Key': const Uuid().v4(),
-        }),
-      );
-      if (!mounted) return;
-      SmSnackbar.info(context, 'Partnership request sent!');
-      context.pop();
-    } catch (_) {
-      if (!mounted) return;
-      SmSnackbar.error(context, 'Could not send request. Please try again.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+    final result = await ref
+        .read(partnershipsRepositoryProvider)
+        .requestPartnership(
+          vendorProfileId: widget.args.vendorProfileId,
+          commissionMinPercent: _range.start,
+          commissionMaxPercent: _range.end,
+          message: _messageCtrl.text.trim(),
+        );
+    if (!mounted) return;
+    result.fold(
+      (e) => SmSnackbar.error(context, NetworkExceptions.getMessage(e)),
+      (_) {
+        SmSnackbar.info(context, 'Partnership request sent!');
+        context.pop();
+      },
+    );
+    if (mounted) setState(() => _submitting = false);
   }
 
   @override

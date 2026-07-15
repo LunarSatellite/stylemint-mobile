@@ -3,10 +3,12 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
     show PartnershipTermsDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/partnership_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 
 // PartnershipState ints: 1=Invited, 2=Active, 3=Declined, 4=Paused, 5=Ended
 const _stateInvited = 1;
 const _stateActive = 2;
+const _stateDeclined = 3;
 const _statePaused = 4;
 const _stateEnded = 5;
 
@@ -26,7 +28,7 @@ class PartnershipsRemoteDataSource {
   }
 
   Future<List<PartnershipDto>> getInvites() =>
-      _fetchPartnerships([_stateInvited]);
+      _fetchPartnerships([_stateInvited, _stateActive, _stateDeclined]);
 
   Future<PartnershipDto> acceptInvite(
     String inviteId,
@@ -104,5 +106,68 @@ class PartnershipsRemoteDataSource {
           (e) => RecipeAttachmentInfoDto.fromJson(e as Map<String, dynamic>),
         )
         .toList(growable: false);
+  }
+
+  Future<void> requestPartnership({
+    required String vendorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    required String message,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/creator/partnerships/request',
+      data: {
+        'vendorProfileId': vendorProfileId,
+        'commissionMinPercent': commissionMinPercent,
+        'commissionMaxPercent': commissionMaxPercent,
+        'message': message,
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
+  Future<CreatorRateCard> getMyRateCard() async {
+    final response = await apiClient.get('/v1/creator/rate-card');
+    return CreatorRateCard.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<void> publishRateCard({
+    required double baseRate,
+    required List<RateTier> rates,
+    required double commissionPreference,
+    required List<String> platformPreferences,
+    String? notes,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/creator/rate-card',
+      data: {
+        'baseRate': baseRate,
+        'rates': rates.map((r) => r.toJson()).toList(),
+        'commissionPreference': commissionPreference,
+        'platformPreferences': platformPreferences,
+        'contentCategories': <String>[],
+        'sampleReelIds': <String>[],
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
+  Future<void> deactivateRateCard(String idempotencyKey) async {
+    await apiClient.authDelete(
+      '/v1/creator/rate-card',
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
   }
 }

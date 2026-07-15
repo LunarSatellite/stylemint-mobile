@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/cre
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/creator_reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
@@ -67,4 +68,19 @@ final reelTaggedProductsProvider =
     FutureProvider.autoDispose.family<List<ReelTagManagementDto>, String>(
   (ref, reelId) =>
       ref.watch(creatorReelsRemoteDataSourceProvider).listTaggedProducts(reelId),
+);
+
+// ── Post-publish coaching report (auto-disposed, keyed by reelId) ─────────────
+
+// ignore: specify_nonobvious_property_types
+final postPublishReportProvider =
+    FutureProvider.autoDispose.family<PostPublishReport, String>(
+  (ref, reelId) async {
+    final repo = ref.watch(creatorReelsRepositoryProvider);
+    final result = await repo.getPostPublishReport(reelId);
+    return result.fold(
+      (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
+      (report) => report,
+    );
+  },
 );

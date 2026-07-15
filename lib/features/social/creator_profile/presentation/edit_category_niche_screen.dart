@@ -23,11 +23,13 @@ class _EditCategoryNicheScreenState
   String _query = '';
   String _accountId = '';
 
-  // Category IDs loaded from backend on init — used to compute diff on submit.
+  // Loaded from backend on init — used to compute diffs on submit.
   Set<String> _originalIds = {};
+  String? _originalPrimaryId;
 
-  // Category IDs the user has toggled in this session.
+  // Current user selection in this session.
   Set<String> _selectedIds = {};
+  String? _primaryId;
 
   bool _initialized = false;
   bool _submitting = false;
@@ -41,16 +43,17 @@ class _EditCategoryNicheScreenState
         );
   }
 
-  void _initFromLoaded(List<String> ids) {
+  void _initFromLoaded(Map<String, bool> specs) {
     if (_initialized) return;
     _initialized = true;
-    // Defer setState so it never fires synchronously inside build() when the
-    // provider already has data cached (avoids "setState called during build").
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
-          _originalIds = Set<String>.from(ids);
-          _selectedIds = Set<String>.from(ids);
+          _originalIds = Set<String>.from(specs.keys);
+          _selectedIds = Set<String>.from(specs.keys);
+          _originalPrimaryId =
+              specs.entries.where((e) => e.value).map((e) => e.key).firstOrNull;
+          _primaryId = _originalPrimaryId;
         });
       }
     });
@@ -67,30 +70,33 @@ class _EditCategoryNicheScreenState
 
     final toAdd = _selectedIds.difference(_originalIds);
     final toRemove = _originalIds.difference(_selectedIds);
+    final primaryChanged = _primaryId != null &&
+        _primaryId != _originalPrimaryId &&
+        _selectedIds.contains(_primaryId!);
 
     final repo = ref.read(creatorProfileRepositoryProvider);
-    final futures = <Future<void>>[
-      for (final id in toAdd)
-        repo.addSpecialization(_accountId, id).then((r) {
-          r.fold(
-            (e) => throw e,
-            (_) {},
-          );
-        }),
-      for (final id in toRemove)
-        repo.removeSpecialization(_accountId, id).then((r) {
-          r.fold(
-            (e) => throw e,
-            (_) {},
-          );
-        }),
-    ];
 
     try {
-      await Future.wait(futures);
-      // Invalidate so profile and edit screens reload fresh data.
+      await Future.wait([
+        for (final id in toAdd)
+          repo.addSpecialization(_accountId, id).then((r) {
+            r.fold((e) => throw e, (_) {});
+          }),
+        for (final id in toRemove)
+          repo.removeSpecialization(_accountId, id).then((r) {
+            r.fold((e) => throw e, (_) {});
+          }),
+      ]);
+
+      // Set primary after adds — the newly added category must exist first.
+      if (primaryChanged) {
+        final r = await repo.setPrimarySpecialization(_accountId, _primaryId!);
+        r.fold((e) => throw e, (_) {});
+      }
+
       ref.invalidate(creatorSpecializationIdsProvider(_accountId));
       ref.invalidate(creatorNicheNamesProvider(_accountId));
+      ref.invalidate(creatorSpecializationsWithPrimaryProvider(_accountId));
       if (mounted) context.pop();
     } on NetworkExceptions catch (e) {
       if (mounted) {
@@ -101,7 +107,8 @@ class _EditCategoryNicheScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          const SnackBar(
+              content: Text('Something went wrong. Please try again.')),
         );
       }
     } finally {
@@ -112,11 +119,10 @@ class _EditCategoryNicheScreenState
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(productCategoriesProvider);
-    final specializationIdsAsync =
-        ref.watch(creatorSpecializationIdsProvider(_accountId));
+    final specializationsAsync =
+        ref.watch(creatorSpecializationsWithPrimaryProvider(_accountId));
 
-    // Seed local selection once both loads complete.
-    specializationIdsAsync.whenData(_initFromLoaded);
+    specializationsAsync.whenData(_initFromLoaded);
 
     final bottomPadding =
         MediaQuery.of(context).padding.bottom + DesignTokens.s16;
@@ -145,10 +151,10 @@ class _EditCategoryNicheScreenState
         loading: () => const Center(
           child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
         ),
-        error: (e, _) => Center(
+        error: (e, _) => const Center(
           child: Text(
             'Failed to load categories.',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               color: DesignTokens.textMuted,
             ),
@@ -163,14 +169,33 @@ class _EditCategoryNicheScreenState
                   DesignTokens.s16,
                   DesignTokens.s16,
                   DesignTokens.s16,
-                  DesignTokens.s20,
+                  DesignTokens.s8,
                 ),
                 child: _SearchBar(
                   onChanged: (v) => setState(() => _query = v),
                 ),
               ),
+              if (_selectedIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 14, color: DesignTokens.textMuted),
+                      const SizedBox(width: DesignTokens.s4),
+                      Expanded(
+                        child: Text(
+                          'Long press a selected niche to mark it as primary',
+                          style: DesignTokens.smallRegular
+                              .copyWith(color: DesignTokens.textMuted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
-                child: specializationIdsAsync.isLoading
+                child: specializationsAsync.isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                             color: DesignTokens.primaryGreen),
@@ -186,13 +211,21 @@ class _EditCategoryNicheScreenState
                                 (cat) => _CategoryChip(
                                   label: cat.name,
                                   isSelected: _selectedIds.contains(cat.id),
+                                  isPrimary: _primaryId == cat.id,
                                   onTap: () => setState(() {
                                     if (_selectedIds.contains(cat.id)) {
                                       _selectedIds.remove(cat.id);
+                                      if (_primaryId == cat.id) {
+                                        _primaryId = null;
+                                      }
                                     } else {
                                       _selectedIds.add(cat.id);
                                     }
                                   }),
+                                  onLongPress: _selectedIds.contains(cat.id)
+                                      ? () => setState(
+                                          () => _primaryId = cat.id)
+                                      : null,
                                 ),
                               )
                               .toList(),
@@ -300,16 +333,21 @@ class _CategoryChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.isPrimary = false,
+    this.onLongPress,
   });
 
   final String label;
   final bool isSelected;
+  final bool isPrimary;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -320,16 +358,27 @@ class _CategoryChip extends StatelessWidget {
             color: isSelected
                 ? DesignTokens.primaryGreen
                 : DesignTokens.borderDefault,
+            width: isPrimary ? 2.0 : 1.0,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: DesignTokens.textWhite,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isPrimary) ...[
+              const Icon(Icons.star_rounded,
+                  size: 13, color: DesignTokens.secondaryYellow),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: DesignTokens.textWhite,
+              ),
+            ),
+          ],
         ),
       ),
     );

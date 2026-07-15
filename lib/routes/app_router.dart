@@ -45,6 +45,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/rate_card_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
@@ -863,6 +864,10 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.brandInfo,
         builder: (ctx, state) =>
             BrandInfoScreen(data: state.extra! as BrandInfoData),
+      ),
+      GoRoute(
+        path: RouteNames.creatorRateCard,
+        builder: (ctx, state) => const RateCardScreen(),
       ),
       GoRoute(
         path: RouteNames.reach,

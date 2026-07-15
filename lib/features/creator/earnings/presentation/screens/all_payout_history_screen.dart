@@ -209,7 +209,7 @@ class _AllPayoutHistoryScreenState
                                 entries: grouped[key]!,
                                 onTap: (entry) => context.push(
                                   RouteNames.creatorPayoutInvoice,
-                                  extra: PayoutInvoiceArgs(entry: entry),
+                                  extra: PayoutInvoiceArgs(payoutId: entry.id),
                                 ),
                               ),
                             ],

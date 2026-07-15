@@ -80,6 +80,19 @@ class _FakeCreatorProfileRepository implements CreatorProfileRepository {
     String categoryId,
   ) async =>
       right(null);
+
+  @override
+  Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
+    String accountId,
+  ) async =>
+      right(const {});
+
+  @override
+  Future<NetworkEither<void>> setPrimarySpecialization(
+    String accountId,
+    String categoryId,
+  ) async =>
+      right(null);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

@@ -1,175 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Data ──────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-enum _Status { pending, accepted, declined }
-
-class _Request {
-  const _Request({
-    required this.id,
-    required this.brandName,
-    required this.rating,
-    required this.timeAgo,
-    required this.message,
-    required this.commission,
-    required this.category,
-    required this.products,
-    required this.status,
-  });
-
-  final String id;
-  final String brandName;
-  final double rating;
-  final String timeAgo;
-  final String message;
-  final String commission;
-  final String category;
-  final String products;
-  final _Status status;
+String _timeAgo(DateTime dt) {
+  final diff = DateTime.now().difference(dt);
+  if (diff.inDays >= 1) return '${diff.inDays}d ago';
+  if (diff.inHours >= 1) return '${diff.inHours}h ago';
+  return '${diff.inMinutes}m ago';
 }
 
-const _kRequests = <_Request>[
-  _Request(
-    id: '1',
-    brandName: 'Nike Official Store',
-    rating: 4.9,
-    timeAgo: '2h ago',
-    message:
-        "Hey! We'd love to collaborate with you on our upcoming Nike Zoom "
-        'Series campaign. Your content style aligns perfectly with our brand '
-        'values and target audience. We believe this partnership will drive '
-        'significant engagement and sales.',
-    commission: '18%',
-    category: 'Athletic & Sportswear',
-    products: '234 available',
-    status: _Status.pending,
-  ),
-  _Request(
-    id: '2',
-    brandName: 'Ultima Lifestyle',
-    rating: 4.7,
-    timeAgo: '1d ago',
-    message:
-        "We've been following your content and think you'd be a perfect fit "
-        'for our latest tech accessories campaign. We offer a competitive '
-        'commission and exclusive early access to our newest products.',
-    commission: '15-20%',
-    category: 'Tech',
-    products: '176 available',
-    status: _Status.pending,
-  ),
-  _Request(
-    id: '3',
-    brandName: 'Nike Official Store',
-    rating: 4.9,
-    timeAgo: '3d ago',
-    message:
-        "Thanks for accepting our partnership request! We're excited to work "
-        'with you on the Air Max campaign.',
-    commission: '20%',
-    category: 'Athletic & Sportswear',
-    products: '234 available',
-    status: _Status.accepted,
-  ),
-  _Request(
-    id: '4',
-    brandName: 'Ultima Lifestyle',
-    rating: 4.7,
-    timeAgo: '5d ago',
-    message:
-        'We were hoping to collaborate with you on our smart home products '
-        'campaign. Let us know if you change your mind.',
-    commission: '15%',
-    category: 'Tech',
-    products: '176 available',
-    status: _Status.declined,
-  ),
-];
+String _commissionLabel(PartnershipInvite invite) {
+  final min = invite.commissionRate.toStringAsFixed(0);
+  final max = invite.commissionMax;
+  return max == null ? '$min%' : '$min-${max.toStringAsFixed(0)}%';
+}
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-class PartnershipRequestsScreen extends StatefulWidget {
+class PartnershipRequestsScreen extends ConsumerStatefulWidget {
   const PartnershipRequestsScreen({super.key});
 
   @override
-  State<PartnershipRequestsScreen> createState() =>
+  ConsumerState<PartnershipRequestsScreen> createState() =>
       _PartnershipRequestsScreenState();
 }
 
 class _PartnershipRequestsScreenState
-    extends State<PartnershipRequestsScreen> {
+    extends ConsumerState<PartnershipRequestsScreen> {
   int _tab = 0;
-  final List<_Request> _items = List<_Request>.from(_kRequests);
 
-  List<_Request> get _filtered {
-    final status = [_Status.pending, _Status.accepted, _Status.declined][_tab];
-    return _items.where((r) => r.status == status).toList();
+  List<PartnershipInvite> _filtered(List<PartnershipInvite> invites) {
+    final status = [
+      PartnershipStatus.pending,
+      PartnershipStatus.accepted,
+      PartnershipStatus.declined,
+    ][_tab];
+    return invites.where((r) => r.status == status).toList();
   }
 
-  int _count(_Status s) => _items.where((r) => r.status == s).length;
+  int _count(List<PartnershipInvite> invites, PartnershipStatus status) =>
+      invites.where((r) => r.status == status).length;
 
-  Future<void> _accept(String id) async {
-    final req = _items.firstWhere((r) => r.id == id);
+  Future<void> _accept(PartnershipInvite invite) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AcceptSheet(
-        request: req,
+        invite: invite,
         onConfirm: () {
-          setState(() {
-            final i = _items.indexWhere((r) => r.id == id);
-            if (i != -1) {
-              final old = _items[i];
-              _items[i] = _Request(
-                id: old.id,
-                brandName: old.brandName,
-                rating: old.rating,
-                timeAgo: old.timeAgo,
-                message: old.message,
-                commission: old.commission,
-                category: old.category,
-                products: old.products,
-                status: _Status.accepted,
-              );
-            }
-          });
+          ref
+              .read(partnershipsNotifierProvider.notifier)
+              .accept(invite.id);
           SmSnackbar.info(context, 'Partnership accepted!');
         },
       ),
     );
   }
 
-  Future<void> _decline(String id) async {
-    final req = _items.firstWhere((r) => r.id == id);
+  Future<void> _decline(PartnershipInvite invite) async {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _DeclineSheet(
-        request: req,
+        invite: invite,
         onConfirm: () {
-          setState(() {
-            final i = _items.indexWhere((r) => r.id == id);
-            if (i != -1) {
-              final old = _items[i];
-              _items[i] = _Request(
-                id: old.id,
-                brandName: old.brandName,
-                rating: old.rating,
-                timeAgo: old.timeAgo,
-                message: old.message,
-                commission: old.commission,
-                category: old.category,
-                products: old.products,
-                status: _Status.declined,
-              );
-            }
-          });
+          ref
+              .read(partnershipsNotifierProvider.notifier)
+              .decline(invite.id);
           SmSnackbar.info(context, 'Partnership declined.');
         },
       ),
@@ -178,13 +85,28 @@ class _PartnershipRequestsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final pending = _count(_Status.pending);
-    final accepted = _count(_Status.accepted);
-    final declined = _count(_Status.declined);
+    final state = ref.watch(partnershipsNotifierProvider);
+    return state.when(
+      initial: () => _scaffold(const CircularProgressIndicator()),
+      loadInProgress: () => _scaffold(const CircularProgressIndicator()),
+      loadFailure: (_) => _scaffold(
+        Text(
+          'Failed to load requests',
+          style:
+              DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
+        ),
+      ),
+      loadSuccess: (invites, _, __) => _buildContent(invites),
+    );
+  }
 
-    return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      appBar: AppBar(
+  Widget _scaffold(Widget body) => Scaffold(
+        backgroundColor: DesignTokens.bgAppFoundation,
+        appBar: _appBar(),
+        body: Center(child: body),
+      );
+
+  AppBar _appBar() => AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
@@ -196,7 +118,17 @@ class _PartnershipRequestsScreenState
           'Partnership Requests',
           style: DesignTokens.sectionInnerTitle,
         ),
-      ),
+      );
+
+  Widget _buildContent(List<PartnershipInvite> invites) {
+    final pending = _count(invites, PartnershipStatus.pending);
+    final accepted = _count(invites, PartnershipStatus.accepted);
+    final declined = _count(invites, PartnershipStatus.declined);
+    final filtered = _filtered(invites);
+
+    return Scaffold(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      appBar: _appBar(),
       body: Column(
         children: [
           // Pill tabs
@@ -237,7 +169,7 @@ class _PartnershipRequestsScreenState
           ),
           // List
           Expanded(
-            child: _filtered.isEmpty
+            child: filtered.isEmpty
                 ? Center(
                     child: Text(
                       'No ${['pending', 'accepted', 'declined'][_tab]} requests',
@@ -252,16 +184,16 @@ class _PartnershipRequestsScreenState
                       DesignTokens.s16,
                       DesignTokens.s24,
                     ),
-                    itemCount: _filtered.length,
+                    itemCount: filtered.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: DesignTokens.s12),
                     itemBuilder: (ctx, i) {
-                      final req = _filtered[i];
+                      final invite = filtered[i];
                       return _RequestCard(
-                        request: req,
+                        invite: invite,
                         isPending: _tab == 0,
-                        onAccept: () => _accept(req.id),
-                        onDecline: () => _decline(req.id),
+                        onAccept: () => _accept(invite),
+                        onDecline: () => _decline(invite),
                       );
                     },
                   ),
@@ -324,13 +256,13 @@ class _PillTab extends StatelessWidget {
 
 class _RequestCard extends StatefulWidget {
   const _RequestCard({
-    required this.request,
+    required this.invite,
     required this.isPending,
     required this.onAccept,
     required this.onDecline,
   });
 
-  final _Request request;
+  final PartnershipInvite invite;
   final bool isPending;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
@@ -343,15 +275,18 @@ class _RequestCardState extends State<_RequestCard> {
   bool _expanded = false;
   static const _previewLen = 100;
 
-  bool get _isLong => widget.request.message.length > _previewLen;
+  bool get _isLong => widget.invite.campaignBrief.length > _previewLen;
 
   String get _displayMsg => _expanded || !_isLong
-      ? widget.request.message
-      : '${widget.request.message.substring(0, _previewLen)}...';
+      ? widget.invite.campaignBrief
+      : '${widget.invite.campaignBrief.substring(0, _previewLen)}...';
 
   @override
   Widget build(BuildContext context) {
-    final req = widget.request;
+    final invite = widget.invite;
+    final name =
+        invite.vendorName.isNotEmpty ? invite.vendorName : 'Brand Partner';
+    final rating = invite.vendorRating;
 
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -366,47 +301,49 @@ class _RequestCardState extends State<_RequestCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _BrandLogo(name: req.brandName),
+              _BrandLogo(name: name),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      req.brandName,
+                      name,
                       style: DesignTokens.mediumSemibold
                           .copyWith(color: DesignTokens.textWhite),
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
+                        if (rating != null) ...[
+                          const Icon(Icons.star_rounded,
+                              size: 13,
+                              color: DesignTokens.secondaryYellow),
+                          const SizedBox(width: 3),
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: rating.toStringAsFixed(1),
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textWhite,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
+                                TextSpan(
+                                  text: ' Stars',
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textWhite,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
+                          const SizedBox(width: 6),
+                        ],
                         Text(
-                          '· ${req.timeAgo}',
+                          '· ${_timeAgo(invite.expiresAt)}',
                           style: DesignTokens.smallRegular
                               .copyWith(color: DesignTokens.textMuted),
                         ),
@@ -418,9 +355,9 @@ class _RequestCardState extends State<_RequestCard> {
                         MaterialPageRoute<void>(
                           builder: (_) => BrandMessagingScreen(
                             args: BrandMessagingArgs(
-                              brandName: req.brandName,
-                              rating: req.rating,
-                              category: req.category,
+                              brandName: name,
+                              rating: rating ?? 0.0,
+                              category: '',
                             ),
                           ),
                         ),
@@ -493,35 +430,16 @@ class _RequestCardState extends State<_RequestCard> {
           ),
           const SizedBox(height: DesignTokens.s12),
 
-          // Info rows
+          // Commission row
           _InfoRow(
             label: 'Proposed Commission',
             icon: Image.asset(
-              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+              'assets/images/creatordash/'
+              'material-symbols_money-bag-outline-rounded.png',
               width: 16,
               height: 16,
             ),
-            trailing: _CommissionChip(req.commission),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _InfoRow(
-            label: 'Product Category',
-            icon: Image.asset(
-              'assets/images/creatordash/material-symbols_package-2-outline.png',
-              width: 16,
-              height: 16,
-            ),
-            trailingText: req.category,
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _InfoRow(
-            label: 'Products',
-            icon: Image.asset(
-              'assets/images/creatordash/video-camera-front-outline-rounded.png',
-              width: 16,
-              height: 16,
-            ),
-            trailingText: req.products,
+            trailing: _CommissionChip(_commissionLabel(invite)),
           ),
 
           // Action buttons (pending only)
@@ -561,10 +479,6 @@ class _BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lower = name.toLowerCase();
-    final isNike = lower.contains('nike');
-    final isSephora = lower.contains('sephora');
-
     return Container(
       width: 44,
       height: 44,
@@ -573,33 +487,15 @@ class _BrandLogo extends StatelessWidget {
         color: Colors.white,
       ),
       alignment: Alignment.center,
-      child: isNike
-          ? const Text(
-              '✓',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-              ),
-            )
-          : isSephora
-              ? const Text(
-                  'S',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
-                )
-              : Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.black,
+        ),
+      ),
     );
   }
 }
@@ -611,13 +507,11 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     this.icon,
     this.trailing,
-    this.trailingText,
   });
 
   final String label;
   final Widget? icon;
   final Widget? trailing;
-  final String? trailingText;
 
   @override
   Widget build(BuildContext context) {
@@ -634,14 +528,6 @@ class _InfoRow extends StatelessWidget {
         ),
         const Spacer(),
         if (trailing != null) trailing!,
-        if (trailingText != null)
-          Text(
-            trailingText!,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textWhite,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
       ],
     );
   }
@@ -724,9 +610,9 @@ const _kDeclineReasons = [
 ];
 
 class _DeclineSheet extends StatefulWidget {
-  const _DeclineSheet({required this.request, required this.onConfirm});
+  const _DeclineSheet({required this.invite, required this.onConfirm});
 
-  final _Request request;
+  final PartnershipInvite invite;
   final VoidCallback onConfirm;
 
   @override
@@ -745,7 +631,9 @@ class _DeclineSheetState extends State<_DeclineSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final req = widget.request;
+    final invite = widget.invite;
+    final name =
+        invite.vendorName.isNotEmpty ? invite.vendorName : 'Brand Partner';
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -813,53 +701,18 @@ class _DeclineSheetState extends State<_DeclineSheet> {
             ),
             child: Row(
               children: [
-                _BrandLogo(name: req.brandName),
+                _BrandLogo(name: name),
                 const SizedBox(width: DesignTokens.s12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      req.brandName,
+                      name,
                       style: DesignTokens.mediumSemibold
                           .copyWith(color: DesignTokens.textWhite),
                     ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· ${req.category}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: DesignTokens.s8),
-                    _CommissionChip(req.commission),
+                    _CommissionChip(_commissionLabel(invite)),
                   ],
                 ),
               ],
@@ -968,9 +821,9 @@ class _DeclineSheetState extends State<_DeclineSheet> {
 // ── Accept confirmation sheet ─────────────────────────────────────────────────
 
 class _AcceptSheet extends StatefulWidget {
-  const _AcceptSheet({required this.request, required this.onConfirm});
+  const _AcceptSheet({required this.invite, required this.onConfirm});
 
-  final _Request request;
+  final PartnershipInvite invite;
   final VoidCallback onConfirm;
 
   @override
@@ -1009,7 +862,9 @@ class _AcceptSheetState extends State<_AcceptSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final req = widget.request;
+    final invite = widget.invite;
+    final name =
+        invite.vendorName.isNotEmpty ? invite.vendorName : 'Brand Partner';
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -1072,53 +927,18 @@ class _AcceptSheetState extends State<_AcceptSheet> {
             ),
             child: Row(
               children: [
-                _BrandLogo(name: req.brandName),
+                _BrandLogo(name: name),
                 const SizedBox(width: DesignTokens.s12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      req.brandName,
+                      name,
                       style: DesignTokens.mediumSemibold
                           .copyWith(color: DesignTokens.textWhite),
                     ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· ${req.category}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
-                        ),
-                      ],
-                    ),
                     const SizedBox(height: DesignTokens.s8),
-                    _CommissionChip(req.commission),
+                    _CommissionChip(_commissionLabel(invite)),
                   ],
                 ),
               ],
@@ -1131,7 +951,8 @@ class _AcceptSheetState extends State<_AcceptSheet> {
             onTap: _pickDate,
             child: Container(
               height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
               decoration: BoxDecoration(
                 color: DesignTokens.inputFieldFill,
                 borderRadius: BorderRadius.circular(10),
@@ -1152,7 +973,8 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                     ),
                   ),
                   const Icon(Icons.calendar_today_rounded,
-                      size: 18, color: DesignTokens.inputFieldDropdownIcon),
+                      size: 18,
+                      color: DesignTokens.inputFieldDropdownIcon),
                 ],
               ),
             ),

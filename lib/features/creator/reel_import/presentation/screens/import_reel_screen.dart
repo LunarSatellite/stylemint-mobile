@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ImportReelScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,8 @@ class ImportReelScreen extends ConsumerStatefulWidget {
 
 class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
   SocialPlatform _selectedPlatform = SocialPlatform.instagram;
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -36,13 +39,38 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
 
   void _onPlatformChanged(SocialPlatform platform) {
     if (platform == _selectedPlatform) return;
-    setState(() => _selectedPlatform = platform);
+    setState(() {
+      _selectedPlatform = platform;
+      _selectedIds.clear();
+      _selectMode = false;
+    });
     unawaited(
       ref.read(reelImportNotifierProvider.notifier).load(platform),
     );
   }
 
+  void _toggleSelectMode() {
+    setState(() {
+      _selectMode = !_selectMode;
+      if (!_selectMode) _selectedIds.clear();
+    });
+  }
+
+  void _toggleReel(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
   void _onReelTapped(ImportableReel reel) {
+    if (_selectMode) {
+      _toggleReel(reel.platformPostId);
+      return;
+    }
     final route = RouteNames.reelImportTagProducts
         .replaceFirst(':postId', reel.platformPostId);
     unawaited(context.push(route, extra: reel));
@@ -68,9 +96,36 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
     }).ignore();
   }
 
+  Future<void> _submitBulk(List<ImportableReel> all) async {
+    final selected =
+        all.where((r) => _selectedIds.contains(r.platformPostId)).toList();
+    if (selected.isEmpty) return;
+    await ref.read(bulkImportNotifierProvider.notifier).submit(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<BulkImportState>(bulkImportNotifierProvider, (_, next) {
+      if (next is BulkImportSuccess) {
+        final r = next.result;
+        final msg = r.allSucceeded
+            ? '${r.successCount} reel${r.successCount == 1 ? '' : 's'} imported'
+            : '${r.successCount} imported, ${r.failureCount} failed';
+        SmSnackbar.info(context, msg);
+        setState(() {
+          _selectMode = false;
+          _selectedIds.clear();
+        });
+        ref.read(bulkImportNotifierProvider.notifier).reset();
+      } else if (next is BulkImportFailure) {
+        SmSnackbar.error(context, next.message);
+        ref.read(bulkImportNotifierProvider.notifier).reset();
+      }
+    });
+
     final state = ref.watch(reelImportNotifierProvider);
+    final bulkState = ref.watch(bulkImportNotifierProvider);
+    final isBulkSubmitting = bulkState is BulkImportInProgress;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -81,7 +136,31 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Import Reel', style: DesignTokens.titleMedium),
+        title: Text(
+          _selectMode
+              ? '${_selectedIds.length} selected'
+              : 'Import Reel',
+          style: DesignTokens.titleMedium,
+        ),
+        actions: [
+          state.maybeWhen(
+            loadSuccess: (_) => TextButton(
+              onPressed: _toggleSelectMode,
+              child: Text(
+                _selectMode ? 'Cancel' : 'Select',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _selectMode
+                      ? DesignTokens.textMuted
+                      : DesignTokens.primaryGreen,
+                ),
+              ),
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -127,11 +206,13 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                   );
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(
+                  padding: EdgeInsets.fromLTRB(
                     DesignTokens.s16,
                     DesignTokens.s12,
                     DesignTokens.s16,
-                    DesignTokens.s32,
+                    _selectMode
+                        ? DesignTokens.s16 + 72
+                        : DesignTokens.s32,
                   ),
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
@@ -141,10 +222,16 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                     childAspectRatio: 0.75,
                   ),
                   itemCount: reels.length,
-                  itemBuilder: (_, i) => ImportableReelCard(
-                    reel: reels[i],
-                    onTap: () => _onReelTapped(reels[i]),
-                  ),
+                  itemBuilder: (_, i) {
+                    final reel = reels[i];
+                    return ImportableReelCard(
+                      reel: reel,
+                      isSelectMode: _selectMode,
+                      isSelected: _selectedIds
+                          .contains(reel.platformPostId),
+                      onTap: () => _onReelTapped(reel),
+                    );
+                  },
                 );
               },
               loadFailure: (failure) => failure.isNotFound
@@ -163,29 +250,74 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
             ),
           ),
 
-          // ── Paste URL fallback ───────────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16,
-                DesignTokens.s8,
-                DesignTokens.s16,
-                DesignTokens.s16,
+          // ── Bulk import bar (select mode) ────────────────────────────────
+          if (_selectMode)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s8,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: DesignTokens.buttonHeight,
+                  child: ElevatedButton(
+                    style: DesignTokens.primaryButtonStyle(),
+                    onPressed: _selectedIds.isEmpty || isBulkSubmitting
+                        ? null
+                        : () {
+                            final reels = state.maybeWhen(
+                              loadSuccess: (r) => r,
+                              orElse: () => <ImportableReel>[],
+                            );
+                            unawaited(_submitBulk(reels));
+                          },
+                    child: isBulkSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : Text(
+                            _selectedIds.isEmpty
+                                ? 'Select reels to import'
+                                : 'Import ${_selectedIds.length} '
+                                    'Reel${_selectedIds.length == 1 ? '' : 's'}',
+                          ),
+                  ),
+                ),
               ),
-              child: GestureDetector(
-                onTap: _showUrlPasteSheet,
-                child: Text(
-                  "Can't see your posts? Paste a URL instead",
-                  textAlign: TextAlign.center,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
+            )
+          // ── Paste URL fallback (normal mode) ─────────────────────────────
+          else
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s8,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                ),
+                child: GestureDetector(
+                  onTap: _showUrlPasteSheet,
+                  child: Text(
+                    "Can't see your posts? Paste a URL instead",
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      decoration: TextDecoration.underline,
+                      decorationColor: DesignTokens.primaryGreen,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

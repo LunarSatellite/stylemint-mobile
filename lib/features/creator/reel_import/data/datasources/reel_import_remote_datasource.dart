@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
 class ReelImportRemoteDataSource {
@@ -83,6 +84,43 @@ class ReelImportRemoteDataSource {
     return _parseReelDto(response as Map<String, dynamic>, platform);
   }
 
+  // POST /v1/creator/reels/import/bulk
+  // Imports multiple reels in one request. Per-item failures don't abort the batch.
+  Future<BulkImportResult> importBulk(
+    List<ImportableReel> reels,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/import/bulk',
+      data: {
+        'items': reels
+            .map(
+              (r) => {
+                'sourcePlatform': _platformInt(r.platform),
+                'sourceUrl': r.sourceUrl,
+                'externalId': r.platformPostId,
+                'durationSeconds': r.videoDuration > 0 ? r.videoDuration : 30,
+                if (r.caption.isNotEmpty) 'caption': r.caption,
+                if (r.thumbnailUrl.isNotEmpty &&
+                    r.thumbnailUrl.length <= 2048)
+                  'thumbnailCdnUrl': r.thumbnailUrl,
+              },
+            )
+            .toList(),
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    final m = response as Map<String, dynamic>;
+    return BulkImportResult(
+      successCount: m['successCount'] as int? ?? 0,
+      failureCount: m['failureCount'] as int? ?? 0,
+      allSucceeded: m['allSucceeded'] as bool? ?? false,
+    );
+  }
+
   // GET /api/v1/customer/search?type=products&q=...&limit=20
   // Searches the product catalog for tagging candidates.
   Future<List<TaggedProductForImportDto>> searchProducts(String query) async {
@@ -137,6 +175,41 @@ class ReelImportRemoteDataSource {
         'Idempotency-Key': idempotencyKey,
       }),
     );
+  }
+
+  // POST /v1/creator/reels/intents
+  // Launches a CreateReelIntent and deep-links the creator to the target platform.
+  Future<Map<String, dynamic>> launchReelIntent({
+    required SocialPlatform platform,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/intents',
+      data: {'targetPlatform': _platformInt(platform)},
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  // POST /v1/creator/reels/intents/{intentId}/complete
+  // Marks the intent as completed once the resulting reel has been imported.
+  Future<Map<String, dynamic>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/intents/$intentId/complete',
+      data: {'resultingReelId': resultingReelId},
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return response as Map<String, dynamic>;
   }
 
   // GET /v1/creator/reels?pageSize=...&cursor=...

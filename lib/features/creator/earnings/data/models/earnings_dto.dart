@@ -98,6 +98,8 @@ abstract class PayoutMethodDto with _$PayoutMethodDto {
   }
 }
 
+// ignore_for_file: invalid_annotation_target
+
 // PayoutDestinationKind: 1=NIMB Bank, 2=Laxmi Bank, 3=PayPal, 4=eSewa
 String _destinationLabel(int dest) => switch (dest) {
       1 => 'NIMB Bank',
@@ -162,6 +164,79 @@ abstract class PayoutDto with _$PayoutDto {
       destinationRef: destinationRef,
       requestedAt: requestedUtc,
       paidAt: paidUtc,
+    );
+  }
+}
+
+@freezed
+abstract class PayoutInvoiceLineDto with _$PayoutInvoiceLineDto {
+  const factory PayoutInvoiceLineDto({
+    required String description,
+    required double amount,
+    required String currency,
+    required DateTime occurredUtc,
+  }) = _PayoutInvoiceLineDto;
+
+  const PayoutInvoiceLineDto._();
+
+  factory PayoutInvoiceLineDto.fromJson(Map<String, dynamic> json) =>
+      _$PayoutInvoiceLineDtoFromJson(json);
+
+  PayoutInvoiceLine toDomain() => PayoutInvoiceLine(
+    description: description,
+    amount: Money(amount: amount, currency: currency),
+    occurredAt: occurredUtc,
+  );
+}
+
+@freezed
+abstract class PayoutInvoiceApiDto with _$PayoutInvoiceApiDto {
+  const factory PayoutInvoiceApiDto({
+    required String payoutId,
+    @Default('') String invoiceNumber,
+    @Default(1) int payeeKind,
+    @Default(1) int mode,
+    @Default(1) int destination,
+    @Default('') String destinationRef,
+    @Default(0.0) double grossAmount,
+    @Default(0.0) double feeAmount,
+    @Default(0.0) double netAmount,
+    @Default('NPR') String currency,
+    required DateTime requestedUtc,
+    required DateTime pendingUntilUtc,
+    DateTime? paidUtc,
+    @Default(1) int state,
+    String? providerPayoutId,
+    @Default(<PayoutInvoiceLineDto>[]) List<PayoutInvoiceLineDto> lines,
+  }) = _PayoutInvoiceApiDto;
+
+  const PayoutInvoiceApiDto._();
+
+  factory PayoutInvoiceApiDto.fromJson(Map<String, dynamic> json) =>
+      _$PayoutInvoiceApiDtoFromJson(json);
+
+  PayoutInvoice toDomain() {
+    final stateEnum = switch (state) {
+      1 => PayoutState.requested,
+      2 => PayoutState.processing,
+      3 => PayoutState.paid,
+      4 => PayoutState.failed,
+      5 => PayoutState.held,
+      _ => PayoutState.requested,
+    };
+    return PayoutInvoice(
+      payoutId: payoutId,
+      invoiceNumber: invoiceNumber,
+      destinationLabel: _destinationLabel(destination),
+      destinationRef: destinationRef.isNotEmpty ? destinationRef : null,
+      grossAmount: Money(amount: grossAmount, currency: currency),
+      feeAmount: Money(amount: feeAmount, currency: currency),
+      netAmount: Money(amount: netAmount, currency: currency),
+      requestedAt: requestedUtc,
+      paidAt: paidUtc,
+      state: stateEnum,
+      providerPayoutId: providerPayoutId,
+      lines: lines.map((l) => l.toDomain()).toList(growable: false),
     );
   }
 }

@@ -30,4 +30,17 @@ abstract interface class ReelImportRepository {
     int pageSize,
     String? cursor,
   });
+
+  Future<Either<NetworkExceptions, BulkImportResult>> importBulk(
+    List<ImportableReel> reels,
+  );
+
+  Future<Either<NetworkExceptions, ReelIntent>> launchReelIntent(
+    SocialPlatform platform,
+  );
+
+  Future<Either<NetworkExceptions, ReelIntent>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+  });
 }

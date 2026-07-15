@@ -1,13 +1,12 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/datasources/earnings_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/repositories/earnings_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
-import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/repositories/earnings_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 
@@ -18,10 +17,11 @@ final earningsRemoteDataSourceProvider = Provider<EarningsRemoteDataSource>(
   ),
 );
 
-/// Per-reel earnings breakdown (creator analytics dashboard). Separate from
-/// the balance summary because the metrics live on a different endpoint.
-final earningsBreakdownProvider = FutureProvider<EarningsBreakdown>((ref) {
-  return ref.watch(earningsRemoteDataSourceProvider).getDashboardBreakdown();
+/// Month-to-date earnings summary: total earned, sales count, avg per sale,
+/// and highest reel earnings. Source: GET /v1/earnings/summary.
+final monthlyEarningsSummaryProvider =
+    FutureProvider.autoDispose<MonthlySummary>((ref) {
+  return ref.watch(earningsRemoteDataSourceProvider).getMonthlySummary();
 });
 
 final earningsRepositoryProvider = Provider<EarningsRepository>(
@@ -50,4 +50,20 @@ final payoutHistoryProvider =
 final addPayoutMethodNotifierProvider =
     StateNotifierProvider.autoDispose<AddPayoutMethodNotifier, AsyncValue<void>>(
       (ref) => AddPayoutMethodNotifier(ref.watch(earningsRepositoryProvider)),
+    );
+
+/// Fetches the structured invoice for a single payout.
+/// Keyed by payoutId so each invoice screen gets its own instance.
+final payoutInvoiceNotifierProvider = StateNotifierProvider.autoDispose
+    .family<PayoutInvoiceNotifier, PayoutInvoiceState, String>(
+  (ref, payoutId) => PayoutInvoiceNotifier(
+    ref.watch(earningsRepositoryProvider),
+    payoutId,
+  ),
+);
+
+/// One-shot notifier for cancelling a Requested payout.
+final cancelPayoutNotifierProvider =
+    StateNotifierProvider.autoDispose<CancelPayoutNotifier, CancelPayoutState>(
+      (ref) => CancelPayoutNotifier(ref.watch(earningsRepositoryProvider)),
     );
