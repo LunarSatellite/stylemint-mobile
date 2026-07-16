@@ -157,6 +157,8 @@ class _DashboardContent extends StatelessWidget {
               pendingBalance: dashboard.pendingBalance,
             ),
             const SizedBox(height: DesignTokens.s16),
+            const _ReelStudioQuickAction(),
+            const SizedBox(height: DesignTokens.s16),
             _StatsSection(
               sales: dashboard.totalSales,
               reels: dashboard.topReels.length,
@@ -590,6 +592,70 @@ class _StatCard extends StatelessWidget {
             style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Reel Studio quick action ──────────────────────────────────────────────────
+
+class _ReelStudioQuickAction extends StatelessWidget {
+  const _ReelStudioQuickAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(RouteNames.reelStudio),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: DesignTokens.cardDecoration(),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.auto_awesome,
+                size: 22,
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reel Studio',
+                    style: DesignTokens.oneLinerSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    'AI recipes & drafts for your next reel',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s8),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: DesignTokens.primaryGreen,
+            ),
+          ],
+        ),
       ),
     );
   }
