@@ -958,54 +958,57 @@ class _ReelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          reel.thumbnailUrl != null
-              ? Image.network(
-                  reel.thumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, _e) => _placeholder(),
-                )
-              : _placeholder(),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 40,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black87, Colors.transparent],
+    return GestureDetector(
+      onTap: () => context.push(RouteNames.creatorReelDetail(reel.id)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            reel.thumbnailUrl != null
+                ? Image.network(
+                    reel.thumbnailUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, _e) => _placeholder(),
+                  )
+                : _placeholder(),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 40,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black87, Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 6,
-            left: 8,
-            child: Row(
-              children: [
-                const Icon(Icons.play_arrow_rounded,
-                    size: 13, color: Colors.white),
-                const SizedBox(width: 2),
-                Text(
-                  _fmtCount(reel.views),
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+            Positioned(
+              bottom: 6,
+              left: 8,
+              child: Row(
+                children: [
+                  const Icon(Icons.play_arrow_rounded,
+                      size: 13, color: Colors.white),
+                  const SizedBox(width: 2),
+                  Text(
+                    _fmtCount(reel.views),
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

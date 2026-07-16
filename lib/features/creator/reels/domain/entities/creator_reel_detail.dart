@@ -21,6 +21,7 @@ class CreatorReelDetail {
     required this.sourceUrl,
     required this.caption,
     required this.thumbnailUrl,
+    required this.videoUrl,
     required this.musicLabel,
     required this.views,
     required this.likes,
@@ -34,6 +35,7 @@ class CreatorReelDetail {
   final String sourceUrl;
   final String? caption;
   final String? thumbnailUrl;
+  final String? videoUrl;
   final String? musicLabel;
   final int views;
   final int likes;

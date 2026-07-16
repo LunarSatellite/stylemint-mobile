@@ -43,6 +43,7 @@ class ReelImportRemoteDataSource {
         platformPostId: m['externalId'] as String? ?? '',
         sourceUrl: m['permalink'] as String? ?? '',
         thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+        videoUrl: m['videoUrl'] as String?,
         caption: m['caption'] as String? ?? '',
         createdAt: m['publishedUtc'] != null
             ? DateTime.parse(m['publishedUtc'] as String)
@@ -104,6 +105,10 @@ class ReelImportRemoteDataSource {
                 if (r.thumbnailUrl.isNotEmpty &&
                     r.thumbnailUrl.length <= 2048)
                   'thumbnailCdnUrl': r.thumbnailUrl,
+                if (r.videoUrl != null &&
+                    r.videoUrl!.isNotEmpty &&
+                    r.videoUrl!.length <= 2048)
+                  'videoCdnUrl': r.videoUrl,
               },
             )
             .toList(),

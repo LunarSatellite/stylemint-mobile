@@ -8,6 +8,7 @@ class ImportableReel {
     required this.platformPostId,
     required this.sourceUrl,
     required this.thumbnailUrl,
+    this.videoUrl,
     required this.caption,
     required this.createdAt,
     required this.videoDuration,
@@ -19,6 +20,7 @@ class ImportableReel {
   final String platformPostId;
   final String sourceUrl;
   final String thumbnailUrl;
+  final String? videoUrl;
   final String caption;
   final DateTime createdAt;
   final int videoDuration;
@@ -30,6 +32,7 @@ class ImportableReel {
     String? platformPostId,
     String? sourceUrl,
     String? thumbnailUrl,
+    String? videoUrl,
     String? caption,
     DateTime? createdAt,
     int? videoDuration,
@@ -41,6 +44,7 @@ class ImportableReel {
       platformPostId: platformPostId ?? this.platformPostId,
       sourceUrl: sourceUrl ?? this.sourceUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
       caption: caption ?? this.caption,
       createdAt: createdAt ?? this.createdAt,
       videoDuration: videoDuration ?? this.videoDuration,

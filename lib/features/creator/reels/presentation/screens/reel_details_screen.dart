@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_player.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Single-reel detail (creator). Pixel-matched to Creator 'Reel Details.pdf'.
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
-/// products). Video is external — the source opens via [CreatorReelDetail.sourceUrl].
+/// products). When [CreatorReelDetail.videoUrl] is available, the reel plays
+/// inline via [ReelPlayer]; otherwise a static thumbnail is shown.
 class ReelDetailsScreen extends ConsumerWidget {
   const ReelDetailsScreen({required this.reelId, super.key});
 
@@ -48,9 +52,50 @@ class _Body extends StatelessWidget {
 
   final CreatorReelDetail reel;
 
+  /// Builds a minimal [Reel] from a [CreatorReelDetail] for use with
+  /// [ReelPlayer]. Fields not present in CreatorReelDetail are zeroed out.
+  Reel get _asReel {
+    String musicTitle = '';
+    String musicArtist = '';
+    if (reel.musicLabel != null && reel.musicLabel!.contains(' - ')) {
+      final parts = reel.musicLabel!.split(' - ');
+      musicArtist = parts[0].trim();
+      musicTitle = parts.sublist(1).join(' - ').trim();
+    } else {
+      musicTitle = reel.musicLabel ?? '';
+    }
+    return Reel(
+      id: reel.id,
+      sourceUrl: reel.sourceUrl,
+      thumbnailUrl: reel.thumbnailUrl ?? '',
+      videoUrl: reel.videoUrl,
+      creatorId: '',
+      creatorName: '',
+      creatorAvatarUrl: '',
+      caption: reel.caption ?? '',
+      musicTitle: musicTitle,
+      musicArtist: musicArtist,
+      taggedProducts: reel.taggedProducts
+          .map((p) => TaggedProductEntity(
+                id: p.productId,
+                name: p.name ?? '',
+                imageUrl: p.imageUrl ?? '',
+                price: Money(amount: 0, currency: 'NPR'),
+                quantity: 1,
+              ))
+          .toList(),
+      likeCount: reel.likes,
+      commentCount: reel.comments,
+      shareCount: 0,
+      createdAt: reel.publishedAtUtc ?? DateTime.now(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final videoUrl = reel.videoUrl;
     final thumb = reel.thumbnailUrl;
+
     return ListView(
       padding: const EdgeInsets.all(DesignTokens.s16),
       children: [
@@ -58,20 +103,26 @@ class _Body extends StatelessWidget {
           aspectRatio: 9 / 16,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            child: Container(
-              color: DesignTokens.bgAppBodyLight,
-              alignment: Alignment.center,
-              child: (thumb == null || thumb.isEmpty)
-                  ? const Icon(Icons.play_circle_outline,
-                      size: 64, color: DesignTokens.iconLight)
-                  : Image.network(thumb,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, _e, _s) => const Icon(
-                          Icons.play_circle_outline,
-                          size: 64,
-                          color: DesignTokens.iconLight)),
-            ),
+            child: videoUrl != null && videoUrl.isNotEmpty
+                ? ReelPlayer(
+                    reel: _asReel,
+                    isActive: true,
+                    playbackController: ReelPlaybackController(),
+                  )
+                : Container(
+                    color: DesignTokens.bgAppBodyLight,
+                    alignment: Alignment.center,
+                    child: (thumb == null || thumb.isEmpty)
+                        ? const Icon(Icons.play_circle_outline,
+                            size: 64, color: DesignTokens.iconLight)
+                        : Image.network(thumb,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (_, _e, _s) => const Icon(
+                                Icons.play_circle_outline,
+                                size: 64,
+                                color: DesignTokens.iconLight)),
+                  ),
           ),
         ),
         const SizedBox(height: DesignTokens.s16),
