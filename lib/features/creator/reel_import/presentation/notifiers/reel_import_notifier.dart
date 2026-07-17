@@ -210,7 +210,14 @@ class ReelSubmitIdle extends ReelSubmitState {}
 
 class ReelSubmitInProgress extends ReelSubmitState {}
 
-class ReelSubmitSuccess extends ReelSubmitState {}
+class ReelSubmitSuccess extends ReelSubmitState {
+  ReelSubmitSuccess(this.reelId);
+
+  /// The backend-generated reel UUID (not the external platform post ID).
+  /// May be null if the reel was already imported previously (409 conflict),
+  /// since that response doesn't carry the existing reel's ID.
+  final String? reelId;
+}
 
 class ReelSubmitFailure extends ReelSubmitState {
   ReelSubmitFailure(this.message);
@@ -237,7 +244,7 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
         orElse: () => false,
       );
       if (alreadyImported) {
-        state = ReelSubmitSuccess();
+        state = ReelSubmitSuccess(null);
         return;
       }
       state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
@@ -264,6 +271,6 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
       return;
     }
 
-    state = ReelSubmitSuccess();
+    state = ReelSubmitSuccess(importedReel.id);
   }
 }

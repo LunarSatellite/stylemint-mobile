@@ -318,10 +318,12 @@ class ReelPublishedScreen extends StatelessWidget {
                             height: 24,
                           ),
                           label: 'View\nAnalytics',
-                          onTap: args.reel?.id.isNotEmpty == true
+                          onTap: args.publishedReelId?.isNotEmpty == true
                               ? () => context.go(
-                                    RouteNames.creatorReelAnalyticsDetail
-                                        .replaceFirst(':reelId', args.reel!.id),
+                                    RouteNames.creatorReelAnalyticsDetail.replaceFirst(
+                                      ':reelId',
+                                      args.publishedReelId!,
+                                    ),
                                   )
                               : null,
                         ),

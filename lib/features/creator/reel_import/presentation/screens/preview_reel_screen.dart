@@ -132,7 +132,10 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                     thumbnailUrl: '',
                     caption: _captionController.text,
                     createdAt: DateTime.now(),
-                    videoDuration: 55,
+                    // Duration is not knowable until the backend processes
+                    // the imported video; 0 signals "unknown" and the
+                    // import endpoint applies its own default.
+                    videoDuration: 0,
                   );
                   unawaited(context.push(
                     RouteNames.reelImportTagProducts
@@ -208,26 +211,8 @@ class _VideoThumbnail extends StatelessWidget {
                 size: 52,
               ),
             ),
-            // Duration badge
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Text(
-                  '0:43 / 0:55',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: Colors.white,
-                    shadows: [
-                      const Shadow(
-                        color: Colors.black54,
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            // Note: no duration badge here — the real duration isn't known
+            // until the backend resolves the imported video.
           ],
         ),
       ),
@@ -242,14 +227,6 @@ class _ReelInfoCard extends StatelessWidget {
 
   final String url;
   final SocialPlatform platform;
-
-  static const _stats = [
-    (Icons.favorite_rounded, '23.8k', DesignTokens.textLight),
-    (Icons.visibility_rounded, '465k', DesignTokens.textLight),
-    (Icons.bookmark_rounded, '1.8k', Colors.white),
-    (Icons.share_rounded, '13.67k', DesignTokens.textLight),
-    (Icons.chat_bubble_rounded, '976', Colors.white),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -268,9 +245,9 @@ class _ReelInfoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Delicious Chocolate Cakes for Birthdays',
-                      style: TextStyle(
+                    Text(
+                      '${platform.displayName} Reel',
+                      style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -297,24 +274,25 @@ class _ReelInfoCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.s12),
           const Divider(color: DesignTokens.borderDefault, height: 1),
           const SizedBox(height: DesignTokens.s12),
+          // Engagement stats can't be known from the pasted URL alone —
+          // they're only available once the reel is actually imported.
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _stats
-                .map(
-                  (s) => Column(
-                    children: [
-                      Icon(s.$1, size: 20, color: s.$3),
-                      const SizedBox(height: DesignTokens.s4),
-                      Text(
-                        s.$2,
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textLight,
-                        ),
-                      ),
-                    ],
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 16,
+                color: DesignTokens.textMuted,
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Expanded(
+                child: Text(
+                  'Engagement stats will be available after import',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
                   ),
-                )
-                .toList(),
+                ),
+              ),
+            ],
           ),
         ],
       ),

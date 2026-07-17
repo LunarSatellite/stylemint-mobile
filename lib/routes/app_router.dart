@@ -24,8 +24,6 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_review_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_social_media_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
@@ -211,8 +209,6 @@ const _publicPaths = {
   RouteNames.pickInterests,
   RouteNames.followCreators,
   RouteNames.creatorApply,
-  RouteNames.creatorApplySocial,
-  RouteNames.creatorApplyReview,
   RouteNames.creatorApplySubmitted,
   RouteNames.followBrands,
   RouteNames.creatorApplyUnderReview,
@@ -596,20 +592,6 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.creatorApply,
         builder: (ctx, state) => const CreatorApplyScreen(),
         routes: [
-          GoRoute(
-            path: _subPath(
-              RouteNames.creatorApply,
-              RouteNames.creatorApplySocial,
-            ),
-            builder: (ctx, state) => const CreatorSocialMediaScreen(),
-          ),
-          GoRoute(
-            path: _subPath(
-              RouteNames.creatorApply,
-              RouteNames.creatorApplyReview,
-            ),
-            builder: (ctx, state) => const CreatorReviewScreen(),
-          ),
           GoRoute(
             path: _subPath(
               RouteNames.creatorApply,

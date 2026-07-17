@@ -79,7 +79,7 @@ const kFaqs = <FaqItem>[
   FaqItem(
     question: 'How do I become a Creator?',
     answer:
-        'Tap your profile, select "Become a Creator", and complete the application. You\'ll need to connect at least one social media account. Applications are reviewed within 1–3 business days.',
+        'Tap your profile, select "Become a Creator", and add a short bio. Your creator account activates instantly — no waiting on review. From there you can connect Instagram, TikTok, YouTube, or Facebook to import reels and tag products.',
   ),
 ];
 
@@ -806,25 +806,25 @@ const _creatorArticles = <HelpArticle>[
   HelpArticle(
     id: 'creator_apply',
     topicId: 'creators',
-    title: 'How to Apply as a Creator',
+    title: 'How to Become a Creator',
     date: 'Friday, 30th Aug, 2024, 9:00 AM',
     views: 5200,
     readMinutes: 4,
     preview:
-        'Becoming a creator unlocks reel uploads, product tagging, and commission earnings. The application takes under 5 minutes and is reviewed within 3 business days...',
+        'Becoming a creator unlocks reel uploads, product tagging, and commission earnings. Your account activates instantly — no application review — then you connect your social accounts...',
     blocks: [
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'The Reel Commerce Creator Programme lets you earn commission by tagging products in your short-form videos. Applications are reviewed by our team within 1–3 business days.',
+            'The Reel Commerce Creator Programme lets you earn commission by tagging products in your short-form videos. Creator accounts activate instantly — there is no review queue.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
         items: [
           'Open your Profile and tap "Become a Creator".',
-          'Connect at least one social account (Instagram, TikTok, YouTube, or Facebook).',
-          'Complete the creator profile with a bio and content category.',
-          'Submit the application and await approval.',
+          'Add an optional bio and tap Activate — your Creator role is live immediately.',
+          'Connect Instagram, TikTok, YouTube, or Facebook via secure sign-in to import reels and tag products.',
+          'You can connect or disconnect platforms any time from your dashboard.',
         ],
       ),
       HelpBlock(
@@ -834,15 +834,14 @@ const _creatorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'There is no minimum follower count. We evaluate applications on content quality, category alignment, and community guidelines compliance. Accounts with recent violations may be ineligible.',
+            'There is no minimum follower count. Connecting a social account isn\'t required to activate, but it is required to import reels and tag products. Accounts with recent guideline violations may be ineligible.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,
         items: [
           'Must be 18 years or older.',
-          'At least one connected social media account.',
           'Content must comply with platform guidelines.',
-          'Approval email sent to your registered address.',
+          'Connect at least one social account to start importing reels.',
         ],
       ),
     ],
