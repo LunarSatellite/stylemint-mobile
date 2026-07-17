@@ -18,15 +18,22 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
   final NetworkInfoConnectivity networkInfo;
 
   @override
-  Future<Either<NetworkExceptions, List<ImportableReel>>> getImportableReels(
-    SocialPlatform platform,
-  ) async {
+  Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
+    SocialPlatform platform, {
+    String? cursor,
+  }) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
     try {
-      final dtos = await remoteDataSource.getImportableReels(platform);
-      return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+      final page = await remoteDataSource.getImportableReels(
+        platform,
+        cursor: cursor,
+      );
+      return right(ImportableReelsResult(
+        reels: page.reels.map((d) => d.toDomain()).toList(growable: false),
+        nextCursor: page.nextCursor,
+      ));
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         return left(const NetworkExceptions.notFound());

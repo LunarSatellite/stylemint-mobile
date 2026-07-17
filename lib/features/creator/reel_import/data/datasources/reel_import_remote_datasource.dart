@@ -3,6 +3,15 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
+/// One provider-native page of importable reels plus the opaque cursor to
+/// fetch the next page (null once the provider has no more pages).
+class ImportableReelsPage {
+  const ImportableReelsPage({required this.reels, required this.nextCursor});
+
+  final List<ImportableReelDto> reels;
+  final String? nextCursor;
+}
+
 class ReelImportRemoteDataSource {
   ReelImportRemoteDataSource({required this.apiClient});
 
@@ -24,17 +33,26 @@ class ReelImportRemoteDataSource {
         _ => 'instagram',
       };
 
-  // GET /v1/social/accounts/{provider}/content?limit=25
-  // Lists recent posts from the creator's connected social account.
-  Future<List<ImportableReelDto>> getImportableReels(
-    SocialPlatform platform,
-  ) async {
+  // GET /v1/social/accounts/{provider}/content?limit=25&cursor=...
+  // Lists recent posts from the creator's connected social account, one
+  // provider-native page at a time. A single page can legitimately return
+  // zero importable (video) items even when more pages exist — e.g. a run of
+  // photo posts — so the caller should keep calling with [nextCursor] rather
+  // than treat an empty page as "no more content".
+  Future<ImportableReelsPage> getImportableReels(
+    SocialPlatform platform, {
+    String? cursor,
+  }) async {
     final response = await apiClient.get(
       '/v1/social/accounts/${platform.name}/content',
-      queryParameters: {'limit': 25},
+      queryParameters: {
+        'limit': 25,
+        if (cursor != null) 'cursor': cursor,
+      },
     );
-    final items = response as List<dynamic>? ?? const <dynamic>[];
-    return items.map((e) {
+    final body = response as Map<String, dynamic>? ?? const {};
+    final items = body['items'] as List<dynamic>? ?? const <dynamic>[];
+    final reels = items.map((e) {
       final m = e as Map<String, dynamic>;
       return ImportableReelDto(
         id: m['externalId'] as String? ?? '',
@@ -49,6 +67,10 @@ class ReelImportRemoteDataSource {
         videoDuration: 30,
       );
     }).toList(growable: false);
+    return ImportableReelsPage(
+      reels: reels,
+      nextCursor: body['nextCursor'] as String?,
+    );
   }
 
   // POST /v1/creator/reels/import

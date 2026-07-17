@@ -16,8 +16,10 @@ abstract class ReelImportState with _$ReelImportState {
   const factory ReelImportState.initial() = _ReelImportInitial;
   const factory ReelImportState.loadInProgress() = _ReelImportLoadInProgress;
   const factory ReelImportState.loadSuccess(
-    List<ImportableReel> reels,
-  ) = _ReelImportLoadSuccess;
+    List<ImportableReel> reels, {
+    @Default(false) bool hasMore,
+    @Default(false) bool isLoadingMore,
+  }) = _ReelImportLoadSuccess;
   const factory ReelImportState.loadFailure(NetworkExceptions failure) =
       _ReelImportLoadFailure;
 }
@@ -55,12 +57,50 @@ class ReelImportNotifier extends StateNotifier<ReelImportState> {
 
   final ReelImportRepository _repository;
 
+  String? _cursor;
+  bool _hasMore = false;
+  bool _isLoadingMore = false;
+  SocialPlatform? _platform;
+  List<ImportableReel> _reels = const [];
+
   Future<void> load(SocialPlatform platform) async {
+    _platform = platform;
+    _cursor = null;
+    _reels = const [];
     state = const ReelImportState.loadInProgress();
     final either = await _repository.getImportableReels(platform);
     state = either.fold(
       ReelImportState.loadFailure,
-      ReelImportState.loadSuccess,
+      (page) {
+        _reels = page.reels;
+        _cursor = page.nextCursor;
+        _hasMore = page.nextCursor != null;
+        return ReelImportState.loadSuccess(_reels, hasMore: _hasMore);
+      },
+    );
+  }
+
+  /// Fetches the next provider-native page and appends its (possibly zero,
+  /// if that page was all non-video posts) importable reels to what's
+  /// already shown. No-ops if there's no known next page or a fetch is
+  /// already in flight.
+  Future<void> loadMore() async {
+    final platform = _platform;
+    if (platform == null || !_hasMore || _isLoadingMore) return;
+
+    _isLoadingMore = true;
+    state = ReelImportState.loadSuccess(_reels, hasMore: _hasMore, isLoadingMore: true);
+
+    final either = await _repository.getImportableReels(platform, cursor: _cursor);
+    _isLoadingMore = false;
+    state = either.fold(
+      (_) => ReelImportState.loadSuccess(_reels, hasMore: _hasMore),
+      (page) {
+        _reels = [..._reels, ...page.reels];
+        _cursor = page.nextCursor;
+        _hasMore = page.nextCursor != null;
+        return ReelImportState.loadSuccess(_reels, hasMore: _hasMore);
+      },
     );
   }
 

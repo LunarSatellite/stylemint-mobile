@@ -61,7 +61,15 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     final reel = widget.reel;
     return ListView(
-      padding: const EdgeInsets.all(DesignTokens.s16),
+      // Bottom inset accounts for the device's own gesture/nav bar so the
+      // last section (tagged products) isn't hidden behind it on
+      // edge-to-edge displays.
+      padding: EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
+      ),
       children: [
         AspectRatio(
           aspectRatio: 9 / 16,

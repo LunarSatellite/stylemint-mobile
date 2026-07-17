@@ -336,10 +336,11 @@ class _MockNotificationsRepository implements NotificationsRepository {
 
 class _MockReelImportRepository implements ReelImportRepository {
   @override
-  Future<Either<NetworkExceptions, List<ImportableReel>>> getImportableReels(
-    SocialPlatform platform,
-  ) async =>
-      right([
+  Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
+    SocialPlatform platform, {
+    String? cursor,
+  }) async =>
+      right(ImportableReelsResult(nextCursor: null, reels: [
         ImportableReel(
           id: '1',
           platform: platform,
@@ -380,7 +381,7 @@ class _MockReelImportRepository implements ReelImportRepository {
           createdAt: DateTime.now().subtract(const Duration(days: 12)),
           videoDuration: 55,
         ),
-      ]);
+      ]));
 
   @override
   Future<Either<NetworkExceptions, ImportedReel>> importReel(

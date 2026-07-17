@@ -119,32 +119,68 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                   color: DesignTokens.primaryGreen,
                 ),
               ),
-              loadSuccess: (reels) {
-                if (reels.isEmpty) {
+              loadSuccess: (reels, hasMore, isLoadingMore) {
+                if (reels.isEmpty && !hasMore) {
                   return _EmptyState(
                     platform: _selectedPlatform,
                     onPasteUrl: _showUrlPasteSheet,
                   );
                 }
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    DesignTokens.s16,
-                    DesignTokens.s12,
-                    DesignTokens.s16,
-                    DesignTokens.s32,
-                  ),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: DesignTokens.s8,
-                    mainAxisSpacing: DesignTokens.s8,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: reels.length,
-                  itemBuilder: (_, i) => ImportableReelCard(
-                    reel: reels[i],
-                    onTap: () => _onReelTapped(reels[i]),
-                  ),
+                return Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(
+                          DesignTokens.s16,
+                          DesignTokens.s12,
+                          DesignTokens.s16,
+                          DesignTokens.s12,
+                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: DesignTokens.s8,
+                          mainAxisSpacing: DesignTokens.s8,
+                          childAspectRatio: 0.75,
+                        ),
+                        itemCount: reels.length,
+                        itemBuilder: (_, i) => ImportableReelCard(
+                          reel: reels[i],
+                          onTap: () => _onReelTapped(reels[i]),
+                        ),
+                      ),
+                    ),
+                    // A single provider page can be entirely non-video posts
+                    // (e.g. a run of photos), so "hasMore" stays visible even
+                    // when this page contributed zero importable reels —
+                    // the empty-state check above only fires once there's
+                    // truly nothing left to fetch.
+                    if (hasMore)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: DesignTokens.s16,
+                        ),
+                        child: isLoadingMore
+                            ? const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: DesignTokens.primaryGreen,
+                                  ),
+                                ),
+                              )
+                            : TextButton(
+                                onPressed: () => unawaited(
+                                  ref
+                                      .read(reelImportNotifierProvider.notifier)
+                                      .loadMore(),
+                                ),
+                                child: const Text('Load more'),
+                              ),
+                      ),
+                  ],
                 );
               },
               loadFailure: (failure) => failure.isNotFound
