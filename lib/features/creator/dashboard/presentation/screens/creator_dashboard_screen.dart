@@ -770,7 +770,10 @@ class _TopPerformingReels extends StatelessWidget {
           ...reels.map(
             (reel) => Padding(
               padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-              child: _TopReelCard(reel: reel),
+              child: GestureDetector(
+                onTap: () => context.push('/creator/reels/${reel.id}'),
+                child: _TopReelCard(reel: reel),
+              ),
             ),
           ),
       ],

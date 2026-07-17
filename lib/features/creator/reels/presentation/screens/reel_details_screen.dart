@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Single-reel detail (creator). Pixel-matched to Creator 'Reel Details.pdf'.
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
@@ -54,23 +55,34 @@ class _Body extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(DesignTokens.s16),
       children: [
-        AspectRatio(
-          aspectRatio: 9 / 16,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            child: Container(
-              color: DesignTokens.bgAppBodyLight,
-              alignment: Alignment.center,
-              child: (thumb == null || thumb.isEmpty)
-                  ? const Icon(Icons.play_circle_outline,
-                      size: 64, color: DesignTokens.iconLight)
-                  : Image.network(thumb,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, _e, _s) => const Icon(
-                          Icons.play_circle_outline,
-                          size: 64,
-                          color: DesignTokens.iconLight)),
+        GestureDetector(
+          onTap: reel.sourceUrl.isEmpty
+              ? null
+              : () => launchUrl(
+                    Uri.parse(reel.sourceUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+          child: AspectRatio(
+            aspectRatio: 9 / 16,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+              child: Container(
+                color: DesignTokens.bgAppBodyLight,
+                alignment: Alignment.center,
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.center,
+                  children: [
+                    if (thumb != null && thumb.isNotEmpty)
+                      Image.network(thumb,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, _e, _s) => const SizedBox.shrink()),
+                    const Icon(Icons.play_circle_outline,
+                        size: 64, color: DesignTokens.iconLight),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
