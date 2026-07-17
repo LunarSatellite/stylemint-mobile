@@ -27,6 +27,7 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/search/presentation/screens/creator_search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/top_reels_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -637,6 +638,10 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.creatorActivity,
         builder: (ctx, state) =>
             const notifications_activity.RecentActivityScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.creatorSearch,
+        builder: (ctx, state) => const CreatorSearchScreen(),
       ),
       GoRoute(
         path: RouteNames.socialConnect,

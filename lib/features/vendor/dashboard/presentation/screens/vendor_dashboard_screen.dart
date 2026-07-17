@@ -61,7 +61,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 color: DesignTokens.textWhite,
                 size: 22,
               ),
-              onPressed: () {},
+              onPressed: () => context.push(RouteNames.search),
             ),
             IconButton(
               icon: const Icon(
@@ -69,7 +69,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 color: DesignTokens.textWhite,
                 size: 22,
               ),
-              onPressed: () {},
+              onPressed: () => context.push(RouteNames.vendorRecentActivity),
             ),
             Consumer(
               builder: (ctx, ref, _) => IconButton(

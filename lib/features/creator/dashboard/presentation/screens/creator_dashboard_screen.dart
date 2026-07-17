@@ -8,7 +8,10 @@ import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/widgets/creator_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart' as partnerships;
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -167,6 +170,8 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: DesignTokens.s24),
             _TopPerformingReels(reels: dashboard.topReels),
             const SizedBox(height: DesignTokens.s24),
+            const _BrandInvites(),
+            const SizedBox(height: DesignTokens.s24),
             const _RecentActivity(),
           ],
         ),
@@ -233,17 +238,19 @@ class _Header extends StatelessWidget {
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
           iconWidget: const Icon(Icons.search_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () => context.push(RouteNames.search),
+          onTap: () => context.push(RouteNames.creatorSearch),
         ),
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
           iconWidget: const Icon(Icons.notifications_none_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () {},
+          onTap: () => context.push(RouteNames.creatorActivity),
         ),
         const SizedBox(width: DesignTokens.s8),
-        _HeaderIconBtn(
-          iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () {},
+        Consumer(
+          builder: (ctx, ref, _) => _HeaderIconBtn(
+            iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
+            onTap: () => showCreatorMoreMenu(ctx, ref),
+          ),
         ),
       ],
     );
@@ -742,6 +749,114 @@ class _TotalViewsCard extends StatelessWidget {
 }
 
 // ── Top Performing Reels ──────────────────────────────────────────────────────
+
+// ── Brand Invites ────────────────────────────────────────────────────────────
+
+/// Preview of real, vendor-initiated partnership invitations the creator can
+/// accept or decline — backed by GET /v1/partnerships?states=Invited (via
+/// [pendingInvitesProvider]), not the hardcoded "recommended brands" demo
+/// data on the Brands screen.
+class _BrandInvites extends ConsumerWidget {
+  const _BrandInvites();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invites = ref.watch(partnerships.pendingInvitesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Brand Invites',
+          onViewAll: () => context.push(RouteNames.partnershipRequests),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (invites.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              'No brand invites yet — check back soon.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            ),
+          )
+        else
+          ...invites.take(3).map(
+            (invite) => Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+              child: GestureDetector(
+                onTap: () => context.push(
+                  RouteNames.brandDetail.replaceFirst(':partnershipId', invite.id),
+                ),
+                child: _BrandInviteCard(invite: invite),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _BrandInviteCard extends StatelessWidget {
+  const _BrandInviteCard({required this.invite});
+
+  final PartnershipInvite invite;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipOval(
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: invite.vendorLogoUrl.isEmpty
+                  ? const ColoredBox(color: DesignTokens.bgAppBody)
+                  : Image.network(
+                      invite.vendorLogoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _e, _s) =>
+                          const ColoredBox(color: DesignTokens.bgAppBody),
+                    ),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(invite.vendorName,
+                    style: DesignTokens.oneLinerSemibold,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: DesignTokens.s4),
+                Text(invite.campaignBrief,
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textMuted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  '${invite.commissionRate.toStringAsFixed(0)}% commission',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.primaryGreen),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right,
+              size: 20, color: DesignTokens.iconLight),
+        ],
+      ),
+    );
+  }
+}
 
 class _TopPerformingReels extends StatelessWidget {
   const _TopPerformingReels({required this.reels});

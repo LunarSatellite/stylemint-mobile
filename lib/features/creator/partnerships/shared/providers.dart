@@ -59,6 +59,17 @@ final pendingInvitesCountProvider = Provider<int>((ref) {
       );
 });
 
+/// Derived view: pending invites themselves (not just the count), empty
+/// while loading or on failure. Real vendor-initiated invitations a
+/// creator can accept/decline — used for the dashboard preview section.
+final pendingInvitesProvider = Provider<List<PartnershipInvite>>((ref) {
+  return ref.watch(partnershipsNotifierProvider).maybeWhen(
+        loadSuccess: (invites, _, _) =>
+            invites.where((i) => i.status == PartnershipStatus.pending).toList(),
+        orElse: () => const [],
+      );
+});
+
 /// Active terms for a given partnership id.
 final partnershipTermsProvider = FutureProvider.autoDispose
     .family<PartnershipTermsDto, String>((ref, partnershipId) {
