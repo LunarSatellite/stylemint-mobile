@@ -13,4 +13,6 @@ abstract class CreatorReelsRepository {
   });
 
   Future<NetworkEither<PostPublishReport>> getPostPublishReport(String reelId);
+
+  Future<NetworkEither<void>> deleteReel(String reelId);
 }

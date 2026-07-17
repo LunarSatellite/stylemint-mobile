@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
   CreatorReelsRepositoryImpl({
@@ -117,6 +118,26 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
       return left<NetworkExceptions, PostPublishReport>(
         const NetworkExceptions.unexpectedError(),
       );
+    }
+  }
+
+  @override
+  Future<NetworkEither<void>> deleteReel(String reelId) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.deleteReel(reelId, const Uuid().v4());
+      return right(unit);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return left(const NetworkExceptions.notFound());
+      }
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
     }
   }
 }

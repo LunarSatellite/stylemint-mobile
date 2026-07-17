@@ -85,6 +85,7 @@ abstract class ImportedReelDto with _$ImportedReelDto {
     @Default('') String sourceUrl,
     required String platform,
     required String platformPostId,
+    @JsonKey(name: 'VideoCdnUrl') String? videoUrl,
   }) = _ImportedReelDto;
 
   const ImportedReelDto._();
@@ -114,6 +115,7 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       sourceUrl: sourceUrl,
       platform: platformEnum,
       platformPostId: platformPostId,
+      videoUrl: videoUrl,
     );
   }
 }

@@ -287,6 +287,7 @@ class ReelImportRemoteDataSource {
       sourceUrl: m['sourceUrl'] as String? ?? '',
       platform: platformName,
       platformPostId: m['externalId'] as String? ?? '',
+      videoUrl: m['VideoCdnUrl'] as String?,
     );
   }
 }

@@ -117,6 +117,7 @@ class ImportedReel {
     required this.sourceUrl,
     required this.platform,
     required this.platformPostId,
+    this.videoUrl,
   });
 
   final String id;
@@ -129,6 +130,7 @@ class ImportedReel {
   final String sourceUrl;
   final SocialPlatform platform;
   final String platformPostId;
+  final String? videoUrl;
 
   ImportedReel copyWith({
     String? id,
@@ -141,6 +143,7 @@ class ImportedReel {
     String? sourceUrl,
     SocialPlatform? platform,
     String? platformPostId,
+    String? videoUrl,
   }) {
     return ImportedReel(
       id: id ?? this.id,
@@ -153,6 +156,7 @@ class ImportedReel {
       sourceUrl: sourceUrl ?? this.sourceUrl,
       platform: platform ?? this.platform,
       platformPostId: platformPostId ?? this.platformPostId,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 }

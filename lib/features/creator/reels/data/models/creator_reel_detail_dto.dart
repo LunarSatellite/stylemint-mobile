@@ -93,7 +93,7 @@ class CreatorReelDetailDto {
       sourceUrl: (json['sourceUrl'] as String?) ?? '',
       caption: json['caption'] as String?,
       thumbnailUrl: json['thumbnailCdnUrl'] as String?,
-      videoUrl: json['videoCdnUrl'] as String?,
+      videoUrl: json['VideoCdnUrl'] as String?,
       musicLabel: music.isEmpty ? null : music,
       views: (json['viewsSnapshot'] as num?)?.toInt() ?? 0,
       likes: (json['likesSnapshot'] as num?)?.toInt() ?? 0,

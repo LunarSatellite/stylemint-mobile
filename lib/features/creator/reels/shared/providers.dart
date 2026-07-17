@@ -11,6 +11,17 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
 
+Future<void> deleteCreatorReel(WidgetRef ref, String reelId) async {
+  final repo = ref.read(creatorReelsRepositoryProvider);
+  final result = await repo.deleteReel(reelId);
+  if (result.isRight()) {
+    // Invalidate all filter variants so the UI refreshes
+    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'asc')));
+    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'desc')));
+    ref.invalidate(creatorReelSummariesProvider(('views', 'desc')));
+  }
+}
+
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
 final creatorReelsRemoteDataSourceProvider =

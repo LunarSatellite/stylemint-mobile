@@ -9,7 +9,7 @@ class CreatorReelsRemoteDataSource {
   final ApiClient apiClient;
 
   Future<CreatorReelDetailDto> getReelDetail(String reelId) async {
-    final response = await apiClient.get('/v1/public/reels/$reelId');
+    final response = await apiClient.get('/v1/creator/reels/$reelId');
     return CreatorReelDetailDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -95,6 +95,17 @@ class CreatorReelsRemoteDataSource {
   ) async {
     await apiClient.authDelete(
       '/v1/creator/reels/$reelId/tagged-products/$taggedProductId',
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
+  // DELETE /v1/creator/reels/{reelId}
+  Future<void> deleteReel(String reelId, String idempotencyKey) async {
+    await apiClient.authDelete(
+      '/v1/creator/reels/$reelId',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,

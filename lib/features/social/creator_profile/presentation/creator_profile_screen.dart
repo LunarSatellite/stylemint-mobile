@@ -952,14 +952,15 @@ class _FilterTab extends StatelessWidget {
   }
 }
 
-class _ReelCard extends StatelessWidget {
+class _ReelCard extends ConsumerWidget {
   const _ReelCard({required this.reel});
   final CreatorReelSummary reel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => context.push(RouteNames.creatorReelDetail(reel.id)),
+      onTap: () => context.push('/creator/reels/${reel.id}'),
+      onLongPress: () => _showDeleteDialog(context, ref),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(
@@ -1011,6 +1012,29 @@ class _ReelCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Reel'),
+        content: const Text('Are you sure you want to delete this reel? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await reels_providers.deleteCreatorReel(ref, reel.id);
+    }
   }
 
   Widget _placeholder() => Container(
