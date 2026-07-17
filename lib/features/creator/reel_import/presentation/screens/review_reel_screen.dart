@@ -15,11 +15,26 @@ class ReviewReelArgs {
     required this.reel,
     required this.taggedProducts,
     required this.potentialEarningsPerSale,
+    this.publishedReelId,
   });
 
   final ImportableReel? reel;
   final List<TaggedProductForImport> taggedProducts;
   final int potentialEarningsPerSale;
+
+  /// The backend-generated reel UUID from the import/publish call chain.
+  /// Only populated once the reel has actually been submitted — this is
+  /// distinct from `reel.id`, which is the external platform post ID.
+  final String? publishedReelId;
+
+  ReviewReelArgs copyWith({String? publishedReelId}) {
+    return ReviewReelArgs(
+      reel: reel,
+      taggedProducts: taggedProducts,
+      potentialEarningsPerSale: potentialEarningsPerSale,
+      publishedReelId: publishedReelId ?? this.publishedReelId,
+    );
+  }
 }
 
 class ReviewReelScreen extends ConsumerStatefulWidget {
@@ -47,7 +62,10 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
       reelSubmitNotifierProvider,
       (previous, next) {
         if (next is ReelSubmitSuccess) {
-          context.pushReplacement(RouteNames.reelPublished, extra: widget.args);
+          context.pushReplacement(
+            RouteNames.reelPublished,
+            extra: widget.args.copyWith(publishedReelId: next.reelId),
+          );
         } else if (next is ReelSubmitFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

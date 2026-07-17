@@ -1,9 +1,16 @@
 import 'package:flutter_riverpod/legacy.dart';
 
-/// Holds all form data across the 3-step Creator Application flow.
-/// Written to on each step's "Proceed"; read on Review + Submit.
+/// Holds the personal-information data collected for a creator application.
+///
+/// NOTE: the old multi-step wizard's "Social Media Profiles" step
+/// (connected platforms, self-reported follower count, engagement rate,
+/// content types, sample post URLs) has been removed — it only ever toggled
+/// a local checkbox with no API call or OAuth, and none of that data (beyond
+/// what's captured here) was ever meaningfully verified. Real social account
+/// linking now happens via the OAuth-backed `SocialConnectScreen`. This class
+/// is retained because [email] still backs the confirmation copy on the
+/// legacy submitted/under-review/approved/rejected screens.
 class CreatorFormData {
-  // Step 1 — Personal Information
   final String fullName;
   final String email;
   final String phone;
@@ -16,13 +23,6 @@ class CreatorFormData {
   final Set<String> categoryIds;
   final String whyJoin;
 
-  // Step 2 — Social Media Profiles
-  final Set<String> connectedPlatforms;
-  final String totalFollowers;
-  final String engagementRate;
-  final Set<String> contentTypes;
-  final List<String> sampleUrls;
-
   const CreatorFormData({
     this.fullName = '',
     this.email = '',
@@ -31,11 +31,6 @@ class CreatorFormData {
     this.categories = const {},
     this.categoryIds = const {},
     this.whyJoin = '',
-    this.connectedPlatforms = const {},
-    this.totalFollowers = '',
-    this.engagementRate = '',
-    this.contentTypes = const {},
-    this.sampleUrls = const [],
   });
 
   CreatorFormData copyWith({
@@ -46,11 +41,6 @@ class CreatorFormData {
     Set<String>? categories,
     Set<String>? categoryIds,
     String? whyJoin,
-    Set<String>? connectedPlatforms,
-    String? totalFollowers,
-    String? engagementRate,
-    Set<String>? contentTypes,
-    List<String>? sampleUrls,
   }) =>
       CreatorFormData(
         fullName: fullName ?? this.fullName,
@@ -60,11 +50,6 @@ class CreatorFormData {
         categories: categories ?? this.categories,
         categoryIds: categoryIds ?? this.categoryIds,
         whyJoin: whyJoin ?? this.whyJoin,
-        connectedPlatforms: connectedPlatforms ?? this.connectedPlatforms,
-        totalFollowers: totalFollowers ?? this.totalFollowers,
-        engagementRate: engagementRate ?? this.engagementRate,
-        contentTypes: contentTypes ?? this.contentTypes,
-        sampleUrls: sampleUrls ?? this.sampleUrls,
       );
 }
 
@@ -88,22 +73,6 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
       categories: Set.unmodifiable(categories),
       categoryIds: Set.unmodifiable(categoryIds),
       whyJoin: whyJoin,
-    );
-  }
-
-  void saveStep2({
-    required Set<String> connectedPlatforms,
-    required String totalFollowers,
-    required String engagementRate,
-    required Set<String> contentTypes,
-    required List<String> sampleUrls,
-  }) {
-    state = state.copyWith(
-      connectedPlatforms: Set.unmodifiable(connectedPlatforms),
-      totalFollowers: totalFollowers,
-      engagementRate: engagementRate,
-      contentTypes: Set.unmodifiable(contentTypes),
-      sampleUrls: List.unmodifiable(sampleUrls),
     );
   }
 

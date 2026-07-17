@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,11 +24,30 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
   List<String> _taggedProductIds = [];
   SocialPlatform _platform = SocialPlatform.instagram;
   bool _isSaving = false;
+  bool _isAnalyzing = false;
+  bool _analysisFailed = false;
+  CoachingFeedback? _coaching;
 
   @override
   void dispose() {
     _captionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _analyzeDraft(String draftId) async {
+    setState(() {
+      _isAnalyzing = true;
+      _analysisFailed = false;
+    });
+    final analyzed = await ref
+        .read(reelStudioNotifierProvider.notifier)
+        .requestCoaching(draftId);
+    if (!mounted) return;
+    setState(() {
+      _isAnalyzing = false;
+      _coaching = analyzed?.coaching;
+      _analysisFailed = analyzed?.coaching == null;
+    });
   }
 
   @override
@@ -35,7 +56,7 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
 
     ref.listen<CreateDraftState>(createDraftNotifierProvider, (_, next) {
       next.maybeWhen(
-        saved: (_) => context.pop(),
+        saved: (draft) => unawaited(_analyzeDraft(draft.id)),
         saveFailure: (_) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to save draft')),
         ),
@@ -60,6 +81,12 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Create Draft', style: DesignTokens.titleMedium),
         actions: [
+          if (_coaching != null || _analysisFailed)
+            TextButton(
+              onPressed: () => context.pop(),
+              child: const Text('Done',
+                  style: TextStyle(color: DesignTokens.textLight)),
+            ),
           TextButton(
             onPressed: _isSaving
                 ? null
@@ -137,19 +164,7 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
                   }).toList(growable: false),
                 ),
                 const SizedBox(height: DesignTokens.s24),
-                const CoachingScoreCard(
-                  overallScore: 0.75,
-                  areas: [
-                    FeedbackArea(label: 'Caption', score: 0.8),
-                    FeedbackArea(label: 'Hashtags', score: 0.65),
-                    FeedbackArea(label: 'Engagement', score: 0.72),
-                    FeedbackArea(label: 'Timing', score: 0.85),
-                  ],
-                  suggestions: [
-                    'Add 2-3 trending hashtags',
-                    'Make caption shorter for higher retention',
-                  ],
-                ),
+                _buildCoachingSection(),
               ],
             ),
           ),
@@ -165,5 +180,45 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildCoachingSection() {
+    if (_isAnalyzing) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+        child: Center(
+          child: Column(
+            children: [
+              CircularProgressIndicator(color: DesignTokens.primaryGreen),
+              SizedBox(height: DesignTokens.s8),
+              Text('Analyzing your reel...', style: DesignTokens.bodyText),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_coaching != null) {
+      final coaching = _coaching!;
+      return CoachingScoreCard(
+        overallScore: coaching.overallScore,
+        areas: coaching.areas,
+        suggestions: coaching.suggestions,
+      );
+    }
+    if (_analysisFailed) {
+      return Container(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          border: Border.all(color: DesignTokens.colorError.withValues(alpha: 0.3)),
+        ),
+        child: Text(
+          'Could not analyze this draft. Save again to retry.',
+          style: DesignTokens.bodyText,
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
