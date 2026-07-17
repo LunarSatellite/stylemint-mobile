@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,44 +45,35 @@ class ReelDetailsScreen extends ConsumerWidget {
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   const _Body({required this.reel});
 
   final CreatorReelDetail reel;
 
   @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  final _playback = ReelPlaybackController();
+
+  @override
   Widget build(BuildContext context) {
-    final thumb = reel.thumbnailUrl;
+    final reel = widget.reel;
     return ListView(
       padding: const EdgeInsets.all(DesignTokens.s16),
       children: [
-        GestureDetector(
-          onTap: reel.sourceUrl.isEmpty
-              ? null
-              : () => launchUrl(
-                    Uri.parse(reel.sourceUrl),
-                    mode: LaunchMode.externalApplication,
-                  ),
-          child: AspectRatio(
-            aspectRatio: 9 / 16,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-              child: Container(
-                color: DesignTokens.bgAppBodyLight,
-                alignment: Alignment.center,
-                child: Stack(
-                  fit: StackFit.expand,
-                  alignment: Alignment.center,
-                  children: [
-                    if (thumb != null && thumb.isNotEmpty)
-                      Image.network(thumb,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorBuilder: (_, _e, _s) => const SizedBox.shrink()),
-                    const Icon(Icons.play_circle_outline,
-                        size: 64, color: DesignTokens.iconLight),
-                  ],
-                ),
+        AspectRatio(
+          aspectRatio: 9 / 16,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+            child: GestureDetector(
+              onTap: _playback.toggle,
+              child: ReelPlayer(
+                videoUrl: reel.videoUrl,
+                thumbnailUrl: reel.thumbnailUrl ?? '',
+                isActive: true,
+                playbackController: _playback,
               ),
             ),
           ),
@@ -90,6 +82,17 @@ class _Body extends StatelessWidget {
         Row(
           children: [
             _Chip(icon: Icons.public, label: reel.platformLabel),
+            if (reel.sourceUrl.isNotEmpty) ...[
+              const SizedBox(width: DesignTokens.s8),
+              TextButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(reel.sourceUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text('View original'),
+              ),
+            ],
             if (reel.musicLabel != null) ...[
               const SizedBox(width: DesignTokens.s8),
               Expanded(

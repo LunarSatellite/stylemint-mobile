@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:video_player/video_player.dart';
 
@@ -15,21 +14,25 @@ class ReelPlaybackController {
   void toggle() => _onToggle?.call();
 }
 
-/// Inline video player for a reel.
+/// Inline video player for a reel. Shared across features (customer feed,
+/// creator reel details) — takes plain URLs rather than a feature-specific
+/// domain entity so it isn't coupled to any one feature's model.
 ///
-/// Plays the MP4 pointed to by [Reel.videoUrl] when [isActive] is true,
-/// and pauses it when [isActive] is false (reel scrolled off-screen).
+/// Plays the MP4 pointed to by [videoUrl] when [isActive] is true, and
+/// pauses it when [isActive] is false (e.g. reel scrolled off-screen).
 ///
-/// Falls back to a static thumbnail + play-button when [Reel.videoUrl] is null.
+/// Falls back to a static thumbnail + play-button when [videoUrl] is null.
 class ReelPlayer extends StatefulWidget {
   const ReelPlayer({
-    required this.reel,
+    required this.videoUrl,
+    required this.thumbnailUrl,
     required this.isActive,
     this.playbackController,
     super.key,
   });
 
-  final Reel reel;
+  final String? videoUrl;
+  final String thumbnailUrl;
   final bool isActive;
 
   /// Optional handle so an ancestor can toggle play/pause on tap.
@@ -101,7 +104,7 @@ class _ReelPlayerState extends State<ReelPlayer>
       widget.playbackController?._onToggle = _togglePlayPause;
     }
 
-    if (oldWidget.reel.videoUrl != widget.reel.videoUrl) {
+    if (oldWidget.videoUrl != widget.videoUrl) {
       _disposeController();
       unawaited(_initVideo());
       return;
@@ -116,7 +119,7 @@ class _ReelPlayerState extends State<ReelPlayer>
   }
 
   Future<void> _initVideo() async {
-    final url = widget.reel.videoUrl;
+    final url = widget.videoUrl;
     if (url == null || url.isEmpty) return;
 
     try {
@@ -176,7 +179,7 @@ class _ReelPlayerState extends State<ReelPlayer>
 
   @override
   Widget build(BuildContext context) {
-    final hasVideo = widget.reel.videoUrl != null;
+    final hasVideo = widget.videoUrl != null;
 
     return ColoredBox(
       color: DesignTokens.baseBlack,
@@ -198,9 +201,9 @@ class _ReelPlayerState extends State<ReelPlayer>
                   child: VideoPlayer(_controller!),
                 ),
               )
-            else if (widget.reel.thumbnailUrl.isNotEmpty)
+            else if (widget.thumbnailUrl.isNotEmpty)
               CachedNetworkImage(
-                imageUrl: widget.reel.thumbnailUrl,
+                imageUrl: widget.thumbnailUrl,
                 fit: BoxFit.cover,
                 placeholder:
                     (_, _) =>

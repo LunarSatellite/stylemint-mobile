@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// A single full-screen reel: inline video background with a gradient
@@ -30,7 +30,8 @@ class _ReelCardState extends State<ReelCard> {
       fit: StackFit.expand,
       children: [
         ReelPlayer(
-          reel: widget.reel,
+          videoUrl: widget.reel.videoUrl,
+          thumbnailUrl: widget.reel.thumbnailUrl,
           isActive: widget.isActive,
           playbackController: _playback,
         ),

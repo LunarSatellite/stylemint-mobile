@@ -49,6 +49,7 @@ class CreatorReelDetailDto {
     required this.sourceUrl,
     required this.caption,
     required this.thumbnailUrl,
+    required this.videoUrl,
     required this.musicLabel,
     required this.views,
     required this.likes,
@@ -62,6 +63,7 @@ class CreatorReelDetailDto {
   final String sourceUrl;
   final String? caption;
   final String? thumbnailUrl;
+  final String? videoUrl;
   final String? musicLabel;
   final int views;
   final int likes;
@@ -91,6 +93,7 @@ class CreatorReelDetailDto {
       sourceUrl: (json['sourceUrl'] as String?) ?? '',
       caption: json['caption'] as String?,
       thumbnailUrl: json['thumbnailCdnUrl'] as String?,
+      videoUrl: json['videoCdnUrl'] as String?,
       musicLabel: music.isEmpty ? null : music,
       views: (json['viewsSnapshot'] as num?)?.toInt() ?? 0,
       likes: (json['likesSnapshot'] as num?)?.toInt() ?? 0,
@@ -110,6 +113,7 @@ class CreatorReelDetailDto {
         sourceUrl: sourceUrl,
         caption: caption,
         thumbnailUrl: thumbnailUrl,
+        videoUrl: videoUrl,
         musicLabel: musicLabel,
         views: views,
         likes: likes,
