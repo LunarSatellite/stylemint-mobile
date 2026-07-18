@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:uuid/uuid.dart';

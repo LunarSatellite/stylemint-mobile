@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'track_orders_notifier.freezed.dart';
 
@@ -36,47 +35,10 @@ class TrackOrdersNotifier extends StateNotifier<TrackOrdersState> {
       cursor: cursor,
     );
     state = either.fold(
-      (_) => TrackOrdersState.loadSuccess(_mockOrders()),
-      (orders) => orders.isEmpty
-          ? TrackOrdersState.loadSuccess(_mockOrders())
-          : TrackOrdersState.loadSuccess(orders),
+      TrackOrdersState.loadFailure,
+      TrackOrdersState.loadSuccess,
     );
   }
-
-  static List<TrackedOrder> _mockOrders() => [
-        TrackedOrder(
-          id: 'mock-o1',
-          orderNumber: 'SM20240115',
-          total: const Money(amount: 3700, currency: 'NPR'),
-          placedAt: DateTime(2024, 1, 15, 14, 30),
-          itemCount: 2,
-          status: OrderTrackStatus.inTransit,
-        ),
-        TrackedOrder(
-          id: 'mock-o2',
-          orderNumber: 'SM20231228',
-          total: const Money(amount: 25000, currency: 'NPR'),
-          placedAt: DateTime(2023, 12, 28, 10, 0),
-          itemCount: 1,
-          status: OrderTrackStatus.delivered,
-        ),
-        TrackedOrder(
-          id: 'mock-o3',
-          orderNumber: 'SM20231210',
-          total: const Money(amount: 5000, currency: 'NPR'),
-          placedAt: DateTime(2023, 12, 10, 9, 15),
-          itemCount: 3,
-          status: OrderTrackStatus.cancelled,
-        ),
-        TrackedOrder(
-          id: 'mock-o4',
-          orderNumber: 'SM20240120',
-          total: const Money(amount: 1500, currency: 'NPR'),
-          placedAt: DateTime(2024, 1, 20, 8, 45),
-          itemCount: 1,
-          status: OrderTrackStatus.preparingForShipping,
-        ),
-      ];
 }
 
 @freezed
