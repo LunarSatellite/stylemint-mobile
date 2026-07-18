@@ -40,8 +40,20 @@ class ReelsRemoteDataSource {
 
   /// Maps a Discovery feed `ReelCardDto` (the card shape) onto the reels
   /// feature's [ReelDto]. `creatorProfileId` is the creator's account id
-  /// (the follow target). Caption/createdAt/tagged-products aren't on the card.
+  /// (the follow target). `createdAt` isn't on the card (feed ordering is by
+  /// relevance/score, not creation time — not needed for display).
   ReelDto _reelCardToDto(Map<String, dynamic> r) {
+    final taggedProducts = (r['taggedProducts'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map((p) => TaggedProductDto(
+              id: (p['productId'] as String?) ?? '',
+              name: (p['name'] as String?) ?? '',
+              imageUrl: (p['imageUrl'] as String?) ?? '',
+              amount: (p['priceAmount'] as num?)?.toDouble() ?? 0,
+              currency: (p['priceCurrency'] as String?) ?? 'NPR',
+            ))
+        .toList(growable: false);
+
     return ReelDto(
       id: (r['reelId'] as String?) ?? '',
       sourceUrl: (r['externalUrl'] as String?) ?? '',
@@ -50,10 +62,11 @@ class ReelsRemoteDataSource {
       creatorId: (r['creatorProfileId'] as String?) ?? '',
       creatorName: (r['creatorHandle'] as String?) ?? '',
       creatorAvatarUrl: (r['creatorAvatarUrl'] as String?) ?? '',
-      caption: '',
+      caption: (r['caption'] as String?) ?? '',
       createdAt: DateTime.now(),
       musicTitle: (r['audioTrackName'] as String?) ?? '',
       musicArtist: (r['audioArtistName'] as String?) ?? '',
+      taggedProducts: taggedProducts,
       likeCount: (r['likeCount'] as num?)?.toInt() ?? 0,
       commentCount: (r['commentCount'] as num?)?.toInt() ?? 0,
       isCreatorFollowed: r['isCreatorFollowed'] as bool?,
