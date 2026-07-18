@@ -108,13 +108,11 @@ class _ActionButton extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          // Spec: "Reel Interaction Container" — radius 20, blur(20px),
+          // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            width: 52,
-            padding: const EdgeInsets.symmetric(
-              vertical: DesignTokens.s8,
-              horizontal: DesignTokens.s4,
-            ),
+            padding: const EdgeInsets.all(DesignTokens.s16),
             decoration: BoxDecoration(
               color: const Color(0x99333333),
               borderRadius: BorderRadius.circular(20),
@@ -122,7 +120,7 @@ class _ActionButton extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 26),
+                Icon(icon, color: color, size: 24),
                 if (label != null && label!.isNotEmpty) ...[
                   const SizedBox(height: DesignTokens.s4),
                   Text(
@@ -130,7 +128,7 @@ class _ActionButton extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       height: 1,
                       color: DesignTokens.textWhite,

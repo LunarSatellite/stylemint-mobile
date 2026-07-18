@@ -247,13 +247,11 @@ class _RailStat extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        // Spec: "Reel Interaction Container" — radius 20, blur(20px),
+        // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          width: 52,
-          padding: const EdgeInsets.symmetric(
-            vertical: DesignTokens.s8,
-            horizontal: DesignTokens.s4,
-          ),
+          padding: const EdgeInsets.all(DesignTokens.s16),
           decoration: const BoxDecoration(
             color: Color(0x99333333),
             borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -268,7 +266,7 @@ class _RailStat extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                   height: 1,
                   color: DesignTokens.textWhite,
@@ -359,10 +357,10 @@ class _ProductTile extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(DesignTokens.s8),
+                borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  width: 76,
-                  height: 76,
+                  width: 72,
+                  height: 72,
                   child: (img == null || img.isEmpty)
                       ? const ColoredBox(color: DesignTokens.bgAppBodyLight)
                       : Image.network(img,
