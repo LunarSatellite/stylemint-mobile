@@ -229,9 +229,9 @@ class _AnalyticsRail extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _RailStat(icon: Icons.remove_red_eye_outlined, value: reel.views),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s12),
         _RailStat(icon: Icons.favorite_outline, value: reel.likes),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s12),
         _RailStat(
           icon: Icons.chat_bubble_outline,
           value: reel.comments,
@@ -253,22 +253,26 @@ class _RailStat extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          // Spec: "Reel Interaction Container" — radius 20, blur(20px),
-          // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
+          // Trimmed down from the design-spec's 16px padding / 24px icon —
+          // that read as oversized/cluttered on-device; this keeps the same
+          // pill look at a tighter, more standard reel-rail size.
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.all(DesignTokens.s16),
+            padding: const EdgeInsets.symmetric(
+              vertical: DesignTokens.s8,
+              horizontal: DesignTokens.s8,
+            ),
             decoration: const BoxDecoration(
               color: Color(0x99333333),
-              borderRadius: BorderRadius.all(Radius.circular(20)),
+              borderRadius: BorderRadius.all(Radius.circular(16)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: DesignTokens.iconWhite, size: 24),
-                const SizedBox(height: DesignTokens.s4),
+                Icon(icon, color: DesignTokens.iconWhite, size: 20),
+                const SizedBox(height: 2),
                 Text(
                   _formatCount(value),
                   textAlign: TextAlign.center,

@@ -52,13 +52,13 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
           color: _isLiked ? DesignTokens.colorError : DesignTokens.iconWhite,
           onTap: _toggleLike,
         ),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s12),
         _ActionButton(
           icon: Icons.chat_bubble_outline,
           label: _formatCount(reel.commentCount),
           onTap: _openComments,
         ),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s12),
         _ActionButton(
           icon: Icons.share_outlined,
           label: _formatCount(reel.shareCount),
@@ -68,7 +68,7 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
             }
           },
         ),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s12),
         _ActionButton(
           icon: _isWishlisted ? Icons.bookmark : Icons.bookmark_outline,
           color: _isWishlisted
@@ -106,23 +106,27 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          // Spec: "Reel Interaction Container" — radius 20, blur(20px),
-          // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
+          // Trimmed down from the design-spec's 16px padding / 24px icon —
+          // that read as oversized/cluttered on-device; this keeps the same
+          // pill look at a tighter, more standard reel-rail size.
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.all(DesignTokens.s16),
+            padding: const EdgeInsets.symmetric(
+              vertical: DesignTokens.s8,
+              horizontal: DesignTokens.s8,
+            ),
             decoration: BoxDecoration(
               color: const Color(0x99333333),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: color, size: 24),
+                Icon(icon, color: color, size: 20),
                 if (label != null && label!.isNotEmpty) ...[
-                  const SizedBox(height: DesignTokens.s4),
+                  const SizedBox(height: 2),
                   Text(
                     label!,
                     textAlign: TextAlign.center,
