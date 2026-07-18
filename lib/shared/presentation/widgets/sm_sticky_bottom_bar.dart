@@ -37,31 +37,38 @@ class SmStickyBottomBar extends StatelessWidget {
                 top: BorderSide(color: DesignTokens.borderDefault, width: 1))
             : null,
       ),
-      padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Opacity(
-            opacity: primaryEnabled ? 1 : 0.5,
-            child: _Pill(
-              label: primaryLabel,
-              fill: DesignTokens.primaryGreen,
-              textColor: DesignTokens.buttonPrimaryText,
-              trailing: primaryTrailing,
-              onTap: primaryEnabled ? onPrimary : null,
-            ),
+      // SafeArea (not just padding) so the system nav bar — 3-button or
+      // gesture — never overlaps these buttons and makes them unpressable.
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Opacity(
+                opacity: primaryEnabled ? 1 : 0.5,
+                child: _Pill(
+                  label: primaryLabel,
+                  fill: DesignTokens.primaryGreen,
+                  textColor: DesignTokens.buttonPrimaryText,
+                  trailing: primaryTrailing,
+                  onTap: primaryEnabled ? onPrimary : null,
+                ),
+              ),
+              if (secondaryLabel != null) ...[
+                const SizedBox(height: DesignTokens.s16),
+                _Pill(
+                  label: secondaryLabel!,
+                  fill: DesignTokens.buttonGrayFill,
+                  textColor: DesignTokens.buttonGrayText,
+                  onTap: onSecondary,
+                ),
+              ],
+            ],
           ),
-          if (secondaryLabel != null) ...[
-            const SizedBox(height: DesignTokens.s16),
-            _Pill(
-              label: secondaryLabel!,
-              fill: DesignTokens.buttonGrayFill,
-              textColor: DesignTokens.buttonGrayText,
-              onTap: onSecondary,
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
