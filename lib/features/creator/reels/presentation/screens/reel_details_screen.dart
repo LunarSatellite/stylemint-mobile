@@ -250,35 +250,34 @@ class _RailStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          // Spec: "Reel Interaction Container" — radius 20, blur(20px),
-          // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: const BoxDecoration(
-              color: Color(0x99333333),
-              borderRadius: BorderRadius.all(Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: DesignTokens.iconWhite, size: 24),
-                const SizedBox(height: DesignTokens.s4),
-                Text(
-                  _formatCount(value),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 1,
-                    color: DesignTokens.textWhite,
-                  ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        child: Container(
+          width: 52,
+          padding: const EdgeInsets.symmetric(
+            vertical: DesignTokens.s8,
+            horizontal: DesignTokens.s4,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0x99333333),
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: DesignTokens.iconWhite, size: 24),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                _formatCount(value),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  height: 1,
+                  color: DesignTokens.textWhite,
                 ),
               ],
             ),
@@ -366,10 +365,10 @@ class _ProductTile extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
                 child: SizedBox(
-                  width: 72,
-                  height: 72,
+                  width: 76,
+                  height: 76,
                   child: (img == null || img.isEmpty)
                       ? const ColoredBox(color: DesignTokens.bgAppBodyLight)
                       : Image.network(img,

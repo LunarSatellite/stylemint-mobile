@@ -81,10 +81,10 @@ class _ProductTile extends StatelessWidget {
               GestureDetector(
                 onTap: () => _openProduct(context),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
                   child: SizedBox(
-                    width: 72,
-                    height: 72,
+                    width: 76,
+                    height: 76,
                     child: product.imageUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: product.imageUrl,
