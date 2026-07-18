@@ -46,6 +46,7 @@ class ReelsRemoteDataSource {
       id: (r['reelId'] as String?) ?? '',
       sourceUrl: (r['externalUrl'] as String?) ?? '',
       thumbnailUrl: (r['thumbnailUrl'] as String?) ?? '',
+      videoUrl: r['videoUrl'] as String?,
       creatorId: (r['creatorProfileId'] as String?) ?? '',
       creatorName: (r['creatorHandle'] as String?) ?? '',
       creatorAvatarUrl: (r['creatorAvatarUrl'] as String?) ?? '',
