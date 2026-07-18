@@ -926,15 +926,29 @@ class _TopReelCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(DesignTokens.s4),
-                child: Container(
+                child: SizedBox(
                   width: 64,
                   height: 64,
-                  color: DesignTokens.bgAppBody,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.play_circle_fill,
-                    color: DesignTokens.iconLight,
-                    size: 28,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (reel.thumbnailUrl.isNotEmpty)
+                        Image.network(
+                          reel.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _e, _s) =>
+                              const ColoredBox(color: DesignTokens.bgAppBody),
+                        )
+                      else
+                        const ColoredBox(color: DesignTokens.bgAppBody),
+                      const Center(
+                        child: Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white70,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -231,48 +232,56 @@ class _AnalyticsRail extends StatelessWidget {
         const SizedBox(height: DesignTokens.s20),
         _RailStat(icon: Icons.favorite_outline, value: reel.likes),
         const SizedBox(height: DesignTokens.s20),
-        _RailStat(icon: Icons.chat_bubble_outline, value: reel.comments),
+        _RailStat(
+          icon: Icons.chat_bubble_outline,
+          value: reel.comments,
+          onTap: () => showReelCommentsSheet(context, reel.id),
+        ),
       ],
     );
   }
 }
 
 class _RailStat extends StatelessWidget {
-  const _RailStat({required this.icon, required this.value});
+  const _RailStat({required this.icon, required this.value, this.onTap});
   final IconData icon;
   final int value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        // Spec: "Reel Interaction Container" — radius 20, blur(20px),
-        // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.all(DesignTokens.s16),
-          decoration: const BoxDecoration(
-            color: Color(0x99333333),
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: DesignTokens.iconWhite, size: 24),
-              const SizedBox(height: DesignTokens.s4),
-              Text(
-                _formatCount(value),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  height: 1,
-                  color: DesignTokens.textWhite,
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          // Spec: "Reel Interaction Container" — radius 20, blur(20px),
+          // padding 16px, gap 4px, icon 24x24, count 10/600/100%.
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            decoration: const BoxDecoration(
+              color: Color(0x99333333),
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: DesignTokens.iconWhite, size: 24),
+                const SizedBox(height: DesignTokens.s4),
+                Text(
+                  _formatCount(value),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
