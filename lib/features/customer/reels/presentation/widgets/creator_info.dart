@@ -23,6 +23,7 @@ class CreatorInfo extends ConsumerStatefulWidget {
 
 class _CreatorInfoState extends ConsumerState<CreatorInfo> {
   bool _busy = false;
+  bool _captionExpanded = false;
 
   @override
   void initState() {
@@ -124,16 +125,26 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
           ),
           if (reel.caption.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s12),
-            Text(reel.caption, maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                // Spec: caption 12/400/130% white.
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                  color: DesignTokens.textWhite,
-                )),
+            // Collapsed by default (stays docked at the bottom); tapping
+            // expands to show the full caption, matching the reel-details
+            // "tap to see complete, otherwise stay down" behavior.
+            GestureDetector(
+              onTap: () =>
+                  setState(() => _captionExpanded = !_captionExpanded),
+              child: Text(reel.caption,
+                  maxLines: _captionExpanded ? null : 3,
+                  overflow: _captionExpanded
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis,
+                  // Spec: caption 12/400/130% white.
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
+                    color: DesignTokens.textWhite,
+                  )),
+            ),
           ],
         ],
       ),
