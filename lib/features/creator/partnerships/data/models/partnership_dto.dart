@@ -5,8 +5,8 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'partnership_dto.freezed.dart';
 part 'partnership_dto.g.dart';
 
-// PartnershipState: 1=Invited, 2=Active, 3=Declined, 4=Paused, 5=Ended
-// Active filter: states=[2,4]  Invites filter: states=[1]
+// PartnershipState: 1=Invited, 2=Declined, 3=Active, 4=Paused, 5=Ended
+// Active filter: states=[3,4]  Invites filter: states=[1]
 
 @freezed
 abstract class PartnershipDto with _$PartnershipDto {
@@ -23,6 +23,8 @@ abstract class PartnershipDto with _$PartnershipDto {
     String? endReason,
     String? requestMessage,
     double? vendorRating,
+    String? vendorName,
+    String? vendorLogoUrl,
     @Default(false) bool initiatedByCreator,
     required DateTime createdUtc,
     required DateTime updatedUtc,
@@ -35,16 +37,14 @@ abstract class PartnershipDto with _$PartnershipDto {
 
   PartnershipInvite toInviteDomain() {
     final status = switch (state) {
-      2 => PartnershipStatus.accepted,
-      3 => PartnershipStatus.declined,
+      3 => PartnershipStatus.accepted,
+      2 => PartnershipStatus.declined,
       _ => PartnershipStatus.pending,
     };
     return PartnershipInvite(
       id: id,
-      // vendorName/Logo not returned by this endpoint — pending vendor profile
-      // enrichment (PM-P2). Screens that need them must fetch separately.
-      vendorName: '',
-      vendorLogoUrl: '',
+      vendorName: vendorName ?? '',
+      vendorLogoUrl: vendorLogoUrl ?? '',
       campaignBrief: requestMessage ?? '',
       commissionRate: commissionMinPercent,
       expiresAt: invitedUtc,
@@ -54,8 +54,8 @@ abstract class PartnershipDto with _$PartnershipDto {
 
   ActivePartnership toActiveDomain() => ActivePartnership(
         id: id,
-        vendorName: '',
-        vendorLogoUrl: '',
+        vendorName: vendorName ?? '',
+        vendorLogoUrl: vendorLogoUrl ?? '',
         commissionRate: commissionMinPercent,
         totalEarned: const Money(amount: 0, currency: 'NPR'),
         totalSales: 0,
@@ -65,8 +65,8 @@ abstract class PartnershipDto with _$PartnershipDto {
 
   EndedPartnership toEndedDomain() => EndedPartnership(
         id: id,
-        vendorName: '',
-        vendorLogoUrl: '',
+        vendorName: vendorName ?? '',
+        vendorLogoUrl: vendorLogoUrl ?? '',
         commissionRate: commissionMinPercent,
         totalEarned: const Money(amount: 0, currency: 'NPR'),
         totalSales: 0,
