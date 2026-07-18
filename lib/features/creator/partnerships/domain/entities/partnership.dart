@@ -11,6 +11,7 @@ class PartnershipInvite {
     required this.commissionRate,
     required this.expiresAt,
     required this.status,
+    this.vendorRating,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class PartnershipInvite {
   final double commissionRate;
   final DateTime expiresAt;
   final PartnershipStatus status;
+  final double? vendorRating;
 
   PartnershipInvite copyWith({
     String? id,

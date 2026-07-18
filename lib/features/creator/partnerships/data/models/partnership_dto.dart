@@ -49,6 +49,7 @@ abstract class PartnershipDto with _$PartnershipDto {
       commissionRate: commissionMinPercent,
       expiresAt: invitedUtc,
       status: status,
+      vendorRating: vendorRating,
     );
   }
 
