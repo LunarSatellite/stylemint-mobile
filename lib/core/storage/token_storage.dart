@@ -63,6 +63,11 @@ class TokenStorage {
     return raw == null ? null : DateTime.tryParse(raw);
   }
 
+  Future<DateTime?> get accessExpiresUtc async {
+    final raw = await _safeRead(_kAccessExpiry);
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
   /// True when a refresh token exists and has not yet expired.
   Future<bool> get hasValidRefreshToken async {
     final token = await refreshToken;

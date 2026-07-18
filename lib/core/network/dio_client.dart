@@ -142,6 +142,10 @@ class _AuthInterceptor extends Interceptor {
 
   bool _requiresToken(RequestOptions opts) => opts.headers['requiresToken'] != false;
 
+  /// Refresh this much before actual expiry so a request that starts right
+  /// at the boundary still lands with a valid token.
+  static const _expiryBuffer = Duration(seconds: 30);
+
   @override
   Future<void> onRequest(
     RequestOptions opts,
@@ -151,7 +155,21 @@ class _AuthInterceptor extends Interceptor {
     opts.headers.remove('requiresToken');
 
     if (needsToken) {
-      final token = await tokenStorage.accessToken;
+      var token = await tokenStorage.accessToken;
+      final expiry = await tokenStorage.accessExpiresUtc;
+
+      // Proactive refresh: several endpoints (e.g. the home feed) are
+      // AllowAnonymous so a request with an expired token never gets a 401
+      // to react to — it silently resolves as "anonymous" instead. Checking
+      // expiry here catches that before it ever reaches the server.
+      if (token != null &&
+          token.isNotEmpty &&
+          expiry != null &&
+          expiry.isBefore(DateTime.now().toUtc().add(_expiryBuffer)) &&
+          await tokenStorage.hasValidRefreshToken) {
+        token = await _refreshToken();
+      }
+
       if (token != null && token.isNotEmpty) {
         opts.headers['Authorization'] = 'Bearer $token';
       }
