@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/brands_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
@@ -68,6 +70,22 @@ final pendingInvitesProvider = Provider<List<PartnershipInvite>>((ref) {
             invites.where((i) => i.status == PartnershipStatus.pending).toList(),
         orElse: () => const [],
       );
+});
+
+final brandsRemoteDataSourceProvider = Provider<BrandsRemoteDataSource>(
+  (ref) => BrandsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
+/// Creator §7A "Browse all Brands" — real approved-vendor catalog.
+final brandsListProvider =
+    FutureProvider.autoDispose<List<BrandListItemDto>>((ref) {
+  return ref.watch(brandsRemoteDataSourceProvider).listBrands();
+});
+
+/// Creator §7A "Recommended Brands for You".
+final recommendedBrandsProvider =
+    FutureProvider.autoDispose<List<BrandListItemDto>>((ref) {
+  return ref.watch(brandsRemoteDataSourceProvider).listRecommendedBrands();
 });
 
 /// Active terms for a given partnership id.

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -11,321 +12,23 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Static brand catalogue ────────────────────────────────────────────────────
-
-final _nikeData = BrandInfoData(
-  name: 'Nike Official Store',
-  logo: const _NikeLogo(),
-  stars: 4.9,
-  category: 'Athletic & Sportswear',
-  commission: '12-20%',
-  description:
-      'Nike is one of the world\'s most recognizable and iconic sportswear '
-      'brands, founded in 1964 by Bill Bowerman and Phil Knight. Nike designs, '
-      'develops, and markets footwear, apparel, equipment, and accessories.',
-  avgOrderValue: 'Rs 12,899.98',
-  successRate: '97%',
-  products: const [
-    BrandProduct(
-      name: 'Nike Air Jordan Travis Scott Limited Edition',
-      price: 'Rs 25,000',
-      sales: 245,
-      thumbnailColor: Color(0xFF6B4C3B),
-      thumbnailIcon: Icons.sports_basketball_rounded,
-    ),
-    BrandProduct(
-      name: 'Nike Air Max Reds 2025',
-      price: 'Rs 18,000',
-      sales: 233,
-      thumbnailColor: Color(0xFFB71C1C),
-      thumbnailIcon: Icons.directions_run_rounded,
-    ),
-    BrandProduct(
-      name: 'Nike Air Jordan Autumn Bloom Ultra Light Sneakers',
-      price: 'Rs 32,500',
-      sales: 208,
-      thumbnailColor: Color(0xFFE65100),
-      thumbnailIcon: Icons.directions_walk_rounded,
-    ),
-    BrandProduct(
-      name: 'Nike Tech Fleece Jacket',
-      price: 'Rs 12,000',
-      sales: 178,
-      thumbnailColor: Color(0xFF37474F),
-      thumbnailIcon: Icons.checkroom_rounded,
-    ),
-    BrandProduct(
-      name: 'Nike Omi Multi Court Sneakers',
-      price: 'Rs 16,000',
-      sales: 148,
-      thumbnailColor: Color(0xFF0277BD),
-      thumbnailIcon: Icons.sports_tennis_rounded,
-    ),
-  ],
-);
-
-final _sephoraData = BrandInfoData(
-  name: 'Sephora Beauty',
-  logo: const _SephoraLogo(),
-  stars: 5.0,
-  category: 'Beauty & Cosmetic',
-  commission: '15-25%',
-  description:
-      'Sephora is a leading multinational retailer of personal care and beauty '
-      'products. With over 2,700 stores worldwide, Sephora carries skincare, '
-      'makeup, haircare, and fragrance from both indie and prestige brands.',
-  avgOrderValue: 'Rs 4,299.50',
-  successRate: '94%',
-  products: const [
-    BrandProduct(
-      name: 'Rare Beauty Soft Pinch Blush',
-      price: 'Rs 3,500',
-      sales: 312,
-      thumbnailColor: Color(0xFFE91E63),
-      thumbnailIcon: Icons.face_retouching_natural_rounded,
-    ),
-    BrandProduct(
-      name: 'Charlotte Tilbury Flawless Filter',
-      price: 'Rs 6,800',
-      sales: 289,
-      thumbnailColor: Color(0xFFFF8F00),
-      thumbnailIcon: Icons.auto_awesome_rounded,
-    ),
-    BrandProduct(
-      name: 'NARS Radiant Creamy Concealer',
-      price: 'Rs 4,200',
-      sales: 265,
-      thumbnailColor: Color(0xFF4A148C),
-      thumbnailIcon: Icons.brush_rounded,
-    ),
-    BrandProduct(
-      name: 'Drunk Elephant Protini Polypeptide Cream',
-      price: 'Rs 9,500',
-      sales: 198,
-      thumbnailColor: Color(0xFF00796B),
-      thumbnailIcon: Icons.spa_rounded,
-    ),
-  ],
-);
-
-final _pumaData = BrandInfoData(
-  name: 'Puma',
-  logo: const _CircleLogo(
-    bg: Colors.black,
-    child: Center(
-      child: Icon(Icons.directions_run_rounded, color: Colors.white, size: 22),
-    ),
-  ),
-  stars: 5.0,
-  category: 'Fitness & Sports',
-  commission: '10-20%',
-  description:
-      'PUMA is one of the world\'s leading sports brands, designing and '
-      'developing footwear, apparel, and accessories. PUMA collaborates with '
-      'renowned designers and brands to bring sport inspiration into street culture.',
-  avgOrderValue: 'Rs 8,450.00',
-  successRate: '91%',
-  products: const [
-    BrandProduct(
-      name: 'PUMA RS-X Reinvention Sneakers',
-      price: 'Rs 14,000',
-      sales: 198,
-      thumbnailColor: Color(0xFF212121),
-      thumbnailIcon: Icons.directions_run_rounded,
-    ),
-    BrandProduct(
-      name: 'PUMA Evolve Court Slide Sandals',
-      price: 'Rs 5,500',
-      sales: 176,
-      thumbnailColor: Color(0xFF455A64),
-      thumbnailIcon: Icons.beach_access_rounded,
-    ),
-    BrandProduct(
-      name: 'PUMA Better Foam Emerge Running Shoes',
-      price: 'Rs 12,500',
-      sales: 154,
-      thumbnailColor: Color(0xFF880E4F),
-      thumbnailIcon: Icons.sports_score_rounded,
-    ),
-    BrandProduct(
-      name: 'PUMA Men\'s Essential Logo Tee',
-      price: 'Rs 3,200',
-      sales: 132,
-      thumbnailColor: Color(0xFF1B5E20),
-      thumbnailIcon: Icons.checkroom_rounded,
-    ),
-  ],
-);
-
-final _kharayoData = BrandInfoData(
-  name: 'Kharayo Bakes',
-  logo: const _CircleLogo(
-    bg: Color(0xFF8B1A1A),
-    child: Center(
-      child: Text(
-        'K',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: 18,
-        ),
-      ),
-    ),
-  ),
-  stars: 4.8,
-  category: 'Food',
-  commission: '8-12%',
-  description:
-      'Kharayo Bakes is a premium artisan bakery brand offering handcrafted '
-      'pastries, cakes, and desserts made from locally sourced ingredients. '
-      'Known for quality and taste, they deliver across major cities.',
-  avgOrderValue: 'Rs 1,850.00',
-  successRate: '88%',
-  products: const [
-    BrandProduct(
-      name: 'Classic Butter Croissant Box (6 pcs)',
-      price: 'Rs 1,200',
-      sales: 432,
-      thumbnailColor: Color(0xFFBF360C),
-      thumbnailIcon: Icons.bakery_dining_rounded,
-    ),
-    BrandProduct(
-      name: 'Dark Chocolate Truffle Cake (1 kg)',
-      price: 'Rs 3,500',
-      sales: 287,
-      thumbnailColor: Color(0xFF4E342E),
-      thumbnailIcon: Icons.cake_rounded,
-    ),
-    BrandProduct(
-      name: 'Strawberry Cheesecake Slice',
-      price: 'Rs 850',
-      sales: 356,
-      thumbnailColor: Color(0xFFC62828),
-      thumbnailIcon: Icons.favorite_rounded,
-    ),
-    BrandProduct(
-      name: 'Assorted Macaron Gift Box',
-      price: 'Rs 2,200',
-      sales: 213,
-      thumbnailColor: Color(0xFFAD1457),
-      thumbnailIcon: Icons.redeem_rounded,
-    ),
-  ],
-);
-
-final _ultimateData = BrandInfoData(
-  name: 'Ultimate Lifestyle',
-  logo: const _CircleLogo(
-    bg: Color(0xFF1C1C2E),
-    child: Center(
-      child: Text(
-        'ULTIM',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 7,
-          letterSpacing: 0.3,
-        ),
-      ),
-    ),
-  ),
-  stars: 4.7,
-  category: 'Tech',
-  commission: '15-20%',
-  description:
-      'Ultimate Lifestyle curates premium tech accessories and smart home '
-      'products designed to elevate everyday living. From wireless audio to '
-      'minimalist gadgets, every product is built for the modern consumer.',
-  avgOrderValue: 'Rs 7,320.00',
-  successRate: '85%',
-  products: const [
-    BrandProduct(
-      name: 'UL Pro Wireless Earbuds',
-      price: 'Rs 8,500',
-      sales: 189,
-      thumbnailColor: Color(0xFF1A237E),
-      thumbnailIcon: Icons.headphones_rounded,
-    ),
-    BrandProduct(
-      name: 'Minimalist Leather Wallet with Tracker',
-      price: 'Rs 4,200',
-      sales: 165,
-      thumbnailColor: Color(0xFF37474F),
-      thumbnailIcon: Icons.account_balance_wallet_rounded,
-    ),
-    BrandProduct(
-      name: 'Portable MagSafe Charger 10000mAh',
-      price: 'Rs 6,800',
-      sales: 143,
-      thumbnailColor: Color(0xFF004D40),
-      thumbnailIcon: Icons.battery_charging_full_rounded,
-    ),
-    BrandProduct(
-      name: 'Smart LED Desk Lamp',
-      price: 'Rs 5,500',
-      sales: 121,
-      thumbnailColor: Color(0xFF4A148C),
-      thumbnailIcon: Icons.lightbulb_rounded,
-    ),
-  ],
-);
-
-final _zaraData = BrandInfoData(
-  name: 'Zara Clothing',
-  logo: const _CircleLogo(
-    bg: Colors.white,
-    child: Center(
-      child: Text(
-        'ZARA',
-        style: TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.w900,
-          fontSize: 8,
-          letterSpacing: 1,
-        ),
-      ),
-    ),
-  ),
-  stars: 4.7,
-  category: 'Fashion',
-  commission: '12-18%',
-  description:
-      'Zara is a global fashion retailer renowned for its fast-fashion model, '
-      'delivering new collections to stores twice a week. Part of the Inditex '
-      'group, Zara blends runway trends with accessible everyday style.',
-  avgOrderValue: 'Rs 5,600.00',
-  successRate: '89%',
-  products: const [
-    BrandProduct(
-      name: 'Oversized Blazer with Belt',
-      price: 'Rs 9,990',
-      sales: 243,
-      thumbnailColor: Color(0xFF212121),
-      thumbnailIcon: Icons.checkroom_rounded,
-    ),
-    BrandProduct(
-      name: 'Wide Leg Trousers',
-      price: 'Rs 5,990',
-      sales: 198,
-      thumbnailColor: Color(0xFF37474F),
-      thumbnailIcon: Icons.accessibility_new_rounded,
-    ),
-    BrandProduct(
-      name: 'Floral Print Midi Dress',
-      price: 'Rs 7,490',
-      sales: 176,
-      thumbnailColor: Color(0xFFAD1457),
-      thumbnailIcon: Icons.dry_cleaning_rounded,
-    ),
-    BrandProduct(
-      name: 'Leather Crossbody Bag',
-      price: 'Rs 11,990',
-      sales: 142,
-      thumbnailColor: Color(0xFF4E342E),
-      thumbnailIcon: Icons.shopping_bag_rounded,
-    ),
-  ],
-);
+/// Maps a real [BrandListItemDto] into the shape [BrandInfoScreen] expects.
+/// Fields the brand-list endpoint doesn't carry (rating, description, avg
+/// order value, success rate, top products) are honestly left blank/zero —
+/// no fabricated numbers — until a real per-brand detail + product endpoint
+/// backs them.
+BrandInfoData _toBrandInfoData(BrandListItemDto brand) => BrandInfoData(
+      name: brand.businessName,
+      logo: _BrandLogo(name: brand.businessName, logoUrl: brand.logoUrl),
+      stars: 0,
+      category: '',
+      commission: brand.commissionRangeLabel,
+      description: '',
+      avgOrderValue: '—',
+      successRate: '—',
+      products: const [],
+      vendorProfileId: brand.vendorAccountId,
+    );
 
 class BrandsScreen extends StatefulWidget {
   const BrandsScreen({super.key});
@@ -335,16 +38,6 @@ class BrandsScreen extends StatefulWidget {
 }
 
 class _BrandsScreenState extends State<BrandsScreen> {
-  int _selectedFilter = 0;
-
-  static const _filters = [
-    'All',
-    'Fashion',
-    'Accessories',
-    'Sports',
-    'Fitness',
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -377,136 +70,91 @@ class _BrandsScreenState extends State<BrandsScreen> {
               const SizedBox(height: DesignTokens.s24),
               _SectionTitle('Recommended Brands for You'),
               const SizedBox(height: DesignTokens.s12),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _nikeData),
-                child: const _RecommendedCard(
-                  logo: _NikeLogo(),
-                  name: 'Nike Official Store',
-                  stars: 4.9,
-                  category: 'Athletic & Sportswear',
-                  reason:
-                      'We recommended this because it matches your fashion category',
-                  commission: '12-20%',
-                  products: '234 available',
-                  creators: '1,235 active',
-                ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final async = ref.watch(recommendedBrandsProvider);
+                  return async.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                            color: DesignTokens.primaryGreen),
+                      ),
+                    ),
+                    error: (_, _) => const _EmptyBrandsMessage(
+                      'Could not load recommended brands.',
+                    ),
+                    data: (brands) => brands.isEmpty
+                        ? const _EmptyBrandsMessage(
+                            'No approved brands yet — check back soon.',
+                          )
+                        : Column(
+                            children: [
+                              for (final b in brands) ...[
+                                GestureDetector(
+                                  onTap: () => context.push(
+                                    RouteNames.brandInfo,
+                                    extra: _toBrandInfoData(b),
+                                  ),
+                                  child: _RecommendedCard(
+                                    logo: _BrandLogo(
+                                      name: b.businessName,
+                                      logoUrl: b.logoUrl,
+                                    ),
+                                    name: b.businessName,
+                                    commission: b.commissionRangeLabel,
+                                  ),
+                                ),
+                                const SizedBox(height: DesignTokens.s12),
+                              ],
+                            ],
+                          ),
+                  );
+                },
               ),
               const SizedBox(height: DesignTokens.s12),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _sephoraData),
-                child: const _RecommendedCard(
-                  logo: _SephoraLogo(),
-                  name: 'Sephora Beauty',
-                  stars: 5.0,
-                  category: 'Beauty & Cosmetic',
-                  reason:
-                      'We recommended this because there is high conversion in Beauty Products',
-                  commission: '15-25%',
-                  products: '567 available',
-                  creators: '892 active',
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s24),
               _SectionTitle('Browse all Brands'),
-              const SizedBox(height: DesignTokens.s12),
-              _FilterChipsRow(
-                filters: _filters,
-                selected: _selectedFilter,
-                onSelect: (i) => setState(() => _selectedFilter = i),
-              ),
               const SizedBox(height: DesignTokens.s16),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _pumaData),
-                child: const _BrandRow(
-                  logo: _CircleLogo(
-                    bg: Colors.black,
-                    child: Center(
-                      child: Icon(
-                        Icons.directions_run_rounded,
-                        color: Colors.white,
-                        size: 22,
+              Consumer(
+                builder: (context, ref, _) {
+                  final async = ref.watch(brandsListProvider);
+                  return async.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                            color: DesignTokens.primaryGreen),
                       ),
                     ),
-                  ),
-                  name: 'Puma',
-                  stars: 5.0,
-                  category: 'Fitness & Sports',
-                  commission: '10-20% Commissions',
-                ),
-              ),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _kharayoData),
-                child: const _BrandRow(
-                  logo: _CircleLogo(
-                    bg: Color(0xFF8B1A1A),
-                    child: Center(
-                      child: Text(
-                        'K',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                        ),
-                      ),
+                    error: (_, _) => const _EmptyBrandsMessage(
+                      'Could not load brands.',
                     ),
-                  ),
-                  name: 'Kharayo Bakes',
-                  stars: 4.8,
-                  category: 'Food',
-                  commission: '8-12% Commissions',
-                ),
-              ),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _ultimateData),
-                child: const _BrandRow(
-                  logo: _CircleLogo(
-                    bg: Color(0xFF1C1C2E),
-                    child: Center(
-                      child: Text(
-                        'ULTIM',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 7,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ),
-                  name: 'Ultimate Lifestyle',
-                  stars: 4.7,
-                  category: 'Tech',
-                  commission: '15-20% Commissions',
-                ),
-              ),
-              GestureDetector(
-                onTap: () =>
-                    context.push(RouteNames.brandInfo, extra: _zaraData),
-                child: const _BrandRow(
-                  logo: _CircleLogo(
-                    bg: Colors.white,
-                    child: Center(
-                      child: Text(
-                        'ZARA',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 8,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                  name: 'Zara Clothing',
-                  stars: 4.7,
-                  category: 'Fashion',
-                  commission: '12-18% Commissions',
-                ),
+                    data: (brands) => brands.isEmpty
+                        ? const _EmptyBrandsMessage(
+                            'No approved brands yet — check back soon.',
+                          )
+                        : Column(
+                            children: [
+                              for (final b in brands)
+                                GestureDetector(
+                                  onTap: () => context.push(
+                                    RouteNames.brandInfo,
+                                    extra: _toBrandInfoData(b),
+                                  ),
+                                  child: _BrandRow(
+                                    logo: _BrandLogo(
+                                      name: b.businessName,
+                                      logoUrl: b.logoUrl,
+                                    ),
+                                    name: b.businessName,
+                                    commission:
+                                        '${b.commissionRangeLabel} Commissions',
+                                  ),
+                                ),
+                            ],
+                          ),
+                  );
+                },
               ),
             ],
           ),
@@ -712,22 +360,12 @@ class _RecommendedCard extends StatelessWidget {
   const _RecommendedCard({
     required this.logo,
     required this.name,
-    required this.stars,
-    required this.category,
-    required this.reason,
     required this.commission,
-    required this.products,
-    required this.creators,
   });
 
   final Widget logo;
   final String name;
-  final double stars;
-  final String category;
-  final String reason;
   final String commission;
-  final String products;
-  final String creators;
 
   @override
   Widget build(BuildContext context) {
@@ -745,67 +383,14 @@ class _RecommendedCard extends StatelessWidget {
               SizedBox(width: 44, height: 44, child: logo),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: DesignTokens.textWhite,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: DesignTokens.secondaryYellow,
-                        ),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 12,
-                              color: DesignTokens.textWhite,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: stars.toStringAsFixed(1),
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                              const TextSpan(
-                                text: ' Stars',
-                                style: TextStyle(fontWeight: FontWeight.w400),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '• $category',
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 12,
-                            color: DesignTokens.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: DesignTokens.s8),
-                    Text(
-                      reason,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
               ),
             ],
@@ -817,18 +402,6 @@ class _RecommendedCard extends StatelessWidget {
             iconWidget: Image.asset('assets/images/creatordash/material-symbols_money-bag-outline-rounded.png', width: 15, height: 15, color: DesignTokens.textMuted),
             label: 'Commission Range',
             trailing: _CommissionChip(commission),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _MetricRow(
-            iconWidget: Image.asset('assets/images/creatordash/material-symbols_package-2-outline.png', width: 15, height: 15, color: DesignTokens.textMuted),
-            label: 'Products',
-            trailingText: products,
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _MetricRow(
-            iconWidget: Image.asset('assets/images/creatordash/video-camera-front-outline-rounded.png', width: 15, height: 15, color: DesignTokens.textMuted),
-            label: 'Creators',
-            trailingText: creators,
           ),
         ],
       ),
@@ -940,54 +513,23 @@ class _DashedPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
-// ── Filter chips ──────────────────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────────
 
-class _FilterChipsRow extends StatelessWidget {
-  const _FilterChipsRow({
-    required this.filters,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  final List<String> filters;
-  final int selected;
-  final ValueChanged<int> onSelect;
+class _EmptyBrandsMessage extends StatelessWidget {
+  const _EmptyBrandsMessage(this.text);
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(filters.length, (i) {
-          final active = i == selected;
-          return Padding(
-            padding: EdgeInsets.only(right: i < filters.length - 1 ? 8 : 0),
-            child: GestureDetector(
-              onTap: () => onSelect(i),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: active ? DesignTokens.primaryGreen : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: active
-                        ? DesignTokens.primaryGreen
-                        : DesignTokens.borderDefault,
-                  ),
-                ),
-                child: Text(
-                  filters[i],
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: active ? Colors.white : DesignTokens.textMuted,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 13,
+          color: DesignTokens.textMuted,
+        ),
       ),
     );
   }
@@ -999,15 +541,11 @@ class _BrandRow extends StatelessWidget {
   const _BrandRow({
     required this.logo,
     required this.name,
-    required this.stars,
-    required this.category,
     required this.commission,
   });
 
   final Widget logo;
   final String name;
-  final double stars;
-  final String category;
   final String commission;
 
   @override
@@ -1040,45 +578,6 @@ class _BrandRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 13,
-                      color: DesignTokens.secondaryYellow,
-                    ),
-                    const SizedBox(width: 3),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          color: DesignTokens.textWhite,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: stars.toStringAsFixed(1),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const TextSpan(
-                            text: ' Stars',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '• $category',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 12,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
                 Text(
                   commission,
                   style: const TextStyle(
@@ -1102,64 +601,44 @@ class _BrandRow extends StatelessWidget {
   }
 }
 
-// ── Brand logo helpers ────────────────────────────────────────────────────────
+// ── Brand logo ────────────────────────────────────────────────────────────────
 
-class _CircleLogo extends StatelessWidget {
-  const _CircleLogo({required this.bg, required this.child});
-  final Color bg;
-  final Widget child;
+/// Real vendor logo when available, else an initials avatar derived from the
+/// business name — no per-brand hardcoded artwork.
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo({required this.name, this.logoUrl});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-      child: child,
-    );
-  }
-}
-
-class _NikeLogo extends StatelessWidget {
-  const _NikeLogo();
+  final String name;
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Text(
-          '✓',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
+    if (logoUrl != null && logoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          logoUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _e, _s) => _initials(),
         ),
-      ),
-    );
+      );
+    }
+    return _initials();
   }
-}
 
-class _SephoraLogo extends StatelessWidget {
-  const _SephoraLogo();
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _initials() {
+    final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: DesignTokens.bgAppBodyLight,
         shape: BoxShape.circle,
       ),
-      child: const Center(
-        child: Text(
-          'S',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: DesignTokens.textWhite,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
