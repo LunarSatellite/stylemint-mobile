@@ -46,10 +46,12 @@ class _NotificationPrefsScreenState
   String _quietEnd = '08:00';
 
   bool _loaded = false;
+  NotificationPreferences _original = const NotificationPreferences();
 
   void _populate(NotificationPreferences prefs) {
     if (_loaded) return;
     _loaded = true;
+    _original = prefs;
     _pushEnabled = prefs.pushEnabled;
     _orderStatusChanges = prefs.orderStatusChanges;
     _deliveryUpdates = prefs.deliveryUpdates;
@@ -75,7 +77,11 @@ class _NotificationPrefsScreenState
 
   void _save() {
     ref.read(settingsNotifierProvider.notifier).savePrefs(
-      NotificationPreferences(
+      // copyWith from the originally loaded prefs so toggles this screen
+      // doesn't expose (commentReplies, newOrderForVendor, partnershipEvents,
+      // ticketUpdates, ordersDelivered) round-trip unchanged instead of
+      // resetting to a hardcoded default.
+      _original.copyWith(
         pushEnabled: _pushEnabled,
         orderStatusChanges: _orderStatusChanges,
         deliveryUpdates: _deliveryUpdates,

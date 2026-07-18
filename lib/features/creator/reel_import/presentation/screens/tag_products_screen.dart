@@ -356,7 +356,7 @@ class _PotentialEarningsCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Potential Earnings: Rs $amount',
+                    'Est. Potential Earnings: ~Rs $amount',
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 14,
@@ -413,6 +413,8 @@ class _BreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Estimate only — real commission is a partnership term confirmed
+    // server-side when the tag is submitted, not known at search time.
     final commission = (product.price.amount * 0.10).toInt();
     final total = qty * commission;
     return Row(
@@ -432,7 +434,7 @@ class _BreakdownRow extends StatelessWidget {
         ),
         const SizedBox(width: DesignTokens.s8),
         Text(
-          '$qty * Rs ${fmt(commission)} = Rs ${fmt(total)}',
+          '$qty * ~Rs ${fmt(commission)} = ~Rs ${fmt(total)} (est.)',
           style: DesignTokens.smallRegular.copyWith(
             color: DesignTokens.textLight,
           ),
@@ -869,13 +871,17 @@ class _ProductCard extends StatelessWidget {
   final TaggedProductForImport product;
   final VoidCallback onTagTap;
 
+  // The real per-sale commission is a creator↔vendor partnership term,
+  // snapshotted server-side only when the tag is actually submitted — no
+  // endpoint returns it at search time, so this is a rough estimate, not
+  // the confirmed rate.
   String _commissionLabel() {
     const pct = 10;
     final amount = (product.price.amount * pct / 100).toStringAsFixed(0);
     if (product.price.amount > 5000) {
-      return '$pct% commission (Rs $amount per sale)';
+      return 'Est. $pct% commission (~Rs $amount per sale)';
     }
-    return 'Rs $amount per sale';
+    return '~Rs $amount per sale (est.)';
   }
 
   String _formattedPrice() {
@@ -1127,13 +1133,17 @@ class _SheetProductRow extends StatelessWidget {
   final VoidCallback onUntag;
   final bool allowUntag;
 
+  // The real per-sale commission is a creator↔vendor partnership term,
+  // snapshotted server-side only when the tag is actually submitted — no
+  // endpoint returns it at search time, so this is a rough estimate, not
+  // the confirmed rate.
   String _commissionLabel() {
     const pct = 10;
     final amount = (product.price.amount * pct / 100).toStringAsFixed(0);
     if (product.price.amount > 5000) {
-      return '$pct% commission (Rs $amount per sale)';
+      return 'Est. $pct% commission (~Rs $amount per sale)';
     }
-    return 'Rs $amount per sale';
+    return '~Rs $amount per sale (est.)';
   }
 
   String _formattedPrice() {

@@ -24,8 +24,8 @@ class SettingsRemoteDataSource {
   Future<NotificationPreferencesDto> updateNotificationPreferences(
     NotificationPreferencesDto prefs,
   ) async {
-    final response = await apiClient.put(
-      '/v1/notifications/preferences/all',
+    final response = await apiClient.patch(
+      '/v1/notifications/preferences',
       data: prefs.toJson(),
     );
     return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
