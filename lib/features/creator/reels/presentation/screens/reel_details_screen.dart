@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +9,11 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_playe
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Single-reel detail (creator). Pixel-matched to Creator 'Reel Details.pdf'.
+/// Single-reel detail (creator) — full-screen Instagram-style viewer.
+/// Video fills the whole screen; analytics sit in a vertical right-rail;
+/// caption + tagged products live in a bottom panel that's collapsed to a
+/// one-line preview until tapped, then expands to show everything.
+///
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
 /// products). Video is external — the source opens via [CreatorReelDetail.sourceUrl].
 class ReelDetailsScreen extends ConsumerWidget {
@@ -19,17 +25,8 @@ class ReelDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(creatorReelDetailProvider(reelId));
     return Scaffold(
-      backgroundColor: DesignTokens.bgAppFoundation,
-      appBar: AppBar(
-        backgroundColor: DesignTokens.bgAppFoundation,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Reel Details', style: DesignTokens.sectionInnerTitle),
-      ),
+      backgroundColor: DesignTokens.baseBlack,
+      extendBodyBehindAppBar: true,
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
@@ -56,94 +53,238 @@ class _Body extends StatefulWidget {
 
 class _BodyState extends State<_Body> {
   final _playback = ReelPlaybackController();
+  bool _detailsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    return ListView(
-      // Bottom inset accounts for the device's own gesture/nav bar so the
-      // last section (tagged products) isn't hidden behind it on
-      // edge-to-edge displays.
-      padding: EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
-      ),
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        AspectRatio(
-          aspectRatio: 9 / 16,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            child: GestureDetector(
-              onTap: _playback.toggle,
-              child: ReelPlayer(
-                videoUrl: reel.videoUrl,
-                thumbnailUrl: reel.thumbnailUrl ?? '',
-                isActive: true,
-                playbackController: _playback,
+        ReelPlayer(
+          videoUrl: reel.videoUrl,
+          thumbnailUrl: reel.thumbnailUrl ?? '',
+          isActive: true,
+          playbackController: _playback,
+        ),
+
+        // Full-screen tap target for play/pause, below the interactive
+        // controls so their own taps still register.
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _playback.toggle,
+          ),
+        ),
+
+        // Bottom scrim so overlaid text stays legible over any video.
+        const IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black87],
+                stops: [0.5, 1.0],
               ),
             ),
           ),
         ),
-        const SizedBox(height: DesignTokens.s16),
-        Row(
-          children: [
-            _Chip(icon: Icons.public, label: reel.platformLabel),
-            if (reel.sourceUrl.isNotEmpty) ...[
-              const SizedBox(width: DesignTokens.s8),
-              TextButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(reel.sourceUrl),
-                  mode: LaunchMode.externalApplication,
+
+        // Transparent top bar over the video.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new,
+                      size: 18, color: DesignTokens.textWhite),
+                  onPressed: () => context.pop(),
                 ),
-                icon: const Icon(Icons.open_in_new, size: 14),
-                label: const Text('View original'),
-              ),
-            ],
-            if (reel.musicLabel != null) ...[
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: Row(
-                  children: [
-                    const Icon(Icons.music_note,
-                        size: 16, color: DesignTokens.textLight),
-                    const SizedBox(width: DesignTokens.s4),
-                    Expanded(
-                      child: Text(reel.musicLabel!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.smallRegular),
-                    ),
-                  ],
+                const Text('Reel Details', style: DesignTokens.sectionInnerTitle),
+              ],
+            ),
+          ),
+        ),
+
+        // Right-rail analytics (read-only — views / likes / comments).
+        Positioned(
+          right: DesignTokens.s12,
+          bottom: 220,
+          child: _AnalyticsRail(reel: reel),
+        ),
+
+        // Collapsed-by-default details panel; tap to expand.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: SafeArea(
+            top: false,
+            child: GestureDetector(
+              onTap: () => setState(() => _detailsExpanded = !_detailsExpanded),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                constraints: BoxConstraints(
+                  maxHeight: _detailsExpanded
+                      ? MediaQuery.of(context).size.height * 0.62
+                      : 96,
+                ),
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16, DesignTokens.s12, 72, DesignTokens.s16,
+                ),
+                child: SingleChildScrollView(
+                  physics: _detailsExpanded
+                      ? const ClampingScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _detailsExpanded
+                                ? Icons.keyboard_arrow_down_rounded
+                                : Icons.keyboard_arrow_up_rounded,
+                            color: DesignTokens.textMuted,
+                            size: 18,
+                          ),
+                          const SizedBox(width: DesignTokens.s4),
+                          _Chip(icon: Icons.public, label: reel.platformLabel),
+                        ],
+                      ),
+                      const SizedBox(height: DesignTokens.s8),
+                      if (reel.caption != null && reel.caption!.isNotEmpty)
+                        Text(
+                          reel.caption!,
+                          maxLines: _detailsExpanded ? null : 1,
+                          overflow: _detailsExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: DesignTokens.bodyText
+                              .copyWith(color: DesignTokens.textWhite),
+                        ),
+                      if (_detailsExpanded) ...[
+                        if (reel.sourceUrl.isNotEmpty) ...[
+                          const SizedBox(height: DesignTokens.s12),
+                          TextButton.icon(
+                            onPressed: () => launchUrl(
+                              Uri.parse(reel.sourceUrl),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                            icon: const Icon(Icons.open_in_new, size: 14),
+                            label: const Text('View original'),
+                          ),
+                        ],
+                        if (reel.musicLabel != null) ...[
+                          const SizedBox(height: DesignTokens.s8),
+                          Row(
+                            children: [
+                              const Icon(Icons.music_note,
+                                  size: 16, color: DesignTokens.textLight),
+                              const SizedBox(width: DesignTokens.s4),
+                              Expanded(
+                                child: Text(reel.musicLabel!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: DesignTokens.smallRegular),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (reel.taggedProducts.isNotEmpty) ...[
+                          const SizedBox(height: DesignTokens.s20),
+                          const Text('Tagged Products',
+                              style: DesignTokens.mediumSemibold),
+                          const SizedBox(height: DesignTokens.s12),
+                          for (final p in reel.taggedProducts) ...[
+                            _ProductRow(product: p),
+                            const SizedBox(height: DesignTokens.s8),
+                          ],
+                        ],
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ],
+            ),
+          ),
         ),
-        if (reel.caption != null && reel.caption!.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s12),
-          Text(reel.caption!, style: DesignTokens.bodyText),
-        ],
-        const SizedBox(height: DesignTokens.s16),
-        Row(
-          children: [
-            Expanded(child: _Metric(label: 'Views', value: reel.views)),
-            Expanded(child: _Metric(label: 'Likes', value: reel.likes)),
-            Expanded(child: _Metric(label: 'Comments', value: reel.comments)),
-          ],
-        ),
-        if (reel.taggedProducts.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s24),
-          const Text('Tagged Products', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s12),
-          for (final p in reel.taggedProducts) ...[
-            _ProductRow(product: p),
-            const SizedBox(height: DesignTokens.s8),
-          ],
-        ],
       ],
     );
+  }
+}
+
+class _AnalyticsRail extends StatelessWidget {
+  const _AnalyticsRail({required this.reel});
+  final CreatorReelDetail reel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _RailStat(icon: Icons.remove_red_eye_outlined, value: reel.views),
+        const SizedBox(height: DesignTokens.s20),
+        _RailStat(icon: Icons.favorite_outline, value: reel.likes),
+        const SizedBox(height: DesignTokens.s20),
+        _RailStat(icon: Icons.chat_bubble_outline, value: reel.comments),
+      ],
+    );
+  }
+}
+
+class _RailStat extends StatelessWidget {
+  const _RailStat({required this.icon, required this.value});
+  final IconData icon;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        child: Container(
+          width: 52,
+          padding: const EdgeInsets.symmetric(
+            vertical: DesignTokens.s8,
+            horizontal: DesignTokens.s4,
+          ),
+          decoration: const BoxDecoration(
+            color: Color(0x99333333),
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: DesignTokens.iconWhite, size: 24),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                _formatCount(value),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  height: 1,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _formatCount(int count) {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
+    return '$count';
   }
 }
 
@@ -157,7 +298,7 @@ class _Chip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s12, vertical: 6),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
+        color: DesignTokens.bgAppBodyLight.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -172,27 +313,6 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
-  final String label;
-  final int value;
-  @override
-  Widget build(BuildContext context) {
-    final v = value < 1000
-        ? '$value'
-        : '${(value / 1000).toStringAsFixed(value >= 10000 ? 0 : 1)}k';
-    return Column(
-      children: [
-        Text(v, style: DesignTokens.sectionInnerTitle),
-        const SizedBox(height: DesignTokens.s4),
-        Text(label,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted)),
-      ],
-    );
-  }
-}
-
 class _ProductRow extends StatelessWidget {
   const _ProductRow({required this.product});
   final ReelTaggedProduct product;
@@ -202,7 +322,7 @@ class _ProductRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
+        color: DesignTokens.bgAppBodyLight.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Row(
