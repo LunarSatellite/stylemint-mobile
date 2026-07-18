@@ -7,22 +7,16 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasourc
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/repositories/reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/shared/mock_reels_repository.dart';
 
 final reelsRemoteDataSourceProvider = Provider<ReelsRemoteDataSource>(
   (ref) => ReelsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
-// Using MockReelsRepository for development/demo (static data, no API needed).
-// To restore the real network implementation, replace the body below with:
-//
-//   ReelsRepositoryImpl(
-//     remoteDataSource: ref.watch(reelsRemoteDataSourceProvider),
-//     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-//   )
-//
 final reelsRepositoryProvider = Provider<ReelsRepository>(
-  (ref) => MockReelsRepository(),
+  (ref) => ReelsRepositoryImpl(
+    remoteDataSource: ref.watch(reelsRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
 );
 
 final reelsFeedNotifierProvider =
