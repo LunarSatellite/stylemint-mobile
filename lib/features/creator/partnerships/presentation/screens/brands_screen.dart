@@ -655,14 +655,16 @@ class _BrandsBottomNav extends ConsumerWidget {
     final accountId = ref.watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
-      height: 68,
+      height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(
           top: BorderSide(color: DesignTokens.borderDefault, width: 1),
         ),
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
@@ -711,6 +713,7 @@ class _BrandsBottomNav extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

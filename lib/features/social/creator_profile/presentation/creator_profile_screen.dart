@@ -1134,13 +1134,15 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppFoundation,
         border: Border(
             top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
@@ -1170,6 +1172,7 @@ class _BottomNav extends StatelessWidget {
             onTap: null,
           ),
         ],
+        ),
       ),
     );
   }

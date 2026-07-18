@@ -286,10 +286,13 @@ class _OrdersReadyToShipScreenState extends ConsumerState<OrdersReadyToShipScree
   Widget _buildSelectBar() {
     return Container(
       color: const Color(0xFF1C1C1E),
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s24,
-      ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s12,
+          ),
+          child: Row(
         children: [
           Expanded(
             child: SizedBox(
@@ -328,6 +331,8 @@ class _OrdersReadyToShipScreenState extends ConsumerState<OrdersReadyToShipScree
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
