@@ -9,10 +9,12 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_playe
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Single-reel detail (creator) — full-screen Instagram-style viewer.
-/// Video fills the whole screen; analytics sit in a vertical right-rail;
-/// caption + tagged products live in a bottom panel that's collapsed to a
-/// one-line preview until tapped, then expands to show everything.
+/// Single-reel detail (creator) — same full-screen layout as the Home feed's
+/// [ReelCard]/[CreatorInfo]/[TaggedProductsSection] (Figma-designed), reused
+/// here rather than re-invented: full-screen video, a right-rail (styled
+/// like ReelActions) for the read-only view/like/comment counts, and a
+/// bottom info block (styled like CreatorInfo) with a tap-to-expand caption
+/// followed by the tagged-products strip.
 ///
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
 /// products). Video is external — the source opens via [CreatorReelDetail.sourceUrl].
@@ -53,7 +55,6 @@ class _Body extends StatefulWidget {
 
 class _BodyState extends State<_Body> {
   final _playback = ReelPlaybackController();
-  bool _detailsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +86,7 @@ class _BodyState extends State<_Body> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [Colors.transparent, Colors.black87],
-                stops: [0.5, 1.0],
+                stops: [0.45, 1.0],
               ),
             ),
           ),
@@ -108,111 +109,110 @@ class _BodyState extends State<_Body> {
           ),
         ),
 
-        // Right-rail analytics (read-only — views / likes / comments).
+        // Right-rail read-only analytics — same visual language as the
+        // Home feed's ReelActions right rail.
         Positioned(
           right: DesignTokens.s12,
           bottom: 220,
           child: _AnalyticsRail(reel: reel),
         ),
 
-        // Collapsed-by-default details panel; tap to expand.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            top: false,
-            child: GestureDetector(
-              onTap: () => setState(() => _detailsExpanded = !_detailsExpanded),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
-                constraints: BoxConstraints(
-                  maxHeight: _detailsExpanded
-                      ? MediaQuery.of(context).size.height * 0.62
-                      : 96,
-                ),
-                padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s12, 72, DesignTokens.s16,
-                ),
-                child: SingleChildScrollView(
-                  physics: _detailsExpanded
-                      ? const ClampingScrollPhysics()
-                      : const NeverScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _detailsExpanded
-                                ? Icons.keyboard_arrow_down_rounded
-                                : Icons.keyboard_arrow_up_rounded,
-                            color: DesignTokens.textMuted,
-                            size: 18,
-                          ),
-                          const SizedBox(width: DesignTokens.s4),
-                          _Chip(icon: Icons.public, label: reel.platformLabel),
-                        ],
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      if (reel.caption != null && reel.caption!.isNotEmpty)
-                        Text(
-                          reel.caption!,
-                          maxLines: _detailsExpanded ? null : 1,
-                          overflow: _detailsExpanded
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
-                          style: DesignTokens.bodyText
-                              .copyWith(color: DesignTokens.textWhite),
-                        ),
-                      if (_detailsExpanded) ...[
-                        if (reel.sourceUrl.isNotEmpty) ...[
-                          const SizedBox(height: DesignTokens.s12),
-                          TextButton.icon(
-                            onPressed: () => launchUrl(
-                              Uri.parse(reel.sourceUrl),
-                              mode: LaunchMode.externalApplication,
-                            ),
-                            icon: const Icon(Icons.open_in_new, size: 14),
-                            label: const Text('View original'),
-                          ),
-                        ],
-                        if (reel.musicLabel != null) ...[
-                          const SizedBox(height: DesignTokens.s8),
-                          Row(
-                            children: [
-                              const Icon(Icons.music_note,
-                                  size: 16, color: DesignTokens.textLight),
-                              const SizedBox(width: DesignTokens.s4),
-                              Expanded(
-                                child: Text(reel.musicLabel!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: DesignTokens.smallRegular),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (reel.taggedProducts.isNotEmpty) ...[
-                          const SizedBox(height: DesignTokens.s20),
-                          const Text('Tagged Products',
-                              style: DesignTokens.mediumSemibold),
-                          const SizedBox(height: DesignTokens.s12),
-                          for (final p in reel.taggedProducts) ...[
-                            _ProductRow(product: p),
-                            const SizedBox(height: DesignTokens.s8),
-                          ],
-                        ],
-                      ],
-                    ],
-                  ),
-                ),
+        // Bottom info block: platform/source/music chip row + tap-to-expand
+        // caption, then the tagged-products strip — same structure as
+        // CreatorInfo + TaggedProductsSection on the Home feed.
+        SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 72, left: DesignTokens.s12),
+                child: _ReelInfo(reel: reel),
               ),
-            ),
+              if (reel.taggedProducts.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s12),
+                _TaggedProductsStrip(products: reel.taggedProducts),
+              ],
+              const SizedBox(height: DesignTokens.s16),
+            ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _ReelInfo extends StatefulWidget {
+  const _ReelInfo({required this.reel});
+  final CreatorReelDetail reel;
+
+  @override
+  State<_ReelInfo> createState() => _ReelInfoState();
+}
+
+class _ReelInfoState extends State<_ReelInfo> {
+  bool _captionExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final reel = widget.reel;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            _Chip(icon: Icons.public, label: reel.platformLabel),
+            if (reel.sourceUrl.isNotEmpty) ...[
+              const SizedBox(width: DesignTokens.s8),
+              GestureDetector(
+                onTap: () => launchUrl(
+                  Uri.parse(reel.sourceUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: const Icon(Icons.open_in_new,
+                    size: 16, color: DesignTokens.textLight),
+              ),
+            ],
+          ],
+        ),
+        if (reel.musicLabel != null) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Row(
+            children: [
+              const Icon(Icons.music_note,
+                  size: DesignTokens.iconSmall, color: DesignTokens.textLight),
+              const SizedBox(width: DesignTokens.s4),
+              Expanded(
+                child: Text(reel.musicLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textLight)),
+              ),
+            ],
+          ),
+        ],
+        if (reel.caption != null && reel.caption!.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s12),
+          // Collapsed by default (stays docked at the bottom); tapping
+          // expands in place — same interaction as the Home feed's caption.
+          GestureDetector(
+            onTap: () => setState(() => _captionExpanded = !_captionExpanded),
+            child: Text(reel.caption!,
+                maxLines: _captionExpanded ? null : 3,
+                overflow: _captionExpanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.3,
+                  color: DesignTokens.textWhite,
+                )),
+          ),
+        ],
       ],
     );
   }
@@ -313,59 +313,94 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.product});
+/// Horizontal strip of tagged products — same visual style as the Home
+/// feed's TaggedProductsSection, but showing commission (creator-relevant)
+/// instead of an Add to Cart action.
+class _TaggedProductsStrip extends StatelessWidget {
+  const _TaggedProductsStrip({required this.products});
+  final List<ReelTaggedProduct> products;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardWidth = MediaQuery.of(context).size.width - 24;
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+        itemCount: products.length,
+        separatorBuilder: (_, _i) => const SizedBox(width: DesignTokens.s12),
+        itemBuilder: (_, i) =>
+            _ProductTile(product: products[i], width: cardWidth),
+      ),
+    );
+  }
+}
+
+class _ProductTile extends StatelessWidget {
+  const _ProductTile({required this.product, required this.width});
   final ReelTaggedProduct product;
+  final double width;
+
   @override
   Widget build(BuildContext context) {
     final img = product.imageUrl;
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 56,
-              height: 56,
-              child: (img == null || img.isEmpty)
-                  ? Container(
-                      color: DesignTokens.bgAppFoundation,
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.image_outlined,
-                          color: DesignTokens.iconLight))
-                  : Image.network(img,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _e, _s) => Container(
-                          color: DesignTokens.bgAppFoundation,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.image_outlined,
-                              color: DesignTokens.iconLight))),
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(DesignTokens.s8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF333333).withValues(alpha: 0.60),
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           ),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.name ?? 'Product',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold),
-                const SizedBox(height: DesignTokens.s4),
-                Text(
-                  '${product.priceLabel}  •  ${product.commissionPercent.toStringAsFixed(0)}% commission',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+                child: SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: (img == null || img.isEmpty)
+                      ? const ColoredBox(color: DesignTokens.bgAppBodyLight)
+                      : Image.network(img,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _e, _s) => const ColoredBox(
+                              color: DesignTokens.bgAppBodyLight)),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name ?? 'Product',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.mediumSemibold
+                          .copyWith(color: DesignTokens.textWhite),
+                    ),
+                    const SizedBox(height: DesignTokens.s4),
+                    Text(
+                      '${product.priceLabel} · ${product.commissionPercent.toStringAsFixed(0)}% commission',
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
