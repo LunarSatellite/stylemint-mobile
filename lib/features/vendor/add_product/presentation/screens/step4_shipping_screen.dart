@@ -235,7 +235,9 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
         ),
 
         // ── Sticky Previous + Proceed ────────────────────────────
-        Container(
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -313,6 +315,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ],

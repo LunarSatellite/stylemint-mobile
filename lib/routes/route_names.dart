@@ -121,6 +121,8 @@ abstract class RouteNames {
       '/vendor/partnerships/requests';
   static const vendorProducts = '/vendor/products';
   static const vendorUpdateStock = '/vendor/products/update-stock';
+  static const vendorEditProductImages = '/vendor/products/edit-images';
+  static const vendorEditProductDetails = '/vendor/products/edit-details';
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
   static const vendorRecentActivity = '/vendor/activity';
@@ -130,6 +132,7 @@ abstract class RouteNames {
       '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
   static const vendorCampaignBriefs = '/vendor/briefs';
+  static const vendorCreateCampaign = '/vendor/briefs/new';
   static const vendorCampaignBriefDetail = '/vendor/briefs/:briefId';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';

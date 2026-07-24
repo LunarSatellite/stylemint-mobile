@@ -49,12 +49,20 @@ class FullAnalyticsReportScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.bookmark_border_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Saving reports is coming soon.'),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.more_vert_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Exporting/sharing reports is coming soon.'),
+              ),
+            ),
           ),
         ],
       ),

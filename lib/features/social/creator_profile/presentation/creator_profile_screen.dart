@@ -258,8 +258,8 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           name,
           style: const TextStyle(
             fontFamily: DesignTokens.fontFamily,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -283,7 +283,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       h.startsWith('@') ? h : '@$h',
       style: const TextStyle(
         fontFamily: DesignTokens.fontFamily,
-        fontSize: 13,
+        fontSize: 14,
         color: DesignTokens.primaryGreen,
       ),
     );

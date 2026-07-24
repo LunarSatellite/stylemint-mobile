@@ -18,7 +18,7 @@ class Step5ReviewScreen extends ConsumerWidget {
       next.maybeWhen(
         publishSuccess: (productId) {
           SmSnackbar.success(context, 'Product published successfully!');
-          context.pop();
+          context.pop(true);
         },
         publishFailure: (_, e) {
           SmSnackbar.error(context, 'Failed to publish product.');
@@ -262,7 +262,9 @@ class Step5ReviewScreen extends ConsumerWidget {
         ),
 
         // ── Sticky Publish button ────────────────────────────────
-        Container(
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -304,6 +306,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                       ),
                     ),
             ),
+          ),
           ),
         ),
       ],

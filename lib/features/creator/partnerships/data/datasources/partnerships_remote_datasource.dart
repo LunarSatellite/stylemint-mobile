@@ -65,7 +65,7 @@ class PartnershipsRemoteDataSource {
       _fetchPartnerships([_stateEnded]);
 
   Future<PartnershipTermsDto> getPartnershipTerms(String partnershipId) async {
-    final response = await apiClient.authGet(
+    final response = await apiClient.get(
       '/v1/partnerships/$partnershipId/terms/active',
     );
     return PartnershipTermsDto.fromJson(response as Map<String, dynamic>);

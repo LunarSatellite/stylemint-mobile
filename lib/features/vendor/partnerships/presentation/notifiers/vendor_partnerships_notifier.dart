@@ -63,14 +63,20 @@ class VendorPartnershipsNotifier extends StateNotifier<CampaignsState> {
     );
   }
 
-  Future<void> createCampaign(CampaignBrief brief) async {
-    await _repository.createCampaign(brief);
+  /// Returns the created brief (with its real id) on success, or null on
+  /// failure — callers need the id to navigate to the detail screen and
+  /// to chain the follow-up [updateCampaign] call that sets commission/
+  /// budget (the draft endpoint only accepts title/goal/currency).
+  Future<CampaignBrief?> createCampaign(CampaignBrief brief) async {
+    final either = await _repository.createCampaign(brief);
     unawaited(loadCampaigns());
+    return either.fold((_) => null, (created) => created);
   }
 
-  Future<void> updateCampaign(String id, CampaignBrief brief) async {
-    await _repository.updateCampaign(id, brief);
+  Future<bool> updateCampaign(String id, CampaignBrief brief) async {
+    final either = await _repository.updateCampaign(id, brief);
     unawaited(loadCampaigns());
+    return either.isRight();
   }
 }
 

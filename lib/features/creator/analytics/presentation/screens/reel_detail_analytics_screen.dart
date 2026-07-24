@@ -80,14 +80,22 @@ class _ReelDetailAnalyticsScreenState
               Icons.bookmark_border_rounded,
               color: DesignTokens.textWhite,
             ),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Saving reel reports is coming soon.'),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(
               Icons.more_vert_rounded,
               color: DesignTokens.textWhite,
             ),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Exporting/sharing reel reports is coming soon.'),
+              ),
+            ),
           ),
         ],
       ),

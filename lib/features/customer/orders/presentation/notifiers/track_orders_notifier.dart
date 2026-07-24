@@ -76,7 +76,7 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.requestReturn(order.id, reason);
+        final either = await _repository.requestReturn(order.orderNumber, reason);
         state = either.fold(
           (failure) {
             _onActionFailure(order, failure);

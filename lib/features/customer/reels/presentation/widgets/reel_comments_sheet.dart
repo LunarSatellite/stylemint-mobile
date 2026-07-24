@@ -4,19 +4,25 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/re
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_comments_controller.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-void showReelCommentsSheet(BuildContext context, String reelId) {
+void showReelCommentsSheet(
+  BuildContext context,
+  String reelId, {
+  VoidCallback? onCommentPosted,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => ReelCommentsSheet(reelId: reelId),
+    builder: (_) =>
+        ReelCommentsSheet(reelId: reelId, onCommentPosted: onCommentPosted),
   );
 }
 
 class ReelCommentsSheet extends ConsumerStatefulWidget {
-  const ReelCommentsSheet({required this.reelId, super.key});
+  const ReelCommentsSheet({required this.reelId, this.onCommentPosted, super.key});
 
   final String reelId;
+  final VoidCallback? onCommentPosted;
 
   @override
   ConsumerState<ReelCommentsSheet> createState() => _ReelCommentsSheetState();
@@ -107,11 +113,12 @@ class _ReelCommentsSheetState extends ConsumerState<ReelCommentsSheet> {
             _CommentInputBar(
               controller: _ctrl,
               sending: state.isPosting,
-              onSend: () {
+              onSend: () async {
                 final text = _ctrl.text.trim();
                 if (text.isEmpty) return;
                 _ctrl.clear();
-                ref.read(provider.notifier).post(text);
+                final posted = await ref.read(provider.notifier).post(text);
+                if (posted) widget.onCommentPosted?.call();
               },
             ),
           ],

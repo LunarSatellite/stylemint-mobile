@@ -290,7 +290,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
         ),
 
         // ── Sticky Previous + Proceed ────────────────────────────
-        Container(
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -372,6 +374,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ],

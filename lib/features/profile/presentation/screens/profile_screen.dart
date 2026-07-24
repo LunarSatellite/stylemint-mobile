@@ -335,6 +335,18 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
 
   @override
   Widget build(BuildContext context) {
+    // The shell keeps this screen mounted across tab switches, so it never
+    // naturally re-runs initState — this is what actually catches a vendor/
+    // creator approval granted elsewhere in the session.
+    ref.listen<int>(profileTabVisitedProvider, (_, _) {
+      final accountId = ref
+          .read(sessionControllerProvider)
+          .maybeWhen(authenticated: (id) => id, orElse: () => null);
+      if (accountId != null && accountId.isNotEmpty) {
+        ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+      }
+    });
+
     final roles = ref
         .watch(roleNotifierProvider)
         .maybeWhen(
@@ -349,16 +361,58 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
         ProfileMenuItem(
           icon: Icons.video_camera_back_outlined,
           label: creatorActive ? 'Creator Studio' : 'Become a Creator',
-          onTap: () => _pushOnce(
-            creatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
-          ),
+          // See the Vendor tile below for why this re-checks fresh instead
+          // of trusting `creatorActive` from the last build.
+          onTap: () async {
+            if (creatorActive) {
+              _pushOnce(RouteNames.creatorHome);
+              return;
+            }
+            final accountId = ref
+                .read(sessionControllerProvider)
+                .maybeWhen(authenticated: (id) => id, orElse: () => null);
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+            }
+            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+                  loadSuccess: (r) => r,
+                  orElse: () => const <RoleProfileDto>[],
+                );
+            final freshCreatorActive = _isActive(freshRoles, _creatorRole);
+            _pushOnce(
+              freshCreatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
+            );
+          },
         ),
         ProfileMenuItem(
           icon: Icons.storefront_outlined,
           label: vendorActive ? 'Vendor Dashboard' : 'Sell on Style Mint',
-          onTap: () => _pushOnce(
-            vendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
-          ),
+          // Re-check fresh rather than trusting `vendorActive` from whatever
+          // build last ran — a vendor approval can land moments before this
+          // tap (e.g. right after switching to this tab), and the cached
+          // role list can still read stale-false at the exact instant of
+          // tap, incorrectly routing back through the apply/approved gate
+          // instead of straight to the dashboard.
+          onTap: () async {
+            if (vendorActive) {
+              _pushOnce(RouteNames.vendorHome);
+              return;
+            }
+            final accountId = ref
+                .read(sessionControllerProvider)
+                .maybeWhen(authenticated: (id) => id, orElse: () => null);
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+            }
+            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+                  loadSuccess: (r) => r,
+                  orElse: () => const <RoleProfileDto>[],
+                );
+            final freshVendorActive = _isActive(freshRoles, _vendorRole);
+            _pushOnce(
+              freshVendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
+            );
+          },
         ),
       ],
     );

@@ -63,7 +63,7 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
   }
 
   Future<void> _loadWithSummary(CheckoutSummary summary) async {
-    // Non-fatal — fall back to summary values on failure.
+    // Non-fatal — fall back to empty lists on failure.
     final addressesEither = await _repository.getShippingAddresses();
     final methodsEither = await _repository.getPaymentMethods();
 
@@ -72,30 +72,65 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     final methods =
         methodsEither.fold((_) => <PaymentMethod>[], (list) => list);
 
-    // Merge: summary's address/method is always first; dedup by id.
-    final seenAddr = <String>{summary.shippingAddress.id};
-    final allAddresses = [
-      summary.shippingAddress,
-      ...addresses.where((a) => seenAddr.add(a.id)),
-    ];
-
-    final seenMeth = <String>{summary.paymentMethod.id};
-    final allMethods = [
-      summary.paymentMethod,
-      ...methods.where((m) => seenMeth.add(m.id)),
-    ];
+    // A fresh checkout session carries no address/payment of its own (see
+    // CheckoutSummaryDto.toDomain) — default to the account's default saved
+    // one, falling back to the sentinel "none selected" from the session.
+    final defaultAddress = addresses.isEmpty
+        ? summary.shippingAddress
+        : addresses.firstWhere((a) => a.isDefault, orElse: () => addresses.first);
+    final defaultMethod = methods.isEmpty
+        ? summary.paymentMethod
+        : methods.firstWhere((m) => m.isDefault, orElse: () => methods.first);
 
     state = CheckoutState.loadSuccess(
       summary.copyWith(
-        availableAddresses: allAddresses,
-        availablePaymentMethods: allMethods,
+        shippingAddress: defaultAddress,
+        paymentMethod: defaultMethod,
+        availableAddresses: addresses,
+        availablePaymentMethods: methods,
       ),
+    );
+  }
+
+  /// Returns null on success, or the failure to show to the user.
+  Future<NetworkExceptions?> addAddress({
+    required String label,
+    required String receiverName,
+    required String receiverPhone,
+    required String addressLine1,
+    String? landmark,
+    required String country,
+    required String state,
+    required String city,
+    required String zipCode,
+    bool makeDefault = false,
+    required String idempotencyKey,
+  }) async {
+    final either = await _repository.addAddress(
+      label: label,
+      receiverName: receiverName,
+      receiverPhone: receiverPhone,
+      addressLine1: addressLine1,
+      landmark: landmark,
+      country: country,
+      state: state,
+      city: city,
+      zipCode: zipCode,
+      makeDefault: makeDefault,
+      idempotencyKey: idempotencyKey,
+    );
+    return either.fold(
+      (f) => f,
+      (_) {
+        unawaited(load());
+        return null;
+      },
     );
   }
 
   Future<void> placeOrder({
     required String addressId,
-    required String paymentMethodId,
+    required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {
     final summary = state.maybeWhen(
@@ -111,7 +146,7 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
     final either = await _repository.placeOrder(
       addressId: addressId,
-      paymentMethodId: paymentMethodId,
+      paymentMethod: paymentMethod,
       idempotencyKey: idempotencyKey,
     );
 

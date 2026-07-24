@@ -60,10 +60,12 @@ class _ReelCardState extends State<ReelCard> {
           ),
         ),
 
-        // Right-rail actions (like / comment / share / wishlist / cart).
+        // Right-rail actions (like / comment / share / wishlist / cart) —
+        // pulled down so the rail sits near the creator/follow row instead
+        // of floating high above it.
         Positioned(
           right: DesignTokens.s12,
-          bottom: 220,
+          bottom: 180,
           child: ReelActions(reel: widget.reel),
         ),
 

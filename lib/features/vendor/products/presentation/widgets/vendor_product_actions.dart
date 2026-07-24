@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Product row ⋮ action sheet.
@@ -41,13 +40,24 @@ Future<void> showVendorProductActions(
           ),
           const SizedBox(height: DesignTokens.s16),
 
-          // 1 — Edit Product Details
+          // 1 — Edit Product Details (full field edit — name, images,
+          // pricing/inventory, shipping — on an already-published product.
+          // Uses the `details/*` + `images` endpoints, which allow
+          // Active/OutOfStock, not the wizard's Draft-only PATCH steps.)
           _ActionRow(
             icon: Icons.edit_outlined,
             title: 'Edit Product Details',
-            onTap: () {
+            onTap: () async {
               Navigator.pop(sheetCtx);
-              SmSnackbar.success(context, 'Edit product (coming soon).');
+              final updated = await context.push<bool>(
+                RouteNames.vendorEditProductDetails,
+                extra: product.id,
+              );
+              if (updated == true && context.mounted) {
+                ref
+                    .read(vendorProductsNotifierProvider.notifier)
+                    .loadProducts();
+              }
             },
           ),
           const _ActionDivider(),

@@ -77,12 +77,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (!mounted) return;
     if (!await ensureProfile(context, ref, [ProfileField.shippingAddress])) return;
     if (!mounted) return;
+    // `_selectedVariants` maps an option-group id to the chosen display
+    // value (e.g. "Size" -> "M"), not a real backend variant/SKU id —
+    // passing `.values.first` here sent that raw label as if it were a
+    // variant id. There's no group+value -> variant-id resolution in this
+    // UI yet, so omit it; the backend resolves the product's single
+    // default variant when no variantId is supplied.
     final success = await ref
         .read(productDetailNotifierProvider(widget.productId).notifier)
         .addToCart(
           productId: widget.productId,
           qty: _quantity,
-          variantId: _selectedVariants.isNotEmpty ? _selectedVariants.values.first : null,
         );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,7 +175,11 @@ class _ProductBody extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined, color: DesignTokens.textWhite),
-                  onPressed: () {},
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sharing products is coming soon.'),
+                    ),
+                  ),
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -317,7 +326,10 @@ class _NamePriceRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(product.name, style: DesignTokens.titleMedium),
+        Text(
+          product.name,
+          style: DesignTokens.titleMedium.copyWith(fontSize: 20),
+        ),
         const SizedBox(height: DesignTokens.s6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -325,7 +337,7 @@ class _NamePriceRow extends StatelessWidget {
           children: [
             Text(
               '${formatMoney(product.price)}$unitLabel',
-              style: DesignTokens.oneLinerSemibold.copyWith(color: DesignTokens.primaryGreen),
+              style: DesignTokens.oneLinerSemibold,
             ),
             if (product.compareAtPrice != null) ...[
               const SizedBox(width: DesignTokens.s8),
@@ -333,7 +345,7 @@ class _NamePriceRow extends StatelessWidget {
                 '${formatMoney(product.compareAtPrice!)}$unitLabel',
                 style: DesignTokens.smallRegular.copyWith(
                   decoration: TextDecoration.lineThrough,
-                  color: DesignTokens.textMuted,
+                  color: DesignTokens.colorError,
                 ),
               ),
             ],
@@ -494,7 +506,13 @@ class _VariantChips extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select ${v.name}', style: DesignTokens.mediumSemibold),
+            Text(
+              'Select ${v.name}',
+              style: DesignTokens.smallRegular.copyWith(
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.textLight,
+              ),
+            ),
             const SizedBox(height: DesignTokens.s8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -639,8 +657,10 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
                   ),
                   child: Text(
                     'Add review',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.primaryGreen),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

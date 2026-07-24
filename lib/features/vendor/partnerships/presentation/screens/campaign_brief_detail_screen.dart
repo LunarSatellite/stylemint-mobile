@@ -297,6 +297,8 @@ class _Actions extends StatelessWidget {
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
+            _InviteCreatorsButton(briefId: brief.id, isBusy: isBusy),
+            const SizedBox(height: DesignTokens.s12),
             _SecondaryRow(
               isBusy: isBusy,
               onRefreshRoi: notifier.recomputeRoi,
@@ -323,6 +325,8 @@ class _Actions extends StatelessWidget {
                     : const Text('Fork New Draft'),
               ),
             ),
+            const SizedBox(height: DesignTokens.s12),
+            _InviteCreatorsButton(briefId: brief.id, isBusy: isBusy),
             const SizedBox(height: DesignTokens.s12),
             _SecondaryRow(
               isBusy: isBusy,
@@ -402,6 +406,38 @@ class _Actions extends StatelessWidget {
       ),
     );
     if (confirmed == true) await notifier.retire();
+  }
+}
+
+class _InviteCreatorsButton extends StatelessWidget {
+  const _InviteCreatorsButton({required this.briefId, required this.isBusy});
+
+  final String briefId;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: DesignTokens.buttonHeight,
+      child: OutlinedButton.icon(
+        onPressed: isBusy
+            ? null
+            : () => context.push(
+                RouteNames.vendorPartnershipsInvite.replaceFirst(
+                  ':campaignId',
+                  briefId,
+                ),
+              ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: DesignTokens.primaryGreen),
+          foregroundColor: DesignTokens.primaryGreen,
+          shape: const StadiumBorder(),
+        ),
+        icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+        label: const Text('Invite Creators'),
+      ),
+    );
   }
 }
 

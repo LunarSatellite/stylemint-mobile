@@ -132,6 +132,32 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, ProfileSummary>> getProfileStats(
+    ProfileSummary base,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final counts = await remoteDataSource.getStatsCounts();
+        return right(base.copyWith(
+          savedItemsCount: counts.savedItemsCount,
+          followingCount: counts.followingCount,
+          ordersCount: counts.ordersCount,
+        ));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, Unit>> unfollowUser(String userId) async {
     if (await networkInfo.isConnected) {
       try {

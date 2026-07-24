@@ -34,7 +34,13 @@ class CartNotifier extends StateNotifier<CartState> {
     );
   }
 
-  Future<void> addItem({
+  /// Returns whether the add succeeded. Callers must use this return value
+  /// rather than re-reading [state] afterward — under rapid repeat taps, a
+  /// later overlapping call can flip state back to loadInProgress before an
+  /// earlier call's post-await check runs, making that earlier call see the
+  /// wrong (in-progress) state even though its own request actually
+  /// succeeded.
+  Future<bool> addItem({
     required String productId,
     required int quantity,
     String? variantId,
@@ -51,6 +57,7 @@ class CartNotifier extends StateNotifier<CartState> {
       CartState.loadFailure,
       CartState.loadSuccess,
     );
+    return either.isRight();
   }
 
   Future<void> updateItem({

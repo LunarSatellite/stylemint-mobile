@@ -172,6 +172,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/create_campaign_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
@@ -182,6 +183,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_details_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_images_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
 
@@ -929,6 +932,18 @@ GoRouter appRouter(Ref ref) {
         ),
       ),
       GoRoute(
+        path: RouteNames.vendorEditProductImages,
+        builder: (ctx, state) => EditProductImagesScreen(
+          productId: state.extra as String,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorEditProductDetails,
+        builder: (ctx, state) => EditProductDetailsScreen(
+          productId: state.extra as String,
+        ),
+      ),
+      GoRoute(
         path: RouteNames.vendorProductAnalytics,
         builder: (ctx, state) => ProductAnalyticsScreen(
           product: state.extra as VendorProduct,
@@ -990,6 +1005,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorCampaignBriefs,
         builder: (ctx, state) => const CampaignBriefsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreateCampaign,
+        builder: (ctx, state) => const CreateCampaignScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorCampaignBriefDetail,

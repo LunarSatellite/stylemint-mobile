@@ -41,9 +41,13 @@ class EarningsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(DesignTokens.s16),
             children: [
-              Text('Total Balance',
-                  style: DesignTokens.sectionInnerTitle
-                      .copyWith(fontSize: 15)),
+              const Text('Total Balance',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: DesignTokens.textLight,
+                  )),
               const SizedBox(height: DesignTokens.s12),
               _BalancesPayoutCard(summary: summary),
               const SizedBox(height: DesignTokens.s24),
@@ -139,14 +143,14 @@ class _BalancesPayoutCard extends StatelessWidget {
                         Text(
                           'Request Payout Withdrawal',
                           style: DesignTokens.mediumSemibold.copyWith(
-                            color: DesignTokens.buttonPrimaryText,
+                            color: DesignTokens.textDark,
                           ),
                         ),
                         const SizedBox(height: DesignTokens.s4),
                         Text(
                           'Payouts are processed weekly on fridays.\nThe minimum withdraw amount is Rs 5,000.00',
                           style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.buttonPrimaryText,
+                            color: DesignTokens.textDark,
                           ),
                         ),
                       ],
@@ -154,7 +158,7 @@ class _BalancesPayoutCard extends StatelessWidget {
                   ),
                   const Icon(
                     Icons.chevron_right_rounded,
-                    color: DesignTokens.buttonPrimaryText,
+                    color: DesignTokens.textDark,
                     size: 22,
                   ),
                 ],
@@ -253,8 +257,13 @@ class _EarningsBreakdown extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Earnings Breakdown This Month',
-            style: DesignTokens.sectionInnerTitle.copyWith(fontSize: 15)),
+        const Text('Earnings Breakdown This Month',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
+            )),
         const SizedBox(height: DesignTokens.s12),
         Container(
           padding: const EdgeInsets.all(DesignTokens.s16),
@@ -875,7 +884,12 @@ class _SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
-            style: DesignTokens.sectionInnerTitle.copyWith(fontSize: 15)),
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
+            )),
         GestureDetector(
           onTap: onAction,
           behavior: HitTestBehavior.opaque,

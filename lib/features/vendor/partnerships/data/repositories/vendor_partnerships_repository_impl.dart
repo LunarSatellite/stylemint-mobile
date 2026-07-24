@@ -45,13 +45,20 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
     if (await networkInfo.isConnected) {
       try {
         final vm = DraftBriefVm(
-          vendorProfileId: brief.vendorProfileId,
+          vendorProfileId: brief.vendorProfileId.isEmpty
+              ? null
+              : brief.vendorProfileId,
           title: brief.title,
           primaryGoal: brief.primaryGoal,
           currencyCode: brief.boostBudget.currency,
         );
+        // json_serializable includes null fields by default, but the
+        // backend's VendorProfileId is a non-nullable Guid — a literal
+        // `null` fails deserialization, so the key must be absent, not null.
+        final payload = vm.toJson()
+          ..removeWhere((_, value) => value == null);
         final created = await remoteDataSource.createCampaign(
-          data: vm.toJson(),
+          data: payload,
         );
         return right(created.toDomain());
       } catch (e) {

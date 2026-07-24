@@ -70,4 +70,10 @@ class MockProfileRepository implements ProfileRepository {
     required String rowVersion,
   }) async =>
       left(const NetworkExceptions.noInternetConnection());
+
+  @override
+  Future<Either<NetworkExceptions, ProfileSummary>> getProfileStats(
+    ProfileSummary base,
+  ) async =>
+      left(const NetworkExceptions.noInternetConnection());
 }

@@ -36,16 +36,27 @@ class CreatorRejectedScreen extends ConsumerWidget {
                     const Text(
                       'Application Rejected',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.titleMedium,
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s12),
 
                     // Subtitle
-                    Text(
+                    const Text(
                       'Unfortunately your application has been rejected. Please contact our support team for more information',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.5,
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s28),
 

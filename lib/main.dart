@@ -222,6 +222,32 @@ class _MockCheckoutRepository implements CheckoutRepository {
       ]);
 
   @override
+  Future<Either<NetworkExceptions, ShippingAddress>> addAddress({
+    required String label,
+    required String receiverName,
+    required String receiverPhone,
+    required String addressLine1,
+    String? landmark,
+    required String country,
+    required String state,
+    required String city,
+    required String zipCode,
+    bool makeDefault = false,
+    required String idempotencyKey,
+  }) async =>
+      right(ShippingAddress(
+        id: 'addr-mock',
+        label: label,
+        line1: addressLine1,
+        line2: landmark,
+        city: city,
+        stateProvince: state,
+        postalCode: zipCode,
+        countryCode: country,
+        isDefault: makeDefault,
+      ));
+
+  @override
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async =>
       right([
         const PaymentMethod(
@@ -250,7 +276,7 @@ class _MockCheckoutRepository implements CheckoutRepository {
   @override
   Future<Either<NetworkExceptions, String>> placeOrder({
     required String addressId,
-    required String paymentMethodId,
+    required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async =>
       right('mock-order-001');

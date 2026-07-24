@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -814,7 +815,21 @@ class _PartnershipCard extends StatelessWidget {
           Row(
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    // rating/category aren't carried by the active-
+                    // partnership data — honestly left at 0/'' rather than
+                    // fabricated (same convention as brands_screen.dart's
+                    // _toBrandInfoData for fields the endpoint lacks).
+                    builder: (_) => BrandMessagingScreen(
+                      args: BrandMessagingArgs(
+                        brandName: name,
+                        rating: 0,
+                        category: '',
+                      ),
+                    ),
+                  ),
+                ),
                 child: const Text(
                   'Message',
                   style: TextStyle(
@@ -890,7 +905,15 @@ class _PartnershipCard extends StatelessWidget {
                 child: _ActionButton(
                   label: 'End Partnership',
                   filled: false,
-                  onTap: () {},
+                  // No end/leave/terminate method exists anywhere on the
+                  // creator partnerships repository/domain interface (unlike
+                  // vendor's partnerships repo, which has end()) — this is a
+                  // genuine backend contract gap, not just unwired UI.
+                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ending a partnership is coming soon.'),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),

@@ -70,12 +70,20 @@ class PayoutInvoiceScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.download_outlined,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Downloading invoices is coming soon.'),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.print_outlined,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Printing invoices is coming soon.'),
+              ),
+            ),
           ),
         ],
       ),

@@ -2,11 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/domain/entities/vendor_product_analytics.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ProductAnalyticsScreen extends ConsumerStatefulWidget {
@@ -138,8 +140,10 @@ class _ProductAnalyticsScreenState
                     initial: _loader,
                     loadInProgress: _loader,
                     loadFailure: (_) => _FailureView(onRetry: _load),
-                    loadSuccess: (analytics) =>
-                        _AnalyticsBody(analytics: analytics),
+                    loadSuccess: (analytics) => _AnalyticsBody(
+                      analytics: analytics,
+                      productId: widget.product.id,
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s32),
                 ],
@@ -185,9 +189,10 @@ class _FailureView extends StatelessWidget {
 }
 
 class _AnalyticsBody extends StatelessWidget {
-  const _AnalyticsBody({required this.analytics});
+  const _AnalyticsBody({required this.analytics, required this.productId});
 
   final VendorProductAnalytics analytics;
+  final String productId;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +204,10 @@ class _AnalyticsBody extends StatelessWidget {
         const _AgeGroupTrafficSection(),
         const SizedBox(height: DesignTokens.s20),
         if (analytics.reviews != null) ...[
-          _ReviewsSection(reviews: analytics.reviews!),
+          _ReviewsSection(
+            reviews: analytics.reviews!,
+            productId: productId,
+          ),
           const SizedBox(height: DesignTokens.s20),
         ],
         const _GenderTrafficSection(),
@@ -671,9 +679,10 @@ class _StatCard extends StatelessWidget {
 // honest placeholder instead of fabricated thumbnails/view counts.
 
 class _ReviewsSection extends StatefulWidget {
-  const _ReviewsSection({required this.reviews});
+  const _ReviewsSection({required this.reviews, required this.productId});
 
   final ProductReviewSummary reviews;
+  final String productId;
 
   @override
   State<_ReviewsSection> createState() => _ReviewsSectionState();
@@ -796,7 +805,12 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: () => context.push(
+                RouteNames.productReviews.replaceFirst(
+                  ':productId',
+                  widget.productId,
+                ),
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: DesignTokens.borderDefault),
                 shape: const StadiumBorder(),

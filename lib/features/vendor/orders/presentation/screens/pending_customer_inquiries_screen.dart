@@ -133,7 +133,7 @@ class _InquiryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
+      padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,10 +144,7 @@ class _InquiryCard extends StatelessWidget {
               children: [
                 Text(
                   inquiry.question,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: DesignTokens.mediumSemibold,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -241,7 +238,15 @@ class _ReplySheetState extends State<_ReplySheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Reply to Enquiry', style: DesignTokens.mediumSemibold),
+                Text(
+                  'Reply to Enquiry',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.close, color: DesignTokens.textWhite, size: 20),
                   onPressed: () => Navigator.pop(context),

@@ -163,4 +163,70 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       AddProductState.publishSuccess,
     );
   }
+
+  /// Fetches an existing product's images for the Edit Product Images flow
+  /// (separate from the wizard — works on already-published products).
+  /// Resets the rest of [_formState] since this is a standalone edit, not a
+  /// continuation of any in-progress Add Product draft.
+  Future<bool> loadExistingImages(String productId) async {
+    state = const AddProductState.loadInProgress(
+      ProductFormState(currentStep: 2),
+    );
+    final either = await _repository.fetchProductImages(productId);
+    return either.fold(
+      (failure) {
+        state = AddProductState.loadFailure(_formState, failure);
+        return false;
+      },
+      (images) {
+        _formState = ProductFormState(
+          currentStep: 2,
+          step2: ImagesInfo(images: images, primaryImageIndex: 0),
+        );
+        state = AddProductState.loadSuccess(_formState);
+        return true;
+      },
+    );
+  }
+
+  /// Persists [loadExistingImages]'s (possibly edited) result back to an
+  /// already-published product via `PATCH .../images`, not the Draft-only
+  /// wizard step-2 endpoint.
+  Future<bool> saveImagesOnly(String productId) async {
+    final images = _formState.step2;
+    if (images == null) return false;
+    final either = await _repository.updateImages(productId, images);
+    return either.isRight();
+  }
+
+  /// Full Edit Product Details flow — fetches all 4 wizard-step fields for
+  /// an already-published product, pre-filling the same step screens the
+  /// Add Product wizard uses (they read/write via this same notifier).
+  Future<bool> loadForEdit(String productId) async {
+    state = const AddProductState.loadInProgress(
+      ProductFormState(currentStep: 1),
+    );
+    final either = await _repository.fetchProductForEdit(productId);
+    return either.fold(
+      (failure) {
+        state = AddProductState.loadFailure(_formState, failure);
+        return false;
+      },
+      (formState) {
+        _formState = formState;
+        state = AddProductState.loadSuccess(_formState);
+        return true;
+      },
+    );
+  }
+
+  /// Persists [loadForEdit]'s (possibly edited) result back to an
+  /// already-published product via the `details/*` + `images` endpoints —
+  /// not `submitDraft`/`publish`, which are for brand-new products only.
+  Future<bool> saveEditedDetails(String productId) async {
+    if (!_formState.isValid) return false;
+    final either =
+        await _repository.updateProductDetails(productId, _formState);
+    return either.isRight();
+  }
 }

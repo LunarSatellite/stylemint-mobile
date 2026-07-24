@@ -112,7 +112,11 @@ abstract class CommissionRangeDto with _$CommissionRangeDto {
 @freezed
 abstract class DraftBriefVm with _$DraftBriefVm {
   const factory DraftBriefVm({
-    required String vendorProfileId,
+    /// Optional / back-compat only — the backend resolves the vendor from
+    /// the authenticated caller (`VendorBriefsController.ResolveVendorAsync`).
+    /// Omit rather than send an empty string: ASP.NET's default `Guid`
+    /// model binder rejects `""`, it only tolerates a missing field.
+    String? vendorProfileId,
     String? title,
     required int primaryGoal,
     List<String>? productVariantIds,

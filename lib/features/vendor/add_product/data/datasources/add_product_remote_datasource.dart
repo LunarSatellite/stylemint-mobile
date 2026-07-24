@@ -80,6 +80,58 @@ class AddProductRemoteDataSource {
     return dto.url;
   }
 
+  /// GET /v1/vendor/products/{id} — fetches existing image CDN URLs
+  /// (ordered by sortOrder) for the Edit Product Images flow.
+  Future<List<String>> fetchProductImages(String id) async {
+    final response = await apiClient.get(
+      '/v1/vendor/products/$id',
+      options: _authed(),
+    );
+    final data = response as Map<String, dynamic>;
+    final images = (data['images'] as List<dynamic>? ?? const [])
+        .map((e) => e as Map<String, dynamic>)
+        .toList()
+      ..sort(
+        (a, b) => (a['sortOrder'] as int? ?? 0)
+            .compareTo(b['sortOrder'] as int? ?? 0),
+      );
+    return images.map((e) => e['cdnUrl'] as String).toList(growable: false);
+  }
+
+  /// PATCH /v1/vendor/products/{id}/images — replaces images on a product
+  /// regardless of state (Active/OutOfStock/Draft), unlike step-2 which is
+  /// Draft-only. Lets a vendor fix photos after publish.
+  Future<void> updateImages(String id, Map<String, dynamic> body) =>
+      apiClient.patch(
+        '/v1/vendor/products/$id/images',
+        data: body,
+        options: _authed(),
+      );
+
+  /// GET /v1/vendor/products/{id} — full product detail for the Edit
+  /// Product Details flow (all 4 wizard-step fields, not just images).
+  Future<Map<String, dynamic>> fetchProduct(String id) async {
+    final response = await apiClient.get(
+      '/v1/vendor/products/$id',
+      options: _authed(),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// The 3 "already-published" siblings of patchStep1/3/4 — same body
+  /// shape, but allowed on Active/OutOfStock products, not just Draft.
+  Future<void> updateBasicInfo(String id, Map<String, dynamic> body) =>
+      apiClient.patch('/v1/vendor/products/$id/details/basic',
+          data: body, options: _authed());
+
+  Future<void> updatePricing(String id, Map<String, dynamic> body) =>
+      apiClient.patch('/v1/vendor/products/$id/details/pricing',
+          data: body, options: _authed());
+
+  Future<void> updateShipping(String id, Map<String, dynamic> body) =>
+      apiClient.patch('/v1/vendor/products/$id/details/shipping',
+          data: body, options: _authed());
+
   Future<String> publishProduct(String draftId, String idempotencyKey) async {
     final response = await apiClient.post(
       '/v1/vendor/products/$draftId/publish',

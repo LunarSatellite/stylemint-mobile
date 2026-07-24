@@ -74,4 +74,36 @@ class ProfileRemoteDataSource {
   Future<void> unfollowUser(String userId) async {
     await apiClient.authDelete('/v1/connections/$userId');
   }
+
+  /// The account endpoint (`getProfileSummary`) doesn't carry the saved /
+  /// following / orders counts — each is sourced from its own already-real
+  /// endpoint instead of a dedicated (nonexistent) stats endpoint. Each
+  /// sub-fetch fails independently to 0 rather than failing the whole
+  /// profile load over one flaky count.
+  Future<({int savedItemsCount, int followingCount, int ordersCount})>
+      getStatsCounts() async {
+    final results = await Future.wait([
+      apiClient
+          .get('/v1/cart/saved-for-later')
+          .then((r) => (r as List<dynamic>).length)
+          .catchError((_) => 0),
+      apiClient
+          .get('/v1/connections', queryParameters: {'pageSize': 1})
+          // The backend returns totalCount: -1 when the list is empty (a
+          // server-side bug) — clamp so the profile never shows "-1".
+          .then((r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
+              .clamp(0, 1 << 31))
+          .catchError((_) => 0),
+      apiClient
+          .get('/v1/orders', queryParameters: {'pageSize': 1})
+          .then((r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
+              .clamp(0, 1 << 31))
+          .catchError((_) => 0),
+    ]);
+    return (
+      savedItemsCount: results[0],
+      followingCount: results[1],
+      ordersCount: results[2],
+    );
+  }
 }

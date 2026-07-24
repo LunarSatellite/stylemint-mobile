@@ -78,12 +78,12 @@ class AnalyticsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.creatorSearch),
           ),
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.creatorActivity),
           ),
         ],
       ),
@@ -181,7 +181,7 @@ class _PerformanceOverview extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -477,7 +477,7 @@ class _TopReelsSection extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -688,7 +688,7 @@ class _EarningTrendSection extends ConsumerWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -919,7 +919,7 @@ class _TopProductsSection extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),

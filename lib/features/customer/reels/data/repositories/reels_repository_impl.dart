@@ -36,7 +36,10 @@ class ReelsRepositoryImpl implements ReelsRepository {
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          // Was `NetworkExceptions.unexpectedError()` (no detail) — any
+          // non-Dio exception here (e.g. a bad-cast while mapping the feed
+          // response into ReelDto) was completely silent to the UI/logs.
+          return left(NetworkExceptions.server('$e'));
         }
       }
     } else {

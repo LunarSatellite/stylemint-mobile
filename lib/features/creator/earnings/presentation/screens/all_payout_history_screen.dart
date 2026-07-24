@@ -124,7 +124,11 @@ class _AllPayoutHistoryScreenState
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Exporting payout history is coming soon.'),
+              ),
+            ),
           ),
         ],
       ),

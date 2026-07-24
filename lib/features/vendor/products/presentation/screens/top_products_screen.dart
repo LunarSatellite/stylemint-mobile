@@ -27,6 +27,15 @@ class TopProductsScreen extends ConsumerStatefulWidget {
 class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
   _Period _period = _Period.last30Days;
   DateTimeRange? _customRange;
+  bool _searching = false;
+  String _query = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   (DateTime?, DateTime?) _rangeFor(_Period period) {
     final now = DateTime.now().toUtc();
@@ -82,15 +91,33 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
           ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Top Products', style: DesignTokens.oneLinerSemibold),
+        title: _searching
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: DesignTokens.oneLinerRegular,
+                decoration: const InputDecoration(
+                  hintText: 'Search products...',
+                  hintStyle: TextStyle(color: DesignTokens.textMuted),
+                  border: InputBorder.none,
+                ),
+                onChanged: (v) => setState(() => _query = v.trim()),
+              )
+            : const Text('Top Products', style: DesignTokens.oneLinerSemibold),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.search,
+            icon: Icon(
+              _searching ? Icons.close : Icons.search,
               color: DesignTokens.textWhite,
               size: 22,
             ),
-            onPressed: () {},
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) {
+                _searchCtrl.clear();
+                _query = '';
+              }
+            }),
           ),
         ],
       ),
@@ -102,25 +129,39 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
             child: state.when(
               initial: _loader,
               loadInProgress: _loader,
-              loadSuccess: (products) => products.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No product sales in this window.',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
+              loadSuccess: (allProducts) {
+                final products = _query.isEmpty
+                    ? allProducts
+                    : allProducts
+                          .where(
+                            (p) => p.name.toLowerCase().contains(
+                              _query.toLowerCase(),
+                            ),
+                          )
+                          .toList(growable: false);
+                return products.isEmpty
+                    ? Center(
+                        child: Text(
+                          _query.isEmpty
+                              ? 'No product sales in this window.'
+                              : 'No products match "$_query".',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s16,
-                        vertical: DesignTokens.s12,
-                      ),
-                      itemCount: products.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: DesignTokens.s12),
-                      itemBuilder: (_, i) => _ProductCard(product: products[i]),
-                    ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s16,
+                          vertical: DesignTokens.s12,
+                        ),
+                        itemCount: products.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: DesignTokens.s12),
+                        itemBuilder: (_, i) =>
+                            _ProductCard(product: products[i]),
+                      );
+              },
               loadFailure: (_) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -233,7 +274,7 @@ class _ProductCard extends StatelessWidget {
         children: [
           // Header: image + name + units sold
           Padding(
-            padding: const EdgeInsets.all(DesignTokens.s12),
+            padding: const EdgeInsets.all(DesignTokens.s16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -273,10 +314,7 @@ class _ProductCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               product.name,
-                              style: DesignTokens.smallRegular.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: DesignTokens.textWhite,
-                              ),
+                              style: DesignTokens.mediumSemibold,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -303,39 +341,51 @@ class _ProductCard extends StatelessWidget {
               ],
             ),
           ),
-          const _DashedDivider(),
-          _StatRow(
-            icon: Icons.account_balance_wallet_outlined,
-            label: 'Total Revenue',
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s8,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFFB8E6FE),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                formatMoney(product.totalRevenue),
-                style: DesignTokens.smallRegular.copyWith(
-                  color: const Color(0xFF0D1B2A),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
           const Divider(color: DesignTokens.borderDefault, height: 1),
-          _StatRow(
-            icon: Icons.person_outline,
-            label: 'Sales via',
-            trailing: Text(
-              '${product.distinctCreatorCount} creators',
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textWhite,
-                fontSize: 12,
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
+            child: Column(
+              children: [
+                _StatRow(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Total Revenue',
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFB8E6FE),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      formatMoney(product.totalRevenue),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: const Color(0xFF0D1B2A),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                _StatRow(
+                  icon: Icons.person_outline,
+                  label: 'Sales via',
+                  trailing: Text(
+                    '${product.distinctCreatorCount} creators',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -380,32 +430,6 @@ class _StatRow extends StatelessWidget {
           trailing,
         ],
       ),
-    );
-  }
-}
-
-class _DashedDivider extends StatelessWidget {
-  const _DashedDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const dashWidth = 6.0;
-        const dashSpace = 4.0;
-        final count = (constraints.maxWidth / (dashWidth + dashSpace)).floor();
-        return Row(
-          children: List.generate(
-            count,
-            (_) => Container(
-              width: dashWidth,
-              height: 1,
-              margin: const EdgeInsets.only(right: dashSpace),
-              color: DesignTokens.borderDefault,
-            ),
-          ),
-        );
-      },
     );
   }
 }

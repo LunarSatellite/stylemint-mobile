@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/data/datasources/add_product_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/repositories/add_product_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class AddProductRepositoryImpl implements AddProductRepository {
   AddProductRepositoryImpl({
@@ -36,9 +37,9 @@ class AddProductRepositoryImpl implements AddProductRepository {
       // POST start creates the draft with basic info; steps 2-4 fill the rest.
       final productId =
           await remoteDataSource.startDraft(_basicBody(draft), _uuid.v4());
-      await remoteDataSource.patchStep2(productId, _mediaBody(draft));
-      await remoteDataSource.patchStep3(productId, _pricingBody(draft));
-      await remoteDataSource.patchStep4(productId, _shippingBody(draft));
+      await remoteDataSource.patchStep2(productId, _mediaBodyFromDraft(draft));
+      await remoteDataSource.patchStep3(productId, _pricingBodyFromDraft(draft));
+      await remoteDataSource.patchStep4(productId, _shippingBodyFromDraft(draft));
       return productId;
     });
   }
@@ -46,6 +47,23 @@ class AddProductRepositoryImpl implements AddProductRepository {
   @override
   Future<Either<NetworkExceptions, String>> uploadImage(String filePath) {
     return _guard(() => remoteDataSource.uploadImage(filePath));
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<String>>> fetchProductImages(
+    String productId,
+  ) {
+    return _guard(() => remoteDataSource.fetchProductImages(productId));
+  }
+
+  @override
+  Future<Either<NetworkExceptions, void>> updateImages(
+    String productId,
+    ImagesInfo images,
+  ) {
+    return _guard(
+      () => remoteDataSource.updateImages(productId, _mediaBody(images)),
+    );
   }
 
   @override
@@ -63,23 +81,28 @@ class AddProductRepositoryImpl implements AddProductRepository {
         'longDescriptionMarkdown': d.basicInfo.description,
       };
 
-  Map<String, dynamic> _mediaBody(ProductDraft d) {
-    final imgs = d.imagesInfo.images;
+  Map<String, dynamic> _mediaBodyFromDraft(ProductDraft d) =>
+      _mediaBody(d.imagesInfo);
+
+  Map<String, dynamic> _mediaBody(ImagesInfo info) {
+    final imgs = info.images;
     return {
       'images': [
         for (var i = 0; i < imgs.length; i++)
           {
             'cdnUrl': imgs[i],
             'sortOrder': i,
-            'isPrimary': i == d.imagesInfo.primaryImageIndex,
+            'isPrimary': i == info.primaryImageIndex,
           },
       ],
       'video': null,
     };
   }
 
-  Map<String, dynamic> _pricingBody(ProductDraft d) {
-    final p = d.pricingInfo;
+  Map<String, dynamic> _pricingBodyFromDraft(ProductDraft d) =>
+      _pricingBody(d.pricingInfo);
+
+  Map<String, dynamic> _pricingBody(PricingInfo p) {
     return {
       'sku': p.sku,
       'priceAmount': p.basePrice.amount,
@@ -94,8 +117,10 @@ class AddProductRepositoryImpl implements AddProductRepository {
     };
   }
 
-  Map<String, dynamic> _shippingBody(ProductDraft d) {
-    final s = d.shippingInfo;
+  Map<String, dynamic> _shippingBodyFromDraft(ProductDraft d) =>
+      _shippingBody(d.shippingInfo);
+
+  Map<String, dynamic> _shippingBody(ShippingInfo s) {
     final grams =
         (s.weightUnit.toLowerCase() == 'kg' ? s.weight * 1000 : s.weight)
             .round();
@@ -117,6 +142,143 @@ class AddProductRepositoryImpl implements AddProductRepository {
           },
       ],
     };
+  }
+
+  @override
+  Future<Either<NetworkExceptions, ProductFormState>> fetchProductForEdit(
+    String productId,
+  ) {
+    return _guard(() async {
+      final data = await remoteDataSource.fetchProduct(productId);
+
+      final variants = (data['variants'] as List<dynamic>? ?? const [])
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+      final variant = variants.isEmpty
+          ? const <String, dynamic>{}
+          : (variants.firstWhere(
+              (v) => v['isDefault'] == true,
+              orElse: () => variants.first,
+            ));
+
+      final images = (data['images'] as List<dynamic>? ?? const [])
+          .map((e) => e as Map<String, dynamic>)
+          .toList()
+        ..sort(
+          (a, b) => (a['sortOrder'] as int? ?? 0)
+              .compareTo(b['sortOrder'] as int? ?? 0),
+        );
+
+      final shippingOptions =
+          (data['shippingOptions'] as List<dynamic>? ?? const [])
+              .map((e) => e as Map<String, dynamic>)
+              .toList();
+      final firstShipping =
+          shippingOptions.isEmpty ? null : shippingOptions.first;
+
+      final priceCurrency = variant['priceCurrency'] as String? ?? 'NPR';
+      final weightGrams = variant['weightGrams'] as int? ?? 0;
+
+      return ProductFormState(
+        currentStep: 1,
+        step1: BasicInfo(
+          productName: data['name'] as String? ?? '',
+          shortDescription: data['shortDescription'] as String? ?? '',
+          description: data['longDescriptionMarkdown'] as String? ?? '',
+          categoryId: data['categoryId'] as String? ?? '',
+          categories: const [],
+          tags: const [],
+        ),
+        step2: ImagesInfo(
+          images: images
+              .map((e) => e['cdnUrl'] as String)
+              .toList(growable: false),
+          primaryImageIndex: images.isEmpty
+              ? 0
+              : images.indexWhere((e) => e['isPrimary'] == true).clamp(
+                    0,
+                    images.length - 1,
+                  ),
+        ),
+        step3: PricingInfo(
+          basePrice: Money(
+            amount: (variant['priceAmount'] as num? ?? 0).toDouble(),
+            currency: priceCurrency,
+          ),
+          costPerItem: variant['costPriceAmount'] == null
+              ? null
+              : Money(
+                  amount: (variant['costPriceAmount'] as num).toDouble(),
+                  currency:
+                      variant['costPriceCurrency'] as String? ?? priceCurrency,
+                ),
+          taxRate: 0,
+          discountEnabled: false,
+          sku: variant['sku'] as String? ?? '',
+          quantityOnHand: variant['quantityOnHand'] as int? ?? 0,
+          trackInventory: variant['trackInventory'] as bool? ?? true,
+          allowOverselling: variant['allowOverselling'] as bool? ?? false,
+          productKind: variant['productKind'] as int? ?? 1,
+          billingCadence: variant['billingCadence'] as int? ?? 1,
+        ),
+        step4: ShippingInfo(
+          weight: weightGrams / 1000,
+          weightUnit: 'kg',
+          dimensionsLength: (variant['lengthCm'] as num? ?? 0).toDouble(),
+          dimensionsWidth: (variant['widthCm'] as num? ?? 0).toDouble(),
+          dimensionsHeight: (variant['heightCm'] as num? ?? 0).toDouble(),
+          requiresShipping: firstShipping != null,
+          shippingFee: firstShipping == null
+              ? null
+              : Money(
+                  amount: (firstShipping['feeAmount'] as num).toDouble(),
+                  currency: firstShipping['feeCurrency'] as String? ?? 'NPR',
+                ),
+          deliveryEstimateMin:
+              firstShipping?['estimatedDaysMin'] as int? ?? 1,
+          deliveryEstimateMax:
+              firstShipping?['estimatedDaysMax'] as int? ?? 3,
+        ),
+      );
+    });
+  }
+
+  @override
+  Future<Either<NetworkExceptions, void>> updateProductDetails(
+    String productId,
+    ProductFormState formState,
+  ) {
+    return _guard(() async {
+      if (formState.step1 != null) {
+        await remoteDataSource.updateBasicInfo(
+          productId,
+          {
+            'categoryId': formState.step1!.categoryId,
+            'name': formState.step1!.productName,
+            'shortDescription': formState.step1!.shortDescription,
+            'longDescriptionMarkdown': formState.step1!.description,
+          },
+        );
+      }
+      if (formState.step3 != null) {
+        await remoteDataSource.updatePricing(
+          productId,
+          _pricingBody(formState.step3!),
+        );
+      }
+      if (formState.step4 != null) {
+        await remoteDataSource.updateShipping(
+          productId,
+          _shippingBody(formState.step4!),
+        );
+      }
+      if (formState.step2 != null) {
+        await remoteDataSource.updateImages(
+          productId,
+          _mediaBody(formState.step2!),
+        );
+      }
+    });
   }
 
   Future<Either<NetworkExceptions, T>> _guard<T>(

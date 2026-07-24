@@ -34,6 +34,18 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       ProfileState.loadFailure,
       ProfileState.loadSuccess,
     );
+
+    // Non-fatal enrichment — the base summary already rendered; the counts
+    // (saved/following/orders) each come from their own real endpoint, not
+    // the account endpoint, so they arrive slightly after the rest of the
+    // header. Left as 0 on failure rather than blocking profile display.
+    final summary = state.maybeWhen(loadSuccess: (s) => s, orElse: () => null);
+    if (summary == null) return;
+    final statsEither = await _repository.getProfileStats(summary);
+    statsEither.fold(
+      (_) {},
+      (updated) => state = ProfileState.loadSuccess(updated),
+    );
   }
 }
 

@@ -26,4 +26,8 @@ abstract interface class ProfileRepository {
   });
 
   Future<Either<NetworkExceptions, Unit>> unfollowUser(String userId);
+
+  Future<Either<NetworkExceptions, ProfileSummary>> getProfileStats(
+    ProfileSummary base,
+  );
 }

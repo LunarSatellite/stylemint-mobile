@@ -37,16 +37,27 @@ class CreatorApprovedScreen extends ConsumerWidget {
                       const Text(
                         'Application Approved',
                         textAlign: TextAlign.center,
-                        style: DesignTokens.titleMedium,
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                       const SizedBox(height: DesignTokens.s12),
 
                       // Subtitle
-                      Text(
+                      const Text(
                         'Congratulations your application has been approved. You can use stylemint to strengthen your brand more',
                         textAlign: TextAlign.center,
-                        style: DesignTokens.mediumRegular
-                            .copyWith(color: DesignTokens.textLight),
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                     ],
                   ),

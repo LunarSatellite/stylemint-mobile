@@ -105,7 +105,7 @@ class _RequestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(partnershipsListNotifierProvider.notifier);
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
+      padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class _RequestCard extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFB8E6FE),
+                        color: DesignTokens.tagInfoFill,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -151,7 +151,7 @@ class _RequestCard extends ConsumerWidget {
                         style: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 10,
-                          color: Color(0xFF0D1B2A),
+                          color: DesignTokens.tagInfoText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -162,17 +162,32 @@ class _RequestCard extends ConsumerWidget {
             ],
           ),
           if ((request.requestMessage ?? '').isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            const Divider(
-              color: DesignTokens.borderDefault,
-              height: 1,
-              thickness: 1,
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              request.requestMessage!,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
+            const SizedBox(height: DesignTokens.s12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s12),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Message',
+                    style: DesignTokens.smallRegular.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    request.requestMessage!,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -185,7 +200,7 @@ class _RequestCard extends ConsumerWidget {
                       ? null
                       : () => notifier.declineRequest(request.id),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: DesignTokens.borderDefault),
+                    side: const BorderSide(color: DesignTokens.dotSeparator),
                     shape: const StadiumBorder(),
                     foregroundColor: DesignTokens.textLight,
                   ),

@@ -50,7 +50,7 @@ Dio dioClient(Ref ref) {
       maxWidth: 120,
       // Route through dart:developer so long JSON bodies aren't truncated or
       // dropped the way raw print() lines are on Android/iOS.
-      logPrint: (obj) => developer.log(obj.toString(),name: ''),
+      logPrint: (obj) => developer.log(obj.toString(), name: ''),
     ));
   }
 

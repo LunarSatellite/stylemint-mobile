@@ -13,6 +13,11 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 Future<void> showVendorMoreMenu(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
+    // The menu has grown to 10 items since the "spec 3 items" comment above
+    // was written — without this, the sheet's default height cap clipped the
+    // bottom entries (Help & Support, Log Out) behind the system nav bar
+    // with no way to scroll to them.
+    isScrollControlled: true,
     backgroundColor: DesignTokens.bgAppBodyLight,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -40,74 +45,104 @@ class _VendorMoreMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s8,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(999),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-            ),
-            _MoreItem(
-              icon: Icons.groups_outlined,
-              title: 'Creator Partnerships',
-              onTap: () => _go(context, RouteNames.vendorPartnerships),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.payments_outlined,
-              title: 'Payouts & Earnings',
-              onTap: () => _go(context, RouteNames.vendorEarnings),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.bar_chart_rounded,
-              title: 'Analytics',
-              onTap: () => _go(context, RouteNames.vendorAnalytics),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.question_answer_outlined,
-              title: 'Customer Inquiries',
-              onTap: () => _go(context, RouteNames.vendorInquiries),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.insights_outlined,
-              title: 'Creator Performance',
-              onTap: () => _go(context, RouteNames.vendorCreatorPerformance),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.settings_outlined,
-              title: 'Settings',
-              onTap: () => _go(context, RouteNames.settings),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.help_outline,
-              title: 'Help & Support',
-              onTap: () => _go(context, RouteNames.support),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.logout_rounded,
-              title: 'Log Out',
-              destructive: true,
-              onTap: () => _logout(context),
-            ),
-          ],
+              _MoreItem(
+                icon: Icons.groups_outlined,
+                title: 'Creator Partnerships',
+                onTap: () => _go(context, RouteNames.vendorPartnerships),
+              ),
+              const _MoreDivider(),
+              // Brand Studio (brand intelligence + Campaign Briefs) had no
+              // navigation entry point anywhere in the vendor UI despite being
+              // fully built and wired to real backend endpoints
+              // (GET/POST /v1/vendor/briefs, VendorBriefsController) — this
+              // was the actual reason "create a campaign" looked unreachable.
+              _MoreItem(
+                icon: Icons.auto_awesome_outlined,
+                title: 'Brand Studio',
+                onTap: () => _go(context, RouteNames.vendorBrandStudio),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.payments_outlined,
+                title: 'Payouts & Earnings',
+                onTap: () => _go(context, RouteNames.vendorEarnings),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.bar_chart_rounded,
+                title: 'Analytics',
+                onTap: () => _go(context, RouteNames.vendorAnalytics),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.question_answer_outlined,
+                title: 'Customer Inquiries',
+                onTap: () => _go(context, RouteNames.vendorInquiries),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.insights_outlined,
+                title: 'Creator Performance',
+                onTap: () => _go(context, RouteNames.vendorCreatorPerformance),
+              ),
+              const _MoreDivider(),
+              // Same "fully built, zero navigation entry points" gap as Brand
+              // Studio above — AI creator-match recommendations, never linked
+              // from anywhere in the vendor UI.
+              _MoreItem(
+                icon: Icons.recommend_outlined,
+                title: 'Recommended Creators',
+                onTap: () => _go(context, RouteNames.vendorMatchmaking),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                onTap: () => _go(context, RouteNames.settings),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.help_outline,
+                title: 'Help & Support',
+                // A dedicated VendorContactSupportScreen exists and is
+                // registered but had zero references anywhere — this was
+                // sending vendors to the generic customer HelpCenterScreen
+                // instead.
+                onTap: () => _go(context, RouteNames.vendorSupportContact),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.logout_rounded,
+                title: 'Log Out',
+                destructive: true,
+                onTap: () => _logout(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

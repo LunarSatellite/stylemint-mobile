@@ -36,12 +36,12 @@ class VendorProductTile extends StatelessWidget {
           vertical: DesignTokens.s6,
         ),
         decoration: DesignTokens.cardDecoration(),
-        child: Column(
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          child: Column(
           children: [
             // ── Top: image + info + 3-dot ─────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(DesignTokens.s12),
-              child: Row(
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Product image
@@ -49,12 +49,12 @@ class VendorProductTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(DesignTokens.s8),
                     child: Image.network(
                       product.imageUrl,
-                      width: 72,
-                      height: 72,
+                      width: 64,
+                      height: 64,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        width: 72,
-                        height: 72,
+                        width: 64,
+                        height: 64,
                         color: DesignTokens.bgAppBodyLight,
                         child: const Icon(
                           Icons.image,
@@ -102,8 +102,8 @@ class VendorProductTile extends StatelessWidget {
                           product.commissionRate != null
                               ? '${formatMoney(product.price)} · ${product.commissionRate!.toStringAsFixed(0)}% Commission'
                               : formatMoney(product.price),
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textLight,
                           ),
                         ),
                         // Draft shows no badges
@@ -127,20 +127,16 @@ class VendorProductTile extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
             // ── Divider ───────────────────────────────────────────────────
-            Divider(
+            const SizedBox(height: DesignTokens.s16),
+            const Divider(
               height: 1,
               thickness: 1,
-              color: DesignTokens.borderDefault.withValues(alpha: 0.4),
+              color: DesignTokens.borderDefault,
             ),
+            const SizedBox(height: DesignTokens.s16),
             // ── Stats ─────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s12,
-                vertical: DesignTokens.s12,
-              ),
-              child: Column(
+            Column(
                 children: [
                   // Draft and Active show In Stock; Out of Stock omits it
                   if (!_isOutOfStock) ...[
@@ -149,7 +145,7 @@ class VendorProductTile extends StatelessWidget {
                       label: 'In Stock',
                       value: _stockValue,
                     ),
-                    const SizedBox(height: DesignTokens.s8),
+                    const SizedBox(height: DesignTokens.s12),
                   ],
                   // Draft hides Ratings and Featured in
                   if (!_isDraft) ...[
@@ -160,7 +156,7 @@ class VendorProductTile extends StatelessWidget {
                           : 'Ratings',
                       value: product.rating.toStringAsFixed(1),
                     ),
-                    const SizedBox(height: DesignTokens.s8),
+                    const SizedBox(height: DesignTokens.s12),
                     _AssetStatRow(
                       assetIcon:
                           'assets/images/vendordashboard/icon_featured_in.png',
@@ -171,9 +167,9 @@ class VendorProductTile extends StatelessWidget {
                     ),
                   ],
                 ],
-              ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -278,7 +274,7 @@ class _StatRow extends StatelessWidget {
         Text(
           label,
           style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textMuted,
+            color: DesignTokens.textWhite,
           ),
         ),
         const Spacer(),
@@ -318,7 +314,7 @@ class _AssetStatRow extends StatelessWidget {
         Text(
           label,
           style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textMuted,
+            color: DesignTokens.textWhite,
           ),
         ),
         const Spacer(),

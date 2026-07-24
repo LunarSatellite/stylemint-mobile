@@ -106,9 +106,15 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     ];
   }
 
-  Future<void> post(String body) async {
+  /// Returns whether the post succeeded — callers use this instead of
+  /// inferring success from [state] (same reasoning as [CartNotifier.addItem]:
+  /// re-reading ambient state after an await is racy under rapid taps, and
+  /// here it's also the only way for the reel action rail's comment-count
+  /// badge to know a post landed, since that badge reads a frozen
+  /// [Reel.commentCount] snapshot that nothing else refreshes).
+  Future<bool> post(String body) async {
     final text = body.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) return false;
     state = state.copyWith(isPosting: true, clearError: true);
     try {
       final created = await _ds.post(_reelId, text);
@@ -116,9 +122,11 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
         isPosting: false,
         comments: [created, ...state.comments],
       );
+      return true;
     } catch (_) {
       state = state.copyWith(
           isPosting: false, errorMessage: 'Could not post your comment.');
+      return false;
     }
   }
 }

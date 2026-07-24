@@ -206,8 +206,7 @@ class _PromoRow extends StatelessWidget {
                   _applied ? 'Promo Code Applied' : 'Have a Promo Code?',
                   style: DesignTokens.smallRegular.copyWith(
                     color: DesignTokens.primaryGreen,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -265,13 +264,9 @@ class _TicketCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Bill Details',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: DesignTokens.oneLinerSemibold,
                 ),
                 const SizedBox(height: 16),
                 _BillRow(
@@ -330,13 +325,9 @@ class _TicketCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
+                    const Text(
                       'Grand Total',
-                      style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: DesignTokens.mediumSemibold,
                     ),
                     Text(
                       formatMoney(cart.total),
@@ -401,8 +392,6 @@ class _TicketCard extends StatelessWidget {
                           'You are appreciated',
                           style: DesignTokens.smallRegular.copyWith(
                             color: DesignTokens.textWhite,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -458,7 +447,7 @@ class _BillRow extends StatelessWidget {
           child: Text(
             label,
             style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight, fontSize: 12),
+                .copyWith(color: DesignTokens.textWhite),
           ),
         ),
         if (valueBadge != null)
@@ -600,7 +589,7 @@ class _PromoBottomSheetState extends State<_PromoBottomSheet> {
                 'Enter your promo code',
                 style: DesignTokens.mediumSemibold.copyWith(
                   color: DesignTokens.textWhite,
-                  fontSize: 18,
+                  fontSize: 20,
                 ),
               ),
               GestureDetector(
@@ -696,9 +685,7 @@ class _CheckoutBar extends StatelessWidget {
                 const Icon(Icons.shopping_cart_outlined,
                     size: 18, color: DesignTokens.textWhite),
                 const SizedBox(width: DesignTokens.s8),
-                Text('Total Order',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight)),
+                const Text('Total Order', style: DesignTokens.mediumSemibold),
                 const Spacer(),
                 Text(formatMoney(cart.total),
                     style: DesignTokens.oneLinerSemibold
@@ -726,13 +713,13 @@ class _CheckoutBar extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                        color: DesignTokens.buttonPrimaryText,
                       ),
                     ),
                     SizedBox(width: DesignTokens.s8),
                     Icon(Icons.arrow_forward_rounded,
-                        size: 18, color: Colors.black),
+                        size: 18, color: DesignTokens.buttonPrimaryText),
                   ],
                 ),
               ),

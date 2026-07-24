@@ -345,7 +345,15 @@ class _AssignTrackingSheetState extends State<_AssignTrackingSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Assign Tracking No.', style: DesignTokens.mediumSemibold),
+                Text(
+                  'Assign Tracking No.',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.close, color: DesignTokens.textWhite, size: 20),
                   onPressed: () => Navigator.pop(context),

@@ -58,7 +58,17 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
+    // Camera captures come off the sensor at full resolution (often
+    // 8-20MB+) — the backend caps the upload body at 5MB
+    // (POST /v1/vendor/products/images 400s with "Request body too large"
+    // otherwise). Downscale + compress on pick so this fits comfortably
+    // under that limit regardless of the device's camera resolution.
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 80,
+    );
     if (picked == null) return;
     setState(() => _uploading = true);
     await ref
@@ -132,13 +142,28 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s4),
-                  const Text(
+                  Text(
                     'Upload 5 - 10 images (max 5mb each in JPG/PNG)',
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: DesignTokens.textLight,
+                      color: _images.length < ImagesInfo.minImages
+                          ? DesignTokens.colorError
+                          : DesignTokens.textLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_images.length}/${ImagesInfo.minImages} minimum'
+                    '${_images.length < ImagesInfo.minImages ? ' — add ${ImagesInfo.minImages - _images.length} more to continue' : ''}',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _images.length < ImagesInfo.minImages
+                          ? DesignTokens.colorError
+                          : DesignTokens.primaryGreen,
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s8),
@@ -147,7 +172,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Image',
-                    onTap: _uploading
+                    onTap: _uploading || _images.length >= ImagesInfo.maxImages
                         ? null
                         : () => _pickImage(ImageSource.gallery),
                   ),
@@ -157,7 +182,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   _WhiteSolidButton(
                     icon: Icons.photo_camera_outlined,
                     label: 'Capture Image',
-                    onTap: _uploading
+                    onTap: _uploading || _images.length >= ImagesInfo.maxImages
                         ? null
                         : () => _pickImage(ImageSource.camera),
                   ),
@@ -218,7 +243,13 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Video',
-                    onTap: () {},
+                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Product video upload is coming soon.',
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -227,7 +258,9 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
         ),
 
         // ── Sticky Previous + Proceed ───────────────────────────────
-        Container(
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -311,6 +344,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ],

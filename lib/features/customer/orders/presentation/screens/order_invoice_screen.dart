@@ -322,7 +322,7 @@ class _InvRow extends StatelessWidget {
             child: Text(
               label,
               style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted),
+                  .copyWith(color: DesignTokens.textWhite),
             ),
           ),
           Expanded(
@@ -330,7 +330,7 @@ class _InvRow extends StatelessWidget {
               value,
               textAlign: TextAlign.end,
               style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textWhite),
+                  .copyWith(color: DesignTokens.textLight),
             ),
           ),
         ],

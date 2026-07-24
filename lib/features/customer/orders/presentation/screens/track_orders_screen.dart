@@ -83,6 +83,14 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
       orElse: () => false,
     );
 
+    // The shell keeps this screen mounted (just hidden) across tab switches,
+    // so bump-driven refresh (rather than provider lifecycle) is what
+    // actually catches orders placed elsewhere in the session.
+    ref.listen<int>(
+      ordersTabVisitedProvider,
+      (_, _) => ref.read(trackOrdersNotifierProvider.notifier).fetchOrders(),
+    );
+
     if (!isAuthed) return const _UnauthenticatedView();
 
     final orderState = ref.watch(trackOrdersNotifierProvider);
@@ -179,8 +187,10 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
                               const SizedBox(height: DesignTokens.s8),
                           itemBuilder: (_, i) => _OrderCard(
                             order: filtered[i],
+                            // Backend order-detail/invoice/cancel routes are keyed by
+                            // orderNumber (e.g. "NK2026-00001"), not the internal id.
                             onTap: () => context.push(
-                              '${RouteNames.orders}/${filtered[i].id}',
+                              '${RouteNames.orders}/${filtered[i].orderNumber}',
                             ),
                           ),
                         ),

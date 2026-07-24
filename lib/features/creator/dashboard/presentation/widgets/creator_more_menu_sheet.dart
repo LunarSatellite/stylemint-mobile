@@ -80,6 +80,12 @@ class _CreatorMoreMenu extends StatelessWidget {
             ),
             const _MoreDivider(),
             _MoreItem(
+              icon: Icons.campaign_outlined,
+              title: 'Reach',
+              onTap: () => _go(context, RouteNames.reach),
+            ),
+            const _MoreDivider(),
+            _MoreItem(
               icon: Icons.settings_outlined,
               title: 'Settings',
               onTap: () => _go(context, RouteNames.settings),
@@ -88,7 +94,7 @@ class _CreatorMoreMenu extends StatelessWidget {
             _MoreItem(
               icon: Icons.help_outline,
               title: 'Help & Support',
-              onTap: () => _go(context, RouteNames.support),
+              onTap: () => _go(context, RouteNames.creatorSupportContact),
             ),
             const _MoreDivider(),
             _MoreItem(

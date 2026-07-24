@@ -17,7 +17,10 @@ class ProfileHeader extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: DesignTokens.avatarLarge / 2,
+            // Figma's profile-header avatar is 64x64, distinct from the
+            // shared avatarLarge (56) token used elsewhere — sized locally
+            // rather than changing that shared constant.
+            radius: 32,
             backgroundColor: DesignTokens.bgAppBodyLight,
             backgroundImage:
                 summary.avatarUrl.isNotEmpty
@@ -35,7 +38,12 @@ class ProfileHeader extends StatelessWidget {
               children: [
                 Text(
                   summary.displayName,
-                  style: DesignTokens.sectionInnerTitle,
+                  // Figma spec is 20/600 for the profile-header name,
+                  // distinct from the shared sectionInnerTitle (18/600)
+                  // token used elsewhere — overridden locally.
+                  style: DesignTokens.sectionInnerTitle.copyWith(
+                    fontSize: 20,
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s4),
                 Text(

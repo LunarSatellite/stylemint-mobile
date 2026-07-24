@@ -245,7 +245,10 @@ class _VendorApplyStep4ScreenState
 
   Widget _buildFormCard() {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s20),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s24,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

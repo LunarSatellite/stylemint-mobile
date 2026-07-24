@@ -562,7 +562,7 @@ class _BrandRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(width: 46, height: 46, child: logo),
+          SizedBox(width: 48, height: 48, child: logo),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
@@ -572,19 +572,19 @@ class _BrandRow extends StatelessWidget {
                   name,
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: DesignTokens.textWhite,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
                 Text(
                   commission,
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4A90D9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF00BCFF),
                   ),
                 ),
               ],
