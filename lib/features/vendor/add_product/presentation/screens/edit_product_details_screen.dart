@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
@@ -10,12 +10,12 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Vendor → Products → ⋮ → Edit Product Details — full field edit on an
+/// Vendor â†’ Products â†’ â‹® â†’ Edit Product Details â€” full field edit on an
 /// already-published product. Reuses the wizard's 4 step screens as-is
 /// (they read/write via `addProductNotifierProvider`), but swaps the
 /// wizard's Draft-only submitDraft/publish flow for
 /// `AddProductNotifier.loadForEdit`/`saveEditedDetails`, which hit the
-/// `details/*` + `images` endpoints instead — those work regardless of
+/// `details/*` + `images` endpoints instead â€” those work regardless of
 /// product state (see Product.AssertEditableOutsideWizard on the backend).
 class EditProductDetailsScreen extends ConsumerStatefulWidget {
   const EditProductDetailsScreen({required this.productId, super.key});
@@ -66,7 +66,7 @@ class _EditProductDetailsScreenState
         content: Text(
           ok
               ? 'Product updated!'
-              : 'Failed to save — check all steps are complete.',
+              : 'Failed to save â€” check all steps are complete.',
         ),
         backgroundColor: ok ? DesignTokens.primaryGreen : DesignTokens.colorError,
       ),
@@ -79,7 +79,22 @@ class _EditProductDetailsScreenState
     final state = ref.watch(addProductNotifierProvider);
     // The reused step screens' own "Proceed" on step 4 advances to step 5
     // (the wizard's Review/Publish screen), which this edit host doesn't
-    // include — clamp the display so that doesn't index out of range.
+    // include â€” clamp the display so that doesn't index out of range.
+    // The wizard's nextStep() bumps _formState.currentStep from 4 to 5 on
+    // Proceed. The display clamp above re-renders step 4, so the user would
+    // otherwise see a dead-end Proceed button. Detect the bump here and treat
+    // it as a save request instead.
+    ref.listen<AddProductState>(addProductNotifierProvider, (_, next) {
+      final steppedToFive = next.maybeWhen(
+        loadSuccess: (fs) => fs.currentStep == 5,
+        orElse: () => false,
+      );
+      if (steppedToFive && !_saving && !_loading) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _save();
+        });
+      }
+    });
     final currentStep = state
         .maybeWhen(
           loadSuccess: (fs) => fs.currentStep,
@@ -180,3 +195,6 @@ class _EditProductDetailsScreenState
     );
   }
 }
+
+
+

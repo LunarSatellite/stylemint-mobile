@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -61,7 +61,7 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
   }
 
   Future<void> loadMoreProducts() async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (products, nextCursor, hasMore, activeFilter) async {
         if (!hasMore || nextCursor == null) return;
         final either = await _repository.getProducts(
@@ -79,7 +79,7 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
           ),
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
@@ -87,7 +87,7 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
     String productId,
     VendorProductStatus status,
   ) async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (products, nextCursor, hasMore, filter) async {
         state = ProductsState.actionInProgress(products);
         final either = await _repository.updateProductStatus(productId, status);
@@ -112,7 +112,7 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
           },
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
@@ -131,7 +131,7 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
           activeFilter: filter,
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
@@ -152,7 +152,8 @@ class VendorProductsNotifier extends StateNotifier<ProductsState> {
           );
         }
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 }
+

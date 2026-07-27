@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -70,7 +70,7 @@ class VendorOrdersNotifier extends StateNotifier<OrdersState> {
   }
 
   Future<void> loadMoreOrders() async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (orders, nextCursor, hasMore, activeFilter) async {
         if (!hasMore || nextCursor == null) return;
         final either = await _repository.getOrders(
@@ -88,11 +88,11 @@ class VendorOrdersNotifier extends StateNotifier<OrdersState> {
           ),
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
-  /// Single-id "Mark as Shipped" — used from the Ready-to-Ship list's 3-dot
+  /// Single-id "Mark as Shipped" â€” used from the Ready-to-Ship list's 3-dot
   /// menu and the bulk select bar. Reloads the list on success so the item
   /// drops out of the To-Ship bucket.
   Future<bool> markReadyToShip(String orderId) async {
@@ -155,7 +155,7 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   }
 
   Future<void> updateStatus(VendorOrderStatus newStatus) async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
         final either = await _repository.updateOrderStatus(order.id, newStatus);
@@ -167,13 +167,13 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
           (updated) => OrderDetailState.loadSuccess(updated),
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
   /// "Mark as Shipped" from the order detail screen.
   Future<void> markReadyToShip() async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
         final either = await _repository.markReadyToShip(order.id);
@@ -185,7 +185,7 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
           OrderDetailState.loadSuccess,
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
@@ -193,7 +193,7 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
     required String carrier,
     required String trackingNumber,
   }) async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
         final either = await _repository.addTracking(
@@ -209,12 +209,12 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
           OrderDetailState.loadSuccess,
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
   Future<void> markDelivered() async {
-    state.maybeWhen(
+    await state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
         final either = await _repository.markDelivered(order.id);
@@ -226,7 +226,7 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
           OrderDetailState.loadSuccess,
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 
@@ -251,7 +251,10 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
           state = OrderDetailState.loadSuccess(o);
         }
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
 }
+
+
+

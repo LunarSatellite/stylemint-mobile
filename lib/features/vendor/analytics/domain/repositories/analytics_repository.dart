@@ -5,6 +5,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entit
 abstract class AnalyticsRepository {
   Future<Either<NetworkExceptions, VendorAnalyticsSummary>> getSummary({
     String? window,
+    DateTime? fromUtc,
+    DateTime? toUtc,
   });
 
   Future<Either<NetworkExceptions, CreatorAnalyticsDeepDive>>

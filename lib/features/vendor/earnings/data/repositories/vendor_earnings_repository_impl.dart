@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -10,7 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:uuid/uuid.dart';
 
-/// The backend's `PayeeKind.Vendor` wire value — `GET /v1/payouts` isn't
+/// The backend's `PayeeKind.Vendor` wire value â€” `GET /v1/payouts` isn't
 /// role-scoped server-side, so rows are filtered to this kind client-side.
 const _vendorPayeeKind = 2;
 
@@ -31,9 +31,17 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
         final now = DateTime.now().toUtc();
         final thisMonthStart = DateTime.utc(now.year, now.month);
         final lastMonthStart = DateTime.utc(now.year, now.month - 1);
+        // Explicit trailing-30d range instead of the backend default so
+        // the 'Total' metrics below line up with the same window the UI
+        // labels them as. The three calls are intentional: each range maps
+        // to a different summary field.
+        final trailing30Start = now.subtract(const Duration(days: 30));
 
         final results = await Future.wait([
-          remoteDataSource.getAnalyticsOverview(),
+          remoteDataSource.getAnalyticsOverview(
+            fromUtc: trailing30Start,
+            toUtc: now,
+          ),
           remoteDataSource.getAnalyticsOverview(
             fromUtc: thisMonthStart,
             toUtc: now,
@@ -68,7 +76,7 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
     }
   }
 
-  /// Auto-Weekly payouts run every Friday (skill §payouts — no fee, vs.
+  /// Auto-Weekly payouts run every Friday (skill Â§payouts â€” no fee, vs.
   /// On-Demand's 2% fee). No backend field supplies this date, so it's
   /// derived from that fixed schedule; today counts as "next" if it's
   /// already Friday.
@@ -211,3 +219,4 @@ class VendorEarningsRepositoryImpl implements VendorEarningsRepository {
     return const NetworkExceptions.unexpectedError();
   }
 }
+

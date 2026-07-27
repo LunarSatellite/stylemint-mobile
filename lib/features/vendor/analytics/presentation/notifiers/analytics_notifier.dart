@@ -25,9 +25,17 @@ class AnalyticsNotifier extends StateNotifier<AnalyticsState> {
 
   final AnalyticsRepository _repository;
 
-  Future<void> load({String? window}) async {
+  Future<void> load({
+    String? window,
+    DateTime? fromUtc,
+    DateTime? toUtc,
+  }) async {
     state = const AnalyticsState.loadInProgress();
-    final either = await _repository.getSummary(window: window);
+    final either = await _repository.getSummary(
+      window: window,
+      fromUtc: fromUtc,
+      toUtc: toUtc,
+    );
     state = either.fold(
       AnalyticsState.loadFailure,
       AnalyticsState.loadSuccess,

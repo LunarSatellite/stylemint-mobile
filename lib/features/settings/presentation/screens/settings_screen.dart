@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,7 +37,15 @@ class SettingsScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          // The vendor bottom nav's "Profile" tab navigates here with
+          // context.go(RouteNames.settings), which replaces the dashboard in
+          // the stack and leaves nothing for context.pop() to pop back to.
+          // Mirror the vendor orders screen's pattern: pop when there is a
+          // back stack, otherwise route to a safe home so the back icon is
+          // never a dead-end.
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.home),
         ),
         title: const Text('Settings', style: DesignTokens.sectionInnerTitle),
       ),
@@ -207,3 +215,4 @@ class _MenuTile extends StatelessWidget {
     );
   }
 }
+

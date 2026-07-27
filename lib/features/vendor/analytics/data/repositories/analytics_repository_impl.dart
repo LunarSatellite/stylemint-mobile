@@ -18,10 +18,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   @override
   Future<Either<NetworkExceptions, VendorAnalyticsSummary>> getSummary({
     String? window,
+    DateTime? fromUtc,
+    DateTime? toUtc,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getSummary(window: window);
+        final dto = await remoteDataSource.getSummary(
+          window: window,
+          fromUtc: fromUtc,
+          toUtc: toUtc,
+        );
         return right(dto.toDomain());
       } on DioException catch (e) {
         return left(NetworkExceptions.server(e.message.toString()));

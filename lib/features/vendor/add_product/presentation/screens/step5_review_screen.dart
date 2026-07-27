@@ -33,22 +33,167 @@ class Step5ReviewScreen extends ConsumerWidget {
       );
     });
 
-    final review = state.maybeWhen(
-      loadSuccess: (fs) => fs.reviewInfo,
-      loadInProgress: (fs) => fs.reviewInfo,
-      saveInProgress: (fs) => fs.reviewInfo,
-      saveSuccess: (fs, d) => fs.reviewInfo,
-      saveFailure: (fs, e) => fs.reviewInfo,
-      publishing: (fs) => fs.reviewInfo,
-      publishFailure: (fs, e) => fs.reviewInfo,
+    // Pull formState directly so we can both build the review AND
+    // diagnose which step(s) are still incomplete when review is null.
+    final formState = state.maybeWhen(
+      loadSuccess: (fs) => fs,
+      loadInProgress: (fs) => fs,
+      saveInProgress: (fs) => fs,
+      saveSuccess: (fs, d) => fs,
+      saveFailure: (fs, e) => fs,
+      publishing: (fs) => fs,
+      publishFailure: (fs, e) => fs,
       orElse: () => null,
     );
 
+    final review = formState?.reviewInfo;
+
     if (review == null) {
-      return const Center(
-        child: Text(
-          'Complete previous steps first',
-          style: DesignTokens.bodyText,
+      // Build a per-step diagnostic so the user knows exactly what
+      // to fix instead of seeing a generic message.
+      final issues = <_StepIssue>[];
+      if (formState != null) {
+        final step1 = formState.step1;
+        if (step1 == null) {
+          issues.add(const _StepIssue(
+              1, 'Basic Information', 'Not filled in'));
+        } else {
+          final missing = <String>[];
+          if (step1.productName.isEmpty) missing.add('Product Name');
+          if (step1.description.isEmpty) {
+            missing.add('Full Description');
+          } else if (step1.description.length > 2000) {
+            missing.add('Full Description too long');
+          }
+          if (step1.categories.isEmpty) missing.add('Category');
+          if (missing.isNotEmpty) {
+            issues.add(_StepIssue(
+                1, 'Basic Information', missing.join(', ')));
+          }
+        }
+        final step2 = formState.step2;
+        if (step2 == null || step2.images.isEmpty) {
+          issues.add(const _StepIssue(
+              2, 'Images & Media', 'No images uploaded'));
+        }
+        if (formState.step3 == null) {
+          issues.add(const _StepIssue(
+              3, 'Pricing & Inventory', 'Not filled in'));
+        }
+        if (formState.step4 == null) {
+          issues.add(const _StepIssue(
+              4, 'Shipping Details', 'Not filled in'));
+        }
+      }
+
+      return Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: DesignTokens.colorWarning, size: 24),
+                SizedBox(width: DesignTokens.s8),
+                Flexible(
+                  child: Text(
+                    'Review unavailable',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              'Some required fields are missing. Go back and complete the highlighted steps before publishing.',
+              style: DesignTokens.bodyText.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s20),
+            ...issues.map(
+              (issue) => Padding(
+                padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: DesignTokens.bgAppBody,
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: DesignTokens.colorWarning),
+                  ),
+                  padding: const EdgeInsets.all(DesignTokens.s16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.colorWarning,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '',
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              issue.title,
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: DesignTokens.textWhite,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              issue.detail,
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 12,
+                                color: DesignTokens.textLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(addProductNotifierProvider.notifier)
+                            .goToStep(issue.step),
+                        child: Text(
+                          'Fix',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -101,7 +246,7 @@ class Step5ReviewScreen extends ConsumerWidget {
 
     return Column(
       children: [
-        // ── Scrollable content ───────────────────────────────────
+        // -- Scrollable content -----------------------------------
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -261,7 +406,7 @@ class Step5ReviewScreen extends ConsumerWidget {
           ),
         ),
 
-        // ── Sticky Publish button ────────────────────────────────
+        // -- Sticky Publish button --------------------------------
         SafeArea(
           top: false,
           child: Container(
@@ -277,35 +422,73 @@ class Step5ReviewScreen extends ConsumerWidget {
               top: BorderSide(color: DesignTokens.borderDefault),
             ),
           ),
-          child: SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: isPublishing
-                  ? null
-                  : () => ref
-                      .read(addProductNotifierProvider.notifier)
-                      .publish(),
-              style: DesignTokens.primaryButtonStyle(),
-              child: isPublishing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : const Text(
-                      'Publish Product',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: DesignTokens.buttonPrimaryText,
+          child: Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: DesignTokens.buttonHeight,
+                  child: ElevatedButton(
+                    onPressed: notifier.prevStep,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignTokens.bgAppBodyLight,
+                      foregroundColor: DesignTokens.textWhite,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius),
                       ),
                     ),
-            ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.arrow_back, size: 16),
+                        SizedBox(width: DesignTokens.s8),
+                        Text(
+                          'Previous',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s16),
+              Expanded(
+                child: SizedBox(
+                  height: DesignTokens.buttonHeight,
+                  child: ElevatedButton(
+                    onPressed: isPublishing
+                        ? null
+                        : () => ref
+                            .read(addProductNotifierProvider.notifier)
+                            .publish(),
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: isPublishing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                          )
+                        : const Text(
+                            'Publish Product',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
           ),
         ),
@@ -314,7 +497,7 @@ class Step5ReviewScreen extends ConsumerWidget {
   }
 }
 
-// ── Section card with Edit button ─────────────────────────────────
+// -- Section card with Edit button ---------------------------------
 
 class _ReviewSection extends StatelessWidget {
   const _ReviewSection({
@@ -381,7 +564,7 @@ class _ReviewSection extends StatelessWidget {
   }
 }
 
-// ── Bold product name row ─────────────────────────────────────────
+// -- Bold product name row -----------------------------------------
 
 class _BoldValueRow extends StatelessWidget {
   const _BoldValueRow(this.value);
@@ -405,7 +588,7 @@ class _BoldValueRow extends StatelessWidget {
   }
 }
 
-// ── Single light-text label row ───────────────────────────────────
+// -- Single light-text label row -----------------------------------
 
 class _LabelValueRow extends StatelessWidget {
   const _LabelValueRow(this.value, {this.maxLines = 2});
@@ -432,7 +615,7 @@ class _LabelValueRow extends StatelessWidget {
   }
 }
 
-// ── Label : Value row ─────────────────────────────────────────────
+// -- Label : Value row ---------------------------------------------
 
 class _DataRow extends StatelessWidget {
   const _DataRow({required this.label, required this.value});
@@ -476,7 +659,7 @@ class _DataRow extends StatelessWidget {
   }
 }
 
-// ── Your Profit row with green pill ──────────────────────────────
+// -- Your Profit row with green pill ------------------------------
 
 class _ProfitRow extends StatelessWidget {
   const _ProfitRow({required this.profit, required this.profitPct});
@@ -525,7 +708,7 @@ class _ProfitRow extends StatelessWidget {
   }
 }
 
-// ── Images thumbnail strip ────────────────────────────────────────
+// -- Images thumbnail strip ----------------------------------------
 
 class _ImagesThumbnailRow extends StatelessWidget {
   const _ImagesThumbnailRow({
@@ -630,4 +813,15 @@ class _ImagesThumbnailRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// --- Per-step issue used by the diagnostic message ------------------------
+// When the review screen can't build a ReviewInfo (validation failed), this
+// describes exactly which step is incomplete so the user can navigate back.
+class _StepIssue {
+  const _StepIssue(this.step, this.title, this.detail);
+
+  final int step;
+  final String title;
+  final String detail;
 }

@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -40,7 +40,7 @@ class VendorRepositoryImpl implements VendorRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          // 404 = no application on file yet → let the UI show the apply form.
+          // 404 = no application on file yet â†’ let the UI show the apply form.
           if (e.response?.statusCode == 404) {
             return left(const NetworkExceptions.notFound());
           }
@@ -67,7 +67,7 @@ class VendorRepositoryImpl implements VendorRepository {
       // /v1/vendor/apply is the endpoint that's actually live on this
       // backend and carries every field the wizard collects in one shot.
       // The draft/step-* wizard endpoints are attempted afterward on a
-      // best-effort basis — they 404/error on this deployment today, so
+      // best-effort basis â€” they 404/error on this deployment today, so
       // their failure must never block a successful submission.
       final dto = await remoteDataSource.submitLegacyApplication(
         form: form,
@@ -82,19 +82,19 @@ class VendorRepositoryImpl implements VendorRepository {
           businessType: form.businessType,
           idempotencyKey: _uuid.v4(),
         );
-        await remoteDataSource.patchStep3Profile(
-          website: form.website,
-          taxId: form.taxId,
-          idempotencyKey: _uuid.v4(),
-        );
         await remoteDataSource.patchStep2Commission(
           commissionMinPercent: form.commissionMinPercent,
           commissionMaxPercent: form.commissionMaxPercent,
           idempotencyKey: _uuid.v4(),
         );
+        await remoteDataSource.patchStep3Profile(
+          website: form.website,
+          taxId: form.taxId,
+          idempotencyKey: _uuid.v4(),
+        );
         await remoteDataSource.submitDraft(idempotencyKey: _uuid.v4());
       } catch (_) {
-        // Best-effort only — the legacy call above already submitted the
+        // Best-effort only â€” the legacy call above already submitted the
         // application; the wizard-draft mirror isn't required to succeed.
       }
       return right(dto.toDomain());
@@ -199,7 +199,7 @@ class VendorRepositoryImpl implements VendorRepository {
   }
 
   /// Vendor-facing subset of the backend `VerificationDocumentType` enum
-  /// (7-10 — see StyleMint.Modules.Identity.Enums.VerificationDocumentType).
+  /// (7-10 â€” see StyleMint.Modules.Identity.Enums.VerificationDocumentType).
   static int _documentTypeCode(KYCDocumentType type) => switch (type) {
     KYCDocumentType.pan => 7,
     KYCDocumentType.citizenship => 8,
@@ -207,3 +207,4 @@ class VendorRepositoryImpl implements VendorRepository {
     KYCDocumentType.taxDoc => 10,
   };
 }
+
