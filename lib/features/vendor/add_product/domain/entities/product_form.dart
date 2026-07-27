@@ -457,7 +457,18 @@ class ProductFormState {
       step1!.description.isNotEmpty &&
       step1!.categories.isNotEmpty;
 
-  bool get isStep2Valid => step2 != null && step2!.images.isNotEmpty;
+  // Must mirror the backend's MinImagesAtPublish / MaxImagesAtPublish
+  // (catalog ProductService). The backend's PatchStep2MediaAsync returns
+  // 400 OutOfRange("Images must be between 5 and 10.") otherwise, and the
+  // publish flow runs submitDraft before publish — so a too-low count
+  // surfaces as a generic "Failed to publish product." in step 5.
+  static const int minImagesAtPublish = 5;
+  static const int maxImagesAtPublish = 10;
+
+  bool get isStep2Valid =>
+      step2 != null &&
+      step2!.images.length >= minImagesAtPublish &&
+      step2!.images.length <= maxImagesAtPublish;
 
   bool get isStep3Valid => step3 != null;
 

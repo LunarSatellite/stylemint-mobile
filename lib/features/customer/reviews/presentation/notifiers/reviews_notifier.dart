@@ -124,6 +124,7 @@ class SubmitReviewNotifier extends StateNotifier<SubmitReviewState> {
 
   Future<void> submitReview({
     required String productId,
+    required String orderId,
     required int rating,
     required String comment,
     List<String>? imagePaths,
@@ -131,6 +132,7 @@ class SubmitReviewNotifier extends StateNotifier<SubmitReviewState> {
     state = const SubmitReviewState.submitting();
     final either = await _repository.submitReview(
       productId,
+      orderId,
       rating,
       comment,
       imagePaths: imagePaths,

@@ -55,7 +55,11 @@ class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
   }
 
   Future<bool> toggleSave(String productId) async {
-    final either = await _repository.toggleSaved(productId);
+    final variantId = state.whenOrNull(
+      loadSuccess: (product) =>
+          product.variants.isNotEmpty ? product.variants.first.id : null,
+    );
+    final either = await _repository.toggleSaved(productId, variantId: variantId);
     return either.fold(
       (_) => false,
       (isSaved) {

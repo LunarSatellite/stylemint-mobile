@@ -73,6 +73,7 @@ dependencies:
   # ── Media + camera ───────────────────────────────────────────────────────
   camera: ^0.12.0+1
   image_picker: ^1.1.2
+  share_plus: ^11.0.0
   # Pinned exactly: beta.6 ships a broken Kotlin FileUtils reference that
   # fails :file_picker:compileDebugKotlin. beta.4 is the known-good build.
   file_picker: 11.0.2

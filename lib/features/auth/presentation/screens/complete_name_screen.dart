@@ -66,7 +66,7 @@ class _CompleteNameScreenState extends ConsumerState<CompleteNameScreen> {
   }
 
   String _errorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (_) => 'Please enter a valid name',
+        validation: (_, __, ___, ____) => 'Please enter a valid name',
         noInternetConnection: () =>
             'Network error. Please check your connection',
         serverUnavailable: () =>

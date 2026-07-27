@@ -20,10 +20,5 @@ abstract interface class DropPartyRepository {
 
   Future<Either<NetworkExceptions, DropParty>> joinDropParty(String partyId);
 
-  Future<Either<NetworkExceptions, Unit>> inviteToParty(
-    String partyId,
-    List<String> userIds,
-  );
-
   Future<Either<NetworkExceptions, DropParty>> scanInviteQr(String qrCode);
 }

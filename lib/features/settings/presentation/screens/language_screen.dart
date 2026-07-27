@@ -14,7 +14,7 @@ class LanguageScreen extends ConsumerStatefulWidget {
 }
 
 class _LanguageScreenState extends ConsumerState<LanguageScreen> {
-  String _selectedCode = 'en';
+  String _selectedCode = 'en-US';
   String _query = '';
 
   @override

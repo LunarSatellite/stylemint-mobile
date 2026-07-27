@@ -14,6 +14,7 @@ abstract interface class ReviewsRepository {
 
   Future<Either<NetworkExceptions, Review>> submitReview(
     String productId,
+    String orderId,
     int rating,
     String comment, {
     List<String>? imagePaths,

@@ -25,5 +25,8 @@ abstract interface class DiscoveryRepository {
     String? variantId,
   });
 
-  Future<Either<NetworkExceptions, bool>> toggleSaved(String productId);
+  Future<Either<NetworkExceptions, bool>> toggleSaved(
+    String productId, {
+    String? variantId,
+  });
 }

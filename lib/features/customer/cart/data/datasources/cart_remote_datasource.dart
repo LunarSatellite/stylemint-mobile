@@ -23,7 +23,7 @@ class CartRemoteDataSource {
       data: {
         'productId': productId,
         'quantity': quantity,
-        if (variantId != null) 'variantId': variantId,
+        if (variantId != null) 'productVariantId': variantId,
       },
       options: _idempotent(idempotencyKey),
     );

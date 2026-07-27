@@ -1,21 +1,24 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/related_products_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/mock_discovery_repository.dart';
 
-// Using MockDiscoveryRepository for development/demo (static data, no API needed).
-// To restore the real network implementation, replace the body below with:
-//
-//   DiscoveryRepositoryImpl(
-//     remoteDataSource: ref.watch(discoveryRemoteDataSourceProvider),
-//     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
-//   )
-//
+final discoveryRemoteDataSourceProvider = Provider<DiscoveryRemoteDataSource>(
+  (ref) => DiscoveryRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
 final discoveryRepositoryProvider = Provider<DiscoveryRepository>(
-  (ref) => MockDiscoveryRepository(),
+  (ref) => DiscoveryRepositoryImpl(
+    remoteDataSource: ref.watch(discoveryRemoteDataSourceProvider),
+    networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+  ),
 );
 
 final discoverNotifierProvider =

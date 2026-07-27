@@ -6,16 +6,15 @@ class NotificationsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// `GET /api/v1/notifications/inbox` — NOTE the `api/` prefix (unlike the
-  /// other `/v1/...` routes). Cursor by [before] (the `queuedUtc` of the last
-  /// item seen); [pageSize] defaults to 20. Returns a plain list (no
-  /// `nextCursor`). Auth is added by the interceptor (`requiresToken`).
+  /// `GET /v1/notifications/inbox`. Cursor by [before] (the `queuedUtc` of
+  /// the last item seen); [pageSize] defaults to 20. Returns a plain list
+  /// (no `nextCursor`). Auth is added by the interceptor (`requiresToken`).
   Future<List<NotificationDispatchDto>> getInbox({
     DateTime? before,
     int pageSize = 20,
   }) async {
     final response = await apiClient.get(
-      '/api/v1/notifications/inbox',
+      '/v1/notifications/inbox',
       queryParameters: <String, dynamic>{
         if (before != null) 'before': before.toUtc().toIso8601String(),
         'pageSize': pageSize,

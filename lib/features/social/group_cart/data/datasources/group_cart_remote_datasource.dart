@@ -38,7 +38,9 @@ class GroupCartRemoteDataSource {
   ) async {
     final response = await apiClient.post(
       '/v1/cart-shares/invitations/accept',
-      data: {'inviteCode': inviteCode},
+      // `AcceptCartShareInvitationVm` field is `token`; the accepting
+      // account is now resolved from the JWT, not sent in the body.
+      data: {'token': inviteCode},
       options: _idempotent(idempotencyKey),
     );
     return GroupCartDto.fromJson(response as Map<String, dynamic>);
@@ -71,13 +73,12 @@ class GroupCartRemoteDataSource {
     );
   }
 
-  /// TODO(swagger): No cart-share checkout endpoint — use /v1/cart-shares/{id}/close to finalize.
   Future<void> checkoutGroupCart(
     String cartId,
     String idempotencyKey,
   ) async {
     await apiClient.post(
-      '/v1/cart-shares/$cartId/checkout',
+      '/v1/cart-shares/$cartId/close',
       options: _idempotent(idempotencyKey),
     );
   }

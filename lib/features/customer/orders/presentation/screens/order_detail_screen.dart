@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -119,6 +120,10 @@ class _OrderDetailBodyState extends State<_OrderDetailBody> {
           ),
           const SizedBox(height: DesignTokens.s24),
           _TrackingTimeline(status: order.status),
+          if (order.status == OrderTrackStatus.delivered) ...[
+            const SizedBox(height: DesignTokens.s24),
+            _ReviewableItemsSection(order: order),
+          ],
           _ViewOtherDetails(
             expanded: _expanded,
             onTap: () => setState(() => _expanded = !_expanded),
@@ -1442,6 +1447,81 @@ class _DetailRow extends StatelessWidget {
               )),
         ),
       ],
+    );
+  }
+}
+
+// ── Write a Review (delivered orders only) ────────────────────────────────────
+class _ReviewableItemsSection extends StatelessWidget {
+  const _ReviewableItemsSection({required this.order});
+  final OrderDetail order;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Rate Your Items', style: DesignTokens.sectionInnerTitle),
+          const SizedBox(height: DesignTokens.s12),
+          for (final item in order.items) ...[
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  child: Image.network(
+                    item.imageUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 48,
+                      height: 48,
+                      color: DesignTokens.bgAppBodyLight,
+                      child: const Icon(Icons.image,
+                          size: 18, color: DesignTokens.textMuted),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Text(
+                    item.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textWhite),
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s8),
+                OutlinedButton(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: DesignTokens.bgAppBody,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(DesignTokens.cardRadius)),
+                    ),
+                    builder: (_) => RateReviewSheet(
+                      productId: item.productId,
+                      orderId: order.id,
+                    ),
+                  ),
+                  style: DesignTokens.outlinedButtonStyle(),
+                  child: Text('Write a Review',
+                      style: DesignTokens.smallRegular
+                          .copyWith(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+            if (item != order.items.last) const SizedBox(height: DesignTokens.s12),
+          ],
+        ],
+      ),
     );
   }
 }

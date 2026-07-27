@@ -12,10 +12,17 @@ enum _ReviewType { reel, written }
 
 /// Bottom sheet for rating and reviewing a product.
 /// Supports Reel Review (link a social reel) and Written Review (stars + text + images).
+///
+/// [orderId] is required by the backend as proof of purchase — pass it when
+/// opening this from a delivered order's line item. Callers without an
+/// order in scope (PDP, product-reviews screen) can still open the sheet,
+/// but Written-review submission is blocked with a message pointing the
+/// customer at their order history instead of attempting a doomed request.
 class RateReviewSheet extends ConsumerStatefulWidget {
-  const RateReviewSheet({required this.productId, super.key});
+  const RateReviewSheet({required this.productId, this.orderId, super.key});
 
   final String productId;
+  final String? orderId;
 
   @override
   ConsumerState<RateReviewSheet> createState() => _RateReviewSheetState();
@@ -270,8 +277,17 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
       SmSnackbar.warning(context, 'Please write a review comment.');
       return;
     }
+    final orderId = widget.orderId;
+    if (orderId == null) {
+      SmSnackbar.warning(
+        context,
+        'Open "Write a Review" from a delivered order to review this product.',
+      );
+      return;
+    }
     ref.read(submitReviewNotifierProvider.notifier).submitReview(
       productId: widget.productId,
+      orderId: orderId,
       rating: _rating,
       comment: comment,
       imagePaths: _imagePaths.isEmpty ? null : _imagePaths,

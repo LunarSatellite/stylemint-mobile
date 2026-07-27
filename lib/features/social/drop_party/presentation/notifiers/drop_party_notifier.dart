@@ -86,10 +86,6 @@ class DropPartyNotifier extends StateNotifier<DropPartiesState> {
     return either;
   }
 
-  Future<Either<NetworkExceptions, Unit>> invite(String partyId, List<String> userIds) async {
-    return _repository.inviteToParty(partyId, userIds);
-  }
-
   Future<Either<NetworkExceptions, DropParty>> scanQr(String qrCode) async {
     final either = await _repository.scanInviteQr(qrCode);
     either.fold(
@@ -124,9 +120,5 @@ class DropPartyDetailNotifier extends StateNotifier<DropPartyDetailState> {
       (party) => state = DropPartyDetailState.loadSuccess(party),
     );
     return either;
-  }
-
-  Future<Either<NetworkExceptions, Unit>> invite(String partyId, List<String> userIds) async {
-    return _repository.inviteToParty(partyId, userIds);
   }
 }

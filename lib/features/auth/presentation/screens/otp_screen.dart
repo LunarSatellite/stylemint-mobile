@@ -109,7 +109,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   /// machine-readable `errorCode` (RFC 7807) — never HTTP status or English
   /// title.
   String _getErrorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (code) => switch (code) {
+        validation: (code, _, __, ___) => switch (code) {
           'validation.invalid_format' || 'validation.invalid_otp' =>
             'The code you entered is incorrect. Please try again',
           'validation.otp_expired' || 'validation.expired' =>

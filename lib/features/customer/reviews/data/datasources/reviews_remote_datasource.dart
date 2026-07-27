@@ -7,14 +7,15 @@ class ReviewsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// GET `/v1/customer/products/{productId}/reviews`
+  /// `/v1/customer/products/{id}/reviews` is POST-only (write); the real
+  /// read endpoint is the public one.
   Future<Map<String, dynamic>> getProductReviews(
     String productId, {
     required int limit,
     String? cursor,
   }) async {
     final response = await apiClient.get(
-      '/v1/customer/products/$productId/reviews',
+      '/v1/public/products/$productId/reviews',
       queryParameters: {
         'limit': limit,
         if (cursor != null) 'cursor': cursor,
@@ -23,17 +24,29 @@ class ReviewsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  // TODO: No review-summary endpoint in Swagger — aggregate from `/v1/customer/products/{productId}/reviews`
+  // No dedicated summary endpoint exists, and there's no per-star
+  // distribution anywhere in the backend — average/count already live on
+  // the product itself (ProductDto.AverageRating/ReviewCount), so this
+  // reads the product detail instead of a fabricated summary endpoint.
+  // ratingDistribution stays empty until the backend adds real support.
   Future<ReviewSummaryDto> getReviewSummary(String productId) async {
-    final response = await apiClient.get(
-      '/v1/customer/products/$productId/reviews',
+    final response =
+        await apiClient.get('/v1/public/products/$productId') as Map<String, dynamic>;
+    return ReviewSummaryDto(
+      averageRating: (response['averageRating'] as num?)?.toDouble() ?? 0,
+      totalReviews: response['reviewCount'] as int? ?? 0,
     );
-    return ReviewSummaryDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// POST `/v1/customer/products/{productId}/reviews`
-  Future<ReviewDto> submitReview(
+  /// POST `/v1/customer/products/{productId}/reviews`. `orderId` is
+  /// required server-side as proof of purchase; `kind` is always Written
+  /// (0) here — Reel-review submission is a separate, still-unbuilt path
+  /// (see `RateReviewSheet`'s ponytail note). `imagePaths` are local file
+  /// paths only — there's no upload endpoint yet (skipped, needs storage
+  /// infra), so images are picked for local preview but not sent.
+  Future<Map<String, dynamic>> submitReview(
     String productId,
+    String orderId,
     int rating,
     String comment,
     String idempotencyKey, {
@@ -42,14 +55,14 @@ class ReviewsRemoteDataSource {
     final response = await apiClient.post(
       '/v1/customer/products/$productId/reviews',
       data: {
+        'orderId': orderId,
+        'kind': 0,
         'rating': rating,
-        'comment': comment,
-        if (imagePaths != null && imagePaths.isNotEmpty)
-          'imagePaths': imagePaths,
+        'text': comment,
       },
       options: _idempotent(idempotencyKey),
     );
-    return ReviewDto.fromJson(response as Map<String, dynamic>);
+    return response as Map<String, dynamic>;
   }
 
   Options _idempotent(String idempotencyKey) => Options(

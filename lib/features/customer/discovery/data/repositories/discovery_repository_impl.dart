@@ -159,11 +159,15 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, bool>> toggleSaved(String productId) async {
+  Future<Either<NetworkExceptions, bool>> toggleSaved(
+    String productId, {
+    String? variantId,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
         final isSaved = await remoteDataSource.toggleSaved(
           productId,
+          variantId,
           _uuid.v4(),
         );
         return right(isSaved);

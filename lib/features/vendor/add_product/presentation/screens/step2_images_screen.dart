@@ -102,10 +102,12 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
     });
 
     final notifier = ref.read(addProductNotifierProvider.notifier);
+    final canProceed = _images.length >= ProductFormState.minImagesAtPublish &&
+        _images.length <= ProductFormState.maxImagesAtPublish;
+    final remaining = ProductFormState.minImagesAtPublish - _images.length;
 
     return Column(
       children: [
-        // ── Scrollable content ──────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -121,7 +123,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 3.1 Section title
                   const Text(
                     'Product Images & Media',
                     style: TextStyle(
@@ -141,28 +142,43 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                       color: DesignTokens.textLight,
                     ),
                   ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    remaining > 0
+                        ? "$_images.length/${ProductFormState.maxImagesAtPublish} added \u2014 $remaining more required"
+                        : "${_images.length}/${ProductFormState.maxImagesAtPublish} added \u2014 ready to publish",
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: canProceed
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
+                    ),
+                  ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.2 Upload Image — gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Image',
-                    onTap: _uploading
+                    onTap: (_uploading ||
+                            _images.length >=
+                                ProductFormState.maxImagesAtPublish)
                         ? null
                         : () => _pickImage(ImageSource.gallery),
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.3 Capture Image — white solid
                   _WhiteSolidButton(
                     icon: Icons.photo_camera_outlined,
                     label: 'Capture Image',
-                    onTap: _uploading
+                    onTap: (_uploading ||
+                            _images.length >=
+                                ProductFormState.maxImagesAtPublish)
                         ? null
                         : () => _pickImage(ImageSource.camera),
                   ),
 
-                  // Uploaded image thumbnails
                   if (_images.isNotEmpty) ...[
                     const SizedBox(height: DesignTokens.s16),
                     Wrap(
@@ -186,13 +202,11 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                     ),
                   ],
 
-                  // Divider between images and video
                   const SizedBox(height: DesignTokens.s20),
                   const Divider(
                       color: DesignTokens.borderDefault, height: 1),
                   const SizedBox(height: DesignTokens.s20),
 
-                  // 3.4 Video section title
                   const Text(
                     'Video Upload (Optional)',
                     style: TextStyle(
@@ -214,7 +228,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.5 Upload Video — gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Video',
@@ -226,7 +239,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
         ),
 
-        // ── Sticky Previous + Proceed ───────────────────────────────
         Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
@@ -242,7 +254,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
           child: Row(
             children: [
-              // Previous — gray
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
@@ -276,34 +287,33 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                 ),
               ),
               const SizedBox(width: DesignTokens.s16),
-              // Proceed — green
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
                   child: ElevatedButton(
-                    onPressed: _images.isEmpty ? null : _onProceed,
+                    onPressed: canProceed ? _onProceed : null,
                     style: DesignTokens.primaryButtonStyle(),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Proceed',
+                          canProceed ? 'Proceed' : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
                           style: TextStyle(
                             fontFamily: DesignTokens.fontFamily,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _images.isEmpty
-                                ? DesignTokens.textMuted
-                                : DesignTokens.buttonPrimaryText,
+                            color: canProceed
+                                ? DesignTokens.buttonPrimaryText
+                                : DesignTokens.textMuted,
                           ),
                         ),
                         const SizedBox(width: DesignTokens.s8),
                         Icon(
                           Icons.arrow_forward,
                           size: 16,
-                          color: _images.isEmpty
-                              ? DesignTokens.textMuted
-                              : DesignTokens.buttonPrimaryText,
+                          color: canProceed
+                              ? DesignTokens.buttonPrimaryText
+                              : DesignTokens.textMuted,
                         ),
                       ],
                     ),
@@ -317,8 +327,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
     );
   }
 }
-
-// ── Gray outline button (Upload Image / Upload Video) ─────────────────────────
 
 class _GrayOutlineButton extends StatelessWidget {
   const _GrayOutlineButton({
@@ -336,10 +344,11 @@ class _GrayOutlineButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: OutlinedButton(
+      child: ElevatedButton(
         onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFF71717B)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF27272A),
+          side: const BorderSide(color: Color(0xFF3F3F46), width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -365,8 +374,6 @@ class _GrayOutlineButton extends StatelessWidget {
     );
   }
 }
-
-// ── White solid button (Capture Image) ───────────────────────────────────────
 
 class _WhiteSolidButton extends StatelessWidget {
   const _WhiteSolidButton({
@@ -394,12 +401,12 @@ class _WhiteSolidButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.photo_camera_outlined,
                 size: 16, color: Color(0xFF52525C)),
-            SizedBox(width: DesignTokens.s8),
+            const SizedBox(width: DesignTokens.s8),
             Text(
               'Capture Image',
               style: TextStyle(
@@ -415,8 +422,6 @@ class _WhiteSolidButton extends StatelessWidget {
     );
   }
 }
-
-// ── Image thumbnail tile ───────────────────────────────────────────
 
 class _ImageTile extends StatelessWidget {
   const _ImageTile({

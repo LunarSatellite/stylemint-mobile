@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -65,10 +65,9 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
   }
 
   Future<Either<NetworkExceptions, CoWatchSession>> createSession(
-    CoWatchContentType contentType,
-    String contentId,
+    String reelId,
   ) async {
-    final either = await _repository.createSession(contentType, contentId);
+    final either = await _repository.createSession(reelId);
     either.fold(
       (_) {},
       (_) => unawaited(loadSessions()),
@@ -119,20 +118,12 @@ class CoWatchSessionDetailNotifier
 
   Future<void> loadSession(String sessionId) async {
     state = const CoWatchSessionDetailState.loadInProgress();
-    final either = await _repository.getActiveSessions();
+    final either = await _repository.getSession(sessionId);
     state = either.fold(
       CoWatchSessionDetailState.loadFailure,
-      (sessions) {
-        final session = sessions.cast<CoWatchSession?>().firstWhere(
-              (s) => s?.id == sessionId,
-              orElse: () => null,
-            );
-        if (session != null) {
-          return CoWatchSessionDetailState.loadSuccess(session);
-        }
-        return CoWatchSessionDetailState.loadFailure(
-            const NetworkExceptions.notFound());
-      },
+      CoWatchSessionDetailState.loadSuccess,
     );
   }
 }
+
+

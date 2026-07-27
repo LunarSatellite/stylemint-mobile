@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -21,13 +22,19 @@ class Step5ReviewScreen extends ConsumerWidget {
           context.pop();
         },
         publishFailure: (_, e) {
-          SmSnackbar.error(context, 'Failed to publish product.');
+          SmSnackbar.error(
+            context,
+            'Failed to publish product: ${NetworkExceptions.getMessage(e)}',
+          );
         },
         saveSuccess: (_, d) {
           SmSnackbar.success(context, 'Draft saved!');
         },
         saveFailure: (_, e) {
-          SmSnackbar.error(context, 'Failed to save draft.');
+          SmSnackbar.error(
+            context,
+            'Failed to save draft: ${NetworkExceptions.getMessage(e)}',
+          );
         },
         orElse: () {},
       );

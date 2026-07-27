@@ -974,19 +974,10 @@ class _CreateTicketSheet extends ConsumerStatefulWidget {
 class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _orderCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
+  String? _selectedCategoryId;
   String? _selectedCategory;
   final List<XFile> _images = [];
   final _picker = ImagePicker();
-
-  static const _categories = [
-    'Shipping Address Issue',
-    'Order Cancellation',
-    'Payment Issue',
-    'Returns & Refunds',
-    'Product Quality Issue',
-    'Account & Security',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -1013,7 +1004,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     ref.read(createTicketNotifierProvider.notifier).submit(
           subject: _descCtrl.text.trim(),
           message: _descCtrl.text.trim(),
-          categoryId: _selectedCategory,
+          categoryId: _selectedCategoryId,
         );
     Navigator.of(context).pop();
   }
@@ -1213,6 +1204,13 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   }
 
   void _showCategoryPicker() {
+    // Snapshot the already-loaded categories (CategoriesNotifier fetches
+    // once on creation) — the 7 fixed backend categories, not a hardcoded
+    // display list, since `category` must be one of the backend's enum ids.
+    final categories = ref.read(categoriesNotifierProvider).whenOrNull(
+              loadSuccess: (categories) => categories,
+            ) ??
+        const [];
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
@@ -1243,17 +1241,20 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
             ),
           ),
           const SizedBox(height: DesignTokens.s8),
-          for (final cat in _categories)
+          for (final cat in categories)
             ListTile(
-              title: Text(cat,
+              title: Text(cat.title,
                   style: DesignTokens.mediumRegular
                       .copyWith(color: DesignTokens.textWhite)),
-              trailing: _selectedCategory == cat
+              trailing: _selectedCategoryId == cat.id
                   ? const Icon(Icons.check,
                       color: DesignTokens.primaryGreen, size: 18)
                   : null,
               onTap: () {
-                setState(() => _selectedCategory = cat);
+                setState(() {
+                  _selectedCategoryId = cat.id;
+                  _selectedCategory = cat.title;
+                });
                 Navigator.of(ctx).pop();
               },
             ),

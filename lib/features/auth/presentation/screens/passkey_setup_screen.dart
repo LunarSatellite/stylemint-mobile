@@ -51,7 +51,7 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
   }
 
   String _errorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (code) => switch (code) {
+        validation: (code, _, __, ___) => switch (code) {
           'PASSKEY_DEVICE_NOT_SUPPORTED' =>
             'Passkeys are not supported on this device',
           'PASSKEY_NO_CREDENTIALS' => 'No passkey credentials found',

@@ -5,9 +5,12 @@ import 'package:stylemint_mobile_frontend/features/social/co_watch/domain/entiti
 abstract interface class CoWatchRepository {
   Future<Either<NetworkExceptions, List<CoWatchSession>>> getActiveSessions();
 
+  Future<Either<NetworkExceptions, CoWatchSession>> getSession(
+    String sessionId,
+  );
+
   Future<Either<NetworkExceptions, CoWatchSession>> createSession(
-    CoWatchContentType contentType,
-    String contentId,
+    String reelId,
   );
 
   Future<Either<NetworkExceptions, CoWatchSession>> joinSession(String sessionId);

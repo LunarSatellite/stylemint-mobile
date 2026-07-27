@@ -22,7 +22,8 @@ abstract class DropPartyDto with _$DropPartyDto {
     required int currentParticipants,
     required DateTime startsAt,
     required DateTime endsAt,
-    required String inviteCode,
+    // Backend field is `joinCode` (same shape as CoWatch's join code).
+    @JsonKey(name: 'joinCode') required String inviteCode,
     required String status,
     required String hostId,
     required String hostName,

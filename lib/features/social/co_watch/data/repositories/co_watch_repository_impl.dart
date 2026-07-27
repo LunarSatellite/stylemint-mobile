@@ -37,18 +37,35 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
     }
   }
 
+
   @override
-  Future<Either<NetworkExceptions, CoWatchSession>> createSession(
-    CoWatchContentType contentType,
-    String contentId,
+  Future<Either<NetworkExceptions, CoWatchSession>> getSession(
+    String sessionId,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.createSession(
-          contentType == CoWatchContentType.product ? 'product' : 'reel',
-          contentId,
-          _uuid.v4(),
-        );
+        final dto = await remoteDataSource.getSession(sessionId);
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+  @override
+  Future<Either<NetworkExceptions, CoWatchSession>> createSession(
+    String reelId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.createSession(reelId, _uuid.v4());
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -153,3 +170,5 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
     }
   }
 }
+
+
