@@ -1,19 +1,27 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class EditProfileTagsScreen extends StatefulWidget {
+class EditProfileTagsScreen extends ConsumerStatefulWidget {
   const EditProfileTagsScreen({required this.initialTags, super.key});
 
   final List<String> initialTags;
 
   @override
-  State<EditProfileTagsScreen> createState() => _EditProfileTagsScreenState();
+  ConsumerState<EditProfileTagsScreen> createState() => _EditProfileTagsScreenState();
 }
 
-class _EditProfileTagsScreenState extends State<EditProfileTagsScreen> {
+class _EditProfileTagsScreenState extends ConsumerState<EditProfileTagsScreen> {
   late List<String> _tags;
   final _tagInputCtrl = TextEditingController();
+  bool _saving = false;
 
   @override
   void initState() {
@@ -37,6 +45,76 @@ class _EditProfileTagsScreenState extends State<EditProfileTagsScreen> {
   }
 
   void _removeTag(String tag) => setState(() => _tags.remove(tag));
+
+  Future<void> _submit() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final accountId = ref.read(sessionControllerProvider).maybeWhen(
+        authenticated: (id) => id,
+        orElse: () => null,
+      );
+      if (accountId == null || accountId.isEmpty) {
+        if (mounted) context.pop(List<String>.from(_tags));
+        return;
+      }
+      final profileState = ref.read(creatorProfileNotifierProvider(accountId));
+      CreatorProfile? profile = profileState.maybeWhen(
+        loadSuccess: (p) => p,
+        orElse: () => null,
+      );
+      if (profile == null) {
+        // Profile not loaded yet - load it to get rowVersion.
+        final result = await ref.read(creatorProfileNotifierProvider(accountId).notifier).load();
+        profile = ref.read(creatorProfileNotifierProvider(accountId)).maybeWhen(
+          loadSuccess: (p) => p,
+          orElse: () => null,
+        );
+      }
+      if (profile == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not load profile')),
+          );
+          setState(() => _saving = false);
+        }
+        return;
+      }
+      final rowVersion = profile.rowVersion;
+      // Backend requires displayName in the PATCH body. Prefer the edit
+      // provider (always up to date in normal flow), but fall back to the
+      // loaded profile if the edit provider was never seeded (e.g. opening
+      // this screen directly without going through the edit profile route).
+      final editData = ref.read(creatorProfileEditProvider);
+      final displayName = editData.displayName.isNotEmpty
+          ? editData.displayName
+          : profile.displayName;
+      await ref.read(updateCreatorProfileNotifierProvider.notifier).submit(
+        accountId: accountId,
+        rowVersion: rowVersion,
+        displayName: displayName,
+        tags: List<String>.from(_tags),
+      );
+      final state = ref.read(updateCreatorProfileNotifierProvider);
+      state.whenOrNull(
+        success: (_) {
+          if (!mounted) return;
+          // refresh profile so tags are reflected everywhere
+          unawaited(ref.read(creatorProfileNotifierProvider(accountId).notifier).load());
+          context.pop(List<String>.from(_tags));
+        },
+        failure: (f) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+          );
+          setState(() => _saving = false);
+        },
+      );
+    } catch (e) {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +231,7 @@ class _EditProfileTagsScreenState extends State<EditProfileTagsScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () => context.pop(List<String>.from(_tags)),
+                onPressed: _saving ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: DesignTokens.textWhite,
@@ -162,21 +240,31 @@ class _EditProfileTagsScreenState extends State<EditProfileTagsScreen> {
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Submit',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                child: _saving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              DesignTokens.textWhite),
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Submit',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(width: DesignTokens.s8),
+                          Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
                       ),
-                    ),
-                    SizedBox(width: DesignTokens.s8),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
-                  ],
-                ),
               ),
             ),
           ),

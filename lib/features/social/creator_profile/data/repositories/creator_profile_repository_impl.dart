@@ -25,7 +25,15 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       final dtos = await remoteDataSource.listMyBadges();
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      String message = e.message ?? 'Server error';
+      final data = e.response?.data;
+      if (data is Map) {
+        final m = data['message'] ?? data['error'] ?? data['title'];
+        if (m is String && m.isNotEmpty) message = m;
+      } else if (data is String && data.isNotEmpty) {
+        message = data;
+      }
+      return left(NetworkExceptions.server(message));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {
@@ -96,7 +104,15 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
-      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+      String message = e.message ?? 'Server error';
+      final data = e.response?.data;
+      if (data is Map) {
+        final m = data['message'] ?? data['error'] ?? data['title'];
+        if (m is String && m.isNotEmpty) message = m;
+      } else if (data is String && data.isNotEmpty) {
+        message = data;
+      }
+      return left(NetworkExceptions.server(message));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Exception {

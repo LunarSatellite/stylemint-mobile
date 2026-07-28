@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -438,7 +438,21 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
                 onPressed: canSubmit ? _openConfirmSheet : null,
-                style: DesignTokens.primaryButtonStyle(),
+                style: DesignTokens.primaryButtonStyle().copyWith(
+                  padding: const WidgetStatePropertyAll(
+                    EdgeInsets.symmetric(horizontal: DesignTokens.s32),
+                  ),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.disabled)) {
+                      return DesignTokens.primaryGreen
+                          .withValues(alpha: 0.4);
+                    }
+                    return DesignTokens.buttonPrimaryFill;
+                  }),
+                  foregroundColor:
+                      const WidgetStatePropertyAll(
+                          DesignTokens.buttonPrimaryText),
+                ),
                 child: isSubmitting
                     ? const SizedBox(
                         width: 20,

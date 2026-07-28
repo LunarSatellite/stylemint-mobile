@@ -283,7 +283,7 @@ class DesignTokens {
   static const double avatarLarge = 56;
 
   // Fixed component heights (from Figma frames)
-  static const double buttonHeight = 48;
+  static const double buttonHeight = 52;
   static const double inputHeight = 48;
 
   // ==========================================================================
