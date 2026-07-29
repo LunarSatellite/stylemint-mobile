@@ -91,3 +91,7 @@ assets/animations/*.json
 logs/
 
 
+.codex
+.tmp_fix.py
+
+
