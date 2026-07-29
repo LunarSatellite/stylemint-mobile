@@ -14,7 +14,7 @@ Future<void> showVendorMoreMenu(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     // The menu has grown to 10 items since the "spec 3 items" comment above
-    // was written — without this, the sheet's default height cap clipped the
+    // was written â€" without this, the sheet's default height cap clipped the
     // bottom entries (Help & Support, Log Out) behind the system nav bar
     // with no way to scroll to them.
     isScrollControlled: true,
@@ -78,7 +78,7 @@ class _VendorMoreMenu extends StatelessWidget {
               // Brand Studio (brand intelligence + Campaign Briefs) had no
               // navigation entry point anywhere in the vendor UI despite being
               // fully built and wired to real backend endpoints
-              // (GET/POST /v1/vendor/briefs, VendorBriefsController) — this
+              // (GET/POST /v1/vendor/briefs, VendorBriefsController) â€" this
               // was the actual reason "create a campaign" looked unreachable.
               _MoreItem(
                 icon: Icons.auto_awesome_outlined,
@@ -111,7 +111,7 @@ class _VendorMoreMenu extends StatelessWidget {
               ),
               const _MoreDivider(),
               // Same "fully built, zero navigation entry points" gap as Brand
-              // Studio above — AI creator-match recommendations, never linked
+              // Studio above â€" AI creator-match recommendations, never linked
               // from anywhere in the vendor UI.
               _MoreItem(
                 icon: Icons.recommend_outlined,
@@ -129,7 +129,7 @@ class _VendorMoreMenu extends StatelessWidget {
                 icon: Icons.help_outline,
                 title: 'Help & Support',
                 // A dedicated VendorContactSupportScreen exists and is
-                // registered but had zero references anywhere — this was
+                // registered but had zero references anywhere â€" this was
                 // sending vendors to the generic customer HelpCenterScreen
                 // instead.
                 onTap: () => _go(context, RouteNames.vendorSupportContact),
@@ -148,6 +148,8 @@ class _VendorMoreMenu extends StatelessWidget {
     );
   }
 }
+
+
 
 class _MoreItem extends StatelessWidget {
   const _MoreItem({

@@ -36,7 +36,9 @@ class _ProductAnalyticsScreenState
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load();
+    });
   }
 
   (DateTime, DateTime) _rangeFor(int filterIndex) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -36,6 +37,32 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     '5-7 business days',
   ];
 
+  bool _seeded = false;
+
+  void _seedFromState(AddProductState state) {
+    state.maybeWhen(
+      loadSuccess: (fs) {
+        final info = fs.step4;
+        if (info == null) return;
+        _weightController.text = info.weight == 0 ? '' : info.weight.toString();
+        _lengthController.text =
+            info.dimensionsLength == 0 ? '' : info.dimensionsLength.toString();
+        _widthController.text =
+            info.dimensionsWidth == 0 ? '' : info.dimensionsWidth.toString();
+        _heightController.text =
+            info.dimensionsHeight == 0 ? '' : info.dimensionsHeight.toString();
+        if (info.deliveryEstimateMin <= 1 &&
+            info.deliveryEstimateMax <= 1) {
+          _overnight = true;
+        } else if (info.deliveryEstimateMin <= 3 &&
+            info.deliveryEstimateMax <= 3) {
+          _express = true;
+        }
+      },
+      orElse: () {},
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +71,18 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     _widthController = TextEditingController();
     _heightController = TextEditingController();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seeded) return;
+    final state = ref.read(addProductNotifierProvider);
+    if (state.maybeWhen(loadSuccess: (_) => true, orElse: () => false)) {
+      _seedFromState(state);
+      _seeded = true;
+    }
+  }
+
 
   @override
   void dispose() {

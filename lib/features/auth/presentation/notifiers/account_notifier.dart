@@ -17,6 +17,19 @@ abstract class AccountState with _$AccountState {
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
+
+  /// The loaded account if [AccountState.loadSuccess] is active, else null.
+  /// Exposed so screens can read profile fields without depending on the
+  /// generated maybeWhen extension (which is invisible to some analyzers
+  /// when the freezed part-file cache is stale).
+  AccountDto? get loadedAccount => maybeWhen(
+    loadSuccess: (a) => a,
+    orElse: () => null,
+  );
+
+  /// True only when [AccountState.loadSuccess] is active.
+  bool get isLoaded =>
+      maybeWhen(loadSuccess: (_) => true, orElse: () => false);
 }
 
 class AccountNotifier extends StateNotifier<AccountState> {

@@ -20,6 +20,9 @@ import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/about_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_performance_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/screens/vendor_inquiries_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 import 'fake_api_client.dart';
 
@@ -75,6 +78,25 @@ void main() {
 
   testWidgets('VendorInquiriesScreen renders', (t) async {
     await pumpAndCheck(t, const VendorInquiriesScreen());
+  });
+
+  testWidgets('ProductAnalyticsScreen renders', (t) async {
+    await pumpAndCheck(
+      t,
+      ProductAnalyticsScreen(
+        product: VendorProduct(
+          id: 'product-1',
+          variantId: 'variant-1',
+          name: 'Test Product',
+          imageUrl: '',
+          price: const Money(amount: 1000, currency: 'NPR'),
+          stockCount: 10,
+          status: VendorProductStatus.active,
+          rating: 0,
+          createdAt: DateTime.utc(2026),
+        ),
+      ),
+    );
   });
 
   testWidgets('ReelDetailsScreen renders', (t) async {

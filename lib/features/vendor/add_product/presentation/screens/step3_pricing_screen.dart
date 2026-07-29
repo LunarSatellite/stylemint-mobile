@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -25,6 +26,30 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
   bool _trackInventory = true;
   bool _allowOverselling = false;
 
+  bool _seeded = false;
+
+  void _seedFromState(AddProductState state) {
+    state.maybeWhen(
+      loadSuccess: (fs) {
+        final info = fs.step3;
+        if (info == null) return;
+        _basePriceController.text =
+            info.basePrice.amount == 0 ? '' : info.basePrice.amount.toString();
+        _compareAtPriceController.text =
+            info.compareAtPrice?.amount.toString() ?? '';
+        _discountController.text =
+            info.discountPercent?.toString() ?? '';
+        _costPerItemController.text =
+            info.costPerItem?.amount.toString() ?? '';
+        _skuController.text = info.sku;
+        _quantityController.text = info.quantityOnHand.toString();
+        _trackInventory = info.trackInventory;
+        _allowOverselling = info.allowOverselling;
+      },
+      orElse: () {},
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +62,18 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
     _quantityController = TextEditingController();
     _commissionRateController = TextEditingController();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seeded) return;
+    final state = ref.read(addProductNotifierProvider);
+    if (state.maybeWhen(loadSuccess: (_) => true, orElse: () => false)) {
+      _seedFromState(state);
+      _seeded = true;
+    }
+  }
+
 
   @override
   void dispose() {

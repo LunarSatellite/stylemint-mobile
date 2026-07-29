@@ -1,0 +1,48 @@
+﻿diff --git a/lib/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart b/lib/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart
+index f0f4a6b..d4e6a54 100644
+--- a/lib/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart
++++ b/lib/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart
+@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
+ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/widgets/creator_invite_tile.dart';
+ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
+ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
++import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+ 
+@@ -87,10 +88,12 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
+           );
+           ref.read(inviteCreatorNotifierProvider.notifier).reset();
+         },
+-        failure: (_) {
++        failure: (failure) {
++          final message = _inviteFailureMessage(failure);
+           ScaffoldMessenger.of(context).showSnackBar(
+-            const SnackBar(content: Text('Failed to invite creator')),
++            SnackBar(content: Text(message)),
+           );
++          ref.read(inviteCreatorNotifierProvider.notifier).reset();
+         },
+         orElse: () {},
+       );
+@@ -230,6 +233,19 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
+   );
+ }
+ 
++/// Maps a backend errorCode returned by
++/// POST /v1/vendor/partnerships/invite to a message that tells the
++/// vendor what to do next. Falls back to [NetworkExceptions.getMessage]
++/// for any code we don't recognise.
++String _inviteFailureMessage(NetworkExceptions failure) {
++  return switch (failure.validationCode) {
++    'rule.violation' =>
++      'Publish your partnership terms before inviting creators.'
++          ' Open Brand Studio to add them, then try again.',
++    _ => NetworkExceptions.getMessage(failure),
++  };
++}
++
+ class _FilterChip extends StatelessWidget {
+   const _FilterChip({
+     required this.label,
+

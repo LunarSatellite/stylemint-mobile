@@ -1,0 +1,28 @@
+﻿git.exe : warning: unable to access 'C:\Users\saile/.config/git/ignore': Permission denied
+At line:3 char:1
++ & git diff HEAD -- $relative 2>&1 | Out-File -Encoding utf8 diff_outp ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: unable...rmission denied:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of 'lib/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart', LF 
+will be replaced by CRLF the next time Git touches it
+diff --git a/lib/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart b/lib/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart
+index a7c6c1d..63697ad 100644
+--- a/lib/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart
++++ b/lib/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart
+@@ -5,6 +5,7 @@ import 'package:intl/intl.dart' hide TextDirection;
+ import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
+ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+ import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
++import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
+ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
+ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
+@@ -911,4 +912,4 @@ class _ActivityGroup {
+   const _ActivityGroup({required this.date, required this.items});
+   final String date;
+   final List<_Activity> items;
+-}
++}
+\ No newline at end of file
