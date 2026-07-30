@@ -309,7 +309,6 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   Widget _achievementChips(List<String> tags) {
     if (tags.isEmpty) return const SizedBox.shrink();
-    const emojis = ['🚀', '👟', '🌟', '🎯', '💪', '🔥'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -318,7 +317,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: DesignTokens.s8),
             child: _AchievementChip(
-              emoji: emojis[i % emojis.length],
+              emoji: null, // Backend tag data drives emoji selection later.
               label: tags[i],
               bg: i == 0
                   ? const Color(0xFF3A2F00)
@@ -395,7 +394,6 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
     if (active.isEmpty) return const SizedBox.shrink();
 
-    const emojis = ['🎯', '⚡', '🌟', '💼', '🏆', '✨'];
     final visible = active.take(2).toList();
     final remaining = active.length - visible.length;
 
@@ -408,7 +406,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 (e) => Padding(
                   padding: const EdgeInsets.only(right: DesignTokens.s8),
                   child: _PartnerChip(
-                    emoji: emojis[e.key % emojis.length],
+                    emoji: null, // Backend tag data drives emoji selection later.
                     label: e.value.vendorName,
                   ),
                 ),
@@ -750,11 +748,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
 class _AchievementChip extends StatelessWidget {
   const _AchievementChip({
-    required this.emoji,
+    this.emoji,
     required this.label,
     required this.bg,
   });
-  final String emoji;
+  final String? emoji;
   final String label;
   final Color bg;
 
@@ -770,8 +768,10 @@ class _AchievementChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 4),
+          if (emoji != null && emoji!.isNotEmpty) ...[
+            Text(emoji!, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+          ],
           Text(
             label,
             style: const TextStyle(
@@ -787,8 +787,8 @@ class _AchievementChip extends StatelessWidget {
 }
 
 class _PartnerChip extends StatelessWidget {
-  const _PartnerChip({required this.emoji, required this.label});
-  final String emoji;
+  const _PartnerChip({this.emoji, required this.label});
+  final String? emoji;
   final String label;
 
   @override
@@ -803,8 +803,10 @@ class _PartnerChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 4),
+          if (emoji != null && emoji!.isNotEmpty) ...[
+            Text(emoji!, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+          ],
           Text(
             label,
             style: const TextStyle(

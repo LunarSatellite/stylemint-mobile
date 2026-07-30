@@ -46,6 +46,31 @@ class _PartnershipRequestScreenState
   bool _agreed = false;
   bool _submitting = false;
 
+  String? _selectedNiche;
+  String? _selectedAudienceGroup;
+  final List<TextEditingController> _sampleUrlCtrls = [TextEditingController()];
+
+  /// TODO: replace with API-driven lists once `/v1/creator/niches` and
+  /// `/v1/creator/audience-groups` (or equivalent) exist. Hardcoded for
+  /// now so the UI matches the design.
+  static const _niches = <String>[
+    'Fashion',
+    'Beauty',
+    'Lifestyle',
+    'Fitness',
+    'Tech',
+    'Food',
+    'Travel',
+    'Gaming',
+  ];
+  static const _audienceGroups = <String>[
+    'Gen Z',
+    'Millennials',
+    'Gen X',
+    'Boomers',
+    'Mixed',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +83,9 @@ class _PartnershipRequestScreenState
   @override
   void dispose() {
     _messageCtrl.dispose();
+    for (final c in _sampleUrlCtrls) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -75,6 +103,11 @@ class _PartnershipRequestScreenState
       return;
     }
 
+    final urls = _sampleUrlCtrls
+        .map((c) => c.text.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     setState(() => _submitting = true);
     try {
       final api = ref.read(apiClientProvider);
@@ -85,6 +118,10 @@ class _PartnershipRequestScreenState
           'commissionMinPercent': _range.start,
           'commissionMaxPercent': _range.end,
           'message': _messageCtrl.text.trim(),
+          if (_selectedNiche != null) 'niche': _selectedNiche,
+          if (_selectedAudienceGroup != null)
+            'audienceGroup': _selectedAudienceGroup,
+          if (urls.isNotEmpty) 'sampleReelUrls': urls,
         },
         options: Options(headers: {
           'requiresToken': true,
@@ -196,6 +233,122 @@ class _PartnershipRequestScreenState
               ),
             ),
             const SizedBox(height: DesignTokens.s24),
+
+            // Your Niche
+            DropdownButtonFormField<String>(
+              value: _selectedNiche,
+              isExpanded: true,
+              dropdownColor: DesignTokens.inputFieldFill,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                  color: DesignTokens.textLight),
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.inputFieldData,
+              ),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Your Niche',
+              ),
+              items: _niches
+                  .map((n) => DropdownMenuItem<String>(
+                        value: n,
+                        child: Text(n,
+                            style: DesignTokens.smallRegular
+                                .copyWith(color: DesignTokens.textWhite)),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedNiche = v),
+            ),
+            const SizedBox(height: DesignTokens.s16),
+
+            // Your Audience Group
+            DropdownButtonFormField<String>(
+              value: _selectedAudienceGroup,
+              isExpanded: true,
+              dropdownColor: DesignTokens.inputFieldFill,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                  color: DesignTokens.textLight),
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                color: DesignTokens.inputFieldData,
+              ),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Your Audience Group',
+              ),
+              items: _audienceGroups
+                  .map((g) => DropdownMenuItem<String>(
+                        value: g,
+                        child: Text(g,
+                            style: DesignTokens.smallRegular
+                                .copyWith(color: DesignTokens.textWhite)),
+                      ))
+                  .toList(),
+              onChanged: (v) =>
+                  setState(() => _selectedAudienceGroup = v),
+            ),
+            const SizedBox(height: DesignTokens.s24),
+
+
+            // Sample Content (Optional)
+            const Text('Sample Content (Optional)',
+                style: DesignTokens.mediumSemibold),
+            const SizedBox(height: DesignTokens.s4),
+            const Text(
+              'Share 3-5 of your best performing reels that match our brand',
+              style: DesignTokens.smallRegular,
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            for (int i = 0; i < _sampleUrlCtrls.length; i++) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _sampleUrlCtrls[i],
+                      keyboardType: TextInputType.url,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 14,
+                        color: DesignTokens.inputFieldData,
+                      ),
+                      decoration: DesignTokens.inputDecoration(
+                        hintText: 'Post URL',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  GestureDetector(
+                    onTap: i == _sampleUrlCtrls.length - 1
+                        ? () => setState(() =>
+                            _sampleUrlCtrls.add(TextEditingController()))
+                        : () => setState(() {
+                              _sampleUrlCtrls.removeAt(i).dispose();
+                              if (_sampleUrlCtrls.isEmpty) {
+                                _sampleUrlCtrls
+                                    .add(TextEditingController());
+                              }
+                            }),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: DesignTokens.bgAppBodyLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        i == _sampleUrlCtrls.length - 1
+                            ? Icons.add_rounded
+                            : Icons.close_rounded,
+                        color: DesignTokens.textWhite,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+            ],
           ],
         ),
       ),
@@ -221,21 +374,31 @@ class _PartnershipRequestScreenState
                         side: const BorderSide(
                             color: DesignTokens.borderDefault, width: 1.5),
                         activeColor: DesignTokens.primaryGreen,
+                        checkColor: DesignTokens.buttonPrimaryText,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4)),
+                          borderRadius:
+                              BorderRadius.circular(DesignTokens.inputRadius),
+                        ),
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
                       ),
                     ),
-                    const SizedBox(width: DesignTokens.s8),
-                    Text(
-                      'I agree to ',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight),
-                    ),
-                    Text(
-                      'Partnership Terms',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.primaryGreen,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          const Text('I agree to the ',
+                              style: DesignTokens.smallRegular),
+                          Text(
+                            'Partnership Terms',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
