@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,6 +164,16 @@ class _BrandsScreenState extends State<BrandsScreen> {
     );
   }
 
+  void _showFilterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.85),
+      builder: (_) => const _FilterPartnershipSheet(),
+    );
+  }
+
   Widget _buildTopBar() {
     return Row(
       children: [
@@ -186,9 +197,20 @@ class _BrandsScreenState extends State<BrandsScreen> {
           },
         ),
         const Spacer(),
-        _IconBtn(icon: Icons.search_rounded),
+        _IconBtn(
+          icon: Icons.search_rounded,
+          onTap: () => context.push(RouteNames.creatorSearch),
+        ),
         const SizedBox(width: DesignTokens.s8),
-        _IconBtn(icon: Icons.notifications_none_rounded),
+        _IconBtn(
+          icon: Icons.tune_rounded,
+          onTap: _showFilterSheet,
+        ),
+        const SizedBox(width: DesignTokens.s8),
+        _IconBtn(
+          icon: Icons.notifications_none_rounded,
+          onTap: () => context.push(RouteNames.creatorActivity),
+        ),
       ],
     );
   }
@@ -255,20 +277,25 @@ class _SectionTitle extends StatelessWidget {
 // ── Top-bar icon button ───────────────────────────────────────────────────────
 
 class _IconBtn extends StatelessWidget {
-  const _IconBtn({required this.icon});
+  const _IconBtn({required this.icon, this.onTap});
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: const BoxDecoration(
-        color: Color(0xFF2C2C2E),
-        shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: const BoxDecoration(
+          color: Color(0xFF2C2C2E),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, size: 18, color: DesignTokens.textLight),
       ),
-      alignment: Alignment.center,
-      child: Icon(icon, size: 18, color: DesignTokens.textLight),
     );
   }
 }
@@ -757,6 +784,262 @@ class _NavBtn extends StatelessWidget {
                 color: color,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Filter Partnership bottom sheet ─────────────────────────────────────────
+
+class _FilterPartnershipSheet extends StatefulWidget {
+  const _FilterPartnershipSheet();
+
+  @override
+  State<_FilterPartnershipSheet> createState() =>
+      _FilterPartnershipSheetState();
+}
+
+class _FilterPartnershipSheetState extends State<_FilterPartnershipSheet> {
+  final _fromCtrl = TextEditingController();
+  final _toCtrl = TextEditingController();
+  bool _newest = false;
+  bool _highestEarnings = false;
+  bool _lowestEarnings = false;
+  bool _name = false;
+
+  @override
+  void dispose() {
+    _fromCtrl.dispose();
+    _toCtrl.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    setState(() {
+      _fromCtrl.clear();
+      _toCtrl.clear();
+      _newest = false;
+      _highestEarnings = false;
+      _lowestEarnings = false;
+      _name = false;
+    });
+  }
+
+  void _apply() {
+    // TODO: pipe these into the brand-list query params once the
+    // brands endpoint supports commission/status filters.
+    // ignore: avoid_print
+    print('FILTER_APPLY: from=${_fromCtrl.text} to=${_toCtrl.text} '
+        'newest=$_newest highest=$_highestEarnings '
+        'lowest=$_lowestEarnings name=$_name');
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+          child: Container(
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppBody.withOpacity(0.92),
+            ),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s12,
+          DesignTokens.s16,
+          DesignTokens.s16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                const Text(
+                  'Filter Partnership',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const Icon(Icons.close_rounded,
+                      color: DesignTokens.textWhite, size: 22),
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s16),
+
+            // Commission range
+            const Text('Commission Range',
+                style: DesignTokens.smallRegular),
+            const SizedBox(height: DesignTokens.s8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _fromCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      color: DesignTokens.inputFieldData,
+                    ),
+                    decoration: DesignTokens.inputDecoration(
+                      hintText: 'From',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: TextField(
+                    controller: _toCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      color: DesignTokens.inputFieldData,
+                    ),
+                    decoration: DesignTokens.inputDecoration(
+                      hintText: 'To',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s20),
+
+            // Status
+            const Text('Status', style: DesignTokens.smallRegular),
+            const SizedBox(height: DesignTokens.s4),
+            _StatusCheckboxRow(
+              label: 'Newest',
+              value: _newest,
+              onChanged: (v) => setState(() => _newest = v),
+            ),
+            _StatusCheckboxRow(
+              label: 'Highest Earnings',
+              value: _highestEarnings,
+              onChanged: (v) => setState(() => _highestEarnings = v),
+            ),
+            _StatusCheckboxRow(
+              label: 'Lowest Earnings',
+              value: _lowestEarnings,
+              onChanged: (v) => setState(() => _lowestEarnings = v),
+            ),
+            _StatusCheckboxRow(
+              label: 'Name',
+              value: _name,
+              onChanged: (v) => setState(() => _name = v),
+            ),
+            const SizedBox(height: DesignTokens.s20),
+
+            // Actions
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: OutlinedButton(
+                      onPressed: _clear,
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                            color: DesignTokens.borderDefault, width: 1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(DesignTokens.buttonRadius),
+                        ),
+                      ),
+                      child: const Text('Clear',
+                          style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              color: DesignTokens.textWhite,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: _apply,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.primaryGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(DesignTokens.buttonRadius),
+                        ),
+                      ),
+                      child: const Text('Apply',
+                          style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              color: DesignTokens.buttonPrimaryText,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
+  }
+}
+
+class _StatusCheckboxRow extends StatelessWidget {
+  const _StatusCheckboxRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: Checkbox(
+                value: value,
+                onChanged: (v) => onChanged(v ?? false),
+                side: const BorderSide(
+                    color: DesignTokens.borderDefault, width: 1.5),
+                activeColor: DesignTokens.primaryGreen,
+                checkColor: DesignTokens.buttonPrimaryText,
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(DesignTokens.inputRadius),
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Text(label,
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textWhite)),
           ],
         ),
       ),
