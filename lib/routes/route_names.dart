@@ -13,6 +13,8 @@ abstract class RouteNames {
   static const socialLogin = '/social/:provider';
   // OAuth redirect deep link: stylemint://auth/oauth/callback?code=&state=
   static const oauthCallback = '/auth/oauth/callback';
+  // Alias: prod backend redirects to /oauth-callback (no /auth prefix).
+  static const oauthCallbackAlias = '/oauth-callback';
   static const otp = '/otp';
   static const magicLink = '/auth/magic';
   // Post-sign-in name capture (magic-link / accounts with no confirmed name).

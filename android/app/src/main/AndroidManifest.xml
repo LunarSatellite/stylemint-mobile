@@ -90,6 +90,7 @@
                     android:scheme="https"
                     android:host="stylemint.voyageritnepal.com"/>
                 <data android:pathPrefix="/auth/magic"/>
+                <data android:pathPrefix="/auth/oauth/callback"/>
                 <data android:pathPrefix="/reels"/>
                 <data android:pathPrefix="/product"/>
                 <data android:pathPrefix="/order"/>

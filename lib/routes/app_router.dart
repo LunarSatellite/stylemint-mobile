@@ -207,6 +207,7 @@ const _publicPaths = {
   RouteNames.completeName,
   RouteNames.socialLogin,
   RouteNames.oauthCallback,
+  RouteNames.oauthCallbackAlias,
   RouteNames.userTypeSelection,
   RouteNames.rolePicker,
   RouteNames.pickInterests,
@@ -404,6 +405,22 @@ GoRouter appRouter(Ref ref) {
       // resolves the account from the CSRF state).
       GoRoute(
         path: RouteNames.oauthCallback,
+        builder: (ctx, state) {
+          final code = state.uri.queryParameters['code'] ?? '';
+          final oauthState = state.uri.queryParameters['state'] ?? '';
+          final error = state.uri.queryParameters['error'];
+          return OAuthCallbackScreen(
+            code: code,
+            state: oauthState,
+            error: error,
+          );
+        },
+      ),
+      // Alias: prod backend redirects to /oauth-callback (without the
+      // /auth prefix). Mirror the canonical route so the HTTPS deep
+      // link lands on OAuthCallbackScreen.
+      GoRoute(
+        path: RouteNames.oauthCallbackAlias,
         builder: (ctx, state) {
           final code = state.uri.queryParameters['code'] ?? '';
           final oauthState = state.uri.queryParameters['state'] ?? '';
