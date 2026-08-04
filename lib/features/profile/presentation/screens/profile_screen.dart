@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_acti
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_header.dart';
@@ -15,6 +17,8 @@ import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart
 import 'package:stylemint_mobile_frontend/core/device/push_notification_service.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -378,10 +382,32 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
                   loadSuccess: (r) => r,
                   orElse: () => const <RoleProfileDto>[],
                 );
-            final freshCreatorActive = _isActive(freshRoles, _creatorRole);
-            _pushOnce(
-              freshCreatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
+            if (_isActive(freshRoles, _creatorRole)) {
+              _pushOnce(RouteNames.creatorHome);
+              return;
+            }
+            // Mirror user_type_selection_screen: when the role isn't active,
+            // resolve the existing application status so a submitted/under-
+            // review account lands on the right status screen instead of
+            // re-entering the apply form.
+            await ref
+                .read(creatorApplyNotifierProvider.notifier)
+                .checkStatus();
+            if (!mounted) return;
+            final statusState = ref.read(creatorApplyNotifierProvider);
+            final route = statusState.maybeWhen(
+              loadSuccess: (application) => switch (application.status) {
+                CreatorApplicationStatus.approved =>
+                  RouteNames.creatorApplyApproved,
+                CreatorApplicationStatus.rejected =>
+                  RouteNames.creatorApplyRejected,
+                CreatorApplicationStatus.pending ||
+                CreatorApplicationStatus.underReview =>
+                  RouteNames.creatorApplyUnderReview,
+              },
+              orElse: () => RouteNames.creatorApply,
             );
+            _pushOnce(route);
           },
         ),
         ProfileMenuItem(
@@ -408,10 +434,38 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
                   loadSuccess: (r) => r,
                   orElse: () => const <RoleProfileDto>[],
                 );
-            final freshVendorActive = _isActive(freshRoles, _vendorRole);
-            _pushOnce(
-              freshVendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
-            );
+            if (_isActive(freshRoles, _vendorRole)) {
+              _pushOnce(RouteNames.vendorHome);
+              return;
+            }
+            // Mirror user_type_selection_screen: when the role isn't active,
+            // resolve the existing application status so a submitted/under-
+            // review account lands on the right status screen instead of
+            // re-entering the vendor apply form.
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref
+                  .read(vendorApplyNotifierProvider.notifier)
+                  .checkStatus(accountId);
+              if (!mounted) return;
+              final vendorState = ref.read(vendorApplyNotifierProvider);
+              final route = vendorState.maybeWhen(
+                loadSuccess: (application) =>
+                    switch (application.status) {
+                  VendorApplicationStatus.approved =>
+                    RouteNames.vendorApplyApproved,
+                  VendorApplicationStatus.rejected =>
+                    RouteNames.vendorApplyRejected,
+                  VendorApplicationStatus.pending ||
+                  VendorApplicationStatus.underReview =>
+                    RouteNames.vendorApplyUnderReview,
+                  VendorApplicationStatus.draft => RouteNames.vendorApply,
+                },
+                orElse: () => RouteNames.vendorApply,
+              );
+              _pushOnce(route);
+              return;
+            }
+            _pushOnce(RouteNames.vendorApply);
           },
         ),
       ],

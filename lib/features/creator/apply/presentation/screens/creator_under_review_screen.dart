@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -28,7 +28,7 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                   children: [
                     // Under-review illustration
                     Image.asset(
-                      'assets/images/vendordashboard/underreview.png',
+                      'assets/images/vendordashboard/badge_under_review.png',
                       width: 100,
                       height: 100,
                     ),
@@ -140,6 +140,12 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                         child: InkWell(
                           onTap: () {
                             ref.read(creatorFormProvider.notifier).reset();
+                            // Pop the pushed creator-apply route first so the
+                            // caller's _pushOnce whenComplete fires and
+                            // resets its navigation guard; then go home.
+                            if (context.canPop()) {
+                              context.pop();
+                            }
                             context.go(RouteNames.home);
                           },
                           borderRadius:

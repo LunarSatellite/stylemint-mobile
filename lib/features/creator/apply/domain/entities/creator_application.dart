@@ -50,7 +50,8 @@ class CreatorApplication {
       other.updatedAt == updatedAt;
 
   @override
-  int get hashCode => Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
+  int get hashCode =>
+      Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
 }
 
 class Platform {
@@ -59,6 +60,7 @@ class Platform {
     required this.name,
     required this.handle,
     required this.followerCount,
+    this.profileUrl = '',
     this.connected = false,
   });
 
@@ -66,6 +68,7 @@ class Platform {
   final String name;
   final String handle;
   final int followerCount;
+  final String profileUrl;
   final bool connected;
 
   Platform copyWith({
@@ -73,6 +76,7 @@ class Platform {
     String? name,
     String? handle,
     int? followerCount,
+    String? profileUrl,
     bool? connected,
   }) {
     return Platform(
@@ -80,6 +84,7 @@ class Platform {
       name: name ?? this.name,
       handle: handle ?? this.handle,
       followerCount: followerCount ?? this.followerCount,
+      profileUrl: profileUrl ?? this.profileUrl,
       connected: connected ?? this.connected,
     );
   }
@@ -91,10 +96,12 @@ class Platform {
       other.name == name &&
       other.handle == handle &&
       other.followerCount == followerCount &&
+      other.profileUrl == profileUrl &&
       other.connected == connected;
 
   @override
-  int get hashCode => Object.hash(id, name, handle, followerCount, connected);
+  int get hashCode =>
+      Object.hash(id, name, handle, followerCount, profileUrl, connected);
 }
 
 /// A selectable creator content category from `GET /v1/public/creator-categories`.
@@ -176,8 +183,16 @@ class CreatorApplicationForm {
       other.identityDocUrl == identityDocUrl;
 
   @override
-  int get hashCode => Object.hash(fullName, handle, platforms.length,
-      contentCategoryIds.length, audienceBand, bio, portfolioUrl, identityDocUrl);
+  int get hashCode => Object.hash(
+    fullName,
+    handle,
+    platforms.length,
+    contentCategoryIds.length,
+    audienceBand,
+    bio,
+    portfolioUrl,
+    identityDocUrl,
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;

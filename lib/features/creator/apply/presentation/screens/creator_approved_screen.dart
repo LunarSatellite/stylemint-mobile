@@ -27,7 +27,7 @@ class CreatorApprovedScreen extends ConsumerWidget {
                     children: [
                       // Approved badge icon
                       Image.asset(
-                        'assets/images/vendordashboard/doneicon.png',
+                        'assets/images/doneicon.png',
                         width: 100,
                         height: 100,
                       ),
