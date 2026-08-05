@@ -8,6 +8,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/social_account_summary.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/social_platform_popup.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart' as reels_providers;
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
@@ -175,7 +178,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               ),
               const SizedBox(height: DesignTokens.s8),
 
-              _socialPlatforms(),
+              _socialPlatforms(effectiveAccountId),
               const SizedBox(height: DesignTokens.s20),
               _aboutMe(loadedProfile),
               const SizedBox(height: DesignTokens.s20),
@@ -545,19 +548,38 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     return Container(width: 1, height: 36, color: color);
   }
 
-  Widget _socialPlatforms() {
+  Widget _socialPlatforms(String accountId) {
+    final connectedSet = ref
+        .watch(creatorConnectedSocialIdsProvider(accountId));
+    final connectedList = ref
+        .watch(creatorConnectedAccountsProvider(accountId))
+        .maybeWhen(data: (l) => l, orElse: () => const <SocialAccountSummary>[]);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const _SocialIcon(svgPath: 'assets/icons/youtube.svg'),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/instagram.svg'),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/facebook.svg', warning: true),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/tiktok.svg'),
+          for (var i = 0; i < kCreatorPlatforms.length; i++) ...[
+            Builder(builder: (context) {
+              final summary = connectedList.where(
+                (s) => s.slug == kCreatorPlatforms[i].id,
+              ).cast<SocialAccountSummary?>().firstWhere(
+                    (s) => s != null,
+                    orElse: () => null,
+                  );
+              return _SocialIcon(
+                svgPath: kCreatorPlatforms[i].assetPath,
+                warning: !connectedSet.contains(kCreatorPlatforms[i].id),
+                onTap: () => showSocialPlatformPopup(
+                  context,
+                  platformId: kCreatorPlatforms[i].id,
+                  summary: summary,
+                ),
+              );
+            }),
+            if (i != kCreatorPlatforms.length - 1)
+              const SizedBox(width: DesignTokens.s12),
+          ],
         ],
       ),
     );
@@ -866,24 +888,33 @@ class _StatItem extends StatelessWidget {
 }
 
 class _SocialIcon extends StatelessWidget {
-  const _SocialIcon({required this.svgPath, this.warning = false});
+  const _SocialIcon({
+    required this.svgPath,
+    this.warning = false,
+    this.onTap,
+  });
   final String svgPath;
   final bool warning;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppBodyLight,
-            shape: BoxShape.circle,
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppBodyLight,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(18),
+            child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
           ),
-          padding: const EdgeInsets.all(18),
-          child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
         ),
         Positioned(
           top: 2,
