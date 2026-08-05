@@ -172,21 +172,14 @@ class CreatorApplyStep3ReviewScreenState
         rows.add(_Row(p.name, '@${p.handle}'));
       }
     }
-    final apiTotal = data.platforms.fold<int>(
-      0,
-      (sum, p) => sum + p.followerCount,
-    );
-    if (data.platforms.isNotEmpty) {
+    if (data.totalFollowers.isNotEmpty) {
+      rows.add(_Row('Total Followers/Subscribers', data.totalFollowers));
+    } else if (data.platforms.isNotEmpty) {
+      final apiTotal = data.platforms.fold<int>(
+        0,
+        (sum, p) => sum + p.followerCount,
+      );
       rows.add(_Row('Total Followers/Subscribers', _formatFollowers(apiTotal)));
-      final breakdown = data.platforms
-          .where((p) => p.followerCount > 0)
-          .map((p) => '{p.name} {_formatFollowers(p.followerCount)}')
-          .join('  \u00b7  ');
-      if (breakdown.isNotEmpty) {
-        rows.add(
-          _Row('Per platform', breakdown, muted: true, showLabel: false),
-        );
-      }
     } else {
       rows.add(
         const _Row(
@@ -194,6 +187,15 @@ class CreatorApplyStep3ReviewScreenState
           'Not provided',
           muted: true,
         ),
+      );
+    }
+    final breakdown = data.platforms
+        .where((p) => p.followerCount > 0)
+        .map((p) => '\${p.name} \${_formatFollowers(p.followerCount)}')
+        .join('  \u00b7  ');
+    if (breakdown.isNotEmpty) {
+      rows.add(
+        _Row('Per platform', breakdown, muted: true, showLabel: false),
       );
     }
 

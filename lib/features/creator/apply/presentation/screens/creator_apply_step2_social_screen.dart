@@ -46,11 +46,25 @@ class CreatorApplyStep2SocialScreenState
     );
     _contentKinds = {...initial.contentKinds};
     _sampleUrls = [...initial.sampleUrls];
+
+    // Reapply prefill: hydrate _connectedById from platforms on form.
+    _connectedById = {
+      for (final p in initial.platforms)
+        if (_slugToPlatform(p.id) != null)
+          p.id: SocialAccount(
+            id: p.id,
+            platform: _slugToPlatform(p.id)!,
+            handle: p.handle,
+            username: p.handle.replaceAll('@', ''),
+            displayName: p.name,
+            avatarUrl: p.profileUrl,
+            followerCount: p.followerCount,
+            isConnected: true,
+          ),
+    };
     _refreshConnectedFromNotifier();
-    ref.listenManual(socialConnectNotifierProvider, (_, __) {
-      _refreshConnectedFromNotifier();
-    });
   }
+
 
   @override
   void dispose() {

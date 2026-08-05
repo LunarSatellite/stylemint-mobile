@@ -18,9 +18,6 @@ class CreatorRepositoryImpl implements CreatorRepository {
 
   static const _uuid = Uuid();
 
-  /// Maps a declared platform id to the backend `SocialIdentityProvider`
-  /// integer enum (1..4). Unsupported platforms (e.g. Snapchat, X) → null and
-  /// are dropped from the payload.
   static int? _providerInt(String platformId) => const {
         'instagram': 1,
         'tiktok': 2,
@@ -99,7 +96,6 @@ class CreatorRepositoryImpl implements CreatorRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          // 404 = no application on file yet → let the UI show the apply form.
           if (e.response?.statusCode == 404) {
             return left(const NetworkExceptions.notFound());
           }
@@ -122,8 +118,6 @@ class CreatorRepositoryImpl implements CreatorRepository {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.submitApplication(
-          // Map declared platforms → socials with the SocialIdentityProvider
-          // integer enum; platforms outside the supported four are dropped.
           socials: form.platforms
               .map((p) => (provider: _providerInt(p.id), platform: p))
               .where((e) => e.provider != null)
@@ -138,6 +132,10 @@ class CreatorRepositoryImpl implements CreatorRepository {
           contentCategoryIds: form.contentCategoryIds,
           audienceBand: form.audienceBand,
           bio: form.bio,
+          otherCategoryDescription:
+              form.otherCategoryDescription?.isEmpty ?? true
+                  ? null
+                  : form.otherCategoryDescription,
           idempotencyKey: _uuid.v4(),
         );
         return right(dto.toDomain());
@@ -155,4 +153,48 @@ class CreatorRepositoryImpl implements CreatorRepository {
     }
   }
 
+  @override
+  Future<Either<NetworkExceptions, CreatorApplication>> reapplyApplication(
+    CreatorApplicationForm form,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.reapplyApplication(
+          socials: form.platforms
+              .map((p) => (provider: _providerInt(p.id), platform: p))
+              .where((e) => e.provider != null)
+              .map(
+                (e) => <String, dynamic>{
+                  'provider': e.provider,
+                  'handle': e.platform.handle,
+                  'followerCountSelfReported': e.platform.followerCount,
+                },
+              )
+              .toList(growable: false),
+          contentCategoryIds: form.contentCategoryIds,
+          audienceBand: form.audienceBand,
+          bio: form.bio,
+          otherCategoryDescription:
+              form.otherCategoryDescription?.isEmpty ?? true
+                  ? null
+                  : form.otherCategoryDescription,
+          idempotencyKey: _uuid.v4(),
+        );
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          if (e.response?.statusCode == 404) {
+            return left(const NetworkExceptions.notFound());
+          }
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(const NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+  }
 }

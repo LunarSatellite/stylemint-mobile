@@ -157,6 +157,11 @@ class CreatorFormData {
   /// Local-only sample-content URLs the creator wants to showcase.
   final List<String> sampleUrls;
 
+  /// Free-form `otherCategoryDescription` text used when one of the
+  /// selected categories has `requiresOtherDescription == true`. Mirrors
+  /// the BE's `OtherCategoryDescription` field; pre-filled on reapply.
+  final String otherCategoryDescription;
+
   const CreatorFormData({
     this.fullName = '',
     this.email = '',
@@ -172,6 +177,7 @@ class CreatorFormData {
     this.engagementRate = '',
     this.contentKinds = const {},
     this.sampleUrls = const [],
+    this.otherCategoryDescription = '',
   });
 
   CreatorFormData copyWith({
@@ -189,6 +195,7 @@ class CreatorFormData {
     String? engagementRate,
     Set<String>? contentKinds,
     List<String>? sampleUrls,
+    String? otherCategoryDescription,
   }) => CreatorFormData(
     fullName: fullName ?? this.fullName,
     email: email ?? this.email,
@@ -204,6 +211,8 @@ class CreatorFormData {
     engagementRate: engagementRate ?? this.engagementRate,
     contentKinds: contentKinds ?? this.contentKinds,
     sampleUrls: sampleUrls ?? this.sampleUrls,
+    otherCategoryDescription:
+        otherCategoryDescription ?? this.otherCategoryDescription,
   );
 }
 
@@ -219,6 +228,7 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
     required Set<String> categories,
     required Set<String> categoryIds,
     required String whyJoin,
+    String otherCategoryDescription = '',
   }) {
     state = state.copyWith(
       fullName: fullName,
@@ -229,6 +239,7 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
       categories: Set.unmodifiable(categories),
       categoryIds: Set.unmodifiable(categoryIds),
       whyJoin: whyJoin,
+      otherCategoryDescription: otherCategoryDescription,
     );
   }
 
@@ -247,6 +258,21 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
       engagementRate: engagementRate,
       contentKinds: Set.unmodifiable(contentKinds),
       sampleUrls: List.unmodifiable(sampleUrls),
+    );
+  }
+
+  /// Pre-fill the wizard from a fetched [CreatorApplication]. Used by the
+  /// reapply flow so the user lands on step 1 with their previous bio,
+  /// categories, socials and audience band already filled in. Step-1
+  /// personal fields the BE doesn't store (fullName/email/phone/country)
+  /// remain empty — the user must re-enter those.
+  void loadFromApplication(CreatorApplication app) {
+    state = state.copyWith(
+      whyJoin: app.bio,
+      audienceBand: app.audienceBand,
+      categoryIds: Set.unmodifiable(app.categoryIds),
+      platforms: List.unmodifiable(app.socials),
+      otherCategoryDescription: app.otherCategoryDescription ?? '',
     );
   }
 

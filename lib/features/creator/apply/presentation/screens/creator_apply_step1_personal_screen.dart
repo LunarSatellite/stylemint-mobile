@@ -1,4 +1,4 @@
-﻿import 'package:country_picker/country_picker.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,8 +33,6 @@ class CreatorApplyStep1PersonalScreenState
   String _country = '';
   String _countryCode = '';
 
-  /// Map of selected category id -> display name (the only place we keep both,
-  /// so we can render either on the review screen).
   final Map<String, String> _selectedCategories = {};
 
   static const int _maxWhyJoin = 500;
@@ -55,15 +53,40 @@ class CreatorApplyStep1PersonalScreenState
     for (var i = 0; i < ids.length && i < names.length; i++) {
       _selectedCategories[ids.elementAt(i)] = names.elementAt(i);
     }
+    // Reapply prefill: resolve category ids to display names when the form
+    // only carries ids (loadFromApplication path).
+    ref.listenManual(creatorContentCategoriesProvider, (_, next) {
+      next.whenData((cats) => _resolveCategoryNames(cats));
+    });
+    final cached = ref.read(creatorContentCategoriesProvider);
+    cached.whenData((cats) {
+      _resolveCategoryNames(cats);
+      if (mounted) setState(() {});
+    });
     _fullNameController.addListener(_onChanged);
     _emailController.addListener(_onChanged);
     _phoneController.addListener(_onChanged);
     _whyJoinController.addListener(_onChanged);
   }
 
+  void _resolveCategoryNames(List<CreatorContentCategory> cats) {
+    final byId = {for (final c in cats) c.id: c.name};
+    var changed = false;
+    for (final id in _selectedCategories.keys.toList()) {
+      final resolved = byId[id];
+      if (resolved != null && _selectedCategories[id] != resolved) {
+        _selectedCategories[id] = resolved;
+        changed = true;
+      }
+    }
+    if (changed && mounted) {
+      setState(() {});
+      ref.read(stepCanProceedProvider.notifier).state = canProceed;
+    }
+  }
+
   void _onChanged() {
     setState(() {});
-    // Notify the wizard shell so the Proceed button can re-enable itself.
     ref.read(stepCanProceedProvider.notifier).state = canProceed;
   }
 
@@ -79,6 +102,7 @@ class CreatorApplyStep1PersonalScreenState
   bool get canProceed {
     return _fullNameController.text.trim().isNotEmpty &&
         _emailController.text.trim().isNotEmpty &&
+        _phoneController.text.trim().isNotEmpty &&
         _selectedCategories.isNotEmpty;
   }
 
@@ -97,6 +121,41 @@ class CreatorApplyStep1PersonalScreenState
     return true;
   }
 
+  void _pickCountry() {
+    showCountryPicker(
+      context: context,
+      onSelect: (Country country) {
+        setState(() {
+          _country = country.name;
+          _countryCode = country.countryCode;
+        });
+        ref.read(stepCanProceedProvider.notifier).state = canProceed;
+      },
+      countryListTheme: CountryListThemeData(
+        backgroundColor: DesignTokens.bgAppBody,
+        textStyle: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 16,
+          color: Colors.white,
+        ),
+        searchTextStyle: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 16,
+          color: Colors.white,
+        ),
+        inputDecoration: DesignTokens.inputDecoration(
+          hintText: 'Search country',
+        ).copyWith(
+          hintStyle: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _toggleCategory(String id, String name) {
     setState(() {
       if (_selectedCategories.containsKey(id)) {
@@ -108,36 +167,9 @@ class CreatorApplyStep1PersonalScreenState
     ref.read(stepCanProceedProvider.notifier).state = canProceed;
   }
 
-  void _pickCountry() {
-    showCountryPicker(
-      context: context,
-      showPhoneCode: false,
-      onSelect: (Country country) {
-        setState(() {
-          _country = country.name;
-          _countryCode = country.countryCode;
-        });
-      },
-      countryListTheme: CountryListThemeData(
-        backgroundColor: DesignTokens.bgAppFoundation,
-        textStyle: const TextStyle(color: DesignTokens.textWhite, fontFamily: DesignTokens.fontFamily),
-        // Search input has its own style separate from the list text style.
-        searchTextStyle: const TextStyle(color: DesignTokens.textWhite, fontFamily: DesignTokens.fontFamily),
-        bottomSheetHeight: MediaQuery.of(context).size.height * 0.7,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(DesignTokens.cardRadius),
-        ),
-        inputDecoration: DesignTokens.inputDecoration(
-          hintText: 'Search country',
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(creatorContentCategoriesProvider);
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s16,
@@ -155,35 +187,54 @@ class CreatorApplyStep1PersonalScreenState
                 style: DesignTokens.sectionInnerTitle,
               ),
               const SizedBox(height: DesignTokens.s6),
-              Text(
-                'We collect this information to verify your identity and ensure '
-                'the security of your account.',
+              const Text(
+                'Tell us a bit about yourself so we can verify your account.',
                 style: DesignTokens.smallDescription,
               ),
-              const SizedBox(height: DesignTokens.s24),
-              _inputField(
+              const SizedBox(height: DesignTokens.s16),
+              TextField(
                 controller: _fullNameController,
-                hint: 'Full Name',
-                keyboardType: TextInputType.name,
                 textCapitalization: TextCapitalization.words,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.inputFieldData,
+                ),
+                cursorColor: DesignTokens.primaryGreen,
+                decoration: DesignTokens.inputDecoration(
+                  labelText: 'Full Name',
+                ),
               ),
-              const SizedBox(height: DesignTokens.s12),
-              _inputField(
+              const SizedBox(height: DesignTokens.s16),
+              TextField(
                 controller: _emailController,
-                hint: 'Email Address',
                 keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.inputFieldData,
+                ),
+                cursorColor: DesignTokens.primaryGreen,
+                decoration: DesignTokens.inputDecoration(
+                  labelText: 'Email Address',
+                ),
               ),
-              const SizedBox(height: DesignTokens.s12),
-              _inputField(
+              const SizedBox(height: DesignTokens.s16),
+              TextField(
                 controller: _phoneController,
-                hint: 'Phone Number',
                 keyboardType: TextInputType.phone,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9+\-\s]')),
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.inputFieldData,
+                ),
+                cursorColor: DesignTokens.primaryGreen,
+                decoration: DesignTokens.inputDecoration(
+                  labelText: 'Phone Number',
+                ),
               ),
-              const SizedBox(height: DesignTokens.s12),
+              const SizedBox(height: DesignTokens.s16),
               _CountryField(
                 value: _country,
                 onTap: _pickCountry,
@@ -195,54 +246,37 @@ class CreatorApplyStep1PersonalScreenState
               ),
               const SizedBox(height: DesignTokens.s16),
               categoriesAsync.when(
-                data: (cats) => _CategoryChips(
-                  categories: cats,
+                data: (categories) => _CategoryChips(
+                  categories: categories,
                   selectedIds: _selectedCategories.keys.toSet(),
                   onToggle: _toggleCategory,
                 ),
                 loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: DesignTokens.s12),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: DesignTokens.primaryGreen,
-                      ),
-                    ),
+                  padding: EdgeInsets.symmetric(vertical: DesignTokens.s8),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
                 error: (_, __) => Text(
-                  'Could not load categories.',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.colorError,
-                  ),
+                  'Could not load categories. Pull to retry.',
+                  style: DesignTokens.smallDescription,
                 ),
               ),
               const SizedBox(height: DesignTokens.s24),
               TextField(
                 controller: _whyJoinController,
-                maxLines: 6,
+                maxLines: 4,
                 maxLength: _maxWhyJoin,
-                keyboardType: TextInputType.multiline,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 14,
                   color: DesignTokens.inputFieldData,
-                  height: 1.5,
                 ),
                 cursorColor: DesignTokens.primaryGreen,
                 decoration: DesignTokens.inputDecoration(
-                  hintText: 'Why do you want to join ReelCommerce ?',
-                ).copyWith(counterText: '', alignLabelWithHint: true),
-              ),
-              const SizedBox(height: DesignTokens.s4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_whyJoinController.text.length}/$_maxWhyJoin',
-                  style: DesignTokens.smallRegular,
+                  hintText: 'Why do you want to join ReelCommerce',
                 ),
               ),
             ],
@@ -251,35 +285,8 @@ class CreatorApplyStep1PersonalScreenState
       ],
     );
   }
-
-  Widget _inputField({
-    required TextEditingController controller,
-    required String hint,
-    TextInputType? keyboardType,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-    List<TextInputFormatter>? inputFormatters,
-    Iterable<String>? autofillHints,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textCapitalization: textCapitalization,
-      inputFormatters: inputFormatters,
-      autofillHints: autofillHints,
-      style: const TextStyle(
-        fontFamily: DesignTokens.fontFamily,
-        fontSize: 14,
-        color: DesignTokens.inputFieldData,
-      ),
-      cursorColor: DesignTokens.primaryGreen,
-      decoration: DesignTokens.inputDecoration(hintText: hint),
-    );
-  }
 }
 
-// ---------------------------------------------------------------------------
-// Section card
-// ---------------------------------------------------------------------------
 class _SectionCard extends StatelessWidget {
   final Widget child;
   const _SectionCard({required this.child});
@@ -319,6 +326,11 @@ class _CountryField extends StatelessWidget {
         isEmpty: value.isEmpty,
         decoration: DesignTokens.inputDecoration(hintText: 'Country/Region')
             .copyWith(
+          hintStyle: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: Colors.white,
+          ),
           suffixIcon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: DesignTokens.inputFieldDropdownIcon,
@@ -329,7 +341,7 @@ class _CountryField extends StatelessWidget {
           style: const TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            color: DesignTokens.inputFieldData,
+            color: Colors.white,
           ),
         ),
       ),
