@@ -25,6 +25,8 @@ class ReelsFeedNotifier extends StateNotifier<ReelsFeedState> {
 
   final ReelsRepository _repository;
 
+  void reset() => state = const ReelsFeedState.initial();
+
   Future<void> fetchFeed({int limit = 20, String? cursor}) async {
     state = const ReelsFeedState.loadInProgress();
     final either = await _repository.getReelsFeed(limit: limit, cursor: cursor);
