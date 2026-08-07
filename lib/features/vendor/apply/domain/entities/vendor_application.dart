@@ -151,6 +151,7 @@ class VendorApplicationForm {
     required this.countryCode,
     required this.businessType,
     required this.taxId,
+    required this.businessRegistrationNumber,
     required this.commissionMinPercent,
     required this.commissionMaxPercent,
     this.website,
@@ -172,6 +173,7 @@ class VendorApplicationForm {
   final String countryCode;
   final BusinessType businessType;
   final String taxId;
+  final String businessRegistrationNumber;
   final double commissionMinPercent;
   final double commissionMaxPercent;
   final String? website;

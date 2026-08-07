@@ -27,6 +27,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   final ProfileRepository _repository;
 
+  void reset() => state = const ProfileState.initial();
+
   Future<void> fetchProfile() async {
     state = const ProfileState.loadInProgress();
     final either = await _repository.getProfileSummary();

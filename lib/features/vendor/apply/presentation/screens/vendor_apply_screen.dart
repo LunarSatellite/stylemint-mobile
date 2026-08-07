@@ -170,6 +170,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       website: websiteText.isEmpty ? null : websiteText,
       countryRegion: _selectedCountryRegion!,
       streetAddress: streetAddress,
+      addressLine2: _selectedCountry ?? '',
       city: city,
       country: _selectedCountry!,
       zipCode: zipCode,
