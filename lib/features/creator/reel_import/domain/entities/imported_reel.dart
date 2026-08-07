@@ -14,6 +14,11 @@ class ImportableReel implements ReelMedia {
     required this.videoDuration,
     this.videoUrl,
     this.isSelected = false,
+    this.likeCount = 0,
+    this.viewCount = 0,
+    this.commentCount = 0,
+    this.shareCount = 0,
+    this.bookmarkCount = 0,
   });
 
   final String id;
@@ -31,6 +36,14 @@ class ImportableReel implements ReelMedia {
   final String? videoUrl;
   final bool isSelected;
 
+  /// Platform-native stats (last sync). Default 0 — backend may populate these
+  /// per provider when the reel is fetched.
+  final int likeCount;
+  final int viewCount;
+  final int commentCount;
+  final int shareCount;
+  final int bookmarkCount;
+
   ImportableReel copyWith({
     String? id,
     SocialPlatform? platform,
@@ -42,6 +55,11 @@ class ImportableReel implements ReelMedia {
     int? videoDuration,
     String? videoUrl,
     bool? isSelected,
+    int? likeCount,
+    int? viewCount,
+    int? commentCount,
+    int? shareCount,
+    int? bookmarkCount,
   }) {
     return ImportableReel(
       id: id ?? this.id,
@@ -54,6 +72,11 @@ class ImportableReel implements ReelMedia {
       videoDuration: videoDuration ?? this.videoDuration,
       videoUrl: videoUrl ?? this.videoUrl,
       isSelected: isSelected ?? this.isSelected,
+      likeCount: likeCount ?? this.likeCount,
+      viewCount: viewCount ?? this.viewCount,
+      commentCount: commentCount ?? this.commentCount,
+      shareCount: shareCount ?? this.shareCount,
+      bookmarkCount: bookmarkCount ?? this.bookmarkCount,
     );
   }
 

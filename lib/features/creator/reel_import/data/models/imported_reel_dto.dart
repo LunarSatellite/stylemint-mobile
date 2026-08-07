@@ -19,6 +19,11 @@ abstract class ImportableReelDto with _$ImportableReelDto {
     @Default(0) int videoDuration,
     @Default('') String videoUrl,
     @Default(false) bool isSelected,
+    @Default(0) int likeCount,
+    @Default(0) int viewCount,
+    @Default(0) int commentCount,
+    @Default(0) int shareCount,
+    @Default(0) int bookmarkCount,
   }) = _ImportableReelDto;
 
   const ImportableReelDto._();
@@ -43,6 +48,11 @@ abstract class ImportableReelDto with _$ImportableReelDto {
       videoDuration: videoDuration,
       videoUrl: videoUrl.isEmpty ? null : videoUrl,
       isSelected: isSelected,
+      likeCount: likeCount,
+      viewCount: viewCount,
+      commentCount: commentCount,
+      shareCount: shareCount,
+      bookmarkCount: bookmarkCount,
     );
   }
 }

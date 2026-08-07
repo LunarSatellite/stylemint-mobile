@@ -119,10 +119,26 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
       ),
       body: Column(
         children: [
-          // ── Platform selector ────────────────────────────────────────────
+          // ── Helper text ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
               DesignTokens.s16, DesignTokens.s12,
+              DesignTokens.s16, DesignTokens.s4,
+            ),
+            child: Text(
+              'Select the reel from your social media and we will '
+              'import it automatically for you.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+                height: 1.4,
+              ),
+            ),
+          ),
+
+          // ── Platform selector ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16, 0,
               DesignTokens.s16, DesignTokens.s4,
             ),
             child: Row(
@@ -271,12 +287,11 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                               );
                             },
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: DesignTokens.borderDefault,
-                              ),
+                              backgroundColor: DesignTokens.buttonGrayFill,
+                              side: BorderSide.none,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
-                                  DesignTokens.s8,
+                                  DesignTokens.buttonRadius,
                                 ),
                               ),
                             ),
@@ -293,7 +308,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                       ),
                       const SizedBox(width: DesignTokens.s12),
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: SizedBox(
                           height: DesignTokens.buttonHeight,
                           child: ElevatedButton(
@@ -308,26 +323,13 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                               children: [
                                 Text('Import Reel'),
                                 SizedBox(width: DesignTokens.s8),
-                                Icon(Icons.arrow_forward_rounded, size: 18),
+                                Icon(Icons.download_rounded, size: 18),
                               ],
                             ),
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: DesignTokens.s8),
-                  GestureDetector(
-                    onTap: _showUrlPasteSheet,
-                    child: Text(
-                      "Can't see your posts? Paste a URL instead",
-                      textAlign: TextAlign.center,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.primaryGreen,
-                        decoration: TextDecoration.underline,
-                        decorationColor: DesignTokens.primaryGreen,
-                      ),
-                    ),
                   ),
                 ],
               ),

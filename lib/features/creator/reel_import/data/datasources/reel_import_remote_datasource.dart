@@ -64,8 +64,13 @@ class ReelImportRemoteDataSource {
         createdAt: m['publishedUtc'] != null
             ? DateTime.parse(m['publishedUtc'] as String)
             : DateTime.now(),
-        videoDuration: 30,
+        videoDuration: (m['durationSeconds'] as num?)?.toInt() ?? 0,
         videoUrl: m['videoUrl'] as String? ?? '',
+        likeCount: (m['likeCount'] as num?)?.toInt() ?? 0,
+        viewCount: (m['viewCount'] as num?)?.toInt() ?? 0,
+        commentCount: (m['commentCount'] as num?)?.toInt() ?? 0,
+        shareCount: (m['shareCount'] as num?)?.toInt() ?? 0,
+        bookmarkCount: (m['bookmarkCount'] as num?)?.toInt() ?? 0,
       );
     }).toList(growable: false);
     return ImportableReelsPage(

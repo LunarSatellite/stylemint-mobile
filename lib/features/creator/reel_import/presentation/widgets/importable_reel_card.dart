@@ -50,26 +50,27 @@ class ImportableReelCard extends StatelessWidget {
                             color: DesignTokens.textMuted),
                       ),
                     ),
-                  Positioned(
-                    right: DesignTokens.s4,
-                    bottom: DesignTokens.s4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s6,
-                        vertical: DesignTokens.s4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: DesignTokens.baseBlack.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(DesignTokens.s4),
-                      ),
-                      child: Text(
-                        _formatDuration(reel.videoDuration),
-                        style: DesignTokens.tiny.copyWith(
-                          color: DesignTokens.textWhite,
+                  if (reel.videoDuration > 0)
+                    Positioned(
+                      right: DesignTokens.s4,
+                      bottom: DesignTokens.s4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s6,
+                          vertical: DesignTokens.s4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: DesignTokens.baseBlack.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(DesignTokens.s4),
+                        ),
+                        child: Text(
+                          _formatDuration(reel.videoDuration),
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   if (isSelected)
                     Positioned(
                       left: DesignTokens.s8,
