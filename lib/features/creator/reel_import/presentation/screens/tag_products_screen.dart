@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +19,6 @@ class TagProductsScreen extends ConsumerStatefulWidget {
 }
 
 class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
-  final _searchController = TextEditingController();
   final _taggedProducts = <String, TaggedProductForImport>{};
   bool _potentialEarningsExpanded = false;
   ImportableReel? _reel;
@@ -34,7 +35,6 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -68,21 +68,54 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
   }
 
   Future<void> _showSearchSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _SearchSheet(
-        taggedProductIds: _taggedProducts.keys.toSet(),
-        onToggle: _toggleProduct,
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierColor: Colors.black.withValues(alpha: 0.72),
+        barrierDismissible: true,
+        transitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (ctx, anim, secAnim) => Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              // Blurred backdrop covering the whole screen
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(ctx).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+              ),
+              // The actual sheet, anchored to the bottom of the screen
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _SearchSheet(
+                onSubmit: (q) => ref
+                    .read(productSearchNotifierProvider.notifier)
+                    .search(q),
+              ),
+              ),
+            ],
+          ),
+        ),
+        transitionsBuilder: (ctx, anim, secAnim, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          );
+        },
       ),
     );
-    if (mounted) {
-      ref.read(productSearchNotifierProvider.notifier).search('');
-    }
   }
 
   void _showTaggedProductsSheet() {
@@ -161,35 +194,17 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
                 GestureDetector(
                   onTap: _showSearchSheet,
                   child: Container(
-                    decoration: BoxDecoration(
-                      color: DesignTokens.bgAppBody,
-                      borderRadius: BorderRadius.circular(DesignTokens.s12),
-                      border: Border.all(color: DesignTokens.borderDefault),
-                    ),
+                    height: DesignTokens.inputHeight,
                     padding: const EdgeInsets.symmetric(
                       horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s4,
                     ),
-                    child: AbsorbPointer(
-                      child: Row(
+                    child: Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            readOnly: true,
+                          child: Text(
+                            'Search products or brands...',
                             style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textWhite,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search products or brands....',
-                              hintStyle: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.textMuted,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: DesignTokens.s12,
-                              ),
+                              color: DesignTokens.textMuted,
                             ),
                           ),
                         ),
@@ -200,69 +215,39 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
                         ),
                       ],
                     ),
-                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Product list ────────────────────────────────────────────────
+          // ── Suggested Products section ────────────────────────────────────────────
           Expanded(
             child: searchState.when(
-              initial: () => const SizedBox.shrink(),
-              loadInProgress: () => const Center(
-                child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+              initial: () => _SuggestedProductsBody(
+                products: const [],
+                onTagTap: _toggleProduct,
+              ),
+              loadInProgress: () => _SuggestedProductsBody(
+                products: const [],
+                onTagTap: _toggleProduct,
+                isLoading: true,
               ),
               loadSuccess: (products) {
                 final untagged = products
                     .where((p) => !_taggedProducts.containsKey(p.productId))
                     .toList();
-                if (untagged.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'All products tagged!',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s32,
-                  ),
-                  itemCount: untagged.length + 1,
-                  itemBuilder: (_, i) {
-                    if (i == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-                        child: Text(
-                          'Suggested Products (Based on your reel)',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textLight,
-                          ),
-                        ),
-                      );
-                    }
-                    final product = untagged[i - 1];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-                      child: _ProductCard(
-                        product: product,
-                        onTagTap: () => _toggleProduct(product),
-                      ),
-                    );
-                  },
+                return _SuggestedProductsBody(
+                  products: untagged,
+                  onTagTap: _toggleProduct,
+                  hasAnyTagged: _taggedProducts.isNotEmpty,
                 );
               },
-              loadFailure: (_) => Center(
-                child: Text(
-                  'Failed to load products',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
+              loadFailure: (_) => _SuggestedProductsBody(
+                products: const [],
+                onTagTap: _toggleProduct,
+                isLoading: false,
+                hasFailure: true,
               ),
             ),
           ),
@@ -535,14 +520,123 @@ class _ViewTaggedProductsBar extends StatelessWidget {
 
 // ── Search bottom sheet ───────────────────────────────────────────────────────
 
-class _SearchSheet extends ConsumerStatefulWidget {
-  const _SearchSheet({
-    required this.taggedProductIds,
-    required this.onToggle,
+class _SuggestedProductsBody extends StatelessWidget {
+  const _SuggestedProductsBody({
+    required this.products,
+    required this.onTagTap,
+    this.isLoading = false,
+    this.hasFailure = false,
+    this.hasAnyTagged = false,
   });
 
-  final Set<String> taggedProductIds;
-  final ValueChanged<TaggedProductForImport> onToggle;
+  final List<TaggedProductForImport> products;
+  final ValueChanged<TaggedProductForImport> onTagTap;
+  final bool isLoading;
+  final bool hasFailure;
+  final bool hasAnyTagged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s32,
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+          child: Text(
+            'Suggested Products (Based on your reel)',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
+        ),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+            child: Center(
+              child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+            ),
+          )
+        else if (hasFailure)
+          _EmptyProductsState(
+            icon: Icons.cloud_off_rounded,
+            title: 'Couldn’t load products',
+            subtitle: 'Check your connection and try again.',
+          )
+        else if (products.isEmpty)
+          _EmptyProductsState(
+            icon: hasAnyTagged
+                ? Icons.check_circle_outline_rounded
+                : Icons.shopping_bag_outlined,
+            title: hasAnyTagged ? 'All products tagged!' : 'No products yet',
+            subtitle: hasAnyTagged
+                ? 'You’ve tagged everything we suggested for this reel.'
+                : 'Suggested products will appear here once available.',
+          )
+        else
+          for (int i = 0; i < products.length; i++) ...[
+            _ProductCard(
+              product: products[i],
+              onTagTap: () => onTagTap(products[i]),
+            ),
+            if (i < products.length - 1)
+              const SizedBox(height: DesignTokens.s16),
+          ],
+      ],
+    );
+  }
+}
+
+class _EmptyProductsState extends StatelessWidget {
+  const _EmptyProductsState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+      child: Column(
+        children: [
+          Icon(icon, size: 56, color: DesignTokens.textMuted),
+          const SizedBox(height: DesignTokens.s12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchSheet extends ConsumerStatefulWidget {
+  const _SearchSheet({
+    required this.onSubmit,
+  });
+
+  final ValueChanged<String> onSubmit;
 
   @override
   ConsumerState<_SearchSheet> createState() => _SearchSheetState();
@@ -550,15 +644,10 @@ class _SearchSheet extends ConsumerStatefulWidget {
 
 class _SearchSheetState extends ConsumerState<_SearchSheet> {
   final _controller = TextEditingController();
-  late final Set<String> _localTaggedIds;
 
   @override
   void initState() {
     super.initState();
-    _localTaggedIds = Set.from(widget.taggedProductIds);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(productSearchNotifierProvider.notifier).search('');
-    });
   }
 
   @override
@@ -567,25 +656,22 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
     super.dispose();
   }
 
-  void _handleToggle(TaggedProductForImport product) {
-    widget.onToggle(product);
-    setState(() {
-      if (_localTaggedIds.contains(product.productId)) {
-        _localTaggedIds.remove(product.productId);
-      } else {
-        _localTaggedIds.add(product.productId);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(productSearchNotifierProvider);
+    final sheetHeight = MediaQuery.of(context).size.height * 0.8;
+    final hasQuery = _controller.text.trim().length >= 2;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.85,
+      child: Container(
+        height: sheetHeight,
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.only(bottom: DesignTokens.s24),
         child: Column(
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: DesignTokens.s12),
@@ -628,120 +714,102 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
-            // Search field with green border
+            // Results section — fills the available space above the input.
+            // Shows nothing until the user has submitted a real query; shows
+            // "Oops! No Results Found" only when a real query returned zero
+            // matches (gated by [hasQuery] so the initial empty state from
+            // the parent's preload doesn't render this card).
+            Expanded(
+              child: searchState.when(
+                initial: () => const SizedBox.shrink(),
+                loadInProgress: () => const Center(
+                  child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+                ),
+                loadSuccess: (products) {
+                  if (products.isEmpty && hasQuery) {
+                    return const _EmptyProductsState(
+                      icon: Icons.sentiment_dissatisfied_rounded,
+                      title: 'Oops! No Results Found',
+                      subtitle: "We couldn't find what you were looking for.\nTry searching again.",
+                    );
+                  }
+                  if (products.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                    itemCount: products.length,
+                    itemBuilder: (_, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+                      child: _ProductCard(
+                        product: products[i],
+                        onTagTap: () {
+                          widget.onSubmit(_controller.text.trim());
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  );
+                },
+                loadFailure: (_) => const _EmptyProductsState(
+                  icon: Icons.error_outline_rounded,
+                  title: 'Something went wrong',
+                  subtitle: 'Failed to load products.\nPlease try again.',
+                ),
+              ),
+            ),
+            // Search input — anchored to the bottom (top of the keyboard via
+            // the outer Padding above). Submit fires the parent's search
+            // callback; tapping the magnifier icon does the same.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s12,
+              ),
               child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(DesignTokens.s12),
-                  border: Border.all(color: DesignTokens.primaryGreen),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                  vertical: DesignTokens.s4,
-                ),
+                height: DesignTokens.inputHeight,
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _controller,
                         autofocus: true,
+                        textInputAction: TextInputAction.search,
                         style: DesignTokens.smallRegular.copyWith(
                           color: DesignTokens.textWhite,
                         ),
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Search products or brands....',
-                          hintStyle: DesignTokens.smallRegular.copyWith(
+                          hintStyle: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
                             color: DesignTokens.textMuted,
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          isCollapsed: true,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: DesignTokens.s12,
-                          ),
+                          contentPadding: EdgeInsets.zero,
                         ),
-                        onChanged: (v) => ref
-                            .read(productSearchNotifierProvider.notifier)
-                            .search(v),
+                        onSubmitted: (v) {
+                          final q = v.trim();
+                          if (q.length >= 2) widget.onSubmit(q);
+                        },
                       ),
                     ),
-                    const Icon(
-                      Icons.search_rounded,
-                      color: DesignTokens.textMuted,
-                      size: 20,
+                    GestureDetector(
+                      onTap: () {
+                        final q = _controller.text.trim();
+                        if (q.length >= 2) widget.onSubmit(q);
+                      },
+                      child: const Icon(
+                        Icons.search_rounded,
+                        color: DesignTokens.textMuted,
+                        size: 20,
+                      ),
                     ),
                   ],
-                ),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            // Results
-            Expanded(
-              child: searchState.when(
-                initial: () => const SizedBox.shrink(),
-                loadInProgress: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
-                loadSuccess: (products) {
-                  final visible = products
-                      .where((p) => !_localTaggedIds.contains(p.productId))
-                      .toList();
-                  if (visible.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            'assets/images/Crossed.png',
-                            width: 80,
-                            height: 80,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Oops! No Results Found',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: DesignTokens.textWhite,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "We couldn't find what you were looking for.\nTry searching again",
-                            textAlign: TextAlign.center,
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textMuted,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(
-                      DesignTokens.s16, 0, DesignTokens.s16, DesignTokens.s24,
-                    ),
-                    itemCount: visible.length,
-                    itemBuilder: (_, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-                      child: _ProductCard(
-                        product: visible[i],
-                        onTagTap: () => _handleToggle(visible[i]),
-                      ),
-                    ),
-                  );
-                },
-                loadFailure: (_) => Center(
-                  child: Text(
-                    'Failed to load products',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
                 ),
               ),
             ),
@@ -750,6 +818,9 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
       ),
     );
   }
+
+
+
 }
 
 // ── Product thumb ─────────────────────────────────────────────────────────────
