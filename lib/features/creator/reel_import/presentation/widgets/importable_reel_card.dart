@@ -3,19 +3,33 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/en
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ImportableReelCard extends StatelessWidget {
-  const ImportableReelCard({super.key, required this.reel, required this.onTap});
+  const ImportableReelCard({
+    super.key,
+    required this.reel,
+    required this.onTap,
+    this.isSelected = false,
+  });
 
   final ImportableReel reel;
   final VoidCallback onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           color: DesignTokens.bgAppBody,
+          border: Border.all(
+            color: isSelected
+                ? DesignTokens.primaryGreen
+                : Colors.transparent,
+            width: 2,
+          ),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -56,6 +70,24 @@ class ImportableReelCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (isSelected)
+                    Positioned(
+                      left: DesignTokens.s8,
+                      top: DesignTokens.s8,
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: const BoxDecoration(
+                          color: DesignTokens.primaryGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

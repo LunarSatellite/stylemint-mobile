@@ -30,8 +30,7 @@ class _ReelCardState extends State<ReelCard> {
       fit: StackFit.expand,
       children: [
         ReelPlayer(
-          videoUrl: widget.reel.videoUrl,
-          thumbnailUrl: widget.reel.thumbnailUrl,
+          reel: widget.reel,
           isActive: widget.isActive,
           playbackController: _playback,
         ),

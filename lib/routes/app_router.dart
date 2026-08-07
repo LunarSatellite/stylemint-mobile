@@ -46,6 +46,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/reel_published_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
@@ -676,11 +677,8 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.reelImportPreview,
         builder: (ctx, state) {
-          final extra = state.extra! as Map<String, dynamic>;
-          return PreviewReelScreen(
-            url: extra['url'] as String,
-            platform: extra['platform'] as SocialPlatform,
-          );
+          final reel = state.extra! as ImportableReel;
+          return PreviewReelScreen(reel: reel);
         },
       ),
       GoRoute(

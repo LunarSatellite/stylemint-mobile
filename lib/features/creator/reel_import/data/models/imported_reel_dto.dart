@@ -17,6 +17,7 @@ abstract class ImportableReelDto with _$ImportableReelDto {
     required String caption,
     required DateTime createdAt,
     @Default(0) int videoDuration,
+    @Default('') String videoUrl,
     @Default(false) bool isSelected,
   }) = _ImportableReelDto;
 
@@ -40,6 +41,7 @@ abstract class ImportableReelDto with _$ImportableReelDto {
       caption: caption,
       createdAt: createdAt,
       videoDuration: videoDuration,
+      videoUrl: videoUrl.isEmpty ? null : videoUrl,
       isSelected: isSelected,
     );
   }

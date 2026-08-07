@@ -65,6 +65,7 @@ class ReelImportRemoteDataSource {
             ? DateTime.parse(m['publishedUtc'] as String)
             : DateTime.now(),
         videoDuration: 30,
+        videoUrl: m['videoUrl'] as String? ?? '',
       );
     }).toList(growable: false);
     return ImportableReelsPage(

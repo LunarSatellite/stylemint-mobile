@@ -21,6 +21,7 @@ class ImportReelScreen extends ConsumerStatefulWidget {
 
 class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
   SocialPlatform _selectedPlatform = SocialPlatform.instagram;
+  ImportableReel? _selectedReel;
 
   @override
   void initState() {
@@ -36,16 +37,26 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
 
   void _onPlatformChanged(SocialPlatform platform) {
     if (platform == _selectedPlatform) return;
-    setState(() => _selectedPlatform = platform);
+    setState(() {
+      _selectedPlatform = platform;
+      _selectedReel = null;
+    });
     unawaited(
       ref.read(reelImportNotifierProvider.notifier).load(platform),
     );
   }
 
-  void _onReelTapped(ImportableReel reel) {
-    final route = RouteNames.reelImportTagProducts
-        .replaceFirst(':postId', reel.platformPostId);
-    unawaited(context.push(route, extra: reel));
+    void _onReelTapped(ImportableReel reel) {
+    setState(() {
+      _selectedReel = _selectedReel?.id == reel.id ? null : reel;
+    });
+  }
+
+  void _onImportPressed(ImportableReel reel) {
+    unawaited(context.push(
+      RouteNames.reelImportPreview,
+      extra: reel,
+    ));
   }
 
   void _showUrlPasteSheet() {
@@ -61,11 +72,34 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
       builder: (_) => _UrlPasteSheet(platform: _selectedPlatform),
     ).then((url) {
       if (url == null || url.isEmpty || !mounted) return;
+      final externalId = _extractExternalId(url);
+      final pastedReel = ImportableReel(
+        id: externalId,
+        platform: _selectedPlatform,
+        platformPostId: externalId,
+        sourceUrl: url,
+        thumbnailUrl: '',
+        caption: '',
+        createdAt: DateTime.now(),
+        videoDuration: 0,
+      );
       unawaited(context.push(
         RouteNames.reelImportPreview,
-        extra: {'url': url, 'platform': _selectedPlatform},
+        extra: pastedReel,
       ));
     }).ignore();
+  }
+
+  String _extractExternalId(String url) {
+    try {
+      final segments = Uri.parse(url)
+          .pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
+      return segments.isNotEmpty ? segments.last : url;
+    } on Exception catch (_) {
+      return url;
+    }
   }
 
   @override
@@ -144,10 +178,14 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                           childAspectRatio: 0.75,
                         ),
                         itemCount: reels.length,
-                        itemBuilder: (_, i) => ImportableReelCard(
-                          reel: reels[i],
-                          onTap: () => _onReelTapped(reels[i]),
-                        ),
+                        itemBuilder: (_, i) {
+                          final reel = reels[i];
+                          return ImportableReelCard(
+                            reel: reel,
+                            isSelected: _selectedReel?.id == reel.id,
+                            onTap: () => _onReelTapped(reel),
+                          );
+                        },
                       ),
                     ),
                     // A single provider page can be entirely non-video posts
@@ -199,26 +237,99 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
             ),
           ),
 
-          // ── Paste URL fallback ───────────────────────────────────────────
+          // ── Bottom action bar ────────────────────────────────────────────────────────────
           SafeArea(
-            child: Padding(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: DesignTokens.bgAppFoundation,
+                border: Border(
+                  top: BorderSide(color: DesignTokens.borderDefault),
+                ),
+              ),
               padding: const EdgeInsets.fromLTRB(
                 DesignTokens.s16,
-                DesignTokens.s8,
+                DesignTokens.s12,
                 DesignTokens.s16,
                 DesignTokens.s16,
               ),
-              child: GestureDetector(
-                onTap: _showUrlPasteSheet,
-                child: Text(
-                  "Can't see your posts? Paste a URL instead",
-                  textAlign: TextAlign.center,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                    'Drafts will be available soon.',
+                                  ),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: DesignTokens.borderDefault,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.s8,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Save as Draft',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                color: DesignTokens.textWhite,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        flex: 2,
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final selected = _selectedReel;
+                              if (selected == null) return;
+                              _onImportPressed(selected);
+                            },
+                            style: DesignTokens.primaryButtonStyle(),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Import Reel'),
+                                SizedBox(width: DesignTokens.s8),
+                                Icon(Icons.arrow_forward_rounded, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: DesignTokens.s8),
+                  GestureDetector(
+                    onTap: _showUrlPasteSheet,
+                    child: Text(
+                      "Can't see your posts? Paste a URL instead",
+                      textAlign: TextAlign.center,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.primaryGreen,
+                        decoration: TextDecoration.underline,
+                        decorationColor: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

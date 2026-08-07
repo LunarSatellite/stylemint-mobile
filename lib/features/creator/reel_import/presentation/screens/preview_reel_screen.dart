@@ -6,17 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class PreviewReelScreen extends StatefulWidget {
-  const PreviewReelScreen({
-    super.key,
-    required this.url,
-    required this.platform,
-  });
+  const PreviewReelScreen({super.key, required this.reel});
 
-  final String url;
-  final SocialPlatform platform;
+  final ImportableReel reel;
 
   @override
   State<PreviewReelScreen> createState() => _PreviewReelScreenState();
@@ -31,20 +27,9 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
     super.dispose();
   }
 
-  String _extractExternalId(String url) {
-    try {
-      final segments = Uri.parse(url)
-          .pathSegments
-          .where((s) => s.isNotEmpty)
-          .toList();
-      return segments.isNotEmpty ? segments.last : url;
-    } on Exception catch (_) {
-      return url;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final reel = widget.reel;
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -69,18 +54,29 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Video thumbnail ────────────────────────────────────
-                  Center(child: _VideoThumbnail()),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  // ── Reel info card ─────────────────────────────────────
-                  _ReelInfoCard(
-                    url: widget.url,
-                    platform: widget.platform,
+                  // Platform-aware player. Switches between mp4 (Instagram),
+                  // YouTube IFrame, and an external-app launcher for TikTok /
+                  // Facebook. See [ReelPlayer] for the full matrix.
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.65,
+                        height: MediaQuery.of(context).size.width * 0.85,
+                        child: ReelPlayer(
+                          reel: reel,
+                          isActive: true,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s16),
 
-                  // ── Caption input ──────────────────────────────────────
+                  // Reel info card
+                  _ReelInfoCard(reel: reel),
+                  const SizedBox(height: DesignTokens.s16),
+
+                  // Caption input
                   Container(
                     height: 160,
                     decoration: DesignTokens.cardDecoration(),
@@ -109,7 +105,7 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
             ),
           ),
 
-          // ── Continue button ────────────────────────────────────────────
+          // Continue button
           Container(
             padding: const EdgeInsets.fromLTRB(
               DesignTokens.s16,
@@ -123,24 +119,13 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
                 onPressed: () {
-                  final externalId = _extractExternalId(widget.url);
-                  final reel = ImportableReel(
-                    id: externalId,
-                    platform: widget.platform,
-                    platformPostId: externalId,
-                    sourceUrl: widget.url,
-                    thumbnailUrl: '',
+                  final updatedReel = reel.copyWith(
                     caption: _captionController.text,
-                    createdAt: DateTime.now(),
-                    // Duration is not knowable until the backend processes
-                    // the imported video; 0 signals "unknown" and the
-                    // import endpoint applies its own default.
-                    videoDuration: 0,
                   );
                   unawaited(context.push(
                     RouteNames.reelImportTagProducts
-                        .replaceFirst(':postId', externalId),
-                    extra: reel,
+                        .replaceFirst(':postId', updatedReel.platformPostId),
+                    extra: updatedReel,
                   ));
                 },
                 style: DesignTokens.primaryButtonStyle(),
@@ -161,72 +146,10 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
   }
 }
 
-// ── Video thumbnail ───────────────────────────────────────────────────────────
-
-class _VideoThumbnail extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size.width * 0.60;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Placeholder background
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-            // Subtle grid texture
-            Opacity(
-              opacity: 0.08,
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                ),
-                itemBuilder: (_, _i) => Container(
-                  margin: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
-            // Play button
-            const Center(
-              child: Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 52,
-              ),
-            ),
-            // Note: no duration badge here — the real duration isn't known
-            // until the backend resolves the imported video.
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Reel info card ────────────────────────────────────────────────────────────
-
 class _ReelInfoCard extends StatelessWidget {
-  const _ReelInfoCard({required this.url, required this.platform});
+  const _ReelInfoCard({required this.reel});
 
-  final String url;
-  final SocialPlatform platform;
+  final ImportableReel reel;
 
   @override
   Widget build(BuildContext context) {
@@ -239,14 +162,14 @@ class _ReelInfoCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _PlatformCircleIcon(platform: platform),
+              _PlatformCircleIcon(platform: reel.platform),
               const SizedBox(width: DesignTokens.s16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${platform.displayName} Reel',
+                      '${reel.platform.displayName} Reel',
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
@@ -256,40 +179,27 @@ class _ReelInfoCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      url,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
+                    if (reel.caption.isNotEmpty)
+                      Text(
+                        reel.caption,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        reel.sourceUrl,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                     const SizedBox(height: DesignTokens.s8),
-                    _SuccessBadge(),
+                    const _SuccessBadge(),
                   ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          const Divider(color: DesignTokens.borderDefault, height: 1),
-          const SizedBox(height: DesignTokens.s12),
-          // Engagement stats can't be known from the pasted URL alone —
-          // they're only available once the reel is actually imported.
-          Row(
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: DesignTokens.textMuted,
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: Text(
-                  'Engagement stats will be available after import',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
                 ),
               ),
             ],
@@ -300,8 +210,7 @@ class _ReelInfoCard extends StatelessWidget {
   }
 }
 
-// ── Platform circle icon ──────────────────────────────────────────────────────
-
+// Platform circle icon
 class _PlatformCircleIcon extends StatelessWidget {
   const _PlatformCircleIcon({required this.platform});
 
@@ -330,9 +239,10 @@ class _PlatformCircleIcon extends StatelessWidget {
   }
 }
 
-// ── Success badge ─────────────────────────────────────────────────────────────
-
+// Success badge
 class _SuccessBadge extends StatelessWidget {
+  const _SuccessBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(

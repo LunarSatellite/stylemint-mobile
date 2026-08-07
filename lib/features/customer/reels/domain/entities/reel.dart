@@ -1,8 +1,10 @@
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 
 /// A reel in the feed. Pure-Dart domain entity — no JSON, no Dio.
 /// Reels are pointer records: [sourceUrl] deep-links to the external platform.
-class Reel {
+class Reel implements ReelMedia {
   const Reel({
     required this.id,
     required this.sourceUrl,
@@ -18,6 +20,7 @@ class Reel {
     required this.commentCount,
     required this.shareCount,
     required this.createdAt,
+    this.platform,
     this.videoUrl,
     this.isLikedByUser,
     this.isWishlistedByUser,
@@ -39,6 +42,12 @@ class Reel {
   final int commentCount;
   final int shareCount;
   final DateTime createdAt;
+
+  /// Source platform (Instagram / YouTube / TikTok / Facebook). Used by the player
+  /// to pick the right playback strategy. Null when the reel is pre-platform-tagging
+  /// (legacy data).
+  final SocialPlatform? platform;
+
   final bool? isLikedByUser;
   final bool? isWishlistedByUser;
   final bool? isCreatorFollowed;
@@ -59,6 +68,7 @@ class Reel {
     int? commentCount,
     int? shareCount,
     DateTime? createdAt,
+    SocialPlatform? platform,
     bool? isLikedByUser,
     bool? isWishlistedByUser,
     bool? isCreatorFollowed,
@@ -79,11 +89,25 @@ class Reel {
       commentCount: commentCount ?? this.commentCount,
       shareCount: shareCount ?? this.shareCount,
       createdAt: createdAt ?? this.createdAt,
+      platform: platform ?? this.platform,
       isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       isWishlistedByUser: isWishlistedByUser ?? this.isWishlistedByUser,
       isCreatorFollowed: isCreatorFollowed ?? this.isCreatorFollowed,
     );
   }
+
+  /// Platform-specific video ID derived from [sourceUrl]. Used by YouTube playback
+  /// to identify the video. Null when not parseable.
+  String? get platformVideoId {
+    if (platform != SocialPlatform.youtube) return null;
+    final uri = Uri.tryParse(sourceUrl);
+    return uri?.queryParameters['v'];
+  }
+
+  /// Open URL for the platform's native app / web. Alias of [sourceUrl]
+  /// for the [ReelMedia] contract.
+  @override
+  String get permalink => sourceUrl;
 }
 
 /// A product tagged on a reel.

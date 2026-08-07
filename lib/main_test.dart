@@ -623,11 +623,8 @@ class _DevApp extends StatelessWidget {
         GoRoute(
           path: RouteNames.reelImportPreview,
           builder: (ctx, state) {
-            final extra = state.extra! as Map<String, dynamic>;
-            return PreviewReelScreen(
-              url: extra['url'] as String,
-              platform: extra['platform'] as SocialPlatform,
-            );
+            final reel = state.extra! as ImportableReel;
+            return PreviewReelScreen(reel: reel);
           },
         ),
         GoRoute(
