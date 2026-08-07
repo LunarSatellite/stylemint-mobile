@@ -106,11 +106,29 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
         .whereType<String>()
         .toList(growable: false);
     final rawSocials = (json['socials'] as List<dynamic>?) ?? const [];
-    return _$CreatorApplicationDtoFromJson(<String, dynamic>{
-      ...json,
-      'categoryIds': categoryIds,
-      'socials': rawSocials,
-    });
+
+    return _CreatorApplicationDto(
+      id: json['id'] as String,
+      state: json['state'] as int,
+      rejectionReason: json['rejectionReason'] as String?,
+      bio: json['bio'] as String?,
+      audienceBand: json['audienceBand'] as int?,
+      otherCategoryDescription: json['otherCategoryDescription'] as String?,
+      categoryIds: categoryIds,
+      socials: rawSocials
+          .map(
+              (s) => CreatorApplicationSocialDto.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      submittedAtUtc: json['submittedAtUtc'] == null
+          ? null
+          : DateTime.parse(json['submittedAtUtc'] as String),
+      createdUtc: json['createdUtc'] == null
+          ? null
+          : DateTime.parse(json['createdUtc'] as String),
+      updatedUtc: json['updatedUtc'] == null
+          ? null
+          : DateTime.parse(json['updatedUtc'] as String),
+    );
   }
 
   CreatorApplication toDomain() {
