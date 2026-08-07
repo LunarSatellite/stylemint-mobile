@@ -659,9 +659,12 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(productSearchNotifierProvider);
-    final hasResults = searchState is _ProductSearchLoadSuccess
-        || searchState is _ProductSearchLoadInProgress
-        || searchState is _ProductSearchLoadFailure;
+    final hasResults = searchState.maybeWhen(
+      loadSuccess: (_) => true,
+      loadInProgress: () => true,
+      loadFailure: (_) => true,
+      orElse: () => false,
+    );
     final sheetHeight = hasResults
         ? MediaQuery.of(context).size.height * 0.8
         : null;
