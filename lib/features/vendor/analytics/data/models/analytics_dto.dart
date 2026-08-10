@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
 
 // ---------------------------------------------------------------------------
@@ -169,7 +170,7 @@ class AnalyticsTopProductDto {
     price: totalRevenue.amount,
     currency: totalRevenue.currency,
     unitsSold: unitsSold,
-    imageUrl: thumbnailUrl,
+    imageUrl: absoluteMediaUrl(thumbnailUrl),
   );
 }
 
