@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
+
 /// Maps a `VendorProfileDto` row from `GET /v1/brands` / `/v1/brands/recommended`.
 class BrandListItemDto {
   const BrandListItemDto({
@@ -26,4 +28,14 @@ class BrandListItemDto {
 
   String get commissionRangeLabel =>
       '${commissionRangeMinPercent.toStringAsFixed(0)}-${commissionRangeMaxPercent.toStringAsFixed(0)}%';
+}
+
+extension BrandListItemDtoMapper on BrandListItemDto {
+  Brand toDomain() => Brand(
+        vendorAccountId: vendorAccountId,
+        businessName: businessName,
+        commissionRangeMinPercent: commissionRangeMinPercent,
+        commissionRangeMaxPercent: commissionRangeMaxPercent,
+        logoUrl: logoUrl,
+      );
 }

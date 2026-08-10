@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
+
 /// Partnership detail — backend `PartnershipDto` (`GET /v1/partnerships/{id}`).
 class PartnershipDetailDto {
   const PartnershipDetailDto({
@@ -228,4 +230,44 @@ class SampleCampaignDto {
       creatorCollabCount: (json['creatorCollabCount'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+extension TermsSectionMapper on TermsSection {
+  PartnershipTermsSection toDomain() =>
+      PartnershipTermsSection(heading: heading, bullets: bullets);
+}
+
+extension PartnershipTermsDtoMapper on PartnershipTermsDto {
+  PartnershipTerms toDomain() => PartnershipTerms(
+        versionNumber: versionNumber,
+        whoCanJoin: whoCanJoin.toDomain(),
+        reelContentRules: reelContentRules.toDomain(),
+      );
+}
+
+extension MoneyDtoMapper on MoneyDto {
+  PartnershipMoney toDomain() =>
+      PartnershipMoney(amount: amount, currency: currency);
+}
+
+extension PotentialEarningsDtoMapper on PotentialEarningsDto {
+  PotentialEarnings toDomain() => PotentialEarnings(
+        partnershipId: partnershipId,
+        productVariantId: productVariantId,
+        commissionRate: commissionRate,
+        unitPrice: unitPrice.toDomain(),
+        perSale: perSale.toDomain(),
+        perFiftySales: perFiftySales.toDomain(),
+        salesAssumed: salesAssumed,
+      );
+}
+
+extension RecipeAttachmentInfoDtoMapper on RecipeAttachmentInfoDto {
+  RecipeAttachmentInfo toDomain() => RecipeAttachmentInfo(
+        recipeId: recipeId,
+        recipeVersion: recipeVersion,
+        isHidden: isHidden,
+        title: title,
+        thumbnailUrl: thumbnailUrl,
+      );
 }

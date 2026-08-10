@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 
 class ReelTaggedProductDto {
   const ReelTaggedProductDto({
@@ -199,4 +200,35 @@ class ReelTagManagementDto {
         vendorAccountId: json['vendorAccountId'] as String?,
         vendorDisplayName: json['vendorDisplayName'] as String?,
       );
+}
+
+extension ReelTagManagementDtoMapper on ReelTagManagementDto {
+  ReelProductTag toDomain() => ReelProductTag(
+        id: id,
+        reelId: reelId,
+        productId: productId,
+        commissionPercent: commissionRateSnapshotPercent,
+        priceLabel: _money(
+          productPriceSnapshotAmount,
+          productPriceSnapshotCurrency,
+        ),
+        commissionPerSaleLabel: _money(
+          commissionPerSaleSnapshotAmount,
+          commissionPerSaleSnapshotCurrency,
+        ),
+        overlayPositionX: overlayPositionX,
+        overlayPositionY: overlayPositionY,
+        productName: productName,
+        productImageUrl: productPrimaryImageUrl,
+        vendorDisplayName: vendorDisplayName,
+        createdUtc: createdUtc,
+      );
+
+  /// Mirrors the label format [ReelTaggedProductDto] already uses so both
+  /// tag views render prices identically.
+  static String _money(double amount, String? currency) {
+    final code = (currency ?? 'NPR').toUpperCase();
+    final symbol = code == 'NPR' ? 'Rs' : code;
+    return '$symbol ${amount.toStringAsFixed(0)}';
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
@@ -124,7 +125,7 @@ class _Header extends StatelessWidget {
 }
 
 class _BrandCard extends StatelessWidget {
-  final BrandListItemDto brand;
+  final Brand brand;
   final bool following;
   final VoidCallback onFollow;
 
