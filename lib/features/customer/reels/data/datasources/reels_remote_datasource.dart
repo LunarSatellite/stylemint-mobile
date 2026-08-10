@@ -61,11 +61,10 @@ class ReelsRemoteDataSource {
             ))
         .toList(growable: false);
 
-    final platformStr = (r['sourcePlatform'] as String?) ?? '';
-    final platform = SocialPlatform.values.firstWhere(
-      (p) => p.name == platformStr,
-      orElse: () => SocialPlatform.instagram,
-    );
+    // The Discovery feed sends PascalCase strings ("YouTubeShorts"), not
+    // Dart enum names — see SocialPlatform.tryParseWire.
+    final platform = SocialPlatform.tryParseWire(r['sourcePlatform']) ??
+        SocialPlatform.instagram;
 
     return Reel(
       id: (r['reelId'] as String?) ?? '',

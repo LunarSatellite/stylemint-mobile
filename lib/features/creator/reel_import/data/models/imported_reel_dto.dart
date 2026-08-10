@@ -33,10 +33,8 @@ abstract class ImportableReelDto with _$ImportableReelDto {
       _$ImportableReelDtoFromJson(json);
 
   ImportableReel toDomain() {
-    final platformEnum = SocialPlatform.values.firstWhere(
-      (p) => p.name == platform,
-      orElse: () => SocialPlatform.instagram,
-    );
+    final platformEnum = SocialPlatform.tryParseWire(platform) ??
+        SocialPlatform.instagram;
 
     return ImportableReel(
       id: id,
@@ -104,10 +102,8 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       _$ImportedReelDtoFromJson(json);
 
   ImportedReel toDomain() {
-    final platformEnum = SocialPlatform.values.firstWhere(
-      (p) => p.name == platform,
-      orElse: () => SocialPlatform.instagram,
-    );
+    final platformEnum = SocialPlatform.tryParseWire(platform) ??
+        SocialPlatform.instagram;
 
     final statusEnum = ImportStatus.values.firstWhere(
       (s) => s.name == status,
