@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -91,7 +92,7 @@ abstract class TopProductDto with _$TopProductDto {
   VendorTopProduct toDomain() => VendorTopProduct(
     productId: productId,
     name: name ?? '',
-    thumbnailUrl: thumbnailUrl,
+    thumbnailUrl: absoluteMediaUrl(thumbnailUrl),
     unitsSold: unitsSold,
     totalRevenue:
         totalRevenue?.toDomain() ?? const Money(amount: 0, currency: 'NPR'),

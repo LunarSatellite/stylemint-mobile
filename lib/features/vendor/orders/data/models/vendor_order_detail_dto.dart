@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -44,7 +45,7 @@ class VendorOrderDetailDto {
   static VendorOrderItem _lineToItem(Map<String, dynamic> l) => VendorOrderItem(
         productId: (l['productVariantId'] as String?) ?? '',
         productName: (l['productTitleSnapshot'] as String?) ?? '',
-        imageUrl: (l['thumbnailUrlSnapshot'] as String?) ?? '',
+        imageUrl: absoluteMediaUrl((l['thumbnailUrlSnapshot'] as String?) ?? ''),
         quantity: (l['quantity'] as num?)?.toInt() ?? 0,
         unitPrice: Money(
           amount: (l['unitPriceAmount'] as num?)?.toDouble() ?? 0,
