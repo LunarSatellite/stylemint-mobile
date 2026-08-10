@@ -21,6 +21,8 @@ enum _Status { pending, accepted, declined }
 class _Request {
   const _Request({
     required this.id,
+    required this.vendorProfileId,
+    this.vendorAccountId,
     required this.brandName,
     required this.rating,
     required this.timeAgo,
@@ -32,6 +34,8 @@ class _Request {
   });
 
   final String id;
+  final String vendorProfileId;
+  final String? vendorAccountId;
   final String brandName;
   final double rating;
   final String timeAgo;
@@ -58,6 +62,8 @@ String _commissionLabel(double min, double max) {
 
 _Request _fromInvite(PartnershipInvite i) => _Request(
       id: i.id,
+      vendorProfileId: i.vendorProfileId,
+      vendorAccountId: i.vendorAccountId,
       brandName: i.vendorName,
       rating: i.vendorRating ?? 0,
       timeAgo: _timeAgo(i.expiresAt),
@@ -73,6 +79,8 @@ _Request _fromInvite(PartnershipInvite i) => _Request(
 
 _Request _fromActive(ActivePartnership a) => _Request(
       id: a.id,
+      vendorProfileId: a.vendorProfileId,
+      vendorAccountId: a.vendorAccountId,
       brandName: a.vendorName,
       rating: 0,
       timeAgo: _timeAgo(a.startedAt),
@@ -412,17 +420,27 @@ class _RequestCardState extends State<_RequestCard> {
                     ),
                     const SizedBox(height: 4),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => BrandMessagingScreen(
-                            args: BrandMessagingArgs(
-                              brandName: req.brandName,
-                              rating: req.rating,
-                              category: req.category,
+                      onTap: () {
+                        final accountId =
+                            (req.vendorAccountId != null &&
+                                    req.vendorAccountId!.isNotEmpty)
+                                ? req.vendorAccountId
+                                : null;
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => BrandMessagingScreen(
+                              args: BrandMessagingArgs(
+                                brandName: req.brandName,
+                                rating: req.rating,
+                                category: req.category,
+                                otherParticipantId: accountId,
+                                profileId:
+                                    accountId == null ? req.vendorProfileId : null,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                       child: Text(
                         'Message Back',
                         style: DesignTokens.smallRegular.copyWith(

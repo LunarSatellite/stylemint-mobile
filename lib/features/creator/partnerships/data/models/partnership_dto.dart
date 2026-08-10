@@ -26,6 +26,7 @@ abstract class PartnershipDto with _$PartnershipDto {
     String? vendorName,
     String? vendorLogoUrl,
     @Default(false) bool initiatedByCreator,
+    String? vendorAccountId,
     required DateTime createdUtc,
     required DateTime updatedUtc,
   }) = _PartnershipDto;
@@ -43,6 +44,8 @@ abstract class PartnershipDto with _$PartnershipDto {
     };
     return PartnershipInvite(
       id: id,
+      vendorProfileId: vendorProfileId,
+      vendorAccountId: vendorAccountId,
       vendorName: vendorName ?? '',
       vendorLogoUrl: vendorLogoUrl ?? '',
       campaignBrief: requestMessage ?? '',
@@ -55,6 +58,8 @@ abstract class PartnershipDto with _$PartnershipDto {
 
   ActivePartnership toActiveDomain() => ActivePartnership(
         id: id,
+        vendorProfileId: vendorProfileId,
+        vendorAccountId: vendorAccountId,
         vendorName: vendorName ?? '',
         vendorLogoUrl: vendorLogoUrl ?? '',
         commissionRate: commissionMinPercent,

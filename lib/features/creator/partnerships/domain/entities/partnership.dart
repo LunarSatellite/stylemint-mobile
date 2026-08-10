@@ -5,6 +5,8 @@ enum PartnershipStatus { pending, accepted, declined, expired, active }
 class PartnershipInvite {
   const PartnershipInvite({
     required this.id,
+    required this.vendorProfileId,
+    this.vendorAccountId,
     required this.vendorName,
     required this.vendorLogoUrl,
     required this.campaignBrief,
@@ -15,6 +17,8 @@ class PartnershipInvite {
   });
 
   final String id;
+  final String vendorProfileId;
+  final String? vendorAccountId;
   final String vendorName;
   final String vendorLogoUrl;
   final String campaignBrief;
@@ -25,6 +29,7 @@ class PartnershipInvite {
 
   PartnershipInvite copyWith({
     String? id,
+    String? vendorProfileId,
     String? vendorName,
     String? vendorLogoUrl,
     String? campaignBrief,
@@ -34,6 +39,7 @@ class PartnershipInvite {
   }) {
     return PartnershipInvite(
       id: id ?? this.id,
+      vendorProfileId: vendorProfileId ?? this.vendorProfileId,
       vendorName: vendorName ?? this.vendorName,
       vendorLogoUrl: vendorLogoUrl ?? this.vendorLogoUrl,
       campaignBrief: campaignBrief ?? this.campaignBrief,
@@ -47,6 +53,8 @@ class PartnershipInvite {
 class ActivePartnership {
   const ActivePartnership({
     required this.id,
+    required this.vendorProfileId,
+    this.vendorAccountId,
     required this.vendorName,
     required this.vendorLogoUrl,
     required this.commissionRate,
@@ -57,6 +65,8 @@ class ActivePartnership {
   });
 
   final String id;
+  final String vendorProfileId;
+  final String? vendorAccountId;
   final String vendorName;
   final String vendorLogoUrl;
   final double commissionRate;
@@ -67,6 +77,7 @@ class ActivePartnership {
 
   ActivePartnership copyWith({
     String? id,
+    String? vendorProfileId,
     String? vendorName,
     String? vendorLogoUrl,
     double? commissionRate,
@@ -77,6 +88,7 @@ class ActivePartnership {
   }) {
     return ActivePartnership(
       id: id ?? this.id,
+      vendorProfileId: vendorProfileId ?? this.vendorProfileId,
       vendorName: vendorName ?? this.vendorName,
       vendorLogoUrl: vendorLogoUrl ?? this.vendorLogoUrl,
       commissionRate: commissionRate ?? this.commissionRate,

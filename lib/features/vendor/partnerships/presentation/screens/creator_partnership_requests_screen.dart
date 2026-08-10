@@ -3,16 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-
-/// Same data as the "Pending" tab on VendorPartnershipsScreen (a
-/// creator-initiated request awaiting the vendor's accept/decline) — this
-/// screen is a standalone entry point for the same real list, reached from
-/// elsewhere (e.g. a dashboard notification) rather than from the tab bar.
+/// Standalone view of pending creator-initiated partnership requests (awaiting
+/// the vendor's accept/decline). Reached from two entry points: the vendor
+/// dashboard notification badge and the Creator Partnerships item on the
+/// dashboard's More menu.
 class CreatorPartnershipRequestsScreen extends ConsumerWidget {
   const CreatorPartnershipRequestsScreen({super.key});
 
@@ -222,6 +223,39 @@ class _RequestCard extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          OutlinedButton(
+            onPressed: () {
+              // Prefer the backend-populated creator account id so the
+              // chat can open directly without the by-profile lookup,
+              // which only resolves RoleProfile.Id and 404s on the
+              // CreatorProfile.Id we get from partnership listings.
+              final otherParticipantId =
+                  (request.creatorAccountId == null ||
+                          request.creatorAccountId!.isEmpty)
+                      ? null
+                      : request.creatorAccountId;
+              context.push(
+                RouteNames.vendorMessageCreator,
+                extra: MessageCreatorArgs(
+                  creatorName: request.creatorLabel,
+                  handle: request.creatorHandle,
+                  avatarAsset: request.creatorLogoUrl ?? "",
+                  otherParticipantId: otherParticipantId,
+                  profileId: otherParticipantId == null
+                      ? request.creatorProfileId
+                      : null,
+                ),
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: DesignTokens.borderDefault),
+              shape: const StadiumBorder(),
+              foregroundColor: DesignTokens.textWhite,
+              minimumSize: const Size.fromHeight(44),
+            ),
+            child: const Text('Message'),
           ),
         ],
       ),

@@ -212,6 +212,10 @@ class VendorPartnership {
     required this.initiatedByCreator,
     this.requestMessage,
     this.vendorRating,
+    this.creatorName = '',
+    this.creatorHandle = '',
+    this.creatorLogoUrl,
+    this.creatorAccountId,
   });
 
   final String id;
@@ -231,8 +235,65 @@ class VendorPartnership {
   final String? requestMessage;
   final double? vendorRating;
 
+  /// Joined at read time from stylemint-identity's CreatorProfile — mirrors
+  /// the existing vendorRating field. The vendor partnership list + chat
+  /// surfaces use these to display the creator's name/handle/avatar
+  /// without a separate profile lookup.
+  final String creatorName;
+  final String creatorHandle;
+  final String? creatorLogoUrl;
+  final String? creatorAccountId;
+
   /// Best available label until the backend exposes creator display fields.
-  String get creatorLabel => creatorProfileId.length >= 8
-      ? 'Creator ••${creatorProfileId.substring(creatorProfileId.length - 4)}'
-      : 'Creator';
+  String get creatorLabel {
+    final name = creatorName.trim();
+    if (name.isNotEmpty) return name;
+    final h = creatorHandle.trim();
+    if (h.isNotEmpty) return h.startsWith('@') ? h : '@$h';
+    return creatorProfileId.length >= 8
+        ? 'Creator ••${creatorProfileId.substring(creatorProfileId.length - 4)}'
+        : 'Creator';
+  }
+
+  VendorPartnership copyWith({
+    String? id,
+    String? vendorProfileId,
+    String? creatorProfileId,
+    PartnershipState? state,
+    double? commissionMinPercent,
+    double? commissionMaxPercent,
+    DateTime? invitedAt,
+    DateTime? respondedAt,
+    DateTime? endedAt,
+    String? endReason,
+    String? brandBriefId,
+    bool? initiatedByCreator,
+    String? requestMessage,
+    double? vendorRating,
+    String? creatorName,
+    String? creatorHandle,
+    String? creatorLogoUrl,
+    String? creatorAccountId,
+  }) {
+    return VendorPartnership(
+      id: id ?? this.id,
+      vendorProfileId: vendorProfileId ?? this.vendorProfileId,
+      creatorProfileId: creatorProfileId ?? this.creatorProfileId,
+      state: state ?? this.state,
+      commissionMinPercent: commissionMinPercent ?? this.commissionMinPercent,
+      commissionMaxPercent: commissionMaxPercent ?? this.commissionMaxPercent,
+      invitedAt: invitedAt ?? this.invitedAt,
+      respondedAt: respondedAt ?? this.respondedAt,
+      endedAt: endedAt ?? this.endedAt,
+      endReason: endReason ?? this.endReason,
+      brandBriefId: brandBriefId ?? this.brandBriefId,
+      initiatedByCreator: initiatedByCreator ?? this.initiatedByCreator,
+      requestMessage: requestMessage ?? this.requestMessage,
+      vendorRating: vendorRating ?? this.vendorRating,
+      creatorName: creatorName ?? this.creatorName,
+      creatorHandle: creatorHandle ?? this.creatorHandle,
+      creatorLogoUrl: creatorLogoUrl ?? this.creatorLogoUrl,
+      creatorAccountId: creatorAccountId ?? this.creatorAccountId,
+    );
+  }
 }

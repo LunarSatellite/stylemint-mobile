@@ -132,13 +132,15 @@ class _ActiveTab extends StatelessWidget {
                     const SizedBox(height: DesignTokens.s12),
                 itemBuilder: (_, i) => _PartnershipCard(
                   partnershipId: active[i].id,
+                  vendorProfileId: active[i].vendorProfileId,
+                  vendorAccountId: active[i].vendorAccountId,
                   logo: _VendorAvatar(
                     url: active[i].vendorLogoUrl,
                     name: active[i].vendorName,
                   ),
                   name: active[i].vendorName.isNotEmpty
                       ? active[i].vendorName
-                      : 'Partnership ${active[i].id.substring(0, 8)}',
+                      : 'Brand',
                   productsTagged: active[i].productsCount,
                   commissionPct: active[i].commissionRate.round(),
                   startDate: DateFormat('d MMM, yyyy').format(
@@ -351,7 +353,7 @@ class _EndedPartnershipCard extends StatelessWidget {
                     Text(
                       partnership.vendorName.isNotEmpty
                           ? partnership.vendorName
-                          : 'Partnership ${partnership.id.substring(0, 8)}',
+                          : 'Brand',
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
@@ -725,6 +727,8 @@ class _PillButton extends StatelessWidget {
 class _PartnershipCard extends StatelessWidget {
   const _PartnershipCard({
     required this.partnershipId,
+    required this.vendorProfileId,
+    this.vendorAccountId,
     required this.logo,
     required this.name,
     required this.productsTagged,
@@ -735,6 +739,8 @@ class _PartnershipCard extends StatelessWidget {
   });
 
   final String partnershipId;
+  final String vendorProfileId;
+  final String? vendorAccountId;
   final Widget logo;
   final String name;
   final int productsTagged;
@@ -809,14 +815,25 @@ class _PartnershipCard extends StatelessWidget {
                   ],
                 ),
               ),
+              _PartnershipCardMenu(
+                partnershipId: partnershipId,
+                name: name,
+                vendorProfileId: vendorProfileId,
+                vendorAccountId: vendorAccountId,
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
           Row(
             children: [
               GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                onTap: () {
+                  final accountId =
+                      (vendorAccountId != null && vendorAccountId!.isNotEmpty)
+                          ? vendorAccountId
+                          : null;
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
                     // rating/category aren't carried by the active-
                     // partnership data — honestly left at 0/'' rather than
                     // fabricated (same convention as brands_screen.dart's
@@ -826,10 +843,13 @@ class _PartnershipCard extends StatelessWidget {
                         brandName: name,
                         rating: 0,
                         category: '',
+                          otherParticipantId: accountId,
+                          profileId: accountId == null ? vendorProfileId : null,
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
                 child: const Text(
                   'Message',
                   style: TextStyle(
@@ -939,6 +959,134 @@ Future<void> _showTermsSheet(BuildContext context, String partnershipId) {
     isScrollControlled: true,
     builder: (_) => _TermsBottomSheet(partnershipId: partnershipId),
   );
+}
+
+// Three-dot popup menu attached to each active partnership item card.
+// Includes the Messages action that wires into the existing
+// BrandMessagingScreen + ChatView pipeline (Realtime SignalR-backed
+// conversations with the brand). Other entries delegate to existing
+// handlers (terms sheet, analytics route, end-partnership snackbar).
+class _PartnershipCardMenu extends StatelessWidget {
+  const _PartnershipCardMenu({
+    required this.partnershipId,
+    required this.name,
+    required this.vendorProfileId,
+    this.vendorAccountId,
+  });
+
+  final String partnershipId;
+  final String name;
+  final String vendorProfileId;
+  final String? vendorAccountId;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_vert_rounded,
+        color: DesignTokens.iconLight,
+        size: 22,
+      ),
+      color: DesignTokens.bgAppBody,
+      tooltip: 'Partnership actions',
+      onSelected: (value) {
+        switch (value) {
+          case 'messages':
+            // Prefer the backend-populated vendor account id to skip the
+            // /v1/accounts/by-profile/{id} lookup (which 404s when
+            // vendorProfileId is a VendorProfile.Id rather than a
+            // RoleProfile.Id). Only fall back to profileId when no
+            // account id is available.
+            final accountId =
+                (vendorAccountId != null && vendorAccountId!.isNotEmpty)
+                    ? vendorAccountId
+                    : null;
+            context.push(
+              RouteNames.brandMessaging,
+              extra: BrandMessagingArgs(
+                brandName: name,
+                rating: 0,
+                category: '',
+                otherParticipantId: accountId,
+                profileId: accountId == null ? vendorProfileId : null,
+              ),
+            );
+            break;
+          case 'terms':
+            _showTermsSheet(context, partnershipId);
+            break;
+          case 'analytics':
+            context.push(RouteNames.creatorAnalytics);
+            break;
+          case 'end':
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ending a partnership is coming soon.'),
+              ),
+            );
+            break;
+        }
+      },
+      itemBuilder: (_) => const [
+        PopupMenuItem<String>(
+          value: 'messages',
+          child: Row(
+            children: [
+              Icon(Icons.chat_bubble_outline_rounded,
+                  size: 18, color: DesignTokens.textWhite),
+              SizedBox(width: 12),
+              Text(
+                'Messages',
+                style: TextStyle(color: DesignTokens.textWhite),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'terms',
+          child: Row(
+            children: [
+              Icon(Icons.description_outlined,
+                  size: 18, color: DesignTokens.textWhite),
+              SizedBox(width: 12),
+              Text(
+                'View Terms',
+                style: TextStyle(color: DesignTokens.textWhite),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'analytics',
+          child: Row(
+            children: [
+              Icon(Icons.insights_rounded,
+                  size: 18, color: DesignTokens.textWhite),
+              SizedBox(width: 12),
+              Text(
+                'View Analytics',
+                style: TextStyle(color: DesignTokens.textWhite),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'end',
+          child: Row(
+            children: [
+              Icon(Icons.handshake_outlined,
+                  size: 18, color: DesignTokens.colorError),
+              SizedBox(width: 12),
+              Text(
+                'End Partnership',
+                style: TextStyle(color: DesignTokens.colorError),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _TermsBottomSheet extends ConsumerWidget {
