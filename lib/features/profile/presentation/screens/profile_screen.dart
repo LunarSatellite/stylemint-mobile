@@ -171,17 +171,21 @@ class _ProfileBody extends ConsumerWidget {
               label: 'Push Notifications',
               toggleValue: pushEnabled,
               onToggle: (val) async {
-                final current = notifState.maybeWhen(
-                  loadSuccess: (p) => p,
-                  orElse: () => null,
-                );
+                // Read the current prefs fresh from state — the closure-captured
+                // `notifState` from build() is stale once an async gap opens.
+                final current = ref
+                    .read(settingsNotifierProvider)
+                    .maybeWhen(
+                      loadSuccess: (p) => p,
+                      saveSuccess: (p) => p,
+                      orElse: () => null,
+                    );
                 if (current == null) return;
 
                 if (val) {
                   final granted =
                       await PushNotificationService.requestPermission();
                   if (!granted) return;
-                  // Token is fetched so the backend can register it on savePrefs.
                   await PushNotificationService.getToken();
                 }
 
