@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show DioException, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -131,6 +131,38 @@ class ReelImportRemoteDataSource {
         vendorName: p['brandName'] as String? ?? '',
       );
     }).toList(growable: false);
+  }
+
+  // GET /v1/creator/reels/{externalId}/suggested-products?platform=...
+  // Returns backend-suggested products for a reel that hasn't been imported yet.
+  // Falls back to an empty list on 404 so the UI can show no suggestions
+  // without surfacing an error.
+  Future<List<TaggedProductForImportDto>> getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    try {
+      final response = await apiClient.get(
+        '/v1/creator/reels//suggested-products',
+        queryParameters: {'platform': _platformInt(platform)},
+      );
+      final m = response as Map<String, dynamic>;
+      final products = m['items'] as List<dynamic>? ?? const <dynamic>[];
+      return products.map((e) {
+        final p = e as Map<String, dynamic>;
+        return TaggedProductForImportDto(
+          productId: p['productId'] as String? ?? '',
+          productName: p['name'] as String? ?? '',
+          imageUrl: p['heroImageUrl'] as String? ?? '',
+          amount: (p['price'] as num?)?.toDouble() ?? 0.0,
+          currency: p['currency'] as String? ?? 'NPR',
+          vendorName: p['brandName'] as String? ?? '',
+        );
+      }).toList(growable: false);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return const [];
+      rethrow;
+    }
   }
 
   // POST /v1/creator/reels/{reelId}/publish

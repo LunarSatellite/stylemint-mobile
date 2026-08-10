@@ -101,7 +101,23 @@ class Reel implements ReelMedia {
   String? get platformVideoId {
     if (platform != SocialPlatform.youtube) return null;
     final uri = Uri.tryParse(sourceUrl);
-    return uri?.queryParameters['v'];
+    if (uri == null) return null;
+    // Standard watch URL: https://www.youtube.com/watch?v=ID
+    final v = uri.queryParameters['v'];
+    if (v != null && v.isNotEmpty) return v;
+    // Short URL: https://youtu.be/ID
+    if (uri.host.contains('youtu.be') && uri.pathSegments.isNotEmpty) {
+      final seg = uri.pathSegments.first;
+      if (seg.isNotEmpty) return seg;
+    }
+    // Shorts URL: https://www.youtube.com/shorts/ID
+    final path = uri.pathSegments;
+    final shortsIdx = path.indexOf('shorts');
+    if (shortsIdx >= 0 && shortsIdx + 1 < path.length) {
+      final id = path[shortsIdx + 1];
+      if (id.isNotEmpty) return id;
+    }
+    return null;
   }
 
   /// Open URL for the platform's native app / web. Alias of [sourceUrl]

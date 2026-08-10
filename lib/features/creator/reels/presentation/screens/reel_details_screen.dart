@@ -78,42 +78,84 @@ class _BodyState extends State<_Body> {
           ),
         ),
 
-        // Bottom scrim so overlaid text stays legible over any video.
+        // Combined top + bottom scrim so the top bar (top ~22%) and
+        // the bottom info block (bottom ~55%) stay legible over any video,
+        // while leaving the middle of the frame fully visible.
         const IgnorePointer(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black87],
-                stops: [0.45, 1.0],
+                colors: [
+                  Color(0xCC000000),
+                  Color(0x00000000),
+                  Color(0x00000000),
+                  Color(0xDD000000),
+                ],
+                stops: [0.0, 0.22, 0.45, 1.0],
               ),
             ),
           ),
         ),
 
-        // Transparent top bar over the video.
+        // Top bar: circular back button on the left, platform-name title
+        // centred (e.g. "YouTube Shorts") so the user always sees where
+        // the reel was imported from. Backdrop + Expanded + ellipsis keep
+        // it legible over any video frame and prevent long labels from
+        // being clipped on narrow screens.
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new,
-                      size: 18, color: DesignTokens.textWhite),
-                  onPressed: () => context.pop(),
-                ),
-                const Text('Reel Details', style: DesignTokens.sectionInnerTitle),
-              ],
+          bottom: false,
+          child: SizedBox(
+            height: 56,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+              child: Row(
+                children: [
+                  Material(
+                    color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => context.pop(),
+                      child: const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Icon(Icons.arrow_back_ios_new,
+                            size: 18, color: DesignTokens.textWhite),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: DesignTokens.baseBlack
+                              .withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          reel.platformLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.sectionInnerTitle,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
             ),
           ),
         ),
-
         // Right-rail read-only analytics — same visual language as the
         // Home feed's ReelActions right rail.
         Positioned(
           right: DesignTokens.s12,
-          bottom: 220,
+          bottom: 320,
           child: _AnalyticsRail(reel: reel),
         ),
 
@@ -121,6 +163,7 @@ class _BodyState extends State<_Body> {
         // caption, then the tagged-products strip — same structure as
         // CreatorInfo + TaggedProductsSection on the Home feed.
         SafeArea(
+          top: false,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,11 +269,12 @@ class _AnalyticsRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _RailStat(icon: Icons.remove_red_eye_outlined, value: reel.views),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s28),
         _RailStat(icon: Icons.favorite_outline, value: reel.likes),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s28),
         _RailStat(
           icon: Icons.chat_bubble_outline,
           value: reel.comments,
@@ -254,27 +298,25 @@ class _RailStat extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
         child: Container(
-          width: 52,
+          width: 56,
           padding: const EdgeInsets.symmetric(
-            vertical: DesignTokens.s8,
+            vertical: DesignTokens.s12,
             horizontal: DesignTokens.s4,
           ),
           decoration: const BoxDecoration(
-            color: Color(0x99333333),
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+            color: Color(0xCC333333),
+            borderRadius: BorderRadius.all(Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: DesignTokens.iconWhite, size: 24),
-              const SizedBox(height: DesignTokens.s4),
+              Icon(icon, color: DesignTokens.iconWhite, size: 26),
               Text(
                 _formatCount(value),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
                   height: 1,
                   color: DesignTokens.textWhite,
                 ),

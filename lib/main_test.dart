@@ -457,6 +457,15 @@ class _MockReelImportRepository implements ReelImportRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    return right(_allProducts);
+  }
+
+  @override
   Future<Either<NetworkExceptions, Unit>> publishReel({
     required String reelId,
   }) async =>
