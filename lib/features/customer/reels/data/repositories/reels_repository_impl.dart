@@ -25,11 +25,11 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.getReelsFeed(
+        final reels = await remoteDataSource.getReelsFeed(
           limit: limit,
           cursor: cursor,
         );
-        return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
+        return right(reels);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

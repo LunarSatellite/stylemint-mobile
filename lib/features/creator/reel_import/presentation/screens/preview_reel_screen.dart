@@ -1,22 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class PreviewReelScreen extends StatefulWidget {
-  const PreviewReelScreen({
-    super.key,
-    required this.url,
-    required this.platform,
-  });
+  const PreviewReelScreen({super.key, required this.reel});
 
-  final String url;
-  final SocialPlatform platform;
+  final ImportableReel reel;
 
   @override
   State<PreviewReelScreen> createState() => _PreviewReelScreenState();
@@ -31,20 +25,9 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
     super.dispose();
   }
 
-  String _extractExternalId(String url) {
-    try {
-      final segments = Uri.parse(url)
-          .pathSegments
-          .where((s) => s.isNotEmpty)
-          .toList();
-      return segments.isNotEmpty ? segments.last : url;
-    } on Exception catch (_) {
-      return url;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final reel = widget.reel;
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -64,31 +47,38 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                 DesignTokens.s16,
                 DesignTokens.s16,
                 DesignTokens.s16,
-                DesignTokens.s32,
+                DesignTokens.s24,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Video thumbnail ────────────────────────────────────
-                  Center(child: _VideoThumbnail()),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  // ── Reel info card ─────────────────────────────────────
-                  _ReelInfoCard(
-                    url: widget.url,
-                    platform: widget.platform,
+                  // Small player at the top, matches the image proportion.
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.42,
+                        height: MediaQuery.of(context).size.width * 0.62,
+                        child: ReelPlayer(
+                          reel: reel,
+                          isActive: true,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s16),
 
-                  // ── Caption input ──────────────────────────────────────
+                  // Reel info card (profile + caption + URL + badge + stats).
+                  _ReelInfoCard(reel: reel),
+                  const SizedBox(height: DesignTokens.s16),
+
+                  // Caption input (no internal border, blends with card).
                   Container(
-                    height: 160,
                     decoration: DesignTokens.cardDecoration(),
-                    padding: const EdgeInsets.all(DesignTokens.s16),
                     child: TextField(
                       controller: _captionController,
-                      maxLines: null,
-                      expands: true,
+                      maxLines: 4,
+                      minLines: 4,
                       textAlignVertical: TextAlignVertical.top,
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textWhite,
@@ -99,8 +89,17 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                           color: DesignTokens.textMuted,
                         ),
                         border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.only(top: 12),
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+                          borderSide: const BorderSide(
+                            color: DesignTokens.primaryGreen,
+                            width: 1.5,
+                          ),
+                        ),
+                        disabledBorder: InputBorder.none,
+                        isCollapsed: true,
+                        contentPadding: const EdgeInsets.all(DesignTokens.s16),
                       ),
                     ),
                   ),
@@ -109,7 +108,7 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
             ),
           ),
 
-          // ── Continue button ────────────────────────────────────────────
+          // Continue button
           Container(
             padding: const EdgeInsets.fromLTRB(
               DesignTokens.s16,
@@ -120,32 +119,24 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
             color: DesignTokens.bgAppFoundation,
             child: SizedBox(
               width: double.infinity,
-              height: DesignTokens.buttonHeight,
               child: ElevatedButton(
                 onPressed: () {
-                  final externalId = _extractExternalId(widget.url);
-                  final reel = ImportableReel(
-                    id: externalId,
-                    platform: widget.platform,
-                    platformPostId: externalId,
-                    sourceUrl: widget.url,
-                    thumbnailUrl: '',
-                    caption: _captionController.text,
-                    createdAt: DateTime.now(),
-                    // Duration is not knowable until the backend processes
-                    // the imported video; 0 signals "unknown" and the
-                    // import endpoint applies its own default.
-                    videoDuration: 0,
+                  context.push(
+                    RouteNames.reelImportTagProducts.replaceFirst(':postId', reel.platformPostId),
+                    extra: reel.copyWith(caption: _captionController.text),
                   );
-                  unawaited(context.push(
-                    RouteNames.reelImportTagProducts
-                        .replaceFirst(':postId', externalId),
-                    extra: reel,
-                  ));
                 },
-                style: DesignTokens.primaryButtonStyle(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: DesignTokens.textWhite,
+                  padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  elevation: 0,
+                ),
                 child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('Continue to Tag Products'),
                     SizedBox(width: DesignTokens.s8),
@@ -161,138 +152,74 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
   }
 }
 
-// ── Video thumbnail ───────────────────────────────────────────────────────────
-
-class _VideoThumbnail extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size.width * 0.60;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Placeholder background
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-            // Subtle grid texture
-            Opacity(
-              opacity: 0.08,
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                ),
-                itemBuilder: (_, _i) => Container(
-                  margin: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ),
-            // Play button
-            const Center(
-              child: Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 52,
-              ),
-            ),
-            // Note: no duration badge here — the real duration isn't known
-            // until the backend resolves the imported video.
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Reel info card ────────────────────────────────────────────────────────────
-
 class _ReelInfoCard extends StatelessWidget {
-  const _ReelInfoCard({required this.url, required this.platform});
+  const _ReelInfoCard({required this.reel});
 
-  final String url;
-  final SocialPlatform platform;
+  final ImportableReel reel;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: DesignTokens.cardDecoration(),
-      padding: const EdgeInsets.all(DesignTokens.s16),
+      padding: const EdgeInsets.all(DesignTokens.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _PlatformCircleIcon(platform: platform),
-              const SizedBox(width: DesignTokens.s16),
+              _PlatformCircleIcon(platform: reel.platform),
+              const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${platform.displayName} Reel',
+                      reel.caption.isNotEmpty
+                          ? reel.caption
+                          : '${reel.platform.displayName} Reel',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: DesignTokens.textWhite,
-                        height: 1.4,
+                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      url,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
+                    if (reel.sourceUrl.isNotEmpty)
+                      Text(
+                        reel.sourceUrl,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontSize: 13,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                     const SizedBox(height: DesignTokens.s8),
-                    _SuccessBadge(),
+                    const _SuccessBadge(),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          const Divider(color: DesignTokens.borderDefault, height: 1),
+          // Divider between header and stats row.
+          Divider(
+            color: DesignTokens.borderDefault,
+            height: 1,
+            thickness: 1,
+          ),
           const SizedBox(height: DesignTokens.s12),
-          // Engagement stats can't be known from the pasted URL alone —
-          // they're only available once the reel is actually imported.
-          Row(
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: DesignTokens.textMuted,
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: Text(
-                  'Engagement stats will be available after import',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-              ),
-            ],
+          _StatsRow(
+            likeCount: reel.likeCount,
+            viewCount: reel.viewCount,
+            bookmarkCount: reel.bookmarkCount,
+            shareCount: reel.shareCount,
+            commentCount: reel.commentCount,
           ),
         ],
       ),
@@ -300,8 +227,108 @@ class _ReelInfoCard extends StatelessWidget {
   }
 }
 
-// ── Platform circle icon ──────────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({
+    required this.likeCount,
+    required this.viewCount,
+    required this.bookmarkCount,
+    required this.shareCount,
+    required this.commentCount,
+  });
 
+  final int likeCount;
+  final int viewCount;
+  final int bookmarkCount;
+  final int shareCount;
+  final int commentCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <_StatEntry>[
+      _StatEntry(
+        icon: Icons.favorite_rounded,
+        value: likeCount,
+      ),
+      _StatEntry(
+        icon: Icons.visibility_rounded,
+        value: viewCount,
+      ),
+      _StatEntry(
+        icon: Icons.bookmark_rounded,
+        value: bookmarkCount,
+      ),
+      _StatEntry(
+        icon: Icons.send_rounded,
+        value: shareCount,
+      ),
+      _StatEntry(
+        icon: Icons.chat_bubble_rounded,
+        value: commentCount,
+      ),
+    ];
+
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < entries.length; i++) ...[
+            _StatItem(entry: entries[i]),
+            if (i < entries.length - 1)
+              const SizedBox(width: DesignTokens.s40),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatEntry {
+  const _StatEntry({required this.icon, required this.value});
+  final IconData icon;
+  final int value;
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({required this.entry});
+  final _StatEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          entry.icon,
+          size: 24,
+          color: DesignTokens.textMuted,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _formatCount(entry.value),
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: DesignTokens.textWhite,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _formatCount(int value) {
+  if (value <= 0) return '0';
+  if (value < 1000) return value.toString();
+  if (value < 1000000) {
+    final k = value / 1000.0;
+    return '${k.toStringAsFixed(k >= 10 ? 0 : 1)}k';
+  }
+  final m = value / 1000000.0;
+  return '${m.toStringAsFixed(m >= 10 ? 0 : 1)}M';
+}
+
+// Platform circle icon (light grey bg, all platforms same color).
 class _PlatformCircleIcon extends StatelessWidget {
   const _PlatformCircleIcon({required this.platform});
 
@@ -316,23 +343,28 @@ class _PlatformCircleIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: 50,
-        height: 50,
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: DesignTokens.inputFieldBorder,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
         child: SvgPicture.asset(
           _svgAssets[platform]!,
-          fit: BoxFit.cover,
+          fit: BoxFit.contain,
         ),
       ),
     );
   }
 }
 
-// ── Success badge ─────────────────────────────────────────────────────────────
-
+// Success badge
 class _SuccessBadge extends StatelessWidget {
+  const _SuccessBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(

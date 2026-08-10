@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/config/api_config.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -62,7 +63,7 @@ abstract class VendorProductDto with _$VendorProductDto {
       id: id,
       variantId: variant?.id ?? '',
       name: name,
-      imageUrl: image?.cdnUrl ?? '',
+      imageUrl: _absoluteUrl(image?.cdnUrl),
       price: Money(
         amount: variant?.priceAmount ?? 0,
         currency: variant?.priceCurrency ?? 'NPR',
@@ -94,6 +95,15 @@ abstract class VendorProductDto with _$VendorProductDto {
       if (i.isPrimary) return i;
     }
     return images.first;
+  }
+
+  // Backend returns CDN paths as relative (/media/...) for some endpoints
+  // and full URLs for others — normalize to a full URL so Image.network can
+  // load it.
+  static String _absoluteUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return ApiConfig.baseUrl + path;
   }
 
   static VendorProductStatus _statusFromState(int state) {

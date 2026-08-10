@@ -92,17 +92,10 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
   const CreatorApplicationDto._();
 
   factory CreatorApplicationDto.fromJson(Map<String, dynamic> json) {
-    // Flatten the BE's nested categories[] and socials[] into the
+    // Flatten the BE's nested categories[] and socials[] arrays into the
     // scalar fields the DTO actually carries. The wire shape for
     // categories is { id, creatorApplicationId, creatorContentCategoryId };
     // we only need the last one (the category GUID the apply payload sends).
-    //
-    // Built directly against the private [_CreatorApplicationDto] because
-    // freezed/json_serializable skip emitting the
-    // _$CreatorApplicationDtoFromJson helper when this factory has a
-    // custom body. The standard '=> _$XFromJson(json)' form would
-    // re-emit it, but callers pass the backend wire shape, so we have
-    // to flatten first.
     final rawCategories = (json['categories'] as List<dynamic>?) ?? const [];
     final categoryIds = rawCategories
         .map(
@@ -112,32 +105,12 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
         )
         .whereType<String>()
         .toList(growable: false);
-
     final rawSocials = (json['socials'] as List<dynamic>?) ?? const [];
-    final socials = rawSocials
-        .map(
-          (s) => CreatorApplicationSocialDto.fromJson(
-            s as Map<String, dynamic>,
-          ),
-        )
-        .toList(growable: false);
-
-    DateTime? parseUtc(Object? v) =>
-        v == null ? null : DateTime.parse(v as String);
-
-    return _CreatorApplicationDto(
-      id: json['id'] as String,
-      state: (json['state'] as num).toInt(),
-      rejectionReason: json['rejectionReason'] as String?,
-      bio: json['bio'] as String?,
-      audienceBand: (json['audienceBand'] as num?)?.toInt(),
-      otherCategoryDescription: json['otherCategoryDescription'] as String?,
-      categoryIds: categoryIds,
-      socials: socials,
-      submittedAtUtc: parseUtc(json['submittedAtUtc']),
-      createdUtc: parseUtc(json['createdUtc']),
-      updatedUtc: parseUtc(json['updatedUtc']),
-    );
+    return _$CreatorApplicationDtoFromJson(<String, dynamic>{
+      ...json,
+      'categoryIds': categoryIds,
+      'socials': rawSocials,
+    });
   }
 
   CreatorApplication toDomain() {

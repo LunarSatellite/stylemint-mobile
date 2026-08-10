@@ -64,8 +64,7 @@ class _BodyState extends State<_Body> {
       fit: StackFit.expand,
       children: [
         ReelPlayer(
-          videoUrl: reel.videoUrl,
-          thumbnailUrl: reel.thumbnailUrl ?? '',
+          reel: reel,
           isActive: true,
           playbackController: _playback,
         ),

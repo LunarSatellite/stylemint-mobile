@@ -2,20 +2,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
-import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/device/device_identity.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/magic_link_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/otp_dto.dart';
-import 'package:stylemint_mobile_frontend/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/passkey_dto.dart';
+import 'package:stylemint_mobile_frontend/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/auth/domain/repositories/auth_repository.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/account_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/services/passkey_service.dart';
+import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 part 'auth_state_provider.freezed.dart';
@@ -137,6 +141,7 @@ class OtpVerificationNotifier extends StateNotifier<OtpVerificationState> {
       },
       (auth) async {
         await ref.read(sessionControllerProvider.notifier).recheck();
+        ref.read(profileNotifierProvider.notifier).fetchProfile();
         state = OtpVerificationState.loadSuccess(auth);
       },
     );
@@ -190,11 +195,19 @@ abstract class AuthSessionState with _$AuthSessionState {
 /// Holds the app-wide auth status. Call [bootstrap] at startup, [recheck]
 /// after a successful login flow, and [logout] to end the session.
 class SessionController extends StateNotifier<AuthSessionState> {
-  SessionController({required this.authRepository, required this.tokenStorage})
-    : super(const AuthSessionState.unknown());
+  SessionController({
+    required this.authRepository,
+    required this.tokenStorage,
+    required this.profileNotifier,
+    required this.roleNotifier,
+    required this.accountNotifier,
+  }) : super(const AuthSessionState.unknown());
 
   final AuthRepository authRepository;
   final TokenStorage tokenStorage;
+  final ProfileNotifier profileNotifier;
+  final RoleNotifier roleNotifier;
+  final AccountNotifier accountNotifier;
 
   /// Reads persisted credentials and sets the initial status.
   Future<void> bootstrap() => recheck();
@@ -223,8 +236,19 @@ class SessionController extends StateNotifier<AuthSessionState> {
   }
 
   /// Revokes the session server-side (best effort) and clears local tokens.
+  /// Also resets all account-specific cached state so the next login starts fresh.
   Future<void> logout({bool allSessions = false}) async {
-    await authRepository.logout(allSessions: allSessions);
+    try {
+      await authRepository.logout(allSessions: allSessions);
+    } catch (_) {
+      // Best-effort logout — proceed to clear local state even if the
+      // server call fails (e.g. no internet).
+    }
+    // Wipe cached profile, roles, and account data so the next login
+    // fetches fresh data instead of showing the previous user's state.
+    profileNotifier.reset();
+    roleNotifier.reset();
+    accountNotifier.reset();
     state = const AuthSessionState.unauthenticated();
   }
 }
@@ -234,6 +258,9 @@ final sessionControllerProvider =
       return SessionController(
         authRepository: ref.watch(authRepositoryProvider),
         tokenStorage: ref.watch(tokenStorageProvider),
+        profileNotifier: ref.watch(profileNotifierProvider.notifier),
+        roleNotifier: ref.watch(roleNotifierProvider.notifier),
+        accountNotifier: ref.watch(accountNotifierProvider.notifier),
       );
     });
 
@@ -334,6 +361,9 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
+      // Fetch profile with the new account's token so the profile screen
+      // shows the correct user immediately after login.
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
     }
   }
 
@@ -413,6 +443,7 @@ class PasskeyAuthNotifier extends StateNotifier<LoginState> {
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
     }
   }
 
@@ -424,6 +455,7 @@ class PasskeyAuthNotifier extends StateNotifier<LoginState> {
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
     }
   }
 
@@ -458,6 +490,7 @@ class PasskeyBootstrapNotifier extends StateNotifier<LoginState> {
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
     }
   }
 
@@ -591,6 +624,7 @@ class OAuthSignInNotifier extends StateNotifier<LoginState> {
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
+      ref.read(profileNotifierProvider.notifier).fetchProfile();
     }
     // Clear the in-flight attempt regardless of outcome.
     ref.read(oauthFlowProvider.notifier).state = const OAuthFlow();
