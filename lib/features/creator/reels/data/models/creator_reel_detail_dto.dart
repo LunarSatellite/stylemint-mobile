@@ -45,6 +45,7 @@ class ReelTaggedProductDto {
 class CreatorReelDetailDto {
   const CreatorReelDetailDto({
     required this.id,
+    required this.sourcePlatform,
     required this.platformLabel,
     required this.sourceUrl,
     required this.caption,
@@ -59,6 +60,14 @@ class CreatorReelDetailDto {
   });
 
   final String id;
+
+  /// Backend `sourcePlatform` integer (1=Instagram, 2=TikTok, 3=YouTube Shorts,
+  /// 4=Facebook). Kept alongside [platformLabel] (the human-readable chip
+  /// text) so [CreatorReelDetail.platform] can map reliably to
+  /// [SocialPlatform] without depending on the label string — the human
+  /// label "YouTube Shorts" does not parse back to `SocialPlatform.youtube`.
+  final int sourcePlatform;
+
   final String platformLabel;
   final String sourceUrl;
   final String? caption;
@@ -85,11 +94,11 @@ class CreatorReelDetailDto {
         [artist, track].where((e) => e != null && e.isNotEmpty).join(' - ');
     final rawProducts =
         json['taggedProducts'] as List<dynamic>? ?? const [];
+    final sourcePlatform = (json['sourcePlatform'] as num?)?.toInt() ?? 0;
     return CreatorReelDetailDto(
       id: (json['id'] as String?) ?? '',
-      platformLabel:
-          _platforms[(json['sourcePlatform'] as num?)?.toInt() ?? 0] ??
-              'External',
+      sourcePlatform: sourcePlatform,
+      platformLabel: _platforms[sourcePlatform] ?? 'External',
       sourceUrl: (json['sourceUrl'] as String?) ?? '',
       caption: json['caption'] as String?,
       thumbnailUrl: json['thumbnailCdnUrl'] as String?,
@@ -109,6 +118,7 @@ class CreatorReelDetailDto {
 
   CreatorReelDetail toDomain() => CreatorReelDetail(
         id: id,
+        sourcePlatform: sourcePlatform,
         platformLabel: platformLabel,
         sourceUrl: sourceUrl,
         caption: caption,

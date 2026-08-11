@@ -37,6 +37,22 @@ final productSearchNotifierProvider =
       (ref) => ProductSearchNotifier(ref.watch(reelImportRepositoryProvider)),
     );
 
+/// Search state owned exclusively by the tag-products search sheet so
+/// results typed in the sheet never leak into the main screen's
+/// suggested-products list (which has its own dedicated state).
+final productSearchSheetNotifierProvider =
+    StateNotifierProvider.autoDispose<ProductSearchNotifier, ProductSearchState>(
+      (ref) => ProductSearchNotifier(ref.watch(reelImportRepositoryProvider)),
+    );
+
+/// Owns the suggested-products list for the tag-products screen so it can
+/// be reloaded independently of the search sheet and never collide with it.
+final suggestedProductsNotifierProvider =
+    StateNotifierProvider<SuggestedProductsNotifier, SuggestedProductsState>(
+      (ref) =>
+          SuggestedProductsNotifier(ref.watch(reelImportRepositoryProvider)),
+    );
+
 final reelSubmitNotifierProvider =
     StateNotifierProvider.autoDispose<ReelSubmitNotifier, ReelSubmitState>(
       (ref) => ReelSubmitNotifier(ref.watch(reelImportRepositoryProvider)),

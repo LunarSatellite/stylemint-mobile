@@ -62,10 +62,7 @@ class ReelsRemoteDataSource {
         .toList(growable: false);
 
     final platformStr = (r['sourcePlatform'] as String?) ?? '';
-    final platform = SocialPlatform.values.firstWhere(
-      (p) => p.name == platformStr,
-      orElse: () => SocialPlatform.instagram,
-    );
+    final platform = _parsePlatform(platformStr);
 
     return Reel(
       id: (r['reelId'] as String?) ?? '',
@@ -89,6 +86,15 @@ class ReelsRemoteDataSource {
   }
 
   /// GET `/v1/public/reels/{id}` — single reel detail.
+
+  static SocialPlatform _parsePlatform(String s) {
+    final lower = s.toLowerCase();
+    if (lower.contains('youtube')) return SocialPlatform.youtube;
+    if (lower.contains('tiktok')) return SocialPlatform.tiktok;
+    if (lower.contains('facebook')) return SocialPlatform.facebook;
+    if (lower.contains('instagram')) return SocialPlatform.instagram;
+    return SocialPlatform.instagram;
+  }
   Future<ReelDto> getReelDetail(String reelId) async {
     final response = await apiClient.get('/v1/public/reels/$reelId');
     return ReelDto.fromJson(response as Map<String, dynamic>);

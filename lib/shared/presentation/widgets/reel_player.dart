@@ -159,7 +159,12 @@ class _ReelPlayerState extends State<ReelPlayer>
 
       setState(() => _initialized = true);
 
+      // Reconcile now (controller ready) and again on the next frame so
+      // _tabVisible / _appResumed have settled before we decide to play.
       _reconcilePlayback();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reconcilePlayback();
+      });
     } on Exception catch (_) {
       if (mounted) setState(() => _hasError = true);
     }
@@ -172,13 +177,15 @@ class _ReelPlayerState extends State<ReelPlayer>
     _ytController = YoutubePlayerController(
       initialVideoId: videoId,
       flags: const YoutubePlayerFlags(
-        autoPlay: false,
+        autoPlay: true,
         mute: false,
         loop: true,
         disableDragSeek: false,
         enableCaption: false,
       ),
     );
+
+    _reconcilePlayback();
   }
 
   void _reconcilePlayback() {

@@ -29,6 +29,16 @@ abstract interface class ReelImportRepository {
     String query,
   );
 
+  /// Suggested products for an importable reel. Returned by the backend
+  /// before the reel is imported (so the reel has no backend id yet) and
+  /// kept in its own dedicated state on the client so the search sheet
+  /// can never leak into this list.
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  });
+
   Future<Either<NetworkExceptions, Unit>> publishReel({
     required String reelId,
   });

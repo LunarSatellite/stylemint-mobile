@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -62,7 +63,7 @@ abstract class VendorProductDto with _$VendorProductDto {
       id: id,
       variantId: variant?.id ?? '',
       name: name,
-      imageUrl: image?.cdnUrl ?? '',
+      imageUrl: absoluteMediaUrl(image?.cdnUrl),
       price: Money(
         amount: variant?.priceAmount ?? 0,
         currency: variant?.priceCurrency ?? 'NPR',
