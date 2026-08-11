@@ -12,7 +12,8 @@ import 'package:stylemint_mobile_frontend/core/config/api_config.dart';
 /// should not route through this helper.
 String absoluteMediaUrl(String? path) {
   if (path == null || path.isEmpty) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  final isAbsolute =
+      path.startsWith('http://') || path.startsWith('https://');
   final qIdx = path.indexOf('?');
   final main = qIdx == -1 ? path : path.substring(0, qIdx);
   final tail = qIdx == -1 ? '' : path.substring(qIdx);
@@ -23,10 +24,14 @@ String absoluteMediaUrl(String? path) {
   // appending `.jpg` to dotfiles (`.gitignore`), trailing-dot segments
   // (`a.`), trailing-slash inputs (`folder/`), and segmentless input.
   final hasExtension = _looksLikeFileWithExtension(lastSegment);
+  // Some backends now return already-absolute URLs whose final segment
+  // has no extension (e.g. https://cdn/media/vendor-products/<uuid>);
+  // the CDN 404s on those, so we still want to append `.jpg`.
   if (!hasExtension) {
-    return ApiConfig.baseUrl + '$main.jpg$tail';
+    final withExt = '$main.jpg$tail';
+    return isAbsolute ? withExt : ApiConfig.baseUrl + withExt;
   }
-  return ApiConfig.baseUrl + path;
+  return isAbsolute ? path : ApiConfig.baseUrl + path;
 }
 
 bool _looksLikeFileWithExtension(String segment) {

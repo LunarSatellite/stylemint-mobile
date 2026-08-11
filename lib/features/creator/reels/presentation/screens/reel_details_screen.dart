@@ -101,11 +101,8 @@ class _BodyState extends State<_Body> {
           ),
         ),
 
-        // Top bar: circular back button on the left, platform-name title
-        // centred (e.g. "YouTube Shorts") so the user always sees where
-        // the reel was imported from. Backdrop + Expanded + ellipsis keep
-        // it legible over any video frame and prevent long labels from
-        // being clipped on narrow screens.
+        // Top bar: circular back button on the left, popup-menu actions on the
+        // right. Backdrop keeps the back button legible over any video frame.
         SafeArea(
           bottom: false,
           child: SizedBox(
@@ -128,25 +125,7 @@ class _BodyState extends State<_Body> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: DesignTokens.baseBlack
-                              .withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          reel.platformLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.sectionInnerTitle,
-                        ),
-                      ),
-                    ),
-                  ),
+                  const Spacer(),
                   _ReelActionsMenu(reel: reel),
                 ],
               ),

@@ -73,6 +73,18 @@ class _ReelPlayerState extends State<ReelPlayer>
   VoidCallback? _ytEndListener;
   bool _ytChromeCssInjected = false;
 
+  /// Flipped to true the instant we begin tearing the YouTube
+  /// controller down. Every site that talks to the YT controller
+  /// (end listener, value-changed listener, reconcile-playback, and
+  /// the CSS-injection helper) checks this before issuing any
+  /// call into the inner InAppWebViewController. Without that
+  /// guard, async events fired between [_disposeAll] and the
+  /// platform actually releasing the WebView can still reach
+  /// `evaluateJavascript` / `play` / `pause` and raise
+  /// "A AndroidInAppWebViewController was used after being
+  /// disposed." on Android.
+  bool _ytDisposed = false;
+
   /// True once the YouTube IFrame WebView reports ready. Until then the
   /// controller drops play()/pause() calls on the floor.
   bool _ytReady = false;
@@ -263,6 +275,10 @@ class _ReelPlayerState extends State<ReelPlayer>
   void _initYouTube() {
     final videoId = widget.reel.platformVideoId;
     if (videoId == null || videoId.isEmpty) return;
+    // A fresh WebView is being built; clear the disposed guard so
+    // listeners / injections that are already in flight (from the
+    // previous lifecycle) cannot touch it.
+    _ytDisposed = false;
 
     _ytController = YoutubePlayerController(
       initialVideoId: videoId,
@@ -294,7 +310,7 @@ class _ReelPlayerState extends State<ReelPlayer>
     // manual loop lives there instead (see _buildYouTubeLayer).
     _ytEndListener = () {
       final yt = _ytController;
-      if (yt == null || !mounted) return;
+      if (yt == null || !mounted || _ytDisposed) return;
       // 1) Pre-loop: keep the IFrame buffer warm by seeking back to 0
       // BEFORE PlayerState.ended fires. The YT IFrame clears its
       // forward buffer at video end, so seekTo(0)+play after ENDED
@@ -333,6 +349,15 @@ class _ReelPlayerState extends State<ReelPlayer>
   /// Retries for ~6 s so we do not race the YT IFrame API on a slow first
   /// paint.
   Future<void> _injectYouTubeOverlayHidingCss(InAppWebViewController webController) async {
+    // The listener may have queued this call against a controller
+    // that has since been torn down (permalinks changed, widget
+    // disposed, user scrolled away mid-loop). The
+    // InAppWebViewController synchronously throws
+    // "A AndroidInAppWebViewController was used after being
+    // disposed." on Android, and the throw is not always catchable
+    // by the try/catch around evaluateJavascript because the
+    // platform side rejects the call before it is dispatched.
+    if (_ytDisposed) return;
     final css = <String>[
       // Top/bottom chrome + title overlays.
       '.ytp-chrome-top, .ytp-chrome-bottom, .ytp-chrome,',
@@ -565,6 +590,7 @@ class _ReelPlayerState extends State<ReelPlayer>
   /// no-op. Re-run it on the ready transition to apply the state the reel
   /// should actually be in by then.
   void _onYouTubeValueChanged() {
+    if (_ytDisposed) return;
     final ready = _ytController?.value.isReady ?? false;
     if (ready == _ytReady) return;
     _ytReady = ready;
@@ -572,6 +598,12 @@ class _ReelPlayerState extends State<ReelPlayer>
   }
 
   void _reconcilePlayback() {
+    if (_ytDisposed) {
+      if (_controller != null && _initialized && _controller!.value.isPlaying) {
+        unawaited(_controller!.pause());
+      }
+      return;
+    }
     if (!_shouldPlay) {
       if (_controller != null && _initialized && _controller!.value.isPlaying) {
         unawaited(_controller!.pause());
@@ -601,15 +633,21 @@ class _ReelPlayerState extends State<ReelPlayer>
     unawaited(c?.dispose() ?? Future<void>.value());
 
     final yt = _ytController;
+    // Flip the disposed guard BEFORE we null the controller or call
+    // yt.dispose(). Any in-flight listener / async JS evaluation
+    // captured a reference to the same `yt` and would otherwise
+    // race with the platform tearing the inner WebView down.
+    _ytDisposed = true;
     _ytController = null;
     final listener = _ytEndListener;
     _ytEndListener = null;
     _ytChromeCssInjected = false;
-    if (yt != null && listener != null) yt.removeListener(listener);
-    yt?.dispose();
+    if (yt != null) {
+      if (listener != null) yt.removeListener(listener);
+      yt.removeListener(_onYouTubeValueChanged);
+      yt.dispose();
+    }
     _ytReady = false;
-    yt?..removeListener(_onYouTubeValueChanged)
-      ..dispose();
   }
 
   @override
