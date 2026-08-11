@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -159,15 +160,28 @@ class _BodyState extends State<_Body> {
           child: _AnalyticsRail(reel: reel),
         ),
 
-        // Bottom info block: platform/source/music chip row + tap-to-expand
-        // caption, then the tagged-products strip — same structure as
-        // CreatorInfo + TaggedProductsSection on the Home feed.
+        // Bottom info block: creator strip (avatar + @handle + Subscribe +
+        // caption) on top, then the chip/music meta row, then the tagged-
+        // products strip. The right-edge padding (72) leaves room for the
+        // analytics rail above this block.
         SafeArea(
           top: false,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 72),
+                child: ReelCreatorStrip(
+                  creatorId: reel.creatorId,
+                  creatorHandle: reel.creatorHandle,
+                  creatorDisplayName: reel.creatorDisplayName,
+                  creatorAvatarUrl: reel.creatorAvatarUrl,
+                  caption: reel.caption,
+                  initialFollowing: reel.isCreatorFollowed,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
               Padding(
                 padding: const EdgeInsets.only(right: 72, left: DesignTokens.s12),
                 child: _ReelInfo(reel: reel),
@@ -194,8 +208,6 @@ class _ReelInfo extends StatefulWidget {
 }
 
 class _ReelInfoState extends State<_ReelInfo> {
-  bool _captionExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
@@ -234,26 +246,6 @@ class _ReelInfoState extends State<_ReelInfo> {
                         .copyWith(color: DesignTokens.textLight)),
               ),
             ],
-          ),
-        ],
-        if (reel.caption != null && reel.caption!.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s12),
-          // Collapsed by default (stays docked at the bottom); tapping
-          // expands in place — same interaction as the Home feed's caption.
-          GestureDetector(
-            onTap: () => setState(() => _captionExpanded = !_captionExpanded),
-            child: Text(reel.caption!,
-                maxLines: _captionExpanded ? null : 3,
-                overflow: _captionExpanded
-                    ? TextOverflow.visible
-                    : TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                  color: DesignTokens.textWhite,
-                )),
           ),
         ],
       ],

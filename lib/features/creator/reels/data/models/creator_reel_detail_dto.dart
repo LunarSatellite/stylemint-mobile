@@ -57,6 +57,11 @@ class CreatorReelDetailDto {
     required this.comments,
     required this.publishedAtUtc,
     required this.taggedProducts,
+    this.creatorId = '',
+    this.creatorHandle = '',
+    this.creatorDisplayName = '',
+    this.creatorAvatarUrl = '',
+    this.isCreatorFollowed,
   });
 
   final String id;
@@ -79,6 +84,15 @@ class CreatorReelDetailDto {
   final int comments;
   final DateTime? publishedAtUtc;
   final List<ReelTaggedProductDto> taggedProducts;
+
+  // ── Creator strip (top-performing reel play) ──────────────────────────────
+  // Read defensively so the strip degrades gracefully until the backend
+  // starts shipping creator fields on `ReelDto`.
+  final String creatorId;
+  final String creatorHandle;
+  final String creatorDisplayName;
+  final String creatorAvatarUrl;
+  final bool? isCreatorFollowed;
 
   static const _platforms = {
     1: 'Instagram',
@@ -113,6 +127,26 @@ class CreatorReelDetailDto {
           .whereType<Map<String, dynamic>>()
           .map(ReelTaggedProductDto.fromJson)
           .toList(growable: false),
+      // The backend may send the creator in a few shapes depending on the
+      // endpoint — accept the most common keys so the strip still renders
+      // once the API is extended, without breaking existing payloads.
+      creatorId: (json['creatorId'] as String?) ??
+          (json['creatorAccountId'] as String?) ??
+          (json['accountId'] as String?) ??
+          '',
+      creatorHandle: (json['creatorHandle'] as String?) ??
+          (json['handle'] as String?) ??
+          (json['username'] as String?) ??
+          '',
+      creatorDisplayName: (json['creatorDisplayName'] as String?) ??
+          (json['displayName'] as String?) ??
+          (json['creatorName'] as String?) ??
+          '',
+      creatorAvatarUrl: (json['creatorAvatarUrl'] as String?) ??
+          (json['avatarUrl'] as String?) ??
+          (json['creatorAvatarCdnUrl'] as String?) ??
+          '',
+      isCreatorFollowed: json['isCreatorFollowed'] as bool?,
     );
   }
 
@@ -131,6 +165,11 @@ class CreatorReelDetailDto {
         publishedAtUtc: publishedAtUtc,
         taggedProducts:
             taggedProducts.map((p) => p.toDomain()).toList(growable: false),
+        creatorId: creatorId,
+        creatorHandle: creatorHandle,
+        creatorDisplayName: creatorDisplayName,
+        creatorAvatarUrl: creatorAvatarUrl,
+        isCreatorFollowed: isCreatorFollowed,
       );
 }
 

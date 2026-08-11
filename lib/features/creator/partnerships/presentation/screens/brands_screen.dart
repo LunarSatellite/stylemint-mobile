@@ -13,21 +13,15 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Maps a real [BrandListItemDto] into the shape [BrandInfoScreen] expects.
-/// Fields the brand-list endpoint doesn't carry (rating, description, avg
-/// order value, success rate, top products) are honestly left blank/zero —
-/// no fabricated numbers — until a real per-brand detail + product endpoint
-/// backs them.
+/// Maps a real [BrandListItemDto] into the seed shape [BrandInfoScreen]
+/// expects. Only carries fields the catalog list endpoint actually
+/// returns; description / rating / success rate / category are fetched
+/// on mount via brandDetailProvider + brandTrustProvider.
 BrandInfoData _toBrandInfoData(BrandListItemDto brand) => BrandInfoData(
       name: brand.businessName,
-      logo: _BrandLogo(name: brand.businessName, logoUrl: brand.logoUrl),
-      stars: 0,
-      category: '',
-      commission: brand.commissionRangeLabel,
-      description: '',
-      avgOrderValue: '—',
-      successRate: '—',
-      products: const [],
+      logoUrl: brand.logoUrl,
+      commissionMinPercent: brand.commissionRangeMinPercent,
+      commissionMaxPercent: brand.commissionRangeMaxPercent,
       vendorProfileId: brand.vendorAccountId,
     );
 
