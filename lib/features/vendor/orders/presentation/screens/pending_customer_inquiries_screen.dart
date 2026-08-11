@@ -31,7 +31,7 @@ class PendingCustomerInquiriesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(inquiriesControllerProvider);
+    final state = ref.watch(inquiriesNotifierProvider);
     final realOpen = state.items.where((i) => i.status == InquiryStatus.open).toList(growable: false);
     final isSample = !state.isLoading && state.items.isEmpty;
     final inquiries = isSample ? _sampleInquiries : realOpen;
@@ -105,7 +105,7 @@ class PendingCustomerInquiriesScreen extends ConsumerWidget {
       builder: (_) => _ReplySheet(
         inquiry: inquiry,
         onSubmit: (text) async {
-          final ok = await ref.read(inquiriesControllerProvider.notifier).reply(inquiry.id, text);
+          final ok = await ref.read(inquiriesNotifierProvider.notifier).reply(inquiry.id, text);
           if (!context.mounted) return;
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(

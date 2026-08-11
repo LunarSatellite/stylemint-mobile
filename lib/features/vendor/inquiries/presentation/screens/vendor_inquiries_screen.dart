@@ -13,9 +13,9 @@ class VendorInquiriesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(inquiriesControllerProvider);
+    final state = ref.watch(inquiriesNotifierProvider);
 
-    ref.listen<InquiriesState>(inquiriesControllerProvider, (prev, next) {
+    ref.listen<InquiriesState>(inquiriesNotifierProvider, (prev, next) {
       if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(next.errorMessage!)));
@@ -40,7 +40,7 @@ class VendorInquiriesScreen extends ConsumerWidget {
               child: CircularProgressIndicator(color: DesignTokens.primaryGreen))
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
-              onRefresh: () => ref.read(inquiriesControllerProvider.notifier).load(),
+              onRefresh: () => ref.read(inquiriesNotifierProvider.notifier).load(),
               child: state.items.isEmpty
                   ? ListView(children: [
                       const SizedBox(height: 120),
@@ -57,7 +57,7 @@ class VendorInquiriesScreen extends ConsumerWidget {
                         inquiry: state.items[i],
                         replying: state.replyingId == state.items[i].id,
                         onReply: (text) => ref
-                            .read(inquiriesControllerProvider.notifier)
+                            .read(inquiriesNotifierProvider.notifier)
                             .reply(state.items[i].id, text),
                       ),
                     ),
