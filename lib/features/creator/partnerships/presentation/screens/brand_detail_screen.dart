@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
@@ -541,7 +542,7 @@ class _ImagePlaceholder extends StatelessWidget {
 
 class _PartnershipTab extends StatelessWidget {
   const _PartnershipTab({required this.termsAsync});
-  final AsyncValue<PartnershipTermsDto> termsAsync;
+  final AsyncValue<PartnershipTerms> termsAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -616,7 +617,7 @@ class _ApplyButton extends StatelessWidget {
 class _TermsSection extends StatelessWidget {
   const _TermsSection({required this.index, required this.section});
   final int index;
-  final TermsSection section;
+  final PartnershipTermsSection section;
 
   @override
   Widget build(BuildContext context) {

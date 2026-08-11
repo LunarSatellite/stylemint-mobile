@@ -103,11 +103,6 @@ class ReelImportNotifier extends StateNotifier<ReelImportState> {
       },
     );
   }
-
-  Future<void> importReel(ImportableReel reel) async {
-    final either = await _repository.importReel(reel);
-    either.fold((_) => null, (_) => null);
-  }
 }
 
 class ImportHistoryNotifier extends StateNotifier<ImportHistoryState> {

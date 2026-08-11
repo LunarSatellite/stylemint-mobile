@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -17,7 +18,7 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// expects. Only carries fields the catalog list endpoint actually
 /// returns; description / rating / success rate / category are fetched
 /// on mount via brandDetailProvider + brandTrustProvider.
-BrandInfoData _toBrandInfoData(BrandListItemDto brand) => BrandInfoData(
+BrandInfoData _toBrandInfoData(Brand brand) => BrandInfoData(
       name: brand.businessName,
       logoUrl: brand.logoUrl,
       commissionMinPercent: brand.commissionRangeMinPercent,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/widgets/identity_documents_section.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
@@ -148,6 +149,8 @@ class CreatorApplyStep3ReviewScreenState
             ],
           ),
         ),
+        const SizedBox(height: DesignTokens.s16),
+        const IdentityDocumentsSection(),
       ],
     );
   }

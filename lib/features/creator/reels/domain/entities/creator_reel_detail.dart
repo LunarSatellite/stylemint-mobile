@@ -92,13 +92,7 @@ class CreatorReelDetail implements ReelMedia {
   /// `null` (which the player treats as Instagram) only when the backend
   /// sends an unrecognised value.
   @override
-  SocialPlatform? get platform => switch (sourcePlatform) {
-        1 => SocialPlatform.instagram,
-        2 => SocialPlatform.tiktok,
-        3 => SocialPlatform.youtube,
-        4 => SocialPlatform.facebook,
-        _ => null,
-      };
+  SocialPlatform? get platform => SocialPlatform.tryParseWire(sourcePlatform);
 
   /// Platform-specific video ID parsed from [sourceUrl]. Only YouTube is
   /// supported today (TikTok / Facebook fall back to external app).

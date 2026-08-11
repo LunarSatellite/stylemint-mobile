@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/datasources/earnings_remote_datasource.dart';
@@ -20,9 +21,15 @@ final earningsRemoteDataSourceProvider = Provider<EarningsRemoteDataSource>(
 
 /// Per-reel earnings breakdown (creator analytics dashboard). Separate from
 /// the balance summary because the metrics live on a different endpoint.
-final earningsBreakdownProvider = FutureProvider<EarningsBreakdown>((ref) {
-  return ref.watch(earningsRemoteDataSourceProvider).getDashboardBreakdown();
-});
+/// Throws on failure so `AsyncValue.error` carries the repository's message.
+final earningsBreakdownProvider = FutureProvider<EarningsBreakdown>(
+  (ref) async =>
+      (await ref.watch(earningsRepositoryProvider).getDashboardBreakdown())
+          .fold(
+        (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
+        (breakdown) => breakdown,
+      ),
+);
 
 final earningsRepositoryProvider = Provider<EarningsRepository>(
   (ref) => EarningsRepositoryImpl(

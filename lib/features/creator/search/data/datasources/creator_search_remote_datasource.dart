@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/creator/search/data/models/creator_search_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/search/domain/entities/creator_search_result.dart';
 
 /// GET /api/v1/customer/search?type=brands|products|creators — the same
@@ -17,53 +18,19 @@ class CreatorSearchRemoteDataSource {
     CreatorSearchType.creators: 'creators',
   };
 
-  Future<List<SearchBrandResult>> searchBrands(String query) async {
+  Future<List<SearchBrandResultDto>> searchBrands(String query) async {
     final m = await _search(query, CreatorSearchType.brands);
-    final raw = m['brands'] as List<dynamic>? ?? const <dynamic>[];
-    return raw.map((e) {
-      final b = e as Map<String, dynamic>;
-      return SearchBrandResult(
-        brandId: b['brandId'] as String? ?? '',
-        name: b['name'] as String? ?? '',
-        logoUrl: b['logoUrl'] as String?,
-        averageRating: (b['averageRating'] as num?)?.toDouble() ?? 0.0,
-        productCount: (b['productCount'] as num?)?.toInt() ?? 0,
-        commissionRange: b['commissionRange'] as String? ?? '',
-      );
-    }).toList(growable: false);
+    return _listOf(m, 'brands', SearchBrandResultDto.fromJson);
   }
 
-  Future<List<SearchProductResult>> searchProducts(String query) async {
+  Future<List<SearchProductResultDto>> searchProducts(String query) async {
     final m = await _search(query, CreatorSearchType.products);
-    final raw = m['products'] as List<dynamic>? ?? const <dynamic>[];
-    return raw.map((e) {
-      final p = e as Map<String, dynamic>;
-      return SearchProductResult(
-        productId: p['productId'] as String? ?? '',
-        name: p['name'] as String? ?? '',
-        heroImageUrl: p['heroImageUrl'] as String? ?? '',
-        price: (p['price'] as num?)?.toDouble() ?? 0.0,
-        currency: p['currency'] as String? ?? 'NPR',
-        brandId: p['brandId'] as String? ?? '',
-        brandName: p['brandName'] as String? ?? '',
-      );
-    }).toList(growable: false);
+    return _listOf(m, 'products', SearchProductResultDto.fromJson);
   }
 
-  Future<List<SearchCreatorResult>> searchCreators(String query) async {
+  Future<List<SearchCreatorResultDto>> searchCreators(String query) async {
     final m = await _search(query, CreatorSearchType.creators);
-    final raw = m['creators'] as List<dynamic>? ?? const <dynamic>[];
-    return raw.map((e) {
-      final c = e as Map<String, dynamic>;
-      return SearchCreatorResult(
-        creatorProfileId: c['creatorProfileId'] as String? ?? '',
-        handle: c['handle'] as String? ?? '',
-        displayName: c['displayName'] as String? ?? '',
-        avatarUrl: c['avatarUrl'] as String?,
-        followerCount: (c['followerCount'] as num?)?.toInt() ?? 0,
-        reelCount: (c['reelCount'] as num?)?.toInt() ?? 0,
-      );
-    }).toList(growable: false);
+    return _listOf(m, 'creators', SearchCreatorResultDto.fromJson);
   }
 
   Future<Map<String, dynamic>> _search(String query, CreatorSearchType type) async {
@@ -77,4 +44,14 @@ class CreatorSearchRemoteDataSource {
     );
     return response as Map<String, dynamic>;
   }
+
+  List<T> _listOf<T>(
+    Map<String, dynamic> envelope,
+    String key,
+    T Function(Map<String, dynamic>) fromJson,
+  ) =>
+      (envelope[key] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<Map<String, dynamic>>()
+          .map(fromJson)
+          .toList(growable: false);
 }

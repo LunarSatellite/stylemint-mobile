@@ -1,6 +1,8 @@
 /// Plain-Dart DTOs for Creator Studio endpoints that don't need code generation.
 library;
 
+import 'package:stylemint_mobile_frontend/features/creator/reel_studio/domain/entities/reel_studio_extras.dart';
+
 class CoachingTipDto {
   const CoachingTipDto({
     this.category,
@@ -91,5 +93,43 @@ class TagNudgeDto {
         suggestedProductId: (json['suggestedProductId'] as String?) ?? '',
         productName: json['productName'] as String?,
         reason: json['reason'] as String?,
+      );
+}
+
+extension CoachingTipDtoMapper on CoachingTipDto {
+  CoachingTip toDomain() => CoachingTip(
+        priority: priority,
+        category: category,
+        tip: tip,
+        exampleText: exampleText,
+        evidenceSummary: evidenceSummary,
+      );
+}
+
+extension CollabSuggestionDtoMapper on CollabSuggestionDto {
+  CollabSuggestion toDomain() => CollabSuggestion(
+        otherCreatorId: otherCreatorId,
+        sharedProductId: sharedProductId,
+        otherCreatorHandle: otherCreatorHandle,
+        sharedProductName: sharedProductName,
+        matchReason: matchReason,
+      );
+}
+
+extension DropPartyPromptDtoMapper on DropPartyPromptDto {
+  DropPartyPrompt toDomain() => DropPartyPrompt(
+        vendorAccountId: vendorAccountId,
+        highPerformingReelCount: highPerformingReelCount,
+        vendorName: vendorName,
+        suggestionText: suggestionText,
+      );
+}
+
+extension TagNudgeDtoMapper on TagNudgeDto {
+  TagNudge toDomain() => TagNudge(
+        reelId: reelId,
+        suggestedProductId: suggestedProductId,
+        productName: productName,
+        reason: reason,
       );
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
@@ -146,7 +147,7 @@ class _BodyState extends State<_Body> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  _ReelActionsMenu(reel: reel),
                 ],
               ),
             ),
@@ -437,6 +438,206 @@ class _ProductTile extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Write-side controls for the creator's own reel: publish/unpublish and
+/// tagged-product management. Sits in the top bar's trailing slot, which
+/// previously held a spacer that balanced the back button.
+///
+/// The backend reel projection carries no explicit status flag, so
+/// `publishedAtUtc` stands in for it: a reel that has never been published
+/// has no publish timestamp. If that proxy is ever wrong the opposite action
+/// is still reachable — both calls are idempotent server-side.
+class _ReelActionsMenu extends ConsumerWidget {
+  const _ReelActionsMenu({required this.reel});
+
+  final CreatorReelDetail reel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(creatorReelActionsNotifierProvider)
+        is CreatorReelActionInProgress;
+
+    ref.listen<CreatorReelActionState>(
+      creatorReelActionsNotifierProvider,
+      (_, next) {
+        final message = switch (next) {
+          CreatorReelActionSucceeded(:final message) => message,
+          CreatorReelActionFailed(:final message) => message,
+          _ => null,
+        };
+        if (message == null) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+        ref.read(creatorReelActionsNotifierProvider.notifier).reset();
+      },
+    );
+
+    final isPublished = reel.publishedAtUtc != null;
+
+    return Material(
+      color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+      shape: const CircleBorder(),
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: busy
+            ? const Padding(
+                padding: EdgeInsets.all(11),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: DesignTokens.textWhite,
+                ),
+              )
+            : PopupMenuButton<_ReelAction>(
+                icon: const Icon(Icons.more_vert,
+                    size: 20, color: DesignTokens.textWhite),
+                tooltip: 'Reel actions',
+                onSelected: (action) =>
+                    _onSelected(context, ref, action, isPublished),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: isPublished
+                        ? _ReelAction.unpublish
+                        : _ReelAction.publish,
+                    child: Text(isPublished ? 'Unpublish' : 'Publish'),
+                  ),
+                  const PopupMenuItem(
+                    value: _ReelAction.manageTags,
+                    child: Text('Manage tagged products'),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _onSelected(
+    BuildContext context,
+    WidgetRef ref,
+    _ReelAction action,
+    bool isPublished,
+  ) async {
+    final notifier = ref.read(creatorReelActionsNotifierProvider.notifier);
+    switch (action) {
+      case _ReelAction.publish:
+        if (await notifier.publish(reel.id)) {
+          ref.invalidate(creatorReelDetailProvider(reel.id));
+        }
+      case _ReelAction.unpublish:
+        if (await notifier.unpublish(reel.id)) {
+          ref.invalidate(creatorReelDetailProvider(reel.id));
+        }
+      case _ReelAction.manageTags:
+        if (!context.mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: DesignTokens.baseBlack,
+          isScrollControlled: true,
+          builder: (_) => _TaggedProductsSheet(reelId: reel.id),
+        );
+    }
+  }
+}
+
+enum _ReelAction { publish, unpublish, manageTags }
+
+/// Lists the reel's tags from the creator-scoped management endpoint (which,
+/// unlike the public projection embedded in the reel, carries each tag's own
+/// id and commission snapshot) and lets the creator remove one.
+class _TaggedProductsSheet extends ConsumerWidget {
+  const _TaggedProductsSheet({required this.reelId});
+
+  final String reelId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(reelTaggedProductsProvider(reelId));
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(DesignTokens.s24),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(DesignTokens.s24),
+            child: Text(
+              '$e'.replaceFirst('Exception: ', ''),
+              style: DesignTokens.bodyText,
+            ),
+          ),
+          data: (tags) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Tagged products',
+                  style: DesignTokens.sectionInnerTitle),
+              const SizedBox(height: DesignTokens.s12),
+              if (tags.isEmpty)
+                const Text(
+                  'No products tagged on this reel yet.',
+                  style: DesignTokens.bodyText,
+                )
+              else
+                ...tags.map(
+                  (tag) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: tag.productImageUrl == null
+                        ? null
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              tag.productImageUrl!,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _e, _s) =>
+                                  const SizedBox(width: 44, height: 44),
+                            ),
+                          ),
+                    title: Text(
+                      tag.productName ?? 'Product',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.bodyText,
+                    ),
+                    subtitle: Text(
+                      '${tag.priceLabel}  ·  '
+                      '${tag.commissionPercent.toStringAsFixed(0)}% '
+                      '(${tag.commissionPerSaleLabel})',
+                      style: DesignTokens.bodyText,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close,
+                          color: DesignTokens.textLight),
+                      tooltip: 'Remove tag',
+                      onPressed: () async {
+                        final ok = await ref
+                            .read(creatorReelActionsNotifierProvider.notifier)
+                            .untagProduct(reelId, tag.id);
+                        if (ok) {
+                          ref
+                            ..invalidate(reelTaggedProductsProvider(reelId))
+                            ..invalidate(creatorReelDetailProvider(reelId));
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              const SizedBox(height: DesignTokens.s8),
             ],
           ),
         ),

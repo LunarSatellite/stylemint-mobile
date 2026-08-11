@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/importable_reel_card.dart';
@@ -116,6 +117,18 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Import Reel', style: DesignTokens.titleMedium),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: DesignTokens.textWhite),
+            tooltip: 'Import history',
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: DesignTokens.bgAppFoundation,
+              isScrollControlled: true,
+              builder: (_) => const _ImportHistorySheet(),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -695,6 +708,151 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Prior imports for this creator, read from [importHistoryNotifierProvider].
+///
+/// The notifier loads once when first read; the sheet offers an explicit
+/// refresh because an import completed elsewhere in the app will not
+/// invalidate it on its own.
+class _ImportHistorySheet extends ConsumerWidget {
+  const _ImportHistorySheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(importHistoryNotifierProvider);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Import history',
+                      style: DesignTokens.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh,
+                        color: DesignTokens.textWhite),
+                    tooltip: 'Refresh',
+                    onPressed: () => unawaited(
+                      ref.read(importHistoryNotifierProvider.notifier).load(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Flexible(
+                child: state.when(
+                  initial: () => const _HistoryMessage('Loading…'),
+                  loadInProgress: () => const Padding(
+                    padding: EdgeInsets.all(DesignTokens.s24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                  ),
+                  loadFailure: (failure) =>
+                      _HistoryMessage(NetworkExceptions.getMessage(failure)),
+                  loadSuccess: (reels) => reels.isEmpty
+                      ? const _HistoryMessage(
+                          "You haven't imported any reels yet.",
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: reels.length,
+                          separatorBuilder: (_, _i) =>
+                              const SizedBox(height: DesignTokens.s8),
+                          itemBuilder: (_, i) =>
+                              _HistoryTile(reel: reels[i]),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryMessage extends StatelessWidget {
+  const _HistoryMessage(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+        child: Text(
+          text,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+      );
+}
+
+class _HistoryTile extends StatelessWidget {
+  const _HistoryTile({required this.reel});
+
+  final ImportedReel reel;
+
+  @override
+  Widget build(BuildContext context) {
+    final caption = reel.caption.trim();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(DesignTokens.s8),
+          child: reel.thumbnailUrl.isEmpty
+              ? const SizedBox(width: 48, height: 64)
+              : Image.network(
+                  reel.thumbnailUrl,
+                  width: 48,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _e, _s) =>
+                      const SizedBox(width: 48, height: 64),
+                ),
+        ),
+        const SizedBox(width: DesignTokens.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                caption.isEmpty ? 'Untitled reel' : caption,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${reel.status.name} · ${reel.tags.length} tagged',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
