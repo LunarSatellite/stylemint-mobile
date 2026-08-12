@@ -62,7 +62,7 @@ class ReelsRemoteDataSource {
             ))
         .toList(growable: false);
 
-    final platformStr = r['sourcePlatform']?.toString() ?? '';
+    final platformStr = (r['sourcePlatform'] as String?) ?? '';
     final platform = _parsePlatform(platformStr);
     // The Discovery feed sends PascalCase strings ("YouTubeShorts"), not
     // Dart enum names — see SocialPlatform.tryParseWire.
