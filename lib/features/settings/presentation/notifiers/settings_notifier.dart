@@ -18,7 +18,7 @@ abstract class NotificationPrefsState with _$NotificationPrefsState {
   const factory NotificationPrefsState.loadInProgress() = _NpLoadInProgress;
   const factory NotificationPrefsState.loadSuccess(NotificationPreferences prefs) = _NpLoadSuccess;
   const factory NotificationPrefsState.loadFailure(NetworkExceptions failure) = _NpLoadFailure;
-  const factory NotificationPrefsState.saveSuccess(NotificationPreferences prefs) = _NpSaveSuccess;
+  const factory NotificationPrefsState.saveSuccess() = _NpSaveSuccess;
   const factory NotificationPrefsState.saveFailure(NetworkExceptions failure) = _NpSaveFailure;
 }
 
@@ -166,3 +166,4 @@ class PendingDeletionNotifier extends StateNotifier<PendingDeletionState> {
     );
   }
 }
+

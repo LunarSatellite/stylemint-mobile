@@ -137,7 +137,7 @@ class _NotificationPrefsScreenState
 
     ref.listen<NotificationPrefsState>(settingsNotifierProvider, (_, next) {
       next.whenOrNull(
-        saveSuccess: (_) => ScaffoldMessenger.of(context).showSnackBar(
+        saveSuccess: () => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Preferences saved')),
         ),
         saveFailure: (f) => ScaffoldMessenger.of(context).showSnackBar(
@@ -513,3 +513,4 @@ class _ToggleItem extends StatelessWidget {
     );
   }
 }
+

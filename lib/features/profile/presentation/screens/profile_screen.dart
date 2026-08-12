@@ -196,7 +196,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                     .read(settingsNotifierProvider)
                     .maybeWhen(
                       loadSuccess: (p) => p,
-                      saveSuccess: (p) => p,
                       orElse: () => null,
                     );
                 if (current == null) return;
@@ -499,3 +498,6 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
     );
   }
 }
+
+
+
