@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +40,7 @@ class ReelPlayer extends StatefulWidget {
     required this.reel,
     required this.isActive,
     this.playbackController,
+    this.autoplay = false,
     super.key,
   });
 
@@ -52,6 +53,14 @@ class ReelPlayer extends StatefulWidget {
 
   /// Optional handle so an ancestor can toggle play/pause on tap.
   final ReelPlaybackController? playbackController;
+
+  /// When true the player auto-starts on first render and (for YouTube)
+  /// is created already unmuted so the IFrame autoplay policy does not
+  /// silently drop programmatic playVideo() calls. Defaults to false
+  /// so callers that host many reels in a scroller (the customer feed)
+  /// do not all start streaming at once; the creator reel details screen
+  /// sets it to true because there is only ever one reel on screen.
+  final bool autoplay;
 
   @override
   State<ReelPlayer> createState() => _ReelPlayerState();
@@ -280,17 +289,24 @@ class _ReelPlayerState extends State<ReelPlayer>
     // previous lifecycle) cannot touch it.
     _ytDisposed = false;
 
+    // When the caller asked for autoplay we hand a non-const flags block
+    // to the controller so the IFrame Player comes up already muted +
+    // playing. Mobile WebView autoplay policies (both Android Chromium
+    // and WKWebView) silently reject programmatic playVideo() on an
+    // unmuted iframe without a user gesture; starting muted is the
+    // supported way to satisfy the policy. For the multi-reel customer
+    // feed we keep autoPlay=false (default) so adjacent offscreen reels
+    // don't all start streaming simultaneously and choke bandwidth.
+    final ytAutoplay = widget.autoplay;
     _ytController = YoutubePlayerController(
       initialVideoId: videoId,
-      flags: const YoutubePlayerFlags(
-        // Deliberately NOT autoPlay. The PageView keeps the adjacent reels
-        // alive (allowImplicitScrolling), so autoPlay made every offscreen
-        // YouTube reel start streaming the moment its WebView finished
-        // loading — up to three videos competing for bandwidth at once,
-        // which is what made playback crawl. Playback is driven explicitly
-        // by _reconcilePlayback instead, so only the active reel streams.
-        autoPlay: false,
-        mute: false,
+      flags: YoutubePlayerFlags(
+        autoPlay: ytAutoplay,
+        // Start muted when autoplaying so the IFrame autoplay policy is
+        // satisfied. Once the controller reports ready, _onYouTubeValueChanged
+        // unmutes (best-effort — WebView may still keep it muted until
+        // the first user gesture).
+        mute: ytAutoplay,
         // Disable IFrame loop:1 — it forces a network re-fetch at the end
         // of every loop (loop:1 seeks back to 0 and re-buffers), which is
         // the visible load-then-load-again on YouTube reels. We replay via
@@ -594,7 +610,17 @@ class _ReelPlayerState extends State<ReelPlayer>
     final ready = _ytController?.value.isReady ?? false;
     if (ready == _ytReady) return;
     _ytReady = ready;
-    if (ready) _reconcilePlayback();
+    if (ready) {
+      // If the caller opted into autoplay we started the IFrame muted
+      // so the autoplay policy would accept it. Try to bring audio back
+      // once the player reports ready. The WebView may still ignore
+      // this until the first user gesture — that is expected and the
+      // tap-to-toggle behaviour already covers it.
+      if (widget.autoplay) {
+        _ytController?.unMute();
+      }
+      _reconcilePlayback();
+    }
   }
 
   void _reconcilePlayback() {

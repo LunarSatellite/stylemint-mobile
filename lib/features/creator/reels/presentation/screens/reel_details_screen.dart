@@ -1,4 +1,4 @@
-import 'dart:ui' show ImageFilter;
+﻿import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
@@ -35,12 +36,15 @@ class ReelDetailsScreen extends ConsumerWidget {
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
-        error: (_, _e) => const Center(
-          child: Text(
-            "Couldn't load this reel.",
-            style: DesignTokens.bodyText,
-          ),
-        ),
+        error: (err, _) {
+          if (err is NetworkExceptions && err.isNotFound) {
+            return const _ReelUnavailableView();
+          }
+          final message = err is NetworkExceptions
+              ? NetworkExceptions.getMessage(err)
+              : err.toString();
+          return _ReelErrorView(reelId: reelId, message: message);
+        },
         data: (reel) => _Body(reel: reel),
       ),
     );
@@ -69,6 +73,9 @@ class _BodyState extends State<_Body> {
           reel: reel,
           isActive: true,
           playbackController: _playback,
+          // Single reel on screen, no bandwidth competition from siblings —
+          // opt into autoplay so the user lands on playback immediately.
+          autoplay: true,
         ),
 
         // Full-screen tap target for play/pause, below the interactive
@@ -624,3 +631,131 @@ class _TaggedProductsSheet extends ConsumerWidget {
     );
   }
 }
+
+/// Shown when the public reels endpoint returns 404 (the most common cause:
+/// the reel is unpublished/deleted but still appears in this creator's
+/// top-performing analytics, so the public catalog legitimately has no record
+/// of it). Clear messaging + a back button so the creator is never stranded.
+class _ReelUnavailableView extends StatelessWidget {
+  const _ReelUnavailableView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.movie_filter_outlined,
+                size: 56,
+                color: DesignTokens.iconLight,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              const Text(
+                'This reel is no longer available',
+                textAlign: TextAlign.center,
+                style: DesignTokens.sectionInnerTitle,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                "It may have been unpublished or removed. It will drop off your "
+                "top-performing list once analytics refresh.",
+                textAlign: TextAlign.center,
+                style: DesignTokens.bodyText.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                style: DesignTokens.primaryButtonStyle(),
+                child: const Text('Back to top reels'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Generic fallback for any non-404 error (network, server, parsing). Keeps
+/// the user on the screen with a retry instead of dumping them back to the
+/// list and forcing a full re-navigation.
+class _ReelErrorView extends ConsumerWidget {
+  const _ReelErrorView({required this.reelId, required this.message});
+
+  final String reelId;
+  final String message;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 56,
+                color: DesignTokens.iconLight,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              const Text(
+                "Couldn't load this reel",
+                textAlign: TextAlign.center,
+                style: DesignTokens.sectionInnerTitle,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: DesignTokens.bodyText.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: DesignTokens.borderDefault),
+                      foregroundColor: DesignTokens.textWhite,
+                      minimumSize: const Size(0, DesignTokens.buttonHeight),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(DesignTokens.buttonRadius),
+                      ),
+                    ),
+                    child: const Text('Back'),
+                  ),
+                  const SizedBox(width: DesignTokens.s12),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(creatorReelDetailProvider(reelId)),
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+

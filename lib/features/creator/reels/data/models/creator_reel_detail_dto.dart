@@ -1,3 +1,4 @@
+﻿import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 
@@ -26,7 +27,11 @@ class ReelTaggedProductDto {
       productId: (json['productId'] as String?) ?? '',
       name: json['productName'] as String?,
       priceLabel: '$symbol ${amount.toStringAsFixed(0)}',
-      imageUrl: json['productPrimaryImageUrl'] as String?,
+      // Resolve the CDN URL up front so callers don't have to remember to
+      // run it through [absoluteMediaUrl]. Without this, backend payloads
+      // like endor-products/<uuid> (no extension) hit the catalog CDN
+      // and 404, producing a NetworkImageLoadException per tile.
+      imageUrl: absoluteMediaUrl(json['productPrimaryImageUrl'] as String?),
       commissionPercent:
           (json['commissionRateSnapshotPercent'] as num?)?.toDouble() ?? 0,
     );
@@ -235,7 +240,11 @@ class ReelTagManagementDto {
             (json['overlayPositionY'] as num?)?.toDouble() ?? 0,
         createdUtc: DateTime.tryParse(json['createdUtc'] as String? ?? ''),
         productName: json['productName'] as String?,
-        productPrimaryImageUrl: json['productPrimaryImageUrl'] as String?,
+        // Same fix as in [ReelTaggedProductDto.fromJson]: append the
+        // extension and prepend the base URL when needed so management
+        // list tiles don't 404 on extensionless product CDN paths.
+        productPrimaryImageUrl:
+            absoluteMediaUrl(json['productPrimaryImageUrl'] as String?),
         vendorAccountId: json['vendorAccountId'] as String?,
         vendorDisplayName: json['vendorDisplayName'] as String?,
       );
