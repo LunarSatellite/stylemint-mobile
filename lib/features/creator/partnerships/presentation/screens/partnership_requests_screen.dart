@@ -124,8 +124,14 @@ class _PartnershipRequestsScreenState
         request: req,
         onConfirm: () async {
           try {
-            await ref.read(partnershipsNotifierProvider.notifier).accept(id);
-            if (mounted) SmSnackbar.info(context, 'Partnership accepted!');
+            final ok =
+                await ref.read(partnershipsNotifierProvider.notifier).accept(id);
+            if (!mounted) return;
+            if (ok) {
+              SmSnackbar.info(context, 'Partnership accepted!');
+            } else {
+              SmSnackbar.error(context, "Couldn't accept. Please try again.");
+            }
           } catch (_) {
             if (mounted) {
               SmSnackbar.error(context, "Couldn't accept. Please try again.");
@@ -147,8 +153,15 @@ class _PartnershipRequestsScreenState
         request: req,
         onConfirm: () async {
           try {
-            await ref.read(partnershipsNotifierProvider.notifier).decline(id);
-            if (mounted) SmSnackbar.info(context, 'Partnership declined.');
+            final ok = await ref
+                .read(partnershipsNotifierProvider.notifier)
+                .decline(id);
+            if (!mounted) return;
+            if (ok) {
+              SmSnackbar.info(context, 'Partnership declined.');
+            } else {
+              SmSnackbar.error(context, "Couldn't decline. Please try again.");
+            }
           } catch (_) {
             if (mounted) {
               SmSnackbar.error(context, "Couldn't decline. Please try again.");

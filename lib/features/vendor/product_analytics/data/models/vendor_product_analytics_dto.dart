@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/domain/entities/vendor_product_analytics.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -46,7 +47,7 @@ class ProductAnalyticsHeaderDto {
   ProductAnalyticsHeader toDomain() => ProductAnalyticsHeader(
     productId: productId,
     title: title,
-    thumbnailUrl: thumbnailUrl,
+    thumbnailUrl: absoluteMediaUrl(thumbnailUrl),
     inStockUnits: inStockUnits,
     isActive: isActive,
   );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
@@ -1189,7 +1190,7 @@ class _TermsBottomSheet extends ConsumerWidget {
 class _TermsSection extends StatelessWidget {
   const _TermsSection({required this.index, required this.section});
   final int index;
-  final TermsSection section;
+  final PartnershipTermsSection section;
 
   @override
   Widget build(BuildContext context) {

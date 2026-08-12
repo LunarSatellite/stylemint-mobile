@@ -12,6 +12,8 @@ import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart' as partnerships;
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -169,6 +171,8 @@ class _DashboardContent extends StatelessWidget {
             ),
             const SizedBox(height: DesignTokens.s24),
             _TopPerformingReels(reels: dashboard.topReels),
+            const SizedBox(height: DesignTokens.s24),
+            const _MyRecentReels(),
             const SizedBox(height: DesignTokens.s24),
             const _BrandInvites(),
             const SizedBox(height: DesignTokens.s24),
@@ -1428,6 +1432,130 @@ class _NavBtn extends StatelessWidget {
                 color: color,
                 height: 1.2,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The creator's own reels in reverse-chronological order, read from
+/// `GET /v1/creator/reels` via [creatorReelSummariesProvider].
+///
+/// Complements [_TopPerformingReels], which ranks by performance off the
+/// analytics payload — this one answers "what did I post most recently",
+/// including reels that have not accumulated enough data to chart yet.
+class _MyRecentReels extends ConsumerWidget {
+  const _MyRecentReels();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(creatorReelSummariesProvider(_recent));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'My Reels',
+          onViewAll: () => context.push(RouteNames.creatorTopReels),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+          ),
+          error: (e, _s) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              '$e'.replaceFirst('Exception: ', ''),
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textMuted),
+            ),
+          ),
+          data: (reels) => reels.isEmpty
+              ? Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  child: Text(
+                    'No reels yet — import one to get started.',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textMuted),
+                  ),
+                )
+              : SizedBox(
+                  height: 132,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: reels.length,
+                    separatorBuilder: (_, _i) =>
+                        const SizedBox(width: DesignTokens.s12),
+                    itemBuilder: (_, i) => _MyReelTile(reel: reels[i]),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// Most recent first — the provider is keyed by (sortBy, order).
+  static const _recent = ('publishedAt', 'desc');
+}
+
+class _MyReelTile extends StatelessWidget {
+  const _MyReelTile({required this.reel});
+
+  final CreatorReelSummary reel;
+
+  @override
+  Widget build(BuildContext context) {
+    final thumb = reel.thumbnailUrl ?? '';
+    return GestureDetector(
+      onTap: () => context.push('/creator/reels/${reel.id}'),
+      child: SizedBox(
+        width: 88,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+              child: SizedBox(
+                width: 88,
+                height: 104,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (thumb.isEmpty)
+                      const ColoredBox(color: DesignTokens.bgAppBody)
+                    else
+                      Image.network(
+                        thumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _e, _s) =>
+                            const ColoredBox(color: DesignTokens.bgAppBody),
+                      ),
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white70,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              '${reel.views} views',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textMuted),
             ),
           ],
         ),

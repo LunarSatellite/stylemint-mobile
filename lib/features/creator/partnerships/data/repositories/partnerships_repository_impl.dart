@@ -3,7 +3,9 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -129,6 +131,63 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, PartnershipTerms>> getPartnershipTerms(
+    String partnershipId,
+  ) =>
+      _guard(() async {
+        final dto = await remoteDataSource.getPartnershipTerms(partnershipId);
+        return dto.toDomain();
+      });
+
+  @override
+  Future<Either<NetworkExceptions, List<PartnershipTerms>>> getTermsVersions(
+    String partnershipId,
+  ) =>
+      _guard(() async {
+        final dtos = await remoteDataSource.getTermsVersions(partnershipId);
+        return dtos.map((d) => d.toDomain()).toList(growable: false);
+      });
+
+  @override
+  Future<Either<NetworkExceptions, PotentialEarnings>> getPotentialEarnings(
+    String partnershipId, {
+    String? variantId,
+  }) =>
+      _guard(() async {
+        final dto = await remoteDataSource.getPotentialEarnings(
+          partnershipId,
+          variantId: variantId,
+        );
+        return dto.toDomain();
+      });
+
+  @override
+  Future<Either<NetworkExceptions, List<RecipeAttachmentInfo>>>
+      getPartnershipRecipes(String partnershipId) => _guard(() async {
+            final dtos =
+                await remoteDataSource.getPartnershipRecipes(partnershipId);
+            return dtos.map((d) => d.toDomain()).toList(growable: false);
+          });
+
+  /// Connectivity check + exception mapping shared by the brief/terms reads.
+  Future<Either<NetworkExceptions, T>> _guard<T>(
+    Future<T> Function() call,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await call());
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
     }
   }
 }

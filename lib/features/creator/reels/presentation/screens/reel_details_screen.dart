@@ -1,10 +1,13 @@
-import 'dart:ui' show ImageFilter;
+﻿import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -33,12 +36,15 @@ class ReelDetailsScreen extends ConsumerWidget {
       body: async.when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
-        error: (_, _e) => const Center(
-          child: Text(
-            "Couldn't load this reel.",
-            style: DesignTokens.bodyText,
-          ),
-        ),
+        error: (err, _) {
+          if (err is NetworkExceptions && err.isNotFound) {
+            return const _ReelUnavailableView();
+          }
+          final message = err is NetworkExceptions
+              ? NetworkExceptions.getMessage(err)
+              : err.toString();
+          return _ReelErrorView(reelId: reelId, message: message);
+        },
         data: (reel) => _Body(reel: reel),
       ),
     );
@@ -67,6 +73,9 @@ class _BodyState extends State<_Body> {
           reel: reel,
           isActive: true,
           playbackController: _playback,
+          // Single reel on screen, no bandwidth competition from siblings —
+          // opt into autoplay so the user lands on playback immediately.
+          autoplay: true,
         ),
 
         // Full-screen tap target for play/pause, below the interactive
@@ -78,53 +87,88 @@ class _BodyState extends State<_Body> {
           ),
         ),
 
-        // Bottom scrim so overlaid text stays legible over any video.
+        // Combined top + bottom scrim so the top bar (top ~22%) and
+        // the bottom info block (bottom ~55%) stay legible over any video,
+        // while leaving the middle of the frame fully visible.
         const IgnorePointer(
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black87],
-                stops: [0.45, 1.0],
+                colors: [
+                  Color(0xCC000000),
+                  Color(0x00000000),
+                  Color(0x00000000),
+                  Color(0xDD000000),
+                ],
+                stops: [0.0, 0.22, 0.45, 1.0],
               ),
             ),
           ),
         ),
 
-        // Transparent top bar over the video.
+        // Top bar: circular back button on the left, popup-menu actions on the
+        // right. Backdrop keeps the back button legible over any video frame.
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new,
-                      size: 18, color: DesignTokens.textWhite),
-                  onPressed: () => context.pop(),
-                ),
-                const Text('Reel Details', style: DesignTokens.sectionInnerTitle),
-              ],
+          bottom: false,
+          child: SizedBox(
+            height: 56,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+              child: Row(
+                children: [
+                  Material(
+                    color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => context.pop(),
+                      child: const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Icon(Icons.arrow_back_ios_new,
+                            size: 18, color: DesignTokens.textWhite),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  _ReelActionsMenu(reel: reel),
+                ],
+              ),
             ),
           ),
         ),
-
         // Right-rail read-only analytics — same visual language as the
         // Home feed's ReelActions right rail.
         Positioned(
           right: DesignTokens.s12,
-          bottom: 220,
+          bottom: 320,
           child: _AnalyticsRail(reel: reel),
         ),
 
-        // Bottom info block: platform/source/music chip row + tap-to-expand
-        // caption, then the tagged-products strip — same structure as
-        // CreatorInfo + TaggedProductsSection on the Home feed.
+        // Bottom info block: creator strip (avatar + @handle + Subscribe +
+        // caption) on top, then the chip/music meta row, then the tagged-
+        // products strip. The right-edge padding (72) leaves room for the
+        // analytics rail above this block.
         SafeArea(
+          top: false,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 72),
+                child: ReelCreatorStrip(
+                  creatorId: reel.creatorId,
+                  creatorHandle: reel.creatorHandle,
+                  creatorDisplayName: reel.creatorDisplayName,
+                  creatorAvatarUrl: reel.creatorAvatarUrl,
+                  caption: reel.caption,
+                  initialFollowing: reel.isCreatorFollowed,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
               Padding(
                 padding: const EdgeInsets.only(right: 72, left: DesignTokens.s12),
                 child: _ReelInfo(reel: reel),
@@ -151,8 +195,6 @@ class _ReelInfo extends StatefulWidget {
 }
 
 class _ReelInfoState extends State<_ReelInfo> {
-  bool _captionExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
@@ -193,26 +235,6 @@ class _ReelInfoState extends State<_ReelInfo> {
             ],
           ),
         ],
-        if (reel.caption != null && reel.caption!.isNotEmpty) ...[
-          const SizedBox(height: DesignTokens.s12),
-          // Collapsed by default (stays docked at the bottom); tapping
-          // expands in place — same interaction as the Home feed's caption.
-          GestureDetector(
-            onTap: () => setState(() => _captionExpanded = !_captionExpanded),
-            child: Text(reel.caption!,
-                maxLines: _captionExpanded ? null : 3,
-                overflow: _captionExpanded
-                    ? TextOverflow.visible
-                    : TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                  color: DesignTokens.textWhite,
-                )),
-          ),
-        ],
       ],
     );
   }
@@ -226,11 +248,12 @@ class _AnalyticsRail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         _RailStat(icon: Icons.remove_red_eye_outlined, value: reel.views),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s28),
         _RailStat(icon: Icons.favorite_outline, value: reel.likes),
-        const SizedBox(height: DesignTokens.s20),
+        const SizedBox(height: DesignTokens.s28),
         _RailStat(
           icon: Icons.chat_bubble_outline,
           value: reel.comments,
@@ -254,27 +277,25 @@ class _RailStat extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
         child: Container(
-          width: 52,
+          width: 56,
           padding: const EdgeInsets.symmetric(
-            vertical: DesignTokens.s8,
+            vertical: DesignTokens.s12,
             horizontal: DesignTokens.s4,
           ),
           decoration: const BoxDecoration(
-            color: Color(0x99333333),
-            borderRadius: BorderRadius.all(Radius.circular(20)),
+            color: Color(0xCC333333),
+            borderRadius: BorderRadius.all(Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: DesignTokens.iconWhite, size: 24),
-              const SizedBox(height: DesignTokens.s4),
+              Icon(icon, color: DesignTokens.iconWhite, size: 26),
               Text(
                 _formatCount(value),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
                   height: 1,
                   color: DesignTokens.textWhite,
                 ),
@@ -410,3 +431,331 @@ class _ProductTile extends StatelessWidget {
     );
   }
 }
+
+/// Write-side controls for the creator's own reel: publish/unpublish and
+/// tagged-product management. Sits in the top bar's trailing slot, which
+/// previously held a spacer that balanced the back button.
+///
+/// The backend reel projection carries no explicit status flag, so
+/// `publishedAtUtc` stands in for it: a reel that has never been published
+/// has no publish timestamp. If that proxy is ever wrong the opposite action
+/// is still reachable — both calls are idempotent server-side.
+class _ReelActionsMenu extends ConsumerWidget {
+  const _ReelActionsMenu({required this.reel});
+
+  final CreatorReelDetail reel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(creatorReelActionsNotifierProvider)
+        is CreatorReelActionInProgress;
+
+    ref.listen<CreatorReelActionState>(
+      creatorReelActionsNotifierProvider,
+      (_, next) {
+        final message = switch (next) {
+          CreatorReelActionSucceeded(:final message) => message,
+          CreatorReelActionFailed(:final message) => message,
+          _ => null,
+        };
+        if (message == null) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+        ref.read(creatorReelActionsNotifierProvider.notifier).reset();
+      },
+    );
+
+    final isPublished = reel.publishedAtUtc != null;
+
+    return Material(
+      color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+      shape: const CircleBorder(),
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: busy
+            ? const Padding(
+                padding: EdgeInsets.all(11),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: DesignTokens.textWhite,
+                ),
+              )
+            : PopupMenuButton<_ReelAction>(
+                icon: const Icon(Icons.more_vert,
+                    size: 20, color: DesignTokens.textWhite),
+                tooltip: 'Reel actions',
+                onSelected: (action) =>
+                    _onSelected(context, ref, action, isPublished),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: isPublished
+                        ? _ReelAction.unpublish
+                        : _ReelAction.publish,
+                    child: Text(isPublished ? 'Unpublish' : 'Publish'),
+                  ),
+                  const PopupMenuItem(
+                    value: _ReelAction.manageTags,
+                    child: Text('Manage tagged products'),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Future<void> _onSelected(
+    BuildContext context,
+    WidgetRef ref,
+    _ReelAction action,
+    bool isPublished,
+  ) async {
+    final notifier = ref.read(creatorReelActionsNotifierProvider.notifier);
+    switch (action) {
+      case _ReelAction.publish:
+        if (await notifier.publish(reel.id)) {
+          ref.invalidate(creatorReelDetailProvider(reel.id));
+        }
+      case _ReelAction.unpublish:
+        if (await notifier.unpublish(reel.id)) {
+          ref.invalidate(creatorReelDetailProvider(reel.id));
+        }
+      case _ReelAction.manageTags:
+        if (!context.mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: DesignTokens.baseBlack,
+          isScrollControlled: true,
+          builder: (_) => _TaggedProductsSheet(reelId: reel.id),
+        );
+    }
+  }
+}
+
+enum _ReelAction { publish, unpublish, manageTags }
+
+/// Lists the reel's tags from the creator-scoped management endpoint (which,
+/// unlike the public projection embedded in the reel, carries each tag's own
+/// id and commission snapshot) and lets the creator remove one.
+class _TaggedProductsSheet extends ConsumerWidget {
+  const _TaggedProductsSheet({required this.reelId});
+
+  final String reelId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(reelTaggedProductsProvider(reelId));
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(DesignTokens.s24),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(DesignTokens.s24),
+            child: Text(
+              '$e'.replaceFirst('Exception: ', ''),
+              style: DesignTokens.bodyText,
+            ),
+          ),
+          data: (tags) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Tagged products',
+                  style: DesignTokens.sectionInnerTitle),
+              const SizedBox(height: DesignTokens.s12),
+              if (tags.isEmpty)
+                const Text(
+                  'No products tagged on this reel yet.',
+                  style: DesignTokens.bodyText,
+                )
+              else
+                ...tags.map(
+                  (tag) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: tag.productImageUrl == null
+                        ? null
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              tag.productImageUrl!,
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _e, _s) =>
+                                  const SizedBox(width: 44, height: 44),
+                            ),
+                          ),
+                    title: Text(
+                      tag.productName ?? 'Product',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.bodyText,
+                    ),
+                    subtitle: Text(
+                      '${tag.priceLabel}  ·  '
+                      '${tag.commissionPercent.toStringAsFixed(0)}% '
+                      '(${tag.commissionPerSaleLabel})',
+                      style: DesignTokens.bodyText,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close,
+                          color: DesignTokens.textLight),
+                      tooltip: 'Remove tag',
+                      onPressed: () async {
+                        final ok = await ref
+                            .read(creatorReelActionsNotifierProvider.notifier)
+                            .untagProduct(reelId, tag.id);
+                        if (ok) {
+                          ref
+                            ..invalidate(reelTaggedProductsProvider(reelId))
+                            ..invalidate(creatorReelDetailProvider(reelId));
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              const SizedBox(height: DesignTokens.s8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the public reels endpoint returns 404 (the most common cause:
+/// the reel is unpublished/deleted but still appears in this creator's
+/// top-performing analytics, so the public catalog legitimately has no record
+/// of it). Clear messaging + a back button so the creator is never stranded.
+class _ReelUnavailableView extends StatelessWidget {
+  const _ReelUnavailableView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.movie_filter_outlined,
+                size: 56,
+                color: DesignTokens.iconLight,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              const Text(
+                'This reel is no longer available',
+                textAlign: TextAlign.center,
+                style: DesignTokens.sectionInnerTitle,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                "It may have been unpublished or removed. It will drop off your "
+                "top-performing list once analytics refresh.",
+                textAlign: TextAlign.center,
+                style: DesignTokens.bodyText.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                style: DesignTokens.primaryButtonStyle(),
+                child: const Text('Back to top reels'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Generic fallback for any non-404 error (network, server, parsing). Keeps
+/// the user on the screen with a retry instead of dumping them back to the
+/// list and forcing a full re-navigation.
+class _ReelErrorView extends ConsumerWidget {
+  const _ReelErrorView({required this.reelId, required this.message});
+
+  final String reelId;
+  final String message;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 56,
+                color: DesignTokens.iconLight,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              const Text(
+                "Couldn't load this reel",
+                textAlign: TextAlign.center,
+                style: DesignTokens.sectionInnerTitle,
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: DesignTokens.bodyText.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: DesignTokens.borderDefault),
+                      foregroundColor: DesignTokens.textWhite,
+                      minimumSize: const Size(0, DesignTokens.buttonHeight),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(DesignTokens.buttonRadius),
+                      ),
+                    ),
+                    child: const Text('Back'),
+                  ),
+                  const SizedBox(width: DesignTokens.s12),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(creatorReelDetailProvider(reelId)),
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+

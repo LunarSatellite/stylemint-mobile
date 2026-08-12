@@ -106,6 +106,7 @@ dependencies:
   # ── UI helpers ────────────────────────────────────────────────────────────
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
   flutter_svg: ^2.0.10
   video_player: ^2.9.2
   youtube_player_flutter: ^9.1.1

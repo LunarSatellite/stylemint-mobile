@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart' show Options;
+﻿import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -52,7 +53,7 @@ class ReelsRemoteDataSource {
         .map((p) => TaggedProductEntity(
               id: (p['productId'] as String?) ?? '',
               name: (p['name'] as String?) ?? '',
-              imageUrl: (p['imageUrl'] as String?) ?? '',
+              imageUrl: absoluteMediaUrl(p['imageUrl'] as String?),
               price: Money(
                 amount: (p['priceAmount'] as num?)?.toDouble() ?? 0,
                 currency: (p['priceCurrency'] as String?) ?? 'NPR',
@@ -61,11 +62,10 @@ class ReelsRemoteDataSource {
             ))
         .toList(growable: false);
 
-    final platformStr = (r['sourcePlatform'] as String?) ?? '';
-    final platform = SocialPlatform.values.firstWhere(
-      (p) => p.name == platformStr,
-      orElse: () => SocialPlatform.instagram,
-    );
+    // The Discovery feed sends PascalCase strings ("YouTubeShorts"), not
+    // Dart enum names — see SocialPlatform.tryParseWire.
+    final platform = SocialPlatform.tryParseWire(r['sourcePlatform']) ??
+        SocialPlatform.instagram;
 
     return Reel(
       id: (r['reelId'] as String?) ?? '',

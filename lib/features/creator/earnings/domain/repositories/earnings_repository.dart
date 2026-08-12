@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 abstract interface class EarningsRepository {
@@ -39,4 +40,9 @@ abstract interface class EarningsRepository {
     int pageSize = 25,
     String? cursor,
   });
+
+  /// Per-reel earnings breakdown backing the creator analytics dashboard.
+  /// Separate from [getSummary] because the metrics live on a different
+  /// endpoint (`/v1/creator/analytics/dashboard`).
+  Future<Either<NetworkExceptions, EarningsBreakdown>> getDashboardBreakdown();
 }

@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:stylemint_mobile_frontend/features/creator/search/data/datasources/creator_search_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/search/domain/entities/creator_search_result.dart';
+import 'package:stylemint_mobile_frontend/features/creator/search/domain/repositories/creator_search_repository.dart';
 
 sealed class CreatorSearchState {}
 
@@ -35,9 +36,9 @@ class CreatorSearchFailed extends CreatorSearchState {
 /// distinctly creator-specific use case; Products and Creators tabs cover
 /// "find something to make content about" and "find other creators".
 class CreatorSearchNotifier extends StateNotifier<CreatorSearchState> {
-  CreatorSearchNotifier(this._dataSource) : super(CreatorSearchIdle());
+  CreatorSearchNotifier(this._repository) : super(CreatorSearchIdle());
 
-  final CreatorSearchRemoteDataSource _dataSource;
+  final CreatorSearchRepository _repository;
 
   CreatorSearchType _type = CreatorSearchType.brands;
   String _query = '';
@@ -69,18 +70,37 @@ class CreatorSearchNotifier extends StateNotifier<CreatorSearchState> {
 
   Future<void> _runSearch(String query) async {
     state = CreatorSearchLoading();
-    try {
-      switch (_type) {
-        case CreatorSearchType.brands:
-          state = CreatorSearchBrandsLoaded(await _dataSource.searchBrands(query));
-        case CreatorSearchType.products:
-          state = CreatorSearchProductsLoaded(await _dataSource.searchProducts(query));
-        case CreatorSearchType.creators:
-          state = CreatorSearchCreatorsLoaded(await _dataSource.searchCreators(query));
-      }
-    } on Object catch (_) {
-      state = CreatorSearchFailed('Search failed. Please try again.');
+    switch (_type) {
+      case CreatorSearchType.brands:
+        _apply(
+          await _repository.searchBrands(query),
+          CreatorSearchBrandsLoaded.new,
+        );
+      case CreatorSearchType.products:
+        _apply(
+          await _repository.searchProducts(query),
+          CreatorSearchProductsLoaded.new,
+        );
+      case CreatorSearchType.creators:
+        _apply(
+          await _repository.searchCreators(query),
+          CreatorSearchCreatorsLoaded.new,
+        );
     }
+  }
+
+  /// Surfaces the repository's real failure message ("No internet connection."
+  /// and friends) instead of a blanket retry prompt. A search that resolves
+  /// after the notifier is gone must not touch state.
+  void _apply<T>(
+    NetworkEither<List<T>> result,
+    CreatorSearchState Function(List<T>) loaded,
+  ) {
+    if (!mounted) return;
+    state = result.fold(
+      (failure) => CreatorSearchFailed(NetworkExceptions.getMessage(failure)),
+      loaded,
+    );
   }
 
   @override

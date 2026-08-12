@@ -97,6 +97,33 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dtos = await remoteDataSource.getSuggestedProducts(
+        platform: platform,
+        externalId: externalId,
+      );
+      return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return right(const []);
+      }
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, Unit>> publishReel({
     required String reelId,
   }) async {

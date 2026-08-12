@@ -46,11 +46,17 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final comments = await _ds.list(_reelId);
+      // The provider is autoDispose, so the last UI listener may have
+      // gone away while the request was in flight. Writing to `state`
+      // after `dispose()` throws "Tried to use ReelCommentsController
+      // after dispose was called."
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         comments: comments.isEmpty ? _mockComments() : comments,
       );
     } catch (_) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, comments: _mockComments());
     }
   }
@@ -118,12 +124,16 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     state = state.copyWith(isPosting: true, clearError: true);
     try {
       final created = await _ds.post(_reelId, text);
+      // See note in load() -- autoDispose means the notifier can be
+      // torn down between the post request and our state update.
+      if (!mounted) return true;
       state = state.copyWith(
         isPosting: false,
         comments: [created, ...state.comments],
       );
       return true;
     } catch (_) {
+      if (!mounted) return false;
       state = state.copyWith(
           isPosting: false, errorMessage: 'Could not post your comment.');
       return false;

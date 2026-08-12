@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -24,7 +25,7 @@ abstract class VendorOrderItemDto with _$VendorOrderItemDto {
   VendorOrderItem toDomain() => VendorOrderItem(
         productId: productId,
         productName: productName,
-        imageUrl: imageUrl,
+        imageUrl: absoluteMediaUrl(imageUrl),
         quantity: quantity,
         unitPrice: Money(amount: unitPriceAmount, currency: currency),
       );

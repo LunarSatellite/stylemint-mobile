@@ -28,10 +28,8 @@ abstract class SocialAccountDto with _$SocialAccountDto {
       _$SocialAccountDtoFromJson(json);
 
   SocialAccount toDomain() {
-    // SocialProvider ints (1..4) map to the SocialPlatform enum order.
-    final platformEnum = (provider >= 1 && provider <= SocialPlatform.values.length)
-        ? SocialPlatform.values[provider - 1]
-        : SocialPlatform.instagram;
+    final platformEnum =
+        SocialPlatform.tryParseWire(provider) ?? SocialPlatform.instagram;
 
     return SocialAccount(
       id: id,
