@@ -112,6 +112,7 @@ abstract class RouteNames {
   static const vendorApplyRejected = '/vendor/apply/rejected';
   static const vendorApplyUnderReview = '/vendor/apply/under-review';
   static const vendorApplyApproved = '/vendor/apply/approved';
+  static const vendorProfile = '/vendor/profile';
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';

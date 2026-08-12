@@ -154,6 +154,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/pr
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart'
     as vendor_dashboard_activity;
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/profile/presentation/screens/vendor_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/add_bank_account_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/all_payout_history_screen.dart'
     as vendor_history;
@@ -931,6 +932,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorDash,
         builder: (ctx, state) => const VendorDashboardScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorProfile,
+        builder: (ctx, state) => const VendorProfileScreen(),
       ),
       GoRoute(
         path: RouteNames.addProduct,

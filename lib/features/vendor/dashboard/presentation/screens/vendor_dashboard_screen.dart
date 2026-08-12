@@ -99,7 +99,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
           onTap: (i) {
             if (i == 1) context.go(RouteNames.vendorOrders);
             if (i == 2) context.go(RouteNames.vendorProducts);
-            if (i == 3) context.go(RouteNames.settings);
+            if (i == 3) context.push(RouteNames.vendorProfile);
           },
         ),
       ),

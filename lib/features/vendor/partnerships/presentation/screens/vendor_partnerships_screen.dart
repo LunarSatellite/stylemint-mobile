@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/en
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/widgets/pending_partnership_card.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -465,11 +466,22 @@ class _PartnershipsTab extends ConsumerWidget {
       ),
       itemCount: partnerships.length,
       separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-      itemBuilder: (_, i) => _PartnershipCard(
-        partnership: partnerships[i],
-        isBusy: isBusy,
-        onMenu: onMenu,
-      ),
+      itemBuilder: (_, i) {
+        // Pending (creator-initiated, awaiting vendor decision) gets its
+        // own card matching the Figma "Pending" reference � commission
+        // chip + Message body + Decline/Accept � not the Active layout.
+        if (tab == _TabKind.pending) {
+          return PendingPartnershipCard(
+            request: partnerships[i],
+            isBusy: isBusy,
+          );
+        }
+        return _PartnershipCard(
+          partnership: partnerships[i],
+          isBusy: isBusy,
+          onMenu: onMenu,
+        );
+      },
     );
   }
 

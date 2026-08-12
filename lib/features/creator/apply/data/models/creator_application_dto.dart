@@ -91,26 +91,42 @@ abstract class CreatorApplicationDto with _$CreatorApplicationDto {
 
   const CreatorApplicationDto._();
 
+  // Hand-rolled because the BE wire shape (nested `categories` array of
+  // { id, creatorApplicationId, creatorContentCategoryId }) does not match
+  // the flat DTO layout json_serializable expects, and a custom factory
+  // body suppresses generation of `_$CreatorApplicationDtoFromJson`.
   factory CreatorApplicationDto.fromJson(Map<String, dynamic> json) {
-    // Flatten the BE's nested categories[] and socials[] arrays into the
-    // scalar fields the DTO actually carries. The wire shape for
-    // categories is { id, creatorApplicationId, creatorContentCategoryId };
-    // we only need the last one (the category GUID the apply payload sends).
     final rawCategories = (json['categories'] as List<dynamic>?) ?? const [];
     final categoryIds = rawCategories
         .map(
-          (c) =>
-              (c as Map<String, dynamic>)['creatorContentCategoryId']
-                  as String?,
+          (c) => (c as Map<String, dynamic>)['creatorContentCategoryId']
+              as String?,
         )
         .whereType<String>()
         .toList(growable: false);
     final rawSocials = (json['socials'] as List<dynamic>?) ?? const [];
-    return _$CreatorApplicationDtoFromJson(<String, dynamic>{
-      ...json,
-      'categoryIds': categoryIds,
-      'socials': rawSocials,
-    });
+    final socials = rawSocials
+        .map(
+          (s) => CreatorApplicationSocialDto.fromJson(
+            s as Map<String, dynamic>,
+          ),
+        )
+        .toList(growable: false);
+    DateTime? parseDate(Object? v) =>
+        v is String && v.isNotEmpty ? DateTime.parse(v) : null;
+    return CreatorApplicationDto(
+      id: json['id'] as String,
+      state: (json['state'] as num).toInt(),
+      rejectionReason: json['rejectionReason'] as String?,
+      bio: json['bio'] as String?,
+      audienceBand: (json['audienceBand'] as num?)?.toInt(),
+      otherCategoryDescription: json['otherCategoryDescription'] as String?,
+      categoryIds: categoryIds,
+      socials: socials,
+      submittedAtUtc: parseDate(json['submittedAtUtc']),
+      createdUtc: parseDate(json['createdUtc']),
+      updatedUtc: parseDate(json['updatedUtc']),
+    );
   }
 
   CreatorApplication toDomain() {

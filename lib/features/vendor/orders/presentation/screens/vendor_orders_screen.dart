@@ -162,7 +162,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
         onTap: (i) {
           if (i == 0) context.go(RouteNames.vendorHome);
           if (i == 2) context.go(RouteNames.vendorProducts);
-          if (i == 3) context.go(RouteNames.settings);
+            if (i == 3) context.push(RouteNames.vendorProfile);
         },
       ),
       ),
