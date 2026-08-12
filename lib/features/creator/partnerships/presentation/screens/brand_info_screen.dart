@@ -1,67 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Data model ────────────────────────────────────────────────────────────────
+// ── Seed data (passed in from the catalog list) ──────────────────────────────
 
+/// Initial values populated from the brand catalog list
+/// (`GET /v1/brands`). Real description / rating / success rate /
+/// category values are fetched after mount via [brandDetailProvider]
+/// and [brandTrustProvider] and override these seeds once loaded.
 class BrandInfoData {
   const BrandInfoData({
     required this.name,
-    required this.logo,
-    required this.stars,
-    required this.category,
-    required this.commission,
-    required this.description,
-    required this.avgOrderValue,
-    required this.successRate,
-    required this.products,
-    this.vendorProfileId = '',
+    required this.logoUrl,
+    required this.commissionMinPercent,
+    required this.commissionMaxPercent,
+    required this.vendorProfileId,
   });
 
   final String name;
-  final Widget logo;
-  final double stars;
-  final String category;
-  final String commission;
-  final String description;
-  final String avgOrderValue;
-  final String successRate;
-  final List<BrandProduct> products;
+  final String? logoUrl;
+  final double commissionMinPercent;
+  final double commissionMaxPercent;
+
+  /// AccountId of the vendor profile — primary key used to fetch
+  /// detail/trust on mount. Empty means the screen was opened without
+  /// a known vendor (and the Apply button stays disabled).
   final String vendorProfileId;
+
+  String get seedCommissionLabel =>
+      '${commissionMinPercent.toStringAsFixed(0)}-'
+      '${commissionMaxPercent.toStringAsFixed(0)}%';
 }
 
-class BrandProduct {
-  const BrandProduct({
-    required this.name,
-    required this.price,
-    required this.sales,
-    required this.thumbnailColor,
-    this.thumbnailIcon = Icons.checkroom_rounded,
-  });
+// ── Screen ───────────────────────────────────────────────────────────────────
 
-  final String name;
-  final String price;
-  final int sales;
-  final Color thumbnailColor;
-  final IconData thumbnailIcon;
-}
-
-// ── Screen ────────────────────────────────────────────────────────────────────
-
-class BrandInfoScreen extends StatefulWidget {
+class BrandInfoScreen extends ConsumerStatefulWidget {
   const BrandInfoScreen({super.key, required this.data});
   final BrandInfoData data;
 
   @override
-  State<BrandInfoScreen> createState() => _BrandInfoScreenState();
+  ConsumerState<BrandInfoScreen> createState() => _BrandInfoScreenState();
 }
 
-class _BrandInfoScreenState extends State<BrandInfoScreen>
+class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  bool _expanded = false;
+  bool _descExpanded = false;
 
   @override
   void initState() {
@@ -77,7 +65,6 @@ class _BrandInfoScreenState extends State<BrandInfoScreen>
 
   @override
   Widget build(BuildContext context) {
-    final d = widget.data;
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -101,99 +88,12 @@ class _BrandInfoScreenState extends State<BrandInfoScreen>
           ),
         ),
       ),
-      bottomNavigationBar: _ApplyButton(data: d),
+      bottomNavigationBar: _ApplyButton(seed: widget.data),
       body: Column(
         children: [
-          // Header section (non-scrolling above tabs)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s8,
-              DesignTokens.s16,
-              0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo + name + rating + commission
-                Row(
-                  children: [
-                    SizedBox(width: 64, height: 64, child: d.logo),
-                    const SizedBox(width: DesignTokens.s16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            d.name,
-                            style: const TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: DesignTokens.textWhite,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: DesignTokens.secondaryYellow,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '${d.stars.toStringAsFixed(1)}',
-                                style: const TextStyle(
-                                  fontFamily: DesignTokens.fontFamily,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: DesignTokens.textWhite,
-                                ),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '· ${d.category}',
-                                style: const TextStyle(
-                                  fontFamily: DesignTokens.fontFamily,
-                                  fontSize: 13,
-                                  color: DesignTokens.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          _CommissionChip(d.commission),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                // Description
-                _ExpandableDescription(
-                  text: d.description,
-                  expanded: _expanded,
-                  onToggle: () => setState(() => _expanded = !_expanded),
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                // Metrics
-                _MetricRow(
-                  iconWidget: Image.asset('assets/images/creatordash/material-symbols_package-2-outline.png', width: 18, height: 18, color: DesignTokens.textMuted),
-                  label: 'Avg Order Value',
-                  value: d.avgOrderValue,
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                _MetricRow(
-                  icon: Icons.handshake_outlined,
-                  label: 'Success Rate with Creators',
-                  value: d.successRate,
-                ),
-                const SizedBox(height: DesignTokens.s4),
-              ],
-            ),
-          ),
-          // Tab bar
+          _BrandHeader(seed: widget.data, expanded: _descExpanded, onToggle: () {
+            setState(() => _descExpanded = !_descExpanded);
+          }),
           TabBar(
             controller: _tabController,
             indicatorColor: DesignTokens.primaryGreen,
@@ -219,18 +119,232 @@ class _BrandInfoScreenState extends State<BrandInfoScreen>
             ],
           ),
           const Divider(height: 1, color: DesignTokens.borderDefault),
-          // Tab views
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _TopProductsTab(products: d.products),
-                const _SampleCampaignsTab(),
-                const _PartnershipTermsTab(),
+              children: const [
+                _TopProductsTab(),
+                _SampleCampaignsTab(),
+                _PartnershipTermsTab(),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Header (logo + name + rating + commission + description + metrics) ───────
+
+class _BrandHeader extends ConsumerWidget {
+  const _BrandHeader({
+    required this.seed,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final BrandInfoData seed;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vendorId = seed.vendorProfileId;
+
+    // Detail (description, business type, commission range) — fetches
+    // when we have a vendor id; stays in loading state until then.
+    final detailAsync = vendorId.isEmpty
+        ? const AsyncValue<BrandDetailDto>.data(_emptyDetail)
+        : ref.watch(brandDetailProvider(vendorId));
+
+    // Trust (rating, success rate) — optional. Vendors without a trust
+    // row yet return 404, which we surface as "no rating yet".
+    final trustAsync = vendorId.isEmpty
+        ? const AsyncValue<BrandTrustDto>.data(_emptyTrust)
+        : ref.watch(brandTrustProvider(vendorId));
+
+    final detail = detailAsync.asData?.value;
+    final trust = trustAsync.asData?.value;
+
+    final name = detail?.businessName.isNotEmpty == true
+        ? detail!.businessName
+        : seed.name;
+    final logoUrl = detail?.logoUrl ?? seed.logoUrl;
+    final category = detail?.businessTypeLabel ?? '';
+    final commissionLabel = detail?.commissionRangeLabel ?? seed.seedCommissionLabel;
+    final description = detail?.description;
+    final rating = trust == null ? null : trust.score;
+    final successRate = trust == null ? null : trust.partnershipCompletionRatePercent;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s8,
+        DesignTokens.s16,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Logo + name + rating + commission
+          Row(
+            children: [
+              SizedBox(width: 64, height: 64, child: _BrandLogo(name: name, logoUrl: logoUrl)),
+              const SizedBox(width: DesignTokens.s16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: DesignTokens.secondaryYellow,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          rating == null ? '--' : rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
+                        if (category.isNotEmpty) ...[
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              '· $category',
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 13,
+                                color: DesignTokens.textMuted,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    _CommissionChip(commissionLabel),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          // Description — only rendered once the detail endpoint has a
+          // real description. While loading or on null/empty description
+          // we skip the tile entirely so we never show "placeholder" text.
+          if (description != null && description.isNotEmpty) ...[
+            _ExpandableDescription(
+              text: description,
+              expanded: expanded,
+              onToggle: onToggle,
+            ),
+            const SizedBox(height: DesignTokens.s12),
+          ],
+          // Metrics
+          _MetricRow(
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_package-2-outline.png',
+              width: 18,
+              height: 18,
+              color: DesignTokens.textMuted,
+            ),
+            label: 'Avg Order Value',
+            // No backend field today; honest placeholder until a brand-level
+            // AOV endpoint exists. The list endpoint, brand detail, and
+            // trust score all return no AOV — don't fabricate one.
+            value: '--',
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _MetricRow(
+            icon: Icons.handshake_outlined,
+            label: 'Success Rate with Creators',
+            value: successRate == null ? '--' : '${successRate.toStringAsFixed(0)}%',
+          ),
+          const SizedBox(height: DesignTokens.s4),
+        ],
+      ),
+    );
+  }
+
+  // Sentinel used when there is no vendor id at all (so the providers
+  // aren't even watched). The screen guards on this and renders nothing
+  // detail-specific in that path.
+  static const _emptyDetail = BrandDetailDto(
+    id: '',
+    accountId: '',
+    businessName: '',
+    businessType: 0,
+    commissionRangeMinPercent: 0,
+    commissionRangeMaxPercent: 0,
+  );
+  static const _emptyTrust = BrandTrustDto(
+    vendorAccountId: '',
+    score: 0,
+    tier: 0,
+    totalPartnerships: 0,
+    verifiedByCount: 0,
+    partnershipCompletionRatePercent: 0,
+    paymentReliabilityPercent: 0,
+    communicationResponseRatePercent: 0,
+    briefQualityPercent: 0,
+    creatorSatisfactionPercent: 0,
+  );
+}
+
+// ── Brand logo (initials fallback) ───────────────────────────────────────────
+
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo({required this.name, this.logoUrl});
+  final String name;
+  final String? logoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (logoUrl != null && logoUrl!.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          logoUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _initials(),
+        ),
+      );
+    }
+    return _initials();
+  }
+
+  Widget _initials() {
+    final initial = name.trim().isEmpty ? '?' : name.trim()[0].toUpperCase();
+    return Container(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: DesignTokens.textWhite,
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -385,95 +499,32 @@ class _CommissionChip extends StatelessWidget {
 
 // ── Top Products tab ──────────────────────────────────────────────────────────
 
+/// Real per-brand top-products endpoint does not exist on the backend
+/// today (`StyleMint.Modules.Catalog.Service.ProductService` only
+/// exposes `PageForVendorAsync` — vendor-self-only — so a creator
+/// cannot list another vendor's products). Show an honest empty
+/// state until that endpoint ships.
 class _TopProductsTab extends StatelessWidget {
-  const _TopProductsTab({required this.products});
-  final List<BrandProduct> products;
+  const _TopProductsTab();
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
-      itemCount: products.length,
-      separatorBuilder: (_, __) => const Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: DesignTokens.borderDefault,
-      ),
-      itemBuilder: (_, i) => _ProductRow(rank: i + 1, product: products[i]),
-    );
-  }
-}
-
-class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.rank, required this.product});
-  final int rank;
-  final BrandProduct product;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s16,
-        vertical: DesignTokens.s12,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24,
-            child: Text(
-              '$rank',
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: DesignTokens.textWhite,
-              ),
-            ),
+    return ListView(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      children: [
+        const SizedBox(height: DesignTokens.s24),
+        Icon(Icons.inventory_2_outlined, size: 48, color: DesignTokens.textLight),
+        const SizedBox(height: DesignTokens.s12),
+        const Text(
+          'No top products yet',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 13,
+            color: DesignTokens.textLight,
           ),
-          const SizedBox(width: DesignTokens.s8),
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 72,
-              height: 72,
-              color: product.thumbnailColor,
-              child: Icon(
-                product.thumbnailIcon,
-                color: Colors.white.withValues(alpha: 0.7),
-                size: 32,
-              ),
-            ),
-          ),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${product.price} · ${product.sales} sales',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -580,7 +631,12 @@ class _CampaignCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s8),
                 Row(
                   children: [
-                    Image.asset('assets/images/creatordash/material-symbols_animated-images-outline-rounded.png', width: 14, height: 14, color: DesignTokens.textMuted),
+                    Image.asset(
+                      'assets/images/creatordash/material-symbols_animated-images-outline-rounded.png',
+                      width: 14,
+                      height: 14,
+                      color: DesignTokens.textMuted,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '$reels Reels',
@@ -626,143 +682,23 @@ class _PartnershipTermsTab extends StatelessWidget {
           title: 'Who Can Join',
           bullets: [
             'Open to all verified StyleMint creators.',
-            'Must have synced social accounts before participating.',
+            'Must have synced social account with at least 1,000 engaged followers.',
+            'No active policy violations in the last 90 days.',
           ],
         ),
         SizedBox(height: DesignTokens.s12),
-        const _ReelContentRulesCard(),
+        _TermsCard(
+          title: 'Reel Content Rules',
+          bullets: [
+            'Showcase the product in real use; candid framing preferred.',
+            'Hook within the first 3 seconds; minimum 15s reel length.',
+            'Add the partnership disclosure tag; honour the supplied brief.',
+            'No comparative claims against competitors in the same category.',
+          ],
+        ),
       ],
     );
   }
-}
-
-class _ReelContentRulesCard extends StatelessWidget {
-  const _ReelContentRulesCard();
-
-  static const _bulletColor = Color(0xFF26C6DA);
-
-  static const _bullets = [
-    null, // first bullet uses RichText
-    'Showcase Nike Running Shoes in action — jogging, sprinting, workouts, or styling shots.',
-    'Minimum reel length: 8 seconds',
-    'Reel must clearly feature Nike Zoom Series branding or product visuals.',
-    'No third-party brand logos allowed in the reel.',
-  ];
-
-  Widget _dot() => const Padding(
-        padding: EdgeInsets.only(top: 5, right: DesignTokens.s8),
-        child: Icon(Icons.circle, size: 5, color: DesignTokens.textLight),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '2. Reel Content Rules',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: DesignTokens.textWhite,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            // First bullet with teal link
-            Padding(
-              padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _dot(),
-                  Expanded(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 13,
-                          height: 1.5,
-                          color: DesignTokens.textLight,
-                        ),
-                        children: const [
-                          TextSpan(text: 'Use the hero video provided in the campaign details. Or download it by '),
-                          TextSpan(
-                            text: 'clicking here',
-                            style: TextStyle(color: _bulletColor, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            for (final b in _bullets.skip(1))
-              Padding(
-                padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _dot(),
-                    Expanded(
-                      child: Text(
-                        b!,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 13,
-                          height: 1.5,
-                          color: DesignTokens.textLight,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-    );
-  }
-}
-
-class _DashedRectPainter extends CustomPainter {
-  const _DashedRectPainter({required this.color, required this.radius});
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-    const dash = 6.0;
-    const gap = 4.0;
-    final rr = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(radius),
-    );
-    final path = Path()..addRRect(rr);
-    final metrics = path.computeMetrics();
-    for (final metric in metrics) {
-      double dist = 0;
-      while (dist < metric.length) {
-        final end = (dist + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(dist, end), paint);
-        dist += dash + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 class _TermsCard extends StatelessWidget {
@@ -829,12 +765,12 @@ class _TermsCard extends StatelessWidget {
 // ── Apply for Partnership button ──────────────────────────────────────────────
 
 class _ApplyButton extends StatelessWidget {
-  const _ApplyButton({required this.data});
-  final BrandInfoData data;
+  const _ApplyButton({required this.seed});
+  final BrandInfoData seed;
 
   @override
   Widget build(BuildContext context) {
-    final canApply = data.vendorProfileId.isNotEmpty;
+    final canApply = seed.vendorProfileId.isNotEmpty;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -846,18 +782,16 @@ class _ApplyButton extends StatelessWidget {
         child: GestureDetector(
           onTap: canApply
               ? () {
-                  final min = _parseMin(data.commission);
-                  final max = _parseMax(data.commission);
                   context.push(
                     RouteNames.partnershipApply
-                        .replaceFirst(':partnershipId', _slugify(data.name)),
+                        .replaceFirst(':partnershipId', _slugify(seed.name)),
                     extra: PartnershipApplyArgs(
-                      vendorProfileId: data.vendorProfileId,
-                      vendorName: data.name,
-                      vendorRating: data.stars,
-                      vendorCategory: data.category,
-                      commissionMin: min,
-                      commissionMax: max,
+                      vendorProfileId: seed.vendorProfileId,
+                      vendorName: seed.name,
+                      vendorRating: null,
+                      vendorCategory: null,
+                      commissionMin: seed.commissionMinPercent,
+                      commissionMax: seed.commissionMaxPercent,
                     ),
                   );
                 }
@@ -885,19 +819,6 @@ class _ApplyButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// Parses "12-20%" → 12.0, "18%" → 18.0
-double _parseMin(String s) {
-  final n = s.replaceAll('%', '').trim();
-  if (n.contains('-')) return double.tryParse(n.split('-')[0].trim()) ?? 0;
-  return double.tryParse(n) ?? 0;
-}
-
-double _parseMax(String s) {
-  final n = s.replaceAll('%', '').trim();
-  if (n.contains('-')) return double.tryParse(n.split('-')[1].trim()) ?? 0;
-  return double.tryParse(n) ?? 0;
 }
 
 String _slugify(String name) =>

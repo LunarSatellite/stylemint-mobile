@@ -31,10 +31,12 @@ final creatorReelsRepositoryProvider = Provider<CreatorReelsRepository>(
 /// Unwraps a repository result for the `FutureProvider` reads below, which
 /// signal failure by throwing so `AsyncValue.error` carries the message.
 T _orThrow<T>(NetworkEither<T> result) => result.fold(
-      (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
+      // Throw the typed [NetworkExceptions] (not just its message) so the
+      // screen's AsyncValue.error can branch on .isNotFound etc.
+      // ignore: only_throw_errors
+      (failure) => throw failure,
       (value) => value,
     );
-
 // ── Reel detail (auto-disposed, keyed by reelId) ──────────────────────────────
 
 // ignore: specify_nonobvious_property_types
@@ -77,3 +79,5 @@ final creatorReelActionsNotifierProvider = StateNotifierProvider.autoDispose<
     ref.watch(creatorReelsRepositoryProvider),
   ),
 );
+
+

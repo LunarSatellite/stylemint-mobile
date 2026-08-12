@@ -232,6 +232,143 @@ class SampleCampaignDto {
   }
 }
 
+/// Brand catalog detail — backend `VendorProfileDto`
+/// (`GET /v1/brands/{vendorAccountId}`). Real approved-vendor profile
+/// surfaced when a creator taps into a brand card from the catalog.
+/// Commission fields arrive as decimals in the [0, 1] fractional range
+/// (e.g. `0.15` = 15%); the mobile multiplies by 100 so downstream widgets
+/// can render whole-percent values.
+class BrandDetailDto {
+  const BrandDetailDto({
+    required this.id,
+    required this.accountId,
+    required this.businessName,
+    required this.businessType,
+    required this.commissionRangeMinPercent,
+    required this.commissionRangeMaxPercent,
+    this.description,
+    this.logoUrl,
+    this.websiteUrl,
+  });
+
+  final String id;
+  final String accountId;
+  final String businessName;
+
+  /// Numeric value of `BusinessType` (1=Individual, 2=SoleProprietorship,
+  /// 3=LimitedLiability, 4=Corporation, 5=Partnership, 6=NonProfit).
+  /// Mapped to a friendly label by `BrandInfoScreen` since the legal form
+  /// is the only taxonomy the vendor profile carries today; product
+  /// categories live on individual products and are not aggregated here.
+  final int businessType;
+
+  final String? description;
+  final String? logoUrl;
+  final String? websiteUrl;
+  final double commissionRangeMinPercent;
+  final double commissionRangeMaxPercent;
+
+  static const _businessTypeLabels = <int, String>{
+    1: 'Individual',
+    2: 'Sole Proprietorship',
+    3: 'Limited Liability',
+    4: 'Corporation',
+    5: 'Partnership',
+    6: 'Non-Profit',
+  };
+
+  String get businessTypeLabel =>
+      _businessTypeLabels[businessType] ?? '';
+
+  String get commissionRangeLabel =>
+      '${commissionRangeMinPercent.toStringAsFixed(0)}-'
+      '${commissionRangeMaxPercent.toStringAsFixed(0)}%';
+
+  factory BrandDetailDto.fromJson(Map<String, dynamic> json) {
+    return BrandDetailDto(
+      id: (json['id'] as String?) ?? '',
+      accountId: (json['accountId'] as String?) ?? '',
+      businessName: (json['businessName'] as String?) ?? '',
+      businessType: (json['businessType'] as num?)?.toInt() ?? 0,
+      description: json['description'] as String?,
+      logoUrl: json['logoUrl'] as String?,
+      websiteUrl: json['websiteUrl'] as String?,
+      commissionRangeMinPercent:
+          ((json['commissionRangeMin'] as num?)?.toDouble() ?? 0) * 100,
+      commissionRangeMaxPercent:
+          ((json['commissionRangeMax'] as num?)?.toDouble() ?? 0) * 100,
+    );
+  }
+}
+
+/// Brand trust score — backend `BrandTrustDto`
+/// (`GET /v1/creator/brands/{vendorId}/trust`). 0–100 score, tier label,
+/// and component sub-scores the brand detail header renders as the
+/// "rating" (Score) and "success rate" (PartnershipCompletionRate * 100).
+class BrandTrustDto {
+  const BrandTrustDto({
+    required this.vendorAccountId,
+    required this.score,
+    required this.tier,
+    required this.totalPartnerships,
+    required this.verifiedByCount,
+    required this.partnershipCompletionRatePercent,
+    required this.paymentReliabilityPercent,
+    required this.communicationResponseRatePercent,
+    required this.briefQualityPercent,
+    required this.creatorSatisfactionPercent,
+  });
+
+  final String vendorAccountId;
+
+  /// 0–100 overall trust score.
+  final double score;
+
+  /// Numeric value of `TrustTier`
+  /// (1=Untrusted, 2=New, 3=Established, 4=Trusted, 5=Premium).
+  final int tier;
+  final int totalPartnerships;
+  final int verifiedByCount;
+
+  /// 0–100 component sub-scores. Arrived as decimals in [0, 1] from the
+  /// backend and are multiplied by 100 here so widgets can render % labels.
+  final double partnershipCompletionRatePercent;
+  final double paymentReliabilityPercent;
+  final double communicationResponseRatePercent;
+  final double briefQualityPercent;
+  final double creatorSatisfactionPercent;
+
+  static const _tierLabels = <int, String>{
+    1: 'Untrusted',
+    2: 'New',
+    3: 'Established',
+    4: 'Trusted',
+    5: 'Premium',
+  };
+
+  String get tierLabel => _tierLabels[tier] ?? '';
+
+  factory BrandTrustDto.fromJson(Map<String, dynamic> json) {
+    final components = json['components'] as Map<String, dynamic>? ??
+        const <String, dynamic>{};
+    double pct(String key) =>
+        ((components[key] as num?)?.toDouble() ?? 0) * 100;
+    return BrandTrustDto(
+      vendorAccountId: (json['vendorAccountId'] as String?) ?? '',
+      score: (json['score'] as num?)?.toDouble() ?? 0,
+      tier: (json['tier'] as num?)?.toInt() ?? 0,
+      totalPartnerships: (json['totalPartnerships'] as num?)?.toInt() ?? 0,
+      verifiedByCount: (json['verifiedByCount'] as num?)?.toInt() ?? 0,
+      partnershipCompletionRatePercent: pct('partnershipCompletionRate'),
+      paymentReliabilityPercent: pct('paymentReliability'),
+      communicationResponseRatePercent:
+          pct('communicationResponseRate'),
+      briefQualityPercent: pct('briefQuality'),
+      creatorSatisfactionPercent: pct('creatorSatisfaction'),
+    );
+  }
+}
+
 extension TermsSectionMapper on TermsSection {
   PartnershipTermsSection toDomain() =>
       PartnershipTermsSection(heading: heading, bullets: bullets);

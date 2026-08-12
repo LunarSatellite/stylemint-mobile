@@ -32,6 +32,11 @@ class CreatorReelDetail implements ReelMedia {
     required this.comments,
     required this.publishedAtUtc,
     required this.taggedProducts,
+    this.creatorId = '',
+    this.creatorHandle = '',
+    this.creatorDisplayName = '',
+    this.creatorAvatarUrl = '',
+    this.isCreatorFollowed,
   });
 
   final String id;
@@ -55,6 +60,32 @@ class CreatorReelDetail implements ReelMedia {
   final int comments;
   final DateTime? publishedAtUtc;
   final List<ReelTaggedProduct> taggedProducts;
+
+  // ── Creator strip (added on the top-performing reel play) ────────────────
+  // Backend `GET /v1/public/reels/{id}` may not yet ship these — the
+  // fields default to empty so the strip degrades gracefully (avatar
+  // placeholder, no Follow button, caption still rendered) when the
+  // creator payload is missing.
+
+  /// Account id of the reel's creator. Empty when the backend did not
+  /// include creator fields. When non-empty, the Follow toggle in
+  /// [ReelCreatorStrip] is functional.
+  final String creatorId;
+
+  /// Public handle shown in the creator strip (e.g. `footbagoob`).
+  /// Rendered as `@handle` and used as the strip's primary text.
+  final String creatorHandle;
+
+  /// Human display name (e.g. "Footbag Oob"). Falls back to [creatorHandle]
+  /// when blank in the UI layer.
+  final String creatorDisplayName;
+
+  /// Avatar CDN URL. Empty when missing → placeholder.
+  final String creatorAvatarUrl;
+
+  /// Whether the current viewer already follows this creator. Null when
+  /// the backend has not hydrated this field.
+  final bool? isCreatorFollowed;
 
   /// Resolve the backend [sourcePlatform] integer to the [SocialPlatform]
   /// enum used by [ReelPlayer] to pick the playback strategy. Falls back to

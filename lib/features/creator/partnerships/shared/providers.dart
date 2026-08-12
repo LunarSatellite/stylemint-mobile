@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/brands_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/brands_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
@@ -17,7 +18,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 
 // Re-export new DTO types consumed by UI widgets
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
-    show PotentialEarningsDto, RecipeAttachmentInfoDto, MoneyDto;
+    show BrandDetailDto, BrandTrustDto, MoneyDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
 
 final partnershipsRemoteDataSourceProvider =
     Provider<PartnershipsRemoteDataSource>(
@@ -143,3 +144,23 @@ final partnershipRecipesProvider =
         .getPartnershipRecipes(partnershipId),
   ),
 );
+
+/// Creator §7B/C/D brand detail — single approved-vendor profile
+/// (`GET /v1/brands/{vendorAccountId}`). DB-backed; replaces the
+/// previously hardcoded `BrandInfoData` stub values.
+final brandDetailProvider = FutureProvider.autoDispose
+    .family<BrandDetailDto, String>((ref, vendorAccountId) {
+  return ref.watch(brandsRemoteDataSourceProvider).getBrand(vendorAccountId);
+});
+
+/// Creator §7B/C/D brand detail — trust score
+/// (`GET /v1/creator/brands/{vendorAccountId}/trust`). Powers the
+/// "rating" and "success rate" tiles on the brand detail header.
+/// Treated as optional by the screen — a 404 just hides those tiles
+/// instead of breaking the whole page.
+final brandTrustProvider = FutureProvider.autoDispose
+    .family<BrandTrustDto, String>((ref, vendorAccountId) {
+  return ref
+      .watch(brandsRemoteDataSourceProvider)
+      .getBrandTrust(vendorAccountId);
+});
