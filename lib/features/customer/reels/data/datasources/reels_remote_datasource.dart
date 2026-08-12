@@ -62,7 +62,7 @@ class ReelsRemoteDataSource {
             ))
         .toList(growable: false);
 
-    final platformStr = (r['sourcePlatform'] as String?) ?? '';
+    final platformStr = r['sourcePlatform']?.toString() ?? '';
     final platform = _parsePlatform(platformStr);
     // The Discovery feed sends PascalCase strings ("YouTubeShorts"), not
     // Dart enum names — see SocialPlatform.tryParseWire.
@@ -94,10 +94,10 @@ class ReelsRemoteDataSource {
 
   static SocialPlatform _parsePlatform(String s) {
     final lower = s.toLowerCase();
-    if (lower.contains('youtube')) return SocialPlatform.youtube;
-    if (lower.contains('tiktok')) return SocialPlatform.tiktok;
-    if (lower.contains('facebook')) return SocialPlatform.facebook;
-    if (lower.contains('instagram')) return SocialPlatform.instagram;
+    if (s == '3' || lower.contains('youtube')) return SocialPlatform.youtube;
+    if (s == '2' || lower.contains('tiktok')) return SocialPlatform.tiktok;
+    if (s == '4' || lower.contains('facebook')) return SocialPlatform.facebook;
+    if (s == '1' || lower.contains('instagram')) return SocialPlatform.instagram;
     return SocialPlatform.instagram;
   }
   Future<ReelDto> getReelDetail(String reelId) async {

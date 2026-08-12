@@ -28,15 +28,17 @@ class SettingsRemoteDataSource {
     NotificationPreferencesDto prefs,
   ) async {
     final accountId = await _accountId();
-    final response = await apiClient.patch(
-      '/v1/accounts/$accountId/notification-preferences/toggles',
-      data: prefs.toJson(),
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': DateTime.now().millisecondsSinceEpoch.toString(),
-      }),
-    );
-    return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    try {
+      final response = await apiClient.patch(
+        '/v1/accounts/$accountId/notification-preferences/toggles',
+        data: prefs.toJson(),
+      );
+      return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      // Log actual error for debugging
+      print('DEBUG updateNotificationPreferences error: $e');
+      rethrow;
+    }
   }
 
   /// TODO(swagger): No settings/language endpoint found — keep as-is.

@@ -32,6 +32,7 @@ class _ReelCardState extends State<ReelCard> {
         ReelPlayer(
           reel: widget.reel,
           isActive: widget.isActive,
+          autoplay: widget.isActive,
           playbackController: _playback,
         ),
 
