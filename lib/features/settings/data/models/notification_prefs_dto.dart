@@ -10,6 +10,7 @@ part 'notification_prefs_dto.g.dart';
 @freezed
 abstract class NotificationTogglesDto with _$NotificationTogglesDto {
   const factory NotificationTogglesDto({
+    @Default(true) bool pushEnabledMaster,
     @Default(true) bool ordersPlaced,
     @Default(true) bool ordersShipped,
     @Default(true) bool ordersDelivered,
@@ -70,7 +71,7 @@ abstract class NotificationPreferencesDto with _$NotificationPreferencesDto {
   static String _hhmmss(String hhmm) => hhmm.length == 5 ? '$hhmm:00' : hhmm;
 
   NotificationPreferences toDomain() => NotificationPreferences(
-    pushEnabled: true,
+    pushEnabled: toggles.pushEnabledMaster,
     orderStatusChanges: toggles.ordersPlaced,
     deliveryUpdates: toggles.ordersShipped,
     returnStatus: toggles.ordersRefunded || toggles.returnsUpdates,
@@ -106,6 +107,7 @@ abstract class NotificationPreferencesDto with _$NotificationPreferencesDto {
   static NotificationPreferencesDto fromDomain(NotificationPreferences p) =>
       NotificationPreferencesDto(
         toggles: NotificationTogglesDto(
+          pushEnabledMaster: p.pushEnabled,
           ordersPlaced: p.orderStatusChanges,
           ordersShipped: p.deliveryUpdates,
           ordersDelivered: p.ordersDelivered,

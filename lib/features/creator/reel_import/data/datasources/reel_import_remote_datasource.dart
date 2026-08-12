@@ -89,6 +89,7 @@ class ReelImportRemoteDataSource {
     required String idempotencyKey,
     String? caption,
     String? thumbnailCdnUrl,
+    String? videoUrl,
   }) async {
     final response = await apiClient.post(
       '/v1/creator/reels/import',
@@ -102,6 +103,7 @@ class ReelImportRemoteDataSource {
             thumbnailCdnUrl.isNotEmpty &&
             thumbnailCdnUrl.length <= 2048)
           'thumbnailCdnUrl': thumbnailCdnUrl,
+        if (videoUrl != null && videoUrl.isNotEmpty) 'videoCdnUrl': videoUrl,
       },
       options: Options(headers: {
         'requiresToken': true,

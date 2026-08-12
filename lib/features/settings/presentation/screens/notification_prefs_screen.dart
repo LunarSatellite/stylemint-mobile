@@ -45,42 +45,10 @@ class _NotificationPrefsScreenState
   String _quietStart = '22:00';
   String _quietEnd = '08:00';
 
-  bool _loaded = false;
   NotificationPreferences _original = const NotificationPreferences();
 
-  void _populate(NotificationPreferences prefs) {
-    if (_loaded) return;
-    _loaded = true;
-    _original = prefs;
-    _pushEnabled = prefs.pushEnabled;
-    _orderStatusChanges = prefs.orderStatusChanges;
-    _deliveryUpdates = prefs.deliveryUpdates;
-    _returnStatus = prefs.returnStatus;
-    _priceDrops = prefs.priceDrops;
-    _backInStock = prefs.backInStock;
-    _flashSales = prefs.flashSales;
-    _newArrivals = prefs.newArrivals;
-    _newReelsFromCreators = prefs.newReelsFromCreators;
-    _creatorRecommendations = prefs.creatorRecommendations;
-    _loginAlerts = prefs.loginAlerts;
-    _passwordChanges = prefs.passwordChanges;
-    _paymentUpdates = prefs.paymentUpdates;
-    _personalizedOffers = prefs.personalizedOffers;
-    _productRecommendations = prefs.productRecommendations;
-    _newsletter = prefs.newsletter;
-    _emailNotifications = prefs.emailNotifications;
-    _smsNotifications = prefs.smsNotifications;
-    _quietHoursEnabled = prefs.quietHoursEnabled;
-    if (prefs.quietHoursStart != null) _quietStart = prefs.quietHoursStart!;
-    if (prefs.quietHoursEnd != null) _quietEnd = prefs.quietHoursEnd!;
-  }
-
-  void _save() {
+  void _saveAll() {
     ref.read(settingsNotifierProvider.notifier).savePrefs(
-      // copyWith from the originally loaded prefs so toggles this screen
-      // doesn't expose (commentReplies, newOrderForVendor, partnershipEvents,
-      // ticketUpdates, ordersDelivered) round-trip unchanged instead of
-      // resetting to a hardcoded default.
       _original.copyWith(
         pushEnabled: _pushEnabled,
         orderStatusChanges: _orderStatusChanges,
@@ -129,16 +97,47 @@ class _NotificationPrefsScreenState
       _smsNotifications = true;
       _quietHoursEnabled = true;
     });
-    _save();
+    _saveAll();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(settingsNotifierProvider);
 
+    // Sync local state from provider when prefs are loaded from backend
+    state.maybeWhen(
+      loadSuccess: (prefs) {
+        _original = prefs;
+        setState(() {
+          _pushEnabled = prefs.pushEnabled;
+          _orderStatusChanges = prefs.orderStatusChanges;
+          _deliveryUpdates = prefs.deliveryUpdates;
+          _returnStatus = prefs.returnStatus;
+          _priceDrops = prefs.priceDrops;
+          _backInStock = prefs.backInStock;
+          _flashSales = prefs.flashSales;
+          _newArrivals = prefs.newArrivals;
+          _newReelsFromCreators = prefs.newReelsFromCreators;
+          _creatorRecommendations = prefs.creatorRecommendations;
+          _loginAlerts = prefs.loginAlerts;
+          _passwordChanges = prefs.passwordChanges;
+          _paymentUpdates = prefs.paymentUpdates;
+          _personalizedOffers = prefs.personalizedOffers;
+          _productRecommendations = prefs.productRecommendations;
+          _newsletter = prefs.newsletter;
+          _emailNotifications = prefs.emailNotifications;
+          _smsNotifications = prefs.smsNotifications;
+          _quietHoursEnabled = prefs.quietHoursEnabled;
+          if (prefs.quietHoursStart != null) _quietStart = prefs.quietHoursStart!;
+          if (prefs.quietHoursEnd != null) _quietEnd = prefs.quietHoursEnd!;
+        });
+      },
+      orElse: () {},
+    );
+
     ref.listen<NotificationPrefsState>(settingsNotifierProvider, (_, next) {
       next.whenOrNull(
-        saveSuccess: () => ScaffoldMessenger.of(context).showSnackBar(
+        saveSuccess: (_) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Preferences saved')),
         ),
         saveFailure: (f) => ScaffoldMessenger.of(context).showSnackBar(
@@ -146,8 +145,6 @@ class _NotificationPrefsScreenState
         ),
       );
     });
-
-    state.whenOrNull(loadSuccess: _populate);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -169,7 +166,10 @@ class _NotificationPrefsScreenState
                     title: 'Enable Push Notifications',
                     subtitle: 'Allow Reel Commerce to send you push notifications',
                     value: _pushEnabled,
-                    onChanged: (v) => setState(() => _pushEnabled = v),
+                    onChanged: (v) {
+                      setState(() => _pushEnabled = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -181,19 +181,28 @@ class _NotificationPrefsScreenState
                     title: 'Order Status Changes',
                     subtitle: 'Order shipped, Delivered & Delays',
                     value: _orderStatusChanges,
-                    onChanged: (v) => setState(() => _orderStatusChanges = v),
+                    onChanged: (v) {
+                      setState(() => _orderStatusChanges = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Delivery Updates',
                     subtitle: 'Out for delivery, Delivery attempts',
                     value: _deliveryUpdates,
-                    onChanged: (v) => setState(() => _deliveryUpdates = v),
+                    onChanged: (v) {
+                      setState(() => _deliveryUpdates = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Return Status',
                     subtitle: 'Return approved, Refund processed',
                     value: _returnStatus,
-                    onChanged: (v) => setState(() => _returnStatus = v),
+                    onChanged: (v) {
+                      setState(() => _returnStatus = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -205,25 +214,37 @@ class _NotificationPrefsScreenState
                     title: 'Price Drops',
                     subtitle: 'When saved items go on sale',
                     value: _priceDrops,
-                    onChanged: (v) => setState(() => _priceDrops = v),
+                    onChanged: (v) {
+                      setState(() => _priceDrops = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Back in Stock',
                     subtitle: 'Products you want are available',
                     value: _backInStock,
-                    onChanged: (v) => setState(() => _backInStock = v),
+                    onChanged: (v) {
+                      setState(() => _backInStock = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Flash Sales',
                     subtitle: 'Limited-time deals and promotions',
                     value: _flashSales,
-                    onChanged: (v) => setState(() => _flashSales = v),
+                    onChanged: (v) {
+                      setState(() => _flashSales = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'New Arrivals',
                     subtitle: 'Latest products in categories you follow',
                     value: _newArrivals,
-                    onChanged: (v) => setState(() => _newArrivals = v),
+                    onChanged: (v) {
+                      setState(() => _newArrivals = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -235,13 +256,19 @@ class _NotificationPrefsScreenState
                     title: 'New Reels from Creators',
                     subtitle: 'When creators you follow post new reels',
                     value: _newReelsFromCreators,
-                    onChanged: (v) => setState(() => _newReelsFromCreators = v),
+                    onChanged: (v) {
+                      setState(() => _newReelsFromCreators = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Creator Recommendations',
                     subtitle: 'Suggested creators to follow',
                     value: _creatorRecommendations,
-                    onChanged: (v) => setState(() => _creatorRecommendations = v),
+                    onChanged: (v) {
+                      setState(() => _creatorRecommendations = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -253,19 +280,28 @@ class _NotificationPrefsScreenState
                     title: 'Login Alerts',
                     subtitle: 'New device or unusual  activity',
                     value: _loginAlerts,
-                    onChanged: (v) => setState(() => _loginAlerts = v),
+                    onChanged: (v) {
+                      setState(() => _loginAlerts = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Password Changes',
                     subtitle: 'Account security updates',
                     value: _passwordChanges,
-                    onChanged: (v) => setState(() => _passwordChanges = v),
+                    onChanged: (v) {
+                      setState(() => _passwordChanges = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Payment Updates',
                     subtitle: 'Payment method changes, receipts',
                     value: _paymentUpdates,
-                    onChanged: (v) => setState(() => _paymentUpdates = v),
+                    onChanged: (v) {
+                      setState(() => _paymentUpdates = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -277,19 +313,28 @@ class _NotificationPrefsScreenState
                     title: 'Personalized Offers',
                     subtitle: 'Special deals based on your interests',
                     value: _personalizedOffers,
-                    onChanged: (v) => setState(() => _personalizedOffers = v),
+                    onChanged: (v) {
+                      setState(() => _personalizedOffers = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Product Recommendations',
                     subtitle: 'Suggested products you might like',
                     value: _productRecommendations,
-                    onChanged: (v) => setState(() => _productRecommendations = v),
+                    onChanged: (v) {
+                      setState(() => _productRecommendations = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'Newsletter',
                     subtitle: 'Weekly email with new products and tips',
                     value: _newsletter,
-                    onChanged: (v) => setState(() => _newsletter = v),
+                    onChanged: (v) {
+                      setState(() => _newsletter = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -301,13 +346,19 @@ class _NotificationPrefsScreenState
                     title: 'Email Notifications',
                     subtitle: 'Notifications & Alerts to your email',
                     value: _emailNotifications,
-                    onChanged: (v) => setState(() => _emailNotifications = v),
+                    onChanged: (v) {
+                      setState(() => _emailNotifications = v);
+                      _saveAll();
+                    },
                   ),
                   _ToggleItem(
                     title: 'SMS Notifications',
                     subtitle: "Notifications & Alerts to your phone's sms",
                     value: _smsNotifications,
-                    onChanged: (v) => setState(() => _smsNotifications = v),
+                    onChanged: (v) {
+                      setState(() => _smsNotifications = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),
@@ -320,7 +371,10 @@ class _NotificationPrefsScreenState
                     subtitle:
                         'Pause notifications from ${_formatTime(_quietStart)} – ${_formatTime(_quietEnd)}',
                     value: _quietHoursEnabled,
-                    onChanged: (v) => setState(() => _quietHoursEnabled = v),
+                    onChanged: (v) {
+                      setState(() => _quietHoursEnabled = v);
+                      _saveAll();
+                    },
                   ),
                 ]),
                 const SizedBox(height: DesignTokens.s16),

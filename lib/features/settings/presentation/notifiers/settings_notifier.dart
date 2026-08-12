@@ -18,7 +18,7 @@ abstract class NotificationPrefsState with _$NotificationPrefsState {
   const factory NotificationPrefsState.loadInProgress() = _NpLoadInProgress;
   const factory NotificationPrefsState.loadSuccess(NotificationPreferences prefs) = _NpLoadSuccess;
   const factory NotificationPrefsState.loadFailure(NetworkExceptions failure) = _NpLoadFailure;
-  const factory NotificationPrefsState.saveSuccess() = _NpSaveSuccess;
+  const factory NotificationPrefsState.saveSuccess(NotificationPreferences prefs) = _NpSaveSuccess;
   const factory NotificationPrefsState.saveFailure(NetworkExceptions failure) = _NpSaveFailure;
 }
 
@@ -39,11 +39,13 @@ class SettingsNotifier extends StateNotifier<NotificationPrefsState> {
   }
 
   Future<void> savePrefs(NotificationPreferences prefs) async {
-    state = const NotificationPrefsState.loadInProgress();
+    state = NotificationPrefsState.loadSuccess(prefs);
     final either = await _repository.updateNotificationPreferences(prefs);
     state = either.fold(
       NotificationPrefsState.saveFailure,
-      (p) => const NotificationPrefsState.saveSuccess(),
+      // Use the prefs we already have (which the user interacted with) rather
+      // than round-tripping through toDomain() which would reset pushEnabled.
+      (_) => NotificationPrefsState.loadSuccess(prefs),
     );
   }
 }
