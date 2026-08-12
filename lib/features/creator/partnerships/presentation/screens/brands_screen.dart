@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_list_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_info_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
@@ -13,12 +14,12 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Maps a real [BrandListItemDto] into the shape [BrandInfoScreen] expects.
+/// Maps a real [Brand] into the shape [BrandInfoScreen] expects.
 /// Fields the brand-list endpoint doesn't carry (rating, description, avg
 /// order value, success rate, top products) are honestly left blank/zero —
 /// no fabricated numbers — until a real per-brand detail + product endpoint
 /// backs them.
-BrandInfoData _toBrandInfoData(BrandListItemDto brand) => BrandInfoData(
+BrandInfoData _toBrandInfoData(Brand brand) => BrandInfoData(
       name: brand.businessName,
       logo: _BrandLogo(name: brand.businessName, logoUrl: brand.logoUrl),
       stars: 0,

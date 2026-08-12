@@ -17,16 +17,24 @@ class SettingsRemoteDataSource {
   }
 
   Future<NotificationPreferencesDto> getNotificationPreferences() async {
-    final response = await apiClient.get('/v1/notifications/preferences');
+    final accountId = await _accountId();
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/notification-preferences',
+    );
     return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<NotificationPreferencesDto> updateNotificationPreferences(
     NotificationPreferencesDto prefs,
   ) async {
+    final accountId = await _accountId();
     final response = await apiClient.patch(
-      '/v1/notifications/preferences',
+      '/v1/accounts/$accountId/notification-preferences/toggles',
       data: prefs.toJson(),
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': DateTime.now().millisecondsSinceEpoch.toString(),
+      }),
     );
     return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
   }

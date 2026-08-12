@@ -272,4 +272,47 @@ class ApiClient {
       rethrow;
     }
   }
+
+  /// POST a single file as `multipart/form-data`, with the bearer token.
+  ///
+  /// [fieldName] must match the parameter name the endpoint binds its
+  /// `IFormFile` to — the backend's blob endpoints bind a parameter literally
+  /// named `file`, so the part name is not cosmetic.
+  ///
+  /// Kept here rather than in a datasource so uploads inherit the shared
+  /// interceptor stack (auth, retry, logging) like every other call. Dio sets
+  /// the multipart boundary itself; do not set Content-Type by hand.
+  Future<dynamic> postFile(
+    String uri, {
+    required File file,
+    String fieldName = 'file',
+    String? filename,
+    Map<String, dynamic>? fields,
+    Options? options,
+    ProgressCallback? onSendProgress,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        ...?fields,
+        fieldName: await MultipartFile.fromFile(
+          file.path,
+          filename: filename ?? file.uri.pathSegments.last,
+        ),
+      });
+
+      final response = await _dio.post<dynamic>(
+        uri,
+        data: formData,
+        options: options ?? Options(headers: {'requiresToken': true}),
+        onSendProgress: onSendProgress,
+      );
+      return response.data;
+    } on SocketException catch (e) {
+      throw SocketException(e.toString());
+    } on FormatException catch (_) {
+      throw const FormatException("Unable to process the data");
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

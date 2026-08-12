@@ -127,17 +127,33 @@ class _UnauthenticatedView extends StatelessWidget {
   }
 }
 
-class _ProfileBody extends ConsumerWidget {
+class _ProfileBody extends ConsumerStatefulWidget {
   const _ProfileBody({required this.summary});
 
   final ProfileSummary summary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ProfileBody> createState() => _ProfileBodyState();
+}
+
+class _ProfileBodyState extends ConsumerState<_ProfileBody> {
+  bool _pushEnabled = false;
+  bool _pushLoaded = false;
+
+  void _populatePush(bool value) {
+    if (_pushLoaded) return;
+    _pushLoaded = true;
+    _pushEnabled = value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifState = ref.watch(settingsNotifierProvider);
-    final pushEnabled = notifState.maybeWhen(
-      loadSuccess: (prefs) => prefs.pushEnabled,
-      orElse: () => false,
+
+    // Populate local state from loaded prefs
+    notifState.maybeWhen(
+      loadSuccess: (prefs) => _populatePush(prefs.pushEnabled),
+      orElse: () {},
     );
 
     return ListView(
@@ -145,11 +161,12 @@ class _ProfileBody extends ConsumerWidget {
       children: [
         const SizedBox(height: DesignTokens.s16),
         ProfileHeader(
-          summary: summary,
+          summary: widget.summary,
           onEdit: () => context.push('${RouteNames.profile}/edit'),
+          onNotifications: () => context.push(RouteNames.customerRecentActivity),
         ),
         const SizedBox(height: DesignTokens.s20),
-        ProfileStatsRow(summary: summary),
+        ProfileStatsRow(summary: widget.summary),
         const SizedBox(height: DesignTokens.s20),
 
         // Selling & Creating — apply for / switch into the Creator & Vendor
@@ -169,10 +186,12 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.notifications_active_outlined,
               label: 'Push Notifications',
-              toggleValue: pushEnabled,
+              toggleValue: _pushEnabled,
               onToggle: (val) async {
-                // Read the current prefs fresh from state — the closure-captured
-                // `notifState` from build() is stale once an async gap opens.
+                // Update local state immediately for instant UI feedback
+                setState(() => _pushEnabled = val);
+
+                // Read current prefs from state
                 final current = ref
                     .read(settingsNotifierProvider)
                     .maybeWhen(
@@ -185,7 +204,11 @@ class _ProfileBody extends ConsumerWidget {
                 if (val) {
                   final granted =
                       await PushNotificationService.requestPermission();
-                  if (!granted) return;
+                  if (!granted) {
+                    // Revert if permission denied
+                    setState(() => _pushEnabled = false);
+                    return;
+                  }
                   await PushNotificationService.getToken();
                 }
 
@@ -219,7 +242,7 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.language_outlined,
               label: 'Language',
-              trailingText: summary.language,
+              trailingText: widget.summary.language,
               onTap: () => context.push('${RouteNames.settings}/language'),
             ),
           ],

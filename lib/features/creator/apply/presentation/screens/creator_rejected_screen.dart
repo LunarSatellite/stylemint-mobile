@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/notifiers/creator_documents_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -97,6 +98,8 @@ class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
                     ),
                     const SizedBox(height: DesignTokens.s28),
                     _RejectionCard(),
+                    const SizedBox(height: DesignTokens.s16),
+                    const _RejectedDocumentsCard(),
                   ],
                 ),
               ),
@@ -328,6 +331,88 @@ class _RejectionCard extends StatelessWidget {
                 fontSize: 14,
               )),
           Expanded(child: content),
+        ],
+      ),
+    );
+  }
+}
+/// Shows which identity documents a reviewer rejected, and why.
+///
+/// Without this the rejected screen said only "contact support", leaving the
+/// creator to guess which document to replace on reapply. Renders nothing
+/// when no document was rejected — an application can be rejected for
+/// reasons unrelated to KYC.
+class _RejectedDocumentsCard extends ConsumerStatefulWidget {
+  const _RejectedDocumentsCard();
+
+  @override
+  ConsumerState<_RejectedDocumentsCard> createState() =>
+      _RejectedDocumentsCardState();
+}
+
+class _RejectedDocumentsCardState
+    extends ConsumerState<_RejectedDocumentsCard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(creatorDocumentsNotifierProvider.notifier).load();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rejected = ref.watch(creatorDocumentsNotifierProvider).rejected;
+    if (rejected.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        border: Border.all(color: DesignTokens.colorError),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 18,
+                color: DesignTokens.colorError,
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Text(
+                rejected.length == 1
+                    ? 'A document was rejected'
+                    : '${rejected.length} documents were rejected',
+                style: DesignTokens.mediumSemibold
+                    .copyWith(color: DesignTokens.textWhite),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          ...rejected.map(
+            (d) => Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(d.type.label, style: DesignTokens.bodyText),
+                  Text(
+                    d.rejectionReason ??
+                        'Please upload a clearer copy when you reapply.',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textLight),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

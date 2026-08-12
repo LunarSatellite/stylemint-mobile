@@ -5,10 +5,16 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Profile header: avatar, name, email and an edit button.
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({required this.summary, required this.onEdit, super.key});
+  const ProfileHeader({
+    required this.summary,
+    required this.onEdit,
+    required this.onNotifications,
+    super.key,
+  });
 
   final ProfileSummary summary;
   final VoidCallback onEdit;
+  final VoidCallback onNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +59,17 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          IconButton(
+            onPressed: onNotifications,
+            style: IconButton.styleFrom(
+              backgroundColor: DesignTokens.bgAppBodyLight,
+            ),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              size: DesignTokens.iconSmall,
+              color: DesignTokens.iconWhite,
             ),
           ),
           IconButton(

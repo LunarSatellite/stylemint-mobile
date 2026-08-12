@@ -6,9 +6,9 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/datasources/inquiries_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/data/repositories/inquiries_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/repositories/inquiries_repository.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_controller.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_notifier.dart';
 
-export 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_controller.dart';
+export 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_notifier.dart';
 
 final inquiriesRemoteDataSourceProvider = Provider<InquiriesRemoteDataSource>(
   (ref) =>
@@ -22,7 +22,7 @@ final inquiriesRepositoryProvider = Provider<InquiriesRepository>(
   ),
 );
 
-final inquiriesControllerProvider =
-    StateNotifierProvider.autoDispose<InquiriesController, InquiriesState>(
-  (ref) => InquiriesController(ref.watch(inquiriesRepositoryProvider)),
+final inquiriesNotifierProvider =
+    StateNotifierProvider.autoDispose<InquiriesNotifier, InquiriesState>(
+  (ref) => InquiriesNotifier(ref.watch(inquiriesRepositoryProvider)),
 );

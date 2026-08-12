@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/shared/data/reel_video_cache.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -60,10 +61,18 @@ class _ReelPlayerState extends State<ReelPlayer>
   // Direct .mp4 playback (Instagram).
   VideoPlayerController? _controller;
   bool _initialized = false;
+
+  /// True when [_controller] was built from a cached file rather than the
+  /// network, so a decode failure can be treated as a bad cache entry.
+  bool _playingFromCache = false;
   bool _hasError = false;
 
   // YouTube playback.
   YoutubePlayerController? _ytController;
+
+  /// True once the YouTube IFrame WebView reports ready. Until then the
+  /// controller drops play()/pause() calls on the floor.
+  bool _ytReady = false;
 
   /// User explicitly tapped to pause. Reset whenever this reel scrolls
   /// off-screen so it auto-plays again next time it becomes active.
@@ -125,6 +134,18 @@ class _ReelPlayerState extends State<ReelPlayer>
 
     if (oldWidget.isActive != widget.isActive) {
       if (!widget.isActive) _manuallyPaused = false;
+
+      // A reel that was only prefetching as a neighbour has no controller
+      // yet; build one now that it is the reel on screen. By this point the
+      // prefetch has usually landed, so this is a cache hit and starts
+      // without touching the network.
+      final isInstagram =
+          (widget.reel.platform ?? SocialPlatform.instagram) ==
+              SocialPlatform.instagram;
+      if (widget.isActive && isInstagram && _controller == null && !_hasError) {
+        unawaited(_initInstagramVideo());
+      }
+
       _reconcilePlayback();
     }
   }
@@ -133,7 +154,17 @@ class _ReelPlayerState extends State<ReelPlayer>
     final platform = widget.reel.platform ?? SocialPlatform.instagram;
     switch (platform) {
       case SocialPlatform.instagram:
-        _initInstagramVideo();
+        // Only the reel actually on screen gets an ExoPlayer. The PageView
+        // keeps both neighbours alive (allowImplicitScrolling), and three
+        // simultaneous initialise() calls split the connection three ways —
+        // starving the one the user is looking at. Neighbours warm the disk
+        // cache instead, which is both cheaper and what makes the next swipe
+        // start instantly.
+        if (widget.isActive) {
+          unawaited(_initInstagramVideo());
+        } else {
+          unawaited(_prefetchInstagramVideo());
+        }
       case SocialPlatform.youtube:
         _initYouTube();
       case SocialPlatform.tiktok:
@@ -143,13 +174,39 @@ class _ReelPlayerState extends State<ReelPlayer>
     }
   }
 
+  /// Stable cache key for this reel's video.
+  ///
+  /// Deliberately the permalink and not [ReelMedia.videoUrl]: the Instagram
+  /// CDN URL is rotated by the backend's refresh job, so keying on it would
+  /// miss after every rotation and re-download a file we already hold.
+  String get _videoCacheKey {
+    final permalink = widget.reel.permalink;
+    return permalink.isNotEmpty ? permalink : (widget.reel.videoUrl ?? '');
+  }
+
+  Future<void> _prefetchInstagramVideo() async {
+    final url = widget.reel.videoUrl;
+    if (url == null || url.isEmpty) return;
+    await ReelVideoCache.instance
+        .prefetch(cacheKey: _videoCacheKey, url: url);
+  }
+
   Future<void> _initInstagramVideo() async {
     final url = widget.reel.videoUrl;
     if (url == null || url.isEmpty) return;
 
+    // Cache hit plays from disk: no network, no rebuffering, and it works
+    // offline. A miss streams straight from the network rather than waiting
+    // for a full download, so first view is never slower than before.
+    final cached = await ReelVideoCache.instance.peek(_videoCacheKey);
+    if (!mounted) return;
+
     try {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      final controller = cached != null
+          ? VideoPlayerController.file(cached)
+          : VideoPlayerController.networkUrl(Uri.parse(url));
       _controller = controller;
+      _playingFromCache = cached != null;
 
       await controller.initialize();
       if (!mounted) return;
@@ -166,6 +223,33 @@ class _ReelPlayerState extends State<ReelPlayer>
         if (mounted) _reconcilePlayback();
       });
     } on Exception catch (_) {
+      // A cached file that will not open is a truncated or corrupt download.
+      // Drop it and retry once over the network so one bad entry cannot
+      // wedge the reel permanently.
+      if (_playingFromCache) {
+        await ReelVideoCache.instance.evict(_videoCacheKey);
+        if (!mounted) return;
+        _playingFromCache = false;
+        unawaited(_controller?.dispose() ?? Future<void>.value());
+        _controller = null;
+        await _initInstagramVideoFromNetwork(url);
+        return;
+      }
+      if (mounted) setState(() => _hasError = true);
+    }
+  }
+
+  Future<void> _initInstagramVideoFromNetwork(String url) async {
+    try {
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      _controller = controller;
+      await controller.initialize();
+      if (!mounted) return;
+      await controller.setLooping(true);
+      if (!mounted) return;
+      setState(() => _initialized = true);
+      _reconcilePlayback();
+    } on Exception catch (_) {
       if (mounted) setState(() => _hasError = true);
     }
   }
@@ -177,15 +261,32 @@ class _ReelPlayerState extends State<ReelPlayer>
     _ytController = YoutubePlayerController(
       initialVideoId: videoId,
       flags: const YoutubePlayerFlags(
-        autoPlay: true,
+        // Deliberately NOT autoPlay. The PageView keeps the adjacent reels
+        // alive (allowImplicitScrolling), so autoPlay made every offscreen
+        // YouTube reel start streaming the moment its WebView finished
+        // loading — up to three videos competing for bandwidth at once,
+        // which is what made playback crawl. Playback is driven explicitly
+        // by _reconcilePlayback instead, so only the active reel streams.
+        autoPlay: false,
         mute: false,
         loop: true,
         disableDragSeek: false,
         enableCaption: false,
       ),
-    );
+    )..addListener(_onYouTubeValueChanged);
 
     _reconcilePlayback();
+  }
+
+  /// The IFrame player silently drops play()/pause() until its WebView
+  /// reports ready, so the reconcile that runs at init time is always a
+  /// no-op. Re-run it on the ready transition to apply the state the reel
+  /// should actually be in by then.
+  void _onYouTubeValueChanged() {
+    final ready = _ytController?.value.isReady ?? false;
+    if (ready == _ytReady) return;
+    _ytReady = ready;
+    if (ready) _reconcilePlayback();
   }
 
   void _reconcilePlayback() {
@@ -193,7 +294,7 @@ class _ReelPlayerState extends State<ReelPlayer>
       if (_controller != null && _initialized && _controller!.value.isPlaying) {
         unawaited(_controller!.pause());
       }
-      if (_ytController != null && _ytController!.value.isPlaying) {
+      if (_ytReady && _ytController != null && _ytController!.value.isPlaying) {
         _ytController!.pause();
       }
       return;
@@ -202,7 +303,9 @@ class _ReelPlayerState extends State<ReelPlayer>
     if (_controller != null && _initialized && !_controller!.value.isPlaying) {
       unawaited(_controller!.play());
     }
-    if (_ytController != null && !_ytController!.value.isPlaying) {
+    if (_ytReady &&
+        _ytController != null &&
+        !_ytController!.value.isPlaying) {
       _ytController!.play();
     }
   }
@@ -211,12 +314,15 @@ class _ReelPlayerState extends State<ReelPlayer>
     final c = _controller;
     _controller = null;
     _initialized = false;
+    _playingFromCache = false;
     _hasError = false;
     unawaited(c?.dispose() ?? Future<void>.value());
 
     final yt = _ytController;
     _ytController = null;
-    yt?.dispose();
+    _ytReady = false;
+    yt?..removeListener(_onYouTubeValueChanged)
+      ..dispose();
   }
 
   @override
