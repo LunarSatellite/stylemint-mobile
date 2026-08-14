@@ -163,11 +163,13 @@ class _ReelPlayerState extends State<ReelPlayer>
       // yet; build one now that it is the reel on screen. By this point the
       // prefetch has usually landed, so this is a cache hit and starts
       // without touching the network.
-      final isInstagram =
-          (widget.reel.platform ?? SocialPlatform.instagram) ==
-              SocialPlatform.instagram;
-      if (widget.isActive && isInstagram && _controller == null && !_hasError) {
+      final platform = widget.reel.platform ?? SocialPlatform.instagram;
+      if (widget.isActive && platform == SocialPlatform.instagram && _controller == null && !_hasError) {
         unawaited(_initInstagramVideo());
+      }
+      // YouTube: initialize when this reel becomes active
+      if (widget.isActive && platform == SocialPlatform.youtube && _ytController == null) {
+        _initYouTube();
       }
 
       _reconcilePlayback();
@@ -354,6 +356,8 @@ class _ReelPlayerState extends State<ReelPlayer>
       unawaited(_injectYouTubeOverlayHidingCss(wc));
     };
     _ytController!.addListener(_ytEndListener!);
+    // Reconcile after init so autoplay flags and mute state are applied.
+    _reconcilePlayback();
   }
 
   /// Hides YouTube's own UI overlays (title bar, channel strip,

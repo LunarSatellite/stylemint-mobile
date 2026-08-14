@@ -1,11 +1,23 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Creator strip on the public reel-detail screen (used from
+/// `ReelDetailsScreen`): avatar + display name + @handle + Follow toggle,
+/// followed by a tap-to-expand caption. Visually mirrors [CreatorInfo] but
+/// takes the creator fields directly rather than a `Reel` (the customer
+/// reel entity binds payload the creator view does not need).
+///
+/// Follow is gated through the shared [ensureAuth] for guests and persists
+/// via the one-way follow graph ([followNotifierProvider] -> POST/DELETE
+/// /v1/follows/{creatorId}). Initial state is seeded from [initialFollowing]
+/// when non-null. When [creatorId] is empty the strip still renders
+/// (avatar -> placeholder, no Follow button) so the layout does not collapse
+/// when the backend omits the creator payload.
 class ReelCreatorStrip extends ConsumerStatefulWidget {
   const ReelCreatorStrip({
     required this.creatorId,
@@ -29,176 +41,197 @@ class ReelCreatorStrip extends ConsumerStatefulWidget {
 }
 
 class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
-  bool _captionExpanded = false;
+  bool _busy = false;
+  bool _expanded = false;
 
   @override
   void initState() {
     super.initState();
-    final initialFollowing = widget.initialFollowing;
-    if (initialFollowing != null) {
-      ref.read(followNotifierProvider.notifier).seed(
-            widget.creatorId,
-            following: initialFollowing,
-          );
+    final id = widget.creatorId;
+    final seed = widget.initialFollowing;
+    if (id.isNotEmpty && seed != null) {
+      // Seed shared follow state after first frame (do not mutate a provider
+      // during init/build), matching [CreatorInfo].
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(followNotifierProvider.notifier)
+              .seed(id, following: seed);
+        }
+      });
     }
   }
 
   Future<void> _toggleFollow() async {
+    if (!await ensureAuth(context, ref, reason: AuthReason.follow)) return;
+    final id = widget.creatorId;
+    if (id.isEmpty) {
+      if (mounted) {
+        SmSnackbar.error(
+          context,
+          "This creator can't be followed right now.",
+        );
+      }
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
-      await ref.read(followNotifierProvider.notifier).toggle(widget.creatorId);
+      await ref.read(followNotifierProvider.notifier).toggle(id);
     } catch (_) {
       if (mounted) {
-        SmSnackbar.error(context, "Couldn't update follow. Please try again.");
+        SmSnackbar.error(
+          context,
+          "Couldn't update follow. Please try again.",
+        );
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  void _openProfile() {
-    if (widget.creatorId.isEmpty) return;
-    context.push(
-      '/creator-profile/${widget.creatorId}',
-      extra: CreatorProfileArgs(
-        accountId: widget.creatorId,
-        displayName: widget.creatorDisplayName,
-        handle: widget.creatorHandle,
-        avatarUrl: widget.creatorAvatarUrl.isEmpty
-            ? null
-            : widget.creatorAvatarUrl,
-      ),
-    );
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
   }
 
   @override
   Widget build(BuildContext context) {
-    final following = ref.watch(followNotifierProvider).contains(widget.creatorId);
-    final displayName = widget.creatorDisplayName.isEmpty
-        ? '@${widget.creatorHandle}'
-        : widget.creatorDisplayName;
-    final avatar = widget.creatorAvatarUrl;
-    final caption = widget.caption;
+    final displayName = widget.creatorDisplayName.isNotEmpty
+        ? widget.creatorDisplayName
+        : widget.creatorHandle;
+    final hasCreator = widget.creatorId.isNotEmpty;
+    final isFollowing = hasCreator
+        ? ref.watch(followNotifierProvider).contains(widget.creatorId)
+        : false;
+    final hasCaption =
+        widget.caption != null && widget.caption!.trim().isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _openProfile,
-                child: ClipOval(
-                  child: SizedBox(
-                    width: DesignTokens.avatarMedium,
-                    height: DesignTokens.avatarMedium,
-                    child: avatar.isEmpty
-                        ? const ColoredBox(
-                            color: DesignTokens.bgAppBodyLight,
-                            child: Icon(Icons.person, color: DesignTokens.iconLight),
-                          )
-                        : Image.network(
-                            avatar,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight,
-                              child: Icon(Icons.person, color: DesignTokens.iconLight),
-                            ),
-                          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: DesignTokens.avatarMedium / 2,
+              backgroundColor: DesignTokens.bgAppBodyLight,
+              backgroundImage: widget.creatorAvatarUrl.isNotEmpty
+                  ? CachedNetworkImageProvider(widget.creatorAvatarUrl)
+                  : null,
+              child: widget.creatorAvatarUrl.isEmpty
+                  ? const Icon(Icons.person, color: DesignTokens.iconLight)
+                  : null,
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.mediumSemibold
+                        .copyWith(color: DesignTokens.textWhite),
                   ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: GestureDetector(
-                  onTap: _openProfile,
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                      if (widget.creatorHandle.isNotEmpty)
-                        Text(
-                          '@${widget.creatorHandle}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              if (widget.creatorId.isNotEmpty) ...[
-                const SizedBox(width: DesignTokens.s8),
-                _FollowButton(
-                  following: following,
-                  onTap: _toggleFollow,
-                ),
-              ],
-            ],
-          ),
-          if (caption != null && caption.trim().isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            GestureDetector(
-              onTap: () => setState(() => _captionExpanded = !_captionExpanded),
-              child: Text(
-                caption,
-                maxLines: _captionExpanded ? null : 2,
-                overflow: _captionExpanded
-                    ? TextOverflow.visible
-                    : TextOverflow.ellipsis,
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textLight,
-                ),
+                  if (widget.creatorHandle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '@${widget.creatorHandle}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.smallRegular
+                          .copyWith(color: DesignTokens.textLight),
+                    ),
+                  ],
+                ],
               ),
             ),
+            const SizedBox(width: DesignTokens.s12),
+            if (hasCreator)
+              _FollowButton(
+                isFollowing: isFollowing,
+                busy: _busy,
+                onTap: _toggleFollow,
+              ),
           ],
+        ),
+        if (hasCaption) ...[
+          const SizedBox(height: DesignTokens.s12),
+          GestureDetector(
+            onTap: _toggleExpanded,
+            behavior: HitTestBehavior.opaque,
+            child: Text(
+              widget.caption!,
+              maxLines: _expanded ? null : 3,
+              overflow: _expanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
+              // Spec: caption 12/400/130% white. Inline style keeps it stable
+              // even if DesignTokens.body shifts in the future.
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                height: 1.3,
+                color: DesignTokens.textWhite,
+              ),
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 }
 
 class _FollowButton extends StatelessWidget {
-  const _FollowButton({required this.following, required this.onTap});
+  const _FollowButton({
+    required this.isFollowing,
+    required this.busy,
+    required this.onTap,
+  });
 
-  final bool following;
+  final bool isFollowing;
+  final bool busy;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: busy ? null : onTap,
       child: Container(
+        // Spec: 8px/16px padding, white border; default state solid fill.
         padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s12,
+          horizontal: DesignTokens.s16,
           vertical: DesignTokens.s8,
         ),
         decoration: BoxDecoration(
-          color: following
-              ? DesignTokens.bgAppBodyLight
-              : DesignTokens.primaryGreen,
-          borderRadius: BorderRadius.circular(999),
-          border: following
-              ? Border.all(color: DesignTokens.borderDefault)
-              : null,
+          color: isFollowing ? Colors.transparent : DesignTokens.textWhite,
+          borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+          border: Border.all(color: DesignTokens.textWhite),
         ),
-        child: Text(
-          following ? 'Following' : 'Follow',
-          style: DesignTokens.oneLinerSemibold.copyWith(
-            color: following
-                ? DesignTokens.textWhite
-                : DesignTokens.buttonPrimaryText,
-          ),
-        ),
+        child: busy
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: DesignTokens.textWhite),
+              )
+            : Text(
+                isFollowing ? 'Following' : 'Follow',
+                // Spec: 12/600/130%, #52525C (Button-White-Text).
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  height: 1.3,
+                ).copyWith(
+                  color: isFollowing
+                      ? DesignTokens.textWhite
+                      : const Color(0xFF52525C),
+                ),
+              ),
       ),
     );
   }

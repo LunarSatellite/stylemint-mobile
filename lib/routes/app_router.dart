@@ -1357,6 +1357,13 @@ GoRouter appRouter(Ref ref) {
           ),
         ],
       ),
+
+      // Customer — recent activity (notifications)
+      GoRoute(
+        path: RouteNames.customerRecentActivity,
+        builder: (ctx, state) =>
+            const notifications_activity.RecentActivityScreen(),
+      ),
     ],
   );
 }

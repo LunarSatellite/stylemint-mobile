@@ -62,6 +62,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
         idempotencyKey: const Uuid().v4(),
         caption: reel.caption,
         thumbnailCdnUrl: reel.thumbnailUrl,
+        videoUrl: reel.videoUrl,
       );
       return right(dto.toDomain());
     } on DioException catch (e) {

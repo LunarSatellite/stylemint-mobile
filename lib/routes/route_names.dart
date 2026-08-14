@@ -189,6 +189,7 @@ abstract class RouteNames {
   // Settings / Support
   static const settings = '/settings';
   static const settingsNotifications = '/settings/notifications';
+  static const customerRecentActivity = '/customer/recent-activity';
   static const settingsLanguage = '/settings/language';
   static const settingsPrivacy = '/settings/privacy';
   static const settingsTerms = '/settings/terms';
