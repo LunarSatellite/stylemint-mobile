@@ -126,6 +126,10 @@ abstract class RouteNames {
   static const vendorUpdateStock = '/vendor/products/update-stock';
   static const vendorEditProductImages = '/vendor/products/edit-images';
   static const vendorEditProductDetails = '/vendor/products/edit-details';
+  // /vendor/products/:productId/edit - unified edit form, replaces the
+  // legacy edit-details route now that the form handles both Create
+  // and Edit modes.
+  static const vendorEditProduct = '/vendor/products/:productId/edit';
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
   static const vendorRecentActivity = '/vendor/activity';

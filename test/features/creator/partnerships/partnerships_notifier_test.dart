@@ -67,6 +67,7 @@ class _FakeRepository implements PartnershipsRepository {
 
 PartnershipInvite _invite() => PartnershipInvite(
       id: 'inv-1',
+      vendorProfileId: 'vendor-profile-1',
       vendorName: 'Vendor',
       vendorLogoUrl: '',
       campaignBrief: 'Brief',

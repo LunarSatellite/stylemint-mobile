@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart' show Options;
+﻿import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/models/vendor_partnership_dto.dart';
 
@@ -114,9 +114,43 @@ class VendorPartnershipsRemoteDataSource {
     return items;
   }
 
+  /// Resolves a creator `Account.Id` (returned by the picker) to the
+  /// corresponding `CreatorProfile.Id` (expected by
+  /// `POST /v1/vendor/partnerships/invite`).
+  ///
+  /// Background: `CreatorPickerDto.CreatorAccountId` is the account id,
+  /// but `InviteCreatorVm.CreatorProfileId` is the creator-profile id
+  /// stored on the partnership aggregate. Sending the account id there
+  /// stores it in `Partnership.CreatorProfileId`, which then breaks the
+  /// chat-by-profile lookup (see `accountByProfileProvider`). This is
+  /// the bridge call that keeps the two surfaces in sync.
+  ///
+  /// `GET /v1/accounts/{accountId}/creator-profile` returns 404 if the
+  /// account has no creator profile; callers should treat that as a
+  /// hard failure for the invite flow (a creator must have a profile to
+  /// be invited).
+  Future<String> getCreatorProfileIdByAccountId(String accountId) async {
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/creator-profile',
+    );
+    final map = response as Map<String, dynamic>;
+    final id = (map['id'] as String?) ?? '';
+    if (id.isEmpty) {
+      throw StateError(
+        'Account $accountId has no creator profile (empty id in response).',
+      );
+    }
+    return id;
+  }
+
   /// `POST /v1/vendor/partnerships/invite`. The backend requires a
   /// commission range per invite — there is no campaign-scoped invite
   /// endpoint.
+  ///
+  /// [creatorProfileId] MUST be the creator's profile id (not the
+  /// account id returned by the picker). Use
+  /// [getCreatorProfileIdByAccountId] to convert Account.Id to
+  /// CreatorProfile.Id before calling this method.
   ///
   /// `message` is NOT part of the documented `InviteCreatorVm` contract
   /// (`additionalProperties: false`) — sent best-effort per product

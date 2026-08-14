@@ -185,7 +185,6 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_images_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
@@ -958,9 +957,21 @@ GoRouter appRouter(Ref ref) {
         ),
       ),
       GoRoute(
+        // /vendor/products/:productId/edit - primary path for editing.
+        // productId is the path parameter; the wizard fetches the
+        // product and pre-populates every step.
+        path: RouteNames.vendorEditProduct,
+        builder: (ctx, state) => AddProductWizardScreen(
+          productId: state.pathParameters['productId'],
+        ),
+      ),
+      GoRoute(
+        // Legacy /vendor/products/edit-details - kept for any callers that
+        // still push the product id via extra. Same screen as the new
+        // /:productId/edit route.
         path: RouteNames.vendorEditProductDetails,
-        builder: (ctx, state) => EditProductDetailsScreen(
-          productId: state.extra as String,
+        builder: (ctx, state) => AddProductWizardScreen(
+          productId: state.extra as String?,
         ),
       ),
       GoRoute(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -41,6 +42,33 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
     _brandController = TextEditingController();
     _shortDescController = TextEditingController();
     _descriptionController = TextEditingController();
+    // Edit-mode pre-population: when the wizard mounts in Edit mode the
+    // notifier already has step1 populated from the backend
+    // (loadForEdit ran before this screen was built). Pull the data here
+    // so the controllers don't start blank. Safe to call in Create mode
+    // too — step1 is null on a fresh wizard, so nothing is copied.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateFromState());
+  }
+
+  void _hydrateFromState() {
+    if (!mounted) return;
+    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+          loadSuccess: (s) => s,
+          orElse: () => null,
+        );
+    final info = fs?.step1;
+    if (info == null) return;
+    setState(() {
+      _nameController.text = info.productName;
+      _shortDescController.text = info.shortDescription;
+      _descriptionController.text = info.description;
+      _selectedCategoryId =
+          info.categoryId.isEmpty ? null : info.categoryId;
+      _selectedCategoryName = info.categories.isEmpty
+          ? null
+          : info.categories.first;
+      _brandController.text = info.brand ?? '';
+    });
   }
 
   @override
@@ -80,6 +108,21 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(productCategoriesProvider);
+
+    // If the categories load after mount and the selected one was
+    // previously stored by id only, fill in the display name once it
+    // becomes available.
+    categoriesAsync.whenData((categories) {
+      if (_selectedCategoryId != null && _selectedCategoryName == null) {
+        final match = categories.where((c) => c.id == _selectedCategoryId);
+        if (match.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() => _selectedCategoryName = match.first.name);
+          });
+        }
+      }
+    });
 
     return Column(
       children: [
@@ -129,7 +172,7 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s16),
 
-                  // Category — dropdown
+                  // Category â€" dropdown
                   categoriesAsync.when(
                     loading: () => const _CategoryShell(
                       child: Center(
@@ -144,9 +187,8 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
                       ),
                     ),
                     error: (e, _) => _CategoryShell(
-                      borderColor: DesignTokens.colorError,
                       child: Text(
-                        'Could not load categories',
+                        'Failed to load categories',
                         style: DesignTokens.smallRegular.copyWith(
                           color: DesignTokens.colorError,
                         ),
@@ -157,7 +199,7 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
                         child: DropdownButton<String>(
                           value: _selectedCategoryId,
                           hint: Text(
-                            'Select Category',
+                            'Select category',
                             style: DesignTokens.mediumRegular.copyWith(
                               color: DesignTokens.textMuted,
                             ),

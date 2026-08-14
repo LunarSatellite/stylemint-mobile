@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
@@ -63,7 +63,7 @@ class _InviteCreatorsScreenState extends ConsumerState<InviteCreatorsScreen> {
     await ref
         .read(inviteCreatorNotifierProvider.notifier)
         .invite(
-          creatorProfileId: creator.creatorAccountId,
+          creatorAccountId: creator.creatorAccountId,
           commissionMinPercent: range.start / 100,
           commissionMaxPercent: range.end / 100,
           brandBriefId: widget.campaignId.isEmpty ? null : widget.campaignId,
@@ -270,7 +270,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 /// The backend requires a commission range on every invite
-/// (`POST /v1/vendor/partnerships/invite`) — there's no default.
+/// (`POST /v1/vendor/partnerships/invite`) â€” there's no default.
 class _CommissionRangeSheet extends StatefulWidget {
   const _CommissionRangeSheet({required this.creatorLabel});
 
@@ -298,7 +298,7 @@ class _CommissionRangeSheetState extends State<_CommissionRangeSheet> {
             ),
             const SizedBox(height: DesignTokens.s8),
             Text(
-              '${_range.start.round()}% – ${_range.end.round()}%',
+              '${_range.start.round()}% â€“ ${_range.end.round()}%',
               style: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.primaryGreen,
               ),

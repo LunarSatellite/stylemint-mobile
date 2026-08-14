@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -53,7 +53,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
           currencyCode: brief.boostBudget.currency,
         );
         // json_serializable includes null fields by default, but the
-        // backend's VendorProfileId is a non-nullable Guid — a literal
+        // backend's VendorProfileId is a non-nullable Guid â€” a literal
         // `null` fails deserialization, so the key must be absent, not null.
         final payload = vm.toJson()
           ..removeWhere((_, value) => value == null);
@@ -202,7 +202,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
 
   @override
   Future<Either<NetworkExceptions, void>> inviteCreator({
-    required String creatorProfileId,
+    required String creatorAccountId,
     required double commissionMinPercent,
     required double commissionMaxPercent,
     String? brandBriefId,
@@ -210,6 +210,13 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
+        // The picker returns Account.Id but the invite endpoint expects
+        // CreatorProfile.Id on the partnership aggregate - sending the
+        // account id stores it under CreatorProfileId and breaks the
+        // chat-by-profile lookup. Resolve here so every caller stays
+        // simple.
+        final creatorProfileId = await remoteDataSource
+            .getCreatorProfileIdByAccountId(creatorAccountId);
         await remoteDataSource.inviteCreator(
           creatorProfileId: creatorProfileId,
           commissionMinPercent: commissionMinPercent,

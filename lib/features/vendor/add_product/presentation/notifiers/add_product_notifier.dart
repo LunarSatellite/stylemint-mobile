@@ -49,6 +49,18 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   final AddProductRepository _repository;
   late ProductFormState _formState;
 
+  // Tracks whether the form has been modified since the last load/save.
+  // Used by the unified ProductFormScreen's unsaved-changes guard so the
+  // vendor gets a confirmation dialog before leaving the page after
+  // touching any field. Reset on loadForEdit (fresh data) and after a
+  // successful saveEditedDetails (changes persisted).
+  bool _isDirty = false;
+  bool get isDirty => _isDirty;
+
+  void _markDirty() {
+    if (!_isDirty) _isDirty = true;
+  }
+
   void nextStep() {
     if (_formState.currentStep < 5) {
       _formState = _formState.copyWith(
@@ -80,21 +92,25 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }
 
   void updateBasicInfo(BasicInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step1: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updateImages(ImagesInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step2: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updatePricing(PricingInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step3: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updateShipping(ShippingInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step4: info);
     state = AddProductState.loadSuccess(_formState);
   }
@@ -214,6 +230,8 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       },
       (formState) {
         _formState = formState;
+        // Fresh data from the backend -- nothing user-touched yet.
+        _isDirty = false;
         state = AddProductState.loadSuccess(_formState);
         return true;
       },
@@ -227,6 +245,12 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     if (!_formState.isValid) return false;
     final either =
         await _repository.updateProductDetails(productId, _formState);
-    return either.isRight();
+    final ok = either.isRight();
+    if (ok) {
+      // Persisted -- clear the dirty flag so the unsaved-changes guard
+      // doesn't fire when the host screen pops on success.
+      _isDirty = false;
+    }
+    return ok;
   }
 }

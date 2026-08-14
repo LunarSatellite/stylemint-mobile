@@ -59,7 +59,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     // Camera captures come off the sensor at full resolution (often
-    // 8-20MB+) — the backend caps the upload body at 5MB
+    // 8-20MB+) â€” the backend caps the upload body at 5MB
     // (POST /v1/vendor/products/images 400s with "Request body too large"
     // otherwise). Downscale + compress on pick so this fits comfortably
     // under that limit regardless of the device's camera resolution.
@@ -115,7 +115,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
 
     return Column(
       children: [
-        // ── Scrollable content ──────────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -156,7 +156,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${_images.length}/${ImagesInfo.minImages} minimum'
-                    '${_images.length < ImagesInfo.minImages ? ' — add ${ImagesInfo.minImages - _images.length} more to continue' : ''}',
+                    '${_images.length < ImagesInfo.minImages ? ' â€” add ${ImagesInfo.minImages - _images.length} more to continue' : ''}',
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
@@ -168,7 +168,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.2 Upload Image — gray outline
+                  // 3.2 Upload Image â€” gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Image',
@@ -178,7 +178,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.3 Capture Image — white solid
+                  // 3.3 Capture Image â€” white solid
                   _WhiteSolidButton(
                     icon: Icons.photo_camera_outlined,
                     label: 'Capture Image',
@@ -239,7 +239,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.5 Upload Video — gray outline
+                  // 3.5 Upload Video â€” gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Video',
@@ -257,7 +257,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
         ),
 
-        // ── Sticky Previous + Proceed ───────────────────────────────
+        // â”€â”€ Sticky Previous + Proceed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         SafeArea(
           top: false,
           child: Container(
@@ -275,7 +275,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
           child: Row(
             children: [
-              // Previous — gray
+              // Previous â€” gray
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
@@ -309,7 +309,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                 ),
               ),
               const SizedBox(width: DesignTokens.s16),
-              // Proceed — green
+              // Proceed â€” green
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
@@ -352,7 +352,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
   }
 }
 
-// ── Gray outline button (Upload Image / Upload Video) ─────────────────────────
+// â”€â”€ Gray outline button (Upload Image / Upload Video) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _GrayOutlineButton extends StatelessWidget {
   const _GrayOutlineButton({
@@ -400,7 +400,7 @@ class _GrayOutlineButton extends StatelessWidget {
   }
 }
 
-// ── White solid button (Capture Image) ───────────────────────────────────────
+// â”€â”€ White solid button (Capture Image) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _WhiteSolidButton extends StatelessWidget {
   const _WhiteSolidButton({
@@ -450,7 +450,7 @@ class _WhiteSolidButton extends StatelessWidget {
   }
 }
 
-// ── Image thumbnail tile ───────────────────────────────────────────
+// â”€â”€ Image thumbnail tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ImageTile extends StatelessWidget {
   const _ImageTile({

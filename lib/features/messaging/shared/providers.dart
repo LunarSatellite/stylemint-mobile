@@ -1,4 +1,4 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
+﻿import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
@@ -61,14 +61,38 @@ final chatNotifierProvider = StateNotifierProvider.family<
   );
 });
 
-/// Resolves a role-profile id to the owning account id (used so screens
+/// Resolves a profile id to the owning account id (used so screens
 /// that only have a profile id can open a chat thread). Cached per
-/// profile id for the app session.
+/// id for the app session.
+///
+/// Tries the documented `GET /v1/accounts/by-profile/{id}` lookup first
+/// (resolves CreatorProfile.Id / RoleProfile.Id / VendorProfile.Id).
+/// If that 404s the id may actually be an Account.Id - partnerships
+/// created by the legacy invite flow stored Account.Id into
+/// Partnership.CreatorProfileId (the picker returned Account.Id but the
+/// invite endpoint expected CreatorProfile.Id), so when those rows come
+/// back through `GET /v1/vendor/partnerships` the only id the messaging
+/// layer has is the Account.Id itself. We fall back to
+/// `GET /v1/accounts/{id}` so those legacy partnerships can still open
+/// the chat without the user recreating them. New invites go through
+/// CreatorProfile.Id so the primary lookup wins.
 final accountByProfileProvider = FutureProvider.family<String, String>(
   (ref, profileId) async {
     final api = ref.watch(apiClientProvider);
-    final res = await api.get('/v1/accounts/by-profile/$profileId');
-    final map = res as Map<String, dynamic>;
-    return (map['accountId'] as String?) ?? '';
+    try {
+      final res = await api.get('/v1/accounts/by-profile/$profileId');
+      final map = res as Map<String, dynamic>;
+      final accountId = (map['accountId'] as String?) ?? '';
+      if (accountId.isNotEmpty) return accountId;
+    } catch (_) {
+      // Fall through to the Account.Id lookup below.
+    }
+    try {
+      final res = await api.get('/v1/accounts/$profileId');
+      final map = res as Map<String, dynamic>;
+      return (map['id'] as String?) ?? '';
+    } catch (_) {
+      return '';
+    }
   },
 );

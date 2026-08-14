@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:fpdart/fpdart.dart';
@@ -64,7 +64,7 @@ class VendorPartnershipsNotifier extends StateNotifier<CampaignsState> {
   }
 
   /// Returns the created brief (with its real id) on success, or null on
-  /// failure — callers need the id to navigate to the detail screen and
+  /// failure â€” callers need the id to navigate to the detail screen and
   /// to chain the follow-up [updateCampaign] call that sets commission/
   /// budget (the draft endpoint only accepts title/goal/currency).
   Future<CampaignBrief?> createCampaign(CampaignBrief brief) async {
@@ -98,13 +98,13 @@ abstract class CampaignDetailState with _$CampaignDetailState {
     NetworkExceptions failure,
   ) = _CampaignDetailActionFailure;
 
-  /// Emitted once after a successful fork — `brief` is the NEW draft
+  /// Emitted once after a successful fork â€” `brief` is the NEW draft
   /// (`version + 1`), distinct from the source brief being viewed.
   const factory CampaignDetailState.forked(CampaignBrief brief) =
       _CampaignDetailForked;
 }
 
-/// Drives the lifecycle actions on a single brief: lock (Vendor §3.1),
+/// Drives the lifecycle actions on a single brief: lock (Vendor Â§3.1),
 /// fork, retire, and recompute-roi. List/create/update stay on
 /// [VendorPartnershipsNotifier]; this notifier is scoped to one brief id.
 class CampaignDetailNotifier extends StateNotifier<CampaignDetailState> {
@@ -144,7 +144,7 @@ class CampaignDetailNotifier extends StateNotifier<CampaignDetailState> {
     );
   }
 
-  /// On success the returned state carries the NEW forked draft — the
+  /// On success the returned state carries the NEW forked draft â€” the
   /// screen should navigate to it, not keep showing the source brief.
   Future<void> fork() async {
     final current = _currentBrief;
@@ -207,7 +207,7 @@ class InviteCreatorNotifier extends StateNotifier<InviteState> {
   final VendorPartnershipsRepository _repository;
 
   Future<void> invite({
-    required String creatorProfileId,
+    required String creatorAccountId,
     required double commissionMinPercent,
     required double commissionMaxPercent,
     String? brandBriefId,
@@ -215,7 +215,7 @@ class InviteCreatorNotifier extends StateNotifier<InviteState> {
   }) async {
     state = const InviteState.submitting();
     final result = await _repository.inviteCreator(
-      creatorProfileId: creatorProfileId,
+      creatorAccountId: creatorAccountId,
       commissionMinPercent: commissionMinPercent,
       commissionMaxPercent: commissionMaxPercent,
       brandBriefId: brandBriefId,

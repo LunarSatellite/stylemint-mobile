@@ -1,4 +1,4 @@
-import 'package:fpdart/fpdart.dart';
+﻿import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -7,7 +7,7 @@ abstract interface class VendorPartnershipsRepository {
   Future<Either<NetworkExceptions, PagedResult<VendorPartnership>>>
   getPartnerships({List<PartnershipState>? states, String? cursor});
 
-  /// `totalCount` of pending creator-initiated partnership requests —
+  /// `totalCount` of pending creator-initiated partnership requests -
   /// dashboard tile count.
   Future<Either<NetworkExceptions, int>> getPendingCreatorRequestCount();
 
@@ -56,8 +56,16 @@ abstract interface class VendorPartnershipsRepository {
     String? niche,
   });
 
+  /// Send a partnership invite to a creator.
+  ///
+  /// [creatorAccountId] is the Account.Id returned by the creator-search
+  /// picker (`CreatorPickerDto.CreatorAccountId`). It is NOT the creator
+  /// profile id - the invite endpoint (`InviteCreatorVm.CreatorProfileId`)
+  /// stores the profile id on the partnership aggregate, so this
+  /// repository resolves Account.Id -> CreatorProfile.Id before calling
+  /// the API. Doing it here keeps the bridge out of every call site.
   Future<Either<NetworkExceptions, void>> inviteCreator({
-    required String creatorProfileId,
+    required String creatorAccountId,
     required double commissionMinPercent,
     required double commissionMaxPercent,
     String? brandBriefId,
