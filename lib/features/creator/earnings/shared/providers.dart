@@ -26,9 +26,9 @@ final earningsBreakdownProvider = FutureProvider<EarningsBreakdown>(
   (ref) async =>
       (await ref.watch(earningsRepositoryProvider).getDashboardBreakdown())
           .fold(
-        (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
-        (breakdown) => breakdown,
-      ),
+            (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
+            (breakdown) => breakdown,
+          ),
 );
 
 final earningsRepositoryProvider = Provider<EarningsRepository>(
@@ -48,24 +48,28 @@ final requestPayoutNotifierProvider =
       (ref) => RequestPayoutNotifier(ref.watch(earningsRepositoryProvider)),
     );
 
-final payoutHistoryProvider =
-    FutureProvider.autoDispose<List<PayoutRecord>>((ref) async {
+final payoutHistoryProvider = FutureProvider.autoDispose<List<PayoutRecord>>((
+  ref,
+) async {
   final result = await ref.watch(earningsRepositoryProvider).getPayouts();
   return result.fold((f) => throw f, (records) => records);
 });
 
 final addPayoutMethodNotifierProvider =
-    StateNotifierProvider.autoDispose<AddPayoutMethodNotifier, AsyncValue<void>>(
+    StateNotifierProvider.autoDispose<
+      AddPayoutMethodNotifier,
+      AsyncValue<void>
+    >(
       (ref) => AddPayoutMethodNotifier(ref.watch(earningsRepositoryProvider)),
     );
 
 final payoutInvoiceNotifierProvider = StateNotifierProvider.autoDispose
     .family<PayoutInvoiceNotifier, PayoutInvoiceState, String>(
-  (ref, payoutId) => PayoutInvoiceNotifier(
-    ref.watch(earningsRepositoryProvider),
-    payoutId,
-  ),
-);
+      (ref, payoutId) => PayoutInvoiceNotifier(
+        ref.watch(earningsRepositoryProvider),
+        payoutId,
+      ),
+    );
 
 final cancelPayoutNotifierProvider =
     StateNotifierProvider.autoDispose<CancelPayoutNotifier, CancelPayoutState>(

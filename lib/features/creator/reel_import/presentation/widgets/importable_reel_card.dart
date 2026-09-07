@@ -25,9 +25,7 @@ class ImportableReelCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
           color: DesignTokens.bgAppBody,
           border: Border.all(
-            color: isSelected
-                ? DesignTokens.primaryGreen
-                : Colors.transparent,
+            color: isSelected ? DesignTokens.primaryGreen : Colors.transparent,
             width: 2,
           ),
         ),
@@ -46,8 +44,10 @@ class ImportableReelCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: DesignTokens.bgAppBodyLight,
-                        child: const Icon(Icons.play_circle_outline,
-                            color: DesignTokens.textMuted),
+                        child: const Icon(
+                          Icons.play_circle_outline,
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     ),
                   if (reel.videoDuration > 0)

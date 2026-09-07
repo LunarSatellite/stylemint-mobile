@@ -15,20 +15,18 @@ class CoWatchRemoteDataSource {
     return items ?? const [];
   }
 
-  /// TODO(swagger): No GET /v1/co-watch/{id} endpoint found.
   Future<CoWatchSessionDto> getSession(String sessionId) async {
     final response = await apiClient.get('/v1/co-watch/$sessionId');
     return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<CoWatchSessionDto> createSession(
-    String contentType,
-    String contentId,
+    String reelId,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
       '/v1/co-watch',
-      data: {'contentType': contentType, 'contentId': contentId},
+      data: {'reelId': reelId},
       options: _idempotent(idempotencyKey),
     );
     return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
@@ -46,18 +44,17 @@ class CoWatchRemoteDataSource {
     return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No leave-session endpoint — use POST /v1/co-watch/{id}/end to end the session.
+  // Co-watch is 2 people; "leave" ends the session for both.
   Future<void> leaveSession(
     String sessionId,
     String idempotencyKey,
   ) async {
     await apiClient.post(
-      '/v1/co-watch/$sessionId/leave',
+      '/v1/co-watch/$sessionId/end',
       options: _idempotent(idempotencyKey),
     );
   }
 
-  /// TODO(swagger): No reaction endpoints for co-watch sessions.
   Future<CoWatchReactionDto> sendReaction(
     String sessionId,
     String reaction,
@@ -71,7 +68,6 @@ class CoWatchRemoteDataSource {
     return CoWatchReactionDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No reaction endpoints for co-watch sessions.
   Future<List<CoWatchReactionDto>> getReactions(String sessionId) async {
     final response =
         await apiClient.get('/v1/co-watch/$sessionId/reactions');

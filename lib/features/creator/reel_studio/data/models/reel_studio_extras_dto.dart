@@ -19,12 +19,12 @@ class CoachingTipDto {
   final String? evidenceSummary;
 
   factory CoachingTipDto.fromJson(Map<String, dynamic> json) => CoachingTipDto(
-        category: json['category'] as String?,
-        tip: json['tip'] as String?,
-        exampleText: json['exampleText'] as String?,
-        priority: (json['priority'] as num?)?.toInt() ?? 0,
-        evidenceSummary: json['evidenceSummary'] as String?,
-      );
+    category: json['category'] as String?,
+    tip: json['tip'] as String?,
+    exampleText: json['exampleText'] as String?,
+    priority: (json['priority'] as num?)?.toInt() ?? 0,
+    evidenceSummary: json['evidenceSummary'] as String?,
+  );
 }
 
 class CollabSuggestionDto {
@@ -89,49 +89,49 @@ class TagNudgeDto {
   final String? reason;
 
   factory TagNudgeDto.fromJson(Map<String, dynamic> json) => TagNudgeDto(
-        reelId: (json['reelId'] as String?) ?? '',
-        suggestedProductId: (json['suggestedProductId'] as String?) ?? '',
-        productName: json['productName'] as String?,
-        reason: json['reason'] as String?,
-      );
+    reelId: (json['reelId'] as String?) ?? '',
+    suggestedProductId: (json['suggestedProductId'] as String?) ?? '',
+    productName: json['productName'] as String?,
+    reason: json['reason'] as String?,
+  );
 }
 
 extension CoachingTipDtoMapper on CoachingTipDto {
   CoachingTip toDomain() => CoachingTip(
-        priority: priority,
-        category: category,
-        tip: tip,
-        exampleText: exampleText,
-        evidenceSummary: evidenceSummary,
-      );
+    priority: priority,
+    category: category,
+    tip: tip,
+    exampleText: exampleText,
+    evidenceSummary: evidenceSummary,
+  );
 }
 
 extension CollabSuggestionDtoMapper on CollabSuggestionDto {
   CollabSuggestion toDomain() => CollabSuggestion(
-        otherCreatorId: otherCreatorId,
-        sharedProductId: sharedProductId,
-        otherCreatorHandle: otherCreatorHandle,
-        sharedProductName: sharedProductName,
-        matchReason: matchReason,
-      );
+    otherCreatorId: otherCreatorId,
+    sharedProductId: sharedProductId,
+    otherCreatorHandle: otherCreatorHandle,
+    sharedProductName: sharedProductName,
+    matchReason: matchReason,
+  );
 }
 
 extension DropPartyPromptDtoMapper on DropPartyPromptDto {
   DropPartyPrompt toDomain() => DropPartyPrompt(
-        vendorAccountId: vendorAccountId,
-        highPerformingReelCount: highPerformingReelCount,
-        vendorName: vendorName,
-        suggestionText: suggestionText,
-      );
+    vendorAccountId: vendorAccountId,
+    highPerformingReelCount: highPerformingReelCount,
+    vendorName: vendorName,
+    suggestionText: suggestionText,
+  );
 }
 
 extension TagNudgeDtoMapper on TagNudgeDto {
   TagNudge toDomain() => TagNudge(
-        reelId: reelId,
-        suggestedProductId: suggestedProductId,
-        productName: productName,
-        reason: reason,
-      );
+    reelId: reelId,
+    suggestedProductId: suggestedProductId,
+    productName: productName,
+    reason: reason,
+  );
 }
 
 class LaunchpadMilestoneDto {
@@ -198,15 +198,13 @@ class LaunchpadDto {
   final List<LaunchpadNextStepDto> nextSteps;
 
   factory LaunchpadDto.fromJson(Map<String, dynamic> json) => LaunchpadDto(
-        level: json['level'] as String? ?? '',
-        totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
-        milestones: (json['milestones'] as List<dynamic>? ?? const [])
-            .map((e) =>
-                LaunchpadMilestoneDto.fromJson(e as Map<String, dynamic>))
-            .toList(growable: false),
-        nextSteps: (json['nextSteps'] as List<dynamic>? ?? const [])
-            .map((e) =>
-                LaunchpadNextStepDto.fromJson(e as Map<String, dynamic>))
-            .toList(growable: false),
-      );
+    level: json['level'] as String? ?? '',
+    totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
+    milestones: (json['milestones'] as List<dynamic>? ?? const [])
+        .map((e) => LaunchpadMilestoneDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false),
+    nextSteps: (json['nextSteps'] as List<dynamic>? ?? const [])
+        .map((e) => LaunchpadNextStepDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false),
+  );
 }

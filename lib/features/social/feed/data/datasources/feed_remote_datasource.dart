@@ -89,7 +89,6 @@ class FeedRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  /// TODO(swagger): No share-post endpoint found — possible future `/v1/posts/{postId}/share`
   Future<void> sharePost(String postId, String idempotencyKey) async {
     await apiClient.post(
       '/v1/posts/$postId/share',

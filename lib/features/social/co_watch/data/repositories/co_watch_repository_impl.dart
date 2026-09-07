@@ -18,7 +18,8 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
   static const _uuid = Uuid();
 
   @override
-  Future<Either<NetworkExceptions, List<CoWatchSession>>> getActiveSessions() async {
+  Future<Either<NetworkExceptions, List<CoWatchSession>>>
+  getActiveSessions() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getActiveSessions();
@@ -38,17 +39,12 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, CoWatchSession>> createSession(
-    CoWatchContentType contentType,
-    String contentId,
+  Future<Either<NetworkExceptions, CoWatchSession>> getSession(
+    String sessionId,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.createSession(
-          contentType == CoWatchContentType.product ? 'product' : 'reel',
-          contentId,
-          _uuid.v4(),
-        );
+        final dto = await remoteDataSource.getSession(sessionId);
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -65,7 +61,31 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, CoWatchSession>> joinSession(String sessionId) async {
+  Future<Either<NetworkExceptions, CoWatchSession>> createSession(
+    String reelId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final dto = await remoteDataSource.createSession(reelId, _uuid.v4());
+        return right(dto.toDomain());
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, CoWatchSession>> joinSession(
+    String sessionId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.joinSession(sessionId, _uuid.v4());

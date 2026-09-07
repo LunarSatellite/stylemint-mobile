@@ -57,28 +57,28 @@ abstract class PartnershipDto with _$PartnershipDto {
   }
 
   ActivePartnership toActiveDomain() => ActivePartnership(
-        id: id,
-        vendorProfileId: vendorProfileId,
-        vendorAccountId: vendorAccountId,
-        vendorName: vendorName ?? '',
-        vendorLogoUrl: vendorLogoUrl ?? '',
-        commissionRate: commissionMinPercent,
-        totalEarned: const Money(amount: 0, currency: 'NPR'),
-        totalSales: 0,
-        startedAt: respondedUtc ?? invitedUtc,
-        productsCount: 0,
-      );
+    id: id,
+    vendorProfileId: vendorProfileId,
+    vendorAccountId: vendorAccountId,
+    vendorName: vendorName ?? '',
+    vendorLogoUrl: vendorLogoUrl ?? '',
+    commissionRate: commissionMinPercent,
+    totalEarned: const Money(amount: 0, currency: 'NPR'),
+    totalSales: 0,
+    startedAt: respondedUtc ?? invitedUtc,
+    productsCount: 0,
+  );
 
   EndedPartnership toEndedDomain() => EndedPartnership(
-        id: id,
-        vendorName: vendorName ?? '',
-        vendorLogoUrl: vendorLogoUrl ?? '',
-        commissionRate: commissionMinPercent,
-        totalEarned: const Money(amount: 0, currency: 'NPR'),
-        totalSales: 0,
-        startedAt: respondedUtc ?? invitedUtc,
-        endedAt: endedUtc ?? updatedUtc,
-        productsCount: 0,
-        endReason: endReason,
-      );
+    id: id,
+    vendorName: vendorName ?? '',
+    vendorLogoUrl: vendorLogoUrl ?? '',
+    commissionRate: commissionMinPercent,
+    totalEarned: const Money(amount: 0, currency: 'NPR'),
+    totalSales: 0,
+    startedAt: respondedUtc ?? invitedUtc,
+    endedAt: endedUtc ?? updatedUtc,
+    productsCount: 0,
+    endReason: endReason,
+  );
 }

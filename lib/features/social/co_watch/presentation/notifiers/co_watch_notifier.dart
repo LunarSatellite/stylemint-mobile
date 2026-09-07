@@ -16,7 +16,8 @@ abstract class CoWatchSessionsState with _$CoWatchSessionsState {
   const factory CoWatchSessionsState.initial() = _SessionsInitial;
   const factory CoWatchSessionsState.loadInProgress() = _SessionsLoadInProgress;
   const factory CoWatchSessionsState.loadSuccess(
-      List<CoWatchSession> sessions) = _SessionsLoadSuccess;
+    List<CoWatchSession> sessions,
+  ) = _SessionsLoadSuccess;
   const factory CoWatchSessionsState.loadFailure(NetworkExceptions failure) =
       _SessionsLoadFailure;
 }
@@ -28,10 +29,11 @@ abstract class CoWatchSessionDetailState with _$CoWatchSessionDetailState {
   const factory CoWatchSessionDetailState.initial() = _SessionDetailInitial;
   const factory CoWatchSessionDetailState.loadInProgress() =
       _SessionDetailLoadInProgress;
-  const factory CoWatchSessionDetailState.loadSuccess(
-      CoWatchSession session) = _SessionDetailLoadSuccess;
-  const factory CoWatchSessionDetailState.loadFailure(NetworkExceptions failure) =
-      _SessionDetailLoadFailure;
+  const factory CoWatchSessionDetailState.loadSuccess(CoWatchSession session) =
+      _SessionDetailLoadSuccess;
+  const factory CoWatchSessionDetailState.loadFailure(
+    NetworkExceptions failure,
+  ) = _SessionDetailLoadFailure;
 }
 
 @freezed
@@ -42,14 +44,15 @@ abstract class CoWatchReactionsState with _$CoWatchReactionsState {
   const factory CoWatchReactionsState.loadInProgress() =
       _ReactionsLoadInProgress;
   const factory CoWatchReactionsState.loadSuccess(
-      List<CoWatchReaction> reactions) = _ReactionsLoadSuccess;
+    List<CoWatchReaction> reactions,
+  ) = _ReactionsLoadSuccess;
   const factory CoWatchReactionsState.loadFailure(NetworkExceptions failure) =
       _ReactionsLoadFailure;
 }
 
 class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
   CoWatchNotifier(this._repository)
-      : super(const CoWatchSessionsState.initial()) {
+    : super(const CoWatchSessionsState.initial()) {
     unawaited(loadSessions());
   }
 
@@ -65,10 +68,9 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
   }
 
   Future<Either<NetworkExceptions, CoWatchSession>> createSession(
-    CoWatchContentType contentType,
-    String contentId,
+    String reelId,
   ) async {
-    final either = await _repository.createSession(contentType, contentId);
+    final either = await _repository.createSession(reelId);
     either.fold(
       (_) {},
       (_) => unawaited(loadSessions()),
@@ -76,7 +78,9 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
     return either;
   }
 
-  Future<Either<NetworkExceptions, CoWatchSession>> join(String sessionId) async {
+  Future<Either<NetworkExceptions, CoWatchSession>> join(
+    String sessionId,
+  ) async {
     final either = await _repository.joinSession(sessionId);
     either.fold(
       (_) {},
@@ -111,7 +115,7 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
 class CoWatchSessionDetailNotifier
     extends StateNotifier<CoWatchSessionDetailState> {
   CoWatchSessionDetailNotifier(this._repository, String sessionId)
-      : super(const CoWatchSessionDetailState.initial()) {
+    : super(const CoWatchSessionDetailState.initial()) {
     unawaited(loadSession(sessionId));
   }
 
@@ -119,20 +123,10 @@ class CoWatchSessionDetailNotifier
 
   Future<void> loadSession(String sessionId) async {
     state = const CoWatchSessionDetailState.loadInProgress();
-    final either = await _repository.getActiveSessions();
+    final either = await _repository.getSession(sessionId);
     state = either.fold(
       CoWatchSessionDetailState.loadFailure,
-      (sessions) {
-        final session = sessions.cast<CoWatchSession?>().firstWhere(
-              (s) => s?.id == sessionId,
-              orElse: () => null,
-            );
-        if (session != null) {
-          return CoWatchSessionDetailState.loadSuccess(session);
-        }
-        return CoWatchSessionDetailState.loadFailure(
-            const NetworkExceptions.notFound());
-      },
+      CoWatchSessionDetailState.loadSuccess,
     );
   }
 }

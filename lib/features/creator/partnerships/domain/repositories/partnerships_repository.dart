@@ -7,13 +7,17 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/e
 abstract interface class PartnershipsRepository {
   Future<Either<NetworkExceptions, List<PartnershipInvite>>> getInvites();
 
-  Future<Either<NetworkExceptions, PartnershipInvite>> acceptInvite(String inviteId);
+  Future<Either<NetworkExceptions, PartnershipInvite>> acceptInvite(
+    String inviteId,
+  );
 
   Future<Either<NetworkExceptions, Unit>> declineInvite(String inviteId);
 
-  Future<Either<NetworkExceptions, List<ActivePartnership>>> getActivePartnerships();
+  Future<Either<NetworkExceptions, List<ActivePartnership>>>
+  getActivePartnerships();
 
-  Future<Either<NetworkExceptions, List<EndedPartnership>>> getEndedPartnerships();
+  Future<Either<NetworkExceptions, List<EndedPartnership>>>
+  getEndedPartnerships();
 
   Future<Either<NetworkExceptions, Unit>> requestPartnership({
     required String vendorProfileId,
@@ -52,5 +56,5 @@ abstract interface class PartnershipsRepository {
   });
 
   Future<Either<NetworkExceptions, List<RecipeAttachmentInfo>>>
-      getPartnershipRecipes(String partnershipId);
+  getPartnershipRecipes(String partnershipId);
 }

@@ -14,7 +14,7 @@ class LanguageOption {
   String get nativeLabel => displayName;
 
   static const List<LanguageOption> supportedLanguages = [
-    LanguageOption(code: 'en', flag: '🇺🇸', displayName: 'English (United States)'),
+    LanguageOption(code: 'en-US', flag: '🇺🇸', displayName: 'English (United States)'),
     LanguageOption(code: 'zh', flag: '🇨🇳', displayName: 'Chinese (中国人)'),
     LanguageOption(code: 'ne', flag: '🇳🇵', displayName: 'Nepali (नेपाली)'),
     LanguageOption(code: 'es', flag: '🇪🇸', displayName: 'Spanish (Español)'),

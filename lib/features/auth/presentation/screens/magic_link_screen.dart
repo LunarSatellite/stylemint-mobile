@@ -39,7 +39,7 @@ class _MagicLinkScreenState extends ConsumerState<MagicLinkScreen> {
   }
 
   String _errorMessage(NetworkExceptions failure) => failure.maybeWhen(
-        validation: (_) => 'This magic link is invalid or has already been used',
+        validation: (_, __, ___, ____) => 'This magic link is invalid or has already been used',
         auth: () => 'This magic link has expired. Please request a new one',
         noInternetConnection: () => 'Network error. Please check your connection',
         orElse: () => 'Sign-in failed. Please try again',

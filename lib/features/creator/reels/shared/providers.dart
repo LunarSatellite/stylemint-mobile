@@ -14,8 +14,9 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/domain/reposito
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 
 Future<void> deleteCreatorReel(WidgetRef ref, String reelId) async {
-  final result =
-      await ref.read(creatorReelsRepositoryProvider).deleteReel(reelId);
+  final result = await ref
+      .read(creatorReelsRepositoryProvider)
+      .deleteReel(reelId);
   if (result.isRight()) {
     ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'asc')));
     ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'desc')));
@@ -27,10 +28,10 @@ Future<void> deleteCreatorReel(WidgetRef ref, String reelId) async {
 
 final creatorReelsRemoteDataSourceProvider =
     Provider<CreatorReelsRemoteDataSource>(
-  (ref) => CreatorReelsRemoteDataSource(
-    apiClient: ref.watch(apiClientProvider),
-  ),
-);
+      (ref) => CreatorReelsRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 final creatorReelsRepositoryProvider = Provider<CreatorReelsRepository>(
   (ref) => CreatorReelsRepositoryImpl(
@@ -42,21 +43,21 @@ final creatorReelsRepositoryProvider = Provider<CreatorReelsRepository>(
 /// Unwraps a repository result for the `FutureProvider` reads below, which
 /// signal failure by throwing so `AsyncValue.error` carries the message.
 T _orThrow<T>(NetworkEither<T> result) => result.fold(
-      // Throw the typed [NetworkExceptions] (not just its message) so the
-      // screen's AsyncValue.error can branch on .isNotFound etc.
-      // ignore: only_throw_errors
-      (failure) => throw failure,
-      (value) => value,
-    );
+  // Throw the typed [NetworkExceptions] (not just its message) so the
+  // screen's AsyncValue.error can branch on .isNotFound etc.
+  // ignore: only_throw_errors
+  (failure) => throw failure,
+  (value) => value,
+);
 // ── Reel detail (auto-disposed, keyed by reelId) ──────────────────────────────
 
 // ignore: specify_nonobvious_property_types
-final creatorReelDetailProvider =
-    FutureProvider.autoDispose.family<CreatorReelDetail, String>(
-  (ref, reelId) async => _orThrow(
-    await ref.watch(creatorReelsRepositoryProvider).getReelDetail(reelId),
-  ),
-);
+final creatorReelDetailProvider = FutureProvider.autoDispose
+    .family<CreatorReelDetail, String>(
+      (ref, reelId) async => _orThrow(
+        await ref.watch(creatorReelsRepositoryProvider).getReelDetail(reelId),
+      ),
+    );
 
 // ── Reel list (auto-disposed, keyed by (sortBy, order)) ───────────────────────
 // sortBy: 'publishedAt' | 'views'   order: 'asc' | 'desc'
@@ -64,38 +65,45 @@ final creatorReelDetailProvider =
 // ignore: specify_nonobvious_property_types
 final creatorReelSummariesProvider = FutureProvider.autoDispose
     .family<List<CreatorReelSummary>, (String sortBy, String order)>(
-  (ref, args) async => _orThrow(
-    await ref.watch(creatorReelsRepositoryProvider).listCreatorReels(
-          sortBy: args.$1,
-          order: args.$2,
-        ),
-  ),
-);
+      (ref, args) async => _orThrow(
+        await ref
+            .watch(creatorReelsRepositoryProvider)
+            .listCreatorReels(
+              sortBy: args.$1,
+              order: args.$2,
+            ),
+      ),
+    );
 
 // ── Tagged products for a reel (auto-disposed, keyed by reelId) ───────────────
 
 // ignore: specify_nonobvious_property_types
-final reelTaggedProductsProvider =
-    FutureProvider.autoDispose.family<List<ReelProductTag>, String>(
-  (ref, reelId) async => _orThrow(
-    await ref.watch(creatorReelsRepositoryProvider).listTaggedProducts(reelId),
-  ),
-);
+final reelTaggedProductsProvider = FutureProvider.autoDispose
+    .family<List<ReelProductTag>, String>(
+      (ref, reelId) async => _orThrow(
+        await ref
+            .watch(creatorReelsRepositoryProvider)
+            .listTaggedProducts(reelId),
+      ),
+    );
 
-final postPublishReportProvider =
-    FutureProvider.autoDispose.family<PostPublishReport, String>(
-  (ref, reelId) async => _orThrow(
-    await ref.watch(creatorReelsRepositoryProvider).getPostPublishReport(reelId),
-  ),
-);
+final postPublishReportProvider = FutureProvider.autoDispose
+    .family<PostPublishReport, String>(
+      (ref, reelId) async => _orThrow(
+        await ref
+            .watch(creatorReelsRepositoryProvider)
+            .getPostPublishReport(reelId),
+      ),
+    );
 
 // ── Write actions (publish / unpublish / tag / untag) ─────────────────────────
 
-final creatorReelActionsNotifierProvider = StateNotifierProvider.autoDispose<
-    CreatorReelActionsNotifier, CreatorReelActionState>(
-  (ref) => CreatorReelActionsNotifier(
-    ref.watch(creatorReelsRepositoryProvider),
-  ),
-);
-
-
+final creatorReelActionsNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      CreatorReelActionsNotifier,
+      CreatorReelActionState
+    >(
+      (ref) => CreatorReelActionsNotifier(
+        ref.watch(creatorReelsRepositoryProvider),
+      ),
+    );

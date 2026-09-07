@@ -89,9 +89,16 @@ class ReelImportNotifier extends StateNotifier<ReelImportState> {
     if (platform == null || !_hasMore || _isLoadingMore) return;
 
     _isLoadingMore = true;
-    state = ReelImportState.loadSuccess(_reels, hasMore: _hasMore, isLoadingMore: true);
+    state = ReelImportState.loadSuccess(
+      _reels,
+      hasMore: _hasMore,
+      isLoadingMore: true,
+    );
 
-    final either = await _repository.getImportableReels(platform, cursor: _cursor);
+    final either = await _repository.getImportableReels(
+      platform,
+      cursor: _cursor,
+    );
     _isLoadingMore = false;
     state = either.fold(
       (_) => ReelImportState.loadSuccess(_reels, hasMore: _hasMore),
@@ -254,7 +261,9 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
       }
     }
 
-    final publishResult = await _repository.publishReel(reelId: importedReel.id);
+    final publishResult = await _repository.publishReel(
+      reelId: importedReel.id,
+    );
     if (publishResult.isLeft()) {
       final failure = publishResult.getLeft().toNullable()!;
       state = ReelSubmitFailure(NetworkExceptions.getMessage(failure));
@@ -268,6 +277,7 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
 sealed class BulkImportState {}
 
 class BulkImportIdle extends BulkImportState {}
+
 class BulkImportInProgress extends BulkImportState {}
 
 class BulkImportSuccess extends BulkImportState {
@@ -298,7 +308,9 @@ class BulkImportNotifier extends StateNotifier<BulkImportState> {
 }
 
 sealed class ReelIntentNotifierState {}
+
 class ReelIntentNotifierIdle extends ReelIntentNotifierState {}
+
 class ReelIntentNotifierInProgress extends ReelIntentNotifierState {}
 
 class ReelIntentNotifierLaunched extends ReelIntentNotifierState {

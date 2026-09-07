@@ -19,7 +19,12 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 
 // Re-export new DTO types consumed by UI widgets
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
-    show BrandDetailDto, BrandTrustDto, MoneyDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
+    show
+        BrandDetailDto,
+        BrandTrustDto,
+        MoneyDto,
+        PotentialEarningsDto,
+        RecipeAttachmentInfoDto;
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart'
     show CreatorRateCard, RateTier;
 
@@ -44,7 +49,9 @@ final partnershipsNotifierProvider =
 
 /// Derived view: active partnerships only, empty while loading or on failure.
 final activePartnershipsProvider = Provider<List<ActivePartnership>>((ref) {
-  return ref.watch(partnershipsNotifierProvider).maybeWhen(
+  return ref
+      .watch(partnershipsNotifierProvider)
+      .maybeWhen(
         loadSuccess: (_, active, _) => active,
         orElse: () => const [],
       );
@@ -52,7 +59,9 @@ final activePartnershipsProvider = Provider<List<ActivePartnership>>((ref) {
 
 /// Derived view: ended partnerships only, empty while loading or on failure.
 final endedPartnershipsProvider = Provider<List<EndedPartnership>>((ref) {
-  return ref.watch(partnershipsNotifierProvider).maybeWhen(
+  return ref
+      .watch(partnershipsNotifierProvider)
+      .maybeWhen(
         loadSuccess: (_, _, ended) => ended,
         orElse: () => const [],
       );
@@ -60,10 +69,11 @@ final endedPartnershipsProvider = Provider<List<EndedPartnership>>((ref) {
 
 /// Derived view: count of pending invites, 0 while loading or on failure.
 final pendingInvitesCountProvider = Provider<int>((ref) {
-  return ref.watch(partnershipsNotifierProvider).maybeWhen(
-        loadSuccess: (invites, _, _) => invites
-            .where((i) => i.status == PartnershipStatus.pending)
-            .length,
+  return ref
+      .watch(partnershipsNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (invites, _, _) =>
+            invites.where((i) => i.status == PartnershipStatus.pending).length,
         orElse: () => 0,
       );
 });
@@ -72,9 +82,12 @@ final pendingInvitesCountProvider = Provider<int>((ref) {
 /// while loading or on failure. Real vendor-initiated invitations a
 /// creator can accept/decline — used for the dashboard preview section.
 final pendingInvitesProvider = Provider<List<PartnershipInvite>>((ref) {
-  return ref.watch(partnershipsNotifierProvider).maybeWhen(
-        loadSuccess: (invites, _, _) =>
-            invites.where((i) => i.status == PartnershipStatus.pending).toList(),
+  return ref
+      .watch(partnershipsNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (invites, _, _) => invites
+            .where((i) => i.status == PartnershipStatus.pending)
+            .toList(),
         orElse: () => const [],
       );
 });
@@ -93,68 +106,72 @@ final brandsRepositoryProvider = Provider<BrandsRepository>(
 /// Unwraps a repository result for the read providers below, which signal
 /// failure by throwing so `AsyncValue.error` carries the message.
 T _orThrow<T>(NetworkEither<T> result) => result.fold(
-      (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
-      (value) => value,
-    );
+  (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
+  (value) => value,
+);
 
 /// Creator §7A "Browse all Brands" — real approved-vendor catalog.
 final brandsListProvider = FutureProvider.autoDispose<List<Brand>>(
-  (ref) async => _orThrow(await ref.watch(brandsRepositoryProvider).listBrands()),
+  (ref) async =>
+      _orThrow(await ref.watch(brandsRepositoryProvider).listBrands()),
 );
 
 /// Creator §7A "Recommended Brands for You".
 final recommendedBrandsProvider = FutureProvider.autoDispose<List<Brand>>(
-  (ref) async =>
-      _orThrow(await ref.watch(brandsRepositoryProvider).listRecommendedBrands()),
+  (ref) async => _orThrow(
+    await ref.watch(brandsRepositoryProvider).listRecommendedBrands(),
+  ),
 );
 
 /// Active terms for a given partnership id.
-final partnershipTermsProvider =
-    FutureProvider.autoDispose.family<PartnershipTerms, String>(
-  (ref, partnershipId) async => _orThrow(
-    await ref
-        .watch(partnershipsRepositoryProvider)
-        .getPartnershipTerms(partnershipId),
-  ),
-);
+final partnershipTermsProvider = FutureProvider.autoDispose
+    .family<PartnershipTerms, String>(
+      (ref, partnershipId) async => _orThrow(
+        await ref
+            .watch(partnershipsRepositoryProvider)
+            .getPartnershipTerms(partnershipId),
+      ),
+    );
 
 /// All terms versions for a given partnership id.
-final partnershipTermsVersionsProvider =
-    FutureProvider.autoDispose.family<List<PartnershipTerms>, String>(
-  (ref, partnershipId) async => _orThrow(
-    await ref
-        .watch(partnershipsRepositoryProvider)
-        .getTermsVersions(partnershipId),
-  ),
-);
+final partnershipTermsVersionsProvider = FutureProvider.autoDispose
+    .family<List<PartnershipTerms>, String>(
+      (ref, partnershipId) async => _orThrow(
+        await ref
+            .watch(partnershipsRepositoryProvider)
+            .getTermsVersions(partnershipId),
+      ),
+    );
 
 /// Potential earnings projection for a given partnership (and optional variant).
 final potentialEarningsProvider = FutureProvider.autoDispose
     .family<PotentialEarnings, (String partnershipId, String? variantId)>(
-  (ref, args) async => _orThrow(
-    await ref
-        .watch(partnershipsRepositoryProvider)
-        .getPotentialEarnings(args.$1, variantId: args.$2),
-  ),
-);
+      (ref, args) async => _orThrow(
+        await ref
+            .watch(partnershipsRepositoryProvider)
+            .getPotentialEarnings(args.$1, variantId: args.$2),
+      ),
+    );
 
 /// Recipes attached to a partnership brief.
-final partnershipRecipesProvider =
-    FutureProvider.autoDispose.family<List<RecipeAttachmentInfo>, String>(
-  (ref, partnershipId) async => _orThrow(
-    await ref
-        .watch(partnershipsRepositoryProvider)
-        .getPartnershipRecipes(partnershipId),
-  ),
-);
+final partnershipRecipesProvider = FutureProvider.autoDispose
+    .family<List<RecipeAttachmentInfo>, String>(
+      (ref, partnershipId) async => _orThrow(
+        await ref
+            .watch(partnershipsRepositoryProvider)
+            .getPartnershipRecipes(partnershipId),
+      ),
+    );
 
 /// Creator §7B/C/D brand detail — single approved-vendor profile
 /// (`GET /v1/brands/{vendorAccountId}`). DB-backed; replaces the
 /// previously hardcoded `BrandInfoData` stub values.
 final brandDetailProvider = FutureProvider.autoDispose
     .family<BrandDetailDto, String>((ref, vendorAccountId) {
-  return ref.watch(brandsRemoteDataSourceProvider).getBrand(vendorAccountId);
-});
+      return ref
+          .watch(brandsRemoteDataSourceProvider)
+          .getBrand(vendorAccountId);
+    });
 
 /// Creator §7B/C/D brand detail — trust score
 /// (`GET /v1/creator/brands/{vendorAccountId}/trust`). Powers the
@@ -163,14 +180,16 @@ final brandDetailProvider = FutureProvider.autoDispose
 /// instead of breaking the whole page.
 final brandTrustProvider = FutureProvider.autoDispose
     .family<BrandTrustDto, String>((ref, vendorAccountId) {
-  return ref
-      .watch(brandsRemoteDataSourceProvider)
-      .getBrandTrust(vendorAccountId);
-});
+      return ref
+          .watch(brandsRemoteDataSourceProvider)
+          .getBrandTrust(vendorAccountId);
+    });
 
-final rateCardProvider =
-    FutureProvider.autoDispose<CreatorRateCard?>((ref) async {
-  final result =
-      await ref.watch(partnershipsRepositoryProvider).getMyRateCard();
+final rateCardProvider = FutureProvider.autoDispose<CreatorRateCard?>((
+  ref,
+) async {
+  final result = await ref
+      .watch(partnershipsRepositoryProvider)
+      .getMyRateCard();
   return result.fold((_) => null, (rateCard) => rateCard);
 });

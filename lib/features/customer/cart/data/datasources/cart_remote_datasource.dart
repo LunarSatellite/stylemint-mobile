@@ -51,9 +51,9 @@ class CartRemoteDataSource {
   }
 
   Options _idempotent(String idempotencyKey) => Options(
-        headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idempotencyKey,
-        },
-      );
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': idempotencyKey,
+    },
+  );
 }

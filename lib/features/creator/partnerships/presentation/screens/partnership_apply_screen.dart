@@ -88,7 +88,10 @@ class _PartnershipRequestScreenState
 
   Future<void> _submit() async {
     if (widget.args.vendorProfileId.isEmpty) {
-      SmSnackbar.error(context, 'Brand profile unavailable. Please try again later.');
+      SmSnackbar.error(
+        context,
+        'Brand profile unavailable. Please try again later.',
+      );
       return;
     }
     if (!_agreed) {
@@ -96,7 +99,10 @@ class _PartnershipRequestScreenState
       return;
     }
     if (_messageCtrl.text.trim().isEmpty) {
-      SmSnackbar.error(context, 'Please explain why this partnership makes sense.');
+      SmSnackbar.error(
+        context,
+        'Please explain why this partnership makes sense.',
+      );
       return;
     }
 
@@ -108,24 +114,27 @@ class _PartnershipRequestScreenState
     setState(() => _submitting = true);
     try {
       final api = ref.read(apiClientProvider);
-      final categories = ref.read(productCategoriesProvider).maybeWhen(
-      data: (d) => d,
-      orElse: () => const <CategoryOption>[],
-    );
-    final payload = <String, dynamic>{
+      final categories = ref
+          .read(productCategoriesProvider)
+          .maybeWhen(
+            data: (d) => d,
+            orElse: () => const <CategoryOption>[],
+          );
+      final payload = <String, dynamic>{
         'vendorProfileId': widget.args.vendorProfileId,
         'commissionMinPercent': _range.start / 100,
         'commissionMaxPercent': _range.end / 100,
         'message': _messageCtrl.text.trim(),
         if (_selectedNiches.isNotEmpty)
           'nicheIds': _selectedNiches
-              .map((name) => categories
-                  .firstWhere(
-                    (c) => c.name == name,
-                    orElse: () =>
-                        const CategoryOption(id: '', name: ''),
-                  )
-                  .id)
+              .map(
+                (name) => categories
+                    .firstWhere(
+                      (c) => c.name == name,
+                      orElse: () => const CategoryOption(id: '', name: ''),
+                    )
+                    .id,
+              )
               .where((id) => id.isNotEmpty)
               .toList(),
         if (_selectedAudienceGroups.isNotEmpty)
@@ -142,10 +151,12 @@ class _PartnershipRequestScreenState
       final response = await api.post(
         '/v1/creator/partnerships/request',
         data: payload,
-        options: Options(headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idemKey,
-        }),
+        options: Options(
+          headers: {
+            'requiresToken': true,
+            'Idempotency-Key': idemKey,
+          },
+        ),
       );
       developer.log('response: $response', name: 'partnership_apply');
       if (!mounted) return;
@@ -186,13 +197,16 @@ class _PartnershipRequestScreenState
     // Niche options = creator's own specializations (category IDs from
     // /v1/accounts/{accountId}/creator-specializations) joined with names
     // from /v1/public/categories.
-    final accountId = ref.watch(sessionControllerProvider).maybeWhen(
+    final accountId = ref
+        .watch(sessionControllerProvider)
+        .maybeWhen(
           authenticated: (id) => id,
           orElse: () => '',
         );
     final categoriesAsync = ref.watch(productCategoriesProvider);
-    final specializationIdsAsync = ref
-        .watch(creatorSpecializationIdsProvider(accountId));
+    final specializationIdsAsync = ref.watch(
+      creatorSpecializationIdsProvider(accountId),
+    );
     final allCategories = categoriesAsync.maybeWhen(
       data: (d) => d,
       orElse: () => const <CategoryOption>[],
@@ -212,12 +226,17 @@ class _PartnershipRequestScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Send Partnership Request',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Send Partnership Request',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
@@ -252,8 +271,9 @@ class _PartnershipRequestScreenState
             // Commission range slider
             Text(
               'Commission Range ($startLabel%-$endLabel%)',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s8),
             SliderTheme(
@@ -261,13 +281,12 @@ class _PartnershipRequestScreenState
                 activeTrackColor: DesignTokens.primaryGreen,
                 inactiveTrackColor: DesignTokens.borderDefault,
                 thumbColor: DesignTokens.primaryGreen,
-                overlayColor:
-                    DesignTokens.primaryGreen.withOpacity(0.15),
+                overlayColor: DesignTokens.primaryGreen.withOpacity(0.15),
                 trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 8),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                 rangeThumbShape: const RoundRangeSliderThumbShape(
-                    enabledThumbRadius: 8),
+                  enabledThumbRadius: 8,
+                ),
               ),
               child: RangeSlider(
                 min: args.commissionMin,
@@ -277,17 +296,22 @@ class _PartnershipRequestScreenState
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s4),
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$minLabel%',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight)),
-                  Text('$maxLabel%',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight)),
+                  Text(
+                    '$minLabel%',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                  Text(
+                    '$maxLabel%',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -319,10 +343,11 @@ class _PartnershipRequestScreenState
             ),
             const SizedBox(height: DesignTokens.s24),
 
-
             // Sample Content (Optional)
-            const Text('Sample Content (Optional)',
-                style: DesignTokens.mediumSemibold),
+            const Text(
+              'Sample Content (Optional)',
+              style: DesignTokens.mediumSemibold,
+            ),
             const SizedBox(height: DesignTokens.s4),
             const Text(
               'Share 3-5 of your best performing reels that match our brand',
@@ -350,15 +375,15 @@ class _PartnershipRequestScreenState
                   const SizedBox(width: DesignTokens.s8),
                   GestureDetector(
                     onTap: i == _sampleUrlCtrls.length - 1
-                        ? () => setState(() =>
-                            _sampleUrlCtrls.add(TextEditingController()))
+                        ? () => setState(
+                            () => _sampleUrlCtrls.add(TextEditingController()),
+                          )
                         : () => setState(() {
-                              _sampleUrlCtrls.removeAt(i).dispose();
-                              if (_sampleUrlCtrls.isEmpty) {
-                                _sampleUrlCtrls
-                                    .add(TextEditingController());
-                              }
-                            }),
+                            _sampleUrlCtrls.removeAt(i).dispose();
+                            if (_sampleUrlCtrls.isEmpty) {
+                              _sampleUrlCtrls.add(TextEditingController());
+                            }
+                          }),
                     child: Container(
                       width: 44,
                       height: 44,
@@ -384,8 +409,12 @@ class _PartnershipRequestScreenState
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-              DesignTokens.s8, DesignTokens.s16, DesignTokens.s16),
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16,
+            DesignTokens.s8,
+            DesignTokens.s16,
+            DesignTokens.s16,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -399,18 +428,19 @@ class _PartnershipRequestScreenState
                       height: 20,
                       child: Checkbox(
                         value: _agreed,
-                        onChanged: (v) =>
-                            setState(() => _agreed = v ?? false),
+                        onChanged: (v) => setState(() => _agreed = v ?? false),
                         side: const BorderSide(
-                            color: DesignTokens.borderDefault, width: 1.5),
+                          color: DesignTokens.borderDefault,
+                          width: 1.5,
+                        ),
                         activeColor: DesignTokens.primaryGreen,
                         checkColor: DesignTokens.buttonPrimaryText,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.inputRadius),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.inputRadius,
+                          ),
                         ),
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
@@ -419,8 +449,10 @@ class _PartnershipRequestScreenState
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Text('I agree to the ',
-                              style: DesignTokens.smallRegular),
+                          const Text(
+                            'I agree to the ',
+                            style: DesignTokens.smallRegular,
+                          ),
                           Text(
                             'Partnership Terms',
                             style: DesignTokens.smallRegular.copyWith(
@@ -448,8 +480,11 @@ class _PartnershipRequestScreenState
                   disabled: _submitting,
                   isLoadingInitially: _submitting,
                   onPressed: _submit,
-                  suffixIcon: const Icon(Icons.arrow_forward_rounded,
-                      color: DesignTokens.buttonPrimaryText, size: 18),
+                  suffixIcon: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: DesignTokens.buttonPrimaryText,
+                    size: 18,
+                  ),
                 ),
               ),
             ],
@@ -471,7 +506,7 @@ class _BrandCard extends StatelessWidget {
     final commission = args.commissionMin == args.commissionMax
         ? '${args.commissionMax.toStringAsFixed(0)}% Commission'
         : '${args.commissionMin.toStringAsFixed(0)}-'
-            '${args.commissionMax.toStringAsFixed(0)}% Commissions';
+              '${args.commissionMax.toStringAsFixed(0)}% Commissions';
 
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
@@ -486,62 +521,86 @@ class _BrandCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: const BoxDecoration(
-                shape: BoxShape.circle, color: Colors.white),
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
             clipBehavior: Clip.antiAlias,
             child: args.vendorLogoUrl != null
-                ? Image.network(args.vendorLogoUrl!, fit: BoxFit.cover,
+                ? Image.network(
+                    args.vendorLogoUrl!,
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const Icon(
-                        Icons.store_rounded,
-                        color: DesignTokens.textLight,
-                        size: 24))
-                : const Icon(Icons.store_rounded,
-                    color: DesignTokens.textLight, size: 24),
+                      Icons.store_rounded,
+                      color: DesignTokens.textLight,
+                      size: 24,
+                    ),
+                  )
+                : const Icon(
+                    Icons.store_rounded,
+                    color: DesignTokens.textLight,
+                    size: 24,
+                  ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(args.vendorName,
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.textWhite)),
+              Text(
+                args.vendorName,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
               const SizedBox(height: 2),
               if (args.vendorRating != null || args.vendorCategory != null)
                 Row(
                   children: [
                     if (args.vendorRating != null) ...[
-                      const Icon(Icons.star_rounded,
-                          size: 14,
-                          color: DesignTokens.secondaryYellow),
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: DesignTokens.secondaryYellow,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         args.vendorRating!.toStringAsFixed(1),
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                       if (args.vendorCategory != null)
-                        Text(' · ',
-                            style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.textLight)),
+                        Text(
+                          ' · ',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
+                        ),
                     ],
                     if (args.vendorCategory != null)
                       Text(
                         args.vendorCategory!,
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textLight),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                   ],
                 ),
               const SizedBox(height: DesignTokens.s8),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s8, vertical: 3),
+                  horizontal: DesignTokens.s8,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: DesignTokens.chipsSelectedFill,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(commission,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.primaryGreen)),
+                child: Text(
+                  commission,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
               ),
             ],
           ),
@@ -550,7 +609,6 @@ class _BrandCard extends StatelessWidget {
     );
   }
 }
-
 
 // ── Multi-select dropdown field ───────────────────────────────────────────────
 
@@ -595,7 +653,9 @@ class _MultiSelectField extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s12, vertical: 14),
+          horizontal: DesignTokens.s12,
+          vertical: 14,
+        ),
         decoration: BoxDecoration(
           color: DesignTokens.inputFieldFill,
           borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
@@ -617,8 +677,10 @@ class _MultiSelectField extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded,
-                color: DesignTokens.textLight),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: DesignTokens.textLight,
+            ),
           ],
         ),
       ),
@@ -656,8 +718,7 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets),
       child: ClipRRect(
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
           child: Container(
@@ -685,8 +746,11 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                     GestureDetector(
                       onTap: () => Navigator.of(context).pop(),
                       behavior: HitTestBehavior.opaque,
-                      child: const Icon(Icons.close_rounded,
-                          color: DesignTokens.textWhite, size: 22),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: DesignTokens.textWhite,
+                        size: 22,
+                      ),
                     ),
                   ],
                 ),
@@ -698,19 +762,21 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: widget.options
-                          .map((opt) => _OptionRow(
-                                label: opt,
-                                value: _picked.contains(opt),
-                                onChanged: (v) {
-                                  setState(() {
-                                    if (v) {
-                                      _picked.add(opt);
-                                    } else {
-                                      _picked.remove(opt);
-                                    }
-                                  });
-                                },
-                              ))
+                          .map(
+                            (opt) => _OptionRow(
+                              label: opt,
+                              value: _picked.contains(opt),
+                              onChanged: (v) {
+                                setState(() {
+                                  if (v) {
+                                    _picked.add(opt);
+                                  } else {
+                                    _picked.remove(opt);
+                                  }
+                                });
+                              },
+                            ),
+                          )
                           .toList(),
                     ),
                   ),
@@ -724,15 +790,19 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: DesignTokens.primaryGreen,
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                     ),
-                    child: const Text('Done',
-                        style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            color: DesignTokens.buttonPrimaryText,
-                            fontWeight: FontWeight.w600)),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        color: DesignTokens.buttonPrimaryText,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -771,12 +841,13 @@ class _OptionRow extends StatelessWidget {
                 value: value,
                 onChanged: (v) => onChanged(v ?? false),
                 side: const BorderSide(
-                    color: DesignTokens.borderDefault, width: 1.5),
+                  color: DesignTokens.borderDefault,
+                  width: 1.5,
+                ),
                 activeColor: DesignTokens.primaryGreen,
                 checkColor: DesignTokens.buttonPrimaryText,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.inputRadius),
+                  borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                 ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -784,9 +855,12 @@ class _OptionRow extends StatelessWidget {
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
-              child: Text(label,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textWhite)),
+              child: Text(
+                label,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
             ),
           ],
         ),

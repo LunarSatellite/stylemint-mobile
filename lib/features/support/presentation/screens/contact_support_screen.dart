@@ -1017,8 +1017,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   /// label guess.
   static TicketCategory _categoryFor(SupportCategory? category) =>
       category == null
-          ? TicketCategory.safetyAndPrivacy
-          : TicketCategory.values[int.parse(category.id) - 1];
+      ? TicketCategory.safetyAndPrivacy
+      : TicketCategory.values[int.parse(category.id) - 1];
 
   @override
   void initState() {

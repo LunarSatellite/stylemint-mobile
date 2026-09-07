@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/entities/drop_party.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/notifiers/drop_party_notifier.dart';
@@ -229,7 +230,7 @@ class DropPartyDetailScreen extends ConsumerWidget {
                     IconButton(
                       icon: const Icon(Icons.share,
                           color: DesignTokens.primaryGreen),
-                      onPressed: () {},
+                      onPressed: () => _shareInvite(context, party),
                     ),
                   ],
                 ),
@@ -237,7 +238,7 @@ class DropPartyDetailScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _shareInvite(context, party),
                     icon: const Icon(Icons.person_add),
                     label: const Text('Invite Friends'),
                     style: DesignTokens.outlinedButtonStyle(),
@@ -252,4 +253,13 @@ class DropPartyDetailScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(child: CircularProgressIndicator());
+}
+
+void _shareInvite(BuildContext context, DropParty party) {
+  SharePlus.instance.share(
+    ShareParams(
+      text: 'Join my drop party "${party.title}" on Style Mint! '
+          'Use invite code ${party.inviteCode} or scan it in the app.',
+    ),
+  );
 }

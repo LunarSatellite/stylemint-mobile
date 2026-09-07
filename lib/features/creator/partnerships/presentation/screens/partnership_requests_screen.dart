@@ -61,35 +61,35 @@ String _commissionLabel(double min, double max) {
 }
 
 _Request _fromInvite(PartnershipInvite i) => _Request(
-      id: i.id,
-      vendorProfileId: i.vendorProfileId,
-      vendorAccountId: i.vendorAccountId,
-      brandName: i.vendorName,
-      rating: i.vendorRating ?? 0,
-      timeAgo: _timeAgo(i.expiresAt),
-      message: i.campaignBrief,
-      commission: _commissionLabel(i.commissionRate, i.commissionRate),
-      category: '',
-      products: '',
-      status: switch (i.status) {
-        PartnershipStatus.declined => _Status.declined,
-        _ => _Status.pending,
-      },
-    );
+  id: i.id,
+  vendorProfileId: i.vendorProfileId,
+  vendorAccountId: i.vendorAccountId,
+  brandName: i.vendorName,
+  rating: i.vendorRating ?? 0,
+  timeAgo: _timeAgo(i.expiresAt),
+  message: i.campaignBrief,
+  commission: _commissionLabel(i.commissionRate, i.commissionRate),
+  category: '',
+  products: '',
+  status: switch (i.status) {
+    PartnershipStatus.declined => _Status.declined,
+    _ => _Status.pending,
+  },
+);
 
 _Request _fromActive(ActivePartnership a) => _Request(
-      id: a.id,
-      vendorProfileId: a.vendorProfileId,
-      vendorAccountId: a.vendorAccountId,
-      brandName: a.vendorName,
-      rating: 0,
-      timeAgo: _timeAgo(a.startedAt),
-      message: '',
-      commission: _commissionLabel(a.commissionRate, a.commissionRate),
-      category: '',
-      products: a.productsCount > 0 ? '${a.productsCount} available' : '',
-      status: _Status.accepted,
-    );
+  id: a.id,
+  vendorProfileId: a.vendorProfileId,
+  vendorAccountId: a.vendorAccountId,
+  brandName: a.vendorName,
+  rating: 0,
+  timeAgo: _timeAgo(a.startedAt),
+  message: '',
+  commission: _commissionLabel(a.commissionRate, a.commissionRate),
+  category: '',
+  products: a.productsCount > 0 ? '${a.productsCount} available' : '',
+  status: _Status.accepted,
+);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -124,8 +124,9 @@ class _PartnershipRequestsScreenState
         request: req,
         onConfirm: () async {
           try {
-            final ok =
-                await ref.read(partnershipsNotifierProvider.notifier).accept(id);
+            final ok = await ref
+                .read(partnershipsNotifierProvider.notifier)
+                .accept(id);
             if (!mounted) return;
             if (ok) {
               SmSnackbar.info(context, 'Partnership accepted!');
@@ -193,8 +194,11 @@ class _PartnershipRequestsScreenState
     final pending = filtered(_Status.pending).length;
     final accepted = filtered(_Status.accepted).length;
     final declined = filtered(_Status.declined).length;
-    final currentList =
-        [filtered(_Status.pending), filtered(_Status.accepted), filtered(_Status.declined)][_tab];
+    final currentList = [
+      filtered(_Status.pending),
+      filtered(_Status.accepted),
+      filtered(_Status.declined),
+    ][_tab];
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -202,8 +206,11 @@ class _PartnershipRequestsScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -254,36 +261,38 @@ class _PartnershipRequestsScreenState
             child: isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen),
+                      color: DesignTokens.primaryGreen,
+                    ),
                   )
                 : currentList.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No ${['pending', 'accepted', 'declined'][_tab]} requests',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textMuted),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(
-                          DesignTokens.s16,
-                          0,
-                          DesignTokens.s16,
-                          DesignTokens.s24,
-                        ),
-                        itemCount: currentList.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: DesignTokens.s12),
-                        itemBuilder: (ctx, i) {
-                          final req = currentList[i];
-                          return _RequestCard(
-                            request: req,
-                            isPending: _tab == 0,
-                            onAccept: () => _accept(req.id),
-                            onDecline: () => _decline(req.id),
-                          );
-                        },
+                ? Center(
+                    child: Text(
+                      'No ${['pending', 'accepted', 'declined'][_tab]} requests',
+                      style: DesignTokens.mediumRegular.copyWith(
+                        color: DesignTokens.textMuted,
                       ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.s16,
+                      0,
+                      DesignTokens.s16,
+                      DesignTokens.s24,
+                    ),
+                    itemCount: currentList.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: DesignTokens.s12),
+                    itemBuilder: (ctx, i) {
+                      final req = currentList[i];
+                      return _RequestCard(
+                        request: req,
+                        isPending: _tab == 0,
+                        onAccept: () => _accept(req.id),
+                        onDecline: () => _decline(req.id),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -393,15 +402,18 @@ class _RequestCardState extends State<_RequestCard> {
                   children: [
                     Text(
                       req.brandName,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: DesignTokens.secondaryYellow,
+                        ),
                         const SizedBox(width: 3),
                         RichText(
                           text: TextSpan(
@@ -426,8 +438,9 @@ class _RequestCardState extends State<_RequestCard> {
                         const SizedBox(width: 6),
                         Text(
                           '· ${req.timeAgo}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -436,9 +449,9 @@ class _RequestCardState extends State<_RequestCard> {
                       onTap: () {
                         final accountId =
                             (req.vendorAccountId != null &&
-                                    req.vendorAccountId!.isNotEmpty)
-                                ? req.vendorAccountId
-                                : null;
+                                req.vendorAccountId!.isNotEmpty)
+                            ? req.vendorAccountId
+                            : null;
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => BrandMessagingScreen(
@@ -447,8 +460,9 @@ class _RequestCardState extends State<_RequestCard> {
                                 rating: req.rating,
                                 category: req.category,
                                 otherParticipantId: accountId,
-                                profileId:
-                                    accountId == null ? req.vendorProfileId : null,
+                                profileId: accountId == null
+                                    ? req.vendorProfileId
+                                    : null,
                               ),
                             ),
                           ),
@@ -495,16 +509,16 @@ class _RequestCardState extends State<_RequestCard> {
                     children: [
                       TextSpan(
                         text: _displayMsg,
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textLight),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                       if (_isLong)
                         WidgetSpan(
                           alignment: PlaceholderAlignment.baseline,
                           baseline: TextBaseline.alphabetic,
                           child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _expanded = !_expanded),
+                            onTap: () => setState(() => _expanded = !_expanded),
                             child: Text(
                               _expanded ? ' Show less' : ' Read More',
                               style: DesignTokens.smallRegular.copyWith(
@@ -616,23 +630,23 @@ class _BrandLogo extends StatelessWidget {
               ),
             )
           : isSephora
-              ? const Text(
-                  'S',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
-                )
-              : Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
+          ? const Text(
+              'S',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            )
+          : Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
     );
   }
 }
@@ -662,8 +676,9 @@ class _InfoRow extends StatelessWidget {
         ],
         Text(
           label,
-          style: DesignTokens.smallRegular
-              .copyWith(color: DesignTokens.textMuted),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
         const Spacer(),
         if (trailing != null) trailing!,
@@ -853,15 +868,18 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                   children: [
                     Text(
                       req.brandName,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: DesignTokens.secondaryYellow,
+                        ),
                         const SizedBox(width: 3),
                         RichText(
                           text: TextSpan(
@@ -886,8 +904,9 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                         const SizedBox(width: 4),
                         Text(
                           '· ${req.category}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -904,8 +923,10 @@ class _DeclineSheetState extends State<_DeclineSheet> {
           DropdownButtonFormField<String>(
             initialValue: _reason,
             dropdownColor: DesignTokens.inputFieldFill,
-            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                color: DesignTokens.inputFieldDropdownIcon),
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: DesignTokens.inputFieldDropdownIcon,
+            ),
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 14,
@@ -950,8 +971,9 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: DesignTokens.primaryGreen,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 child: const Text(
                   'Decline Partnership',
@@ -977,8 +999,9 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: DesignTokens.bgAppBodyLight,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 child: const Text(
                   'Cancel',
@@ -1037,8 +1060,8 @@ class _AcceptSheetState extends State<_AcceptSheet> {
   String get _dateLabel => _startDate == null
       ? 'Expected Start Date'
       : '${_startDate!.day.toString().padLeft(2, '0')}/'
-          '${_startDate!.month.toString().padLeft(2, '0')}/'
-          '${_startDate!.year}';
+            '${_startDate!.month.toString().padLeft(2, '0')}/'
+            '${_startDate!.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -1112,15 +1135,18 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                   children: [
                     Text(
                       req.brandName,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 13,
-                            color: DesignTokens.secondaryYellow),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 13,
+                          color: DesignTokens.secondaryYellow,
+                        ),
                         const SizedBox(width: 3),
                         RichText(
                           text: TextSpan(
@@ -1145,8 +1171,9 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                         const SizedBox(width: 4),
                         Text(
                           '· ${req.category}',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -1184,8 +1211,11 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.calendar_today_rounded,
-                      size: 18, color: DesignTokens.inputFieldDropdownIcon),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 18,
+                    color: DesignTokens.inputFieldDropdownIcon,
+                  ),
                 ],
               ),
             ),
@@ -1204,17 +1234,21 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                     value: _agreed,
                     onChanged: (v) => setState(() => _agreed = v ?? false),
                     side: const BorderSide(
-                        color: DesignTokens.borderDefault, width: 1.5),
+                      color: DesignTokens.borderDefault,
+                      width: 1.5,
+                    ),
                     activeColor: DesignTokens.primaryGreen,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
                 Text(
                   'I agree to ',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
                 ),
                 Text(
                   'Partnership Terms',
@@ -1236,7 +1270,9 @@ class _AcceptSheetState extends State<_AcceptSheet> {
               onTap: () {
                 if (!_agreed) {
                   SmSnackbar.error(
-                      context, 'Please agree to the Partnership Terms.');
+                    context,
+                    'Please agree to the Partnership Terms.',
+                  );
                   return;
                 }
                 Navigator.of(context).pop();
@@ -1246,8 +1282,9 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: DesignTokens.primaryGreen,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 child: const Text(
                   'Accept Partnership',
@@ -1273,8 +1310,9 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: DesignTokens.bgAppBodyLight,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 child: const Text(
                   'Cancel',

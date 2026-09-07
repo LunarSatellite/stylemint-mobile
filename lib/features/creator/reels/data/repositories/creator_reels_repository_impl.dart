@@ -32,36 +32,34 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
     String sortBy = 'publishedAt',
     String order = 'desc',
     int limit = 6,
-  }) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.listCreatorReels(
-          sortBy: sortBy,
-          order: order,
-          limit: limit,
-        );
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  }) => _guard(() async {
+    final dtos = await remoteDataSource.listCreatorReels(
+      sortBy: sortBy,
+      order: order,
+      limit: limit,
+    );
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
   Future<NetworkEither<Unit>> publishReel(String reelId) => _guard(() async {
-        await remoteDataSource.publishReel(reelId, const Uuid().v4());
-        return unit;
-      });
+    await remoteDataSource.publishReel(reelId, const Uuid().v4());
+    return unit;
+  });
 
   @override
   Future<NetworkEither<Unit>> unpublishReel(String reelId) => _guard(() async {
-        await remoteDataSource.unpublishReel(reelId, const Uuid().v4());
-        return unit;
-      });
+    await remoteDataSource.unpublishReel(reelId, const Uuid().v4());
+    return unit;
+  });
 
   @override
   Future<NetworkEither<List<ReelProductTag>>> listTaggedProducts(
     String reelId,
-  ) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.listTaggedProducts(reelId);
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  ) => _guard(() async {
+    final dtos = await remoteDataSource.listTaggedProducts(reelId);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
   Future<NetworkEither<ReelProductTag>> tagProduct(
@@ -69,65 +67,62 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
     required String productId,
     required double overlayPositionX,
     required double overlayPositionY,
-  }) =>
-      _guard(() async {
-        final dto = await remoteDataSource.tagProduct(
-          reelId,
-          productId: productId,
-          overlayPositionX: overlayPositionX,
-          overlayPositionY: overlayPositionY,
-          idempotencyKey: const Uuid().v4(),
-        );
-        return dto.toDomain();
-      });
+  }) => _guard(() async {
+    final dto = await remoteDataSource.tagProduct(
+      reelId,
+      productId: productId,
+      overlayPositionX: overlayPositionX,
+      overlayPositionY: overlayPositionY,
+      idempotencyKey: const Uuid().v4(),
+    );
+    return dto.toDomain();
+  });
 
   @override
   Future<NetworkEither<Unit>> untagProduct(
     String reelId,
     String taggedProductId,
-  ) =>
-      _guard(() async {
-        await remoteDataSource.untagProduct(
-          reelId,
-          taggedProductId,
-          const Uuid().v4(),
-        );
-        return unit;
-      });
+  ) => _guard(() async {
+    await remoteDataSource.untagProduct(
+      reelId,
+      taggedProductId,
+      const Uuid().v4(),
+    );
+    return unit;
+  });
 
   @override
   Future<NetworkEither<PostPublishReport>> getPostPublishReport(
     String reelId,
-  ) =>
-      _guard(() async {
-        final response = await remoteDataSource.getPostPublishReport(reelId);
-        final insights =
-            (response['insights'] as List<dynamic>? ?? const <dynamic>[])
-                .map((entry) {
-          final item = entry as Map<String, dynamic>;
-          return PostPublishInsight(
-            category: item['category'] as String? ?? '',
-            body: item['body'] as String? ?? '',
-          );
-        }).toList(growable: false);
-        return PostPublishReport(
-          reelId: response['reelId'] as String? ?? reelId,
-          generatedAtUtc: response['generatedAtUtc'] != null
-              ? DateTime.parse(response['generatedAtUtc'] as String)
-              : DateTime.now(),
-          performanceScore:
-              (response['performanceScore'] as num?)?.toDouble() ?? 0,
-          headline: response['headline'] as String? ?? '',
-          insights: insights,
-          isAvailable: response['isAvailable'] as bool? ?? true,
-        );
-      });
+  ) => _guard(() async {
+    final response = await remoteDataSource.getPostPublishReport(reelId);
+    final insights =
+        (response['insights'] as List<dynamic>? ?? const <dynamic>[])
+            .map((entry) {
+              final item = entry as Map<String, dynamic>;
+              return PostPublishInsight(
+                category: item['category'] as String? ?? '',
+                body: item['body'] as String? ?? '',
+              );
+            })
+            .toList(growable: false);
+    return PostPublishReport(
+      reelId: response['reelId'] as String? ?? reelId,
+      generatedAtUtc: response['generatedAtUtc'] != null
+          ? DateTime.parse(response['generatedAtUtc'] as String)
+          : DateTime.now(),
+      performanceScore: (response['performanceScore'] as num?)?.toDouble() ?? 0,
+      headline: response['headline'] as String? ?? '',
+      insights: insights,
+      isAvailable: response['isAvailable'] as bool? ?? true,
+    );
+  });
 
   @override
   Future<NetworkEither<Unit>> deleteReel(String reelId) => _guard(() async {
-        await remoteDataSource.deleteReel(reelId, const Uuid().v4());
-        return unit;
-      });
+    await remoteDataSource.deleteReel(reelId, const Uuid().v4());
+    return unit;
+  });
 
   /// Every call shares the same connectivity precondition and exception
   /// mapping, so it lives here rather than being repeated per method.

@@ -34,7 +34,7 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
           cursor: cursor,
         );
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map((e) => ReviewDto.fromJson(e as Map<String, dynamic>).toDomain())
+            .map((e) => _reviewFromApi(e as Map<String, dynamic>).toDomain())
             .toList(growable: false);
         return right(PagedResult<Review>(
           items: items,
@@ -83,20 +83,22 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
   @override
   Future<Either<NetworkExceptions, Review>> submitReview(
     String productId,
+    String orderId,
     int rating,
     String comment, {
     List<String>? imagePaths,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.submitReview(
+        final json = await remoteDataSource.submitReview(
           productId,
+          orderId,
           rating,
           comment,
           _uuid.v4(),
           imagePaths: imagePaths,
         );
-        return right(dto.toDomain());
+        return right(_reviewFromApi(json).toDomain());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -109,5 +111,27 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
     } else {
       return left(NetworkExceptions.noInternetConnection());
     }
+  }
+
+  // Backend's ProductReviewDto shape doesn't match ReviewDto's field names
+  // (`text`/`createdUtc` vs `comment`/`createdAt`) and adds reviewer
+  // identity as `reviewerDisplayName`/`reviewerAvatarUrl`, not
+  // `userName`/`userAvatarUrl`. `helpfulCount` has no backend support at
+  // all (no review-likes feature) — defaults to 0.
+  ReviewDto _reviewFromApi(Map<String, dynamic> json) {
+    final images = (json['images'] as List<dynamic>? ?? [])
+        .cast<Map<String, dynamic>>()
+        .map((i) => i['cdnUrl'] as String? ?? '')
+        .toList(growable: false);
+    return ReviewDto(
+      id: json['id'] as String,
+      userId: json['customerAccountId'] as String? ?? '',
+      userName: json['reviewerDisplayName'] as String? ?? 'Anonymous',
+      userAvatarUrl: json['reviewerAvatarUrl'] as String? ?? '',
+      rating: json['rating'] as int? ?? 0,
+      comment: json['text'] as String? ?? '',
+      createdAt: DateTime.parse(json['createdUtc'] as String),
+      images: images,
+    );
   }
 }

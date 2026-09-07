@@ -16,7 +16,6 @@ final cartRepositoryProvider = Provider<CartRepository>(
   ),
 );
 
-final cartNotifierProvider =
-    StateNotifierProvider<CartNotifier, CartState>(
-      (ref) => CartNotifier(ref.watch(cartRepositoryProvider)),
-    );
+final cartNotifierProvider = StateNotifierProvider<CartNotifier, CartState>(
+  (ref) => CartNotifier(ref.watch(cartRepositoryProvider)),
+);

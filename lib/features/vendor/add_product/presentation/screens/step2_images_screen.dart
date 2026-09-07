@@ -22,17 +22,19 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(addProductNotifierProvider).maybeWhen(
-        loadSuccess: (fs) {
-          if (fs.step2 != null) {
-            setState(() {
-              _images.addAll(fs.step2!.images);
-              _primaryIndex = fs.step2!.primaryImageIndex;
-            });
-          }
-        },
-        orElse: () {},
-      );
+      ref
+          .read(addProductNotifierProvider)
+          .maybeWhen(
+            loadSuccess: (fs) {
+              if (fs.step2 != null) {
+                setState(() {
+                  _images.addAll(fs.step2!.images);
+                  _primaryIndex = fs.step2!.primaryImageIndex;
+                });
+              }
+            },
+            orElse: () {},
+          );
     });
   }
 
@@ -58,11 +60,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    // Camera captures come off the sensor at full resolution (often
-    // 8-20MB+) â€” the backend caps the upload body at 5MB
-    // (POST /v1/vendor/products/images 400s with "Request body too large"
-    // otherwise). Downscale + compress on pick so this fits comfortably
-    // under that limit regardless of the device's camera resolution.
     final picked = await picker.pickImage(
       source: source,
       maxWidth: 1920,
@@ -92,7 +89,9 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
   }
 
   void _emitUpdate() {
-    ref.read(addProductNotifierProvider.notifier).updateImages(
+    ref
+        .read(addProductNotifierProvider.notifier)
+        .updateImages(
           ImagesInfo(
             images: List.from(_images),
             primaryImageIndex: _primaryIndex,
@@ -112,10 +111,13 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
     });
 
     final notifier = ref.read(addProductNotifierProvider.notifier);
+    final canProceed =
+        _images.length >= ImagesInfo.minImages &&
+        _images.length <= ImagesInfo.maxImages;
+    final remaining = ImagesInfo.minImages - _images.length;
 
     return Column(
       children: [
-        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -131,7 +133,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 3.1 Section title
                   const Text(
                     'Product Images & Media',
                     style: TextStyle(
@@ -142,52 +143,54 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s4),
-                  Text(
+                  const Text(
                     'Upload 5 - 10 images (max 5mb each in JPG/PNG)',
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: _images.length < ImagesInfo.minImages
-                          ? DesignTokens.colorError
-                          : DesignTokens.textLight,
+                      color: DesignTokens.textLight,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: DesignTokens.s4),
                   Text(
-                    '${_images.length}/${ImagesInfo.minImages} minimum'
-                    '${_images.length < ImagesInfo.minImages ? ' â€” add ${ImagesInfo.minImages - _images.length} more to continue' : ''}',
+                    remaining > 0
+                        ? "$_images.length/${ProductFormState.maxImagesAtPublish} added \u2014 $remaining more required"
+                        : "${_images.length}/${ProductFormState.maxImagesAtPublish} added \u2014 ready to publish",
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _images.length < ImagesInfo.minImages
-                          ? DesignTokens.colorError
-                          : DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w400,
+                      color: canProceed
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
                     ),
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.2 Upload Image â€” gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Image',
-                    onTap: _uploading || _images.length >= ImagesInfo.maxImages
+                    onTap:
+                        (_uploading ||
+                            _images.length >=
+                                ProductFormState.maxImagesAtPublish)
                         ? null
                         : () => _pickImage(ImageSource.gallery),
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.3 Capture Image â€” white solid
                   _WhiteSolidButton(
                     icon: Icons.photo_camera_outlined,
                     label: 'Capture Image',
-                    onTap: _uploading || _images.length >= ImagesInfo.maxImages
+                    onTap:
+                        (_uploading ||
+                            _images.length >=
+                                ProductFormState.maxImagesAtPublish)
                         ? null
                         : () => _pickImage(ImageSource.camera),
                   ),
 
-                  // Uploaded image thumbnails
                   if (_images.isNotEmpty) ...[
                     const SizedBox(height: DesignTokens.s16),
                     Wrap(
@@ -207,17 +210,16 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                     const SizedBox(height: DesignTokens.s12),
                     const Center(
                       child: CircularProgressIndicator(
-                          color: DesignTokens.primaryGreen, strokeWidth: 2),
+                        color: DesignTokens.primaryGreen,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ],
 
-                  // Divider between images and video
                   const SizedBox(height: DesignTokens.s20),
-                  const Divider(
-                      color: DesignTokens.borderDefault, height: 1),
+                  const Divider(color: DesignTokens.borderDefault, height: 1),
                   const SizedBox(height: DesignTokens.s20),
 
-                  // 3.4 Video section title
                   const Text(
                     'Video Upload (Optional)',
                     style: TextStyle(
@@ -239,17 +241,10 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
 
-                  // 3.5 Upload Video â€” gray outline
                   _GrayOutlineButton(
                     icon: Icons.upload_outlined,
                     label: 'Upload Video',
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Product video upload is coming soon.',
-                        ),
-                      ),
-                    ),
+                    onTap: () {},
                   ),
                 ],
               ),
@@ -257,10 +252,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
         ),
 
-        // â”€â”€ Sticky Previous + Proceed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        SafeArea(
-          top: false,
-          child: Container(
+        Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -275,7 +267,6 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
           child: Row(
             children: [
-              // Previous â€” gray
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
@@ -286,8 +277,9 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                       foregroundColor: DesignTokens.textWhite,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                     ),
                     child: const Row(
@@ -309,34 +301,35 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                 ),
               ),
               const SizedBox(width: DesignTokens.s16),
-              // Proceed â€” green
               Expanded(
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
                   child: ElevatedButton(
-                    onPressed: _images.isEmpty ? null : _onProceed,
+                    onPressed: canProceed ? _onProceed : null,
                     style: DesignTokens.primaryButtonStyle(),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Proceed',
+                          canProceed
+                              ? 'Proceed'
+                              : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
                           style: TextStyle(
                             fontFamily: DesignTokens.fontFamily,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _images.isEmpty
-                                ? DesignTokens.textMuted
-                                : DesignTokens.buttonPrimaryText,
+                            color: canProceed
+                                ? DesignTokens.buttonPrimaryText
+                                : DesignTokens.textMuted,
                           ),
                         ),
                         const SizedBox(width: DesignTokens.s8),
                         Icon(
                           Icons.arrow_forward,
                           size: 16,
-                          color: _images.isEmpty
-                              ? DesignTokens.textMuted
-                              : DesignTokens.buttonPrimaryText,
+                          color: canProceed
+                              ? DesignTokens.buttonPrimaryText
+                              : DesignTokens.textMuted,
                         ),
                       ],
                     ),
@@ -345,14 +338,11 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
               ),
             ],
           ),
-          ),
         ),
       ],
     );
   }
 }
-
-// â”€â”€ Gray outline button (Upload Image / Upload Video) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _GrayOutlineButton extends StatelessWidget {
   const _GrayOutlineButton({
@@ -370,10 +360,11 @@ class _GrayOutlineButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: OutlinedButton(
+      child: ElevatedButton(
         onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFF71717B)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF27272A),
+          side: const BorderSide(color: Color(0xFF3F3F46), width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -399,8 +390,6 @@ class _GrayOutlineButton extends StatelessWidget {
     );
   }
 }
-
-// â”€â”€ White solid button (Capture Image) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _WhiteSolidButton extends StatelessWidget {
   const _WhiteSolidButton({
@@ -428,12 +417,15 @@ class _WhiteSolidButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.photo_camera_outlined,
-                size: 16, color: Color(0xFF52525C)),
-            SizedBox(width: DesignTokens.s8),
+            Icon(
+              Icons.photo_camera_outlined,
+              size: 16,
+              color: Color(0xFF52525C),
+            ),
+            const SizedBox(width: DesignTokens.s8),
             Text(
               'Capture Image',
               style: TextStyle(
@@ -449,8 +441,6 @@ class _WhiteSolidButton extends StatelessWidget {
     );
   }
 }
-
-// â”€â”€ Image thumbnail tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ImageTile extends StatelessWidget {
   const _ImageTile({
@@ -485,14 +475,12 @@ class _ImageTile extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(DesignTokens.cardRadius - 2),
+              borderRadius: BorderRadius.circular(DesignTokens.cardRadius - 2),
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (ctx, e, st) => const Icon(
-                    Icons.image,
-                    color: DesignTokens.textMuted),
+                errorBuilder: (ctx, e, st) =>
+                    const Icon(Icons.image, color: DesignTokens.textMuted),
               ),
             ),
             if (isPrimary)
@@ -501,15 +489,18 @@ class _ImageTile extends StatelessWidget {
                 left: 4,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.primaryGreen,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     'Primary',
-                    style: DesignTokens.tiny
-                        .copyWith(color: DesignTokens.textDark),
+                    style: DesignTokens.tiny.copyWith(
+                      color: DesignTokens.textDark,
+                    ),
                   ),
                 ),
               ),
@@ -523,8 +514,7 @@ class _ImageTile extends StatelessWidget {
                     color: DesignTokens.colorError,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close,
-                      size: 16, color: Colors.white),
+                  child: const Icon(Icons.close, size: 16, color: Colors.white),
                 ),
               ),
             ),

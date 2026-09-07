@@ -77,14 +77,14 @@ class BasicInfo {
 
   @override
   int get hashCode => Object.hash(
-        productName,
-        shortDescription,
-        description,
-        categoryId,
-        Object.hashAll(categories),
-        brand,
-        Object.hashAll(tags),
-      );
+    productName,
+    shortDescription,
+    description,
+    categoryId,
+    Object.hashAll(categories),
+    brand,
+    Object.hashAll(tags),
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;
@@ -231,19 +231,19 @@ class PricingInfo {
 
   @override
   int get hashCode => Object.hash(
-        basePrice,
-        compareAtPrice,
-        costPerItem,
-        taxRate,
-        discountEnabled,
-        discountPercent,
-        sku,
-        quantityOnHand,
-        trackInventory,
-        allowOverselling,
-        productKind,
-        billingCadence,
-      );
+    basePrice,
+    compareAtPrice,
+    costPerItem,
+    taxRate,
+    discountEnabled,
+    discountPercent,
+    sku,
+    quantityOnHand,
+    trackInventory,
+    allowOverselling,
+    productKind,
+    billingCadence,
+  );
 }
 
 class ShippingInfo {
@@ -313,17 +313,17 @@ class ShippingInfo {
 
   @override
   int get hashCode => Object.hash(
-        weight,
-        weightUnit,
-        dimensionsLength,
-        dimensionsWidth,
-        dimensionsHeight,
-        requiresShipping,
-        shippingFee,
-        freeShippingOver,
-        deliveryEstimateMin,
-        deliveryEstimateMax,
-      );
+    weight,
+    weightUnit,
+    dimensionsLength,
+    dimensionsWidth,
+    dimensionsHeight,
+    requiresShipping,
+    shippingFee,
+    freeShippingOver,
+    deliveryEstimateMin,
+    deliveryEstimateMax,
+  );
 }
 
 class ReviewInfo {
@@ -362,7 +362,8 @@ class ReviewInfo {
       other.shippingInfo == shippingInfo;
 
   @override
-  int get hashCode => Object.hash(basicInfo, imagesInfo, pricingInfo, shippingInfo);
+  int get hashCode =>
+      Object.hash(basicInfo, imagesInfo, pricingInfo, shippingInfo);
 }
 
 class ProductDraft {
@@ -412,16 +413,19 @@ class ProductDraft {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        basicInfo,
-        imagesInfo,
-        pricingInfo,
-        shippingInfo,
-        status,
-      );
+    id,
+    basicInfo,
+    imagesInfo,
+    pricingInfo,
+    shippingInfo,
+    status,
+  );
 }
 
 class ProductFormState {
+  static const int minImagesAtPublish = ImagesInfo.minImages;
+  static const int maxImagesAtPublish = ImagesInfo.maxImages;
+
   const ProductFormState({
     required this.currentStep,
     this.step1,

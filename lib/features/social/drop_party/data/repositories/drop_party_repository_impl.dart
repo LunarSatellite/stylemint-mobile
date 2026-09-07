@@ -116,29 +116,6 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> inviteToParty(
-    String partyId,
-    List<String> userIds,
-  ) async {
-    if (await networkInfo.isConnected) {
-      try {
-        await remoteDataSource.inviteToParty(partyId, userIds, _uuid.v4());
-        return right(unit);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
   Future<Either<NetworkExceptions, DropParty>> scanInviteQr(String qrCode) async {
     if (await networkInfo.isConnected) {
       try {

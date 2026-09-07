@@ -28,29 +28,38 @@ final discoverNotifierProvider =
       (ref) => DiscoverNotifier(ref.watch(discoveryRepositoryProvider)),
     );
 
-final productDetailNotifierProvider = StateNotifierProvider.family<
-  ProductDetailNotifier,
-  ProductDetailState,
-  String
->((ref, productId) => ProductDetailNotifier(ref.watch(discoveryRepositoryProvider)));
+final productDetailNotifierProvider =
+    StateNotifierProvider.family<
+      ProductDetailNotifier,
+      ProductDetailState,
+      String
+    >(
+      (ref, productId) =>
+          ProductDetailNotifier(ref.watch(discoveryRepositoryProvider)),
+    );
 
-final relatedProductsProvider = StateNotifierProvider.family<
-  RelatedProductsNotifier,
-  RelatedProductsState,
-  String
->((ref, productId) => RelatedProductsNotifier(
-    ref.watch(discoveryRepositoryProvider),
-    productId: productId,
-  ));
+final relatedProductsProvider =
+    StateNotifierProvider.family<
+      RelatedProductsNotifier,
+      RelatedProductsState,
+      String
+    >(
+      (ref, productId) => RelatedProductsNotifier(
+        ref.watch(discoveryRepositoryProvider),
+        productId: productId,
+      ),
+    );
 
 final customerSearchRemoteDataSourceProvider =
     Provider<CustomerSearchRemoteDataSource>(
-  (ref) => CustomerSearchRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
+      (ref) => CustomerSearchRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
 
 /// Real search results for the given query, keyed so each distinct query
 /// string gets its own cached fetch.
 final customerSearchResultsProvider = FutureProvider.autoDispose
     .family<CustomerSearchResults, String>((ref, query) {
-  return ref.watch(customerSearchRemoteDataSourceProvider).search(query);
-});
+      return ref.watch(customerSearchRemoteDataSourceProvider).search(query);
+    });

@@ -20,19 +20,19 @@ class ReelImportRemoteDataSource {
 
   // Backend sourcePlatform int mapping (REEL_IMPORT_PICKER_API.md)
   static int _platformInt(SocialPlatform platform) => switch (platform) {
-        SocialPlatform.instagram => 1,
-        SocialPlatform.tiktok => 2,
-        SocialPlatform.youtube => 3,
-        SocialPlatform.facebook => 4,
-      };
+    SocialPlatform.instagram => 1,
+    SocialPlatform.tiktok => 2,
+    SocialPlatform.youtube => 3,
+    SocialPlatform.facebook => 4,
+  };
 
   static String _platformName(int value) => switch (value) {
-        1 => 'instagram',
-        2 => 'tiktok',
-        3 => 'youtube',
-        4 => 'facebook',
-        _ => 'instagram',
-      };
+    1 => 'instagram',
+    2 => 'tiktok',
+    3 => 'youtube',
+    4 => 'facebook',
+    _ => 'instagram',
+  };
 
   // GET /v1/social/accounts/{provider}/content?limit=25&cursor=...
   // Lists recent posts from the creator's connected social account, one
@@ -53,27 +53,29 @@ class ReelImportRemoteDataSource {
     );
     final body = response as Map<String, dynamic>? ?? const {};
     final items = body['items'] as List<dynamic>? ?? const <dynamic>[];
-    final reels = items.map((e) {
-      final m = e as Map<String, dynamic>;
-      return ImportableReelDto(
-        id: m['externalId'] as String? ?? '',
-        platform: platform.name,
-        platformPostId: m['externalId'] as String? ?? '',
-        sourceUrl: m['permalink'] as String? ?? '',
-        thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
-        caption: m['caption'] as String? ?? '',
-        createdAt: m['publishedUtc'] != null
-            ? DateTime.parse(m['publishedUtc'] as String)
-            : DateTime.now(),
-        videoDuration: (m['durationSeconds'] as num?)?.toInt() ?? 0,
-        videoUrl: m['videoUrl'] as String? ?? '',
-        likeCount: (m['likeCount'] as num?)?.toInt() ?? 0,
-        viewCount: (m['viewCount'] as num?)?.toInt() ?? 0,
-        commentCount: (m['commentCount'] as num?)?.toInt() ?? 0,
-        shareCount: (m['shareCount'] as num?)?.toInt() ?? 0,
-        bookmarkCount: (m['bookmarkCount'] as num?)?.toInt() ?? 0,
-      );
-    }).toList(growable: false);
+    final reels = items
+        .map((e) {
+          final m = e as Map<String, dynamic>;
+          return ImportableReelDto(
+            id: m['externalId'] as String? ?? '',
+            platform: platform.name,
+            platformPostId: m['externalId'] as String? ?? '',
+            sourceUrl: m['permalink'] as String? ?? '',
+            thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+            caption: m['caption'] as String? ?? '',
+            createdAt: m['publishedUtc'] != null
+                ? DateTime.parse(m['publishedUtc'] as String)
+                : DateTime.now(),
+            videoDuration: (m['durationSeconds'] as num?)?.toInt() ?? 0,
+            videoUrl: m['videoUrl'] as String? ?? '',
+            likeCount: (m['likeCount'] as num?)?.toInt() ?? 0,
+            viewCount: (m['viewCount'] as num?)?.toInt() ?? 0,
+            commentCount: (m['commentCount'] as num?)?.toInt() ?? 0,
+            shareCount: (m['shareCount'] as num?)?.toInt() ?? 0,
+            bookmarkCount: (m['bookmarkCount'] as num?)?.toInt() ?? 0,
+          );
+        })
+        .toList(growable: false);
     return ImportableReelsPage(
       reels: reels,
       nextCursor: body['nextCursor'] as String?,
@@ -106,10 +108,12 @@ class ReelImportRemoteDataSource {
           'thumbnailCdnUrl': thumbnailCdnUrl,
         if (videoUrl != null && videoUrl.isNotEmpty) 'videoCdnUrl': videoUrl,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return _parseReelDto(response as Map<String, dynamic>, platform);
   }
@@ -127,8 +131,9 @@ class ReelImportRemoteDataSource {
                 'sourcePlatform': _platformInt(reel.platform),
                 'sourceUrl': reel.sourceUrl,
                 'externalId': reel.platformPostId,
-                'durationSeconds':
-                    reel.videoDuration > 0 ? reel.videoDuration : 30,
+                'durationSeconds': reel.videoDuration > 0
+                    ? reel.videoDuration
+                    : 30,
                 if (reel.caption.isNotEmpty) 'caption': reel.caption,
                 if (reel.thumbnailUrl.isNotEmpty &&
                     reel.thumbnailUrl.length <= 2048)
@@ -141,10 +146,12 @@ class ReelImportRemoteDataSource {
             )
             .toList(),
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     final body = response as Map<String, dynamic>;
     return BulkImportResult(
@@ -163,17 +170,19 @@ class ReelImportRemoteDataSource {
     );
     final m = response as Map<String, dynamic>;
     final products = m['products'] as List<dynamic>? ?? const <dynamic>[];
-    return products.map((e) {
-      final p = e as Map<String, dynamic>;
-      return TaggedProductForImportDto(
-        productId: p['productId'] as String? ?? '',
-        productName: p['name'] as String? ?? '',
-        imageUrl: p['heroImageUrl'] as String? ?? '',
-        amount: (p['price'] as num?)?.toDouble() ?? 0.0,
-        currency: p['currency'] as String? ?? 'NPR',
-        vendorName: p['brandName'] as String? ?? '',
-      );
-    }).toList(growable: false);
+    return products
+        .map((e) {
+          final p = e as Map<String, dynamic>;
+          return TaggedProductForImportDto(
+            productId: p['productId'] as String? ?? '',
+            productName: p['name'] as String? ?? '',
+            imageUrl: p['heroImageUrl'] as String? ?? '',
+            amount: (p['price'] as num?)?.toDouble() ?? 0.0,
+            currency: p['currency'] as String? ?? 'NPR',
+            vendorName: p['brandName'] as String? ?? '',
+          );
+        })
+        .toList(growable: false);
   }
 
   // GET /v1/creator/reels/{externalId}/suggested-products?platform=...
@@ -191,17 +200,19 @@ class ReelImportRemoteDataSource {
       );
       final m = response as Map<String, dynamic>;
       final products = m['items'] as List<dynamic>? ?? const <dynamic>[];
-      return products.map((e) {
-        final p = e as Map<String, dynamic>;
-        return TaggedProductForImportDto(
-          productId: p['productId'] as String? ?? '',
-          productName: p['name'] as String? ?? '',
-          imageUrl: p['heroImageUrl'] as String? ?? '',
-          amount: (p['price'] as num?)?.toDouble() ?? 0.0,
-          currency: p['currency'] as String? ?? 'NPR',
-          vendorName: p['brandName'] as String? ?? '',
-        );
-      }).toList(growable: false);
+      return products
+          .map((e) {
+            final p = e as Map<String, dynamic>;
+            return TaggedProductForImportDto(
+              productId: p['productId'] as String? ?? '',
+              productName: p['name'] as String? ?? '',
+              imageUrl: p['heroImageUrl'] as String? ?? '',
+              amount: (p['price'] as num?)?.toDouble() ?? 0.0,
+              currency: p['currency'] as String? ?? 'NPR',
+              vendorName: p['brandName'] as String? ?? '',
+            );
+          })
+          .toList(growable: false);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return const [];
       rethrow;
@@ -215,10 +226,12 @@ class ReelImportRemoteDataSource {
   }) async {
     await apiClient.post(
       '/v1/creator/reels/$reelId/publish',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -235,10 +248,12 @@ class ReelImportRemoteDataSource {
         'overlayPositionX': 0.5,
         'overlayPositionY': 0.5,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -249,10 +264,12 @@ class ReelImportRemoteDataSource {
     final response = await apiClient.post(
       '/v1/creator/reels/intents',
       data: {'targetPlatform': _platformInt(platform)},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return response as Map<String, dynamic>;
   }
@@ -265,10 +282,12 @@ class ReelImportRemoteDataSource {
     final response = await apiClient.post(
       '/v1/creator/reels/intents/$intentId/complete',
       data: {'resultingReelId': resultingReelId},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return response as Map<String, dynamic>;
   }
@@ -312,18 +331,22 @@ class ReelImportRemoteDataSource {
     };
 
     final taggedProducts =
-        (m['taggedProducts'] as List<dynamic>? ?? const <dynamic>[]).map((t) {
-      final tp = t as Map<String, dynamic>;
-      return TaggedProductForImportDto(
-        productId: tp['productId'] as String? ?? '',
-        productName: tp['productName'] as String? ?? '',
-        imageUrl: tp['productPrimaryImageUrl'] as String? ?? '',
-        amount:
-            (tp['productPriceSnapshotAmount'] as num?)?.toDouble() ?? 0.0,
-        currency: tp['productPriceSnapshotCurrency'] as String? ?? 'NPR',
-        vendorName: tp['vendorDisplayName'] as String? ?? '',
-      );
-    }).toList(growable: false);
+        (m['taggedProducts'] as List<dynamic>? ?? const <dynamic>[])
+            .map((t) {
+              final tp = t as Map<String, dynamic>;
+              return TaggedProductForImportDto(
+                productId: tp['productId'] as String? ?? '',
+                productName: tp['productName'] as String? ?? '',
+                imageUrl: tp['productPrimaryImageUrl'] as String? ?? '',
+                amount:
+                    (tp['productPriceSnapshotAmount'] as num?)?.toDouble() ??
+                    0.0,
+                currency:
+                    tp['productPriceSnapshotCurrency'] as String? ?? 'NPR',
+                vendorName: tp['vendorDisplayName'] as String? ?? '',
+              );
+            })
+            .toList(growable: false);
 
     return ImportedReelDto(
       id: m['id'] as String? ?? '',

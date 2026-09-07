@@ -157,69 +157,67 @@ class _MockEarningsRepository implements EarningsRepository {
   Future<Either<NetworkExceptions, List<EarningsLedgerEntry>>> getLedger({
     int limit = 20,
     String? cursor,
-  }) async =>
-      right([
-        EarningsLedgerEntry(
-          id: 'p1',
-          type: LedgerEntryType.payout,
-          description: 'Payout to Bank A/C',
-          amount: const Money(amount: 12500, currency: 'NPR'),
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          reference: '********1268',
-        ),
-        EarningsLedgerEntry(
-          id: 'p2',
-          type: LedgerEntryType.payout,
-          description: 'Payout to Esewa Wallet',
-          amount: const Money(amount: 17000, currency: 'NPR'),
-          createdAt: DateTime.now().subtract(const Duration(days: 3)),
-          reference: '********22',
-        ),
-        EarningsLedgerEntry(
-          id: 'p3',
-          type: LedgerEntryType.payout,
-          description: 'Payout to Bank A/C',
-          amount: const Money(amount: 10985.89, currency: 'NPR'),
-          createdAt: DateTime.now().subtract(const Duration(days: 7)),
-          reference: '********4566',
-        ),
-      ]);
+  }) async => right([
+    EarningsLedgerEntry(
+      id: 'p1',
+      type: LedgerEntryType.payout,
+      description: 'Payout to Bank A/C',
+      amount: const Money(amount: 12500, currency: 'NPR'),
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      reference: '********1268',
+    ),
+    EarningsLedgerEntry(
+      id: 'p2',
+      type: LedgerEntryType.payout,
+      description: 'Payout to Esewa Wallet',
+      amount: const Money(amount: 17000, currency: 'NPR'),
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+      reference: '********22',
+    ),
+    EarningsLedgerEntry(
+      id: 'p3',
+      type: LedgerEntryType.payout,
+      description: 'Payout to Bank A/C',
+      amount: const Money(amount: 10985.89, currency: 'NPR'),
+      createdAt: DateTime.now().subtract(const Duration(days: 7)),
+      reference: '********4566',
+    ),
+  ]);
 
   @override
-  Future<Either<NetworkExceptions, List<PayoutMethod>>> getPayoutMethods() async =>
-      right([
-        const PayoutMethod(
-          id: 'bank-1',
-          type: PayoutMethodType.bankTransfer,
-          label: 'NIMB Bank a/c — ****8909',
-          isPrimary: false,
-        ),
-        const PayoutMethod(
-          id: 'bank-2',
-          type: PayoutMethodType.bankTransfer,
-          label: 'Laxmi Bank a/c — ****7787',
-          isPrimary: false,
-        ),
-        const PayoutMethod(
-          id: 'paypal-1',
-          type: PayoutMethodType.paypal,
-          label: 'Paypal — @shreeteen123',
-          isPrimary: true,
-        ),
-        const PayoutMethod(
-          id: 'esewa-1',
-          type: PayoutMethodType.esewa,
-          label: 'eSewa — 9840098522',
-          isPrimary: false,
-        ),
-      ]);
+  Future<Either<NetworkExceptions, List<PayoutMethod>>>
+  getPayoutMethods() async => right([
+    const PayoutMethod(
+      id: 'bank-1',
+      type: PayoutMethodType.bankTransfer,
+      label: 'NIMB Bank a/c — ****8909',
+      isPrimary: false,
+    ),
+    const PayoutMethod(
+      id: 'bank-2',
+      type: PayoutMethodType.bankTransfer,
+      label: 'Laxmi Bank a/c — ****7787',
+      isPrimary: false,
+    ),
+    const PayoutMethod(
+      id: 'paypal-1',
+      type: PayoutMethodType.paypal,
+      label: 'Paypal — @shreeteen123',
+      isPrimary: true,
+    ),
+    const PayoutMethod(
+      id: 'esewa-1',
+      type: PayoutMethodType.esewa,
+      label: 'eSewa — 9840098522',
+      isPrimary: false,
+    ),
+  ]);
 
   @override
   Future<Either<NetworkExceptions, Unit>> requestPayout({
     required Money amount,
     required String payoutMethodId,
-  }) async =>
-      right(unit);
+  }) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, Unit>> addBankPayoutMethod({
@@ -228,8 +226,7 @@ class _MockEarningsRepository implements EarningsRepository {
     String? maskedAccountNumber,
     String? beneficiaryName,
     String? processorReference,
-  }) async =>
-      right(unit);
+  }) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, Unit>> addExternalWalletPayoutMethod({
@@ -237,82 +234,78 @@ class _MockEarningsRepository implements EarningsRepository {
     required String label,
     String? externalIdentifier,
     String? processorReference,
-  }) async =>
-      right(unit);
+  }) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, Unit>> removePayoutMethod(
     String methodId,
-  ) async =>
-      right(unit);
+  ) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, List<PayoutRecord>>> getPayouts({
     int pageSize = 25,
     String? cursor,
-  }) async =>
-      right([
-        PayoutRecord(
-          id: 'pay-001',
-          requestedAmount: const Money(amount: 17000, currency: 'NPR'),
-          feeAmount: const Money(amount: 340, currency: 'NPR'),
-          netAmount: const Money(amount: 16660, currency: 'NPR'),
-          state: PayoutState.paid,
-          mode: PayoutMode.onDemand,
-          destinationLabel: 'eSewa',
-          destinationRef: '9840098522',
-          requestedAt: DateTime.now().subtract(const Duration(days: 1)),
-          paidAt: DateTime.now().subtract(const Duration(hours: 10)),
-        ),
-        PayoutRecord(
-          id: 'pay-002',
-          requestedAmount: const Money(amount: 12500, currency: 'NPR'),
-          feeAmount: const Money(amount: 0, currency: 'NPR'),
-          netAmount: const Money(amount: 12500, currency: 'NPR'),
-          state: PayoutState.requested,
-          mode: PayoutMode.automaticWeekly,
-          destinationLabel: 'NIMB Bank',
-          destinationRef: '****8909',
-          requestedAt: DateTime.now().subtract(const Duration(days: 3)),
-        ),
-      ]);
+  }) async => right([
+    PayoutRecord(
+      id: 'pay-001',
+      requestedAmount: const Money(amount: 17000, currency: 'NPR'),
+      feeAmount: const Money(amount: 340, currency: 'NPR'),
+      netAmount: const Money(amount: 16660, currency: 'NPR'),
+      state: PayoutState.paid,
+      mode: PayoutMode.onDemand,
+      destinationLabel: 'eSewa',
+      destinationRef: '9840098522',
+      requestedAt: DateTime.now().subtract(const Duration(days: 1)),
+      paidAt: DateTime.now().subtract(const Duration(hours: 10)),
+    ),
+    PayoutRecord(
+      id: 'pay-002',
+      requestedAmount: const Money(amount: 12500, currency: 'NPR'),
+      feeAmount: const Money(amount: 0, currency: 'NPR'),
+      netAmount: const Money(amount: 12500, currency: 'NPR'),
+      state: PayoutState.requested,
+      mode: PayoutMode.automaticWeekly,
+      destinationLabel: 'NIMB Bank',
+      destinationRef: '****8909',
+      requestedAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+  ]);
 
   @override
   Future<Either<NetworkExceptions, EarningsBreakdown>>
-      getDashboardBreakdown() async => right(
-            const EarningsBreakdown(
-              salesCount: 128,
-              reelCount: 4,
-              avgPerSale: Money(amount: 191.40, currency: 'NPR'),
-              highestReelEarnings: Money(amount: 8200, currency: 'NPR'),
-            ),
-          );
+  getDashboardBreakdown() async => right(
+    const EarningsBreakdown(
+      salesCount: 128,
+      reelCount: 4,
+      avgPerSale: Money(amount: 191.40, currency: 'NPR'),
+      highestReelEarnings: Money(amount: 8200, currency: 'NPR'),
+    ),
+  );
 
   @override
   Future<Either<NetworkExceptions, PayoutInvoice>> getPayoutInvoice(
     String payoutId,
-  ) async =>
-      right(
-        PayoutInvoice(
-          payoutId: payoutId,
-          invoiceNumber: 'INV-0001',
-          destinationLabel: 'eSewa',
-          destinationRef: '9840098522',
-          grossAmount: const Money(amount: 17000, currency: 'NPR'),
-          feeAmount: const Money(amount: 340, currency: 'NPR'),
-          netAmount: const Money(amount: 16660, currency: 'NPR'),
-          requestedAt: DateTime.now().subtract(const Duration(days: 1)),
-          paidAt: DateTime.now().subtract(const Duration(hours: 10)),
-          state: PayoutState.paid,
-          lines: [
-            PayoutInvoiceLine(
-              description: 'Commission — order #NK2024-8912',
-              amount: const Money(amount: 17000, currency: 'NPR'),
-              occurredAt: DateTime.now().subtract(const Duration(days: 2)),
-            ),
-          ],
+  ) async => right(
+    PayoutInvoice(
+      payoutId: payoutId,
+      invoiceNumber: 'INV-0001',
+      destinationLabel: 'eSewa',
+      destinationRef: '9840098522',
+      grossAmount: const Money(amount: 17000, currency: 'NPR'),
+      feeAmount: const Money(amount: 340, currency: 'NPR'),
+      netAmount: const Money(amount: 16660, currency: 'NPR'),
+      requestedAt: DateTime.now().subtract(const Duration(days: 1)),
+      paidAt: DateTime.now().subtract(const Duration(hours: 10)),
+      state: PayoutState.paid,
+      lines: [
+        PayoutInvoiceLine(
+          description: 'Commission — order #NK2024-8912',
+          amount: const Money(amount: 17000, currency: 'NPR'),
+          occurredAt: DateTime.now().subtract(const Duration(days: 2)),
         ),
-      );
+      ],
+    ),
+  );
 
   @override
   Future<Either<NetworkExceptions, Unit>> cancelPayout(String payoutId) async =>
@@ -323,57 +316,57 @@ class _MockNotificationsRepository implements NotificationsRepository {
   @override
   Future<Either<NetworkExceptions, List<ActivityItem>>> getRecentActivity({
     int pageSize = 10,
-  }) async =>
-      right([
-        ActivityItem(
-          id: '1',
-          title: 'Earnings +Rs 5,525.00 — Commission from order #NK2024-8912',
-          occurredAt: DateTime.now().subtract(const Duration(hours: 2)),
-          isRead: false,
-        ),
-        ActivityItem(
-          id: '2',
-          title: 'Reel Published — "Winter Fashion Trends 2026" · 1.2k views',
-          occurredAt: DateTime.now().subtract(const Duration(hours: 5)),
-          isRead: true,
-        ),
-        ActivityItem(
-          id: '3',
-          title: 'Partnership Request — Nike wants to collaborate with you',
-          occurredAt: DateTime.now().subtract(const Duration(hours: 8)),
-          isRead: false,
-        ),
-        ActivityItem(
-          id: '4',
-          title: 'Milestone Achieved — You reached 10k followers!',
-          occurredAt: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
-          isRead: true,
-        ),
-        ActivityItem(
-          id: '5',
-          title: 'Earnings +Rs 17,899.90 — 15 orders from your reels',
-          occurredAt: DateTime.now().subtract(const Duration(days: 1, hours: 14)),
-          isRead: true,
-        ),
-        ActivityItem(
-          id: '6',
-          title: 'Payout Completed — Rs 1,33,890.91 sent to NIMB Bank a/c ******3458',
-          occurredAt: DateTime.now().subtract(const Duration(days: 2)),
-          isRead: true,
-        ),
-        ActivityItem(
-          id: '7',
-          title: 'Reel Imported — "Top Picks: Monsoon Collection" is live',
-          occurredAt: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
-          isRead: true,
-        ),
-        ActivityItem(
-          id: '8',
-          title: 'Brand Partnership — StyleCo campaign approved',
-          occurredAt: DateTime.now().subtract(const Duration(days: 3)),
-          isRead: true,
-        ),
-      ]);
+  }) async => right([
+    ActivityItem(
+      id: '1',
+      title: 'Earnings +Rs 5,525.00 — Commission from order #NK2024-8912',
+      occurredAt: DateTime.now().subtract(const Duration(hours: 2)),
+      isRead: false,
+    ),
+    ActivityItem(
+      id: '2',
+      title: 'Reel Published — "Winter Fashion Trends 2026" · 1.2k views',
+      occurredAt: DateTime.now().subtract(const Duration(hours: 5)),
+      isRead: true,
+    ),
+    ActivityItem(
+      id: '3',
+      title: 'Partnership Request — Nike wants to collaborate with you',
+      occurredAt: DateTime.now().subtract(const Duration(hours: 8)),
+      isRead: false,
+    ),
+    ActivityItem(
+      id: '4',
+      title: 'Milestone Achieved — You reached 10k followers!',
+      occurredAt: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
+      isRead: true,
+    ),
+    ActivityItem(
+      id: '5',
+      title: 'Earnings +Rs 17,899.90 — 15 orders from your reels',
+      occurredAt: DateTime.now().subtract(const Duration(days: 1, hours: 14)),
+      isRead: true,
+    ),
+    ActivityItem(
+      id: '6',
+      title:
+          'Payout Completed — Rs 1,33,890.91 sent to NIMB Bank a/c ******3458',
+      occurredAt: DateTime.now().subtract(const Duration(days: 2)),
+      isRead: true,
+    ),
+    ActivityItem(
+      id: '7',
+      title: 'Reel Imported — "Top Picks: Monsoon Collection" is live',
+      occurredAt: DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+      isRead: true,
+    ),
+    ActivityItem(
+      id: '8',
+      title: 'Brand Partnership — StyleCo campaign approved',
+      occurredAt: DateTime.now().subtract(const Duration(days: 3)),
+      isRead: true,
+    ),
+  ]);
 }
 
 class _MockReelImportRepository implements ReelImportRepository {
@@ -381,8 +374,10 @@ class _MockReelImportRepository implements ReelImportRepository {
   Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
     SocialPlatform platform, {
     String? cursor,
-  }) async =>
-      right(ImportableReelsResult(nextCursor: null, reels: [
+  }) async => right(
+    ImportableReelsResult(
+      nextCursor: null,
+      reels: [
         ImportableReel(
           id: '1',
           platform: platform,
@@ -423,26 +418,27 @@ class _MockReelImportRepository implements ReelImportRepository {
           createdAt: DateTime.now().subtract(const Duration(days: 12)),
           videoDuration: 55,
         ),
-      ]));
+      ],
+    ),
+  );
 
   @override
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
     ImportableReel reel,
-  ) async =>
-      right(
-        ImportedReel(
-          id: 'imported-${reel.platformPostId}',
-          status: ImportStatus.processing,
-          reelReelId: 'reel-${reel.platformPostId}',
-          tags: const [],
-          importedAt: DateTime.now(),
-          caption: reel.caption,
-          thumbnailUrl: '',
-          sourceUrl: reel.sourceUrl,
-          platform: SocialPlatform.instagram,
-          platformPostId: reel.platformPostId,
-        ),
-      );
+  ) async => right(
+    ImportedReel(
+      id: 'imported-${reel.platformPostId}',
+      status: ImportStatus.processing,
+      reelReelId: 'reel-${reel.platformPostId}',
+      tags: const [],
+      importedAt: DateTime.now(),
+      caption: reel.caption,
+      thumbnailUrl: '',
+      sourceUrl: reel.sourceUrl,
+      platform: SocialPlatform.instagram,
+      platformPostId: reel.platformPostId,
+    ),
+  );
 
   static final _allProducts = [
     const TaggedProductForImport(
@@ -461,7 +457,8 @@ class _MockReelImportRepository implements ReelImportRepository {
     ),
     const TaggedProductForImport(
       productId: 'p3',
-      productName: 'Belgian Chocolate Truffles Cake with Swiss Chocolate Drizzle',
+      productName:
+          'Belgian Chocolate Truffles Cake with Swiss Chocolate Drizzle',
       imageUrl: '',
       price: Money(amount: 8000, currency: 'NPR'),
       vendorName: 'The German Bakery',
@@ -484,7 +481,7 @@ class _MockReelImportRepository implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      searchProducts(String query) async {
+  searchProducts(String query) async {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return right(_allProducts);
     return right(
@@ -500,7 +497,7 @@ class _MockReelImportRepository implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      getSuggestedProducts({
+  getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
   }) async {
@@ -510,58 +507,58 @@ class _MockReelImportRepository implements ReelImportRepository {
   @override
   Future<Either<NetworkExceptions, Unit>> publishReel({
     required String reelId,
-  }) async =>
-      right(unit);
+  }) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, Unit>> tagProduct({
     required String reelId,
     required String productId,
-  }) async =>
-      right(unit);
+  }) async => right(unit);
 
   @override
   Future<Either<NetworkExceptions, List<ImportedReel>>> getImportHistory({
     int pageSize = 20,
     String? cursor,
-  }) async =>
-      right([]);
+  }) async => right([]);
 
   @override
   Future<Either<NetworkExceptions, BulkImportResult>> importBulk(
     List<ImportableReel> reels,
-  ) async =>
-      right(BulkImportResult(
-        successCount: reels.length,
-        failureCount: 0,
-        allSucceeded: true,
-      ));
+  ) async => right(
+    BulkImportResult(
+      successCount: reels.length,
+      failureCount: 0,
+      allSucceeded: true,
+    ),
+  );
 
   @override
   Future<Either<NetworkExceptions, ReelIntent>> launchReelIntent(
     SocialPlatform platform,
-  ) async =>
-      right(ReelIntent(
-        id: 'intent-mock-1',
-        targetPlatform: platform,
-        launchedAtUtc: DateTime.now(),
-        expiresAtUtc: DateTime.now().add(const Duration(minutes: 30)),
-        state: ReelIntentState.launched,
-      ));
+  ) async => right(
+    ReelIntent(
+      id: 'intent-mock-1',
+      targetPlatform: platform,
+      launchedAtUtc: DateTime.now(),
+      expiresAtUtc: DateTime.now().add(const Duration(minutes: 30)),
+      state: ReelIntentState.launched,
+    ),
+  );
 
   @override
   Future<Either<NetworkExceptions, ReelIntent>> completeReelIntent({
     required String intentId,
     required String resultingReelId,
-  }) async =>
-      right(ReelIntent(
-        id: intentId,
-        targetPlatform: SocialPlatform.instagram,
-        launchedAtUtc: DateTime.now().subtract(const Duration(minutes: 5)),
-        expiresAtUtc: DateTime.now().add(const Duration(minutes: 25)),
-        state: ReelIntentState.completed,
-        resultingReelId: resultingReelId,
-      ));
+  }) async => right(
+    ReelIntent(
+      id: intentId,
+      targetPlatform: SocialPlatform.instagram,
+      launchedAtUtc: DateTime.now().subtract(const Duration(minutes: 5)),
+      expiresAtUtc: DateTime.now().add(const Duration(minutes: 25)),
+      state: ReelIntentState.completed,
+      resultingReelId: resultingReelId,
+    ),
+  );
 }
 
 // ── Mock API client ───────────────────────────────────────────────────────────
@@ -780,7 +777,10 @@ class _DevApp extends StatelessWidget {
             final extra = state.extra is CreatorProfileArgs
                 ? state.extra! as CreatorProfileArgs
                 : CreatorProfileArgs(
-                    accountId: accountId, displayName: '', handle: '');
+                    accountId: accountId,
+                    displayName: '',
+                    handle: '',
+                  );
             return CreatorProfileScreen(args: extra);
           },
         ),
@@ -790,7 +790,10 @@ class _DevApp extends StatelessWidget {
             final extra = state.extra is CreatorProfileArgs
                 ? state.extra! as CreatorProfileArgs
                 : const CreatorProfileArgs(
-                    accountId: '', displayName: '', handle: '');
+                    accountId: '',
+                    displayName: '',
+                    handle: '',
+                  );
             return ProfileSettingsScreen(
               displayName: extra.displayName,
               handle: extra.handle,
@@ -804,7 +807,10 @@ class _DevApp extends StatelessWidget {
             final extra = state.extra is CreatorProfileArgs
                 ? state.extra! as CreatorProfileArgs
                 : const CreatorProfileArgs(
-                    accountId: '', displayName: '', handle: '');
+                    accountId: '',
+                    displayName: '',
+                    handle: '',
+                  );
             return CreatorEditProfileScreen(
               initialDisplayName: extra.displayName,
               initialHandle: extra.handle,

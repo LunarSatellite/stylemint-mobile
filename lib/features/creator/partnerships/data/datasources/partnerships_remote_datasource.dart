@@ -40,10 +40,12 @@ class PartnershipsRemoteDataSource {
     final response = await apiClient.post(
       '/v1/partnerships/$inviteId/accept',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return PartnershipDto.fromJson(response as Map<String, dynamic>);
   }
@@ -52,10 +54,12 @@ class PartnershipsRemoteDataSource {
     await apiClient.post(
       '/v1/partnerships/$inviteId/decline',
       data: <String, dynamic>{},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -126,10 +130,12 @@ class PartnershipsRemoteDataSource {
         'commissionMaxPercent': commissionMaxPercent,
         'message': message,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -157,20 +163,24 @@ class PartnershipsRemoteDataSource {
         'sampleReelIds': <String>[],
         if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
   Future<void> deactivateRateCard(String idempotencyKey) async {
     await apiClient.authDelete(
       '/v1/creator/rate-card',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 }

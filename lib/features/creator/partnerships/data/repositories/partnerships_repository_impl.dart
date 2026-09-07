@@ -21,7 +21,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
 
   @override
   Future<Either<NetworkExceptions, List<PartnershipInvite>>>
-      getInvites() async {
+  getInvites() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getInvites();
@@ -91,7 +91,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
 
   @override
   Future<Either<NetworkExceptions, List<ActivePartnership>>>
-      getActivePartnerships() async {
+  getActivePartnerships() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getActivePartnerships();
@@ -114,7 +114,7 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
 
   @override
   Future<Either<NetworkExceptions, List<EndedPartnership>>>
-      getEndedPartnerships() async {
+  getEndedPartnerships() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getEndedPartnerships();
@@ -229,41 +229,37 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
   @override
   Future<Either<NetworkExceptions, PartnershipTerms>> getPartnershipTerms(
     String partnershipId,
-  ) =>
-      _guard(() async {
-        final dto = await remoteDataSource.getPartnershipTerms(partnershipId);
-        return dto.toDomain();
-      });
+  ) => _guard(() async {
+    final dto = await remoteDataSource.getPartnershipTerms(partnershipId);
+    return dto.toDomain();
+  });
 
   @override
   Future<Either<NetworkExceptions, List<PartnershipTerms>>> getTermsVersions(
     String partnershipId,
-  ) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.getTermsVersions(partnershipId);
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  ) => _guard(() async {
+    final dtos = await remoteDataSource.getTermsVersions(partnershipId);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
   Future<Either<NetworkExceptions, PotentialEarnings>> getPotentialEarnings(
     String partnershipId, {
     String? variantId,
-  }) =>
-      _guard(() async {
-        final dto = await remoteDataSource.getPotentialEarnings(
-          partnershipId,
-          variantId: variantId,
-        );
-        return dto.toDomain();
-      });
+  }) => _guard(() async {
+    final dto = await remoteDataSource.getPotentialEarnings(
+      partnershipId,
+      variantId: variantId,
+    );
+    return dto.toDomain();
+  });
 
   @override
   Future<Either<NetworkExceptions, List<RecipeAttachmentInfo>>>
-      getPartnershipRecipes(String partnershipId) => _guard(() async {
-            final dtos =
-                await remoteDataSource.getPartnershipRecipes(partnershipId);
-            return dtos.map((d) => d.toDomain()).toList(growable: false);
-          });
+  getPartnershipRecipes(String partnershipId) => _guard(() async {
+    final dtos = await remoteDataSource.getPartnershipRecipes(partnershipId);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   /// Connectivity check + exception mapping shared by the brief/terms reads.
   Future<Either<NetworkExceptions, T>> _guard<T>(

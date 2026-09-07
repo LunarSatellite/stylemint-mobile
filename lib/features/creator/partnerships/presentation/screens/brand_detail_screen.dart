@@ -11,22 +11,24 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 final _partnershipProvider = FutureProvider.autoDispose
     .family<PartnershipDetailDto, String>((ref, id) async {
-  final ApiClient api = ref.watch(apiClientProvider);
-  final res = await api.get('/v1/partnerships/$id');
-  return PartnershipDetailDto.fromJson(res as Map<String, dynamic>);
-});
+      final ApiClient api = ref.watch(apiClientProvider);
+      final res = await api.get('/v1/partnerships/$id');
+      return PartnershipDetailDto.fromJson(res as Map<String, dynamic>);
+    });
 
 final _campaignsProvider = FutureProvider.autoDispose
     .family<List<SampleCampaignDto>, String>((ref, id) async {
-  final api = ref.watch(apiClientProvider);
-  final res = await api.get('/v1/partnerships/$id/campaigns');
-  final list =
-      (res is List ? res : (res as Map<String, dynamic>?)?['data'] as List?) ??
+      final api = ref.watch(apiClientProvider);
+      final res = await api.get('/v1/partnerships/$id/campaigns');
+      final list =
+          (res is List
+              ? res
+              : (res as Map<String, dynamic>?)?['data'] as List?) ??
           [];
-  return list
-      .map((e) => SampleCampaignDto.fromJson(e as Map<String, dynamic>))
-      .toList();
-});
+      return list
+          .map((e) => SampleCampaignDto.fromJson(e as Map<String, dynamic>))
+          .toList();
+    });
 
 class BrandDetailScreen extends ConsumerWidget {
   const BrandDetailScreen({super.key, required this.partnershipId});
@@ -47,12 +49,17 @@ class BrandDetailScreen extends ConsumerWidget {
           backgroundColor: DesignTokens.bgAppFoundation,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new,
-                size: 18, color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 18,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Brand Details',
-              style: DesignTokens.sectionInnerTitle),
+          title: const Text(
+            'Brand Details',
+            style: DesignTokens.sectionInnerTitle,
+          ),
         ),
         body: NestedScrollView(
           headerSliverBuilder: (_, __) => [
@@ -62,7 +69,8 @@ class BrandDetailScreen extends ConsumerWidget {
                   height: 160,
                   child: Center(
                     child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen),
+                      color: DesignTokens.primaryGreen,
+                    ),
                   ),
                 ),
                 error: (_, __) => const SizedBox(),
@@ -77,8 +85,9 @@ class BrandDetailScreen extends ConsumerWidget {
                   unselectedLabelColor: DesignTokens.textLight,
                   indicatorColor: DesignTokens.primaryGreen,
                   indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: DesignTokens.smallRegular
-                      .copyWith(fontWeight: FontWeight.w600),
+                  labelStyle: DesignTokens.smallRegular.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   unselectedLabelStyle: DesignTokens.smallRegular,
                   tabs: const [
                     Tab(text: 'Top Products'),
@@ -140,11 +149,15 @@ class _BrandHeaderState extends State<_BrandHeader> {
     final commission = p.commissionMinPercent == p.commissionMaxPercent
         ? '${p.commissionMaxPercent.toStringAsFixed(0)}% Commission'
         : '${p.commissionMinPercent.toStringAsFixed(0)}-'
-            '${p.commissionMaxPercent.toStringAsFixed(0)}% Commissions';
+              '${p.commissionMaxPercent.toStringAsFixed(0)}% Commissions';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s8, DesignTokens.s16, DesignTokens.s4),
+        DesignTokens.s16,
+        DesignTokens.s8,
+        DesignTokens.s16,
+        DesignTokens.s4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -160,13 +173,16 @@ class _BrandHeaderState extends State<_BrandHeader> {
                   children: [
                     Text(
                       p.vendorName,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     if (p.vendorRating != null || p.vendorCategory != null) ...[
                       const SizedBox(height: 2),
                       _RatingCategory(
-                          rating: p.vendorRating, category: p.vendorCategory),
+                        rating: p.vendorRating,
+                        category: p.vendorCategory,
+                      ),
                     ],
                     const SizedBox(height: DesignTokens.s8),
                     _CommissionChip(label: commission),
@@ -181,16 +197,16 @@ class _BrandHeaderState extends State<_BrandHeader> {
             _ExpandableText(
               text: p.description!,
               expanded: _descExpanded,
-              onToggle: () =>
-                  setState(() => _descExpanded = !_descExpanded),
+              onToggle: () => setState(() => _descExpanded = !_descExpanded),
             ),
           ],
           // Stats
           if (p.avgOrderValue != null || p.successRatePercent != null) ...[
             const SizedBox(height: DesignTokens.s12),
             _StatsSection(
-                avgOrderValue: p.avgOrderValue,
-                successRatePercent: p.successRatePercent),
+              avgOrderValue: p.avgOrderValue,
+              successRatePercent: p.successRatePercent,
+            ),
           ],
           const SizedBox(height: DesignTokens.s8),
         ],
@@ -214,8 +230,11 @@ class _VendorLogo extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: url != null
-          ? Image.network(url!, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _StoreFallback())
+          ? Image.network(
+              url!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const _StoreFallback(),
+            )
           : const _StoreFallback(),
     );
   }
@@ -224,8 +243,8 @@ class _VendorLogo extends StatelessWidget {
 class _StoreFallback extends StatelessWidget {
   const _StoreFallback();
   @override
-  Widget build(BuildContext context) => const Icon(Icons.store_rounded,
-      color: DesignTokens.textLight, size: 28);
+  Widget build(BuildContext context) =>
+      const Icon(Icons.store_rounded, color: DesignTokens.textLight, size: 28);
 }
 
 class _RatingCategory extends StatelessWidget {
@@ -238,23 +257,33 @@ class _RatingCategory extends StatelessWidget {
     return Row(
       children: [
         if (rating != null) ...[
-          const Icon(Icons.star_rounded,
-              size: 14, color: DesignTokens.secondaryYellow),
+          const Icon(
+            Icons.star_rounded,
+            size: 14,
+            color: DesignTokens.secondaryYellow,
+          ),
           const SizedBox(width: 2),
-          Text(rating!.toStringAsFixed(1),
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textWhite)),
+          Text(
+            rating!.toStringAsFixed(1),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
+            ),
+          ),
           if (category != null)
-            Text(' · ',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight)),
+            Text(
+              ' · ',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
         ],
         if (category != null)
           Expanded(
             child: Text(
               category!,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -271,23 +300,29 @@ class _CommissionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: 3),
+        horizontal: DesignTokens.s8,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.chipsSelectedFill,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label,
-          style: DesignTokens.smallRegular
-              .copyWith(color: DesignTokens.primaryGreen)),
+      child: Text(
+        label,
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.primaryGreen,
+        ),
+      ),
     );
   }
 }
 
 class _ExpandableText extends StatelessWidget {
-  const _ExpandableText(
-      {required this.text,
-      required this.expanded,
-      required this.onToggle});
+  const _ExpandableText({
+    required this.text,
+    required this.expanded,
+    required this.onToggle,
+  });
   final String text;
   final bool expanded;
   final VoidCallback onToggle;
@@ -309,8 +344,9 @@ class _ExpandableText extends StatelessWidget {
             onTap: onToggle,
             child: Text(
               expanded ? 'Read Less' : 'Read More',
-              style: DesignTokens.bodyText
-                  .copyWith(color: DesignTokens.primaryGreen),
+              style: DesignTokens.bodyText.copyWith(
+                color: DesignTokens.primaryGreen,
+              ),
             ),
           ),
       ],
@@ -356,14 +392,20 @@ class _StatRow extends StatelessWidget {
         const Icon(Icons.circle, size: 8, color: DesignTokens.textLight),
         const SizedBox(width: DesignTokens.s8),
         Expanded(
-          child: Text(label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight)),
-        ),
-        Text(value,
+          child: Text(
+            label,
             style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textWhite,
-                fontWeight: FontWeight.w600)),
+              color: DesignTokens.textLight,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textWhite,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -382,14 +424,20 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return ColoredBox(
       color: DesignTokens.bgAppFoundation,
       child: Column(
         children: [
           tabBar,
           const Divider(
-              height: 1, thickness: 1, color: DesignTokens.borderDefault),
+            height: 1,
+            thickness: 1,
+            color: DesignTokens.borderDefault,
+          ),
         ],
       ),
     );
@@ -408,14 +456,16 @@ class _TopProductsTab extends StatelessWidget {
       padding: const EdgeInsets.all(DesignTokens.s16),
       children: [
         const SizedBox(height: DesignTokens.s24),
-        Icon(Icons.inventory_2_outlined,
-            size: 48, color: DesignTokens.textLight),
+        Icon(
+          Icons.inventory_2_outlined,
+          size: 48,
+          color: DesignTokens.textLight,
+        ),
         const SizedBox(height: DesignTokens.s12),
         Text(
           'No top products yet',
           textAlign: TextAlign.center,
-          style:
-              DesignTokens.bodyText.copyWith(color: DesignTokens.textLight),
+          style: DesignTokens.bodyText.copyWith(color: DesignTokens.textLight),
         ),
       ],
     );
@@ -433,8 +483,7 @@ class _SampleCampaignsTab extends StatelessWidget {
         child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
       ),
       error: (_, __) => Center(
-        child: Text("Couldn't load campaigns.",
-            style: DesignTokens.bodyText),
+        child: Text("Couldn't load campaigns.", style: DesignTokens.bodyText),
       ),
       data: (campaigns) {
         if (campaigns.isEmpty) {
@@ -442,21 +491,29 @@ class _SampleCampaignsTab extends StatelessWidget {
             padding: const EdgeInsets.all(DesignTokens.s16),
             children: [
               const SizedBox(height: DesignTokens.s24),
-              Icon(Icons.movie_creation_outlined,
-                  size: 48, color: DesignTokens.textLight),
+              Icon(
+                Icons.movie_creation_outlined,
+                size: 48,
+                color: DesignTokens.textLight,
+              ),
               const SizedBox(height: DesignTokens.s12),
               Text(
                 'No sample campaigns yet',
                 textAlign: TextAlign.center,
-                style: DesignTokens.bodyText
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.bodyText.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-              DesignTokens.s16, DesignTokens.s16, DesignTokens.s24),
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16,
+            DesignTokens.s16,
+            DesignTokens.s16,
+            DesignTokens.s24,
+          ),
           itemCount: campaigns.length,
           itemBuilder: (_, i) => _CampaignCard(campaign: campaigns[i]),
         );
@@ -485,8 +542,7 @@ class _CampaignCard extends StatelessWidget {
                   ? Image.network(
                       campaign.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          _ImagePlaceholder(),
+                      errorBuilder: (_, __, ___) => _ImagePlaceholder(),
                     )
                   : _ImagePlaceholder(),
             ),
@@ -495,29 +551,38 @@ class _CampaignCard extends StatelessWidget {
           // Title
           Text(
             campaign.title,
-            style: DesignTokens.mediumSemibold
-                .copyWith(color: DesignTokens.textWhite),
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.textWhite,
+            ),
           ),
           const SizedBox(height: 4),
           // Stats
           Row(
             children: [
-              const Icon(Icons.video_camera_back_outlined,
-                  size: 14, color: DesignTokens.textLight),
+              const Icon(
+                Icons.video_camera_back_outlined,
+                size: 14,
+                color: DesignTokens.textLight,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${_formatCount(campaign.reelCount)} Reels',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
               const SizedBox(width: DesignTokens.s12),
-              const Icon(Icons.people_outline_rounded,
-                  size: 14, color: DesignTokens.textLight),
+              const Icon(
+                Icons.people_outline_rounded,
+                size: 14,
+                color: DesignTokens.textLight,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${_formatCount(campaign.creatorCollabCount)} Creator Collabs',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           ),
@@ -533,8 +598,11 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       color: DesignTokens.bgAppBodyLight,
       child: const Center(
-        child: Icon(Icons.image_outlined,
-            color: DesignTokens.textLight, size: 40),
+        child: Icon(
+          Icons.image_outlined,
+          color: DesignTokens.textLight,
+          size: 40,
+        ),
       ),
     );
   }
@@ -554,8 +622,12 @@ class _PartnershipTab extends StatelessWidget {
         child: Text('Terms unavailable.', style: DesignTokens.bodyText),
       ),
       data: (t) => ListView(
-        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s16,
-            DesignTokens.s16, DesignTokens.s24),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s24,
+        ),
         children: [
           _TermsSection(index: 1, section: t.whoCanJoin),
           const SizedBox(height: DesignTokens.s24),
@@ -577,8 +649,12 @@ class _ApplyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s8,
-            DesignTokens.s16, DesignTokens.s16),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s8,
+          DesignTokens.s16,
+          DesignTokens.s16,
+        ),
         child: SizedBox(
           width: double.infinity,
           height: DesignTokens.buttonHeight,
@@ -588,8 +664,7 @@ class _ApplyButton extends StatelessWidget {
               backgroundColor: DesignTokens.primaryGreen,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(DesignTokens.buttonRadius),
+                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
               ),
             ),
             child: Row(
@@ -597,12 +672,16 @@ class _ApplyButton extends StatelessWidget {
               children: [
                 Text(
                   'Apply for Partnership',
-                  style: DesignTokens.oneLinerSemibold
-                      .copyWith(color: DesignTokens.buttonPrimaryText),
+                  style: DesignTokens.oneLinerSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
-                const Icon(Icons.arrow_forward_rounded,
-                    color: DesignTokens.buttonPrimaryText, size: 18),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: DesignTokens.buttonPrimaryText,
+                  size: 18,
+                ),
               ],
             ),
           ),
@@ -626,14 +705,18 @@ class _TermsSection extends StatelessWidget {
       children: [
         Text(
           '$index. ${section.heading}',
-          style: DesignTokens.mediumSemibold
-              .copyWith(color: DesignTokens.textWhite),
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.textWhite,
+          ),
         ),
         const SizedBox(height: DesignTokens.s12),
         if (section.bullets.isEmpty)
-          Text('—',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted))
+          Text(
+            '—',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          )
         else
           for (final b in section.bullets)
             Padding(
@@ -643,8 +726,11 @@ class _TermsSection extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 6, right: DesignTokens.s12),
-                    child: Icon(Icons.circle,
-                        size: 7, color: DesignTokens.textWhite),
+                    child: Icon(
+                      Icons.circle,
+                      size: 7,
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   Expanded(child: Text(b, style: DesignTokens.bodyText)),
                 ],

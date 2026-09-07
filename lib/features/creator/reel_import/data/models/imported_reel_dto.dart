@@ -33,8 +33,8 @@ abstract class ImportableReelDto with _$ImportableReelDto {
       _$ImportableReelDtoFromJson(json);
 
   ImportableReel toDomain() {
-    final platformEnum = SocialPlatform.tryParseWire(platform) ??
-        SocialPlatform.instagram;
+    final platformEnum =
+        SocialPlatform.tryParseWire(platform) ?? SocialPlatform.instagram;
 
     return ImportableReel(
       id: id,
@@ -73,12 +73,12 @@ abstract class TaggedProductForImportDto with _$TaggedProductForImportDto {
       _$TaggedProductForImportDtoFromJson(json);
 
   TaggedProductForImport toDomain() => TaggedProductForImport(
-        productId: productId,
-        productName: productName,
-        imageUrl: absoluteMediaUrl(imageUrl),
-        price: Money(amount: amount, currency: currency),
-        vendorName: vendorName,
-      );
+    productId: productId,
+    productName: productName,
+    imageUrl: absoluteMediaUrl(imageUrl),
+    price: Money(amount: amount, currency: currency),
+    vendorName: vendorName,
+  );
 }
 
 @freezed
@@ -87,7 +87,8 @@ abstract class ImportedReelDto with _$ImportedReelDto {
     required String id,
     required String status,
     required String reelReelId,
-    @Default(<TaggedProductForImportDto>[]) List<TaggedProductForImportDto> tags,
+    @Default(<TaggedProductForImportDto>[])
+    List<TaggedProductForImportDto> tags,
     required DateTime importedAt,
     required String caption,
     required String thumbnailUrl,
@@ -102,8 +103,8 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       _$ImportedReelDtoFromJson(json);
 
   ImportedReel toDomain() {
-    final platformEnum = SocialPlatform.tryParseWire(platform) ??
-        SocialPlatform.instagram;
+    final platformEnum =
+        SocialPlatform.tryParseWire(platform) ?? SocialPlatform.instagram;
 
     final statusEnum = ImportStatus.values.firstWhere(
       (s) => s.name == status,

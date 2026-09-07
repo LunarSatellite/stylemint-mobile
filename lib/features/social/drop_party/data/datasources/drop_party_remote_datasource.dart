@@ -57,27 +57,16 @@ class DropPartyRemoteDataSource {
     return DropPartyDto.fromJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No invite endpoint found for drop-parties.
-  Future<void> inviteToParty(
-    String partyId,
-    List<String> userIds,
-    String idempotencyKey,
-  ) async {
-    await apiClient.post(
-      '/v1/drop-parties/$partyId/invite',
-      data: {'userIds': userIds},
-      options: _idempotent(idempotencyKey),
-    );
-  }
-
-  /// TODO(swagger): No scan/QR endpoint found for drop-parties.
+  /// Invite is client-side only now (native share sheet of the invite
+  /// code) — there's no per-recipient invite concept on the backend, same
+  /// as CoWatch. "Scan" resolves the code and joins in one step.
   Future<DropPartyDto> scanInviteQr(
     String qrCode,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
-      '/v1/drop-parties/scan',
-      data: {'qrCode': qrCode},
+      '/v1/drop-parties/join-by-code',
+      data: {'joinCode': qrCode},
       options: _idempotent(idempotencyKey),
     );
     return DropPartyDto.fromJson(response as Map<String, dynamic>);

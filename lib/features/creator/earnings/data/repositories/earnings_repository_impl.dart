@@ -50,15 +50,13 @@ class EarningsRepositoryImpl implements EarningsRepository {
           limit: limit,
           cursor: cursor,
         );
-        final items =
-            (response['items'] as List<dynamic>? ?? const <dynamic>[])
-                .map(
-                  (e) =>
-                      EarningsLedgerEntryDto.fromJson(
-                        e as Map<String, dynamic>,
-                      ),
-                )
-                .toList(growable: false);
+        final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map(
+              (e) => EarningsLedgerEntryDto.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
+            .toList(growable: false);
         return right(
           items.map((dto) => dto.toDomain()).toList(growable: false),
         );
@@ -77,7 +75,8 @@ class EarningsRepositoryImpl implements EarningsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<PayoutMethod>>> getPayoutMethods() async {
+  Future<Either<NetworkExceptions, List<PayoutMethod>>>
+  getPayoutMethods() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPayoutMethods();
@@ -199,10 +198,9 @@ class EarningsRepositoryImpl implements EarningsRepository {
           pageSize: pageSize,
           cursor: cursor,
         );
-        final items =
-            (response['items'] as List<dynamic>? ?? const <dynamic>[])
-                .map((e) => PayoutDto.fromJson(e as Map<String, dynamic>))
-                .toList(growable: false);
+        final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
+            .map((e) => PayoutDto.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false);
         return right(
           items.map((dto) => dto.toDomain()).toList(growable: false),
         );
@@ -244,7 +242,7 @@ class EarningsRepositoryImpl implements EarningsRepository {
 
   @override
   Future<Either<NetworkExceptions, EarningsBreakdown>>
-      getDashboardBreakdown() async {
+  getDashboardBreakdown() async {
     if (await networkInfo.isConnected) {
       try {
         return right(await remoteDataSource.getDashboardBreakdown());

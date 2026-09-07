@@ -30,10 +30,12 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
         platform,
         cursor: cursor,
       );
-      return right(ImportableReelsResult(
-        reels: page.reels.map((d) => d.toDomain()).toList(growable: false),
-        nextCursor: page.nextCursor,
-      ));
+      return right(
+        ImportableReelsResult(
+          reels: page.reels.map((d) => d.toDomain()).toList(growable: false),
+          nextCursor: page.nextCursor,
+        ),
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         return left(const NetworkExceptions.notFound());
@@ -79,7 +81,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      searchProducts(
+  searchProducts(
     String query,
   ) async {
     if (!await networkInfo.isConnected) {
@@ -99,7 +101,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
-      getSuggestedProducts({
+  getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
   }) async {

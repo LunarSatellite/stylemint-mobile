@@ -29,9 +29,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(
-        ref
-            .read(reelImportNotifierProvider.notifier)
-            .load(_selectedPlatform),
+        ref.read(reelImportNotifierProvider.notifier).load(_selectedPlatform),
       );
     });
   }
@@ -47,17 +45,19 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
     );
   }
 
-    void _onReelTapped(ImportableReel reel) {
+  void _onReelTapped(ImportableReel reel) {
     setState(() {
       _selectedReel = _selectedReel?.id == reel.id ? null : reel;
     });
   }
 
   void _onImportPressed(ImportableReel reel) {
-    unawaited(context.push(
-      RouteNames.reelImportPreview,
-      extra: reel,
-    ));
+    unawaited(
+      context.push(
+        RouteNames.reelImportPreview,
+        extra: reel,
+      ),
+    );
   }
 
   void _showUrlPasteSheet() {
@@ -84,19 +84,20 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
         createdAt: DateTime.now(),
         videoDuration: 0,
       );
-      unawaited(context.push(
-        RouteNames.reelImportPreview,
-        extra: pastedReel,
-      ));
+      unawaited(
+        context.push(
+          RouteNames.reelImportPreview,
+          extra: pastedReel,
+        ),
+      );
     }).ignore();
   }
 
   String _extractExternalId(String url) {
     try {
-      final segments = Uri.parse(url)
-          .pathSegments
-          .where((s) => s.isNotEmpty)
-          .toList();
+      final segments = Uri.parse(
+        url,
+      ).pathSegments.where((s) => s.isNotEmpty).toList();
       return segments.isNotEmpty ? segments.last : url;
     } on Exception catch (_) {
       return url;
@@ -135,8 +136,10 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           // ── Helper text ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s12,
-              DesignTokens.s16, DesignTokens.s4,
+              DesignTokens.s16,
+              DesignTokens.s12,
+              DesignTokens.s16,
+              DesignTokens.s4,
             ),
             child: Text(
               'Select the reel from your social media and we will '
@@ -151,8 +154,10 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           // ── Platform selector ────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, 0,
-              DesignTokens.s16, DesignTokens.s4,
+              DesignTokens.s16,
+              0,
+              DesignTokens.s16,
+              DesignTokens.s4,
             ),
             child: Row(
               children: SocialPlatform.values.map((platform) {
@@ -201,11 +206,11 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                         ),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: DesignTokens.s8,
-                          mainAxisSpacing: DesignTokens.s8,
-                          childAspectRatio: 0.75,
-                        ),
+                              crossAxisCount: 2,
+                              crossAxisSpacing: DesignTokens.s8,
+                              mainAxisSpacing: DesignTokens.s8,
+                              childAspectRatio: 0.75,
+                            ),
                         itemCount: reels.length,
                         itemBuilder: (_, i) {
                           final reel = reels[i];
@@ -253,8 +258,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
               loadFailure: (failure) => failure.isNotFound
                   ? _NotConnectedState(
                       platform: _selectedPlatform,
-                      onConnect: () =>
-                          context.push(RouteNames.socialConnect),
+                      onConnect: () => context.push(RouteNames.socialConnect),
                     )
                   : _ErrorState(
                       onRetry: () => unawaited(
@@ -294,7 +298,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                    'Drafts will be available soon.',
+                                    'Drafts will be available soon.',
                                   ),
                                 ),
                               );
@@ -656,8 +660,7 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s24,
-        bottom:
-            MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -743,8 +746,10 @@ class _ImportHistorySheet extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh,
-                        color: DesignTokens.textWhite),
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: DesignTokens.textWhite,
+                    ),
                     tooltip: 'Refresh',
                     onPressed: () => unawaited(
                       ref.read(importHistoryNotifierProvider.notifier).load(),
@@ -775,8 +780,7 @@ class _ImportHistorySheet extends ConsumerWidget {
                           itemCount: reels.length,
                           separatorBuilder: (_, _i) =>
                               const SizedBox(height: DesignTokens.s8),
-                          itemBuilder: (_, i) =>
-                              _HistoryTile(reel: reels[i]),
+                          itemBuilder: (_, i) => _HistoryTile(reel: reels[i]),
                         ),
                 ),
               ),
@@ -795,14 +799,14 @@ class _HistoryMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
-        child: Text(
-          text,
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textMuted,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+    child: Text(
+      text,
+      style: DesignTokens.smallRegular.copyWith(
+        color: DesignTokens.textMuted,
+      ),
+    ),
+  );
 }
 
 class _HistoryTile extends StatelessWidget {

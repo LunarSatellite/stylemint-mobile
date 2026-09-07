@@ -41,18 +41,28 @@ class SettingsRemoteDataSource {
     }
   }
 
-  /// TODO(swagger): No settings/language endpoint found — keep as-is.
+  // No dedicated language endpoint exists — locale lives on the account
+  // record (`GET/PATCH /v1/accounts/{id}`), the same one profile edits use.
   Future<String> getCurrentLanguage() async {
-    final response = await apiClient.get('/v1/settings/language');
+    final accountId = await _accountId();
+    final response = await apiClient.get('/v1/accounts/$accountId');
     final data = response as Map<String, dynamic>;
-    return data['languageCode'] as String? ?? 'en';
+    return data['locale'] as String? ?? 'en-US';
   }
 
-  /// TODO(swagger): No settings/language endpoint found — keep as-is.
+  /// PATCH `/v1/accounts/{accountId}` requires `displayName`, so the current
+  /// profile is fetched first to carry it (and `rowVersion`) forward unchanged.
   Future<void> setLanguage(String languageCode) async {
-    await apiClient.put(
-      '/v1/settings/language',
-      data: {'languageCode': languageCode},
+    final accountId = await _accountId();
+    final current =
+        await apiClient.get('/v1/accounts/$accountId') as Map<String, dynamic>;
+    await apiClient.patch(
+      '/v1/accounts/$accountId',
+      data: {
+        'displayName': current['displayName'],
+        'rowVersion': current['rowVersion'],
+        'locale': languageCode,
+      },
     );
   }
 

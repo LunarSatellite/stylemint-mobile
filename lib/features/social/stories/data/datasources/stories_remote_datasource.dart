@@ -54,7 +54,6 @@ class StoriesRemoteDataSource {
     );
   }
 
-  /// TODO(swagger): No DELETE /v1/stories endpoint found — use POST /v1/posts/{postId}/archive instead or keep as-is.
   Future<void> deleteStory(String storyId, String idempotencyKey) async {
     await apiClient.authDelete(
       '/v1/stories/$storyId',

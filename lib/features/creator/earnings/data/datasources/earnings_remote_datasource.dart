@@ -30,8 +30,8 @@ class EarningsRemoteDataSource {
   /// Month-to-date earnings summary: total, sales count, avg per sale,
   /// highest reel earnings. Source: GET /v1/earnings/summary.
   Future<MonthlySummary> getMonthlySummary() async {
-    final r = await apiClient.get('/v1/earnings/summary')
-        as Map<String, dynamic>;
+    final r =
+        await apiClient.get('/v1/earnings/summary') as Map<String, dynamic>;
     final currency = r['currency'] as String? ?? 'NPR';
     return MonthlySummary(
       thisMonthEarnings: Money(
@@ -54,8 +54,9 @@ class EarningsRemoteDataSource {
   /// Derives the per-reel earnings breakdown from the creator analytics
   /// dashboard. Parsed manually because KPI tiles and Money are nested.
   Future<EarningsBreakdown> getDashboardBreakdown() async {
-    final r = await apiClient.get('/v1/creator/analytics/dashboard')
-        as Map<String, dynamic>;
+    final r =
+        await apiClient.get('/v1/creator/analytics/dashboard')
+            as Map<String, dynamic>;
     final salesCount =
         ((r['totalSales'] as Map<String, dynamic>?)?['current'] as num? ?? 0)
             .toInt();
@@ -63,8 +64,8 @@ class EarningsRemoteDataSource {
         (r['totalEarnings'] as Map<String, dynamic>?)?['current']
             as Map<String, dynamic>?;
     final currency = totalEarnings?['currency'] as String? ?? 'NPR';
-    final totalEarningsAmount =
-        (totalEarnings?['amount'] as num? ?? 0).toDouble();
+    final totalEarningsAmount = (totalEarnings?['amount'] as num? ?? 0)
+        .toDouble();
     final reels = (r['topReels'] as List<dynamic>? ?? const <dynamic>[])
         .cast<Map<String, dynamic>>();
     var highest = 0.0;
@@ -122,10 +123,12 @@ class EarningsRemoteDataSource {
         'currency': currency,
         'payoutMethodId': payoutMethodId,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -149,10 +152,12 @@ class EarningsRemoteDataSource {
         if (processorReference != null)
           'processorReference': processorReference,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return PayoutMethodDto.fromJson(response as Map<String, dynamic>);
   }
@@ -175,10 +180,12 @@ class EarningsRemoteDataSource {
         if (processorReference != null)
           'processorReference': processorReference,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return PayoutMethodDto.fromJson(response as Map<String, dynamic>);
   }
@@ -215,10 +222,12 @@ class EarningsRemoteDataSource {
   }) async {
     await apiClient.post(
       '/v1/payouts/$payoutId/cancel',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 }

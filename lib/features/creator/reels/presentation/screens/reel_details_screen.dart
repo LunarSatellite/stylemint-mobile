@@ -1,4 +1,4 @@
-﻿import 'dart:ui' show ImageFilter;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -35,7 +35,8 @@ class ReelDetailsScreen extends ConsumerWidget {
       extendBodyBehindAppBar: true,
       body: async.when(
         loading: () => const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
+          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+        ),
         error: (err, _) {
           if (err is NetworkExceptions && err.isNotFound) {
             return const _ReelUnavailableView();
@@ -127,8 +128,11 @@ class _BodyState extends State<_Body> {
                       child: const SizedBox(
                         width: 40,
                         height: 40,
-                        child: Icon(Icons.arrow_back_ios_new,
-                            size: 18, color: DesignTokens.textWhite),
+                        child: Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 18,
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                     ),
                   ),
@@ -170,7 +174,10 @@ class _BodyState extends State<_Body> {
               ),
               const SizedBox(height: DesignTokens.s12),
               Padding(
-                padding: const EdgeInsets.only(right: 72, left: DesignTokens.s12),
+                padding: const EdgeInsets.only(
+                  right: 72,
+                  left: DesignTokens.s12,
+                ),
                 child: _ReelInfo(reel: reel),
               ),
               if (reel.taggedProducts.isNotEmpty) ...[
@@ -212,8 +219,11 @@ class _ReelInfoState extends State<_ReelInfo> {
                   Uri.parse(reel.sourceUrl),
                   mode: LaunchMode.externalApplication,
                 ),
-                child: const Icon(Icons.open_in_new,
-                    size: 16, color: DesignTokens.textLight),
+                child: const Icon(
+                  Icons.open_in_new,
+                  size: 16,
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           ],
@@ -222,15 +232,21 @@ class _ReelInfoState extends State<_ReelInfo> {
           const SizedBox(height: DesignTokens.s4),
           Row(
             children: [
-              const Icon(Icons.music_note,
-                  size: DesignTokens.iconSmall, color: DesignTokens.textLight),
+              const Icon(
+                Icons.music_note,
+                size: DesignTokens.iconSmall,
+                color: DesignTokens.textLight,
+              ),
               const SizedBox(width: DesignTokens.s4),
               Expanded(
-                child: Text(reel.musicLabel!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight)),
+                child: Text(
+                  reel.musicLabel!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
               ),
             ],
           ),
@@ -322,7 +338,9 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s12, vertical: 6),
+        horizontal: DesignTokens.s12,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(999),
@@ -391,10 +409,13 @@ class _ProductTile extends StatelessWidget {
                   height: 76,
                   child: (img == null || img.isEmpty)
                       ? const ColoredBox(color: DesignTokens.bgAppBodyLight)
-                      : Image.network(img,
+                      : Image.network(
+                          img,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _e, _s) => const ColoredBox(
-                              color: DesignTokens.bgAppBodyLight)),
+                            color: DesignTokens.bgAppBodyLight,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
@@ -407,8 +428,9 @@ class _ProductTile extends StatelessWidget {
                       product.name ?? 'Product',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
                     Text(
@@ -447,8 +469,9 @@ class _ReelActionsMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final busy = ref.watch(creatorReelActionsNotifierProvider)
-        is CreatorReelActionInProgress;
+    final busy =
+        ref.watch(creatorReelActionsNotifierProvider)
+            is CreatorReelActionInProgress;
 
     ref.listen<CreatorReelActionState>(
       creatorReelActionsNotifierProvider,
@@ -483,8 +506,11 @@ class _ReelActionsMenu extends ConsumerWidget {
                 ),
               )
             : PopupMenuButton<_ReelAction>(
-                icon: const Icon(Icons.more_vert,
-                    size: 20, color: DesignTokens.textWhite),
+                icon: const Icon(
+                  Icons.more_vert,
+                  size: 20,
+                  color: DesignTokens.textWhite,
+                ),
                 tooltip: 'Reel actions',
                 onSelected: (action) =>
                     _onSelected(context, ref, action, isPublished),
@@ -569,8 +595,10 @@ class _TaggedProductsSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tagged products',
-                  style: DesignTokens.sectionInnerTitle),
+              const Text(
+                'Tagged products',
+                style: DesignTokens.sectionInnerTitle,
+              ),
               const SizedBox(height: DesignTokens.s12),
               if (tags.isEmpty)
                 const Text(
@@ -607,8 +635,10 @@ class _TaggedProductsSheet extends ConsumerWidget {
                       style: DesignTokens.bodyText,
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.close,
-                          color: DesignTokens.textLight),
+                      icon: const Icon(
+                        Icons.close,
+                        color: DesignTokens.textLight,
+                      ),
                       tooltip: 'Remove tag',
                       onPressed: () async {
                         final ok = await ref
@@ -734,15 +764,17 @@ class _ReelErrorView extends ConsumerWidget {
                       foregroundColor: DesignTokens.textWhite,
                       minimumSize: const Size(0, DesignTokens.buttonHeight),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                     ),
                     child: const Text('Back'),
                   ),
                   const SizedBox(width: DesignTokens.s12),
                   ElevatedButton(
-                    onPressed: () => ref.invalidate(creatorReelDetailProvider(reelId)),
+                    onPressed: () =>
+                        ref.invalidate(creatorReelDetailProvider(reelId)),
                     style: DesignTokens.primaryButtonStyle(),
                     child: const Text('Retry'),
                   ),
@@ -755,7 +787,3 @@ class _ReelErrorView extends ConsumerWidget {
     );
   }
 }
-
-
-
-

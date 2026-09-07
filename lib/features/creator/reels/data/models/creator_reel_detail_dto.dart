@@ -1,4 +1,4 @@
-﻿import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 
@@ -20,8 +20,7 @@ class ReelTaggedProductDto {
   factory ReelTaggedProductDto.fromJson(Map<String, dynamic> json) {
     final amount =
         (json['productPriceSnapshotAmount'] as num?)?.toDouble() ?? 0;
-    final currency =
-        (json['productPriceSnapshotCurrency'] as String?) ?? 'NPR';
+    final currency = (json['productPriceSnapshotCurrency'] as String?) ?? 'NPR';
     final symbol = currency.toUpperCase() == 'NPR' ? 'Rs' : currency;
     return ReelTaggedProductDto(
       productId: (json['productId'] as String?) ?? '',
@@ -38,12 +37,12 @@ class ReelTaggedProductDto {
   }
 
   ReelTaggedProduct toDomain() => ReelTaggedProduct(
-        productId: productId,
-        name: name,
-        priceLabel: priceLabel,
-        imageUrl: imageUrl,
-        commissionPercent: commissionPercent,
-      );
+    productId: productId,
+    name: name,
+    priceLabel: priceLabel,
+    imageUrl: imageUrl,
+    commissionPercent: commissionPercent,
+  );
 }
 
 /// DTO for `GET /v1/public/reels/{id}` → backend `ReelDto`.
@@ -110,10 +109,11 @@ class CreatorReelDetailDto {
   factory CreatorReelDetailDto.fromJson(Map<String, dynamic> json) {
     final track = json['musicTrackTitle'] as String?;
     final artist = json['musicArtistName'] as String?;
-    final music =
-        [artist, track].where((e) => e != null && e.isNotEmpty).join(' - ');
-    final rawProducts =
-        json['taggedProducts'] as List<dynamic>? ?? const [];
+    final music = [
+      artist,
+      track,
+    ].where((e) => e != null && e.isNotEmpty).join(' - ');
+    final rawProducts = json['taggedProducts'] as List<dynamic>? ?? const [];
     final sourcePlatform = (json['sourcePlatform'] as num?)?.toInt() ?? 0;
     return CreatorReelDetailDto(
       id: (json['id'] as String?) ?? '',
@@ -127,8 +127,9 @@ class CreatorReelDetailDto {
       views: (json['viewsSnapshot'] as num?)?.toInt() ?? 0,
       likes: (json['likesSnapshot'] as num?)?.toInt() ?? 0,
       comments: (json['commentsSnapshot'] as num?)?.toInt() ?? 0,
-      publishedAtUtc:
-          DateTime.tryParse(json['publishedAtUtc'] as String? ?? ''),
+      publishedAtUtc: DateTime.tryParse(
+        json['publishedAtUtc'] as String? ?? '',
+      ),
       taggedProducts: rawProducts
           .whereType<Map<String, dynamic>>()
           .map(ReelTaggedProductDto.fromJson)
@@ -136,19 +137,23 @@ class CreatorReelDetailDto {
       // The backend may send the creator in a few shapes depending on the
       // endpoint — accept the most common keys so the strip still renders
       // once the API is extended, without breaking existing payloads.
-      creatorId: (json['creatorId'] as String?) ??
+      creatorId:
+          (json['creatorId'] as String?) ??
           (json['creatorAccountId'] as String?) ??
           (json['accountId'] as String?) ??
           '',
-      creatorHandle: (json['creatorHandle'] as String?) ??
+      creatorHandle:
+          (json['creatorHandle'] as String?) ??
           (json['handle'] as String?) ??
           (json['username'] as String?) ??
           '',
-      creatorDisplayName: (json['creatorDisplayName'] as String?) ??
+      creatorDisplayName:
+          (json['creatorDisplayName'] as String?) ??
           (json['displayName'] as String?) ??
           (json['creatorName'] as String?) ??
           '',
-      creatorAvatarUrl: (json['creatorAvatarUrl'] as String?) ??
+      creatorAvatarUrl:
+          (json['creatorAvatarUrl'] as String?) ??
           (json['avatarUrl'] as String?) ??
           (json['creatorAvatarCdnUrl'] as String?) ??
           '',
@@ -157,26 +162,27 @@ class CreatorReelDetailDto {
   }
 
   CreatorReelDetail toDomain() => CreatorReelDetail(
-        id: id,
-        sourcePlatform: sourcePlatform,
-        platformLabel: platformLabel,
-        sourceUrl: sourceUrl,
-        caption: caption,
-        thumbnailUrl: thumbnailUrl,
-        videoUrl: videoUrl,
-        musicLabel: musicLabel,
-        views: views,
-        likes: likes,
-        comments: comments,
-        publishedAtUtc: publishedAtUtc,
-        taggedProducts:
-            taggedProducts.map((p) => p.toDomain()).toList(growable: false),
-        creatorId: creatorId,
-        creatorHandle: creatorHandle,
-        creatorDisplayName: creatorDisplayName,
-        creatorAvatarUrl: creatorAvatarUrl,
-        isCreatorFollowed: isCreatorFollowed,
-      );
+    id: id,
+    sourcePlatform: sourcePlatform,
+    platformLabel: platformLabel,
+    sourceUrl: sourceUrl,
+    caption: caption,
+    thumbnailUrl: thumbnailUrl,
+    videoUrl: videoUrl,
+    musicLabel: musicLabel,
+    views: views,
+    likes: likes,
+    comments: comments,
+    publishedAtUtc: publishedAtUtc,
+    taggedProducts: taggedProducts
+        .map((p) => p.toDomain())
+        .toList(growable: false),
+    creatorId: creatorId,
+    creatorHandle: creatorHandle,
+    creatorDisplayName: creatorDisplayName,
+    creatorAvatarUrl: creatorAvatarUrl,
+    isCreatorFollowed: isCreatorFollowed,
+  );
 }
 
 /// DTO for `GET /v1/creator/reels/{id}/tagged-products` and
@@ -234,17 +240,16 @@ class ReelTagManagementDto {
             (json['commissionPerSaleSnapshotAmount'] as num?)?.toDouble() ?? 0,
         commissionPerSaleSnapshotCurrency:
             json['commissionPerSaleSnapshotCurrency'] as String?,
-        overlayPositionX:
-            (json['overlayPositionX'] as num?)?.toDouble() ?? 0,
-        overlayPositionY:
-            (json['overlayPositionY'] as num?)?.toDouble() ?? 0,
+        overlayPositionX: (json['overlayPositionX'] as num?)?.toDouble() ?? 0,
+        overlayPositionY: (json['overlayPositionY'] as num?)?.toDouble() ?? 0,
         createdUtc: DateTime.tryParse(json['createdUtc'] as String? ?? ''),
         productName: json['productName'] as String?,
         // Same fix as in [ReelTaggedProductDto.fromJson]: append the
         // extension and prepend the base URL when needed so management
         // list tiles don't 404 on extensionless product CDN paths.
-        productPrimaryImageUrl:
-            absoluteMediaUrl(json['productPrimaryImageUrl'] as String?),
+        productPrimaryImageUrl: absoluteMediaUrl(
+          json['productPrimaryImageUrl'] as String?,
+        ),
         vendorAccountId: json['vendorAccountId'] as String?,
         vendorDisplayName: json['vendorDisplayName'] as String?,
       );
@@ -252,25 +257,25 @@ class ReelTagManagementDto {
 
 extension ReelTagManagementDtoMapper on ReelTagManagementDto {
   ReelProductTag toDomain() => ReelProductTag(
-        id: id,
-        reelId: reelId,
-        productId: productId,
-        commissionPercent: commissionRateSnapshotPercent,
-        priceLabel: _money(
-          productPriceSnapshotAmount,
-          productPriceSnapshotCurrency,
-        ),
-        commissionPerSaleLabel: _money(
-          commissionPerSaleSnapshotAmount,
-          commissionPerSaleSnapshotCurrency,
-        ),
-        overlayPositionX: overlayPositionX,
-        overlayPositionY: overlayPositionY,
-        productName: productName,
-        productImageUrl: productPrimaryImageUrl,
-        vendorDisplayName: vendorDisplayName,
-        createdUtc: createdUtc,
-      );
+    id: id,
+    reelId: reelId,
+    productId: productId,
+    commissionPercent: commissionRateSnapshotPercent,
+    priceLabel: _money(
+      productPriceSnapshotAmount,
+      productPriceSnapshotCurrency,
+    ),
+    commissionPerSaleLabel: _money(
+      commissionPerSaleSnapshotAmount,
+      commissionPerSaleSnapshotCurrency,
+    ),
+    overlayPositionX: overlayPositionX,
+    overlayPositionY: overlayPositionY,
+    productName: productName,
+    productImageUrl: productPrimaryImageUrl,
+    vendorDisplayName: vendorDisplayName,
+    createdUtc: createdUtc,
+  );
 
   /// Mirrors the label format [ReelTaggedProductDto] already uses so both
   /// tag views render prices identically.
