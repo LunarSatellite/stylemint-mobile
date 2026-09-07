@@ -28,8 +28,7 @@ class _FakeRepository implements EarningsRepository {
   Future<NetworkEither<List<EarningsLedgerEntry>>> getLedger({
     int limit = 20,
     String? cursor,
-  }) async =>
-      ledger ?? networkRight(const <EarningsLedgerEntry>[]);
+  }) async => ledger ?? networkRight(const <EarningsLedgerEntry>[]);
 
   @override
   Future<NetworkEither<List<PayoutMethod>>> getPayoutMethods() async =>
@@ -39,8 +38,7 @@ class _FakeRepository implements EarningsRepository {
   Future<NetworkEither<Unit>> requestPayout({
     required Money amount,
     required String payoutMethodId,
-  }) async =>
-      networkRight(unit);
+  }) async => networkRight(unit);
 
   @override
   Future<NetworkEither<Unit>> addBankPayoutMethod({
@@ -49,8 +47,7 @@ class _FakeRepository implements EarningsRepository {
     String? maskedAccountNumber,
     String? beneficiaryName,
     String? processorReference,
-  }) async =>
-      networkRight(unit);
+  }) async => networkRight(unit);
 
   @override
   Future<NetworkEither<Unit>> addExternalWalletPayoutMethod({
@@ -58,8 +55,7 @@ class _FakeRepository implements EarningsRepository {
     required String label,
     String? externalIdentifier,
     String? processorReference,
-  }) async =>
-      networkRight(unit);
+  }) async => networkRight(unit);
 
   @override
   Future<NetworkEither<Unit>> removePayoutMethod(String methodId) async =>
@@ -69,8 +65,7 @@ class _FakeRepository implements EarningsRepository {
   Future<NetworkEither<List<PayoutRecord>>> getPayouts({
     int pageSize = 25,
     String? cursor,
-  }) async =>
-      networkRight(const <PayoutRecord>[]);
+  }) async => networkRight(const <PayoutRecord>[]);
 
   @override
   Future<NetworkEither<EarningsBreakdown>> getDashboardBreakdown() async =>
@@ -82,16 +77,25 @@ class _FakeRepository implements EarningsRepository {
           highestReelEarnings: Money(amount: 1, currency: _npr),
         ),
       );
+
+  @override
+  Future<NetworkEither<PayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  ) async => networkLeft(const NetworkExceptions.unexpectedError());
+
+  @override
+  Future<NetworkEither<Unit>> cancelPayout(String payoutId) async =>
+      networkRight(unit);
 }
 
 EarningsSummary _summary() => const EarningsSummary(
-      totalEarnings: Money(amount: 100, currency: _npr),
-      availableBalance: Money(amount: 60, currency: _npr),
-      pendingBalance: Money(amount: 40, currency: _npr),
-      totalCommission: 2,
-      thisMonthEarnings: Money(amount: 25, currency: _npr),
-      totalPayouts: Money(amount: 10, currency: _npr),
-    );
+  totalEarnings: Money(amount: 100, currency: _npr),
+  availableBalance: Money(amount: 60, currency: _npr),
+  pendingBalance: Money(amount: 40, currency: _npr),
+  totalCommission: 2,
+  thisMonthEarnings: Money(amount: 25, currency: _npr),
+  totalPayouts: Money(amount: 10, currency: _npr),
+);
 
 /// The notifier loads from its constructor; settle that before asserting.
 Future<EarningsNotifier> _settled(_FakeRepository repo) async {
@@ -102,16 +106,18 @@ Future<EarningsNotifier> _settled(_FakeRepository repo) async {
 
 void main() {
   group('EarningsNotifier', () {
-    test('composes summary, ledger and payout methods into one success state',
-        () async {
-      final notifier = await _settled(_FakeRepository());
+    test(
+      'composes summary, ledger and payout methods into one success state',
+      () async {
+        final notifier = await _settled(_FakeRepository());
 
-      final balance = notifier.state.maybeWhen(
-        loadSuccess: (summary, _, _) => summary.availableBalance.amount,
-        orElse: () => -1.0,
-      );
-      expect(balance, 60);
-    });
+        final balance = notifier.state.maybeWhen(
+          loadSuccess: (summary, _, _) => summary.availableBalance.amount,
+          orElse: () => -1.0,
+        );
+        expect(balance, 60);
+      },
+    );
 
     test('a failing summary fails the whole load', () async {
       final notifier = await _settled(
@@ -129,19 +135,24 @@ void main() {
       );
     });
 
-    test('a failing ledger fails the load even when the summary succeeded',
-        () async {
-      final notifier = await _settled(
-        _FakeRepository(
-          ledger: networkLeft(const NetworkExceptions.unexpectedError()),
-        ),
-      );
+    test(
+      'a failing ledger fails the load even when the summary succeeded',
+      () async {
+        final notifier = await _settled(
+          _FakeRepository(
+            ledger: networkLeft(const NetworkExceptions.unexpectedError()),
+          ),
+        );
 
-      expect(
-        notifier.state.maybeWhen(loadFailure: (_) => true, orElse: () => false),
-        isTrue,
-      );
-    });
+        expect(
+          notifier.state.maybeWhen(
+            loadFailure: (_) => true,
+            orElse: () => false,
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('a failing payout-method lookup fails the load', () async {
       final notifier = await _settled(

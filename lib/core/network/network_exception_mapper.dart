@@ -12,7 +12,7 @@ NetworkExceptions mapDioExceptionToNetworkException(dynamic exception) {
       switch (statusCode) {
         case 400:
         case 422:
-        case 429: // rate limited — body carries 'system.rate_limited'
+        case 429: // rate limited â€” body carries 'system.rate_limited'
           return _buildValidation(body, statusCode);
         case 401:
         case 403:
@@ -22,7 +22,7 @@ NetworkExceptions mapDioExceptionToNetworkException(dynamic exception) {
         case 409:
           return _buildConflict(body);
         case >= 500:
-          // 500/502/503/504 — backend or the gateway in front of it is down.
+          // 500/502/503/504 â€” backend or the gateway in front of it is down.
           // The body is often an HTML error page (e.g. nginx "502 Bad
           // Gateway"), so never surface it; map to a friendly, retryable error.
           return const NetworkExceptions.serverUnavailable();

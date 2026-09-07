@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 
@@ -24,8 +25,7 @@ class _FakeRepository implements PartnershipsRepository {
   @override
   Future<NetworkEither<PartnershipInvite>> acceptInvite(
     String inviteId,
-  ) async =>
-      acceptResult ?? networkRight(_invite());
+  ) async => acceptResult ?? networkRight(_invite());
 
   @override
   Future<NetworkEither<Unit>> declineInvite(String inviteId) async =>
@@ -33,7 +33,7 @@ class _FakeRepository implements PartnershipsRepository {
 
   @override
   Future<NetworkEither<List<ActivePartnership>>>
-      getActivePartnerships() async => networkRight(const []);
+  getActivePartnerships() async => networkRight(const []);
 
   @override
   Future<NetworkEither<List<EndedPartnership>>> getEndedPartnerships() async =>
@@ -42,39 +42,59 @@ class _FakeRepository implements PartnershipsRepository {
   @override
   Future<NetworkEither<PartnershipTerms>> getPartnershipTerms(
     String partnershipId,
-  ) async =>
-      networkLeft(const NetworkExceptions.unexpectedError());
+  ) async => networkLeft(const NetworkExceptions.unexpectedError());
 
   @override
   Future<NetworkEither<List<PartnershipTerms>>> getTermsVersions(
     String partnershipId,
-  ) async =>
-      networkRight(const []);
+  ) async => networkRight(const []);
 
   @override
   Future<NetworkEither<PotentialEarnings>> getPotentialEarnings(
     String partnershipId, {
     String? variantId,
-  }) async =>
-      networkLeft(const NetworkExceptions.unexpectedError());
+  }) async => networkLeft(const NetworkExceptions.unexpectedError());
 
   @override
   Future<NetworkEither<List<RecipeAttachmentInfo>>> getPartnershipRecipes(
     String partnershipId,
-  ) async =>
-      networkRight(const []);
+  ) async => networkRight(const []);
+
+  @override
+  Future<NetworkEither<Unit>> requestPartnership({
+    required String vendorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    required String message,
+  }) async => networkRight(unit);
+
+  @override
+  Future<NetworkEither<CreatorRateCard>> getMyRateCard() async =>
+      networkLeft(const NetworkExceptions.notFound());
+
+  @override
+  Future<NetworkEither<Unit>> publishRateCard({
+    required double baseRate,
+    required List<RateTier> rates,
+    required double commissionPreference,
+    required List<String> platformPreferences,
+    String? notes,
+  }) async => networkRight(unit);
+
+  @override
+  Future<NetworkEither<Unit>> deactivateRateCard() async => networkRight(unit);
 }
 
 PartnershipInvite _invite() => PartnershipInvite(
-      id: 'inv-1',
-      vendorProfileId: 'vendor-profile-1',
-      vendorName: 'Vendor',
-      vendorLogoUrl: '',
-      campaignBrief: 'Brief',
-      commissionRate: 10,
-      expiresAt: DateTime.utc(2030),
-      status: PartnershipStatus.pending,
-    );
+  id: 'inv-1',
+  vendorProfileId: 'vendor-profile-1',
+  vendorName: 'Vendor',
+  vendorLogoUrl: '',
+  campaignBrief: 'Brief',
+  commissionRate: 10,
+  expiresAt: DateTime.utc(2030),
+  status: PartnershipStatus.pending,
+);
 
 Future<PartnershipsNotifier> _settled(_FakeRepository repo) async {
   final notifier = PartnershipsNotifier(repo);

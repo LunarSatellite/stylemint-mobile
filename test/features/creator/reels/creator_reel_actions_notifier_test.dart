@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
@@ -56,26 +57,33 @@ class _FakeRepository implements CreatorReelsRepository {
     String sortBy = 'publishedAt',
     String order = 'desc',
     int limit = 6,
-  }) async =>
-      networkRight(const <CreatorReelSummary>[]);
+  }) async => networkRight(const <CreatorReelSummary>[]);
 
   @override
   Future<NetworkEither<List<ReelProductTag>>> listTaggedProducts(
     String reelId,
-  ) async =>
-      networkRight(const <ReelProductTag>[]);
+  ) async => networkRight(const <ReelProductTag>[]);
+
+  @override
+  Future<NetworkEither<PostPublishReport>> getPostPublishReport(
+    String reelId,
+  ) async => networkLeft(const NetworkExceptions.notFound());
+
+  @override
+  Future<NetworkEither<Unit>> deleteReel(String reelId) async =>
+      networkRight(unit);
 }
 
 ReelProductTag _tag() => const ReelProductTag(
-      id: 'tag-1',
-      reelId: 'reel-1',
-      productId: 'prod-1',
-      commissionPercent: 10,
-      priceLabel: 'Rs 1200',
-      commissionPerSaleLabel: 'Rs 120',
-      overlayPositionX: 0.5,
-      overlayPositionY: 0.5,
-    );
+  id: 'tag-1',
+  reelId: 'reel-1',
+  productId: 'prod-1',
+  commissionPercent: 10,
+  priceLabel: 'Rs 1200',
+  commissionPerSaleLabel: 'Rs 120',
+  overlayPositionX: 0.5,
+  overlayPositionY: 0.5,
+);
 
 void main() {
   group('CreatorReelActionsNotifier', () {
@@ -108,8 +116,7 @@ void main() {
       expect(repo.calls.single, 'unpublish:reel-1');
     });
 
-    test('failure returns false and surfaces the repository message',
-        () async {
+    test('failure returns false and surfaces the repository message', () async {
       final repo = _FakeRepository(
         unitResult: networkLeft(const NetworkExceptions.noInternetConnection()),
       );
@@ -125,15 +132,17 @@ void main() {
       );
     });
 
-    test('tagProduct defaults the overlay to the centre of the frame',
-        () async {
-      final repo = _FakeRepository();
-      final notifier = CreatorReelActionsNotifier(repo);
+    test(
+      'tagProduct defaults the overlay to the centre of the frame',
+      () async {
+        final repo = _FakeRepository();
+        final notifier = CreatorReelActionsNotifier(repo);
 
-      await notifier.tagProduct('reel-1', productId: 'prod-1');
+        await notifier.tagProduct('reel-1', productId: 'prod-1');
 
-      expect(repo.calls.single, 'tag:reel-1:prod-1:0.5,0.5');
-    });
+        expect(repo.calls.single, 'tag:reel-1:prod-1:0.5,0.5');
+      },
+    );
 
     test('untagProduct passes the tag id, not the product id', () async {
       final repo = _FakeRepository();
@@ -156,15 +165,17 @@ void main() {
       expect(repo.calls, hasLength(1));
     });
 
-    test('reset returns the notifier to idle so a snackbar does not replay',
-        () async {
-      final notifier = CreatorReelActionsNotifier(_FakeRepository());
+    test(
+      'reset returns the notifier to idle so a snackbar does not replay',
+      () async {
+        final notifier = CreatorReelActionsNotifier(_FakeRepository());
 
-      await notifier.publish('reel-1');
-      expect(notifier.state, isA<CreatorReelActionSucceeded>());
+        await notifier.publish('reel-1');
+        expect(notifier.state, isA<CreatorReelActionSucceeded>());
 
-      notifier.reset();
-      expect(notifier.state, isA<CreatorReelActionIdle>());
-    });
+        notifier.reset();
+        expect(notifier.state, isA<CreatorReelActionIdle>());
+      },
+    );
   });
 }

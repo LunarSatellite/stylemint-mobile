@@ -6,67 +6,54 @@ class SupportRemoteDataSource {
 
   final ApiClient apiClient;
 
+  /// `GET /v1/support/tickets` returns a skip/take `PagedList`, not a bare
+  /// array.
   Future<List<TicketDto>> getTickets() async {
     final response = await apiClient.get('/v1/support/tickets');
-    final items = (response as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => _ticketFromApi(e as Map<String, dynamic>))
+    final data = response as Map<String, dynamic>;
+    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map((e) => TicketDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
     return items;
   }
 
-  Future<TicketDto> getTicketDetail(String ticketId) async {
-    final response = await apiClient.get('/v1/support/tickets/$ticketId');
-    return _ticketFromApi(response as Map<String, dynamic>);
+  Future<TicketDto> getTicketDetail(String ticketNumber) async {
+    final response = await apiClient.get('/v1/support/tickets/$ticketNumber');
+    return TicketDto.fromJson(response as Map<String, dynamic>);
   }
 
-  // Backend returns `state` (1=Submitted, 2=InProgress, 3=Resolved) and
-  // `openedUtc`/`lastAgentReplyUtc` — not the flat `status`/`createdAt`/
-  // `lastUpdated` shape this DTO models, so map it explicitly.
-  TicketDto _ticketFromApi(Map<String, dynamic> json) {
-    const stateNames = {1: 'open', 2: 'in_progress', 3: 'resolved'};
-    final openedUtc = DateTime.parse(json['openedUtc'] as String);
-    final lastAgentReplyUtc = json['lastAgentReplyUtc'] != null
-        ? DateTime.parse(json['lastAgentReplyUtc'] as String)
-        : null;
-    return TicketDto(
-      id: json['id'] as String,
-      ticketNumber: json['ticketNumber'] as String,
-      subject: json['subject'] as String,
-      status: stateNames[json['state'] as int] ?? 'open',
-      createdAt: openedUtc,
-      lastUpdated: lastAgentReplyUtc ?? openedUtc,
-    );
-  }
-
-  /// `OpenTicketVm` requires `category` (int enum id) and `body` (not
-  /// `message`) — `categoryId` here is the string form of that same int,
-  /// sourced from [getSupportCategories]'s real `HelpCategoryDto.id`.
   Future<TicketDto> createTicket({
     required String subject,
-    required String message,
-    String? categoryId,
+    required String body,
+    required int category,
+    List<String> attachmentUrls = const [],
   }) async {
     final data = <String, dynamic>{
+      'category': category,
       'subject': subject,
-      'body': message,
-      if (categoryId != null) 'category': int.parse(categoryId),
+      'body': body,
+      'attachmentUrls': attachmentUrls,
     };
     final response = await apiClient.post('/v1/support/tickets', data: data);
-    return _ticketFromApi(response as Map<String, dynamic>);
+    return TicketDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// `GET /v1/help/categories` — there is no `/v1/support/categories`.
+  /// Response rows are `HelpCategoryDto` (`id`, `code`, `name`,
+  /// `publishedArticleCount`), not the `SupportCategoryDto` shape, so this
+  /// maps fields explicitly instead of calling `SupportCategoryDto.fromJson`.
   Future<List<SupportCategoryDto>> getSupportCategories() async {
     final response = await apiClient.get('/v1/help/categories');
     final items = (response as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => _categoryFromApi(e as Map<String, dynamic>))
+        .map((e) {
+          final json = e as Map<String, dynamic>;
+          return SupportCategoryDto(
+            id: json['id'].toString(),
+            title: json['name'] as String,
+            iconName: json['code'] as String,
+          );
+        })
         .toList(growable: false);
     return items;
   }
-
-  SupportCategoryDto _categoryFromApi(Map<String, dynamic> json) =>
-      SupportCategoryDto(
-        id: (json['id'] as num).toString(),
-        title: json['name'] as String? ?? '',
-        iconName: '',
-      );
 }

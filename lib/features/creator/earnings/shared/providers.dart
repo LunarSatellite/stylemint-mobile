@@ -19,6 +19,11 @@ final earningsRemoteDataSourceProvider = Provider<EarningsRemoteDataSource>(
   ),
 );
 
+final monthlyEarningsSummaryProvider =
+    FutureProvider.autoDispose<MonthlySummary>((ref) {
+      return ref.watch(earningsRemoteDataSourceProvider).getMonthlySummary();
+    });
+
 /// Per-reel earnings breakdown (creator analytics dashboard). Separate from
 /// the balance summary because the metrics live on a different endpoint.
 /// Throws on failure so `AsyncValue.error` carries the repository's message.

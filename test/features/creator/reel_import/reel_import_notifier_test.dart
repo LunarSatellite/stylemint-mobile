@@ -24,7 +24,10 @@ class _FakeRepository implements ReelImportRepository {
     final page = pages != null && pageCalls < pages!.length
         ? pages![pageCalls]
         : networkRight(
-            ImportableReelsResult(reels: [_reel('r$pageCalls')], nextCursor: null),
+            ImportableReelsResult(
+              reels: [_reel('r$pageCalls')],
+              nextCursor: null,
+            ),
           );
     pageCalls++;
     return page;
@@ -37,15 +40,13 @@ class _FakeRepository implements ReelImportRepository {
   @override
   Future<NetworkEither<List<TaggedProductForImport>>> searchProducts(
     String query,
-  ) async =>
-      networkRight(const []);
+  ) async => networkRight(const []);
 
   @override
   Future<NetworkEither<List<TaggedProductForImport>>> getSuggestedProducts({
     required SocialPlatform platform,
     required String externalId,
-  }) async =>
-      networkRight(const []);
+  }) async => networkRight(const []);
 
   @override
   Future<NetworkEither<Unit>> publishReel({required String reelId}) async =>
@@ -55,44 +56,66 @@ class _FakeRepository implements ReelImportRepository {
   Future<NetworkEither<Unit>> tagProduct({
     required String reelId,
     required String productId,
-  }) async =>
-      networkRight(unit);
+  }) async => networkRight(unit);
 
   @override
   Future<NetworkEither<List<ImportedReel>>> getImportHistory({
     int pageSize = 20,
     String? cursor,
-  }) async =>
-      networkRight(const []);
+  }) async => networkRight(const []);
+
+  @override
+  Future<NetworkEither<BulkImportResult>> importBulk(
+    List<ImportableReel> reels,
+  ) async => networkRight(
+    BulkImportResult(
+      successCount: reels.length,
+      failureCount: 0,
+      allSucceeded: true,
+    ),
+  );
+
+  @override
+  Future<NetworkEither<ReelIntent>> launchReelIntent(
+    SocialPlatform platform,
+  ) async => networkLeft(const NetworkExceptions.unexpectedError());
+
+  @override
+  Future<NetworkEither<ReelIntent>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+  }) async => networkLeft(const NetworkExceptions.unexpectedError());
 }
 
 ImportableReel _reel(String id) => ImportableReel(
-      id: id,
-      platform: SocialPlatform.instagram,
-      platformPostId: id,
-      sourceUrl: 'https://example.com/$id',
-      thumbnailUrl: '',
-      caption: '',
-      createdAt: DateTime.utc(2026),
-      videoDuration: 15,
-    );
+  id: id,
+  platform: SocialPlatform.instagram,
+  platformPostId: id,
+  sourceUrl: 'https://example.com/$id',
+  thumbnailUrl: '',
+  caption: '',
+  createdAt: DateTime.utc(2026),
+  videoDuration: 15,
+);
 
 void main() {
   group('ReelImportNotifier', () {
-    test('load populates reels and reports no more pages when cursor is null',
-        () async {
-      final notifier = ReelImportNotifier(_FakeRepository());
+    test(
+      'load populates reels and reports no more pages when cursor is null',
+      () async {
+        final notifier = ReelImportNotifier(_FakeRepository());
 
-      await notifier.load(SocialPlatform.instagram);
+        await notifier.load(SocialPlatform.instagram);
 
-      expect(
-        notifier.state.maybeWhen(
-          loadSuccess: (reels, hasMore, _) => '${reels.length}:$hasMore',
-          orElse: () => 'none',
-        ),
-        '1:false',
-      );
-    });
+        expect(
+          notifier.state.maybeWhen(
+            loadSuccess: (reels, hasMore, _) => '${reels.length}:$hasMore',
+            orElse: () => 'none',
+          ),
+          '1:false',
+        );
+      },
+    );
 
     test('a non-null cursor marks more pages available', () async {
       final repo = _FakeRepository(
