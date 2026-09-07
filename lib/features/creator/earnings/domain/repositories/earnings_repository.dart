@@ -41,6 +41,12 @@ abstract interface class EarningsRepository {
     String? cursor,
   });
 
+  Future<Either<NetworkExceptions, PayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  );
+
+  Future<Either<NetworkExceptions, Unit>> cancelPayout(String payoutId);
+
   /// Per-reel earnings breakdown backing the creator analytics dashboard.
   /// Separate from [getSummary] because the metrics live on a different
   /// endpoint (`/v1/creator/analytics/dashboard`).

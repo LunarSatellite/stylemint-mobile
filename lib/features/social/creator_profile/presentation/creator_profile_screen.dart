@@ -1090,62 +1090,89 @@ class _FilterTab extends StatelessWidget {
   }
 }
 
-class _ReelCard extends StatelessWidget {
+class _ReelCard extends ConsumerWidget {
   const _ReelCard({required this.reel});
   final CreatorReelSummary reel;
 
   @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          reel.thumbnailUrl != null
-              ? Image.network(
-                  reel.thumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, _e) => _placeholder(),
-                )
-              : _placeholder(),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 40,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black87, Colors.transparent],
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => context.push('/creator/reels/${reel.id}'),
+      onLongPress: () => _showDeleteDialog(context, ref),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            reel.thumbnailUrl != null
+                ? Image.network(
+                    reel.thumbnailUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, _e) => _placeholder(),
+                  )
+                : _placeholder(),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 40,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [Colors.black87, Colors.transparent],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: 6,
-            left: 8,
-            child: Row(
-              children: [
-                const Icon(Icons.play_arrow_rounded,
-                    size: 13, color: Colors.white),
-                const SizedBox(width: 2),
-                Text(
-                  _fmtCount(reel.views),
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+            Positioned(
+              bottom: 6,
+              left: 8,
+              child: Row(
+                children: [
+                  const Icon(Icons.play_arrow_rounded,
+                      size: 13, color: Colors.white),
+                  const SizedBox(width: 2),
+                  Text(
+                    _fmtCount(reel.views),
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Reel'),
+        content: const Text('Are you sure you want to delete this reel? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+    if (confirmed == true && context.mounted) {
+      await reels_providers.deleteCreatorReel(ref, reel.id);
+    }
   }
 
   Widget _placeholder() => Container(

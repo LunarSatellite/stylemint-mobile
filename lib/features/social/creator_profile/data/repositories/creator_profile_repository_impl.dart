@@ -174,4 +174,41 @@ class CreatorProfileRepositoryImpl implements CreatorProfileRepository {
       return left(const NetworkExceptions.unexpectedError());
     }
   }
+
+  @override
+  Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
+      String accountId) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final map =
+          await remoteDataSource.listSpecializationsWithPrimary(accountId);
+      return right(map);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<NetworkEither<void>> setPrimarySpecialization(
+      String accountId, String categoryId) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.setPrimarySpecialization(accountId, categoryId);
+      return right(null);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message ?? 'Server error'));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Exception {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
 }

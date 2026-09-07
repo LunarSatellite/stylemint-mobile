@@ -58,3 +58,16 @@ final addPayoutMethodNotifierProvider =
     StateNotifierProvider.autoDispose<AddPayoutMethodNotifier, AsyncValue<void>>(
       (ref) => AddPayoutMethodNotifier(ref.watch(earningsRepositoryProvider)),
     );
+
+final payoutInvoiceNotifierProvider = StateNotifierProvider.autoDispose
+    .family<PayoutInvoiceNotifier, PayoutInvoiceState, String>(
+  (ref, payoutId) => PayoutInvoiceNotifier(
+    ref.watch(earningsRepositoryProvider),
+    payoutId,
+  ),
+);
+
+final cancelPayoutNotifierProvider =
+    StateNotifierProvider.autoDispose<CancelPayoutNotifier, CancelPayoutState>(
+      (ref) => CancelPayoutNotifier(ref.watch(earningsRepositoryProvider)),
+    );

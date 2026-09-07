@@ -264,3 +264,87 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
     state = ReelSubmitSuccess(importedReel.id);
   }
 }
+
+sealed class BulkImportState {}
+
+class BulkImportIdle extends BulkImportState {}
+class BulkImportInProgress extends BulkImportState {}
+
+class BulkImportSuccess extends BulkImportState {
+  BulkImportSuccess(this.result);
+  final BulkImportResult result;
+}
+
+class BulkImportFailure extends BulkImportState {
+  BulkImportFailure(this.message);
+  final String message;
+}
+
+class BulkImportNotifier extends StateNotifier<BulkImportState> {
+  BulkImportNotifier(this._repository) : super(BulkImportIdle());
+  final ReelImportRepository _repository;
+
+  Future<void> submit(List<ImportableReel> reels) async {
+    if (reels.isEmpty) return;
+    state = BulkImportInProgress();
+    final either = await _repository.importBulk(reels);
+    state = either.fold(
+      (failure) => BulkImportFailure(NetworkExceptions.getMessage(failure)),
+      BulkImportSuccess.new,
+    );
+  }
+
+  void reset() => state = BulkImportIdle();
+}
+
+sealed class ReelIntentNotifierState {}
+class ReelIntentNotifierIdle extends ReelIntentNotifierState {}
+class ReelIntentNotifierInProgress extends ReelIntentNotifierState {}
+
+class ReelIntentNotifierLaunched extends ReelIntentNotifierState {
+  ReelIntentNotifierLaunched(this.intent);
+  final ReelIntent intent;
+}
+
+class ReelIntentNotifierCompleted extends ReelIntentNotifierState {
+  ReelIntentNotifierCompleted(this.intent);
+  final ReelIntent intent;
+}
+
+class ReelIntentNotifierFailure extends ReelIntentNotifierState {
+  ReelIntentNotifierFailure(this.message);
+  final String message;
+}
+
+class ReelIntentNotifier extends StateNotifier<ReelIntentNotifierState> {
+  ReelIntentNotifier(this._repository) : super(ReelIntentNotifierIdle());
+  final ReelImportRepository _repository;
+
+  Future<void> launch(SocialPlatform platform) async {
+    state = ReelIntentNotifierInProgress();
+    final either = await _repository.launchReelIntent(platform);
+    state = either.fold(
+      (failure) =>
+          ReelIntentNotifierFailure(NetworkExceptions.getMessage(failure)),
+      ReelIntentNotifierLaunched.new,
+    );
+  }
+
+  Future<void> complete({
+    required String intentId,
+    required String resultingReelId,
+  }) async {
+    state = ReelIntentNotifierInProgress();
+    final either = await _repository.completeReelIntent(
+      intentId: intentId,
+      resultingReelId: resultingReelId,
+    );
+    state = either.fold(
+      (failure) =>
+          ReelIntentNotifierFailure(NetworkExceptions.getMessage(failure)),
+      ReelIntentNotifierCompleted.new,
+    );
+  }
+
+  void reset() => state = ReelIntentNotifierIdle();
+}

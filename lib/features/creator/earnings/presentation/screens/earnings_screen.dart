@@ -51,7 +51,7 @@ class EarningsScreen extends ConsumerWidget {
               const SizedBox(height: DesignTokens.s12),
               _BalancesPayoutCard(summary: summary),
               const SizedBox(height: DesignTokens.s24),
-              _EarningsBreakdown(summary: summary),
+              const _EarningsBreakdown(),
               const SizedBox(height: DesignTokens.s24),
               _PayoutHistory(entries: entries),
               const SizedBox(height: DesignTokens.s24),
@@ -230,27 +230,26 @@ class _BalanceMetric extends StatelessWidget {
 
 // ── Earnings breakdown (this month) ───────────────────────────────────────────
 class _EarningsBreakdown extends ConsumerWidget {
-  const _EarningsBreakdown({required this.summary});
-
-  final EarningsSummary summary;
+  const _EarningsBreakdown();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final total = formatMoney(summary.thisMonthEarnings);
-    final breakdown = ref.watch(earningsBreakdownProvider);
+    final monthlyAsync = ref.watch(monthlyEarningsSummaryProvider);
 
-    // Real per-reel metrics come from the analytics dashboard; show a dash
-    // while loading or if the dashboard call fails.
-    final (salesLabel, avg, highest) = breakdown.maybeWhen(
-      data: (b) => (
-        'No. of sales across ${b.reelCount} reels',
-        '${formatMoney(b.avgPerSale)} per sale',
-        formatMoney(b.highestReelEarnings),
+    final total = monthlyAsync.maybeWhen(
+      data: (s) => formatMoney(s.thisMonthEarnings),
+      orElse: () => '—',
+    );
+    final (salesLabel, avg, highest) = monthlyAsync.maybeWhen(
+      data: (s) => (
+        'No. of sales across ${s.reelCount} reels',
+        '${formatMoney(s.avgPerSale)} per sale',
+        formatMoney(s.highestReelEarnings),
       ),
       orElse: () => ('No. of sales', '—', '—'),
     );
-    final salesValue = breakdown.maybeWhen(
-      data: (b) => '${b.salesCount}',
+    final salesValue = monthlyAsync.maybeWhen(
+      data: (s) => '${s.salesCount}',
       orElse: () => '—',
     );
 

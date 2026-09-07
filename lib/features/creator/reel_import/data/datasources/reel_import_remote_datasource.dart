@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show DioException, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
 /// One provider-native page of importable reels plus the opaque cursor to
@@ -113,6 +114,46 @@ class ReelImportRemoteDataSource {
     return _parseReelDto(response as Map<String, dynamic>, platform);
   }
 
+  Future<BulkImportResult> importBulk(
+    List<ImportableReel> reels,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/import/bulk',
+      data: {
+        'items': reels
+            .map(
+              (reel) => {
+                'sourcePlatform': _platformInt(reel.platform),
+                'sourceUrl': reel.sourceUrl,
+                'externalId': reel.platformPostId,
+                'durationSeconds':
+                    reel.videoDuration > 0 ? reel.videoDuration : 30,
+                if (reel.caption.isNotEmpty) 'caption': reel.caption,
+                if (reel.thumbnailUrl.isNotEmpty &&
+                    reel.thumbnailUrl.length <= 2048)
+                  'thumbnailCdnUrl': reel.thumbnailUrl,
+                if (reel.videoUrl != null &&
+                    reel.videoUrl!.isNotEmpty &&
+                    reel.videoUrl!.length <= 2048)
+                  'videoCdnUrl': reel.videoUrl,
+              },
+            )
+            .toList(),
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    final body = response as Map<String, dynamic>;
+    return BulkImportResult(
+      successCount: body['successCount'] as int? ?? 0,
+      failureCount: body['failureCount'] as int? ?? 0,
+      allSucceeded: body['allSucceeded'] as bool? ?? false,
+    );
+  }
+
   // GET /api/v1/customer/search?type=products&q=...&limit=20
   // Searches the product catalog for tagging candidates.
   Future<List<TaggedProductForImportDto>> searchProducts(String query) async {
@@ -145,7 +186,7 @@ class ReelImportRemoteDataSource {
   }) async {
     try {
       final response = await apiClient.get(
-        '/v1/creator/reels//suggested-products',
+        '/v1/creator/reels/$externalId/suggested-products',
         queryParameters: {'platform': _platformInt(platform)},
       );
       final m = response as Map<String, dynamic>;
@@ -199,6 +240,37 @@ class ReelImportRemoteDataSource {
         'Idempotency-Key': idempotencyKey,
       }),
     );
+  }
+
+  Future<Map<String, dynamic>> launchReelIntent({
+    required SocialPlatform platform,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/intents',
+      data: {'targetPlatform': _platformInt(platform)},
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/reels/intents/$intentId/complete',
+      data: {'resultingReelId': resultingReelId},
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+    return response as Map<String, dynamic>;
   }
 
   // GET /v1/creator/reels?pageSize=...&cursor=...

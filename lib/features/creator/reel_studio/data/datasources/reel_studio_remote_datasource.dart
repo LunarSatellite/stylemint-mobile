@@ -69,6 +69,11 @@ class ReelStudioRemoteDataSource {
         .toList(growable: false);
   }
 
+  Future<LaunchpadDto> getLaunchpad() async {
+    final response = await apiClient.get('/v1/creator/studio/launchpad');
+    return LaunchpadDto.fromJson(response as Map<String, dynamic>);
+  }
+
   Future<ReelDraftDto> createDraft({
     required String caption,
     required List<String> hashtags,

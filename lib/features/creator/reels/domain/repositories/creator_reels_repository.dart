@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 
 abstract class CreatorReelsRepository {
@@ -12,6 +13,10 @@ abstract class CreatorReelsRepository {
     String order = 'desc',
     int limit = 6,
   });
+
+  Future<NetworkEither<PostPublishReport>> getPostPublishReport(String reelId);
+
+  Future<NetworkEither<Unit>> deleteReel(String reelId);
 
   /// Makes the reel publicly visible and shoppable.
   Future<NetworkEither<Unit>> publishReel(String reelId);

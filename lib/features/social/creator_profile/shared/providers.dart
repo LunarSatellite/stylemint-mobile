@@ -162,6 +162,19 @@ final creatorSpecializationIdsProvider =
   },
 );
 
+/// All specializations with their primary flag: {categoryId → isPrimary}.
+/// Used by EditCategoryNicheScreen to seed selection and primary state.
+final creatorSpecializationsWithPrimaryProvider =
+    FutureProvider.family.autoDispose<Map<String, bool>, String>(
+  (ref, accountId) async {
+    if (accountId.isEmpty) return const {};
+    final either = await ref
+        .read(creatorProfileRepositoryProvider)
+        .listSpecializationsWithPrimary(accountId);
+    return either.fold((_) => const {}, (map) => map);
+  },
+);
+
 // ── Badges ────────────────────────────────────────────────────────────────────
 
 final badgesNotifierProvider =

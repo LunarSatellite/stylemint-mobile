@@ -133,3 +133,80 @@ extension TagNudgeDtoMapper on TagNudgeDto {
         reason: reason,
       );
 }
+
+class LaunchpadMilestoneDto {
+  const LaunchpadMilestoneDto({
+    required this.key,
+    required this.title,
+    this.description,
+    required this.isCompleted,
+    this.progressCurrent,
+    this.progressTarget,
+  });
+
+  final String key;
+  final String title;
+  final String? description;
+  final bool isCompleted;
+  final int? progressCurrent;
+  final int? progressTarget;
+
+  factory LaunchpadMilestoneDto.fromJson(Map<String, dynamic> json) =>
+      LaunchpadMilestoneDto(
+        key: json['key'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        description: json['description'] as String?,
+        isCompleted: json['isCompleted'] as bool? ?? false,
+        progressCurrent: (json['progressCurrent'] as num?)?.toInt(),
+        progressTarget: (json['progressTarget'] as num?)?.toInt(),
+      );
+}
+
+class LaunchpadNextStepDto {
+  const LaunchpadNextStepDto({
+    required this.key,
+    required this.headline,
+    this.body,
+    this.actionRoute,
+  });
+
+  final String key;
+  final String headline;
+  final String? body;
+  final String? actionRoute;
+
+  factory LaunchpadNextStepDto.fromJson(Map<String, dynamic> json) =>
+      LaunchpadNextStepDto(
+        key: json['key'] as String? ?? '',
+        headline: json['headline'] as String? ?? '',
+        body: json['body'] as String?,
+        actionRoute: json['actionRoute'] as String?,
+      );
+}
+
+class LaunchpadDto {
+  const LaunchpadDto({
+    required this.level,
+    required this.totalPoints,
+    required this.milestones,
+    required this.nextSteps,
+  });
+
+  final String level;
+  final int totalPoints;
+  final List<LaunchpadMilestoneDto> milestones;
+  final List<LaunchpadNextStepDto> nextSteps;
+
+  factory LaunchpadDto.fromJson(Map<String, dynamic> json) => LaunchpadDto(
+        level: json['level'] as String? ?? '',
+        totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
+        milestones: (json['milestones'] as List<dynamic>? ?? const [])
+            .map((e) =>
+                LaunchpadMilestoneDto.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false),
+        nextSteps: (json['nextSteps'] as List<dynamic>? ?? const [])
+            .map((e) =>
+                LaunchpadNextStepDto.fromJson(e as Map<String, dynamic>))
+            .toList(growable: false),
+      );
+}

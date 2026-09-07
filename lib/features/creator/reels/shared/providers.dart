@@ -8,9 +8,20 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasource
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/creator_reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
+
+Future<void> deleteCreatorReel(WidgetRef ref, String reelId) async {
+  final result =
+      await ref.read(creatorReelsRepositoryProvider).deleteReel(reelId);
+  if (result.isRight()) {
+    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'asc')));
+    ref.invalidate(creatorReelSummariesProvider(('publishedAt', 'desc')));
+    ref.invalidate(creatorReelSummariesProvider(('views', 'desc')));
+  }
+}
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
@@ -68,6 +79,13 @@ final reelTaggedProductsProvider =
     FutureProvider.autoDispose.family<List<ReelProductTag>, String>(
   (ref, reelId) async => _orThrow(
     await ref.watch(creatorReelsRepositoryProvider).listTaggedProducts(reelId),
+  ),
+);
+
+final postPublishReportProvider =
+    FutureProvider.autoDispose.family<PostPublishReport, String>(
+  (ref, reelId) async => _orThrow(
+    await ref.watch(creatorReelsRepositoryProvider).getPostPublishReport(reelId),
   ),
 );
 

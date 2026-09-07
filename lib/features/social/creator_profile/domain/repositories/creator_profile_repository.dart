@@ -26,4 +26,10 @@ abstract class CreatorProfileRepository {
 
   Future<NetworkEither<void>> removeSpecialization(
       String accountId, String categoryId);
+
+  Future<NetworkEither<Map<String, bool>>> listSpecializationsWithPrimary(
+      String accountId);
+
+  Future<NetworkEither<void>> setPrimarySpecialization(
+      String accountId, String categoryId);
 }

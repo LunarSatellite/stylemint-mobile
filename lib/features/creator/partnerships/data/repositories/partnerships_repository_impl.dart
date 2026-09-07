@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/dat
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -131,6 +132,97 @@ class PartnershipsRepositoryImpl implements PartnershipsRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> requestPartnership({
+    required String vendorProfileId,
+    required double commissionMinPercent,
+    required double commissionMaxPercent,
+    required String message,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.requestPartnership(
+        vendorProfileId: vendorProfileId,
+        commissionMinPercent: commissionMinPercent,
+        commissionMaxPercent: commissionMaxPercent,
+        message: message,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } catch (_) {
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, CreatorRateCard>> getMyRateCard() async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await remoteDataSource.getMyRateCard());
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } catch (_) {
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> publishRateCard({
+    required double baseRate,
+    required List<RateTier> rates,
+    required double commissionPreference,
+    required List<String> platformPreferences,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.publishRateCard(
+        baseRate: baseRate,
+        rates: rates,
+        commissionPreference: commissionPreference,
+        platformPreferences: platformPreferences,
+        notes: notes,
+        idempotencyKey: const Uuid().v4(),
+      );
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } catch (_) {
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> deactivateRateCard() async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.deactivateRateCard(const Uuid().v4());
+      return right(unit);
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } catch (_) {
+      return left(NetworkExceptions.unexpectedError());
     }
   }
 

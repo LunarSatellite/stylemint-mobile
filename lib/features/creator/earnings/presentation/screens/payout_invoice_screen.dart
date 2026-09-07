@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// ── Shared types ──────────────────────────────────────────────────────────────
+// ── Shared display types ───────────────────────────────────────────────────────
 
 enum PayoutStatus { pending, completed, failed }
 
@@ -37,8 +44,8 @@ class PayoutHistoryEntry {
 }
 
 class PayoutInvoiceArgs {
-  const PayoutInvoiceArgs({required this.entry});
-  final PayoutHistoryEntry entry;
+  const PayoutInvoiceArgs({required this.payoutId});
+  final String payoutId;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -46,16 +53,72 @@ class PayoutInvoiceArgs {
 String _fmtAmount(double v) =>
     'Rs ${NumberFormat('#,##0.##', 'en_US').format(v)}';
 
+PayoutHistoryEntry _invoiceToEntry(PayoutInvoice invoice) {
+  final feePercent = invoice.grossAmount.amount > 0
+      ? (invoice.feeAmount.amount / invoice.grossAmount.amount * 100)
+      : 0.0;
+  final status = switch (invoice.state) {
+    PayoutState.paid => PayoutStatus.completed,
+    PayoutState.failed => PayoutStatus.failed,
+    _ => PayoutStatus.pending,
+  };
+  final receiptNo = invoice.invoiceNumber.isNotEmpty
+      ? invoice.invoiceNumber
+      : invoice.payoutId.substring(0, 8).toUpperCase();
+  final txnId = invoice.providerPayoutId ??
+      invoice.payoutId.substring(0, 8).toUpperCase();
+  return PayoutHistoryEntry(
+    id: invoice.payoutId,
+    title: '${_fmtAmount(invoice.grossAmount.amount)} Payout'
+        ' to ${invoice.destinationLabel}',
+    accountMask: invoice.destinationRef ?? '',
+    dateTime: invoice.paidAt ?? invoice.requestedAt,
+    status: status,
+    subTotalAmount: invoice.grossAmount.amount,
+    processingFeePercent: feePercent,
+    receiptNo: receiptNo,
+    txnId: txnId,
+    payoutTo: invoice.destinationRef != null
+        ? '${invoice.destinationLabel} — ${invoice.destinationRef}'
+        : invoice.destinationLabel,
+  );
+}
+
 // ── PayoutInvoiceScreen ───────────────────────────────────────────────────────
 
-class PayoutInvoiceScreen extends StatelessWidget {
-  const PayoutInvoiceScreen({super.key, required this.args});
+class PayoutInvoiceScreen extends ConsumerWidget {
+  const PayoutInvoiceScreen({required this.args, super.key});
 
   final PayoutInvoiceArgs args;
 
   @override
-  Widget build(BuildContext context) {
-    final entry = args.entry;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invoiceState =
+        ref.watch(payoutInvoiceNotifierProvider(args.payoutId));
+    final cancelState = ref.watch(cancelPayoutNotifierProvider);
+
+    ref.listen<CancelPayoutState>(cancelPayoutNotifierProvider, (_, next) {
+      next.maybeWhen(
+        success: () {
+          ref.invalidate(payoutHistoryProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Payout cancelled.')),
+          );
+          unawaited(Navigator.of(context).maybePop());
+        },
+        failure: (NetworkExceptions f) =>
+            ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+        ),
+        orElse: () {},
+      );
+    });
+
+    final isCancelling = cancelState.maybeWhen(
+      inProgress: () => true,
+      orElse: () => false,
+    );
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -87,15 +150,246 @@ class PayoutInvoiceScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        child: _ReceiptCard(entry: entry),
+      body: invoiceState.when(
+        initial: () => const _Loader(),
+        loadInProgress: () => const _Loader(),
+        loadSuccess: (PayoutInvoice invoice) => _InvoiceBody(
+          invoice: invoice,
+          isCancelling: isCancelling,
+          onCancel: () =>
+              _showCancelSheet(context, ref, invoice.payoutId),
+        ),
+        loadFailure: (NetworkExceptions failure) => _ErrorView(
+          message: NetworkExceptions.getMessage(failure),
+          onRetry: () => ref
+              .read(
+                payoutInvoiceNotifierProvider(args.payoutId).notifier,
+              )
+              .load(),
+        ),
+      ),
+    );
+  }
+
+  void _showCancelSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String payoutId,
+  ) {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: DesignTokens.bgAppBody,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(DesignTokens.cardRadius),
+          ),
+        ),
+        builder: (_) => _CancelConfirmSheet(
+          onConfirm: () {
+            Navigator.of(context).pop();
+            unawaited(
+              ref
+                  .read(cancelPayoutNotifierProvider.notifier)
+                  .cancel(payoutId),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-// ── Receipt card with scalloped bottom ───────────────────────────────────────
+// ── Invoice body ──────────────────────────────────────────────────────────
+
+class _InvoiceBody extends StatelessWidget {
+  const _InvoiceBody({
+    required this.invoice,
+    required this.isCancelling,
+    required this.onCancel,
+  });
+
+  final PayoutInvoice invoice;
+  final bool isCancelling;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = _invoiceToEntry(invoice);
+    final canCancel = invoice.state == PayoutState.requested;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: _ReceiptCard(entry: entry),
+          ),
+        ),
+        if (canCancel)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                0,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: DesignTokens.buttonHeight,
+                child: OutlinedButton(
+                  onPressed: isCancelling ? null : onCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: DesignTokens.colorError,
+                    side: const BorderSide(color: DesignTokens.colorError),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(DesignTokens.buttonRadius),
+                    ),
+                  ),
+                  child: isCancelling
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: DesignTokens.colorError,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Cancel Payout'),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Cancel confirm sheet ──────────────────────────────────────────────────
+
+class _CancelConfirmSheet extends StatelessWidget {
+  const _CancelConfirmSheet({required this.onConfirm});
+
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(DesignTokens.s20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Cancel this payout?',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          Text(
+            'The requested amount will be returned to your available '
+            'balance. This action cannot be undone once processing begins.',
+            style: DesignTokens.smallRegular
+                .copyWith(color: DesignTokens.textLight),
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: DesignTokens.textWhite,
+                    side: const BorderSide(color: DesignTokens.borderDefault),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(DesignTokens.buttonRadius),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+                  ),
+                  child: const Text('Keep'),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: onConfirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DesignTokens.colorError,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(DesignTokens.buttonRadius),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+                  ),
+                  child: const Text('Cancel Payout'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Loader / Error ─────────────────────────────────────────────────────────────
+
+class _Loader extends StatelessWidget {
+  const _Loader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: DesignTokens.mediumRegular
+                  .copyWith(color: DesignTokens.textMuted),
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: DesignTokens.primaryButtonStyle(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Receipt card with scalloped bottom ───────────────────────────────────
 
 class _ReceiptCard extends StatelessWidget {
   const _ReceiptCard({required this.entry});
@@ -124,22 +418,13 @@ class _ReceiptCard extends StatelessWidget {
             children: [
               _ReceiptHeader(entry: entry),
               const SizedBox(height: DesignTokens.s20),
-              _ReceiptRow(
-                label: 'Receipt No.',
-                value: entry.receiptNo,
-              ),
+              _ReceiptRow(label: 'Receipt No.', value: entry.receiptNo),
               _ReceiptRow(
                 label: 'Date',
                 value: DateFormat('MMM d, yyyy').format(entry.dateTime),
               ),
-              _ReceiptRow(
-                label: 'Payout to',
-                value: entry.payoutTo,
-              ),
-              _ReceiptRow(
-                label: 'TXN',
-                value: entry.txnId,
-              ),
+              _ReceiptRow(label: 'Payout to', value: entry.payoutTo),
+              _ReceiptRow(label: 'TXN', value: entry.txnId),
               _ReceiptRow(
                 label: 'Payment Status',
                 value: '',
@@ -151,13 +436,13 @@ class _ReceiptCard extends StatelessWidget {
                 value: _fmtAmount(entry.subTotalAmount),
               ),
               _ReceiptRow(
-                label:
-                    'Processing Fee (${entry.processingFeePercent.toStringAsFixed(0)}%)',
+                label: 'Processing Fee '
+                    '(${entry.processingFeePercent.toStringAsFixed(0)}%)',
                 value: '-${_fmtAmount(entry.processingFee)}',
                 valueColor: const Color(0xFFEF4444),
               ),
               const SizedBox(height: DesignTokens.s12),
-              _DashedDivider(),
+              const _DashedDivider(),
               const SizedBox(height: DesignTokens.s12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -183,12 +468,11 @@ class _ReceiptCard extends StatelessWidget {
             ],
           ),
         ),
-        // Scalloped punch-holes at the bottom
         Positioned(
           bottom: -9,
           left: 0,
           right: 0,
-          child: _ScallopRow(),
+          child: const _ScallopRow(),
         ),
       ],
     );
@@ -221,7 +505,7 @@ class _ReceiptHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'ReelCommerce Receipt',
+                'StyleMint Receipt',
                 style: TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 16,
@@ -325,7 +609,7 @@ class _StatusBadge extends StatelessWidget {
           fontFamily: DesignTokens.fontFamily,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          height: 1.0,
+          height: 1,
           color: fg,
         ),
       ),
@@ -347,12 +631,12 @@ class _DashedDivider extends StatelessWidget {
             (constraints.maxWidth / (dashWidth + dashGap)).floor();
         return Row(
           children: List.generate(count, (_) {
-            return Padding(
-              padding: const EdgeInsets.only(right: dashGap),
-              child: Container(
+            return const Padding(
+              padding: EdgeInsets.only(right: dashGap),
+              child: SizedBox(
                 width: dashWidth,
                 height: dashHeight,
-                color: DesignTokens.borderDefault,
+                child: ColoredBox(color: DesignTokens.borderDefault),
               ),
             );
           }),
@@ -370,7 +654,6 @@ class _ScallopRow extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const circleSize = 18.0;
-        // Overlap the card edges by half a circle so cut-outs look punched
         final totalWidth = constraints.maxWidth;
         const count = 14;
         final spacing = (totalWidth - circleSize) / (count - 1);
@@ -380,12 +663,14 @@ class _ScallopRow extends StatelessWidget {
             children: List.generate(count, (i) {
               return Positioned(
                 left: i * spacing,
-                child: Container(
+                child: const SizedBox(
                   width: circleSize,
                   height: circleSize,
-                  decoration: const BoxDecoration(
-                    color: DesignTokens.bgAppFoundation,
-                    shape: BoxShape.circle,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: DesignTokens.bgAppFoundation,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               );

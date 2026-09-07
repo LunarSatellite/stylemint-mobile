@@ -164,3 +164,64 @@ class RequestPayoutNotifier extends StateNotifier<RequestPayoutState> {
     );
   }
 }
+
+// ── Payout Invoice ─────────────────────────────────────────────────────────────
+
+@freezed
+abstract class PayoutInvoiceState with _$PayoutInvoiceState {
+  const PayoutInvoiceState._();
+
+  const factory PayoutInvoiceState.initial() = _PayoutInvoiceInitial;
+  const factory PayoutInvoiceState.loadInProgress() = _PayoutInvoiceLoadInProgress;
+  const factory PayoutInvoiceState.loadSuccess(PayoutInvoice invoice) =
+      _PayoutInvoiceLoadSuccess;
+  const factory PayoutInvoiceState.loadFailure(NetworkExceptions failure) =
+      _PayoutInvoiceLoadFailure;
+}
+
+class PayoutInvoiceNotifier extends StateNotifier<PayoutInvoiceState> {
+  PayoutInvoiceNotifier(this._repository, this._payoutId)
+      : super(const PayoutInvoiceState.initial()) {
+    unawaited(load());
+  }
+
+  final EarningsRepository _repository;
+  final String _payoutId;
+
+  Future<void> load() async {
+    state = const PayoutInvoiceState.loadInProgress();
+    final result = await _repository.getPayoutInvoice(_payoutId);
+    state = result.fold(
+      PayoutInvoiceState.loadFailure,
+      PayoutInvoiceState.loadSuccess,
+    );
+  }
+}
+
+// ── Cancel Payout ──────────────────────────────────────────────────────────────
+
+@freezed
+abstract class CancelPayoutState with _$CancelPayoutState {
+  const CancelPayoutState._();
+
+  const factory CancelPayoutState.idle() = _CancelPayoutIdle;
+  const factory CancelPayoutState.inProgress() = _CancelPayoutInProgress;
+  const factory CancelPayoutState.success() = _CancelPayoutSuccess;
+  const factory CancelPayoutState.failure(NetworkExceptions failure) =
+      _CancelPayoutFailure;
+}
+
+class CancelPayoutNotifier extends StateNotifier<CancelPayoutState> {
+  CancelPayoutNotifier(this._repository) : super(const CancelPayoutState.idle());
+
+  final EarningsRepository _repository;
+
+  Future<void> cancel(String payoutId) async {
+    state = const CancelPayoutState.inProgress();
+    final result = await _repository.cancelPayout(payoutId);
+    state = result.fold(
+      CancelPayoutState.failure,
+      (_) => const CancelPayoutState.success(),
+    );
+  }
+}

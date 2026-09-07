@@ -70,3 +70,8 @@ final tagNudgesProvider = FutureProvider.autoDispose<List<TagNudge>>(
   (ref) async =>
       _orThrow(await ref.watch(reelStudioRepositoryProvider).getTagNudges()),
 );
+
+// ignore: specify_nonobvious_property_types
+final launchpadProvider = FutureProvider.autoDispose<LaunchpadDto>(
+  (ref) => ref.watch(reelStudioRemoteDataSourceProvider).getLaunchpad(),
+);

@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/rep
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/brands_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
@@ -19,6 +20,8 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 // Re-export new DTO types consumed by UI widgets
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
     show BrandDetailDto, BrandTrustDto, MoneyDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
+export 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart'
+    show CreatorRateCard, RateTier;
 
 final partnershipsRemoteDataSourceProvider =
     Provider<PartnershipsRemoteDataSource>(
@@ -163,4 +166,11 @@ final brandTrustProvider = FutureProvider.autoDispose
   return ref
       .watch(brandsRemoteDataSourceProvider)
       .getBrandTrust(vendorAccountId);
+});
+
+final rateCardProvider =
+    FutureProvider.autoDispose<CreatorRateCard?>((ref) async {
+  final result =
+      await ref.watch(partnershipsRepositoryProvider).getMyRateCard();
+  return result.fold((_) => null, (rateCard) => rateCard);
 });

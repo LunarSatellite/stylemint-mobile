@@ -9,6 +9,7 @@ class ImportableReel implements ReelMedia {
     required this.platformPostId,
     required this.sourceUrl,
     required this.thumbnailUrl,
+    this.videoUrl,
     required this.caption,
     required this.createdAt,
     required this.videoDuration,
@@ -26,6 +27,7 @@ class ImportableReel implements ReelMedia {
   final String platformPostId;
   final String sourceUrl;
   final String thumbnailUrl;
+  final String? videoUrl;
   final String caption;
   final DateTime createdAt;
   final int videoDuration;
@@ -50,6 +52,7 @@ class ImportableReel implements ReelMedia {
     String? platformPostId,
     String? sourceUrl,
     String? thumbnailUrl,
+    String? videoUrl,
     String? caption,
     DateTime? createdAt,
     int? videoDuration,
@@ -67,6 +70,7 @@ class ImportableReel implements ReelMedia {
       platformPostId: platformPostId ?? this.platformPostId,
       sourceUrl: sourceUrl ?? this.sourceUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
       caption: caption ?? this.caption,
       createdAt: createdAt ?? this.createdAt,
       videoDuration: videoDuration ?? this.videoDuration,
@@ -106,7 +110,41 @@ class TaggedProductForImport {
   final String vendorName;
 }
 
+class BulkImportResult {
+  const BulkImportResult({
+    required this.successCount,
+    required this.failureCount,
+    required this.allSucceeded,
+  });
+
+  final int successCount;
+  final int failureCount;
+  final bool allSucceeded;
+}
+
 enum ImportStatus { pending, processing, live, flagged }
+
+// ── Reel intent ───────────────────────────────────────────────────────────────
+
+enum ReelIntentState { launched, completed, abandoned }
+
+class ReelIntent {
+  const ReelIntent({
+    required this.id,
+    required this.targetPlatform,
+    required this.launchedAtUtc,
+    required this.expiresAtUtc,
+    required this.state,
+    this.resultingReelId,
+  });
+
+  final String id;
+  final SocialPlatform targetPlatform;
+  final DateTime launchedAtUtc;
+  final DateTime expiresAtUtc;
+  final ReelIntentState state;
+  final String? resultingReelId;
+}
 
 class ImportedReel {
   const ImportedReel({
@@ -120,6 +158,7 @@ class ImportedReel {
     required this.sourceUrl,
     required this.platform,
     required this.platformPostId,
+    this.videoUrl,
   });
 
   final String id;
@@ -132,6 +171,7 @@ class ImportedReel {
   final String sourceUrl;
   final SocialPlatform platform;
   final String platformPostId;
+  final String? videoUrl;
 
   ImportedReel copyWith({
     String? id,
@@ -144,6 +184,7 @@ class ImportedReel {
     String? sourceUrl,
     SocialPlatform? platform,
     String? platformPostId,
+    String? videoUrl,
   }) {
     return ImportedReel(
       id: id ?? this.id,
@@ -156,6 +197,7 @@ class ImportedReel {
       sourceUrl: sourceUrl ?? this.sourceUrl,
       platform: platform ?? this.platform,
       platformPostId: platformPostId ?? this.platformPostId,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 }

@@ -11,6 +11,7 @@ class PartnershipInvite {
     required this.vendorLogoUrl,
     required this.campaignBrief,
     required this.commissionRate,
+    this.commissionMax,
     required this.expiresAt,
     required this.status,
     this.vendorRating,
@@ -23,6 +24,7 @@ class PartnershipInvite {
   final String vendorLogoUrl;
   final String campaignBrief;
   final double commissionRate;
+  final double? commissionMax;
   final DateTime expiresAt;
   final PartnershipStatus status;
   final double? vendorRating;
@@ -34,8 +36,10 @@ class PartnershipInvite {
     String? vendorLogoUrl,
     String? campaignBrief,
     double? commissionRate,
+    double? commissionMax,
     DateTime? expiresAt,
     PartnershipStatus? status,
+    double? vendorRating,
   }) {
     return PartnershipInvite(
       id: id ?? this.id,
@@ -44,8 +48,10 @@ class PartnershipInvite {
       vendorLogoUrl: vendorLogoUrl ?? this.vendorLogoUrl,
       campaignBrief: campaignBrief ?? this.campaignBrief,
       commissionRate: commissionRate ?? this.commissionRate,
+      commissionMax: commissionMax ?? this.commissionMax,
       expiresAt: expiresAt ?? this.expiresAt,
       status: status ?? this.status,
+      vendorRating: vendorRating ?? this.vendorRating,
     );
   }
 }

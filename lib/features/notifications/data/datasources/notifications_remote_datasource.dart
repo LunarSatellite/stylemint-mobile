@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/data/models/notification_dispatch_dto.dart';
+import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 
 class NotificationsRemoteDataSource {
   NotificationsRemoteDataSource({required this.apiClient});
@@ -25,4 +26,29 @@ class NotificationsRemoteDataSource {
         .map((e) => NotificationDispatchDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
   }
+
+  /// `GET /v1/creator/activity` — cursor-paged reverse-chronological activity
+  /// feed for the authenticated creator. Requires Creator role.
+  Future<List<ActivityItem>> getCreatorActivity({
+    int pageSize = 25,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/creator/activity',
+      queryParameters: <String, dynamic>{'pageSize': pageSize},
+    );
+    final json = response as Map<String, dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
+    return items.map((e) {
+      final entry = e as Map<String, dynamic>;
+      return ActivityItem(
+        id: (entry['id'] ?? '').toString(),
+        title: entry['headline'] as String? ?? '',
+        occurredAt: _parseDate(entry['occurredUtc']),
+        isRead: false,
+      );
+    }).toList(growable: false);
+  }
+
+  static DateTime? _parseDate(dynamic v) =>
+      v is String ? DateTime.tryParse(v) : null;
 }

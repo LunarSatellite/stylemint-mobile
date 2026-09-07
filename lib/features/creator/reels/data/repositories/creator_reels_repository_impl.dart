@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasource
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/post_publish_report.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -91,6 +92,40 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
           taggedProductId,
           const Uuid().v4(),
         );
+        return unit;
+      });
+
+  @override
+  Future<NetworkEither<PostPublishReport>> getPostPublishReport(
+    String reelId,
+  ) =>
+      _guard(() async {
+        final response = await remoteDataSource.getPostPublishReport(reelId);
+        final insights =
+            (response['insights'] as List<dynamic>? ?? const <dynamic>[])
+                .map((entry) {
+          final item = entry as Map<String, dynamic>;
+          return PostPublishInsight(
+            category: item['category'] as String? ?? '',
+            body: item['body'] as String? ?? '',
+          );
+        }).toList(growable: false);
+        return PostPublishReport(
+          reelId: response['reelId'] as String? ?? reelId,
+          generatedAtUtc: response['generatedAtUtc'] != null
+              ? DateTime.parse(response['generatedAtUtc'] as String)
+              : DateTime.now(),
+          performanceScore:
+              (response['performanceScore'] as num?)?.toDouble() ?? 0,
+          headline: response['headline'] as String? ?? '',
+          insights: insights,
+          isAvailable: response['isAvailable'] as bool? ?? true,
+        );
+      });
+
+  @override
+  Future<NetworkEither<Unit>> deleteReel(String reelId) => _guard(() async {
+        await remoteDataSource.deleteReel(reelId, const Uuid().v4());
         return unit;
       });
 

@@ -287,6 +287,36 @@ class _MockEarningsRepository implements EarningsRepository {
               highestReelEarnings: Money(amount: 8200, currency: 'NPR'),
             ),
           );
+
+  @override
+  Future<Either<NetworkExceptions, PayoutInvoice>> getPayoutInvoice(
+    String payoutId,
+  ) async =>
+      right(
+        PayoutInvoice(
+          payoutId: payoutId,
+          invoiceNumber: 'INV-0001',
+          destinationLabel: 'eSewa',
+          destinationRef: '9840098522',
+          grossAmount: const Money(amount: 17000, currency: 'NPR'),
+          feeAmount: const Money(amount: 340, currency: 'NPR'),
+          netAmount: const Money(amount: 16660, currency: 'NPR'),
+          requestedAt: DateTime.now().subtract(const Duration(days: 1)),
+          paidAt: DateTime.now().subtract(const Duration(hours: 10)),
+          state: PayoutState.paid,
+          lines: [
+            PayoutInvoiceLine(
+              description: 'Commission — order #NK2024-8912',
+              amount: const Money(amount: 17000, currency: 'NPR'),
+              occurredAt: DateTime.now().subtract(const Duration(days: 2)),
+            ),
+          ],
+        ),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> cancelPayout(String payoutId) async =>
+      right(unit);
 }
 
 class _MockNotificationsRepository implements NotificationsRepository {
@@ -496,6 +526,42 @@ class _MockReelImportRepository implements ReelImportRepository {
     String? cursor,
   }) async =>
       right([]);
+
+  @override
+  Future<Either<NetworkExceptions, BulkImportResult>> importBulk(
+    List<ImportableReel> reels,
+  ) async =>
+      right(BulkImportResult(
+        successCount: reels.length,
+        failureCount: 0,
+        allSucceeded: true,
+      ));
+
+  @override
+  Future<Either<NetworkExceptions, ReelIntent>> launchReelIntent(
+    SocialPlatform platform,
+  ) async =>
+      right(ReelIntent(
+        id: 'intent-mock-1',
+        targetPlatform: platform,
+        launchedAtUtc: DateTime.now(),
+        expiresAtUtc: DateTime.now().add(const Duration(minutes: 30)),
+        state: ReelIntentState.launched,
+      ));
+
+  @override
+  Future<Either<NetworkExceptions, ReelIntent>> completeReelIntent({
+    required String intentId,
+    required String resultingReelId,
+  }) async =>
+      right(ReelIntent(
+        id: intentId,
+        targetPlatform: SocialPlatform.instagram,
+        launchedAtUtc: DateTime.now().subtract(const Duration(minutes: 5)),
+        expiresAtUtc: DateTime.now().add(const Duration(minutes: 25)),
+        state: ReelIntentState.completed,
+        resultingReelId: resultingReelId,
+      ));
 }
 
 // ── Mock API client ───────────────────────────────────────────────────────────
