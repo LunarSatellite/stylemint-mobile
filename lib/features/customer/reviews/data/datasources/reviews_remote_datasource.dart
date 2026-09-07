@@ -7,14 +7,16 @@ class ReviewsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// GET `/v1/customer/products/{productId}/reviews`
+  /// GET `/v1/public/products/{productId}/reviews` — reads are on the
+  /// public catalog surface; `/v1/customer/products/{id}/reviews` is
+  /// write-only (POST, see [submitReview]) and 405s on GET.
   Future<Map<String, dynamic>> getProductReviews(
     String productId, {
     required int limit,
     String? cursor,
   }) async {
     final response = await apiClient.get(
-      '/v1/customer/products/$productId/reviews',
+      '/v1/public/products/$productId/reviews',
       queryParameters: {
         'limit': limit,
         if (cursor != null) 'cursor': cursor,
@@ -23,10 +25,10 @@ class ReviewsRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  // TODO: No review-summary endpoint in Swagger — aggregate from `/v1/customer/products/{productId}/reviews`
+  // TODO: No review-summary endpoint in Swagger — aggregate from `/v1/public/products/{productId}/reviews`
   Future<ReviewSummaryDto> getReviewSummary(String productId) async {
     final response = await apiClient.get(
-      '/v1/customer/products/$productId/reviews',
+      '/v1/public/products/$productId/reviews',
     );
     return ReviewSummaryDto.fromJson(response as Map<String, dynamic>);
   }

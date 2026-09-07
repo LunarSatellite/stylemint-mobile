@@ -5,10 +5,16 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Profile header: avatar, name, email and an edit button.
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({required this.summary, required this.onEdit, super.key});
+  const ProfileHeader({
+    required this.summary,
+    required this.onEdit,
+    required this.onNotifications,
+    super.key,
+  });
 
   final ProfileSummary summary;
   final VoidCallback onEdit;
+  final VoidCallback onNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +23,10 @@ class ProfileHeader extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: DesignTokens.avatarLarge / 2,
+            // Figma's profile-header avatar is 64x64, distinct from the
+            // shared avatarLarge (56) token used elsewhere — sized locally
+            // rather than changing that shared constant.
+            radius: 32,
             backgroundColor: DesignTokens.bgAppBodyLight,
             backgroundImage:
                 summary.avatarUrl.isNotEmpty
@@ -35,7 +44,12 @@ class ProfileHeader extends StatelessWidget {
               children: [
                 Text(
                   summary.displayName,
-                  style: DesignTokens.sectionInnerTitle,
+                  // Figma spec is 20/600 for the profile-header name,
+                  // distinct from the shared sectionInnerTitle (18/600)
+                  // token used elsewhere — overridden locally.
+                  style: DesignTokens.sectionInnerTitle.copyWith(
+                    fontSize: 20,
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s4),
                 Text(
@@ -45,6 +59,17 @@ class ProfileHeader extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          IconButton(
+            onPressed: onNotifications,
+            style: IconButton.styleFrom(
+              backgroundColor: DesignTokens.bgAppBodyLight,
+            ),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              size: DesignTokens.iconSmall,
+              color: DesignTokens.iconWhite,
             ),
           ),
           IconButton(

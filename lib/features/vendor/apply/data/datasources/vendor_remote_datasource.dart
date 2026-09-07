@@ -111,6 +111,7 @@ class VendorRemoteDataSource {
         'commissionMaxPercent': form.commissionMaxPercent,
         if (form.website != null) 'website': form.website,
         'taxId': form.taxId,
+        'businessRegistrationNumber': form.businessRegistrationNumber,
         if (form.addressLine1 != null) 'addressLine1': form.addressLine1,
         if (form.addressLine2 != null) 'addressLine2': form.addressLine2,
         if (form.city != null) 'city': form.city,

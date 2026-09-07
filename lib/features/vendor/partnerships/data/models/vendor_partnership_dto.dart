@@ -5,7 +5,7 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'vendor_partnership_dto.freezed.dart';
 part 'vendor_partnership_dto.g.dart';
 
-/// Matches `RoiProjectionSummary` (Vendor §5.4) — inline on `BrandBriefDto`
+/// Matches `RoiProjectionSummary` (Vendor Â§5.4) â€” inline on `BrandBriefDto`
 /// and standalone from `POST /v1/vendor/briefs/{id}/recompute-roi`.
 @freezed
 abstract class RoiProjectionSummaryDto with _$RoiProjectionSummaryDto {
@@ -112,7 +112,11 @@ abstract class CommissionRangeDto with _$CommissionRangeDto {
 @freezed
 abstract class DraftBriefVm with _$DraftBriefVm {
   const factory DraftBriefVm({
-    required String vendorProfileId,
+    /// Optional / back-compat only â€” the backend resolves the vendor from
+    /// the authenticated caller (`VendorBriefsController.ResolveVendorAsync`).
+    /// Omit rather than send an empty string: ASP.NET's default `Guid`
+    /// model binder rejects `""`, it only tolerates a missing field.
+    String? vendorProfileId,
     String? title,
     required int primaryGoal,
     List<String>? productVariantIds,
@@ -123,7 +127,7 @@ abstract class DraftBriefVm with _$DraftBriefVm {
       _$DraftBriefVmFromJson(json);
 }
 
-/// Request body for `PATCH /v1/vendor/briefs/{id}` (`UpdateBriefVm`) — only
+/// Request body for `PATCH /v1/vendor/briefs/{id}` (`UpdateBriefVm`) â€” only
 /// the subset the mobile UI edits today.
 @freezed
 abstract class UpdateBriefVm with _$UpdateBriefVm {
@@ -140,7 +144,7 @@ abstract class UpdateBriefVm with _$UpdateBriefVm {
 }
 
 /// Matches `CreatorPickerDto` from `GET /v1/vendor/partnerships/creators`
-/// (Vendor §7J — the invite picker).
+/// (Vendor Â§7J â€” the invite picker).
 @freezed
 abstract class CreatorInviteDto with _$CreatorInviteDto {
   const factory CreatorInviteDto({
@@ -189,6 +193,14 @@ abstract class VendorPartnershipDto with _$VendorPartnershipDto {
     @Default(false) bool initiatedByCreator,
     String? requestMessage,
     double? vendorRating,
+    // Joined at read time from stylemint-identity's CreatorProfile \u2014 mirrors
+    // the existing vendorRating field. The vendor partnership list + chat
+    // surfaces use these to display the creator's name/handle/avatar
+    // without a separate profile lookup.
+    String? creatorName,
+    String? creatorHandle,
+    String? creatorLogoUrl,
+    String? creatorAccountId,
   }) = _VendorPartnershipDto;
 
   const VendorPartnershipDto._();
@@ -213,5 +225,9 @@ abstract class VendorPartnershipDto with _$VendorPartnershipDto {
     initiatedByCreator: initiatedByCreator,
     requestMessage: requestMessage,
     vendorRating: vendorRating,
+    creatorName: creatorName ?? "",
+    creatorHandle: creatorHandle ?? "",
+    creatorLogoUrl: creatorLogoUrl,
+    creatorAccountId: creatorAccountId,
   );
 }

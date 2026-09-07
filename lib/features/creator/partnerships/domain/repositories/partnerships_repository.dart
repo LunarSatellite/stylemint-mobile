@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 
 abstract interface class PartnershipsRepository {
   Future<Either<NetworkExceptions, List<PartnershipInvite>>> getInvites();
@@ -12,4 +13,24 @@ abstract interface class PartnershipsRepository {
   Future<Either<NetworkExceptions, List<ActivePartnership>>> getActivePartnerships();
 
   Future<Either<NetworkExceptions, List<EndedPartnership>>> getEndedPartnerships();
+
+  // ── Brief / terms reads ─────────────────────────────────────────────────
+  // Routed through the repository so they share the connectivity guard and
+  // typed failures with the rest of the partnership calls.
+
+  Future<Either<NetworkExceptions, PartnershipTerms>> getPartnershipTerms(
+    String partnershipId,
+  );
+
+  Future<Either<NetworkExceptions, List<PartnershipTerms>>> getTermsVersions(
+    String partnershipId,
+  );
+
+  Future<Either<NetworkExceptions, PotentialEarnings>> getPotentialEarnings(
+    String partnershipId, {
+    String? variantId,
+  });
+
+  Future<Either<NetworkExceptions, List<RecipeAttachmentInfo>>>
+      getPartnershipRecipes(String partnershipId);
 }

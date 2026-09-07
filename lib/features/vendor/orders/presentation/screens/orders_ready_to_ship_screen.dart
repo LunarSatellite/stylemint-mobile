@@ -286,10 +286,13 @@ class _OrdersReadyToShipScreenState extends ConsumerState<OrdersReadyToShipScree
   Widget _buildSelectBar() {
     return Container(
       color: const Color(0xFF1C1C1E),
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s24,
-      ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s12,
+          ),
+          child: Row(
         children: [
           Expanded(
             child: SizedBox(
@@ -328,6 +331,8 @@ class _OrdersReadyToShipScreenState extends ConsumerState<OrdersReadyToShipScree
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -450,10 +455,10 @@ class _OrderCard extends StatelessWidget {
               ),
             ],
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: DesignTokens.bgAppBodyLight,
                 borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
               ),
               child: Padding(
@@ -468,10 +473,7 @@ class _OrderCard extends StatelessWidget {
                 children: [
                   Text(
                     'Order #${order.orderNumber}',
-                    style: DesignTokens.smallRegular.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
-                    ),
+                    style: DesignTokens.mediumSemibold,
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -495,7 +497,7 @@ class _OrderCard extends StatelessWidget {
                           fontFamily: DesignTokens.fontFamily,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF0D1B2A),
+                          color: Color(0xFF024A70),
                         ),
                       ),
                     ),

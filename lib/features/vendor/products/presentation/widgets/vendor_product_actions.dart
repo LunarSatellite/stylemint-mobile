@@ -6,13 +6,12 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Product row ⋮ action sheet.
-/// Active    → Edit / View Analytics / Deactivate / Update Stock  (4 items)
-/// OutOfStock → Edit / View Analytics / Update Stock              (3 items)
-/// Draft      → Edit / View Analytics / Update Stock              (3 items)
+/// Product row â‹® action sheet.
+/// Active    â†’ Edit / View Analytics / Deactivate / Update Stock  (4 items)
+/// OutOfStock â†’ Edit / View Analytics / Update Stock              (3 items)
+/// Draft      â†’ Edit / View Analytics / Update Stock              (3 items)
 Future<void> showVendorProductActions(
   BuildContext context,
   WidgetRef ref,
@@ -41,18 +40,30 @@ Future<void> showVendorProductActions(
           ),
           const SizedBox(height: DesignTokens.s16),
 
-          // 1 — Edit Product Details
+          // 1 â€” Edit Product Details (full field edit â€” name, images,
+          // pricing/inventory, shipping â€” on an already-published product.
+          // Uses the `details/*` + `images` endpoints, which allow
+          // Active/OutOfStock, not the wizard's Draft-only PATCH steps.)
           _ActionRow(
             icon: Icons.edit_outlined,
             title: 'Edit Product Details',
-            onTap: () {
+            onTap: () async {
               Navigator.pop(sheetCtx);
-              SmSnackbar.success(context, 'Edit product (coming soon).');
+              // /vendor/products/{id}/edit — pre-populates the unified
+              // form with the existing product's data.
+              final editPath = RouteNames.vendorEditProduct
+                  .replaceFirst(':productId', product.id);
+              final updated = await context.push<bool>(editPath);
+              if (updated == true && context.mounted) {
+                ref
+                    .read(vendorProductsNotifierProvider.notifier)
+                    .loadProducts();
+              }
             },
           ),
           const _ActionDivider(),
 
-          // 2 — View Analytics
+          // 2 â€” View Analytics
           _ActionRow(
             icon: Icons.bar_chart_outlined,
             title: 'View Analytics',
@@ -63,7 +74,7 @@ Future<void> showVendorProductActions(
           ),
           const _ActionDivider(),
 
-          // 3 — Deactivate (Active only)
+          // 3 â€” Deactivate (Active only)
           if (isActive) ...[
             _ActionRow(
               icon: Icons.do_not_disturb_on_outlined,
@@ -84,7 +95,7 @@ Future<void> showVendorProductActions(
             const _ActionDivider(),
           ],
 
-          // 4 — Update Product Stock
+          // 4 â€” Update Product Stock
           _ActionRow(
             icon: Icons.inventory_2_outlined,
             title: 'Update Product Stock',
@@ -113,7 +124,7 @@ Future<bool?> _confirmDeactivate(BuildContext context, VendorProduct product) {
   );
 }
 
-// ── Action row ────────────────────────────────────────────────────────────────
+// â”€â”€ Action row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ActionRow extends StatelessWidget {
   const _ActionRow({
@@ -169,7 +180,7 @@ class _ActionDivider extends StatelessWidget {
   );
 }
 
-// ── Confirm deactivate sheet ──────────────────────────────────────────────────
+// â”€â”€ Confirm deactivate sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ConfirmDeactivateSheet extends StatefulWidget {
   const _ConfirmDeactivateSheet({required this.product});
@@ -293,7 +304,7 @@ class _ConfirmDeactivateSheetState extends State<_ConfirmDeactivateSheet> {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            'Active Orders: ${widget.product.totalSales ?? '—'}',
+                            'Active Orders: ${widget.product.totalSales ?? 'â€”'}',
                             style: DesignTokens.tiny.copyWith(
                               color: DesignTokens.primaryGreen,
                               fontWeight: FontWeight.w600,

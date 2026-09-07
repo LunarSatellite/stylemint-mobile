@@ -1,7 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/shared/orders_mock_data.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
-import 'package:stylemint_mobile_frontend/features/profile/shared/profile_mock_data.dart';
 
 part 'profile_summary_dto.freezed.dart';
 part 'profile_summary_dto.g.dart';
@@ -29,10 +27,10 @@ abstract class ProfileSummaryDto with _$ProfileSummaryDto {
     email: '',
     avatarUrl: avatarUrl ?? '',
     savedItemsCount: 0,
-    // Counts are not yet returned by the account endpoint — use mock counts
-    // until the backend wires /v1/accounts/{id}/stats.
-    followingCount: kMockFollowingUsers.length,
-    ordersCount: kMockTrackedOrders.length,
+    // Counts are not yet returned by the account endpoint — 0 until the
+    // backend wires /v1/accounts/{id}/stats, rather than a fabricated value.
+    followingCount: 0,
+    ordersCount: 0,
     language: locale,
     pushEnabled: true,
   );

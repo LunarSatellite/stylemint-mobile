@@ -18,7 +18,7 @@ class Step5ReviewScreen extends ConsumerWidget {
       next.maybeWhen(
         publishSuccess: (productId) {
           SmSnackbar.success(context, 'Product published successfully!');
-          context.pop();
+          context.pop(true);
         },
         publishFailure: (_, e) {
           SmSnackbar.error(context, 'Failed to publish product.');
@@ -101,7 +101,7 @@ class Step5ReviewScreen extends ConsumerWidget {
 
     return Column(
       children: [
-        // ── Scrollable content ───────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -130,7 +130,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // 1 — Business Information
+                // 1 â€” Business Information
                 _ReviewSection(
                   title: 'Business Information',
                   onEdit: () => notifier.goToStep(1),
@@ -148,7 +148,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s12),
 
-                // 2 — Images & Media
+                // 2 â€” Images & Media
                 _ReviewSection(
                   title: 'Images & Media',
                   onEdit: () => notifier.goToStep(2),
@@ -161,7 +161,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s12),
 
-                // 3 — Pricing
+                // 3 â€” Pricing
                 _ReviewSection(
                   title: 'Pricing',
                   onEdit: () => notifier.goToStep(3),
@@ -190,7 +190,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s12),
 
-                // 4 — Inventory
+                // 4 â€” Inventory
                 _ReviewSection(
                   title: 'Inventory',
                   onEdit: () => notifier.goToStep(3),
@@ -212,7 +212,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s12),
 
-                // 5 — Creator Commission
+                // 5 â€” Creator Commission
                 _ReviewSection(
                   title: 'Creator Commission',
                   onEdit: () => notifier.goToStep(3),
@@ -223,7 +223,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: DesignTokens.s12),
 
-                // 6 — Shipping Details
+                // 6 â€” Shipping Details
                 _ReviewSection(
                   title: 'Shipping Details',
                   onEdit: () => notifier.goToStep(4),
@@ -261,8 +261,10 @@ class Step5ReviewScreen extends ConsumerWidget {
           ),
         ),
 
-        // ── Sticky Publish button ────────────────────────────────
-        Container(
+        // â”€â”€ Sticky Publish button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -305,13 +307,14 @@ class Step5ReviewScreen extends ConsumerWidget {
                     ),
             ),
           ),
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Section card with Edit button ─────────────────────────────────
+// â”€â”€ Section card with Edit button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ReviewSection extends StatelessWidget {
   const _ReviewSection({
@@ -378,7 +381,7 @@ class _ReviewSection extends StatelessWidget {
   }
 }
 
-// ── Bold product name row ─────────────────────────────────────────
+// â”€â”€ Bold product name row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _BoldValueRow extends StatelessWidget {
   const _BoldValueRow(this.value);
@@ -402,7 +405,7 @@ class _BoldValueRow extends StatelessWidget {
   }
 }
 
-// ── Single light-text label row ───────────────────────────────────
+// â”€â”€ Single light-text label row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _LabelValueRow extends StatelessWidget {
   const _LabelValueRow(this.value, {this.maxLines = 2});
@@ -429,7 +432,7 @@ class _LabelValueRow extends StatelessWidget {
   }
 }
 
-// ── Label : Value row ─────────────────────────────────────────────
+// â”€â”€ Label : Value row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DataRow extends StatelessWidget {
   const _DataRow({required this.label, required this.value});
@@ -473,7 +476,7 @@ class _DataRow extends StatelessWidget {
   }
 }
 
-// ── Your Profit row with green pill ──────────────────────────────
+// â”€â”€ Your Profit row with green pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ProfitRow extends StatelessWidget {
   const _ProfitRow({required this.profit, required this.profitPct});
@@ -522,7 +525,7 @@ class _ProfitRow extends StatelessWidget {
   }
 }
 
-// ── Images thumbnail strip ────────────────────────────────────────
+// â”€â”€ Images thumbnail strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ImagesThumbnailRow extends StatelessWidget {
   const _ImagesThumbnailRow({

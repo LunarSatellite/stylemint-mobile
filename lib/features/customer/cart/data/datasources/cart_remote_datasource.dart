@@ -8,7 +8,7 @@ class CartRemoteDataSource {
   final ApiClient apiClient;
 
   Future<CartDto> getCart() async {
-    final response = await apiClient.authGet('/v1/cart');
+    final response = await apiClient.get('/v1/cart');
     return CartDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -23,7 +23,11 @@ class CartRemoteDataSource {
       data: {
         'productId': productId,
         'quantity': quantity,
-        if (variantId != null) 'variantId': variantId,
+        // Backend field is ProductVariantId; omit entirely when we don't have
+        // one (e.g. reel-tag Add to Cart) — the server resolves the product's
+        // single default variant. Day 1 has no real per-variant SKU ids on
+        // the client to send here.
+        if (variantId != null) 'productVariantId': variantId,
       },
       options: _idempotent(idempotencyKey),
     );

@@ -137,7 +137,10 @@ class _VendorApplyStep2ScreenState
 
   Widget _buildFormCard() {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s20),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s24,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +152,7 @@ class _VendorApplyStep2ScreenState
             ' the security of your account.',
             style: DesignTokens.smallRegular,
           ),
-          const SizedBox(height: DesignTokens.s24),
+          const SizedBox(height: DesignTokens.s32),
 
           TextField(
             controller: _supportEmailController,
@@ -161,7 +164,7 @@ class _VendorApplyStep2ScreenState
               hintText: 'Support Email Address',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _supportPhoneController,
@@ -173,7 +176,7 @@ class _VendorApplyStep2ScreenState
               hintText: 'Support Phone',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _returnPolicyController,
@@ -200,7 +203,7 @@ class _VendorApplyStep2ScreenState
             ),
             decoration: DesignTokens.inputDecoration(hintText: 'Full Name'),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _positionController,
@@ -211,7 +214,7 @@ class _VendorApplyStep2ScreenState
               hintText: 'Position/Title',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _emailController,
@@ -223,7 +226,7 @@ class _VendorApplyStep2ScreenState
               hintText: 'Email Address',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _phoneController,

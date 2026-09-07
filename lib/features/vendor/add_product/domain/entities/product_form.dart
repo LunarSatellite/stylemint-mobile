@@ -102,6 +102,11 @@ class ImagesInfo {
     required this.primaryImageIndex,
   });
 
+  // Backend enforces 5-10 images at publish time
+  // (ProductService.MinImagesAtPublish/MaxImagesAtPublish).
+  static const minImages = 5;
+  static const maxImages = 10;
+
   final List<String> images;
   final int primaryImageIndex;
 
@@ -457,7 +462,13 @@ class ProductFormState {
       step1!.description.isNotEmpty &&
       step1!.categories.isNotEmpty;
 
-  bool get isStep2Valid => step2 != null && step2!.images.isNotEmpty;
+  // Matched to ImagesInfo.minImages/maxImages so the wizard can't walk a
+  // vendor through all 5 steps only to fail silently on the final publish
+  // call with no indication why.
+  bool get isStep2Valid =>
+      step2 != null &&
+      step2!.images.length >= ImagesInfo.minImages &&
+      step2!.images.length <= ImagesInfo.maxImages;
 
   bool get isStep3Valid => step3 != null;
 

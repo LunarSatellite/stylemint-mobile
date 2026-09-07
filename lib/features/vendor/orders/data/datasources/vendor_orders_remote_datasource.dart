@@ -19,13 +19,27 @@ class VendorOrdersRemoteDataSource {
     required int limit,
     String? cursor,
     String? status,
+    DateTime? placedFromUtc,
+    DateTime? placedToUtc,
+    String? productVariantId,
+    double? minSubtotal,
+    double? maxSubtotal,
+    String? carrier,
   }) async {
     final response = await apiClient.get(
       '/v1/vendor/sub-orders',
       queryParameters: {
-        'limit': limit,
+        'pageSize': limit,
         if (cursor != null) 'cursor': cursor,
-        if (status != null) 'status': status,
+        if (status != null) 'state': status,
+        if (placedFromUtc != null)
+          'placedFromUtc': placedFromUtc.toUtc().toIso8601String(),
+        if (placedToUtc != null)
+          'placedToUtc': placedToUtc.toUtc().toIso8601String(),
+        if (productVariantId != null) 'productVariantId': productVariantId,
+        if (minSubtotal != null) 'minSubtotal': minSubtotal,
+        if (maxSubtotal != null) 'maxSubtotal': maxSubtotal,
+        if (carrier != null) 'carrier': carrier,
       },
     );
     return response as Map<String, dynamic>;

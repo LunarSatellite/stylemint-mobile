@@ -30,55 +30,14 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
     );
   }
 
-  // Sample tickets matching customer context
-  static final _sampleTickets = [
-    Ticket(
-      id: '1',
-      ticketNumber: '#ST890087',
-      subject: 'Cannot Add New Shipping Address',
-      status: TicketStatus.open,
-      createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
-    ),
-    Ticket(
-      id: '2',
-      ticketNumber: '#ST890086',
-      subject: 'Did not get Full Refund for Order #32323',
-      status: TicketStatus.open,
-      createdAt: DateTime(2025, 9, 25, 16, 53),
-      lastUpdated: DateTime(2025, 9, 25, 16, 53),
-      lastMessagePreview: null,
-    ),
-    Ticket(
-      id: '3',
-      ticketNumber: '#ST890085',
-      subject: 'Order delivered to wrong address',
-      status: TicketStatus.inProgress,
-      createdAt: DateTime(2025, 9, 20, 10, 30),
-      lastUpdated: DateTime(2025, 9, 20, 10, 30),
-      lastMessagePreview: null,
-    ),
-    Ticket(
-      id: '4',
-      ticketNumber: '#ST890084',
-      subject: 'Item arrived damaged — resolved',
-      status: TicketStatus.resolved,
-      createdAt: DateTime(2025, 9, 15, 9, 0),
-      lastUpdated: DateTime(2025, 9, 15, 9, 0),
-      lastMessagePreview: null,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(supportNotifierProvider);
 
-    final apiTickets = state.maybeWhen(
+    final allTickets = state.maybeWhen(
       loadSuccess: (t) => t,
       orElse: () => <Ticket>[],
     );
-    final allTickets = apiTickets.isEmpty ? _sampleTickets : apiTickets;
 
     final submitted = allTickets
         .where((t) => t.status == TicketStatus.open)

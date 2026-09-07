@@ -5,7 +5,9 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class VendorOrdersScreen extends ConsumerStatefulWidget {
@@ -47,13 +49,25 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
     final shipped = inTransit;
     final completed = orders.where((o) => o.status.isCompleted).toList(growable: false);
 
-    return Scaffold(
+    return RootBackGuard(
+      fallback: RouteNames.vendorHome,
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         centerTitle: false,
+        // Reached via context.go() from the dashboard's bottom nav, which
+        // clears back history — there's nothing for GoRouter to auto-detect,
+        // so the leading back arrow needs to be explicit, not just re-enabled.
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: DesignTokens.textWhite, size: 20),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.vendorHome),
+        ),
         title: const Text(
           'Your Orders',
           style: TextStyle(
@@ -142,6 +156,15 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
             _OrderList(orders: completed),
           ],
         ),
+      ),
+      bottomNavigationBar: VendorBottomNav(
+        selectedIndex: 1,
+        onTap: (i) {
+          if (i == 0) context.go(RouteNames.vendorHome);
+          if (i == 2) context.go(RouteNames.vendorProducts);
+            if (i == 3) context.push(RouteNames.vendorProfile);
+        },
+      ),
       ),
     );
   }

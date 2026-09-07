@@ -3,11 +3,25 @@
          only auto-injects INTERNET into the debug manifest, so release APKs
          have no network access without this. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Required by connectivity_plus (NetworkInfoConnectivityImpl.isConnected),
+         used to gate every cart API call. Without it, checkConnectivity() can
+         fail/throw and the cart repository short-circuits to "no internet"
+         before ever calling the API. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Biometric / device-credential unlock (local_auth). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    <!-- QR scanner for cross-device web login (mobile_scanner). -->
+    <!-- QR scanner for cross-device web login (mobile_scanner); also the
+         vendor Add Product wizard's "Capture Image" (image_picker). -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <!-- image_picker's gallery source (vendor Add Product "Upload Image").
+         The Android 13+ Photo Picker doesn't need these, but some OEM
+         builds (e.g. ColorOS) still gate the legacy media picker behind
+         them on certain flows. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
 
     <application
         android:label="stylemint_mobile_frontend"
@@ -76,6 +90,7 @@
                     android:scheme="https"
                     android:host="stylemint.voyageritnepal.com"/>
                 <data android:pathPrefix="/auth/magic"/>
+                <data android:pathPrefix="/auth/oauth/callback"/>
                 <data android:pathPrefix="/reels"/>
                 <data android:pathPrefix="/product"/>
                 <data android:pathPrefix="/order"/>

@@ -28,6 +28,12 @@ class CampaignBriefsScreen extends ConsumerWidget {
         leading: const BackButton(color: DesignTokens.textWhite),
         title: const Text('Campaign Briefs', style: DesignTokens.titleMedium),
       ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: DesignTokens.primaryGreen,
+        foregroundColor: Colors.black,
+        onPressed: () => context.push(RouteNames.vendorCreateCampaign),
+        child: const Icon(Icons.add),
+      ),
       body: state.when(
         initial: _loader,
         loadInProgress: _loader,

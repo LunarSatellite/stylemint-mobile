@@ -5,7 +5,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/repositories/checkout_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'checkout_notifier.freezed.dart';
 
@@ -54,102 +53,109 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
     try {
       final summaryEither = await _repository.getCheckoutSummary();
-
-      if (summaryEither.isLeft()) {
-        // Any API failure (including empty-cart rule.violation): fall back to mock.
-        state = CheckoutState.loadSuccess(_mockSummary());
-        return;
-      }
-
-      final summary = summaryEither.fold((_) => _mockSummary(), (s) => s);
-
-      // Non-fatal — fall back to summary values on failure.
-      final addressesEither = await _repository.getShippingAddresses();
-      final methodsEither = await _repository.getPaymentMethods();
-
-      final addresses =
-          addressesEither.fold((_) => <ShippingAddress>[], (list) => list);
-      final methods =
-          methodsEither.fold((_) => <PaymentMethod>[], (list) => list);
-
-      // Merge: summary's address/method is always first; dedup by id.
-      final seenAddr = <String>{summary.shippingAddress.id};
-      final allAddresses = [
-        summary.shippingAddress,
-        ...addresses.where((a) => seenAddr.add(a.id)),
-      ];
-
-      final seenMeth = <String>{summary.paymentMethod.id};
-      final allMethods = [
-        summary.paymentMethod,
-        ...methods.where((m) => seenMeth.add(m.id)),
-      ];
-
-      state = CheckoutState.loadSuccess(
-        summary.copyWith(
-          availableAddresses: allAddresses,
-          availablePaymentMethods: allMethods,
-        ),
+      await summaryEither.fold(
+        (f) async => state = CheckoutState.loadFailure(f),
+        (summary) => _loadWithSummary(summary),
       );
     } catch (_) {
-      // Unexpected runtime error — show mock data so the UI is never stuck.
-      state = CheckoutState.loadSuccess(_mockSummary());
+      state = const CheckoutState.loadFailure(NetworkExceptions.unexpectedError());
     }
   }
 
-  static CheckoutSummary _mockSummary() => CheckoutSummary(
-        shippingAddress: const ShippingAddress(
-          id: '',
-          label: 'Home',
-          line1: '',
-          city: '',
-          countryCode: 'NP',
-          isDefault: false,
-        ),
-        paymentMethod: const PaymentMethod(
-          id: 'mock-pm-1',
-          type: PaymentMethodType.eSewa,
-          label: 'eSewa',
-          isDefault: true,
-        ),
-        items: const [
-          CheckoutItem(
-            productId: 'mock-prod-1',
-            productName: 'StyleMint Tote Bag',
-            imageUrl: '',
-            variantName: 'Black / One Size',
-            quantity: 1,
-            unitPrice: Money(amount: 1500, currency: 'NPR'),
-          ),
-          CheckoutItem(
-            productId: 'mock-prod-2',
-            productName: 'Oversized Linen Shirt',
-            imageUrl: '',
-            variantName: 'White / M',
-            quantity: 2,
-            unitPrice: Money(amount: 2200, currency: 'NPR'),
-          ),
-        ],
-        subtotal: const Money(amount: 5900, currency: 'NPR'),
-        shipping: const Money(amount: 0, currency: 'NPR'),
-        tax: const Money(amount: 767, currency: 'NPR'),
-        discount: const Money(amount: 0, currency: 'NPR'),
-        total: const Money(amount: 6667, currency: 'NPR'),
-        availableAddresses: const [],
-        availablePaymentMethods: const [],
-      );
+  Future<void> _loadWithSummary(CheckoutSummary summary) async {
+    // Non-fatal — fall back to empty lists on failure.
+    final addressesEither = await _repository.getShippingAddresses();
+    final methodsEither = await _repository.getPaymentMethods();
+
+    final addresses =
+        addressesEither.fold((_) => <ShippingAddress>[], (list) => list);
+    final methods =
+        methodsEither.fold((_) => <PaymentMethod>[], (list) => list);
+
+    // A fresh checkout session carries no address/payment of its own (see
+    // CheckoutSummaryDto.toDomain) — default to the account's default saved
+    // one, falling back to the sentinel "none selected" from the session.
+    final defaultAddress = addresses.isEmpty
+        ? summary.shippingAddress
+        : addresses.firstWhere((a) => a.isDefault, orElse: () => addresses.first);
+    final defaultMethod = methods.isEmpty
+        ? summary.paymentMethod
+        : methods.firstWhere((m) => m.isDefault, orElse: () => methods.first);
+
+    state = CheckoutState.loadSuccess(
+      summary.copyWith(
+        shippingAddress: defaultAddress,
+        paymentMethod: defaultMethod,
+        availableAddresses: addresses,
+        availablePaymentMethods: methods,
+      ),
+    );
+  }
+
+  /// Returns null on success, or the failure to show to the user.
+  Future<NetworkExceptions?> addAddress({
+    required String label,
+    required String receiverName,
+    required String receiverPhone,
+    required String addressLine1,
+    String? landmark,
+    required String country,
+    required String state,
+    required String city,
+    required String zipCode,
+    bool makeDefault = false,
+    required String idempotencyKey,
+  }) async {
+    final either = await _repository.addAddress(
+      label: label,
+      receiverName: receiverName,
+      receiverPhone: receiverPhone,
+      addressLine1: addressLine1,
+      landmark: landmark,
+      country: country,
+      state: state,
+      city: city,
+      zipCode: zipCode,
+      makeDefault: makeDefault,
+      idempotencyKey: idempotencyKey,
+    );
+    return either.fold(
+      (f) => f,
+      (_) {
+        unawaited(load());
+        return null;
+      },
+    );
+  }
 
   Future<void> placeOrder({
     required String addressId,
-    required String paymentMethodId,
+    required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {
-    state = state.maybeWhen(
-      loadSuccess: (summary, _) => CheckoutState.loadSuccess(
-        summary,
-        placeOrderState: const PlaceOrderState.success('mock-order-001'),
+    final summary = state.maybeWhen(
+      loadSuccess: (s, _) => s,
+      orElse: () => null,
+    );
+    if (summary == null) return;
+
+    state = CheckoutState.loadSuccess(
+      summary,
+      placeOrderState: const PlaceOrderState.processing(),
+    );
+
+    final either = await _repository.placeOrder(
+      addressId: addressId,
+      paymentMethod: paymentMethod,
+      idempotencyKey: idempotencyKey,
+    );
+
+    state = CheckoutState.loadSuccess(
+      summary,
+      placeOrderState: either.fold(
+        PlaceOrderState.failure,
+        PlaceOrderState.success,
       ),
-      orElse: () => state,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -36,6 +37,40 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
     _barcodeController = TextEditingController();
     _quantityController = TextEditingController();
     _commissionRateController = TextEditingController();
+    // Edit-mode pre-population: when the wizard mounts in Edit mode the
+    // notifier already has step3 populated from the backend. Pull the
+    // data here so the controllers don't start blank. Safe to call in
+    // Create mode too -- step3 is null on a fresh wizard, so nothing
+    // is copied.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateFromState());
+  }
+
+  void _hydrateFromState() {
+    if (!mounted) return;
+    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+          loadSuccess: (s) => s,
+          orElse: () => null,
+        );
+    final p = fs?.step3;
+    if (p == null) return;
+    setState(() {
+      _basePriceController.text = p.basePrice.amount > 0
+          ? p.basePrice.amount.toString()
+          : '';
+      if (p.compareAtPrice != null && p.compareAtPrice!.amount > 0) {
+        _compareAtPriceController.text = p.compareAtPrice!.amount.toString();
+      }
+      if (p.costPerItem != null && p.costPerItem!.amount > 0) {
+        _costPerItemController.text = p.costPerItem!.amount.toString();
+      }
+      if (p.discountPercent != null) {
+        _discountController.text = p.discountPercent!.toString();
+      }
+      _skuController.text = p.sku;
+      _quantityController.text = p.quantityOnHand.toString();
+      _trackInventory = p.trackInventory;
+      _allowOverselling = p.allowOverselling;
+    });
   }
 
   @override
@@ -116,7 +151,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
 
     return Column(
       children: [
-        // ── Scrollable content ───────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -289,8 +324,10 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
           ),
         ),
 
-        // ── Sticky Previous + Proceed ────────────────────────────
-        Container(
+        // â”€â”€ Sticky Previous + Proceed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -373,13 +410,14 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
               ),
             ],
           ),
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Plain input field ─────────────────────────────────────────────
+// â”€â”€ Plain input field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _PricingField extends StatelessWidget {
   const _PricingField({
@@ -421,7 +459,7 @@ class _PricingField extends StatelessWidget {
   }
 }
 
-// ── Barcode field with trailing chevron icon ──────────────────────
+// â”€â”€ Barcode field with trailing chevron icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DropdownStyleField extends StatelessWidget {
   const _DropdownStyleField({
@@ -448,7 +486,7 @@ class _DropdownStyleField extends StatelessWidget {
   }
 }
 
-// ── Your Profit display row ───────────────────────────────────────
+// â”€â”€ Your Profit display row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _YourProfitRow extends StatelessWidget {
   const _YourProfitRow({required this.profit});
@@ -495,7 +533,7 @@ class _YourProfitRow extends StatelessWidget {
   }
 }
 
-// ── Creators Earn display row ─────────────────────────────────────
+// â”€â”€ Creators Earn display row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _CreatorsEarnRow extends StatelessWidget {
   const _CreatorsEarnRow({required this.amount});
@@ -530,7 +568,7 @@ class _CreatorsEarnRow extends StatelessWidget {
   }
 }
 
-// ── Spec-style checkbox (square check + title + description) ──────
+// â”€â”€ Spec-style checkbox (square check + title + description) â”€â”€â”€â”€â”€â”€
 
 class _SpecCheckbox extends StatelessWidget {
   const _SpecCheckbox({

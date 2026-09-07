@@ -4,9 +4,10 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/mod
     show PartnershipTermsDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/partnership_dto.dart';
 
-// PartnershipState ints: 1=Invited, 2=Active, 3=Declined, 4=Paused, 5=Ended
+// PartnershipState ints: 1=Invited, 2=Declined, 3=Active, 4=Paused, 5=Ended
 const _stateInvited = 1;
-const _stateActive = 2;
+const _stateDeclined = 2;
+const _stateActive = 3;
 const _statePaused = 4;
 const _stateEnded = 5;
 
@@ -25,8 +26,11 @@ class PartnershipsRemoteDataSource {
         .toList(growable: false);
   }
 
+  // Includes Declined alongside Invited so the requests screen's
+  // Pending/Declined tabs can both derive from PartnershipInvite.status
+  // (toInviteDomain() already maps state 1/2 to pending/declined).
   Future<List<PartnershipDto>> getInvites() =>
-      _fetchPartnerships([_stateInvited]);
+      _fetchPartnerships([_stateInvited, _stateDeclined]);
 
   Future<PartnershipDto> acceptInvite(
     String inviteId,
@@ -61,7 +65,7 @@ class PartnershipsRemoteDataSource {
       _fetchPartnerships([_stateEnded]);
 
   Future<PartnershipTermsDto> getPartnershipTerms(String partnershipId) async {
-    final response = await apiClient.authGet(
+    final response = await apiClient.get(
       '/v1/partnerships/$partnershipId/terms/active',
     );
     return PartnershipTermsDto.fromJson(response as Map<String, dynamic>);

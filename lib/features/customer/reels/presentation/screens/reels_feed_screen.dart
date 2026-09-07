@@ -78,17 +78,18 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
           );
         },
         loadFailure: (failure) {
-          if (failure.isNoInternet) {
-            return SmErrorView(
-              message: 'No internet connection.',
-              onRetry:
-                  () =>
-                      ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
-            );
-          }
-          return const SmEmptyState(
-            message: 'No reels yet. Check back soon for new content.',
-            icon: Icons.video_library_outlined,
+          // Previously this fell through to the same "No reels yet" empty
+          // state as a genuinely-empty feed for every failure type — making
+          // real errors (parsing exceptions, 500s, etc.) indistinguishable
+          // from "there's just nothing to show" and impossible to diagnose
+          // from the UI alone.
+          final message = failure.isNoInternet
+              ? 'No internet connection.'
+              : 'Failed to load reels: ${failure.toString()}';
+          return SmErrorView(
+            message: message,
+            onRetry: () =>
+                ref.read(reelsFeedNotifierProvider.notifier).fetchFeed(),
           );
         },
       ),

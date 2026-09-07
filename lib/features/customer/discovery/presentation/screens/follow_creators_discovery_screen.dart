@@ -18,18 +18,18 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// creator's account id server-side, so it is the correct follow target.
 final _suggestedCreatorsProvider =
     FutureProvider.autoDispose<List<CreatorChipDto>>((ref) async {
-  final ApiClient api = ref.watch(apiClientProvider);
-  final res = await api.get(
-    '/api/v1/customer/feed/creators-you-may-like',
-    queryParameters: {'limit': 30},
-  );
-  final map = res as Map<String, dynamic>;
-  final items = (map['items'] as List<dynamic>? ?? const <dynamic>[]);
-  return items
-      .whereType<Map<String, dynamic>>()
-      .map(CreatorChipDto.fromJson)
-      .toList(growable: false);
-});
+      final ApiClient api = ref.watch(apiClientProvider);
+      final res = await api.get(
+        '/api/v1/customer/feed/creators-you-may-like',
+        queryParameters: {'limit': 30},
+      );
+      final map = res as Map<String, dynamic>;
+      final items = (map['items'] as List<dynamic>? ?? const <dynamic>[]);
+      return items
+          .whereType<Map<String, dynamic>>()
+          .map(CreatorChipDto.fromJson)
+          .toList(growable: false);
+    });
 
 class FollowCreatorsDiscoveryScreen extends ConsumerStatefulWidget {
   const FollowCreatorsDiscoveryScreen({super.key});
@@ -61,46 +61,103 @@ class _FollowCreatorsDiscoveryScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Discover Creators',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Discover Creators',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
-      body: async.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
-        error: (_, __) => Center(
-            child: Text("Couldn't load creators.", style: DesignTokens.bodyText)),
-        data: (creators) => creators.isEmpty
-            ? Center(
-                child: Text('No suggestions right now.',
-                    style: DesignTokens.bodyText))
-            : ListView.separated(
-                padding: const EdgeInsets.all(DesignTokens.s16),
-                itemCount: creators.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: DesignTokens.s12),
-                itemBuilder: (context, i) {
-                  final c = creators[i];
-                  return _CreatorRow(
-                    creator: c,
-                    following: followed.contains(c.creatorProfileId),
-                    onToggle: () => _toggle(c.creatorProfileId),
-                    onOpen: () => context.push(
-                      '/creator-profile/${c.creatorProfileId}',
-                      extra: CreatorProfileArgs(
-                        accountId: c.creatorProfileId,
-                        displayName: c.displayName,
-                        handle: c.handle,
-                        avatarUrl: c.avatarUrl,
-                      ),
-                    ),
-                  );
-                },
+      body: Column(
+        children: [
+          // Figma "Follow Creators" frame has this as a static header above
+          // the list — the app bar title alone didn't carry this copy.
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s8,
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Follow Creators You Love',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                SizedBox(height: DesignTokens.s8),
+                Text(
+                  'Get Personalized recommendations from creators in '
+                  'Fashion, Beauty, and Fitness',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _buildList(async, followed)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(
+    AsyncValue<List<CreatorChipDto>> async,
+    Set<String> followed,
+  ) {
+    return async.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      ),
+      error: (_, __) => Center(
+        child: Text("Couldn't load creators.", style: DesignTokens.bodyText),
+      ),
+      data: (creators) => creators.isEmpty
+          ? Center(
+              child: Text(
+                'No suggestions right now.',
+                style: DesignTokens.bodyText,
               ),
-      ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              itemCount: creators.length,
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: DesignTokens.s12),
+              itemBuilder: (context, i) {
+                final c = creators[i];
+                return _CreatorRow(
+                  creator: c,
+                  following: followed.contains(c.creatorProfileId),
+                  onToggle: () => _toggle(c.creatorProfileId),
+                  onOpen: () => context.push(
+                    '/creator-profile/${c.creatorProfileId}',
+                    extra: CreatorProfileArgs(
+                      accountId: c.creatorProfileId,
+                      displayName: c.displayName,
+                      handle: c.handle,
+                      avatarUrl: c.avatarUrl,
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
@@ -133,16 +190,23 @@ class _CreatorRow extends StatelessWidget {
                   ? Container(
                       color: DesignTokens.bgAppBodyLight,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.person,
-                          color: DesignTokens.iconLight))
-                  : Image.network(avatar,
+                      child: const Icon(
+                        Icons.person,
+                        color: DesignTokens.iconLight,
+                      ),
+                    )
+                  : Image.network(
+                      avatar,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                            color: DesignTokens.bgAppBodyLight,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.person,
-                                color: DesignTokens.iconLight),
-                          )),
+                        color: DesignTokens.bgAppBodyLight,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.person,
+                          color: DesignTokens.iconLight,
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),
@@ -154,15 +218,20 @@ class _CreatorRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(creator.displayName.isEmpty ? '@${creator.handle}' : creator.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold),
+                Text(
+                  creator.displayName.isEmpty
+                      ? '@${creator.handle}'
+                      : creator.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.mediumSemibold,
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '${_compact(creator.followerCount)} followers • ${creator.reelCount} reels',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -191,9 +260,13 @@ class _FollowButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s8,
+        ),
         decoration: BoxDecoration(
-          color: following ? DesignTokens.bgAppBodyLight : DesignTokens.primaryGreen,
+          color: following
+              ? DesignTokens.bgAppBodyLight
+              : DesignTokens.primaryGreen,
           borderRadius: BorderRadius.circular(999),
           border: following
               ? Border.all(color: DesignTokens.borderDefault)
@@ -202,7 +275,9 @@ class _FollowButton extends StatelessWidget {
         child: Text(
           following ? 'Following' : 'Follow',
           style: DesignTokens.smallRegular.copyWith(
-            color: following ? DesignTokens.textLight : DesignTokens.buttonPrimaryText,
+            color: following
+                ? DesignTokens.textLight
+                : DesignTokens.buttonPrimaryText,
             fontWeight: FontWeight.w600,
           ),
         ),

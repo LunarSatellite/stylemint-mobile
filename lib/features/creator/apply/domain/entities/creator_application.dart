@@ -14,6 +14,11 @@ class CreatorApplication {
     required this.id,
     required this.status,
     this.rejectionReason,
+    this.bio = '',
+    this.audienceBand = 1,
+    this.otherCategoryDescription,
+    this.categoryIds = const <String>[],
+    this.socials = const <Platform>[],
     required this.submittedAt,
     required this.updatedAt,
   });
@@ -21,6 +26,24 @@ class CreatorApplication {
   final String id;
   final CreatorApplicationStatus status;
   final String? rejectionReason;
+
+  /// What the user submitted as 'why join' / motivation. Mirrors the BE's
+  /// io field on the application — pre-fills step 1 of the wizard on
+  /// reapply so the user doesn't have to retype it.
+  final String bio;
+
+  /// 1..5; mirrors the BE's udienceBand int enum. Pre-fills step 2.
+  final int audienceBand;
+
+  final String? otherCategoryDescription;
+
+  /// GUIDs of selected content categories (from categories[*].creatorContentCategoryId);
+  /// pre-fills step 1 category chips on reapply.
+  final List<String> categoryIds;
+
+  /// Connected social profiles, decoded from socials; pre-fills step 2.
+  final List<Platform> socials;
+
   final DateTime submittedAt;
   final DateTime updatedAt;
 
@@ -28,6 +51,11 @@ class CreatorApplication {
     String? id,
     CreatorApplicationStatus? status,
     String? rejectionReason,
+    String? bio,
+    int? audienceBand,
+    String? otherCategoryDescription,
+    List<String>? categoryIds,
+    List<Platform>? socials,
     DateTime? submittedAt,
     DateTime? updatedAt,
   }) {
@@ -35,6 +63,12 @@ class CreatorApplication {
       id: id ?? this.id,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      bio: bio ?? this.bio,
+      audienceBand: audienceBand ?? this.audienceBand,
+      otherCategoryDescription:
+          otherCategoryDescription ?? this.otherCategoryDescription,
+      categoryIds: categoryIds ?? this.categoryIds,
+      socials: socials ?? this.socials,
       submittedAt: submittedAt ?? this.submittedAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -46,11 +80,36 @@ class CreatorApplication {
       other.id == id &&
       other.status == status &&
       other.rejectionReason == rejectionReason &&
+      other.bio == bio &&
+      other.audienceBand == audienceBand &&
+      other.otherCategoryDescription == otherCategoryDescription &&
+      _listEquals(other.categoryIds, categoryIds) &&
+      _listEquals(other.socials, socials) &&
       other.submittedAt == submittedAt &&
       other.updatedAt == updatedAt;
 
   @override
-  int get hashCode => Object.hash(id, status, rejectionReason, submittedAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    status,
+    rejectionReason,
+    bio,
+    audienceBand,
+    otherCategoryDescription,
+    categoryIds.length,
+    socials.length,
+    submittedAt,
+    updatedAt,
+  );
+
+  static bool _listEquals<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 }
 
 class Platform {
@@ -59,6 +118,7 @@ class Platform {
     required this.name,
     required this.handle,
     required this.followerCount,
+    this.profileUrl = '',
     this.connected = false,
   });
 
@@ -66,6 +126,7 @@ class Platform {
   final String name;
   final String handle;
   final int followerCount;
+  final String profileUrl;
   final bool connected;
 
   Platform copyWith({
@@ -73,6 +134,7 @@ class Platform {
     String? name,
     String? handle,
     int? followerCount,
+    String? profileUrl,
     bool? connected,
   }) {
     return Platform(
@@ -80,6 +142,7 @@ class Platform {
       name: name ?? this.name,
       handle: handle ?? this.handle,
       followerCount: followerCount ?? this.followerCount,
+      profileUrl: profileUrl ?? this.profileUrl,
       connected: connected ?? this.connected,
     );
   }
@@ -91,10 +154,12 @@ class Platform {
       other.name == name &&
       other.handle == handle &&
       other.followerCount == followerCount &&
+      other.profileUrl == profileUrl &&
       other.connected == connected;
 
   @override
-  int get hashCode => Object.hash(id, name, handle, followerCount, connected);
+  int get hashCode =>
+      Object.hash(id, name, handle, followerCount, profileUrl, connected);
 }
 
 /// A selectable creator content category from `GET /v1/public/creator-categories`.
@@ -122,6 +187,7 @@ class CreatorApplicationForm {
     required this.contentCategoryIds,
     required this.audienceBand,
     required this.bio,
+    this.otherCategoryDescription,
     this.portfolioUrl,
     this.identityDocUrl,
   });
@@ -138,6 +204,11 @@ class CreatorApplicationForm {
   /// (1..5, ascending by follower count).
   final int audienceBand;
   final String bio;
+
+  /// Free-form description used when one of the selected content categories
+  /// has requiresOtherDescription == true. Mirrors the BEs
+  /// OtherCategoryDescription field.
+  final String? otherCategoryDescription;
   final String? portfolioUrl;
   final String? identityDocUrl;
 
@@ -148,6 +219,7 @@ class CreatorApplicationForm {
     List<String>? contentCategoryIds,
     int? audienceBand,
     String? bio,
+    String? otherCategoryDescription,
     String? portfolioUrl,
     String? identityDocUrl,
   }) {
@@ -158,6 +230,8 @@ class CreatorApplicationForm {
       contentCategoryIds: contentCategoryIds ?? this.contentCategoryIds,
       audienceBand: audienceBand ?? this.audienceBand,
       bio: bio ?? this.bio,
+      otherCategoryDescription:
+          otherCategoryDescription ?? this.otherCategoryDescription,
       portfolioUrl: portfolioUrl ?? this.portfolioUrl,
       identityDocUrl: identityDocUrl ?? this.identityDocUrl,
     );
@@ -172,12 +246,22 @@ class CreatorApplicationForm {
       _listEquals(other.contentCategoryIds, contentCategoryIds) &&
       other.audienceBand == audienceBand &&
       other.bio == bio &&
+      other.otherCategoryDescription == otherCategoryDescription &&
       other.portfolioUrl == portfolioUrl &&
       other.identityDocUrl == identityDocUrl;
 
   @override
-  int get hashCode => Object.hash(fullName, handle, platforms.length,
-      contentCategoryIds.length, audienceBand, bio, portfolioUrl, identityDocUrl);
+  int get hashCode => Object.hash(
+    fullName,
+    handle,
+    platforms.length,
+    contentCategoryIds.length,
+    audienceBand,
+    bio,
+    otherCategoryDescription,
+    portfolioUrl,
+    identityDocUrl,
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;

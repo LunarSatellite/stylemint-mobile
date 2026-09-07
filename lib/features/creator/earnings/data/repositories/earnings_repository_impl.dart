@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/datasources/earnings_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/models/earnings_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/repositories/earnings_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:uuid/uuid.dart';
@@ -227,6 +228,26 @@ class EarningsRepositoryImpl implements EarningsRepository {
       try {
         await remoteDataSource.removePayoutMethod(methodId);
         return right(unit);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, EarningsBreakdown>>
+      getDashboardBreakdown() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return right(await remoteDataSource.getDashboardBreakdown());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

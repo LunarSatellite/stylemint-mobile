@@ -4,7 +4,65 @@ enum SocialPlatform {
   instagram,
   tiktok,
   youtube,
-  facebook,
+  facebook;
+
+  /// Resolves the platform from whatever shape the backend sent.
+  ///
+  /// The wire format is not consistent across endpoints, and the two forms
+  /// do not agree with Dart's enum names:
+  ///
+  /// - `ReelDto.sourcePlatform` (`GET /v1/public/reels/{id}`) is the C#
+  ///   `ReelSourcePlatform` enum, which System.Text.Json serialises as its
+  ///   **int** value — 1 Instagram, 2 TikTok, 3 YouTubeShorts, 4 Facebook.
+  /// - `ReelCardDto.SourcePlatform` (the Discovery feed) is a **string**
+  ///   built with `.ToString()`, so it arrives PascalCase and, for YouTube,
+  ///   as `"YouTubeShorts"` — matching neither `SocialPlatform.youtube.name`
+  ///   nor the label shown in the UI.
+  ///
+  /// Comparing against `name` therefore fails for every value and silently
+  /// falls back to Instagram, which is why non-Instagram reels rendered with
+  /// the wrong player. Parse tolerantly here, in one place, instead.
+  ///
+  /// Returns null when the value is absent or unrecognised so callers choose
+  /// their own fallback rather than inheriting a wrong one.
+  static SocialPlatform? tryParseWire(Object? value) {
+    if (value == null) return null;
+
+    if (value is num) return _fromCode(value.toInt());
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return null;
+
+      final asInt = int.tryParse(trimmed);
+      if (asInt != null) return _fromCode(asInt);
+
+      // Collapse case and separators so "YouTubeShorts", "youtube_shorts"
+      // and "YouTube Shorts" all land on the same key.
+      final key = trimmed.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+      return switch (key) {
+        'instagram' || 'ig' || 'insta' => SocialPlatform.instagram,
+        'tiktok' => SocialPlatform.tiktok,
+        'youtubeshorts' || 'youtube' || 'shorts' || 'yt' =>
+          SocialPlatform.youtube,
+        'facebook' || 'fb' => SocialPlatform.facebook,
+        _ => null,
+      };
+    }
+
+    return null;
+  }
+
+  /// Backend `ReelSourcePlatform` int values. Deliberately not
+  /// `values[code - 1]`: that couples the wire contract to this enum's
+  /// declaration order and breaks silently if a member is ever reordered.
+  static SocialPlatform? _fromCode(int code) => switch (code) {
+        1 => SocialPlatform.instagram,
+        2 => SocialPlatform.tiktok,
+        3 => SocialPlatform.youtube,
+        4 => SocialPlatform.facebook,
+        _ => null,
+      };
 }
 
 extension SocialPlatformX on SocialPlatform {

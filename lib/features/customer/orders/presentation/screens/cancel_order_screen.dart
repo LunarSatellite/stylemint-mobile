@@ -6,7 +6,9 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_invoice_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -71,7 +73,8 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
         ),
         title: const Text('Cancel Order', style: DesignTokens.sectionInnerTitle),
       ),
-      body: ListView(
+      body: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s8,
             DesignTokens.s16, DesignTokens.s32),
         children: [
@@ -190,6 +193,7 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
                     reason: _reason!, note: _commentCtrl.text.trim()),
           ),
         ],
+        ),
       ),
     );
   }
@@ -962,16 +966,28 @@ class _OtherDetailsSection extends StatelessWidget {
             subtitle: '$itemCount item${itemCount == 1 ? '' : 's'} · $total Total',
           ),
           const _TileDivider(),
-          const _OtherDetailsTile(
+          _OtherDetailsTile(
             icon: Icons.receipt_long_outlined,
             title: 'View Invoice',
             subtitle: 'Your invoice for the order',
+            onTap: order == null
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => OrderInvoiceScreen(order: order!),
+                      ),
+                    ),
           ),
           const _TileDivider(),
-          const _OtherDetailsTile(
+          _OtherDetailsTile(
             icon: Icons.headset_mic_outlined,
             title: 'Contact Support',
             subtitle: 'Have any queries? We are here to help',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ContactSupportScreen(),
+              ),
+            ),
           ),
         ],
       ),
@@ -984,17 +1000,19 @@ class _OtherDetailsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      onTap: null,
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: DesignTokens.s16, vertical: 14),

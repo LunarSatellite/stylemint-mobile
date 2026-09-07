@@ -39,11 +39,13 @@ class SettingsNotifier extends StateNotifier<NotificationPrefsState> {
   }
 
   Future<void> savePrefs(NotificationPreferences prefs) async {
-    state = const NotificationPrefsState.loadInProgress();
+    state = NotificationPrefsState.loadSuccess(prefs);
     final either = await _repository.updateNotificationPreferences(prefs);
     state = either.fold(
       NotificationPrefsState.saveFailure,
-      (p) => const NotificationPrefsState.saveSuccess(),
+      // Use the prefs we already have (which the user interacted with) rather
+      // than round-tripping through toDomain() which would reset pushEnabled.
+      (_) => NotificationPrefsState.loadSuccess(prefs),
     );
   }
 }
@@ -164,3 +166,4 @@ class PendingDeletionNotifier extends StateNotifier<PendingDeletionState> {
     );
   }
 }
+

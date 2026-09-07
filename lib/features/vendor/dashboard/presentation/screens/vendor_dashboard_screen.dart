@@ -8,18 +8,11 @@ import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/provid
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-
-// Bottom nav tap destinations (null = current screen, stay)
-const _navRoutes = [
-  null, // 0 Home (current)
-  RouteNames.vendorOrders, // 1 Orders
-  RouteNames.vendorProducts, // 2 Products
-  RouteNames.settings, // 3 Profile
-];
 
 class VendorDashboardScreen extends ConsumerStatefulWidget {
   const VendorDashboardScreen({super.key});
@@ -30,8 +23,6 @@ class VendorDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vendorDashboardNotifierProvider);
@@ -61,7 +52,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 color: DesignTokens.textWhite,
                 size: 22,
               ),
-              onPressed: () {},
+              onPressed: () => context.push(RouteNames.search),
             ),
             IconButton(
               icon: const Icon(
@@ -69,7 +60,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 color: DesignTokens.textWhite,
                 size: 22,
               ),
-              onPressed: () {},
+              onPressed: () => context.push(RouteNames.vendorRecentActivity),
             ),
             Consumer(
               builder: (ctx, ref, _) => IconButton(
@@ -103,108 +94,13 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
             ),
           ),
         ),
-        bottomNavigationBar: _buildBottomNav(),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    const items = [
-      _NavItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home,
-        label: 'Home',
-      ),
-      _NavItem(
-        icon: Icons.inventory_2_outlined,
-        activeIcon: Icons.inventory_2,
-        label: 'Orders',
-        assetIcon: 'assets/images/vendordashboard/nav_orders.png',
-      ),
-      _NavItem(
-        icon: Icons.grid_view_outlined,
-        activeIcon: Icons.grid_view,
-        label: 'Products',
-        assetIcon: 'assets/images/vendordashboard/nav_products.png',
-      ),
-      _NavItem(
-        icon: Icons.person_outline,
-        activeIcon: Icons.person,
-        label: 'Profile',
-        assetIcon: 'assets/images/vendordashboard/nav_profile.png',
-      ),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        border: Border(
-          top: BorderSide(
-            color: DesignTokens.borderDefault.withValues(alpha: 0.3),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              final selected = _selectedIndex == i;
-              return GestureDetector(
-                onTap: () {
-                  final route = _navRoutes[i];
-                  if (route != null) {
-                    context.go(route);
-                  } else {
-                    setState(() => _selectedIndex = i);
-                  }
-                },
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 72,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      item.assetIcon != null
-                          ? Image.asset(
-                              item.assetIcon!,
-                              width: 24,
-                              height: 24,
-                              color: selected
-                                  ? DesignTokens.primaryGreen
-                                  : DesignTokens.textMuted,
-                            )
-                          : Icon(
-                              selected ? item.activeIcon : item.icon,
-                              color: selected
-                                  ? DesignTokens.primaryGreen
-                                  : DesignTokens.textMuted,
-                              size: 24,
-                            ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 11,
-                          color: selected
-                              ? DesignTokens.primaryGreen
-                              : DesignTokens.textMuted,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+        bottomNavigationBar: VendorBottomNav(
+          selectedIndex: 0,
+          onTap: (i) {
+            if (i == 1) context.go(RouteNames.vendorOrders);
+            if (i == 2) context.go(RouteNames.vendorProducts);
+            if (i == 3) context.push(RouteNames.vendorProfile);
+          },
         ),
       ),
     );
@@ -213,19 +109,6 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
   Widget _loader() => const Center(
     child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
   );
-}
-
-class _NavItem {
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    this.assetIcon,
-  });
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final String? assetIcon;
 }
 
 // ── Main content ──────────────────────────────────────────────────────────────
@@ -300,7 +183,7 @@ class _DashboardContent extends StatelessWidget {
               // Gross Sales row
               _buildRevenueRow(
                 assetIcon: 'assets/images/vendordashboard/icon_gross_sales.png',
-                iconBg: const Color(0xFF1A3A1A),
+                iconBg: DesignTokens.primaryGreenDark,
                 label: grossSalesDelta != null
                     ? 'Gross Sales ($grossSalesDelta vs last)'
                     : 'Gross Sales',
@@ -310,7 +193,7 @@ class _DashboardContent extends StatelessWidget {
               // Net Revenue row
               _buildRevenueRow(
                 assetIcon: 'assets/images/vendordashboard/icon_net_revenue.png',
-                iconBg: const Color(0xFF0D2137),
+                iconBg: DesignTokens.infoFillDark,
                 label: 'Net Revenue (After fees & commissions)',
                 amount: formatMoney(dashboard.netRevenue),
               ),
@@ -321,7 +204,10 @@ class _DashboardContent extends StatelessWidget {
         // Total Orders Completed green card
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(DesignTokens.s16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s20,
+          ),
           decoration: BoxDecoration(
             color: DesignTokens.primaryGreen,
             borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -335,8 +221,8 @@ class _DashboardContent extends StatelessWidget {
                     Text(
                       'Total Orders Completed',
                       style: DesignTokens.smallRegular.copyWith(
-                        color: Colors.black87,
-                        fontSize: 13,
+                        color: DesignTokens.buttonPrimaryText,
+                        fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
@@ -344,9 +230,9 @@ class _DashboardContent extends StatelessWidget {
                       _compactCount(dashboard.totalOrders),
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: DesignTokens.buttonPrimaryText,
                       ),
                     ),
                   ],
@@ -373,14 +259,14 @@ class _DashboardContent extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: iconBg,
             borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(4),
             child: Image.asset(assetIcon, fit: BoxFit.contain),
           ),
         ),
@@ -393,10 +279,10 @@ class _DashboardContent extends StatelessWidget {
                 label,
                 style: DesignTokens.smallRegular.copyWith(
                   color: DesignTokens.textMuted,
-                  fontSize: 11,
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               Text(
                 amount,
                 style: DesignTokens.mediumSemibold.copyWith(fontSize: 18),

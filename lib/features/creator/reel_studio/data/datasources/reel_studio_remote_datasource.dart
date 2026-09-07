@@ -77,7 +77,7 @@ class ReelStudioRemoteDataSource {
     required String idempotencyKey,
   }) async {
     final response = await apiClient.post(
-      '/v1/creator/recipes/draft',
+      '/v1/creator/studio/drafts',
       data: {
         'caption': caption,
         'hashtags': hashtags,
@@ -100,7 +100,7 @@ class ReelStudioRemoteDataSource {
     required String idempotencyKey,
   }) async {
     final response = await apiClient.put(
-      '/v1/creator/recipes/$draftId',
+      '/v1/creator/studio/drafts/$draftId',
       data: {
         if (caption != null) 'caption': caption,
         if (hashtags != null) 'hashtags': hashtags,
@@ -115,7 +115,7 @@ class ReelStudioRemoteDataSource {
   }
 
   Future<List<ReelDraftDto>> getDrafts() async {
-    final response = await apiClient.get('/v1/creator/recipes/draft');
+    final response = await apiClient.get('/v1/creator/studio/drafts');
     final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => ReelDraftDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
@@ -124,7 +124,7 @@ class ReelStudioRemoteDataSource {
 
   Future<void> deleteDraft(String draftId, String idempotencyKey) async {
     await apiClient.authDelete(
-      '/v1/creator/recipes/$draftId',
+      '/v1/creator/studio/drafts/$draftId',
       options: Options(headers: {
         'requiresToken': true,
         'Idempotency-Key': idempotencyKey,

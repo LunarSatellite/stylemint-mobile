@@ -49,6 +49,18 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   final AddProductRepository _repository;
   late ProductFormState _formState;
 
+  // Tracks whether the form has been modified since the last load/save.
+  // Used by the unified ProductFormScreen's unsaved-changes guard so the
+  // vendor gets a confirmation dialog before leaving the page after
+  // touching any field. Reset on loadForEdit (fresh data) and after a
+  // successful saveEditedDetails (changes persisted).
+  bool _isDirty = false;
+  bool get isDirty => _isDirty;
+
+  void _markDirty() {
+    if (!_isDirty) _isDirty = true;
+  }
+
   void nextStep() {
     if (_formState.currentStep < 5) {
       _formState = _formState.copyWith(
@@ -80,21 +92,25 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }
 
   void updateBasicInfo(BasicInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step1: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updateImages(ImagesInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step2: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updatePricing(PricingInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step3: info);
     state = AddProductState.loadSuccess(_formState);
   }
 
   void updateShipping(ShippingInfo info) {
+    _markDirty();
     _formState = _formState.copyWith(step4: info);
     state = AddProductState.loadSuccess(_formState);
   }
@@ -162,5 +178,79 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       (failure) => AddProductState.publishFailure(_formState, failure),
       AddProductState.publishSuccess,
     );
+  }
+
+  /// Fetches an existing product's images for the Edit Product Images flow
+  /// (separate from the wizard — works on already-published products).
+  /// Resets the rest of [_formState] since this is a standalone edit, not a
+  /// continuation of any in-progress Add Product draft.
+  Future<bool> loadExistingImages(String productId) async {
+    state = const AddProductState.loadInProgress(
+      ProductFormState(currentStep: 2),
+    );
+    final either = await _repository.fetchProductImages(productId);
+    return either.fold(
+      (failure) {
+        state = AddProductState.loadFailure(_formState, failure);
+        return false;
+      },
+      (images) {
+        _formState = ProductFormState(
+          currentStep: 2,
+          step2: ImagesInfo(images: images, primaryImageIndex: 0),
+        );
+        state = AddProductState.loadSuccess(_formState);
+        return true;
+      },
+    );
+  }
+
+  /// Persists [loadExistingImages]'s (possibly edited) result back to an
+  /// already-published product via `PATCH .../images`, not the Draft-only
+  /// wizard step-2 endpoint.
+  Future<bool> saveImagesOnly(String productId) async {
+    final images = _formState.step2;
+    if (images == null) return false;
+    final either = await _repository.updateImages(productId, images);
+    return either.isRight();
+  }
+
+  /// Full Edit Product Details flow — fetches all 4 wizard-step fields for
+  /// an already-published product, pre-filling the same step screens the
+  /// Add Product wizard uses (they read/write via this same notifier).
+  Future<bool> loadForEdit(String productId) async {
+    state = const AddProductState.loadInProgress(
+      ProductFormState(currentStep: 1),
+    );
+    final either = await _repository.fetchProductForEdit(productId);
+    return either.fold(
+      (failure) {
+        state = AddProductState.loadFailure(_formState, failure);
+        return false;
+      },
+      (formState) {
+        _formState = formState;
+        // Fresh data from the backend -- nothing user-touched yet.
+        _isDirty = false;
+        state = AddProductState.loadSuccess(_formState);
+        return true;
+      },
+    );
+  }
+
+  /// Persists [loadForEdit]'s (possibly edited) result back to an
+  /// already-published product via the `details/*` + `images` endpoints —
+  /// not `submitDraft`/`publish`, which are for brand-new products only.
+  Future<bool> saveEditedDetails(String productId) async {
+    if (!_formState.isValid) return false;
+    final either =
+        await _repository.updateProductDetails(productId, _formState);
+    final ok = either.isRight();
+    if (ok) {
+      // Persisted -- clear the dirty flag so the unsaved-changes guard
+      // doesn't fire when the host screen pops on success.
+      _isDirty = false;
+    }
+    return ok;
   }
 }

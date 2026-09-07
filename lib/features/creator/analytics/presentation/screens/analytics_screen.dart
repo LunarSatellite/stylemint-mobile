@@ -28,7 +28,23 @@ class AnalyticsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
-      bottomNavigationBar: const _AnalyticsBottomNav(),
+      // ─── Bottom bar: custom button + nav ──────────────────────────────
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Custom "View Full Report" button – solid green, small radius
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              8, // space above
+              DesignTokens.s16,
+              8, // space below (between button and nav)
+            ),
+            child: _FullReportButton(),
+          ),
+          const _AnalyticsBottomNav(),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -78,14 +94,60 @@ class AnalyticsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.creatorSearch),
           ),
           IconButton(
             icon: const Icon(Icons.notifications_none_rounded,
                 color: DesignTokens.textWhite),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.creatorActivity),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Custom "View Full Report" button ─────────────────────────────────────────
+
+class _FullReportButton extends StatelessWidget {
+  const _FullReportButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          // TODO: Navigate to full report
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: DesignTokens.primaryGreen,
+          foregroundColor: DesignTokens.buttonPrimaryText,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8), // small radius – rectangle with slight rounding
+          ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(
+              'View Full Report',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -134,8 +196,6 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ── Dashboard body ────────────────────────────────────────────────────────────
-
 class _DashboardBody extends StatelessWidget {
   const _DashboardBody({required this.dashboard});
   final CreatorDashboard dashboard;
@@ -181,7 +241,7 @@ class _PerformanceOverview extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -231,7 +291,7 @@ class _EarningsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final delta = _formatDelta(tile.deltaPercent);
     return Container(
-      height: 90,
+      constraints: const BoxConstraints(minHeight: 90),
       clipBehavior: Clip.antiAlias,
       decoration: DesignTokens.cardDecoration().copyWith(
         border: Border.all(color: DesignTokens.borderDefault, width: 1),
@@ -477,7 +537,7 @@ class _TopReelsSection extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -688,7 +748,7 @@ class _EarningTrendSection extends ConsumerWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -919,7 +979,7 @@ class _TopProductsSection extends StatelessWidget {
           style: TextStyle(
             fontFamily: DesignTokens.fontFamily,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w400,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -953,26 +1013,6 @@ class _TopProductsSection extends StatelessWidget {
               ),
             );
           }),
-        const SizedBox(height: DesignTokens.s4),
-        SizedBox(
-          width: double.infinity,
-          height: DesignTokens.buttonHeight,
-          child: Builder(
-            builder: (ctx) => ElevatedButton(
-              onPressed: () =>
-                  ctx.push(RouteNames.creatorFullAnalyticsReport),
-              style: DesignTokens.primaryButtonStyle(),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('View Full Report'),
-                  SizedBox(width: DesignTokens.s8),
-                  Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -1099,13 +1139,15 @@ class _AnalyticsBottomNav extends ConsumerWidget {
     final accountId = ref.watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
-      height: 68,
+      height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(
             top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
@@ -1164,6 +1206,7 @@ class _AnalyticsBottomNav extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1236,7 +1279,7 @@ String _formatDelta(double? delta) {
 
 String _formatCount(int count) {
   if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-  if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+  if (count >= 1000) return '${(count / 1000000).toStringAsFixed(1)}k';
   return count.toString();
 }
 

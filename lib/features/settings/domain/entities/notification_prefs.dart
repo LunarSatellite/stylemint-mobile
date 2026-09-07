@@ -29,12 +29,14 @@ class NotificationPreferences {
     this.quietHoursEnabled = true,
     this.quietHoursStart = '22:00',
     this.quietHoursEnd = '08:00',
-    // Legacy aliases kept for DTO compat
-    bool? emailEnabled,
-    bool? orderUpdates,
-    bool? promotional,
-    bool? reelLikes,
-    bool? newFollowers,
+    // Backend toggles with no dedicated UI control on this screen — kept so
+    // saving never resets them to a default; always round-tripped from the
+    // last loaded value via copyWith.
+    this.commentReplies = true,
+    this.newOrderForVendor = true,
+    this.partnershipEvents = true,
+    this.ticketUpdates = true,
+    this.ordersDelivered = true,
   });
 
   final bool pushEnabled;
@@ -58,13 +60,11 @@ class NotificationPreferences {
   final bool quietHoursEnabled;
   final String? quietHoursStart;
   final String? quietHoursEnd;
-
-  // Legacy getters so existing DTO/repository code compiles unchanged
-  bool get emailEnabled => emailNotifications;
-  bool get orderUpdates => orderStatusChanges;
-  bool get promotional => personalizedOffers;
-  bool get reelLikes => newReelsFromCreators;
-  bool get newFollowers => creatorRecommendations;
+  final bool commentReplies;
+  final bool newOrderForVendor;
+  final bool partnershipEvents;
+  final bool ticketUpdates;
+  final bool ordersDelivered;
 
   NotificationPreferences copyWith({
     bool? pushEnabled,
@@ -88,6 +88,11 @@ class NotificationPreferences {
     bool? quietHoursEnabled,
     String? quietHoursStart,
     String? quietHoursEnd,
+    bool? commentReplies,
+    bool? newOrderForVendor,
+    bool? partnershipEvents,
+    bool? ticketUpdates,
+    bool? ordersDelivered,
   }) {
     return NotificationPreferences(
       pushEnabled: pushEnabled ?? this.pushEnabled,
@@ -111,6 +116,11 @@ class NotificationPreferences {
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
+      commentReplies: commentReplies ?? this.commentReplies,
+      newOrderForVendor: newOrderForVendor ?? this.newOrderForVendor,
+      partnershipEvents: partnershipEvents ?? this.partnershipEvents,
+      ticketUpdates: ticketUpdates ?? this.ticketUpdates,
+      ordersDelivered: ordersDelivered ?? this.ordersDelivered,
     );
   }
 }

@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
+//
+// _Request is a display-only view-model adapted from the real
+// PartnershipInvite/ActivePartnership domain entities (via
+// partnershipsNotifierProvider) — no hardcoded brands/messages. category and
+// products aren't returned by the partnerships API, so those fields are left
+// blank and the info rows that show them are skipped rather than fabricated.
 
 enum _Status { pending, accepted, declined }
 
 class _Request {
   const _Request({
     required this.id,
+    required this.vendorProfileId,
+    this.vendorAccountId,
     required this.brandName,
     required this.rating,
     required this.timeAgo,
@@ -22,6 +34,8 @@ class _Request {
   });
 
   final String id;
+  final String vendorProfileId;
+  final String? vendorAccountId;
   final String brandName;
   final double rating;
   final String timeAgo;
@@ -32,145 +46,127 @@ class _Request {
   final _Status status;
 }
 
-const _kRequests = <_Request>[
-  _Request(
-    id: '1',
-    brandName: 'Nike Official Store',
-    rating: 4.9,
-    timeAgo: '2h ago',
-    message:
-        "Hey! We'd love to collaborate with you on our upcoming Nike Zoom "
-        'Series campaign. Your content style aligns perfectly with our brand '
-        'values and target audience. We believe this partnership will drive '
-        'significant engagement and sales.',
-    commission: '18%',
-    category: 'Athletic & Sportswear',
-    products: '234 available',
-    status: _Status.pending,
-  ),
-  _Request(
-    id: '2',
-    brandName: 'Ultima Lifestyle',
-    rating: 4.7,
-    timeAgo: '1d ago',
-    message:
-        "We've been following your content and think you'd be a perfect fit "
-        'for our latest tech accessories campaign. We offer a competitive '
-        'commission and exclusive early access to our newest products.',
-    commission: '15-20%',
-    category: 'Tech',
-    products: '176 available',
-    status: _Status.pending,
-  ),
-  _Request(
-    id: '3',
-    brandName: 'Nike Official Store',
-    rating: 4.9,
-    timeAgo: '3d ago',
-    message:
-        "Thanks for accepting our partnership request! We're excited to work "
-        'with you on the Air Max campaign.',
-    commission: '20%',
-    category: 'Athletic & Sportswear',
-    products: '234 available',
-    status: _Status.accepted,
-  ),
-  _Request(
-    id: '4',
-    brandName: 'Ultima Lifestyle',
-    rating: 4.7,
-    timeAgo: '5d ago',
-    message:
-        'We were hoping to collaborate with you on our smart home products '
-        'campaign. Let us know if you change your mind.',
-    commission: '15%',
-    category: 'Tech',
-    products: '176 available',
-    status: _Status.declined,
-  ),
-];
+String _timeAgo(DateTime dt) {
+  final diff = DateTime.now().difference(dt);
+  if (diff.inDays >= 1) return '${diff.inDays}d ago';
+  if (diff.inHours >= 1) return '${diff.inHours}h ago';
+  if (diff.inMinutes >= 1) return '${diff.inMinutes}m ago';
+  return 'just now';
+}
+
+String _commissionLabel(double min, double max) {
+  final minStr = min.toStringAsFixed(min.truncateToDouble() == min ? 0 : 1);
+  final maxStr = max.toStringAsFixed(max.truncateToDouble() == max ? 0 : 1);
+  return min == max ? '$minStr%' : '$minStr-$maxStr%';
+}
+
+_Request _fromInvite(PartnershipInvite i) => _Request(
+      id: i.id,
+      vendorProfileId: i.vendorProfileId,
+      vendorAccountId: i.vendorAccountId,
+      brandName: i.vendorName,
+      rating: i.vendorRating ?? 0,
+      timeAgo: _timeAgo(i.expiresAt),
+      message: i.campaignBrief,
+      commission: _commissionLabel(i.commissionRate, i.commissionRate),
+      category: '',
+      products: '',
+      status: switch (i.status) {
+        PartnershipStatus.declined => _Status.declined,
+        _ => _Status.pending,
+      },
+    );
+
+_Request _fromActive(ActivePartnership a) => _Request(
+      id: a.id,
+      vendorProfileId: a.vendorProfileId,
+      vendorAccountId: a.vendorAccountId,
+      brandName: a.vendorName,
+      rating: 0,
+      timeAgo: _timeAgo(a.startedAt),
+      message: '',
+      commission: _commissionLabel(a.commissionRate, a.commissionRate),
+      category: '',
+      products: a.productsCount > 0 ? '${a.productsCount} available' : '',
+      status: _Status.accepted,
+    );
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-class PartnershipRequestsScreen extends StatefulWidget {
+class PartnershipRequestsScreen extends ConsumerStatefulWidget {
   const PartnershipRequestsScreen({super.key});
 
   @override
-  State<PartnershipRequestsScreen> createState() =>
+  ConsumerState<PartnershipRequestsScreen> createState() =>
       _PartnershipRequestsScreenState();
 }
 
 class _PartnershipRequestsScreenState
-    extends State<PartnershipRequestsScreen> {
+    extends ConsumerState<PartnershipRequestsScreen> {
   int _tab = 0;
-  final List<_Request> _items = List<_Request>.from(_kRequests);
 
-  List<_Request> get _filtered {
-    final status = [_Status.pending, _Status.accepted, _Status.declined][_tab];
-    return _items.where((r) => r.status == status).toList();
-  }
-
-  int _count(_Status s) => _items.where((r) => r.status == s).length;
+  _Request? _findInvite(String id) => ref
+      .read(partnershipsNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (invites, active, ended) =>
+            invites.where((i) => i.id == id).map(_fromInvite).firstOrNull,
+        orElse: () => null,
+      );
 
   Future<void> _accept(String id) async {
-    final req = _items.firstWhere((r) => r.id == id);
+    final req = _findInvite(id);
+    if (req == null) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _AcceptSheet(
         request: req,
-        onConfirm: () {
-          setState(() {
-            final i = _items.indexWhere((r) => r.id == id);
-            if (i != -1) {
-              final old = _items[i];
-              _items[i] = _Request(
-                id: old.id,
-                brandName: old.brandName,
-                rating: old.rating,
-                timeAgo: old.timeAgo,
-                message: old.message,
-                commission: old.commission,
-                category: old.category,
-                products: old.products,
-                status: _Status.accepted,
-              );
+        onConfirm: () async {
+          try {
+            final ok =
+                await ref.read(partnershipsNotifierProvider.notifier).accept(id);
+            if (!mounted) return;
+            if (ok) {
+              SmSnackbar.info(context, 'Partnership accepted!');
+            } else {
+              SmSnackbar.error(context, "Couldn't accept. Please try again.");
             }
-          });
-          SmSnackbar.info(context, 'Partnership accepted!');
+          } catch (_) {
+            if (mounted) {
+              SmSnackbar.error(context, "Couldn't accept. Please try again.");
+            }
+          }
         },
       ),
     );
   }
 
   Future<void> _decline(String id) async {
-    final req = _items.firstWhere((r) => r.id == id);
+    final req = _findInvite(id);
+    if (req == null) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _DeclineSheet(
         request: req,
-        onConfirm: () {
-          setState(() {
-            final i = _items.indexWhere((r) => r.id == id);
-            if (i != -1) {
-              final old = _items[i];
-              _items[i] = _Request(
-                id: old.id,
-                brandName: old.brandName,
-                rating: old.rating,
-                timeAgo: old.timeAgo,
-                message: old.message,
-                commission: old.commission,
-                category: old.category,
-                products: old.products,
-                status: _Status.declined,
-              );
+        onConfirm: () async {
+          try {
+            final ok = await ref
+                .read(partnershipsNotifierProvider.notifier)
+                .decline(id);
+            if (!mounted) return;
+            if (ok) {
+              SmSnackbar.info(context, 'Partnership declined.');
+            } else {
+              SmSnackbar.error(context, "Couldn't decline. Please try again.");
             }
-          });
-          SmSnackbar.info(context, 'Partnership declined.');
+          } catch (_) {
+            if (mounted) {
+              SmSnackbar.error(context, "Couldn't decline. Please try again.");
+            }
+          }
         },
       ),
     );
@@ -178,9 +174,27 @@ class _PartnershipRequestsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final pending = _count(_Status.pending);
-    final accepted = _count(_Status.accepted);
-    final declined = _count(_Status.declined);
+    final state = ref.watch(partnershipsNotifierProvider);
+    final items = state.maybeWhen(
+      loadSuccess: (invites, active, ended) => [
+        ...invites.map(_fromInvite),
+        ...active.map(_fromActive),
+      ],
+      orElse: () => const <_Request>[],
+    );
+    final isLoading = state.maybeWhen(
+      loadInProgress: () => true,
+      orElse: () => false,
+    );
+
+    List<_Request> filtered(_Status s) =>
+        items.where((r) => r.status == s).toList();
+
+    final pending = filtered(_Status.pending).length;
+    final accepted = filtered(_Status.accepted).length;
+    final declined = filtered(_Status.declined).length;
+    final currentList =
+        [filtered(_Status.pending), filtered(_Status.accepted), filtered(_Status.declined)][_tab];
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -237,34 +251,39 @@ class _PartnershipRequestsScreenState
           ),
           // List
           Expanded(
-            child: _filtered.isEmpty
-                ? Center(
-                    child: Text(
-                      'No ${['pending', 'accepted', 'declined'][_tab]} requests',
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textMuted),
-                    ),
+            child: isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: DesignTokens.primaryGreen),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      DesignTokens.s16,
-                      0,
-                      DesignTokens.s16,
-                      DesignTokens.s24,
-                    ),
-                    itemCount: _filtered.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: DesignTokens.s12),
-                    itemBuilder: (ctx, i) {
-                      final req = _filtered[i];
-                      return _RequestCard(
-                        request: req,
-                        isPending: _tab == 0,
-                        onAccept: () => _accept(req.id),
-                        onDecline: () => _decline(req.id),
-                      );
-                    },
-                  ),
+                : currentList.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No ${['pending', 'accepted', 'declined'][_tab]} requests',
+                          style: DesignTokens.mediumRegular
+                              .copyWith(color: DesignTokens.textMuted),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          DesignTokens.s16,
+                          0,
+                          DesignTokens.s16,
+                          DesignTokens.s24,
+                        ),
+                        itemCount: currentList.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(height: DesignTokens.s12),
+                        itemBuilder: (ctx, i) {
+                          final req = currentList[i];
+                          return _RequestCard(
+                            request: req,
+                            isPending: _tab == 0,
+                            onAccept: () => _accept(req.id),
+                            onDecline: () => _decline(req.id),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -414,17 +433,27 @@ class _RequestCardState extends State<_RequestCard> {
                     ),
                     const SizedBox(height: 4),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => BrandMessagingScreen(
-                            args: BrandMessagingArgs(
-                              brandName: req.brandName,
-                              rating: req.rating,
-                              category: req.category,
+                      onTap: () {
+                        final accountId =
+                            (req.vendorAccountId != null &&
+                                    req.vendorAccountId!.isNotEmpty)
+                                ? req.vendorAccountId
+                                : null;
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => BrandMessagingScreen(
+                              args: BrandMessagingArgs(
+                                brandName: req.brandName,
+                                rating: req.rating,
+                                category: req.category,
+                                otherParticipantId: accountId,
+                                profileId:
+                                    accountId == null ? req.vendorProfileId : null,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                       child: Text(
                         'Message Back',
                         style: DesignTokens.smallRegular.copyWith(
@@ -503,26 +532,30 @@ class _RequestCardState extends State<_RequestCard> {
             ),
             trailing: _CommissionChip(req.commission),
           ),
-          const SizedBox(height: DesignTokens.s8),
-          _InfoRow(
-            label: 'Product Category',
-            icon: Image.asset(
-              'assets/images/creatordash/material-symbols_package-2-outline.png',
-              width: 16,
-              height: 16,
+          if (req.category.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            _InfoRow(
+              label: 'Product Category',
+              icon: Image.asset(
+                'assets/images/creatordash/material-symbols_package-2-outline.png',
+                width: 16,
+                height: 16,
+              ),
+              trailingText: req.category,
             ),
-            trailingText: req.category,
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _InfoRow(
-            label: 'Products',
-            icon: Image.asset(
-              'assets/images/creatordash/video-camera-front-outline-rounded.png',
-              width: 16,
-              height: 16,
+          ],
+          if (req.products.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            _InfoRow(
+              label: 'Products',
+              icon: Image.asset(
+                'assets/images/creatordash/video-camera-front-outline-rounded.png',
+                width: 16,
+                height: 16,
+              ),
+              trailingText: req.products,
             ),
-            trailingText: req.products,
-          ),
+          ],
 
           // Action buttons (pending only)
           if (widget.isPending) ...[

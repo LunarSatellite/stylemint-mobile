@@ -14,6 +14,22 @@ class ShippingAddress {
     this.rowVersion = '',
   });
 
+  /// Sentinel "nothing selected yet" address — a checkout session doesn't
+  /// carry a default address the way the old flat summary did, so callers
+  /// use this until the customer picks one from [availableAddresses].
+  /// [CheckoutScreen] already treats an empty `line1` as "no address".
+  const ShippingAddress.empty()
+      : id = '',
+        label = '',
+        line1 = '',
+        line2 = null,
+        city = '',
+        stateProvince = null,
+        postalCode = null,
+        countryCode = '',
+        isDefault = false,
+        rowVersion = '';
+
   final String id;
   final String label;
   final String line1;
@@ -94,6 +110,14 @@ class PaymentMethod {
   final String label;
   final String? lastFour;
   final bool isDefault;
+
+  /// Sentinel "nothing selected yet" payment method — see [ShippingAddress.empty].
+  const PaymentMethod.empty()
+      : id = '',
+        type = PaymentMethodType.cod,
+        label = '',
+        lastFour = null,
+        isDefault = false;
 
   PaymentMethod copyWith({
     String? id,

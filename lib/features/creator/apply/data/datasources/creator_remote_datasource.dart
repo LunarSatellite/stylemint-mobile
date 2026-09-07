@@ -68,6 +68,48 @@ class CreatorRemoteDataSource {
     return CreatorApplicationDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// Re-open a rejected application so the user can edit + resubmit.
+  /// `POST /v1/accounts/{accountId}/creator-profile/reapply` → 204 No
+  /// Content on success; 404 if no rejected application exists.
+  Future<void> reapply({
+    required String accountId,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/accounts/$accountId/creator-profile/reapply',
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+
+  /// Re-submit a rejected creator application with a fresh payload.
+  /// `POST /v1/creator/reapply` → atomic Rejected → Submitted on the most-recent
+  /// rejected application for the caller. Returns the updated application.
+  /// 404 if no rejected application exists.
+  Future<CreatorApplicationDto> reapplyApplication({
+    required List<String> contentCategoryIds,
+    required int audienceBand,
+    required List<Map<String, dynamic>> socials,
+    required String bio,
+    String? otherCategoryDescription,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/creator/reapply',
+      data: {
+        'bio': bio,
+        'audienceBand': audienceBand,
+        'contentCategoryIds': contentCategoryIds,
+        if (otherCategoryDescription != null &&
+          otherCategoryDescription.trim().isNotEmpty)
+          'otherCategoryDescription': otherCategoryDescription,
+        if (socials.isNotEmpty) 'socials': socials,
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return CreatorApplicationDto.fromJson(response as Map<String, dynamic>);
+  }
+
   Options _idempotent(String idempotencyKey) => Options(
     headers: {
       'requiresToken': true,

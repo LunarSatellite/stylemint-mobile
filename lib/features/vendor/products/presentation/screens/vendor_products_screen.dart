@@ -6,7 +6,9 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_actions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_tile.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -29,6 +31,15 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
   ];
 
   late final TabController _tabController;
+  bool _searching = false;
+  String _query = '';
+  final _searchCtrl = TextEditingController();
+
+  List<VendorProduct> _filtered(List<VendorProduct> products) => _query.isEmpty
+      ? products
+      : products
+            .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
+            .toList(growable: false);
 
   @override
   void initState() {
@@ -53,6 +64,7 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
   void dispose() {
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -68,33 +80,66 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
       );
     });
 
-    return Scaffold(
+    return RootBackGuard(
+      fallback: RouteNames.vendorHome,
+      child: Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
+        // Reached via context.go() from the dashboard's bottom nav, which
+        // clears back history — GoRouter has nothing to auto-detect a
+        // leading arrow from, so it's explicit here instead.
         automaticallyImplyLeading: false,
-        titleSpacing: DesignTokens.s16,
-        title: const CircleAvatar(
-          radius: 18,
-          backgroundColor: DesignTokens.bgAppBodyLight,
-          child: Icon(
-            Icons.store_outlined,
-            color: DesignTokens.textMuted,
-            size: 20,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: DesignTokens.textWhite, size: 20),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.vendorHome),
         ),
+        titleSpacing: DesignTokens.s16,
+        title: _searching
+            ? TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                style: DesignTokens.oneLinerRegular,
+                decoration: const InputDecoration(
+                  hintText: 'Search products...',
+                  hintStyle: TextStyle(color: DesignTokens.textMuted),
+                  border: InputBorder.none,
+                ),
+                onChanged: (v) => setState(() => _query = v.trim()),
+              )
+            : const CircleAvatar(
+                radius: 18,
+                backgroundColor: DesignTokens.bgAppBodyLight,
+                child: Icon(
+                  Icons.store_outlined,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
+              ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: DesignTokens.iconLight),
-            onPressed: () {},
+            icon: Icon(
+              _searching ? Icons.close : Icons.search,
+              color: DesignTokens.iconLight,
+            ),
+            onPressed: () => setState(() {
+              _searching = !_searching;
+              if (!_searching) {
+                _searchCtrl.clear();
+                _query = '';
+              }
+            }),
           ),
           IconButton(
             icon: const Icon(
               Icons.notifications_outlined,
               color: DesignTokens.iconLight,
             ),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.vendorRecentActivity),
           ),
         ],
         bottom: TabBar(
@@ -123,8 +168,8 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
         initial: _loader,
         loadInProgress: _loader,
         loadSuccess: (products, _, hasMore, __) => _ProductList(
-          products: products,
-          hasMore: hasMore,
+          products: _filtered(products),
+          hasMore: _query.isEmpty && hasMore,
           onRefresh: () => ref
               .read(vendorProductsNotifierProvider.notifier)
               .loadProducts(status: _tabs[_tabController.index].$1),
@@ -140,14 +185,14 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
               .loadProducts(status: _tabs[_tabController.index].$1),
         ),
         actionInProgress: (products) => _ProductList(
-          products: products,
+          products: _filtered(products),
           hasMore: false,
           onRefresh: () {},
           onLoadMore: () {},
           onMore: (p) => showVendorProductActions(context, ref, p),
         ),
         actionFailure: (products, _) => _ProductList(
-          products: products,
+          products: _filtered(products),
           hasMore: false,
           onRefresh: () {},
           onLoadMore: () {},
@@ -157,7 +202,18 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: DesignTokens.primaryGreen,
         shape: const StadiumBorder(),
-        onPressed: () => context.push(RouteNames.addProduct),
+        onPressed: () async {
+          // The wizard is one route (IndexedStack over its 5 steps), so
+          // popping back here doesn't remount this screen — without an
+          // explicit refresh, a just-published product wouldn't show up
+          // until a manual pull-to-refresh or leaving/reentering the tab.
+          final published = await context.push<bool>(RouteNames.addProduct);
+          if (published == true && context.mounted) {
+            ref
+                .read(vendorProductsNotifierProvider.notifier)
+                .loadProducts(status: _tabs[_tabController.index].$1);
+          }
+        },
         icon: const Icon(Icons.add, color: DesignTokens.textDark),
         label: Text(
           'Add Product',
@@ -166,13 +222,14 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
           ),
         ),
       ),
-      bottomNavigationBar: _VendorBottomNav(
+      bottomNavigationBar: VendorBottomNav(
         selectedIndex: 2,
         onTap: (i) {
-          if (i == 0) context.go(RouteNames.vendorDash);
+          if (i == 0) context.go(RouteNames.vendorHome);
           if (i == 1) context.go(RouteNames.vendorOrders);
-          if (i == 3) context.go(RouteNames.settings);
+            if (i == 3) context.push(RouteNames.vendorProfile);
         },
+      ),
       ),
     );
   }
@@ -230,7 +287,10 @@ class _ProductList extends StatelessWidget {
           }
           return VendorProductTile(
             product: products[i],
-            onTap: () {},
+            onTap: () => context.push(
+              RouteNames.vendorProductAnalytics,
+              extra: products[i],
+            ),
             onMore: () => onMore(products[i]),
           );
         },
@@ -239,114 +299,4 @@ class _ProductList extends StatelessWidget {
   }
 }
 
-// ── Bottom nav ────────────────────────────────────────────────────────────────
-
-class _NavItem {
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    this.assetIcon,
-  });
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final String? assetIcon;
-}
-
-class _VendorBottomNav extends StatelessWidget {
-  const _VendorBottomNav({
-    required this.selectedIndex,
-    required this.onTap,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-
-  static const _items = [
-    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-    _NavItem(
-      icon: Icons.inventory_2_outlined,
-      activeIcon: Icons.inventory_2,
-      label: 'Orders',
-    ),
-    _NavItem(
-      icon: Icons.grid_view_outlined,
-      activeIcon: Icons.grid_view,
-      label: 'Products',
-      assetIcon: 'assets/images/vendordashboard/nav_products.png',
-    ),
-    _NavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: 'Profile',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        border: Border(
-          top: BorderSide(
-            color: DesignTokens.borderDefault.withValues(alpha: 0.3),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              final selected = selectedIndex == i;
-              final color = selected
-                  ? DesignTokens.primaryGreen
-                  : DesignTokens.textMuted;
-              return GestureDetector(
-                onTap: () => onTap(i),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 72,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      item.assetIcon != null
-                          ? Image.asset(
-                              item.assetIcon!,
-                              width: 24,
-                              height: 24,
-                              color: color,
-                            )
-                          : Icon(
-                              selected ? item.activeIcon : item.icon,
-                              color: color,
-                              size: 24,
-                            ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 11,
-                          color: color,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Bottom nav — see VendorBottomNav (shared/widgets/vendor_bottom_nav.dart).

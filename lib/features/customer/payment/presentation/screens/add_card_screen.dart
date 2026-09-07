@@ -224,34 +224,35 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  width: double.infinity,
-                  color: DesignTokens.bgAppFoundation,
-                  padding: const EdgeInsets.fromLTRB(
-                    DesignTokens.s16,
-                    DesignTokens.s16,
-                    DesignTokens.s16,
-                    DesignTokens.s32,
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _saving ? null : _save,
-                    style: DesignTokens.primaryButtonStyle(),
-                    child: _saving
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: DesignTokens.buttonPrimaryText,
+                SafeArea(
+                  child: Container(
+                    width: double.infinity,
+                    color: DesignTokens.bgAppFoundation,
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.s16,
+                      DesignTokens.s16,
+                      DesignTokens.s16,
+                      DesignTokens.s16,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _saving ? null : _save,
+                      style: DesignTokens.primaryButtonStyle(),
+                      child: _saving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: DesignTokens.buttonPrimaryText,
+                              ),
+                            )
+                          : Text(
+                              isEdit ? 'Update Card Details' : 'Add Card Details',
+                              style: DesignTokens.mediumSemibold.copyWith(
+                                color: DesignTokens.buttonPrimaryText,
+                              ),
                             ),
-                          )
-                        : Text(
-                            isEdit ? 'Update Card Details' : 'Add Card Details',
-                            style: DesignTokens.mediumSemibold.copyWith(
-                              color: DesignTokens.buttonPrimaryText,
-                            ),
-
-                          ),
+                    ),
                   ),
                 ),
               ],

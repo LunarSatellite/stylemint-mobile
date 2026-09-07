@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/creator_profile_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/youtube_channel_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/youtube_channel.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/social_account_summary.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/repositories/creator_profile_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
@@ -187,6 +190,78 @@ final showcasedBadgesProvider = Provider<List<BadgeAward>>(
 
 /// Resolved category names for the creator's active specializations.
 /// Used by the profile screen to display niche chips.
+const _providerIntToSlug = <int, String>{
+  1: 'instagram',
+  2: 'tiktok',
+  3: 'youtube',
+  4: 'facebook',
+};
+
+/// Connected social platform slugs for the authenticated user.
+/// Calls GET /v1/social/accounts. accountId is ignored (user-scoped via auth).
+/// Raw list of connected SocialAccount summaries from GET /v1/social/accounts.
+/// Returns lightweight projections so the profile popup can render fallback
+/// fields when the YouTube Data API is missing or empty.
+final creatorConnectedAccountsProvider =
+    FutureProvider.family.autoDispose<List<SocialAccountSummary>, String>(
+  (ref, accountId) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final raw = await api.get('/v1/social/accounts');
+      if (raw is! List) return const <SocialAccountSummary>[];
+      final summaries = <SocialAccountSummary>[];
+      for (final item in raw.whereType<Map>()) {
+        final state = item['state'];
+        if (state is int && state != 2) continue;
+        final provider = item['provider'];
+        String slug = '';
+        if (provider is int) {
+          slug = _providerIntToSlug[provider] ?? '';
+        } else if (provider is String) {
+          slug = provider.toLowerCase();
+        }
+        if (slug.isEmpty) continue;
+        summaries.add(SocialAccountSummary(
+          slug: slug,
+          providerUserId: (item['providerUserId'] ?? '').toString(),
+          handle: (item['handle'] ?? '').toString(),
+          displayName: (item['displayName'] ?? '').toString(),
+          avatarUrl: (item['avatarUrl'] ?? '').toString(),
+          followerCount: int.tryParse((item['followerCount'] ?? '0').toString()) ?? 0,
+        ));
+      }
+      return summaries;
+    } catch (_) {
+      return const <SocialAccountSummary>[];
+    }
+  },
+);
+
+/// Set of connected platform slugs derived from [creatorConnectedAccountsProvider].
+/// accountId is ignored (endpoint is user-scoped via auth).
+final creatorConnectedSocialIdsProvider =
+    Provider.family.autoDispose<Set<String>, String>(
+  (ref, accountId) {
+    final asyncAccounts = ref.watch(creatorConnectedAccountsProvider(accountId));
+    return asyncAccounts.maybeWhen(
+      data: (list) => list.map((s) => s.slug).toSet(),
+      orElse: () => const <String>{},
+    );
+  },
+);
+
+/// Fetches the YouTube channel profile (banner, avatar, stats) for a
+/// given YouTube channelId. Pulled directly from the public YouTube Data
+/// API v3 using an API key supplied via --dart-define=YOUTUBE_API_KEY=...
+final youtubeChannelProvider =
+    FutureProvider.family.autoDispose<YouTubeChannel?, String>(
+  (ref, channelId) async {
+    if (channelId.isEmpty) return null;
+    final ds = YouTubeChannelDataSource();
+    return ds.getChannel(channelId);
+  },
+);
+
 final creatorNicheNamesProvider =
     FutureProvider.family.autoDispose<List<String>, String>(
   (ref, accountId) async {

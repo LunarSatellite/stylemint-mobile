@@ -283,7 +283,7 @@ class DesignTokens {
   static const double avatarLarge = 56;
 
   // Fixed component heights (from Figma frames)
-  static const double buttonHeight = 48;
+  static const double buttonHeight = 52;
   static const double inputHeight = 48;
 
   // ==========================================================================
@@ -294,6 +294,12 @@ class DesignTokens {
     return ElevatedButton.styleFrom(
       backgroundColor: buttonPrimaryFill,
       foregroundColor: buttonPrimaryText,
+      // Flutter's Material3 default disabled style is a translucent white
+      // (12%/38% opacity) — nearly invisible against this app's near-black
+      // background, making disabled "Proceed"/"Continue" buttons look like
+      // they'd vanished rather than just being unavailable yet.
+      disabledBackgroundColor: bgAppBodyLight,
+      disabledForegroundColor: textMuted,
       padding: const EdgeInsets.symmetric(horizontal: s32, vertical: s16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(buttonRadius),

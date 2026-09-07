@@ -1,4 +1,5 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -13,6 +14,7 @@ abstract class ReelDto with _$ReelDto {
     required String id,
     required String sourceUrl,
     required String thumbnailUrl,
+    String? videoUrl,
     required String creatorId,
     required String creatorName,
     required String creatorAvatarUrl,
@@ -38,6 +40,7 @@ abstract class ReelDto with _$ReelDto {
     id: id,
     sourceUrl: sourceUrl,
     thumbnailUrl: thumbnailUrl,
+    videoUrl: videoUrl,
     creatorId: creatorId,
     creatorName: creatorName,
     creatorAvatarUrl: creatorAvatarUrl,
@@ -72,7 +75,7 @@ abstract class TaggedProductDto with _$TaggedProductDto {
   const TaggedProductDto._();
 
   factory TaggedProductDto.fromJson(Map<String, dynamic> json) =>
-      _$TaggedProductDtoFromJson(json);
+      _$TaggedProductDtoFromJson(json)._resolvedImageUrl();
 
   TaggedProductEntity toDomain() => TaggedProductEntity(
     id: id,
@@ -81,4 +84,18 @@ abstract class TaggedProductDto with _$TaggedProductDto {
     price: Money(amount: amount, currency: currency),
     quantity: quantity,
   );
+}
+
+// Resolve the backend CDN URL (which may be relative like
+// /media/vendor-products/<uuid> or absolute without an extension) to
+// an absolute URL with .jpg appended where needed. The catalog CDN
+// refuses to serve extensionless image paths, so without this every
+// tagged-product tile would log a NetworkImageLoadException 404.
+extension _TaggedProductDtoUrlFix on TaggedProductDto {
+  TaggedProductDto _resolvedImageUrl() {
+    if (imageUrl.isEmpty) return this;
+    final fixed = absoluteMediaUrl(imageUrl);
+    if (fixed == imageUrl) return this;
+    return copyWith(imageUrl: fixed);
+  }
 }

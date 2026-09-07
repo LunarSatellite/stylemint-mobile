@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:uuid/uuid.dart';
@@ -31,10 +31,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     ref.listen<CheckoutState>(checkoutNotifierProvider, (previous, next) {
       next.maybeWhen(
         loadSuccess: (summary, _) {
-          if (_selectedPayment == null) {
+          // Re-pick the default whenever nothing real is selected yet — not
+          // just on the very first load. A reload after saving a new address
+          // (there were none before) must not be blocked by an earlier
+          // "selected" sentinel empty address from before any existed.
+          if (_selectedPayment == null || _selectedPayment!.id.isEmpty) {
             setState(() => _selectedPayment = summary.paymentMethod);
           }
-          if (_selectedAddress == null) {
+          if (_selectedAddress == null || _selectedAddress!.id.isEmpty) {
             setState(() => _selectedAddress = summary.shippingAddress);
           }
         },
@@ -130,7 +134,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 onPlaceOrder: () {
                   ref.read(checkoutNotifierProvider.notifier).placeOrder(
                     addressId: effectiveAddress.id,
-                    paymentMethodId: selectedPayment.id,
+                    paymentMethod: selectedPayment.type,
                     idempotencyKey: _uuid.v4(),
                   );
                 },
@@ -205,10 +209,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _AddAddressSheet(
-        onSaved: () {
-          Navigator.pop(context);
-          ref.read(checkoutNotifierProvider.notifier).load();
-        },
+        onSubmit: (fields) => ref.read(checkoutNotifierProvider.notifier).addAddress(
+              label: fields.label,
+              receiverName: fields.receiverName,
+              receiverPhone: fields.receiverPhone,
+              addressLine1: fields.addressLine1,
+              landmark: fields.landmark,
+              country: fields.countryCode,
+              state: fields.state,
+              city: fields.city,
+              zipCode: fields.zipCode,
+              idempotencyKey: _uuid.v4(),
+            ),
+        onSaved: () => Navigator.pop(context),
       ),
     );
   }
@@ -442,13 +455,9 @@ class _BillTicketCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Bill Details',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: DesignTokens.oneLinerSemibold,
                 ),
                 const SizedBox(height: 16),
 
@@ -503,13 +512,9 @@ class _BillTicketCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
+                    const Text(
                       'Grand Total',
-                      style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: DesignTokens.mediumSemibold,
                     ),
                     Text(
                       formatMoney(summary.total),
@@ -625,11 +630,10 @@ class _BillRow extends StatelessWidget {
           child: Text(
             label,
             style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
-              fontSize: 13,
+              color: DesignTokens.textWhite,
               decoration:
               labelUnderline ? TextDecoration.underline : TextDecoration.none,
-              decorationColor: DesignTokens.textLight,
+              decorationColor: DesignTokens.textWhite,
             ),
           ),
         ),
@@ -638,15 +642,14 @@ class _BillRow extends StatelessWidget {
             padding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF4FC3F7),
+              color: DesignTokens.tagInfoFill,
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               valueBadge!,
               style: DesignTokens.smallRegular.copyWith(
-                fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: DesignTokens.tagInfoText,
               ),
             ),
           )
@@ -655,7 +658,6 @@ class _BillRow extends StatelessWidget {
             value ?? '',
             style: DesignTokens.smallRegular.copyWith(
               color: valueColor ?? DesignTokens.textLight,
-              fontSize: 13,
             ),
           ),
       ],
@@ -887,12 +889,12 @@ class _BottomBar extends StatelessWidget {
               style: TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.buttonPrimaryText,
               ),
             ),
             SizedBox(width: 6),
-            Icon(Icons.add_rounded, size: 20, color: Colors.black),
+            Icon(Icons.add_rounded, size: 20, color: DesignTokens.buttonPrimaryText),
           ],
         ),
       ),
@@ -920,7 +922,7 @@ class _BottomBar extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
       ),
@@ -943,7 +945,8 @@ class _CartItemsSheet extends StatelessWidget {
       initialChildSize: 0.65,
       minChildSize: 0.4,
       maxChildSize: 0.92,
-      builder: (_, controller) => Column(
+      builder: (_, controller) => SafeArea(
+        child: Column(
         children: [
           // Handle bar
           Padding(
@@ -991,6 +994,7 @@ class _CartItemsSheet extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1115,7 +1119,8 @@ class _PickAddressSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SafeArea(
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1166,17 +1171,18 @@ class _PickAddressSheet extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.buttonPrimaryText,
                     ),
                   ),
                   SizedBox(width: 6),
-                  Icon(Icons.add_rounded, size: 20, color: Colors.black),
+                  Icon(Icons.add_rounded, size: 20, color: DesignTokens.buttonPrimaryText),
                 ],
               ),
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -1270,9 +1276,37 @@ class _AddressPickerRow extends StatelessWidget {
 }
 
 // ─── ADD SHIPPING ADDRESS SHEET ───────────────────────────────────────────────
-class _AddAddressSheet extends StatefulWidget {
-  const _AddAddressSheet({required this.onSaved});
+/// Collected form values, mapped to backend field names/codes before submit.
+class _AddressFormFields {
+  const _AddressFormFields({
+    required this.label,
+    required this.receiverName,
+    required this.receiverPhone,
+    required this.addressLine1,
+    this.landmark,
+    required this.countryCode,
+    required this.state,
+    required this.city,
+    required this.zipCode,
+  });
 
+  final String label;
+  final String receiverName;
+  final String receiverPhone;
+  final String addressLine1;
+  final String? landmark;
+  final String countryCode;
+  final String state;
+  final String city;
+  final String zipCode;
+}
+
+class _AddAddressSheet extends StatefulWidget {
+  const _AddAddressSheet({required this.onSubmit, required this.onSaved});
+
+  /// Submits the form; returns null on success or a failure to display.
+  final Future<NetworkExceptions?> Function(_AddressFormFields fields)
+      onSubmit;
   final VoidCallback onSaved;
 
   @override
@@ -1285,10 +1319,21 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
   final _zipCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
   final _labelCtrl = TextEditingController();
+  final _receiverNameCtrl = TextEditingController();
+  final _receiverPhoneCtrl = TextEditingController();
   String? _selectedCountry;
   String? _selectedState;
+  bool _submitting = false;
+  String? _errorText;
 
   static const _fill = Color(0xFF2C2C2C);
+
+  static const _countryCodes = {
+    'Nepal': 'NP',
+    'India': 'IN',
+    'USA': 'US',
+    'UK': 'GB',
+  };
 
   InputDecoration _dec(String hint) => InputDecoration(
     filled: true,
@@ -1311,7 +1356,49 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
     _zipCtrl.dispose();
     _cityCtrl.dispose();
     _labelCtrl.dispose();
+    _receiverNameCtrl.dispose();
+    _receiverPhoneCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_line1Ctrl.text.trim().isEmpty ||
+        _cityCtrl.text.trim().isEmpty ||
+        _receiverNameCtrl.text.trim().isEmpty ||
+        _receiverPhoneCtrl.text.trim().isEmpty ||
+        _selectedCountry == null ||
+        _selectedState == null) {
+      setState(() => _errorText = 'Please fill in all required fields.');
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _errorText = null;
+    });
+
+    final failure = await widget.onSubmit(_AddressFormFields(
+      label: _labelCtrl.text.trim().isEmpty ? 'Home' : _labelCtrl.text.trim(),
+      receiverName: _receiverNameCtrl.text.trim(),
+      receiverPhone: _receiverPhoneCtrl.text.trim(),
+      addressLine1: _line1Ctrl.text.trim(),
+      landmark: _landmarkCtrl.text.trim().isEmpty ? null : _landmarkCtrl.text.trim(),
+      countryCode: _countryCodes[_selectedCountry] ?? 'NP',
+      state: _selectedState!,
+      city: _cityCtrl.text.trim(),
+      zipCode: _zipCtrl.text.trim(),
+    ));
+
+    if (!mounted) return;
+
+    if (failure == null) {
+      widget.onSaved();
+    } else {
+      setState(() {
+        _submitting = false;
+        _errorText = 'Failed to save address. Please try again.';
+      });
+    }
   }
 
   @override
@@ -1320,6 +1407,7 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
     return Padding(
       padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
         child: Column(
@@ -1339,6 +1427,17 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
               ],
             ),
             const SizedBox(height: 24),
+            TextField(
+                controller: _receiverNameCtrl,
+                style: style,
+                decoration: _dec('Receiver Name')),
+            const SizedBox(height: 12),
+            TextField(
+                controller: _receiverPhoneCtrl,
+                style: style,
+                keyboardType: TextInputType.phone,
+                decoration: _dec('Receiver Phone')),
+            const SizedBox(height: 12),
             TextField(
                 controller: _line1Ctrl,
                 style: style,
@@ -1384,6 +1483,11 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
                 controller: _labelCtrl,
                 style: style,
                 decoration: _dec('Save Address As')),
+            if (_errorText != null) ...[
+              const SizedBox(height: 12),
+              Text(_errorText!,
+                  style: const TextStyle(color: DesignTokens.colorError, fontSize: 13)),
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -1396,20 +1500,28 @@ class _AddAddressSheetState extends State<_AddAddressSheet> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26)),
                 ),
-                onPressed: widget.onSaved,
-                child: const Text(
-                  'Save Address',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
+                onPressed: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: DesignTokens.buttonPrimaryText),
+                      )
+                    : const Text(
+                        'Save Address',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }

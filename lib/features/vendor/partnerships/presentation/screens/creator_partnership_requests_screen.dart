@@ -4,15 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/widgets/pending_partnership_card.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-
-/// Same data as the "Pending" tab on VendorPartnershipsScreen (a
-/// creator-initiated request awaiting the vendor's accept/decline) — this
-/// screen is a standalone entry point for the same real list, reached from
-/// elsewhere (e.g. a dashboard notification) rather than from the tab bar.
+/// Standalone view of pending creator-initiated partnership requests (awaiting
+/// the vendor's accept/decline). Reached from two entry points: the vendor
+/// dashboard notification badge and the Creator Partnerships item on the
+/// dashboard's More menu.
 class CreatorPartnershipRequestsScreen extends ConsumerWidget {
   const CreatorPartnershipRequestsScreen({super.key});
 
@@ -88,128 +89,10 @@ class CreatorPartnershipRequestsScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) =>
                     const SizedBox(height: DesignTokens.s8),
                 itemBuilder: (_, i) =>
-                    _RequestCard(request: pending[i], isBusy: isBusy),
+                    PendingPartnershipCard(request: pending[i], isBusy: isBusy),
               ),
       ),
     );
   }
 }
 
-class _RequestCard extends ConsumerWidget {
-  const _RequestCard({required this.request, required this.isBusy});
-
-  final VendorPartnership request;
-  final bool isBusy;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(partnershipsListNotifierProvider.notifier);
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: const Color(0xFF2C2C2E),
-                child: Text(
-                  request.creatorLabel[0],
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      request.creatorLabel,
-                      style: DesignTokens.smallRegular.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: DesignTokens.textWhite,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB8E6FE),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Requested Commission: '
-                        '${(request.commissionMinPercent * 100).round()}%'
-                        '–${(request.commissionMaxPercent * 100).round()}%',
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 10,
-                          color: Color(0xFF0D1B2A),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if ((request.requestMessage ?? '').isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            const Divider(
-              color: DesignTokens.borderDefault,
-              height: 1,
-              thickness: 1,
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              request.requestMessage!,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-              ),
-            ),
-          ],
-          const SizedBox(height: DesignTokens.s12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isBusy
-                      ? null
-                      : () => notifier.declineRequest(request.id),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: DesignTokens.borderDefault),
-                    shape: const StadiumBorder(),
-                    foregroundColor: DesignTokens.textLight,
-                  ),
-                  child: const Text('Decline'),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isBusy
-                      ? null
-                      : () => notifier.acceptRequest(request.id),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: DesignTokens.primaryGreen),
-                    shape: const StadiumBorder(),
-                    foregroundColor: DesignTokens.primaryGreen,
-                  ),
-                  child: const Text('Accept'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

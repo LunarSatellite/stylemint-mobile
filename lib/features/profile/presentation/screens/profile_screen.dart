@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_acti
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_header.dart';
@@ -15,6 +17,8 @@ import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart
 import 'package:stylemint_mobile_frontend/core/device/push_notification_service.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/settings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -123,17 +127,33 @@ class _UnauthenticatedView extends StatelessWidget {
   }
 }
 
-class _ProfileBody extends ConsumerWidget {
+class _ProfileBody extends ConsumerStatefulWidget {
   const _ProfileBody({required this.summary});
 
   final ProfileSummary summary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ProfileBody> createState() => _ProfileBodyState();
+}
+
+class _ProfileBodyState extends ConsumerState<_ProfileBody> {
+  bool _pushEnabled = false;
+  bool _pushLoaded = false;
+
+  void _populatePush(bool value) {
+    if (_pushLoaded) return;
+    _pushLoaded = true;
+    _pushEnabled = value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifState = ref.watch(settingsNotifierProvider);
-    final pushEnabled = notifState.maybeWhen(
-      loadSuccess: (prefs) => prefs.pushEnabled,
-      orElse: () => false,
+
+    // Populate local state from loaded prefs
+    notifState.maybeWhen(
+      loadSuccess: (prefs) => _populatePush(prefs.pushEnabled),
+      orElse: () {},
     );
 
     return ListView(
@@ -141,11 +161,12 @@ class _ProfileBody extends ConsumerWidget {
       children: [
         const SizedBox(height: DesignTokens.s16),
         ProfileHeader(
-          summary: summary,
+          summary: widget.summary,
           onEdit: () => context.push('${RouteNames.profile}/edit'),
+          onNotifications: () => context.push(RouteNames.customerRecentActivity),
         ),
         const SizedBox(height: DesignTokens.s20),
-        ProfileStatsRow(summary: summary),
+        ProfileStatsRow(summary: widget.summary),
         const SizedBox(height: DesignTokens.s20),
 
         // Selling & Creating — apply for / switch into the Creator & Vendor
@@ -165,19 +186,28 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.notifications_active_outlined,
               label: 'Push Notifications',
-              toggleValue: pushEnabled,
+              toggleValue: _pushEnabled,
               onToggle: (val) async {
-                final current = notifState.maybeWhen(
-                  loadSuccess: (p) => p,
-                  orElse: () => null,
-                );
+                // Update local state immediately for instant UI feedback
+                setState(() => _pushEnabled = val);
+
+                // Read current prefs from state
+                final current = ref
+                    .read(settingsNotifierProvider)
+                    .maybeWhen(
+                      loadSuccess: (p) => p,
+                      orElse: () => null,
+                    );
                 if (current == null) return;
 
                 if (val) {
                   final granted =
                       await PushNotificationService.requestPermission();
-                  if (!granted) return;
-                  // Token is fetched so the backend can register it on savePrefs.
+                  if (!granted) {
+                    // Revert if permission denied
+                    setState(() => _pushEnabled = false);
+                    return;
+                  }
                   await PushNotificationService.getToken();
                 }
 
@@ -211,7 +241,7 @@ class _ProfileBody extends ConsumerWidget {
             ProfileMenuItem(
               icon: Icons.language_outlined,
               label: 'Language',
-              trailingText: summary.language,
+              trailingText: widget.summary.language,
               onTap: () => context.push('${RouteNames.settings}/language'),
             ),
           ],
@@ -335,6 +365,18 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
 
   @override
   Widget build(BuildContext context) {
+    // The shell keeps this screen mounted across tab switches, so it never
+    // naturally re-runs initState — this is what actually catches a vendor/
+    // creator approval granted elsewhere in the session.
+    ref.listen<int>(profileTabVisitedProvider, (_, _) {
+      final accountId = ref
+          .read(sessionControllerProvider)
+          .maybeWhen(authenticated: (id) => id, orElse: () => null);
+      if (accountId != null && accountId.isNotEmpty) {
+        ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+      }
+    });
+
     final roles = ref
         .watch(roleNotifierProvider)
         .maybeWhen(
@@ -349,18 +391,113 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
         ProfileMenuItem(
           icon: Icons.video_camera_back_outlined,
           label: creatorActive ? 'Creator Studio' : 'Become a Creator',
-          onTap: () => _pushOnce(
-            creatorActive ? RouteNames.creatorHome : RouteNames.creatorApply,
-          ),
+          // See the Vendor tile below for why this re-checks fresh instead
+          // of trusting `creatorActive` from the last build.
+          onTap: () async {
+            if (creatorActive) {
+              _pushOnce(RouteNames.creatorHome);
+              return;
+            }
+            final accountId = ref
+                .read(sessionControllerProvider)
+                .maybeWhen(authenticated: (id) => id, orElse: () => null);
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+            }
+            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+                  loadSuccess: (r) => r,
+                  orElse: () => const <RoleProfileDto>[],
+                );
+            if (_isActive(freshRoles, _creatorRole)) {
+              _pushOnce(RouteNames.creatorHome);
+              return;
+            }
+            // Mirror user_type_selection_screen: when the role isn't active,
+            // resolve the existing application status so a submitted/under-
+            // review account lands on the right status screen instead of
+            // re-entering the apply form.
+            await ref
+                .read(creatorApplyNotifierProvider.notifier)
+                .checkStatus();
+            if (!mounted) return;
+            final statusState = ref.read(creatorApplyNotifierProvider);
+            final route = statusState.maybeWhen(
+              loadSuccess: (application) => switch (application.status) {
+                CreatorApplicationStatus.approved =>
+                  RouteNames.creatorApplyApproved,
+                CreatorApplicationStatus.rejected =>
+                  RouteNames.creatorApplyRejected,
+                CreatorApplicationStatus.pending ||
+                CreatorApplicationStatus.underReview =>
+                  RouteNames.creatorApplyUnderReview,
+              },
+              orElse: () => RouteNames.creatorApply,
+            );
+            _pushOnce(route);
+          },
         ),
         ProfileMenuItem(
           icon: Icons.storefront_outlined,
           label: vendorActive ? 'Vendor Dashboard' : 'Sell on Style Mint',
-          onTap: () => _pushOnce(
-            vendorActive ? RouteNames.vendorHome : RouteNames.vendorApply,
-          ),
+          // Re-check fresh rather than trusting `vendorActive` from whatever
+          // build last ran — a vendor approval can land moments before this
+          // tap (e.g. right after switching to this tab), and the cached
+          // role list can still read stale-false at the exact instant of
+          // tap, incorrectly routing back through the apply/approved gate
+          // instead of straight to the dashboard.
+          onTap: () async {
+            if (vendorActive) {
+              _pushOnce(RouteNames.vendorHome);
+              return;
+            }
+            final accountId = ref
+                .read(sessionControllerProvider)
+                .maybeWhen(authenticated: (id) => id, orElse: () => null);
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+            }
+            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+                  loadSuccess: (r) => r,
+                  orElse: () => const <RoleProfileDto>[],
+                );
+            if (_isActive(freshRoles, _vendorRole)) {
+              _pushOnce(RouteNames.vendorHome);
+              return;
+            }
+            // Mirror user_type_selection_screen: when the role isn't active,
+            // resolve the existing application status so a submitted/under-
+            // review account lands on the right status screen instead of
+            // re-entering the vendor apply form.
+            if (accountId != null && accountId.isNotEmpty) {
+              await ref
+                  .read(vendorApplyNotifierProvider.notifier)
+                  .checkStatus(accountId);
+              if (!mounted) return;
+              final vendorState = ref.read(vendorApplyNotifierProvider);
+              final route = vendorState.maybeWhen(
+                loadSuccess: (application) =>
+                    switch (application.status) {
+                  VendorApplicationStatus.approved =>
+                    RouteNames.vendorApplyApproved,
+                  VendorApplicationStatus.rejected =>
+                    RouteNames.vendorApplyRejected,
+                  VendorApplicationStatus.pending ||
+                  VendorApplicationStatus.underReview =>
+                    RouteNames.vendorApplyUnderReview,
+                  VendorApplicationStatus.draft => RouteNames.vendorApply,
+                },
+                orElse: () => RouteNames.vendorApply,
+              );
+              _pushOnce(route);
+              return;
+            }
+            _pushOnce(RouteNames.vendorApply);
+          },
         ),
       ],
     );
   }
 }
+
+
+

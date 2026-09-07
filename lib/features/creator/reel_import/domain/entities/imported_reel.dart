@@ -1,7 +1,8 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 
-class ImportableReel {
+class ImportableReel implements ReelMedia {
   const ImportableReel({
     required this.id,
     required this.platform,
@@ -11,7 +12,13 @@ class ImportableReel {
     required this.caption,
     required this.createdAt,
     required this.videoDuration,
+    this.videoUrl,
     this.isSelected = false,
+    this.likeCount = 0,
+    this.viewCount = 0,
+    this.commentCount = 0,
+    this.shareCount = 0,
+    this.bookmarkCount = 0,
   });
 
   final String id;
@@ -22,7 +29,20 @@ class ImportableReel {
   final String caption;
   final DateTime createdAt;
   final int videoDuration;
+
+  /// Direct playable URL (mp4 / m3u8). Null when the platform does not
+  /// expose one (e.g. Instagram). Use [ReelPlayer] which falls back to a
+  /// thumbnail + tap-to-open in that case.
+  final String? videoUrl;
   final bool isSelected;
+
+  /// Platform-native stats (last sync). Default 0 — backend may populate these
+  /// per provider when the reel is fetched.
+  final int likeCount;
+  final int viewCount;
+  final int commentCount;
+  final int shareCount;
+  final int bookmarkCount;
 
   ImportableReel copyWith({
     String? id,
@@ -33,7 +53,13 @@ class ImportableReel {
     String? caption,
     DateTime? createdAt,
     int? videoDuration,
+    String? videoUrl,
     bool? isSelected,
+    int? likeCount,
+    int? viewCount,
+    int? commentCount,
+    int? shareCount,
+    int? bookmarkCount,
   }) {
     return ImportableReel(
       id: id ?? this.id,
@@ -44,9 +70,24 @@ class ImportableReel {
       caption: caption ?? this.caption,
       createdAt: createdAt ?? this.createdAt,
       videoDuration: videoDuration ?? this.videoDuration,
+      videoUrl: videoUrl ?? this.videoUrl,
       isSelected: isSelected ?? this.isSelected,
+      likeCount: likeCount ?? this.likeCount,
+      viewCount: viewCount ?? this.viewCount,
+      commentCount: commentCount ?? this.commentCount,
+      shareCount: shareCount ?? this.shareCount,
+      bookmarkCount: bookmarkCount ?? this.bookmarkCount,
     );
   }
+
+  /// Platform-specific video ID — for YouTube this is the 11-char video ID,
+  /// for Instagram the shortcode, for TikTok / Facebook the post/video ID.
+  @override
+  String? get platformVideoId => platformPostId;
+
+  /// Open URL for the platform's native app / web.
+  @override
+  String get permalink => sourceUrl;
 }
 
 class TaggedProductForImport {

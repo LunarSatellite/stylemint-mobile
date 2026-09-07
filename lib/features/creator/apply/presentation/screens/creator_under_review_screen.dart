@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -28,7 +28,7 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                   children: [
                     // Under-review illustration
                     Image.asset(
-                      'assets/images/vendordashboard/underreview.png',
+                      'assets/images/vendordashboard/badge_under_review.png',
                       width: 100,
                       height: 100,
                     ),
@@ -38,16 +38,27 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                     const Text(
                       'Application Under Review',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.titleMedium,
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s12),
 
                     // Subtitle
-                    Text(
+                    const Text(
                       'Your application is being reviewed. We will notify you with the results once the review process is completed',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.5,
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s28),
 
@@ -129,6 +140,12 @@ class CreatorUnderReviewScreen extends ConsumerWidget {
                         child: InkWell(
                           onTap: () {
                             ref.read(creatorFormProvider.notifier).reset();
+                            // Pop the pushed creator-apply route first so the
+                            // caller's _pushOnce whenComplete fires and
+                            // resets its navigation guard; then go home.
+                            if (context.canPop()) {
+                              context.pop();
+                            }
                             context.go(RouteNames.home);
                           },
                           borderRadius:

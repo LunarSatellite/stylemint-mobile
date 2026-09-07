@@ -83,7 +83,19 @@ class _StatCard extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, color: DesignTokens.iconWhite),
+                // Figma wraps the stat icon in a 40x40 bgAppBodyLight
+                // (#27272a) rounded square — the code previously rendered
+                // a bare icon with no background container at all.
+                Container(
+                  width: 40,
+                  height: 40,
+                  padding: const EdgeInsets.all(DesignTokens.s8),
+                  decoration: BoxDecoration(
+                    color: DesignTokens.bgAppBodyLight,
+                    borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  ),
+                  child: Icon(icon, color: DesignTokens.iconWhite),
+                ),
                 if (badge > 0)
                   Positioned(
                     right: -10,
@@ -108,12 +120,19 @@ class _StatCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: DesignTokens.s12),
-            Text('$value', style: DesignTokens.sectionInnerTitle),
+            // Figma spec is 20/600 for the stat value (shared
+            // sectionInnerTitle token is 18/600) and textLight (#d4d4d8)
+            // for the label (was textMuted/#9f9fa9) — both overridden
+            // locally rather than changing the shared tokens.
+            Text(
+              '$value',
+              style: DesignTokens.sectionInnerTitle.copyWith(fontSize: 20),
+            ),
             const SizedBox(height: DesignTokens.s4),
             Text(
               label,
               style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
+                color: DesignTokens.textLight,
               ),
             ),
           ],

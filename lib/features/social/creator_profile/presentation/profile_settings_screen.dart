@@ -10,6 +10,8 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
@@ -341,78 +343,157 @@ class _PickerOption extends StatelessWidget {
 
 // ── Become a Brand banner ─────────────────────────────────────────────────────
 
-class _BecomeBrandBanner extends StatelessWidget {
+class _BecomeBrandBanner extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_BecomeBrandBanner> createState() => _BecomeBrandBannerState();
+}
+
+class _BecomeBrandBannerState extends ConsumerState<_BecomeBrandBanner> {
+  bool _loading = false;
+
+  Future<void> _openBrandApply() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+
+    final accountId = ref.read(sessionControllerProvider).maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => '',
+        );
+
+    String route = RouteNames.vendorApply;
+    Object? extra;
+
+    if (accountId.isNotEmpty) {
+      await ref
+          .read(vendorApplyNotifierProvider.notifier)
+          .checkStatus(accountId);
+      final statusState = ref.read(vendorApplyNotifierProvider);
+      statusState.maybeWhen(
+        loadSuccess: (application) {
+          switch (application.status) {
+            case VendorApplicationStatus.approved:
+              route = RouteNames.vendorApplyApproved;
+            case VendorApplicationStatus.rejected:
+              route = RouteNames.vendorApplyRejected;
+              extra = application.rejectionReason;
+            case VendorApplicationStatus.pending:
+            case VendorApplicationStatus.underReview:
+              route = RouteNames.vendorApplyUnderReview;
+            case VendorApplicationStatus.draft:
+              route = RouteNames.vendorApply;
+          }
+        },
+        orElse: () {},
+      );
+    }
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (route == RouteNames.vendorApply ||
+        route == RouteNames.vendorApplyUnderReview) {
+      context.push(route);
+    } else {
+      context.push(route, extra: extra);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 100,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D5C32), Color(0xFF1DB954), Color(0xFF25E07A)],
-          stops: [0.0, 0.6, 1.0],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return InkWell(
+      onTap: _openBrandApply,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: Container(
+        width: double.infinity,
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0D5C32), Color(0xFF1DB954), Color(0xFF25E07A)],
+            stops: [0.0, 0.6, 1.0],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s16,
-                vertical: DesignTokens.s12,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    'Become a Brand !',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s12,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'Become a Brand !',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Become a Brand User and start selling your products',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 11,
+                            color: DesignTokens.textLight,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Become a Brand User and start selling your products',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 11,
-                      color: DesignTokens.textLight,
-                      height: 1.4,
+                ),
+                Image.asset(
+                  'assets/images/creatordash/shop.png',
+                  width: 90,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, _e) => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Icon(Icons.storefront_rounded,
+                        color: DesignTokens.primaryGreen, size: 48),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(right: DesignTokens.s12),
+                  child: Icon(Icons.chevron_right_rounded,
+                      color: DesignTokens.textWhite, size: 22),
+                ),
+              ],
+            ),
+            if (_loading)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x66000000),
+                  child: Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          Image.asset(
-            'assets/images/creatordash/shop.png',
-            width: 90,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, _e) => const Padding(
-              padding: EdgeInsets.all(16),
-              child: Icon(Icons.storefront_rounded,
-                  color: DesignTokens.primaryGreen, size: 48),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: DesignTokens.s12),
-            child: Icon(Icons.chevron_right_rounded,
-                color: DesignTokens.textWhite, size: 22),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

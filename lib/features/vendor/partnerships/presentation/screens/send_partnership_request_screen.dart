@@ -1,4 +1,4 @@
-import 'package:file_picker/file_picker.dart';
+﻿import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
@@ -6,13 +6,13 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Vendor → Partnerships → "Send Partnership Requests". Backed by the real
+/// Vendor â†’ Partnerships â†’ "Send Partnership Requests". Backed by the real
 /// `POST /v1/vendor/partnerships/invite`. Creator selection and commission
 /// rate map directly onto the request body; the message is sent as a
 /// best-effort extra field the documented contract doesn't include (product
-/// decision — the backend most likely ignores it rather than rejects the
-/// request). "Upload Document" has no transport at all on this endpoint —
-/// there's no file/multipart field on the invite contract — so the picked
+/// decision â€” the backend most likely ignores it rather than rejects the
+/// request). "Upload Document" has no transport at all on this endpoint â€”
+/// there's no file/multipart field on the invite contract â€” so the picked
 /// file stays local and is never actually sent anywhere.
 class SendPartnershipRequestScreen extends ConsumerStatefulWidget {
   const SendPartnershipRequestScreen({super.key});
@@ -77,7 +77,7 @@ class _SendPartnershipRequestScreenState
     ref
         .read(inviteCreatorNotifierProvider.notifier)
         .invite(
-          creatorProfileId: creator.creatorAccountId,
+          creatorAccountId: creator.creatorAccountId,
           commissionMinPercent: rate / 100,
           commissionMaxPercent: rate / 100,
           message: _messageCtrl.text.trim().isEmpty
@@ -176,7 +176,7 @@ class _SendPartnershipRequestScreenState
                                       '@${_selectedCreator!.handle}',
                                     if (_selectedCreator!.niches.isNotEmpty)
                                       _selectedCreator!.niches.join(', '),
-                                  ].join(' • ')
+                                  ].join(' â€¢ ')
                                 : 'Search and select the creator you want send a partnership request',
                             style: DesignTokens.smallRegular.copyWith(
                               color: DesignTokens.textMuted,
@@ -320,7 +320,7 @@ class _SendPartnershipRequestScreenState
   }
 }
 
-// ─── Picked document chip ───────────────────────────────────────────────────
+// â”€â”€â”€ Picked document chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DocumentChip extends StatelessWidget {
   const _DocumentChip({required this.document, required this.onRemove});
@@ -392,7 +392,7 @@ class _DocumentChip extends StatelessWidget {
   }
 }
 
-// ─── Creator picker sheet ───────────────────────────────────────────────────
+// â”€â”€â”€ Creator picker sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _CreatorPickerSheet extends ConsumerStatefulWidget {
   const _CreatorPickerSheet({this.selectedCreatorId});
@@ -597,7 +597,7 @@ class _CreatorPickerRow extends StatelessWidget {
                       [
                         if (creator.handle != null) '@${creator.handle}',
                         if (niche != null) niche,
-                      ].join(' • '),
+                      ].join(' â€¢ '),
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textMuted,
                       ),

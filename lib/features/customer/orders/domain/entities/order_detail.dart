@@ -34,6 +34,8 @@ class OrderDetail {
     required this.tax,
     required this.total,
     required this.shippingAddress,
+    this.receiverName = '',
+    this.receiverPhone = '',
     required this.paymentMethod,
     this.trackingNumber,
     required this.canCancel,
@@ -51,6 +53,8 @@ class OrderDetail {
   final Money tax;
   final Money total;
   final String shippingAddress;
+  final String receiverName;
+  final String receiverPhone;
   final String paymentMethod;
   final String? trackingNumber;
   final bool canCancel;

@@ -8,6 +8,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/social_account_summary.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/social_platform_popup.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart' as reels_providers;
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
@@ -76,7 +79,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   int _reelFilter = 1;
 
   void _showBadgesSheet() {
-    final showcased = ref.read(showcasedBadgesProvider);
+    final showcased = ref.watch(showcasedBadgesProvider);
     if (showcased.isEmpty) return;
     unawaited(showModalBottomSheet<void>(
       context: context,
@@ -121,6 +124,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // ─── Dark header container (stats row removed) ───
               Container(
                 constraints: BoxConstraints(
                   minHeight: MediaQuery.of(context).size.height * 0.5,
@@ -151,13 +155,30 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                     const SizedBox(height: DesignTokens.s16),
                     _brandLogosRow(),
                     const SizedBox(height: DesignTokens.s16),
-                    _statsRow(loadedProfile),
+                    // _statsRow removed – now placed outside as a hanging card
                     const SizedBox(height: DesignTokens.s8),
                   ],
                 ),
               ),
-              const SizedBox(height: DesignTokens.s20),
-              _socialPlatforms(),
+
+              // ─── Hanging stats row (light card with shadow) ───
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                child: Transform.translate(
+                  offset: const Offset(0, -36), // pull up to overlap
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                    decoration: BoxDecoration(
+                      color: DesignTokens.bgAppBodyLight,
+                      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+                    ),
+                    child: _statsRow(loadedProfile, lightTheme: false),
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+
+              _socialPlatforms(effectiveAccountId),
               const SizedBox(height: DesignTokens.s20),
               _aboutMe(loadedProfile),
               const SizedBox(height: DesignTokens.s20),
@@ -258,8 +279,8 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           name,
           style: const TextStyle(
             fontFamily: DesignTokens.fontFamily,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
             color: DesignTokens.textWhite,
           ),
         ),
@@ -283,7 +304,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       h.startsWith('@') ? h : '@$h',
       style: const TextStyle(
         fontFamily: DesignTokens.fontFamily,
-        fontSize: 13,
+        fontSize: 14,
         color: DesignTokens.primaryGreen,
       ),
     );
@@ -291,7 +312,6 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   Widget _achievementChips(List<String> tags) {
     if (tags.isEmpty) return const SizedBox.shrink();
-    const emojis = ['🚀', '👟', '🌟', '🎯', '💪', '🔥'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -300,7 +320,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: DesignTokens.s8),
             child: _AchievementChip(
-              emoji: emojis[i % emojis.length],
+              emoji: null, // Backend tag data drives emoji selection later.
               label: tags[i],
               bg: i == 0
                   ? const Color(0xFF3A2F00)
@@ -377,7 +397,6 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
     if (active.isEmpty) return const SizedBox.shrink();
 
-    const emojis = ['🎯', '⚡', '🌟', '💼', '🏆', '✨'];
     final visible = active.take(2).toList();
     final remaining = active.length - visible.length;
 
@@ -390,7 +409,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 (e) => Padding(
                   padding: const EdgeInsets.only(right: DesignTokens.s8),
                   child: _PartnerChip(
-                    emoji: emojis[e.key % emojis.length],
+                    emoji: null, // Backend tag data drives emoji selection later.
                     label: e.value.vendorName,
                   ),
                 ),
@@ -479,37 +498,41 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _statsRow(CreatorProfile? loaded) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        children: [
-          _StatItem(
-            value: loaded != null ? _fmtCount(loaded.followersCount) : '—',
-            label: 'Followers',
-          ),
-          _vDivider(),
-          _StatItem(
-            value: loaded != null ? _fmtCount(loaded.partnershipsCount) : '—',
-            label: 'Partnership',
-          ),
-          _vDivider(),
-          _StatItem(
-            value: loaded != null ? _fmtCount(loaded.reelsCount) : '—',
-            label: 'Reels',
-          ),
-          _vDivider(),
-          _StatItem(
-            value: loaded != null ? _fmtCount(loaded.likesCount) : '—',
-            label: 'Likes',
-          ),
-        ],
-      ),
+  // Updated stats row – now accepts lightTheme flag
+  Widget _statsRow(CreatorProfile? loaded, {bool lightTheme = false}) {
+    final valueColor = lightTheme ? DesignTokens.textDark : DesignTokens.textWhite;
+    final labelColor = lightTheme ? DesignTokens.textMuted : DesignTokens.textWhite;
+
+    return Row(
+      children: [
+        _StatItem(
+          value: loaded != null ? _fmtCount(loaded.followersCount) : '—',
+          label: 'Followers',
+          valueColor: valueColor,
+          labelColor: labelColor,
+        ),
+        _vDivider(lightTheme: lightTheme),
+        _StatItem(
+          value: loaded != null ? _fmtCount(loaded.partnershipsCount) : '—',
+          label: 'Partnership',
+          valueColor: valueColor,
+          labelColor: labelColor,
+        ),
+        _vDivider(lightTheme: lightTheme),
+        _StatItem(
+          value: loaded != null ? _fmtCount(loaded.reelsCount) : '—',
+          label: 'Reels',
+          valueColor: valueColor,
+          labelColor: labelColor,
+        ),
+        _vDivider(lightTheme: lightTheme),
+        _StatItem(
+          value: loaded != null ? _fmtCount(loaded.likesCount) : '—',
+          label: 'Likes',
+          valueColor: valueColor,
+          labelColor: labelColor,
+        ),
+      ],
     );
   }
 
@@ -519,22 +542,44 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     return n.toString();
   }
 
-  Widget _vDivider() =>
-      Container(width: 1, height: 36, color: DesignTokens.borderDefault);
+  // Divider with light theme support
+  Widget _vDivider({bool lightTheme = false}) {
+    final color = lightTheme ? Colors.grey.shade300 : DesignTokens.borderDefault;
+    return Container(width: 1, height: 36, color: color);
+  }
 
-  Widget _socialPlatforms() {
+  Widget _socialPlatforms(String accountId) {
+    final connectedSet = ref
+        .watch(creatorConnectedSocialIdsProvider(accountId));
+    final connectedList = ref
+        .watch(creatorConnectedAccountsProvider(accountId))
+        .maybeWhen(data: (l) => l, orElse: () => const <SocialAccountSummary>[]);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const _SocialIcon(svgPath: 'assets/icons/youtube.svg'),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/instagram.svg'),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/facebook.svg', warning: true),
-          const SizedBox(width: DesignTokens.s12),
-          const _SocialIcon(svgPath: 'assets/icons/tiktok.svg'),
+          for (var i = 0; i < kCreatorPlatforms.length; i++) ...[
+            Builder(builder: (context) {
+              final summary = connectedList.where(
+                (s) => s.slug == kCreatorPlatforms[i].id,
+              ).cast<SocialAccountSummary?>().firstWhere(
+                    (s) => s != null,
+                    orElse: () => null,
+                  );
+              return _SocialIcon(
+                svgPath: kCreatorPlatforms[i].assetPath,
+                warning: !connectedSet.contains(kCreatorPlatforms[i].id),
+                onTap: () => showSocialPlatformPopup(
+                  context,
+                  platformId: kCreatorPlatforms[i].id,
+                  summary: summary,
+                ),
+              );
+            }),
+            if (i != kCreatorPlatforms.length - 1)
+              const SizedBox(width: DesignTokens.s12),
+          ],
         ],
       ),
     );
@@ -545,29 +590,24 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     final fullBio = loadedProfile?.bio ?? '';
     final needsTruncation = fullBio.length > truncateAt;
     final truncated = needsTruncation ? fullBio.substring(0, truncateAt) : fullBio;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'About Me',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'About Me',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.textWhite,
+              ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBody,
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            ),
-            child: (_expanded || !needsTruncation)
+            const SizedBox(height: DesignTokens.s8),
+            (_expanded || !needsTruncation)
                 ? Text(
                     fullBio,
                     style: const TextStyle(
@@ -605,47 +645,42 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                       ],
                     ),
                   ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
+  );
+}
 
   Widget _categoryNiche(String accountId) {
     final nichesAsync = ref.watch(creatorNicheNamesProvider(accountId));
     return nichesAsync.maybeWhen(
       data: (niches) {
         if (niches.isEmpty) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Category Niche',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: DesignTokens.textWhite,
+        final sortedNiches = [...niches]..sort((a, b) => a.length.compareTo(b.length));
+        return SizedBox(
+          width: double.infinity,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Category Niche',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(DesignTokens.s16),
-                decoration: BoxDecoration(
-                  color: DesignTokens.bgAppBody,
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.cardRadius),
-                ),
-                child: Wrap(
+                const SizedBox(height: DesignTokens.s8),
+                Wrap(
                   spacing: DesignTokens.s8,
                   runSpacing: DesignTokens.s8,
-                  children: niches.map((n) => _NicheChip(label: n)).toList(),
+                  children: sortedNiches.map((n) => _NicheChip(label: n, icon: _iconForNiche(n))).toList(),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -735,11 +770,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
 class _AchievementChip extends StatelessWidget {
   const _AchievementChip({
-    required this.emoji,
+    this.emoji,
     required this.label,
     required this.bg,
   });
-  final String emoji;
+  final String? emoji;
   final String label;
   final Color bg;
 
@@ -755,8 +790,10 @@ class _AchievementChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 4),
+          if (emoji != null && emoji!.isNotEmpty) ...[
+            Text(emoji!, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+          ],
           Text(
             label,
             style: const TextStyle(
@@ -772,8 +809,8 @@ class _AchievementChip extends StatelessWidget {
 }
 
 class _PartnerChip extends StatelessWidget {
-  const _PartnerChip({required this.emoji, required this.label});
-  final String emoji;
+  const _PartnerChip({this.emoji, required this.label});
+  final String? emoji;
   final String label;
 
   @override
@@ -788,8 +825,10 @@ class _PartnerChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 13)),
-          const SizedBox(width: 4),
+          if (emoji != null && emoji!.isNotEmpty) ...[
+            Text(emoji!, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+          ],
           Text(
             label,
             style: const TextStyle(
@@ -805,10 +844,18 @@ class _PartnerChip extends StatelessWidget {
   }
 }
 
+// Updated StatItem to accept custom colors
 class _StatItem extends StatelessWidget {
-  const _StatItem({required this.value, required this.label});
+  const _StatItem({
+    required this.value,
+    required this.label,
+    this.valueColor = DesignTokens.textWhite,
+    this.labelColor = DesignTokens.textMuted,
+  });
   final String value;
   final String label;
+  final Color valueColor;
+  final Color labelColor;
 
   @override
   Widget build(BuildContext context) {
@@ -817,20 +864,20 @@ class _StatItem extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: DesignTokens.textWhite,
+              color: valueColor,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 11,
-              color: DesignTokens.textMuted,
+              color: labelColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -841,24 +888,33 @@ class _StatItem extends StatelessWidget {
 }
 
 class _SocialIcon extends StatelessWidget {
-  const _SocialIcon({required this.svgPath, this.warning = false});
+  const _SocialIcon({
+    required this.svgPath,
+    this.warning = false,
+    this.onTap,
+  });
   final String svgPath;
   final bool warning;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppBodyLight,
-            shape: BoxShape.circle,
+        InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppBodyLight,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(18),
+            child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
           ),
-          padding: const EdgeInsets.all(18),
-          child: SvgPicture.asset(svgPath, fit: BoxFit.contain),
         ),
         Positioned(
           top: 2,
@@ -887,26 +943,108 @@ class _SocialIcon extends StatelessWidget {
   }
 }
 
+IconData _iconForNiche(String niche) {
+  final n = niche.toLowerCase().trim();
+  if (n.contains('fashion') || n.contains('cloth') || n.contains('style')) {
+    return Icons.checkroom;
+  }
+  if (n.contains('accessor') || n.contains('jewel') || n.contains('watch')) {
+    return Icons.diamond;
+  }
+  if (n.contains('book') || n.contains('read') || n.contains('liter')) {
+    return Icons.auto_stories;
+  }
+  if (n.contains('beauty') || n.contains('makeup') || n.contains('cosmetic')) {
+    return Icons.face_retouching_natural;
+  }
+  if (n.contains('fit') || n.contains('gym') || n.contains('workout')) {
+    return Icons.fitness_center;
+  }
+  if (n.contains('food') || n.contains('cook') || n.contains('recipe')) {
+    return Icons.restaurant;
+  }
+  if (n.contains('travel') || n.contains('trip') || n.contains('tour')) {
+    return Icons.flight;
+  }
+  if (n.contains('tech') || n.contains('gadget') || n.contains('electronic')) {
+    return Icons.devices;
+  }
+  if (n.contains('music') || n.contains('song') || n.contains('audio')) {
+    return Icons.music_note;
+  }
+  if (n.contains('art') || n.contains('paint') || n.contains('draw')) {
+    return Icons.palette;
+  }
+  if (n.contains('photo')) {
+    return Icons.camera_alt;
+  }
+  if (n.contains('game') || n.contains('gaming')) {
+    return Icons.sports_esports;
+  }
+  if (n.contains('life')) {
+    return Icons.spa;
+  }
+  if (n.contains('home') || n.contains('decor') || n.contains('interior')) {
+    return Icons.chair;
+  }
+  if (n.contains('health') || n.contains('wellness')) {
+    return Icons.favorite;
+  }
+  if (n.contains('sport')) {
+    return Icons.sports_soccer;
+  }
+  if (n.contains('edu') || n.contains('learn') || n.contains('teach')) {
+    return Icons.school;
+  }
+  if (n.contains('business') || n.contains('entrepreneur')) {
+    return Icons.business;
+  }
+  if (n.contains('comedy') || n.contains('humor') || n.contains('funny')) {
+    return Icons.theater_comedy;
+  }
+  if (n.contains('dance')) {
+    return Icons.music_note;
+  }
+  if (n.contains('pet') || n.contains('dog') || n.contains('cat')) {
+    return Icons.pets;
+  }
+  if (n.contains('parent') || n.contains('kid') || n.contains('baby') || n.contains('child')) {
+    return Icons.child_care;
+  }
+  if (n.contains('outdoor') || n.contains('camp') || n.contains('hike')) {
+    return Icons.terrain;
+  }
+  return Icons.label_important;
+}
+
 class _NicheChip extends StatelessWidget {
-  const _NicheChip({required this.label});
+  const _NicheChip({required this.label, required this.icon});
   final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
-        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: DesignTokens.borderDefault),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 12,
-          color: DesignTokens.textLight,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: DesignTokens.textWhite),
+          const SizedBox(width: DesignTokens.s8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1134,13 +1272,15 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
+      height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppFoundation,
         border: Border(
             top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
-      child: Row(
+      child: SafeArea(
+        top: false,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
@@ -1170,6 +1310,7 @@ class _BottomNav extends StatelessWidget {
             onTap: null,
           ),
         ],
+        ),
       ),
     );
   }

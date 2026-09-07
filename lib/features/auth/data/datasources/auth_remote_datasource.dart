@@ -929,7 +929,7 @@ class AuthRemoteDataSource {
   /// GET `/v1/accounts/{accountId}/roles`
   Future<List<RoleProfileDto>> getRoles(String accountId) async {
     final response =
-    await apiClient.authGet('/v1/accounts/$accountId/roles');
+    await apiClient.get('/v1/accounts/$accountId/roles');
     return (response as List)
         .map((e) => RoleProfileDto.fromJson(e as Map<String, dynamic>))
         .toList();

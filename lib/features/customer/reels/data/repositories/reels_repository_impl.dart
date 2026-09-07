@@ -25,18 +25,21 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.getReelsFeed(
+        final reels = await remoteDataSource.getReelsFeed(
           limit: limit,
           cursor: cursor,
         );
-        return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
+        return right(reels);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
-          return left(NetworkExceptions.unexpectedError());
+          // Was `NetworkExceptions.unexpectedError()` (no detail) — any
+          // non-Dio exception here (e.g. a bad-cast while mapping the feed
+          // response into ReelDto) was completely silent to the UI/logs.
+          return left(NetworkExceptions.server('$e'));
         }
       }
     } else {

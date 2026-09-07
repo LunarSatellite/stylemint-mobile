@@ -67,7 +67,26 @@ class VendorEarningsScreen extends ConsumerWidget {
             vertical: DesignTokens.s12,
           ),
           children: [
-            Text('Total Balance', style: DesignTokens.mediumSemibold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total Balance', style: DesignTokens.mediumSemibold),
+                TextButton.icon(
+                  onPressed: () => context.push(RouteNames.vendorEarningsPayout),
+                  icon: const Icon(
+                    Icons.request_quote_outlined,
+                    size: 16,
+                    color: DesignTokens.primaryGreen,
+                  ),
+                  label: Text(
+                    'Request Payout',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: DesignTokens.s12),
             _buildBalanceCard(balanceState),
             const SizedBox(height: DesignTokens.s12),
@@ -538,22 +557,19 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s12,
-          horizontal: DesignTokens.s8,
-        ),
+        padding: const EdgeInsets.all(DesignTokens.s16),
         decoration: DesignTokens.cardDecoration(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: DesignTokens.textMuted, size: 20),
-            const SizedBox(height: DesignTokens.s8),
+            Icon(icon, color: DesignTokens.textWhite, size: 24),
+            const SizedBox(height: DesignTokens.s12),
             Text(
               value,
               style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: DesignTokens.textWhite,
               ),
             ),
@@ -561,8 +577,8 @@ class _StatCard extends StatelessWidget {
             Text(
               label,
               style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-                fontSize: 11,
+                color: DesignTokens.textLight,
+                fontSize: 12,
               ),
             ),
           ],

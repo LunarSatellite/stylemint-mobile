@@ -7,6 +7,9 @@ import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
 import 'features/auth/presentation/providers/auth_state_provider.dart';
+import 'core/config/api_config.dart';
+import 'core/storage/token_storage.dart';
+import 'features/messaging/shared/providers.dart';
 import 'features/creator/social_connect/shared/providers.dart';
 import 'features/customer/cart/domain/entities/cart.dart';
 import 'features/customer/cart/domain/repositories/cart_repository.dart';
@@ -222,6 +225,32 @@ class _MockCheckoutRepository implements CheckoutRepository {
       ]);
 
   @override
+  Future<Either<NetworkExceptions, ShippingAddress>> addAddress({
+    required String label,
+    required String receiverName,
+    required String receiverPhone,
+    required String addressLine1,
+    String? landmark,
+    required String country,
+    required String state,
+    required String city,
+    required String zipCode,
+    bool makeDefault = false,
+    required String idempotencyKey,
+  }) async =>
+      right(ShippingAddress(
+        id: 'addr-mock',
+        label: label,
+        line1: addressLine1,
+        line2: landmark,
+        city: city,
+        stateProvince: state,
+        postalCode: zipCode,
+        countryCode: country,
+        isDefault: makeDefault,
+      ));
+
+  @override
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async =>
       right([
         const PaymentMethod(
@@ -250,7 +279,7 @@ class _MockCheckoutRepository implements CheckoutRepository {
   @override
   Future<Either<NetworkExceptions, String>> placeOrder({
     required String addressId,
-    required String paymentMethodId,
+    required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async =>
       right('mock-order-001');
@@ -357,6 +386,32 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
         _navigate(pending);
       }
     });
+
+    // Keep the SignalR connection for /hubs/messaging in sync with the
+    // auth session. Connects on authenticated, drops on unauthenticated.
+    ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
+      _syncRealtime(next);
+    });
+  }
+
+  Future<void> _syncRealtime(AuthSessionState session) async {
+    final realtime = ref.read(messagingRealtimeServiceProvider);
+    final tokenStorage = ref.read(tokenStorageProvider);
+    final isAuthed = session.maybeWhen(
+      authenticated: (_) => true,
+      orElse: () => false,
+    );
+    if (!isAuthed) {
+      await realtime.stop();
+      return;
+    }
+    final token = await tokenStorage.accessToken;
+    if (token == null || token.isEmpty) {
+      realtime.setAccessToken(null);
+      return;
+    }
+    realtime.setAccessToken(token);
+    await realtime.start(hubBaseUrl: ApiConfig.baseUrl, accessToken: token);
   }
 
   void _listenDeepLinks() {

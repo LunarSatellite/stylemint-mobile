@@ -170,6 +170,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       website: websiteText.isEmpty ? null : websiteText,
       countryRegion: _selectedCountryRegion!,
       streetAddress: streetAddress,
+      addressLine2: _selectedCountry ?? '',
       city: city,
       country: _selectedCountry!,
       zipCode: zipCode,
@@ -399,7 +400,10 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
 
   Widget _buildFormCard() {
     return Container(
-      padding: const EdgeInsets.all(DesignTokens.s20),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s24,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,7 +414,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             'We collect this information to verify your identity and ensure the security of your account.',
             style: DesignTokens.smallRegular,
           ),
-          const SizedBox(height: DesignTokens.s24),
+          const SizedBox(height: DesignTokens.s32),
 
           TextField(
             controller: _brandNameController,
@@ -421,7 +425,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               hintText: 'Brand Name',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _legalBusinessNameController,
@@ -432,14 +436,14 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               hintText: 'Legal Business Name',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           _buildDropdown(
             hint: 'Business Type',
             value: _selectedBusinessType?.label,
             onTap: _showBusinessTypeSheet,
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _taxIdController,
@@ -448,7 +452,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             ),
             decoration: DesignTokens.inputDecoration(hintText: 'Tax ID / EIN'),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _businessRegController,
@@ -459,7 +463,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               hintText: 'Business Registration Number',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _websiteController,
@@ -471,7 +475,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               hintText: 'Website URL (optional)',
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           _buildDropdown(
             hint: 'Country/Region',
@@ -483,7 +487,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             ),
           ),
 
-          const SizedBox(height: DesignTokens.s24),
+          const SizedBox(height: DesignTokens.s32),
           Text('Business Address', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s16),
 
@@ -494,7 +498,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             ),
             decoration: DesignTokens.inputDecoration(hintText: 'Street Address'),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _cityController,
@@ -503,7 +507,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             ),
             decoration: DesignTokens.inputDecoration(hintText: 'City'),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           _buildDropdown(
             hint: 'Country',
@@ -514,7 +518,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
               onSelected: (v) => setState(() => _selectedCountry = v),
             ),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           TextField(
             controller: _zipCodeController,
@@ -524,7 +528,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             ),
             decoration: DesignTokens.inputDecoration(hintText: 'Zip Code'),
           ),
-          const SizedBox(height: DesignTokens.s12),
+          const SizedBox(height: DesignTokens.s20),
 
           _buildDropdown(
             hint: 'State',

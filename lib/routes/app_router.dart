@@ -27,6 +27,7 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_under_review_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/creator_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/search/presentation/screens/creator_search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/screens/top_reels_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_screen.dart';
@@ -45,6 +46,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brands_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reach/presentation/screens/reach_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/import_reel_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/preview_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/reel_published_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
@@ -152,6 +154,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/pr
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/recent_activity_screen.dart'
     as vendor_dashboard_activity;
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/screens/vendor_dashboard_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/profile/presentation/screens/vendor_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/add_bank_account_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/all_payout_history_screen.dart'
     as vendor_history;
@@ -171,6 +174,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/create_campaign_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/invite_creators_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/message_creator_screen.dart';
@@ -181,6 +185,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_images_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
 
@@ -203,6 +208,7 @@ const _publicPaths = {
   RouteNames.completeName,
   RouteNames.socialLogin,
   RouteNames.oauthCallback,
+  RouteNames.oauthCallbackAlias,
   RouteNames.userTypeSelection,
   RouteNames.rolePicker,
   RouteNames.pickInterests,
@@ -400,6 +406,22 @@ GoRouter appRouter(Ref ref) {
       // resolves the account from the CSRF state).
       GoRoute(
         path: RouteNames.oauthCallback,
+        builder: (ctx, state) {
+          final code = state.uri.queryParameters['code'] ?? '';
+          final oauthState = state.uri.queryParameters['state'] ?? '';
+          final error = state.uri.queryParameters['error'];
+          return OAuthCallbackScreen(
+            code: code,
+            state: oauthState,
+            error: error,
+          );
+        },
+      ),
+      // Alias: prod backend redirects to /oauth-callback (without the
+      // /auth prefix). Mirror the canonical route so the HTTPS deep
+      // link lands on OAuthCallbackScreen.
+      GoRoute(
+        path: RouteNames.oauthCallbackAlias,
         builder: (ctx, state) {
           final code = state.uri.queryParameters['code'] ?? '';
           final oauthState = state.uri.queryParameters['state'] ?? '';
@@ -639,6 +661,10 @@ GoRouter appRouter(Ref ref) {
             const notifications_activity.RecentActivityScreen(),
       ),
       GoRoute(
+        path: RouteNames.creatorSearch,
+        builder: (ctx, state) => const CreatorSearchScreen(),
+      ),
+      GoRoute(
         path: RouteNames.socialConnect,
         builder: (ctx, state) => SocialConnectScreen(
           isOnboarding: state.uri.queryParameters['onboarding'] == 'true',
@@ -651,11 +677,8 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.reelImportPreview,
         builder: (ctx, state) {
-          final extra = state.extra! as Map<String, dynamic>;
-          return PreviewReelScreen(
-            url: extra['url'] as String,
-            platform: extra['platform'] as SocialPlatform,
-          );
+          final reel = state.extra! as ImportableReel;
+          return PreviewReelScreen(reel: reel);
         },
       ),
       GoRoute(
@@ -910,6 +933,10 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const VendorDashboardScreen(),
       ),
       GoRoute(
+        path: RouteNames.vendorProfile,
+        builder: (ctx, state) => const VendorProfileScreen(),
+      ),
+      GoRoute(
         path: RouteNames.addProduct,
         builder: (ctx, state) => const AddProductWizardScreen(),
       ),
@@ -921,6 +948,30 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.vendorUpdateStock,
         builder: (ctx, state) => UpdateProductStockScreen(
           product: state.extra as VendorProduct,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorEditProductImages,
+        builder: (ctx, state) => EditProductImagesScreen(
+          productId: state.extra as String,
+        ),
+      ),
+      GoRoute(
+        // /vendor/products/:productId/edit - primary path for editing.
+        // productId is the path parameter; the wizard fetches the
+        // product and pre-populates every step.
+        path: RouteNames.vendorEditProduct,
+        builder: (ctx, state) => AddProductWizardScreen(
+          productId: state.pathParameters['productId'],
+        ),
+      ),
+      GoRoute(
+        // Legacy /vendor/products/edit-details - kept for any callers that
+        // still push the product id via extra. Same screen as the new
+        // /:productId/edit route.
+        path: RouteNames.vendorEditProductDetails,
+        builder: (ctx, state) => AddProductWizardScreen(
+          productId: state.extra as String?,
         ),
       ),
       GoRoute(
@@ -985,6 +1036,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorCampaignBriefs,
         builder: (ctx, state) => const CampaignBriefsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCreateCampaign,
+        builder: (ctx, state) => const CreateCampaignScreen(),
       ),
       GoRoute(
         path: RouteNames.vendorCampaignBriefDetail,
@@ -1301,6 +1356,13 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
         ],
+      ),
+
+      // Customer — recent activity (notifications)
+      GoRoute(
+        path: RouteNames.customerRecentActivity,
+        builder: (ctx, state) =>
+            const notifications_activity.RecentActivityScreen(),
       ),
     ],
   );

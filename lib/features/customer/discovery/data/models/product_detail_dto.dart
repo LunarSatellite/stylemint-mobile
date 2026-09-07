@@ -5,30 +5,23 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 part 'product_detail_dto.freezed.dart';
 part 'product_detail_dto.g.dart';
 
+/// Maps `GET /v1/public/products/{id}` — backend `ProductDto`
+/// (StyleMint.Modules.Catalog). There is no top-level price, vendor name,
+/// or "compare at" price on this DTO: price/stock live per-SKU on
+/// [variants], and the vendor's display name isn't returned by this
+/// endpoint at all (only [vendorAccountId] — a raw GUID, no profile join).
 @freezed
 abstract class ProductDetailDto with _$ProductDetailDto {
   const factory ProductDetailDto({
     required String id,
+    required String vendorAccountId,
     required String name,
-    @Default('') String description,
-    @Default(<String>[]) List<String> images,
-    required double amount,
-    @Default('NPR') String currency,
-    double? compareAtAmount,
-    String? compareAtCurrency,
-    @Default(0) double rating,
+    @Default('') String shortDescription,
+    @Default('') String longDescriptionMarkdown,
+    @Default(0) double averageRating,
     @Default(0) int reviewCount,
-    @Default(0) int soldCount,
-    required String vendorId,
-    required String vendorName,
-    @Default('') String vendorAvatarUrl,
-    @Default(true) bool isInStock,
-    int? stockCount,
+    @Default(<ProductImageDto>[]) List<ProductImageDto> images,
     @Default(<ProductVariantDto>[]) List<ProductVariantDto> variants,
-    @Default(<String, String>{}) Map<String, String> specifications,
-    @Default('') String shippingInfo,
-    @Default(false) bool isSaved,
-    @Default(false) bool isInCart,
   }) = _ProductDetailDto;
 
   const ProductDetailDto._();
@@ -36,38 +29,72 @@ abstract class ProductDetailDto with _$ProductDetailDto {
   factory ProductDetailDto.fromJson(Map<String, dynamic> json) =>
       _$ProductDetailDtoFromJson(json);
 
-  ProductDetail toDomain() => ProductDetail(
-    id: id,
-    name: name,
-    description: description,
-    images: images,
-    price: Money(amount: amount, currency: currency),
-    compareAtPrice: compareAtAmount != null
-        ? Money(amount: compareAtAmount!, currency: compareAtCurrency ?? 'NPR')
-        : null,
-    rating: rating,
-    reviewCount: reviewCount,
-    soldCount: soldCount,
-    vendorId: vendorId,
-    vendorName: vendorName,
-    vendorAvatarUrl: vendorAvatarUrl,
-    isInStock: isInStock,
-    stockCount: stockCount,
-    variants: variants.map((v) => v.toDomain()).toList(growable: false),
-    specifications: specifications,
-    shippingInfo: shippingInfo,
-    isSaved: isSaved,
-    isInCart: isInCart,
-  );
+  ProductDetail toDomain() {
+    final defaultVariant = variants.isEmpty
+        ? null
+        : variants.firstWhere((v) => v.isDefault, orElse: () => variants.first);
+    final sortedImages = [...images]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    return ProductDetail(
+      id: id,
+      name: name,
+      description:
+          longDescriptionMarkdown.isNotEmpty ? longDescriptionMarkdown : shortDescription,
+      images: sortedImages.map((i) => i.cdnUrl).toList(growable: false),
+      price: Money(
+        amount: defaultVariant?.priceAmount ?? 0,
+        currency: defaultVariant?.priceCurrency ?? 'NPR',
+      ),
+      // No "was" price on this contract yet.
+      compareAtPrice: null,
+      rating: averageRating,
+      reviewCount: reviewCount,
+      soldCount: 0,
+      vendorId: vendorAccountId,
+      // Not returned by this endpoint — needs a separate vendor-profile
+      // lookup to populate; left blank rather than blocking the page.
+      vendorName: '',
+      vendorAvatarUrl: '',
+      isInStock: defaultVariant == null ||
+          !defaultVariant.trackInventory ||
+          defaultVariant.quantityOnHand > 0,
+      stockCount: defaultVariant?.trackInventory == true ? defaultVariant?.quantityOnHand : null,
+      // Backend variants are per-SKU price/stock rows, not option groups
+      // (e.g. "Size" -> ["S","M","L"]) — this endpoint doesn't expose an
+      // option-axis structure to build that selector from.
+      variants: const [],
+      specifications: const {},
+      shippingInfo: '',
+      isSaved: false,
+      isInCart: false,
+    );
+  }
+}
+
+@freezed
+abstract class ProductImageDto with _$ProductImageDto {
+  const factory ProductImageDto({
+    @Default('') String cdnUrl,
+    @Default(0) int sortOrder,
+    @Default(false) bool isPrimary,
+  }) = _ProductImageDto;
+
+  const ProductImageDto._();
+
+  factory ProductImageDto.fromJson(Map<String, dynamic> json) =>
+      _$ProductImageDtoFromJson(json);
 }
 
 @freezed
 abstract class ProductVariantDto with _$ProductVariantDto {
   const factory ProductVariantDto({
     required String id,
-    required String name,
-    @Default(<String>[]) List<String> values,
-    @Default('size') String type,
+    @Default('') String sku,
+    @Default(false) bool isDefault,
+    @Default(0) double priceAmount,
+    @Default('NPR') String priceCurrency,
+    @Default(true) bool trackInventory,
+    @Default(0) int quantityOnHand,
   }) = _ProductVariantDto;
 
   const ProductVariantDto._();
@@ -77,9 +104,9 @@ abstract class ProductVariantDto with _$ProductVariantDto {
 
   ProductVariant toDomain() => ProductVariant(
     id: id,
-    name: name,
-    values: values,
-    type: type,
+    name: sku,
+    values: const [],
+    type: 'sku',
   );
 }
 

@@ -166,33 +166,35 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               ),
             ),
           ),
-          Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+          SafeArea(
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+                ),
               ),
-            ),
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _save,
-                style: DesignTokens.primaryButtonStyle(),
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: DesignTokens.buttonPrimaryText,
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: DesignTokens.primaryButtonStyle(),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        )
+                      : Text(
+                          isEdit ? 'Update Address Details' : 'Add Address Details',
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
                         ),
-                      )
-                    : Text(
-                        isEdit ? 'Update Address Details' : 'Add Address Details',
-                        style: DesignTokens.mediumSemibold.copyWith(
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
-                      ),
+                ),
               ),
             ),
           ),

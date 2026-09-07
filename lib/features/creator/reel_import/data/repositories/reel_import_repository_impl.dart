@@ -62,6 +62,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
         idempotencyKey: const Uuid().v4(),
         caption: reel.caption,
         thumbnailCdnUrl: reel.thumbnailUrl,
+        videoUrl: reel.videoUrl,
       );
       return right(dto.toDomain());
     } on DioException catch (e) {
@@ -88,6 +89,33 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       final dtos = await remoteDataSource.searchProducts(query);
       return right(dtos.map((d) => d.toDomain()).toList(growable: false));
     } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dtos = await remoteDataSource.getSuggestedProducts(
+        platform: platform,
+        externalId: externalId,
+      );
+      return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return right(const []);
+      }
       return left(NetworkExceptions.server(e.message.toString()));
     } on NetworkExceptions catch (e) {
       return left(e);

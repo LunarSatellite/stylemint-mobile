@@ -17,18 +17,28 @@ class SettingsRemoteDataSource {
   }
 
   Future<NotificationPreferencesDto> getNotificationPreferences() async {
-    final response = await apiClient.get('/v1/notifications/preferences');
+    final accountId = await _accountId();
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/notification-preferences',
+    );
     return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<NotificationPreferencesDto> updateNotificationPreferences(
     NotificationPreferencesDto prefs,
   ) async {
-    final response = await apiClient.put(
-      '/v1/notifications/preferences/all',
-      data: prefs.toJson(),
-    );
-    return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    final accountId = await _accountId();
+    try {
+      final response = await apiClient.patch(
+        '/v1/accounts/$accountId/notification-preferences/toggles',
+        data: prefs.toJson(),
+      );
+      return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      // Log actual error for debugging
+      print('DEBUG updateNotificationPreferences error: $e');
+      rethrow;
+    }
   }
 
   /// TODO(swagger): No settings/language endpoint found — keep as-is.

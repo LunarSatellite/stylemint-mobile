@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/importable_reel_card.dart';
@@ -21,6 +22,7 @@ class ImportReelScreen extends ConsumerStatefulWidget {
 
 class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
   SocialPlatform _selectedPlatform = SocialPlatform.instagram;
+  ImportableReel? _selectedReel;
 
   @override
   void initState() {
@@ -36,16 +38,26 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
 
   void _onPlatformChanged(SocialPlatform platform) {
     if (platform == _selectedPlatform) return;
-    setState(() => _selectedPlatform = platform);
+    setState(() {
+      _selectedPlatform = platform;
+      _selectedReel = null;
+    });
     unawaited(
       ref.read(reelImportNotifierProvider.notifier).load(platform),
     );
   }
 
-  void _onReelTapped(ImportableReel reel) {
-    final route = RouteNames.reelImportTagProducts
-        .replaceFirst(':postId', reel.platformPostId);
-    unawaited(context.push(route, extra: reel));
+    void _onReelTapped(ImportableReel reel) {
+    setState(() {
+      _selectedReel = _selectedReel?.id == reel.id ? null : reel;
+    });
+  }
+
+  void _onImportPressed(ImportableReel reel) {
+    unawaited(context.push(
+      RouteNames.reelImportPreview,
+      extra: reel,
+    ));
   }
 
   void _showUrlPasteSheet() {
@@ -61,11 +73,34 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
       builder: (_) => _UrlPasteSheet(platform: _selectedPlatform),
     ).then((url) {
       if (url == null || url.isEmpty || !mounted) return;
+      final externalId = _extractExternalId(url);
+      final pastedReel = ImportableReel(
+        id: externalId,
+        platform: _selectedPlatform,
+        platformPostId: externalId,
+        sourceUrl: url,
+        thumbnailUrl: '',
+        caption: '',
+        createdAt: DateTime.now(),
+        videoDuration: 0,
+      );
       unawaited(context.push(
         RouteNames.reelImportPreview,
-        extra: {'url': url, 'platform': _selectedPlatform},
+        extra: pastedReel,
       ));
     }).ignore();
+  }
+
+  String _extractExternalId(String url) {
+    try {
+      final segments = Uri.parse(url)
+          .pathSegments
+          .where((s) => s.isNotEmpty)
+          .toList();
+      return segments.isNotEmpty ? segments.last : url;
+    } on Exception catch (_) {
+      return url;
+    }
   }
 
   @override
@@ -82,13 +117,41 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text('Import Reel', style: DesignTokens.titleMedium),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history, color: DesignTokens.textWhite),
+            tooltip: 'Import history',
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: DesignTokens.bgAppFoundation,
+              isScrollControlled: true,
+              builder: (_) => const _ImportHistorySheet(),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // ── Platform selector ────────────────────────────────────────────
+          // ── Helper text ──────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
               DesignTokens.s16, DesignTokens.s12,
+              DesignTokens.s16, DesignTokens.s4,
+            ),
+            child: Text(
+              'Select the reel from your social media and we will '
+              'import it automatically for you.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+                height: 1.4,
+              ),
+            ),
+          ),
+
+          // ── Platform selector ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16, 0,
               DesignTokens.s16, DesignTokens.s4,
             ),
             child: Row(
@@ -144,10 +207,14 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                           childAspectRatio: 0.75,
                         ),
                         itemCount: reels.length,
-                        itemBuilder: (_, i) => ImportableReelCard(
-                          reel: reels[i],
-                          onTap: () => _onReelTapped(reels[i]),
-                        ),
+                        itemBuilder: (_, i) {
+                          final reel = reels[i];
+                          return ImportableReelCard(
+                            reel: reel,
+                            isSelected: _selectedReel?.id == reel.id,
+                            onTap: () => _onReelTapped(reel),
+                          );
+                        },
                       ),
                     ),
                     // A single provider page can be entirely non-video posts
@@ -199,26 +266,85 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
             ),
           ),
 
-          // ── Paste URL fallback ───────────────────────────────────────────
+          // ── Bottom action bar ────────────────────────────────────────────────────────────
           SafeArea(
-            child: Padding(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: DesignTokens.bgAppFoundation,
+                border: Border(
+                  top: BorderSide(color: DesignTokens.borderDefault),
+                ),
+              ),
               padding: const EdgeInsets.fromLTRB(
                 DesignTokens.s16,
-                DesignTokens.s8,
+                DesignTokens.s12,
                 DesignTokens.s16,
                 DesignTokens.s16,
               ),
-              child: GestureDetector(
-                onTap: _showUrlPasteSheet,
-                child: Text(
-                  "Can't see your posts? Paste a URL instead",
-                  textAlign: TextAlign.center,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                    'Drafts will be available soon.',
+                                  ),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: DesignTokens.buttonGrayFill,
+                              side: BorderSide.none,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.buttonRadius,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Save as Draft',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                color: DesignTokens.textWhite,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        flex: 1,
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final selected = _selectedReel;
+                              if (selected == null) return;
+                              _onImportPressed(selected);
+                            },
+                            style: DesignTokens.primaryButtonStyle(),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Import Reel'),
+                                SizedBox(width: DesignTokens.s8),
+                                Icon(Icons.download_rounded, size: 18),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -582,6 +708,151 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Prior imports for this creator, read from [importHistoryNotifierProvider].
+///
+/// The notifier loads once when first read; the sheet offers an explicit
+/// refresh because an import completed elsewhere in the app will not
+/// invalidate it on its own.
+class _ImportHistorySheet extends ConsumerWidget {
+  const _ImportHistorySheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(importHistoryNotifierProvider);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Import history',
+                      style: DesignTokens.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh,
+                        color: DesignTokens.textWhite),
+                    tooltip: 'Refresh',
+                    onPressed: () => unawaited(
+                      ref.read(importHistoryNotifierProvider.notifier).load(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              Flexible(
+                child: state.when(
+                  initial: () => const _HistoryMessage('Loading…'),
+                  loadInProgress: () => const Padding(
+                    padding: EdgeInsets.all(DesignTokens.s24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                  ),
+                  loadFailure: (failure) =>
+                      _HistoryMessage(NetworkExceptions.getMessage(failure)),
+                  loadSuccess: (reels) => reels.isEmpty
+                      ? const _HistoryMessage(
+                          "You haven't imported any reels yet.",
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: reels.length,
+                          separatorBuilder: (_, _i) =>
+                              const SizedBox(height: DesignTokens.s8),
+                          itemBuilder: (_, i) =>
+                              _HistoryTile(reel: reels[i]),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryMessage extends StatelessWidget {
+  const _HistoryMessage(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+        child: Text(
+          text,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+      );
+}
+
+class _HistoryTile extends StatelessWidget {
+  const _HistoryTile({required this.reel});
+
+  final ImportedReel reel;
+
+  @override
+  Widget build(BuildContext context) {
+    final caption = reel.caption.trim();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(DesignTokens.s8),
+          child: reel.thumbnailUrl.isEmpty
+              ? const SizedBox(width: 48, height: 64)
+              : Image.network(
+                  reel.thumbnailUrl,
+                  width: 48,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _e, _s) =>
+                      const SizedBox(width: 48, height: 64),
+                ),
+        ),
+        const SizedBox(width: DesignTokens.s12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                caption.isEmpty ? 'Untitled reel' : caption,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${reel.status.name} · ${reel.tags.length} tagged',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

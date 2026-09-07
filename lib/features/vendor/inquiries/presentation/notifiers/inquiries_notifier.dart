@@ -34,8 +34,8 @@ class InquiriesState {
   }
 }
 
-class InquiriesController extends StateNotifier<InquiriesState> {
-  InquiriesController(this._repository) : super(const InquiriesState()) {
+class InquiriesNotifier extends StateNotifier<InquiriesState> {
+  InquiriesNotifier(this._repository) : super(const InquiriesState()) {
     unawaited(load());
   }
 

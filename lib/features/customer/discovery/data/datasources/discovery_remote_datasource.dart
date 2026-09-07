@@ -60,8 +60,11 @@ class DiscoveryRemoteDataSource {
       '/v1/cart/lines',
       data: {
         'productId': productId,
-        'qty': qty,
-        if (variantId != null) 'variantId': variantId,
+        'quantity': qty,
+        // Backend field is ProductVariantId; omit when we don't have a real
+        // variant SKU id (Day 1 has no multi-variant selection) — the server
+        // resolves the product's single default variant.
+        if (variantId != null) 'productVariantId': variantId,
       },
       options: _idempotent(idempotencyKey),
     );

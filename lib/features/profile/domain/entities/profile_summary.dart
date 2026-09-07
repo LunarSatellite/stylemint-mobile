@@ -20,13 +20,18 @@ class ProfileSummary {
   final String language; // e.g. "English"
   final bool pushEnabled;
 
-  ProfileSummary copyWith({bool? pushEnabled}) => ProfileSummary(
+  ProfileSummary copyWith({
+    int? savedItemsCount,
+    int? followingCount,
+    int? ordersCount,
+    bool? pushEnabled,
+  }) => ProfileSummary(
     displayName: displayName,
     email: email,
     avatarUrl: avatarUrl,
-    savedItemsCount: savedItemsCount,
-    followingCount: followingCount,
-    ordersCount: ordersCount,
+    savedItemsCount: savedItemsCount ?? this.savedItemsCount,
+    followingCount: followingCount ?? this.followingCount,
+    ordersCount: ordersCount ?? this.ordersCount,
     language: language,
     pushEnabled: pushEnabled ?? this.pushEnabled,
   );

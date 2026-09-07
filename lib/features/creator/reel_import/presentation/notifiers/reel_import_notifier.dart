@@ -103,11 +103,6 @@ class ReelImportNotifier extends StateNotifier<ReelImportState> {
       },
     );
   }
-
-  Future<void> importReel(ImportableReel reel) async {
-    final either = await _repository.importReel(reel);
-    either.fold((_) => null, (_) => null);
-  }
 }
 
 class ImportHistoryNotifier extends StateNotifier<ImportHistoryState> {
@@ -147,6 +142,52 @@ class ProductSearchNotifier extends StateNotifier<ProductSearchState> {
     state = either.fold(
       ProductSearchState.loadFailure,
       ProductSearchState.loadSuccess,
+    );
+  }
+}
+
+/// Loads and owns the suggested-products list for the currently imported
+/// reel. Kept fully separate from [ProductSearchNotifier] so the search
+sealed class SuggestedProductsState {
+  const SuggestedProductsState();
+}
+
+class SuggestedProductsInitial extends SuggestedProductsState {
+  const SuggestedProductsInitial();
+}
+
+class SuggestedProductsLoadInProgress extends SuggestedProductsState {
+  const SuggestedProductsLoadInProgress();
+}
+
+class SuggestedProductsLoadSuccess extends SuggestedProductsState {
+  const SuggestedProductsLoadSuccess(this.products);
+  final List<TaggedProductForImport> products;
+}
+
+class SuggestedProductsLoadFailure extends SuggestedProductsState {
+  const SuggestedProductsLoadFailure(this.failure);
+  final NetworkExceptions failure;
+}
+
+class SuggestedProductsNotifier extends StateNotifier<SuggestedProductsState> {
+  SuggestedProductsNotifier(this._repository)
+    : super(const SuggestedProductsInitial());
+
+  final ReelImportRepository _repository;
+
+  Future<void> loadSuggestions({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    state = const SuggestedProductsLoadInProgress();
+    final either = await _repository.getSuggestedProducts(
+      platform: platform,
+      externalId: externalId,
+    );
+    state = either.fold(
+      SuggestedProductsLoadFailure.new,
+      (products) => SuggestedProductsLoadSuccess(products),
     );
   }
 }

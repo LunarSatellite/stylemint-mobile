@@ -23,9 +23,22 @@ class CreatorProfileRemoteDataSource {
     final cpJson = results[1] as Map<String, dynamic>;
 
     final bio = cpJson['bio'] as String? ?? '';
+    // Tags may live on either the account or the creator-profile document;
+    // prefer the account response when both are present.
+    List<String>? tags;
+    final acctTags = accountJson['tags'] as List<dynamic>?;
+    if (acctTags != null) {
+      tags = acctTags.map((t) => t.toString()).toList(growable: false);
+    } else {
+      final cpTags = cpJson['tags'] as List<dynamic>?;
+      if (cpTags != null) {
+        tags = cpTags.map((t) => t.toString()).toList(growable: false);
+      }
+    }
     return CreatorProfileDto.fromJson({
       ...accountJson,
       if (bio.isNotEmpty) 'bio': bio,
+      if (tags != null) 'tags': tags,
     });
   }
 
@@ -38,26 +51,30 @@ class CreatorProfileRemoteDataSource {
     List<String>? tags,
     List<String>? niches,
   }) async {
-    // Account-level fields (bio is NOT accepted here — send it to creator-profile).
+    // Account-level fields.
     final accountData = <String, dynamic>{
       'rowVersion': rowVersion,
       if (displayName != null) 'displayName': displayName,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
-      if (tags != null) 'tags': tags,
     };
 
-    if (bio != null) {
-      // Both calls run in parallel; bio goes to the creator-profile endpoint.
+    // Creator-level fields (bio, tags) go to the creator-profile endpoint.
+    final creatorProfileData = <String, dynamic>{};
+    if (bio != null) creatorProfileData['bio'] = bio;
+    if (tags != null) creatorProfileData['tags'] = tags;
+
+    if (creatorProfileData.isNotEmpty) {
+      // Both calls run in parallel.
       final results = await Future.wait([
         apiClient.patch('/v1/accounts/$accountId', data: accountData),
         apiClient.patch(
           '/v1/accounts/$accountId/creator-profile',
-          data: {'bio': bio},
+          data: creatorProfileData,
         ),
       ]);
       return CreatorProfileDto.fromJson({
         ...(results[0] as Map<String, dynamic>),
-        'bio': bio,
+        ...(results[1] as Map<String, dynamic>),
       });
     }
 

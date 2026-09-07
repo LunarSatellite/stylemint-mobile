@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/top_products/domain/entities/vendor_top_product.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -38,7 +39,7 @@ class VendorTopProductDto {
   VendorTopProduct toDomain() => VendorTopProduct(
     productId: productId,
     name: (name?.isNotEmpty ?? false) ? name! : 'Unnamed product',
-    thumbnailUrl: thumbnailUrl,
+    thumbnailUrl: absoluteMediaUrl(thumbnailUrl),
     unitsSold: unitsSold,
     totalRevenue: totalRevenue.toDomain(),
     distinctCreatorCount: distinctCreatorCount,

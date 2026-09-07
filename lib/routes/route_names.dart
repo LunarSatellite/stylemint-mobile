@@ -13,6 +13,8 @@ abstract class RouteNames {
   static const socialLogin = '/social/:provider';
   // OAuth redirect deep link: stylemint://auth/oauth/callback?code=&state=
   static const oauthCallback = '/auth/oauth/callback';
+  // Alias: prod backend redirects to /oauth-callback (no /auth prefix).
+  static const oauthCallbackAlias = '/oauth-callback';
   static const otp = '/otp';
   static const magicLink = '/auth/magic';
   // Post-sign-in name capture (magic-link / accounts with no confirmed name).
@@ -110,6 +112,7 @@ abstract class RouteNames {
   static const vendorApplyRejected = '/vendor/apply/rejected';
   static const vendorApplyUnderReview = '/vendor/apply/under-review';
   static const vendorApplyApproved = '/vendor/apply/approved';
+  static const vendorProfile = '/vendor/profile';
   static const vendorDash = '/vendor/dashboard';
   static const addProduct = '/vendor/add-product';
   static const vendorOrders = '/vendor/orders';
@@ -121,6 +124,12 @@ abstract class RouteNames {
       '/vendor/partnerships/requests';
   static const vendorProducts = '/vendor/products';
   static const vendorUpdateStock = '/vendor/products/update-stock';
+  static const vendorEditProductImages = '/vendor/products/edit-images';
+  static const vendorEditProductDetails = '/vendor/products/edit-details';
+  // /vendor/products/:productId/edit - unified edit form, replaces the
+  // legacy edit-details route now that the form handles both Create
+  // and Edit modes.
+  static const vendorEditProduct = '/vendor/products/:productId/edit';
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
   static const vendorRecentActivity = '/vendor/activity';
@@ -130,6 +139,7 @@ abstract class RouteNames {
       '/vendor/partnerships/:campaignId/invite';
   static const vendorBrandStudio = '/vendor/brand-studio';
   static const vendorCampaignBriefs = '/vendor/briefs';
+  static const vendorCreateCampaign = '/vendor/briefs/new';
   static const vendorCampaignBriefDetail = '/vendor/briefs/:briefId';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';
@@ -145,6 +155,7 @@ abstract class RouteNames {
   static const vendorCreatorAnalytics = '/vendor/creator-analytics';
   static const vendorAnalytics = '/vendor/analytics';
   static const vendorMessageCreator = '/vendor/message-creator';
+
   static const vendorAdjustCommission = '/vendor/adjust-commission';
   static const vendorSupportContact = '/vendor/support/contact';
 
@@ -178,6 +189,7 @@ abstract class RouteNames {
   // Settings / Support
   static const settings = '/settings';
   static const settingsNotifications = '/settings/notifications';
+  static const customerRecentActivity = '/customer/recent-activity';
   static const settingsLanguage = '/settings/language';
   static const settingsPrivacy = '/settings/privacy';
   static const settingsTerms = '/settings/terms';
@@ -206,4 +218,5 @@ abstract class RouteNames {
   static const creatorAnalytics = '/creator/analytics';
   static const creatorReelAnalyticsDetail = '/creator/analytics/reel-detail/:reelId';
   static const creatorFullAnalyticsReport = '/creator/analytics/full-report';
+  static const creatorSearch = '/creator/search';
 }

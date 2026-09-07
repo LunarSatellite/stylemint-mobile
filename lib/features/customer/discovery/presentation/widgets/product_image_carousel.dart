@@ -62,7 +62,49 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
             ),
           ),
         ),
-        if (widget.images.length > 1)
+        // Scrims keep the back/save/share icons and the page dots readable
+        // no matter how bright or busy the underlying product photo is.
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: Container(
+              height: 90,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.images.length > 1) ...[
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.4),
+                      Colors.black.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Positioned(
             bottom: DesignTokens.s12,
             left: 0,
@@ -89,6 +131,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               }),
             ),
           ),
+        ],
       ],
     );
   }

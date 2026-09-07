@@ -1,15 +1,58 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/notifiers/creator_documents_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class CreatorRejectedScreen extends ConsumerWidget {
+class CreatorRejectedScreen extends ConsumerStatefulWidget {
   const CreatorRejectedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CreatorRejectedScreen> createState() =>
+      _CreatorRejectedScreenState();
+}
+
+class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
+  bool _loading = false;
+
+  Future<void> _onApplyAgain() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    // Backend gap: neither /v1/creator/apply (returns 409 — application
+    // exists) nor /v1/accounts/{accountId}/creator-profile/reapply (returns
+    // 404 — no CreatorProfile yet) supports re-applying from a rejected
+    // CreatorApplication that never became a CreatorProfile. For now, just
+    // open the wizard pre-filled from the rejected application so the user
+    // can edit; the backend team needs to add a re-submit-from-rejected
+    // endpoint before the submit step can succeed.
+    await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
+    if (!mounted) return;
+    final state = ref.read(creatorApplyNotifierProvider);
+    state.maybeWhen(
+      loadSuccess: (app) {
+        ref.read(creatorFormProvider.notifier).loadFromApplication(app);
+      },
+      orElse: () {},
+    );
+    if (context.canPop()) {
+      context.pop();
+    }
+    context.go(RouteNames.creatorApply);
+  }
+
+  void _onReturnToHome() {
+    ref.read(creatorFormProvider.notifier).reset();
+    if (context.canPop()) {
+      context.pop();
+    }
+    context.go(RouteNames.home);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
@@ -24,39 +67,43 @@ class CreatorRejectedScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    // Rejected icon
                     Image.asset(
-                      'assets/images/vendordashboard/Crossed.png',
+                      'assets/images/Crossed.png',
                       width: 100,
                       height: 100,
                     ),
                     const SizedBox(height: DesignTokens.s24),
-
-                    // Title
                     const Text(
                       'Application Rejected',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.titleMedium,
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s12),
-
-                    // Subtitle
-                    Text(
+                    const Text(
                       'Unfortunately your application has been rejected. Please contact our support team for more information',
                       textAlign: TextAlign.center,
-                      style: DesignTokens.mediumRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.5,
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s28),
-
-                    // Rejection reasons card
                     _RejectionCard(),
+                    const SizedBox(height: DesignTokens.s16),
+                    const _RejectedDocumentsCard(),
                   ],
                 ),
               ),
             ),
-
-            // Footer
             Container(
               decoration: const BoxDecoration(
                 color: DesignTokens.bgAppFoundation,
@@ -93,41 +140,19 @@ class CreatorRejectedScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: DesignTokens.s16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: Material(
-                        color: DesignTokens.primaryGreen,
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
-                        child: InkWell(
-                          onTap: () {
-                            ref.read(creatorFormProvider.notifier).reset();
-                            context.go(RouteNames.home);
-                          },
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.buttonRadius),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: DesignTokens.s16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.home_rounded,
-                                    size: DesignTokens.iconSmall,
-                                    color: DesignTokens.buttonPrimaryText),
-                                const SizedBox(width: DesignTokens.s8),
-                                Text(
-                                  'Return to Home',
-                                  style: DesignTokens.oneLinerSemibold
-                                      .copyWith(
-                                          color:
-                                              DesignTokens.buttonPrimaryText),
-                                ),
-                              ],
-                            ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ReturnToHomeButton(onTap: _onReturnToHome),
+                        ),
+                        const SizedBox(width: DesignTokens.s12),
+                        Expanded(
+                          child: _ApplyAgainButton(
+                            loading: _loading,
+                            onTap: _onApplyAgain,
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -140,9 +165,90 @@ class CreatorRejectedScreen extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Rejection reasons card
-// ---------------------------------------------------------------------------
+class _ReturnToHomeButton extends StatelessWidget {
+  const _ReturnToHomeButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: DesignTokens.bgAppFoundation,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: DesignTokens.primaryGreen, width: 1.5),
+        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.home_rounded,
+                  size: DesignTokens.iconSmall,
+                  color: DesignTokens.primaryGreen),
+              const SizedBox(width: DesignTokens.s8),
+              Text(
+                'Return to Home',
+                style: DesignTokens.oneLinerSemibold
+                    .copyWith(color: DesignTokens.primaryGreen),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ApplyAgainButton extends StatelessWidget {
+  const _ApplyAgainButton({required this.onTap, required this.loading});
+  final VoidCallback onTap;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: DesignTokens.primaryGreen,
+      borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+      child: InkWell(
+        onTap: loading ? null : onTap,
+        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (loading)
+                const SizedBox(
+                  width: DesignTokens.iconSmall,
+                  height: DesignTokens.iconSmall,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      DesignTokens.buttonPrimaryText,
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.refresh_rounded,
+                    size: DesignTokens.iconSmall,
+                    color: DesignTokens.buttonPrimaryText),
+              const SizedBox(width: DesignTokens.s8),
+              Text(
+                loading ? 'Loading...' : 'Apply Again',
+                style: DesignTokens.oneLinerSemibold
+                    .copyWith(color: DesignTokens.buttonPrimaryText),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RejectionCard extends StatelessWidget {
   static const _guidelinesStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -225,6 +331,88 @@ class _RejectionCard extends StatelessWidget {
                 fontSize: 14,
               )),
           Expanded(child: content),
+        ],
+      ),
+    );
+  }
+}
+/// Shows which identity documents a reviewer rejected, and why.
+///
+/// Without this the rejected screen said only "contact support", leaving the
+/// creator to guess which document to replace on reapply. Renders nothing
+/// when no document was rejected — an application can be rejected for
+/// reasons unrelated to KYC.
+class _RejectedDocumentsCard extends ConsumerStatefulWidget {
+  const _RejectedDocumentsCard();
+
+  @override
+  ConsumerState<_RejectedDocumentsCard> createState() =>
+      _RejectedDocumentsCardState();
+}
+
+class _RejectedDocumentsCardState
+    extends ConsumerState<_RejectedDocumentsCard> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(creatorDocumentsNotifierProvider.notifier).load();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rejected = ref.watch(creatorDocumentsNotifierProvider).rejected;
+    if (rejected.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        border: Border.all(color: DesignTokens.colorError),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 18,
+                color: DesignTokens.colorError,
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Text(
+                rejected.length == 1
+                    ? 'A document was rejected'
+                    : '${rejected.length} documents were rejected',
+                style: DesignTokens.mediumSemibold
+                    .copyWith(color: DesignTokens.textWhite),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          ...rejected.map(
+            (d) => Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(d.type.label, style: DesignTokens.bodyText),
+                  Text(
+                    d.rejectionReason ??
+                        'Please upload a clearer copy when you reapply.',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textLight),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

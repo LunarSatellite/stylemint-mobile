@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -17,7 +18,13 @@ abstract class ImportableReelDto with _$ImportableReelDto {
     required String caption,
     required DateTime createdAt,
     @Default(0) int videoDuration,
+    @Default('') String videoUrl,
     @Default(false) bool isSelected,
+    @Default(0) int likeCount,
+    @Default(0) int viewCount,
+    @Default(0) int commentCount,
+    @Default(0) int shareCount,
+    @Default(0) int bookmarkCount,
   }) = _ImportableReelDto;
 
   const ImportableReelDto._();
@@ -26,21 +33,25 @@ abstract class ImportableReelDto with _$ImportableReelDto {
       _$ImportableReelDtoFromJson(json);
 
   ImportableReel toDomain() {
-    final platformEnum = SocialPlatform.values.firstWhere(
-      (p) => p.name == platform,
-      orElse: () => SocialPlatform.instagram,
-    );
+    final platformEnum = SocialPlatform.tryParseWire(platform) ??
+        SocialPlatform.instagram;
 
     return ImportableReel(
       id: id,
       platform: platformEnum,
       platformPostId: platformPostId,
       sourceUrl: sourceUrl,
-      thumbnailUrl: thumbnailUrl,
+      thumbnailUrl: absoluteMediaUrl(thumbnailUrl),
       caption: caption,
       createdAt: createdAt,
       videoDuration: videoDuration,
+      videoUrl: videoUrl.isEmpty ? null : videoUrl,
       isSelected: isSelected,
+      likeCount: likeCount,
+      viewCount: viewCount,
+      commentCount: commentCount,
+      shareCount: shareCount,
+      bookmarkCount: bookmarkCount,
     );
   }
 }
@@ -64,7 +75,7 @@ abstract class TaggedProductForImportDto with _$TaggedProductForImportDto {
   TaggedProductForImport toDomain() => TaggedProductForImport(
         productId: productId,
         productName: productName,
-        imageUrl: imageUrl,
+        imageUrl: absoluteMediaUrl(imageUrl),
         price: Money(amount: amount, currency: currency),
         vendorName: vendorName,
       );
@@ -91,10 +102,8 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       _$ImportedReelDtoFromJson(json);
 
   ImportedReel toDomain() {
-    final platformEnum = SocialPlatform.values.firstWhere(
-      (p) => p.name == platform,
-      orElse: () => SocialPlatform.instagram,
-    );
+    final platformEnum = SocialPlatform.tryParseWire(platform) ??
+        SocialPlatform.instagram;
 
     final statusEnum = ImportStatus.values.firstWhere(
       (s) => s.name == status,
@@ -108,7 +117,7 @@ abstract class ImportedReelDto with _$ImportedReelDto {
       tags: tags.map((dto) => dto.toDomain()).toList(growable: false),
       importedAt: importedAt,
       caption: caption,
-      thumbnailUrl: thumbnailUrl,
+      thumbnailUrl: absoluteMediaUrl(thumbnailUrl),
       sourceUrl: sourceUrl,
       platform: platformEnum,
       platformPostId: platformPostId,

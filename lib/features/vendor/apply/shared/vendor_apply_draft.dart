@@ -38,6 +38,7 @@ class VendorApplyDraft {
     required this.businessRegistrationNumber,
     required this.countryRegion,
     required this.streetAddress,
+    this.addressLine2 = '',
     required this.city,
     required this.country,
     required this.zipCode,
@@ -84,6 +85,7 @@ class VendorApplyDraft {
   final String? website;
   final String countryRegion;
   final String streetAddress;
+  final String addressLine2;
   final String city;
   final String country;
   final String zipCode;
@@ -126,10 +128,12 @@ class VendorApplyDraft {
     countryCode: _countryCodes[countryRegion] ?? countryRegion,
     businessType: businessType,
     taxId: taxId,
+    businessRegistrationNumber: businessRegistrationNumber,
     commissionMinPercent: double.tryParse(commissionMinRate ?? '') ?? 0,
     commissionMaxPercent: double.tryParse(commissionMaxRate ?? '') ?? 0,
     website: website,
     addressLine1: streetAddress.isEmpty ? null : streetAddress,
+    addressLine2: addressLine2.isEmpty ? null : addressLine2,
     city: city.isEmpty ? null : city,
     stateProvince: state.isEmpty ? null : state,
     postalCode: zipCode.isEmpty ? null : zipCode,
@@ -209,6 +213,7 @@ class VendorApplyDraft {
       website: website ?? this.website,
       countryRegion: countryRegion ?? this.countryRegion,
       streetAddress: streetAddress ?? this.streetAddress,
+      addressLine2: addressLine2 ?? this.addressLine2,
       city: city ?? this.city,
       country: country ?? this.country,
       zipCode: zipCode ?? this.zipCode,

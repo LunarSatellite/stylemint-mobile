@@ -120,9 +120,9 @@ class _AnalyticsBody extends StatelessWidget {
             'Revenue Overview (Last 30 Days)',
             style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
             ),
           ),
           const SizedBox(height: 8),
@@ -166,6 +166,7 @@ class _RevenueOverviewCard extends StatelessWidget {
               children: [
                 _MetricRow(
                   icon: 'assets/images/vendordashboard/icon_gross_sales.png',
+                  iconBg: const Color(0xFF092A17),
                   label: 'Gross Sales',
                   badge: overview.grossSalesBadge,
                   value: 'Rs ${overview.grossSales.toStringAsFixed(2)}',
@@ -174,6 +175,7 @@ class _RevenueOverviewCard extends StatelessWidget {
                 const SizedBox(height: 14),
                 _MetricRow(
                   icon: 'assets/images/vendordashboard/icon_net_revenue.png',
+                  iconBg: const Color(0xFF052F4A),
                   label: 'Net Revenue',
                   badge: overview.netRevenueBadge,
                   value: 'Rs ${overview.netRevenue.toStringAsFixed(2)}',
@@ -183,6 +185,7 @@ class _RevenueOverviewCard extends StatelessWidget {
                 _MetricRow(
                   icon:
                       'assets/images/vendordashboard/icon_conversion_rate.png',
+                  iconBg: const Color(0xFF3A2F03),
                   label: 'Conversion Rate',
                   badge: overview.conversionRateBadge,
                   value: '${overview.conversionRate.toStringAsFixed(1)}%',
@@ -270,6 +273,7 @@ class _RevenueOverviewCard extends StatelessWidget {
 class _MetricRow extends StatelessWidget {
   const _MetricRow({
     required this.icon,
+    required this.iconBg,
     required this.label,
     required this.badge,
     required this.value,
@@ -277,6 +281,7 @@ class _MetricRow extends StatelessWidget {
   });
 
   final String icon;
+  final Color iconBg;
   final String label;
   final String badge;
   final String value;
@@ -286,7 +291,13 @@ class _MetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Image.asset(icon, width: 32, height: 32, fit: BoxFit.contain),
+        Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(4),
+          color: iconBg,
+          child: Image.asset(icon, fit: BoxFit.contain),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -299,7 +310,7 @@ class _MetricRow extends StatelessWidget {
                     style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
-                      color: Color(0xFF9F9FA9),
+                      color: DesignTokens.textLight,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -331,7 +342,7 @@ class _MetricRow extends StatelessWidget {
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: DesignTokens.textWhite,
                 ),
               ),
@@ -382,7 +393,7 @@ class _EarningsOverviewCard extends StatelessWidget {
             style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 12,
-              color: Color(0xFF9F9FA9),
+              color: DesignTokens.textLight,
             ),
           ),
           const SizedBox(height: 16),
@@ -513,7 +524,7 @@ class _ChartPainter extends CustomPainter {
     final h = size.height;
 
     final gridPaint = Paint()
-      ..color = const Color(0xFF3A3A3C)
+      ..color = DesignTokens.borderDefault
       ..strokeWidth = 0.5;
     for (var i = 0; i <= ySteps; i++) {
       final y = h - (i / ySteps) * h;
@@ -591,8 +602,8 @@ Widget _topProductsSection(BuildContext context, List<TopProduct> products) {
             style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
             ),
           ),
           GestureDetector(
@@ -601,7 +612,7 @@ Widget _topProductsSection(BuildContext context, List<TopProduct> products) {
               'View All',
               style: TextStyle(
                 fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: DesignTokens.primaryGreen,
               ),
@@ -624,7 +635,7 @@ Widget _topProductsSection(BuildContext context, List<TopProduct> products) {
                 if (!isLast)
                   const Divider(
                     height: 1,
-                    color: Color(0xFF3A3A3C),
+                    color: DesignTokens.borderDefault,
                     indent: 16,
                     endIndent: 16,
                   ),
@@ -652,8 +663,8 @@ class _ProductRow extends StatelessWidget {
             '${product.rank}',
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: Color(0xFF9F9FA9),
             ),
           ),
@@ -663,8 +674,8 @@ class _ProductRow extends StatelessWidget {
             child: product.imageUrl != null
                 ? Image.network(
                     product.imageUrl!,
-                    width: 48,
-                    height: 48,
+                    width: 56,
+                    height: 56,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => _placeholder(),
                   )
@@ -679,7 +690,7 @@ class _ProductRow extends StatelessWidget {
                   product.name,
                   style: const TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: DesignTokens.textWhite,
                     height: 1.3,
@@ -704,8 +715,8 @@ class _ProductRow extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-    width: 48,
-    height: 48,
+    width: 56,
+    height: 56,
     color: const Color(0xFF2C2C2E),
     child: const Icon(
       Icons.inventory_2_outlined,
@@ -733,8 +744,8 @@ Widget _creatorPerformanceSection(
             style: TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w400,
+              color: DesignTokens.textLight,
             ),
           ),
           GestureDetector(
@@ -743,7 +754,7 @@ Widget _creatorPerformanceSection(
               'View All',
               style: TextStyle(
                 fontFamily: DesignTokens.fontFamily,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: DesignTokens.primaryGreen,
               ),
@@ -766,7 +777,7 @@ Widget _creatorPerformanceSection(
                 if (!isLast)
                   const Divider(
                     height: 1,
-                    color: Color(0xFF3A3A3C),
+                    color: DesignTokens.borderDefault,
                     indent: 16,
                     endIndent: 16,
                   ),
@@ -794,8 +805,8 @@ class _CreatorRow extends StatelessWidget {
             '${creator.rank}',
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: Color(0xFF9F9FA9),
             ),
           ),

@@ -27,15 +27,18 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(orderDetailNotifierProvider.notifier).loadOrder(widget.orderId);
+      ref
+          .read(orderDetailNotifierProvider(widget.orderId).notifier)
+          .loadOrder(widget.orderId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(orderDetailNotifierProvider);
+    final provider = orderDetailNotifierProvider(widget.orderId);
+    final state = ref.watch(provider);
 
-    ref.listen<OrderDetailState>(orderDetailNotifierProvider, (previous, next) {
+    ref.listen<OrderDetailState>(provider, (previous, next) {
       next.maybeWhen(
         actionFailure: (failure) =>
             SmSnackbar.error(context, 'Action failed. Please try again.'),
@@ -55,25 +58,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         title: const Text('Order Details', style: DesignTokens.sectionInnerTitle),
         centerTitle: true,
       ),
-      body: state.when(
-        initial: () => _loader(),
-        loadInProgress: () => _loader(),
-        loadSuccess: (order) => _OrderDetailBody(
-          order: order,
-          notifier: ref.read(orderDetailNotifierProvider.notifier),
+      // Scaffold doesn't inset its body from the bottom by default — the
+      // system gesture/nav bar was clipping the last action row and the
+      // "Cancel Order" button.
+      body: SafeArea(
+        child: state.when(
+          initial: () => _loader(),
+          loadInProgress: () => _loader(),
+          loadSuccess: (order) => _OrderDetailBody(
+            order: order,
+            notifier: ref.read(provider.notifier),
+          ),
+          loadFailure: (failure) => SmErrorView(
+            message: 'Failed to load order details.',
+            onRetry: () => ref.read(provider.notifier).loadOrder(widget.orderId),
+          ),
+          actionInProgress: (order) => _OrderDetailBody(
+            order: order,
+            actionPending: true,
+            notifier: ref.read(provider.notifier),
+          ),
+          actionFailure: (failure) => _loader(),
         ),
-        loadFailure: (failure) => SmErrorView(
-          message: 'Failed to load order details.',
-          onRetry: () => ref
-              .read(orderDetailNotifierProvider.notifier)
-              .loadOrder(widget.orderId),
-        ),
-        actionInProgress: (order) => _OrderDetailBody(
-          order: order,
-          actionPending: true,
-          notifier: ref.read(orderDetailNotifierProvider.notifier),
-        ),
-        actionFailure: (failure) => _loader(),
       ),
     );
   }
@@ -1156,7 +1162,7 @@ class _OtherDetails extends StatelessWidget {
             iconBg: DesignTokens.bgAppBodyLight,
             title: 'View Invoice',
             subtitle: 'Your invoice for the order',
-            onTap: () => context.push('/orders/${order.id}/invoice', extra: order),
+            onTap: () => context.push('/orders/${order.orderNumber}/invoice', extra: order),
           ),
         ]),
         const SizedBox(height: DesignTokens.s12),
@@ -1177,7 +1183,7 @@ class _OtherDetails extends StatelessWidget {
             iconBg: DesignTokens.bgAppBodyLight,
             title: 'Track with FedEx',
             subtitle: 'Track your order on FedEx',
-            onTap: () => context.push('/orders/${order.id}/fedex', extra: order),
+            onTap: () => context.push('/orders/${order.orderNumber}/fedex', extra: order),
           ),
           if (order.canCancel) ...[
             _rowDivider(),
@@ -1188,7 +1194,7 @@ class _OtherDetails extends StatelessWidget {
               title: 'Cancel Order',
               subtitle: 'Order cancellation procedure',
               onTap: () =>
-                  context.push('/orders/${order.id}/cancel', extra: order),
+                  context.push('/orders/${order.orderNumber}/cancel', extra: order),
             ),
           ],
           if (order.canReturn) ...[
@@ -1514,7 +1520,11 @@ void _showShippingAddressSheet(BuildContext context, OrderDetail order) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (_) => _ShippingAddressSheet(address: order.shippingAddress),
+    builder: (_) => _ShippingAddressSheet(
+      address: order.shippingAddress,
+      receiverName: order.receiverName,
+      receiverPhone: order.receiverPhone,
+    ),
   );
 }
 
@@ -1530,17 +1540,24 @@ void _showOrderSummarySheet(BuildContext context, OrderDetail order) {
 // ── Shipping Address Sheet ────────────────────────────────────────────────────
 
 class _ShippingAddressSheet extends StatelessWidget {
-  const _ShippingAddressSheet({required this.address});
+  const _ShippingAddressSheet({
+    required this.address,
+    required this.receiverName,
+    required this.receiverPhone,
+  });
   final String address;
+  final String receiverName;
+  final String receiverPhone;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SafeArea(
+      child: Container(
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1588,18 +1605,23 @@ class _ShippingAddressSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text('Sailesh Aryal',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textWhite)),
-          const SizedBox(height: 4),
-          Text('+977 9801234567',
-              style:
-                  DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted)),
-          const SizedBox(height: 8),
+          if (receiverName.isNotEmpty) ...[
+            Text(receiverName,
+                style: DesignTokens.mediumSemibold
+                    .copyWith(color: DesignTokens.textWhite)),
+            const SizedBox(height: 4),
+          ],
+          if (receiverPhone.isNotEmpty) ...[
+            Text(receiverPhone,
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textMuted)),
+            const SizedBox(height: 8),
+          ],
           Text(address,
               style: DesignTokens.smallRegular
                   .copyWith(color: DesignTokens.textLight, height: 1.6)),
         ],
+      ),
       ),
     );
   }
@@ -1618,7 +1640,8 @@ class _OrderSummarySheet extends StatelessWidget {
       minChildSize: 0.4,
       maxChildSize: 0.92,
       expand: false,
-      builder: (_, sc) => Container(
+      builder: (_, sc) => SafeArea(
+        child: Container(
         decoration: const BoxDecoration(
           color: DesignTokens.bgAppBody,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1682,6 +1705,7 @@ class _OrderSummarySheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

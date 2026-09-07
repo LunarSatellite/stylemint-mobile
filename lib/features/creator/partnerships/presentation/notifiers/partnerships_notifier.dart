@@ -49,13 +49,30 @@ class PartnershipsNotifier extends StateNotifier<PartnershipsState> {
     );
   }
 
-  Future<void> accept(String inviteId) async {
-    await _repository.acceptInvite(inviteId);
-    unawaited(load());
+  /// Returns whether the invite was accepted. The result used to be
+  /// discarded, so a rejected accept still reloaded and the screen still
+  /// reported success -- a creator was told the partnership was accepted
+  /// when the backend had refused it.
+  Future<bool> accept(String inviteId) async {
+    final result = await _repository.acceptInvite(inviteId);
+    return result.fold(
+      (_) => false,
+      (_) {
+        unawaited(load());
+        return true;
+      },
+    );
   }
 
-  Future<void> decline(String inviteId) async {
-    await _repository.declineInvite(inviteId);
-    unawaited(load());
+  /// Returns whether the invite was declined. See [accept].
+  Future<bool> decline(String inviteId) async {
+    final result = await _repository.declineInvite(inviteId);
+    return result.fold(
+      (_) => false,
+      (_) {
+        unawaited(load());
+        return true;
+      },
+    );
   }
 }

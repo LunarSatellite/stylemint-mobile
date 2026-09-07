@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticke
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CreatorContactSupportScreen extends ConsumerStatefulWidget {
   const CreatorContactSupportScreen({super.key});
@@ -31,20 +32,31 @@ class _CreatorContactSupportScreenState
   }
 
   List<_SupportChannel> _channels(BuildContext context) => [
-    const _SupportChannel(
+    _SupportChannel(
       icon: Icons.chat_bubble_outline_rounded,
       title: 'Creator Support Chat',
       subtitle: 'Available • Wait: 2min',
+      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Live chat is coming soon.')),
+      ),
     ),
-    const _SupportChannel(
+    _SupportChannel(
       icon: Icons.email_outlined,
       title: 'Email Support',
       subtitle: 'Response within 12 hours',
+      onTap: () => unawaited(
+        launchUrl(
+          Uri(scheme: 'mailto', path: 'creator-support@stylemint.com'),
+        ),
+      ),
     ),
-    const _SupportChannel(
+    _SupportChannel(
       icon: Icons.phone_outlined,
       title: 'Creator Hotline (1-800-CREATE)',
       subtitle: 'Mon-Fri, 9 AM - 6 PM EST',
+      onTap: () => unawaited(
+        launchUrl(Uri(scheme: 'tel', path: '1-800-273-2283')),
+      ),
     ),
     _SupportChannel(
       icon: Icons.library_books_outlined,
@@ -144,7 +156,14 @@ class _CreatorContactSupportScreenState
                 const SizedBox(height: DesignTokens.s16),
                 _ChannelList(channels: _channels(context)),
                 const SizedBox(height: DesignTokens.s16),
-                _TopicsGrid(topics: _topics),
+                _TopicsGrid(
+                  topics: _topics,
+                  // No 1:1 mapping from these creator-facing topic buckets
+                  // to the backend's generic TicketCategory taxonomy, so
+                  // just open ticket creation rather than guessing a
+                  // category — better than a silent no-op.
+                  onTopicTap: () => _showCreateTicket(context),
+                ),
                 const SizedBox(height: DesignTokens.s24),
                 const Text(
                   'Your Support Tickets',
@@ -221,18 +240,18 @@ class _WelcomeBanner extends StatelessWidget {
                   'Welcome to Support',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: DesignTokens.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.buttonPrimaryText,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                const Text(
                   'How can we help you today?',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    color: DesignTokens.textDark.withValues(alpha: 0.75),
+                    fontSize: 12,
+                    color: DesignTokens.buttonPrimaryText,
                   ),
                 ),
               ],
@@ -358,7 +377,8 @@ class _ChannelList extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _TopicsGrid extends StatelessWidget {
   final List<_Topic> topics;
-  const _TopicsGrid({required this.topics});
+  final VoidCallback onTopicTap;
+  const _TopicsGrid({required this.topics, required this.onTopicTap});
 
   @override
   Widget build(BuildContext context) {
@@ -369,14 +389,17 @@ class _TopicsGrid extends StatelessWidget {
       childAspectRatio: 1.6,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      children: topics.map((t) => _TopicCard(topic: t)).toList(),
+      children: topics
+          .map((t) => _TopicCard(topic: t, onTap: onTopicTap))
+          .toList(),
     );
   }
 }
 
 class _TopicCard extends StatelessWidget {
   final _Topic topic;
-  const _TopicCard({required this.topic});
+  final VoidCallback onTap;
+  const _TopicCard({required this.topic, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +407,7 @@ class _TopicCard extends StatelessWidget {
       color: DesignTokens.bgAppBody,
       borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
         child: Padding(
           padding: const EdgeInsets.all(DesignTokens.s12),
@@ -398,9 +421,9 @@ class _TopicCard extends StatelessWidget {
                 topic.label,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: DesignTokens.textWhite,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: DesignTokens.textLight,
                 ),
               ),
             ],
@@ -660,7 +683,11 @@ class _CreatorResourcesSheet extends StatelessWidget {
           return Column(
             children: [
               InkWell(
-                onTap: () {},
+                // No help-article backend exists (support module only
+                // models tickets, not a CMS) — same as the vendor
+                // Resources sheet, this just closes rather than opening
+                // content that doesn't exist.
+                onTap: () => Navigator.of(context).pop(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: DesignTokens.s16,

@@ -1,14 +1,16 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/datasources/creator_reels_remote_datasource.dart';
-import 'package:stylemint_mobile_frontend/features/creator/reels/data/models/creator_reel_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/data/repositories/creator_reels_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/repositories/creator_reels_repository.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
@@ -26,19 +28,23 @@ final creatorReelsRepositoryProvider = Provider<CreatorReelsRepository>(
   ),
 );
 
+/// Unwraps a repository result for the `FutureProvider` reads below, which
+/// signal failure by throwing so `AsyncValue.error` carries the message.
+T _orThrow<T>(NetworkEither<T> result) => result.fold(
+      // Throw the typed [NetworkExceptions] (not just its message) so the
+      // screen's AsyncValue.error can branch on .isNotFound etc.
+      // ignore: only_throw_errors
+      (failure) => throw failure,
+      (value) => value,
+    );
 // ── Reel detail (auto-disposed, keyed by reelId) ──────────────────────────────
 
 // ignore: specify_nonobvious_property_types
 final creatorReelDetailProvider =
     FutureProvider.autoDispose.family<CreatorReelDetail, String>(
-  (ref, reelId) async {
-    final repo = ref.watch(creatorReelsRepositoryProvider);
-    final result = await repo.getReelDetail(reelId);
-    return result.fold(
-      (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
-      (detail) => detail,
-    );
-  },
+  (ref, reelId) async => _orThrow(
+    await ref.watch(creatorReelsRepositoryProvider).getReelDetail(reelId),
+  ),
 );
 
 // ── Reel list (auto-disposed, keyed by (sortBy, order)) ───────────────────────
@@ -47,24 +53,31 @@ final creatorReelDetailProvider =
 // ignore: specify_nonobvious_property_types
 final creatorReelSummariesProvider = FutureProvider.autoDispose
     .family<List<CreatorReelSummary>, (String sortBy, String order)>(
-  (ref, args) async {
-    final repo = ref.watch(creatorReelsRepositoryProvider);
-    final result = await repo.listCreatorReels(
-      sortBy: args.$1,
-      order: args.$2,
-    );
-    return result.fold(
-      (failure) => throw Exception(NetworkExceptions.getMessage(failure)),
-      (reels) => reels,
-    );
-  },
+  (ref, args) async => _orThrow(
+    await ref.watch(creatorReelsRepositoryProvider).listCreatorReels(
+          sortBy: args.$1,
+          order: args.$2,
+        ),
+  ),
 );
 
 // ── Tagged products for a reel (auto-disposed, keyed by reelId) ───────────────
 
 // ignore: specify_nonobvious_property_types
 final reelTaggedProductsProvider =
-    FutureProvider.autoDispose.family<List<ReelTagManagementDto>, String>(
-  (ref, reelId) =>
-      ref.watch(creatorReelsRemoteDataSourceProvider).listTaggedProducts(reelId),
+    FutureProvider.autoDispose.family<List<ReelProductTag>, String>(
+  (ref, reelId) async => _orThrow(
+    await ref.watch(creatorReelsRepositoryProvider).listTaggedProducts(reelId),
+  ),
 );
+
+// ── Write actions (publish / unpublish / tag / untag) ─────────────────────────
+
+final creatorReelActionsNotifierProvider = StateNotifierProvider.autoDispose<
+    CreatorReelActionsNotifier, CreatorReelActionState>(
+  (ref) => CreatorReelActionsNotifier(
+    ref.watch(creatorReelsRepositoryProvider),
+  ),
+);
+
+

@@ -8,7 +8,12 @@ import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/domain/entities/creator_dashboard.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/creator/dashboard/presentation/widgets/creator_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/creator/dashboard/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart' as partnerships;
+import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -167,6 +172,10 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: DesignTokens.s24),
             _TopPerformingReels(reels: dashboard.topReels),
             const SizedBox(height: DesignTokens.s24),
+            const _MyRecentReels(),
+            const SizedBox(height: DesignTokens.s24),
+            const _BrandInvites(),
+            const SizedBox(height: DesignTokens.s24),
             const _RecentActivity(),
           ],
         ),
@@ -233,17 +242,19 @@ class _Header extends StatelessWidget {
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
           iconWidget: const Icon(Icons.search_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () => context.push(RouteNames.search),
+          onTap: () => context.push(RouteNames.creatorSearch),
         ),
         const SizedBox(width: DesignTokens.s8),
         _HeaderIconBtn(
           iconWidget: const Icon(Icons.notifications_none_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () {},
+          onTap: () => context.push(RouteNames.creatorActivity),
         ),
         const SizedBox(width: DesignTokens.s8),
-        _HeaderIconBtn(
-          iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
-          onTap: () {},
+        Consumer(
+          builder: (ctx, ref, _) => _HeaderIconBtn(
+            iconWidget: const Icon(Icons.menu_rounded, size: 20, color: DesignTokens.textWhite),
+            onTap: () => showCreatorMoreMenu(ctx, ref),
+          ),
         ),
       ],
     );
@@ -743,6 +754,114 @@ class _TotalViewsCard extends StatelessWidget {
 
 // ── Top Performing Reels ──────────────────────────────────────────────────────
 
+// ── Brand Invites ────────────────────────────────────────────────────────────
+
+/// Preview of real, vendor-initiated partnership invitations the creator can
+/// accept or decline — backed by GET /v1/partnerships?states=Invited (via
+/// [pendingInvitesProvider]), not the hardcoded "recommended brands" demo
+/// data on the Brands screen.
+class _BrandInvites extends ConsumerWidget {
+  const _BrandInvites();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invites = ref.watch(partnerships.pendingInvitesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Brand Invites',
+          onViewAll: () => context.push(RouteNames.partnershipRequests),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        if (invites.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              'No brand invites yet — check back soon.',
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            ),
+          )
+        else
+          ...invites.take(3).map(
+            (invite) => Padding(
+              padding: const EdgeInsets.only(bottom: DesignTokens.s12),
+              child: GestureDetector(
+                onTap: () => context.push(
+                  RouteNames.brandDetail.replaceFirst(':partnershipId', invite.id),
+                ),
+                child: _BrandInviteCard(invite: invite),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _BrandInviteCard extends StatelessWidget {
+  const _BrandInviteCard({required this.invite});
+
+  final PartnershipInvite invite;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipOval(
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: invite.vendorLogoUrl.isEmpty
+                  ? const ColoredBox(color: DesignTokens.bgAppBody)
+                  : Image.network(
+                      invite.vendorLogoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _e, _s) =>
+                          const ColoredBox(color: DesignTokens.bgAppBody),
+                    ),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(invite.vendorName,
+                    style: DesignTokens.oneLinerSemibold,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: DesignTokens.s4),
+                Text(invite.campaignBrief,
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textMuted),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  '${invite.commissionRate.toStringAsFixed(0)}% commission',
+                  style: DesignTokens.smallRegular
+                      .copyWith(color: DesignTokens.primaryGreen),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right,
+              size: 20, color: DesignTokens.iconLight),
+        ],
+      ),
+    );
+  }
+}
+
 class _TopPerformingReels extends StatelessWidget {
   const _TopPerformingReels({required this.reels});
 
@@ -811,15 +930,29 @@ class _TopReelCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(DesignTokens.s4),
-                child: Container(
+                child: SizedBox(
                   width: 64,
                   height: 64,
-                  color: DesignTokens.bgAppBody,
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.play_circle_fill,
-                    color: DesignTokens.iconLight,
-                    size: 28,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (reel.thumbnailUrl.isNotEmpty)
+                        Image.network(
+                          reel.thumbnailUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _e, _s) =>
+                              const ColoredBox(color: DesignTokens.bgAppBody),
+                        )
+                      else
+                        const ColoredBox(color: DesignTokens.bgAppBody),
+                      const Center(
+                        child: Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white70,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1168,12 +1301,16 @@ class _CreatorBottomNav extends ConsumerWidget {
     final accountId = ref.watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
-      height: 68,
+      height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
       ),
-      child: Row(
+      // SafeArea (not just fixed height) so the system nav bar — 3-button or
+      // gesture — never overlaps these buttons and makes them unpressable.
+      child: SafeArea(
+        top: false,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavBtn(
@@ -1226,6 +1363,7 @@ class _CreatorBottomNav extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -1294,6 +1432,130 @@ class _NavBtn extends StatelessWidget {
                 color: color,
                 height: 1.2,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The creator's own reels in reverse-chronological order, read from
+/// `GET /v1/creator/reels` via [creatorReelSummariesProvider].
+///
+/// Complements [_TopPerformingReels], which ranks by performance off the
+/// analytics payload — this one answers "what did I post most recently",
+/// including reels that have not accumulated enough data to chart yet.
+class _MyRecentReels extends ConsumerWidget {
+  const _MyRecentReels();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(creatorReelSummariesProvider(_recent));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'My Reels',
+          onViewAll: () => context.push(RouteNames.creatorTopReels),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+          ),
+          error: (e, _s) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+            child: Text(
+              '$e'.replaceFirst('Exception: ', ''),
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textMuted),
+            ),
+          ),
+          data: (reels) => reels.isEmpty
+              ? Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  child: Text(
+                    'No reels yet — import one to get started.',
+                    style: DesignTokens.smallRegular
+                        .copyWith(color: DesignTokens.textMuted),
+                  ),
+                )
+              : SizedBox(
+                  height: 132,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: reels.length,
+                    separatorBuilder: (_, _i) =>
+                        const SizedBox(width: DesignTokens.s12),
+                    itemBuilder: (_, i) => _MyReelTile(reel: reels[i]),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// Most recent first — the provider is keyed by (sortBy, order).
+  static const _recent = ('publishedAt', 'desc');
+}
+
+class _MyReelTile extends StatelessWidget {
+  const _MyReelTile({required this.reel});
+
+  final CreatorReelSummary reel;
+
+  @override
+  Widget build(BuildContext context) {
+    final thumb = reel.thumbnailUrl ?? '';
+    return GestureDetector(
+      onTap: () => context.push('/creator/reels/${reel.id}'),
+      child: SizedBox(
+        width: 88,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+              child: SizedBox(
+                width: 88,
+                height: 104,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (thumb.isEmpty)
+                      const ColoredBox(color: DesignTokens.bgAppBody)
+                    else
+                      Image.network(
+                        thumb,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _e, _s) =>
+                            const ColoredBox(color: DesignTokens.bgAppBody),
+                      ),
+                    const Center(
+                      child: Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white70,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              '${reel.views} views',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: DesignTokens.smallRegular
+                  .copyWith(color: DesignTokens.textMuted),
             ),
           ],
         ),

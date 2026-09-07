@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'colors.dart';
+import 'design_tokens.dart';
 import 'typography.dart';
 
 abstract class AppTheme {
@@ -24,9 +25,27 @@ abstract class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         centerTitle: false,
+        // Explicit systemNavigationBarColor here (not just the .dark/.light
+        // shorthand) because AppBar wraps this in its own AnnotatedRegion,
+        // which sits deeper in the tree than the app root's and wins —
+        // the shorthand presets don't pin the nav bar color, so it fell
+        // through to Android's own default (light grey) on any screen with
+        // an AppBar, clashing against this app's near-black UI.
         systemOverlayStyle: brightness == Brightness.light
-            ? SystemUiOverlayStyle.dark
-            : SystemUiOverlayStyle.light,
+            ? SystemUiOverlayStyle.dark.copyWith(
+                systemNavigationBarColor: Colors.white,
+                systemNavigationBarIconBrightness: Brightness.dark,
+                systemNavigationBarDividerColor: Colors.transparent,
+              )
+            : SystemUiOverlayStyle.light.copyWith(
+                // The actual dark background every screen renders against —
+                // individual screens hardcode this directly on their
+                // Scaffold rather than reading scheme.surface, so this (not
+                // kSurfaceColorDark) is what the nav bar must match.
+                systemNavigationBarColor: DesignTokens.bgAppFoundation,
+                systemNavigationBarIconBrightness: Brightness.light,
+                systemNavigationBarDividerColor: Colors.transparent,
+              ),
       ),
       dividerTheme: const DividerThemeData(
         color: kDividerColor,

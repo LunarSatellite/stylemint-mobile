@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
 import 'package:stylemint_mobile_frontend/core/auth/jwt_roles.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
@@ -275,6 +276,17 @@ class _MockEarningsRepository implements EarningsRepository {
           requestedAt: DateTime.now().subtract(const Duration(days: 3)),
         ),
       ]);
+
+  @override
+  Future<Either<NetworkExceptions, EarningsBreakdown>>
+      getDashboardBreakdown() async => right(
+            const EarningsBreakdown(
+              salesCount: 128,
+              reelCount: 4,
+              avgPerSale: Money(amount: 191.40, currency: 'NPR'),
+              highestReelEarnings: Money(amount: 8200, currency: 'NPR'),
+            ),
+          );
 }
 
 class _MockNotificationsRepository implements NotificationsRepository {
@@ -457,6 +469,15 @@ class _MockReelImportRepository implements ReelImportRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
+      getSuggestedProducts({
+    required SocialPlatform platform,
+    required String externalId,
+  }) async {
+    return right(_allProducts);
+  }
+
+  @override
   Future<Either<NetworkExceptions, Unit>> publishReel({
     required String reelId,
   }) async =>
@@ -623,11 +644,8 @@ class _DevApp extends StatelessWidget {
         GoRoute(
           path: RouteNames.reelImportPreview,
           builder: (ctx, state) {
-            final extra = state.extra! as Map<String, dynamic>;
-            return PreviewReelScreen(
-              url: extra['url'] as String,
-              platform: extra['platform'] as SocialPlatform,
-            );
+            final reel = state.extra! as ImportableReel;
+            return PreviewReelScreen(reel: reel);
           },
         ),
         GoRoute(

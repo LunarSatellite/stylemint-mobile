@@ -46,11 +46,17 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final comments = await _ds.list(_reelId);
+      // The provider is autoDispose, so the last UI listener may have
+      // gone away while the request was in flight. Writing to `state`
+      // after `dispose()` throws "Tried to use ReelCommentsController
+      // after dispose was called."
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         comments: comments.isEmpty ? _mockComments() : comments,
       );
     } catch (_) {
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, comments: _mockComments());
     }
   }
@@ -106,19 +112,31 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     ];
   }
 
-  Future<void> post(String body) async {
+  /// Returns whether the post succeeded — callers use this instead of
+  /// inferring success from [state] (same reasoning as [CartNotifier.addItem]:
+  /// re-reading ambient state after an await is racy under rapid taps, and
+  /// here it's also the only way for the reel action rail's comment-count
+  /// badge to know a post landed, since that badge reads a frozen
+  /// [Reel.commentCount] snapshot that nothing else refreshes).
+  Future<bool> post(String body) async {
     final text = body.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) return false;
     state = state.copyWith(isPosting: true, clearError: true);
     try {
       final created = await _ds.post(_reelId, text);
+      // See note in load() -- autoDispose means the notifier can be
+      // torn down between the post request and our state update.
+      if (!mounted) return true;
       state = state.copyWith(
         isPosting: false,
         comments: [created, ...state.comments],
       );
+      return true;
     } catch (_) {
+      if (!mounted) return false;
       state = state.copyWith(
           isPosting: false, errorMessage: 'Could not post your comment.');
+      return false;
     }
   }
 }

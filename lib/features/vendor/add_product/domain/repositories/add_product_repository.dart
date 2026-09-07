@@ -12,4 +12,31 @@ abstract interface class AddProductRepository {
   Future<Either<NetworkExceptions, String>> uploadImage(String filePath);
 
   Future<Either<NetworkExceptions, String>> publishProduct(String productId);
+
+  /// Existing image CDN URLs for an already-created product, for the Edit
+  /// Product Images flow.
+  Future<Either<NetworkExceptions, List<String>>> fetchProductImages(
+    String productId,
+  );
+
+  /// Replaces images on a product regardless of state — works on already
+  /// -published products, unlike the wizard's step-2 patch.
+  Future<Either<NetworkExceptions, void>> updateImages(
+    String productId,
+    ImagesInfo images,
+  );
+
+  /// Full existing product detail (all 4 wizard-step fields), pre-filling
+  /// the Edit Product Details flow.
+  Future<Either<NetworkExceptions, ProductFormState>> fetchProductForEdit(
+    String productId,
+  );
+
+  /// Persists edited basic/pricing/shipping/images fields back to an
+  /// already-published product via the `details/*` + `images` endpoints
+  /// (not the Draft-only wizard steps).
+  Future<Either<NetworkExceptions, void>> updateProductDetails(
+    String productId,
+    ProductFormState formState,
+  );
 }

@@ -123,7 +123,11 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
               width: 22,
               height: 22,
             ),
-            onPressed: () {},
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Exporting activity is coming soon.'),
+              ),
+            ),
           ),
         ],
       ),

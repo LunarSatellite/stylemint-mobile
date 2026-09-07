@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/repositories/inquiries_repository.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_controller.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/notifiers/inquiries_notifier.dart';
 
 class _MockInquiriesRepository extends Mock implements InquiriesRepository {}
 
@@ -27,7 +27,7 @@ void main() {
     when(() => repository.listVendor(pageSize: any(named: 'pageSize')))
         .thenAnswer((_) async => right([inquiry]));
 
-    final controller = InquiriesController(repository);
+    final controller = InquiriesNotifier(repository);
     await controller.load();
 
     expect(controller.state.isLoading, isFalse);
@@ -41,7 +41,7 @@ void main() {
       (_) async => left(const NetworkExceptions.serverUnavailable()),
     );
 
-    final controller = InquiriesController(repository);
+    final controller = InquiriesNotifier(repository);
     await controller.load();
 
     expect(controller.state.isLoading, isFalse);
@@ -50,7 +50,7 @@ void main() {
   });
 
   test('reply() rejects blank text without calling the repository', () async {
-    final controller = InquiriesController(repository);
+    final controller = InquiriesNotifier(repository);
     await controller.load();
 
     final ok = await controller.reply(inquiry.id, '   ');
@@ -69,7 +69,7 @@ void main() {
     when(() => repository.reply(inquiry.id, 'Yes, size M is in stock.'))
         .thenAnswer((_) async => right(replied));
 
-    final controller = InquiriesController(repository);
+    final controller = InquiriesNotifier(repository);
     await controller.load();
 
     final ok = await controller.reply(inquiry.id, 'Yes, size M is in stock.');
@@ -86,7 +86,7 @@ void main() {
       (_) async => left(const NetworkExceptions.serverUnavailable()),
     );
 
-    final controller = InquiriesController(repository);
+    final controller = InquiriesNotifier(repository);
     await controller.load();
 
     final ok = await controller.reply(inquiry.id, 'Hello');

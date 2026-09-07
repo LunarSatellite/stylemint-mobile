@@ -84,7 +84,10 @@ class _VendorContactSupportScreenState
   Widget _buildWelcomeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s20,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.primaryGreen,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -98,7 +101,7 @@ class _VendorContactSupportScreenState
                 Text(
                   'Welcome to Support',
                   style: DesignTokens.mediumSemibold.copyWith(
-                    color: Colors.black,
+                    color: DesignTokens.buttonPrimaryText,
                     fontSize: 18,
                   ),
                 ),
@@ -106,7 +109,7 @@ class _VendorContactSupportScreenState
                 Text(
                   'How can we help you today?',
                   style: DesignTokens.smallRegular.copyWith(
-                    color: Colors.black.withOpacity(0.7),
+                    color: DesignTokens.buttonPrimaryText,
                   ),
                 ),
               ],
@@ -324,7 +327,9 @@ class _VendorContactSupportScreenState
               onTap: () => _showCreateTicketSheet(prefilledIssue: a.label),
               child: Container(
                 padding: const EdgeInsets.all(DesignTokens.s16),
-                decoration: DesignTokens.cardDecoration(),
+                decoration: DesignTokens.cardDecoration(
+                  borderColor: DesignTokens.borderDefault,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -530,7 +535,9 @@ class _TicketTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: DesignTokens.cardDecoration(),
+        decoration: DesignTokens.cardDecoration(
+          borderColor: DesignTokens.borderDefault,
+        ),
         child: Row(
           children: [
             Expanded(

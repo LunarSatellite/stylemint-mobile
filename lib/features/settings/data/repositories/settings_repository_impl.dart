@@ -43,17 +43,7 @@ class SettingsRepositoryImpl implements SettingsRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = NotificationPreferencesDto(
-          pushEnabled: prefs.pushEnabled,
-          emailEnabled: prefs.emailEnabled,
-          orderUpdates: prefs.orderUpdates,
-          promotional: prefs.promotional,
-          reelLikes: prefs.reelLikes,
-          newFollowers: prefs.newFollowers,
-          quietHoursEnabled: prefs.quietHoursEnabled,
-          quietHoursStart: prefs.quietHoursStart,
-          quietHoursEnd: prefs.quietHoursEnd,
-        );
+        final dto = NotificationPreferencesDto.fromDomain(prefs);
         final result = await remoteDataSource.updateNotificationPreferences(dto);
         return right(result.toDomain());
       } catch (e) {

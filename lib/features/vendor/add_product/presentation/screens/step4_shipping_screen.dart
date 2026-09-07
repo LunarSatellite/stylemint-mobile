@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -19,7 +20,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
   late TextEditingController _widthController;
   late TextEditingController _heightController;
 
-  // Shipping options — multi-select
+  // Shipping options â€” multi-select
   bool _standard = true;
   bool _express = false;
   bool _overnight = false;
@@ -43,6 +44,36 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     _lengthController = TextEditingController();
     _widthController = TextEditingController();
     _heightController = TextEditingController();
+    // Edit-mode pre-population: when the wizard mounts in Edit mode the
+    // notifier already has step4 populated from the backend. Pull the
+    // data here so the controllers don't start blank. Safe to call in
+    // Create mode too -- step4 is null on a fresh wizard, so nothing
+    // is copied.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateFromState());
+  }
+
+  void _hydrateFromState() {
+    if (!mounted) return;
+    final fs = ref.read(addProductNotifierProvider).maybeWhen(
+          loadSuccess: (s) => s,
+          orElse: () => null,
+        );
+    final s = fs?.step4;
+    if (s == null) return;
+    setState(() {
+      _weightController.text = s.weight > 0 ? s.weight.toString() : '';
+      _lengthController.text =
+          s.dimensionsLength > 0 ? s.dimensionsLength.toString() : '';
+      _widthController.text =
+          s.dimensionsWidth > 0 ? s.dimensionsWidth.toString() : '';
+      _heightController.text =
+          s.dimensionsHeight > 0 ? s.dimensionsHeight.toString() : '';
+      // Derive the option checkboxes from the estimate range the
+      // backend gave us -- Standard 5-7d / Express 2-3d / Overnight 1d.
+      _standard = s.deliveryEstimateMin >= 5;
+      _express = s.deliveryEstimateMin <= 3 && s.deliveryEstimateMax <= 3;
+      _overnight = s.deliveryEstimateMin == 1;
+    });
   }
 
   @override
@@ -63,7 +94,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     if (_standard) {
       selectedMins.add(5);
       selectedMaxes.add(7);
-      // Standard is FREE — no fee
+      // Standard is FREE â€” no fee
     }
     if (_express) {
       selectedMins.add(2);
@@ -115,7 +146,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
 
     return Column(
       children: [
-        // ── Scrollable content ───────────────────────────────────
+        // â”€â”€ Scrollable content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(DesignTokens.s16),
@@ -234,8 +265,10 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
           ),
         ),
 
-        // ── Sticky Previous + Proceed ────────────────────────────
-        Container(
+        // â”€â”€ Sticky Previous + Proceed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        SafeArea(
+          top: false,
+          child: Container(
           padding: const EdgeInsets.fromLTRB(
             DesignTokens.s16,
             DesignTokens.s24,
@@ -314,13 +347,14 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
               ),
             ],
           ),
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Plain text field ──────────────────────────────────────────────
+// â”€â”€ Plain text field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ShippingField extends StatelessWidget {
   const _ShippingField({
@@ -344,7 +378,7 @@ class _ShippingField extends StatelessWidget {
   }
 }
 
-// ── Single shipping option row (checkbox + label) ─────────────────
+// â”€â”€ Single shipping option row (checkbox + label) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _ShippingOptionRow extends StatelessWidget {
   const _ShippingOptionRow({
@@ -388,7 +422,7 @@ class _ShippingOptionRow extends StatelessWidget {
   }
 }
 
-// ── Dropdown field (Ships From / Processing Time) ─────────────────
+// â”€â”€ Dropdown field (Ships From / Processing Time) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DropdownField extends StatelessWidget {
   const _DropdownField({

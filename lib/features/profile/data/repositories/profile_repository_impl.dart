@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -9,7 +8,6 @@ import 'package:stylemint_mobile_frontend/features/profile/domain/entities/follo
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/user_profile.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/repositories/profile_repository.dart';
-import 'package:stylemint_mobile_frontend/features/profile/shared/profile_mock_data.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
@@ -23,8 +21,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<Either<NetworkExceptions, ProfileSummary>> getProfileSummary() async {
-    // ponytail: static stub for UI dev, remove when backend is stable
-    if (kDebugMode) return right(kMockProfileSummaryDto.toDomain());
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getProfileSummary();
@@ -120,6 +116,32 @@ class ProfileRepositoryImpl implements ProfileRepository {
           nextCursor: response['nextCursor'] as String?,
           previousCursor: response['previousCursor'] as String?,
           hasMore: response['hasMore'] as bool? ?? false,
+        ));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, ProfileSummary>> getProfileStats(
+    ProfileSummary base,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final counts = await remoteDataSource.getStatsCounts();
+        return right(base.copyWith(
+          savedItemsCount: counts.savedItemsCount,
+          followingCount: counts.followingCount,
+          ordersCount: counts.ordersCount,
         ));
       } catch (e) {
         if (e is DioException) {
