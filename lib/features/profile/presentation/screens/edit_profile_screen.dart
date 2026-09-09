@@ -268,8 +268,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
         },
         failure: (f) {
+          // Was dumping the raw NetworkExceptions.toString() (e.g.
+          // "NetworkExceptions.unexpectedError()") straight into a
+          // snackbar — confirmed live on a fresh profile with no
+          // pending deletion request, where this check simply has
+          // nothing to report yet. Show a plain, actionable message
+          // instead of leaking the exception's internal shape.
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${f.toString()}')),
+            const SnackBar(
+              content: Text('Something went wrong. Please try again.'),
+            ),
           );
         },
       );
