@@ -18,6 +18,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/a
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/services/passkey_service.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -186,7 +188,8 @@ abstract class AuthSessionState with _$AuthSessionState {
   const factory AuthSessionState.unknown() = _AuthSessionUnknown;
   const factory AuthSessionState.authenticated(String accountId) =
       _AuthSessionAuthenticated;
-  const factory AuthSessionState.unauthenticated() = _AuthSessionUnauthenticated;
+  const factory AuthSessionState.unauthenticated() =
+      _AuthSessionUnauthenticated;
 
   bool get isAuthenticated =>
       maybeWhen(authenticated: (_) => true, orElse: () => false);
@@ -201,6 +204,7 @@ class SessionController extends StateNotifier<AuthSessionState> {
     required this.profileNotifier,
     required this.roleNotifier,
     required this.accountNotifier,
+    required this.cartNotifier,
   }) : super(const AuthSessionState.unknown());
 
   final AuthRepository authRepository;
@@ -208,6 +212,7 @@ class SessionController extends StateNotifier<AuthSessionState> {
   final ProfileNotifier profileNotifier;
   final RoleNotifier roleNotifier;
   final AccountNotifier accountNotifier;
+  final CartNotifier cartNotifier;
 
   /// Reads persisted credentials and sets the initial status.
   Future<void> bootstrap() => recheck();
@@ -221,11 +226,20 @@ class SessionController extends StateNotifier<AuthSessionState> {
   /// guarded with a try/catch + timeout that falls back to unauthenticated.
   Future<void> recheck() async {
     try {
-      final accountId =
-          await tokenStorage.accountId.timeout(const Duration(seconds: 6));
-      final hasRefresh = await tokenStorage.hasValidRefreshToken
-          .timeout(const Duration(seconds: 6));
-      state = (accountId != null && accountId.isNotEmpty && hasRefresh)
+      final accountId = await tokenStorage.accountId.timeout(
+        const Duration(seconds: 6),
+      );
+      final hasRefresh = await tokenStorage.hasValidRefreshToken.timeout(
+        const Duration(seconds: 6),
+      );
+      final authenticated =
+          accountId != null && accountId.isNotEmpty && hasRefresh;
+      // A fresh login (or a returning session on app start) always gets a
+      // clean cart fetch for whichever account is now signed in — cart
+      // is the one piece of per-account state that had no reset call
+      // anywhere in the login flows.
+      if (authenticated) cartNotifier.reset();
+      state = authenticated
           ? AuthSessionState.authenticated(accountId)
           : const AuthSessionState.unauthenticated();
     } catch (_) {
@@ -244,11 +258,13 @@ class SessionController extends StateNotifier<AuthSessionState> {
       // Best-effort logout — proceed to clear local state even if the
       // server call fails (e.g. no internet).
     }
-    // Wipe cached profile, roles, and account data so the next login
-    // fetches fresh data instead of showing the previous user's state.
+    // Wipe cached profile, roles, account, and cart data so the next
+    // login fetches fresh data instead of showing the previous user's
+    // state.
     profileNotifier.reset();
     roleNotifier.reset();
     accountNotifier.reset();
+    cartNotifier.reset();
     state = const AuthSessionState.unauthenticated();
   }
 }
@@ -261,6 +277,7 @@ final sessionControllerProvider =
         profileNotifier: ref.watch(profileNotifierProvider.notifier),
         roleNotifier: ref.watch(roleNotifierProvider.notifier),
         accountNotifier: ref.watch(accountNotifierProvider.notifier),
+        cartNotifier: ref.watch(cartNotifierProvider.notifier),
       );
     });
 
@@ -303,7 +320,9 @@ class MagicLinkNotifier extends StateNotifier<MagicLinkRequestState> {
 
 final magicLinkProvider =
     StateNotifierProvider<MagicLinkNotifier, MagicLinkRequestState>((ref) {
-      return MagicLinkNotifier(authRepository: ref.watch(authRepositoryProvider));
+      return MagicLinkNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      );
     });
 
 // ============================================================================
@@ -317,7 +336,8 @@ abstract class LoginState with _$LoginState {
   const factory LoginState.initial() = _LoginInitial;
   const factory LoginState.loadInProgress() = _LoginInProgress;
   const factory LoginState.loadSuccess(AuthResponseDto auth) = _LoginSuccess;
-  const factory LoginState.loadFailure(NetworkExceptions failure) = _LoginNetworkExceptions;
+  const factory LoginState.loadFailure(NetworkExceptions failure) =
+      _LoginNetworkExceptions;
 
   bool get isLoading =>
       maybeWhen(loadInProgress: () => true, orElse: () => false);
@@ -348,7 +368,10 @@ class LoginNotifier extends StateNotifier<LoginState> {
     await _apply(result);
   }
 
-  Future<void> consumeMagicLink({required String token, String? deviceId}) async {
+  Future<void> consumeMagicLink({
+    required String token,
+    String? deviceId,
+  }) async {
     state = const LoginState.loadInProgress();
     final result = await authRepository.consumeMagicLogin(
       token: token,
@@ -387,8 +410,9 @@ abstract class PasskeyRegisterState with _$PasskeyRegisterState {
 
   const factory PasskeyRegisterState.initial() = _PasskeyRegInitial;
   const factory PasskeyRegisterState.loadInProgress() = _PasskeyRegInProgress;
-  const factory PasskeyRegisterState.loadSuccess(PasskeyCredentialDto credential) =
-      _PasskeyRegSuccess;
+  const factory PasskeyRegisterState.loadSuccess(
+    PasskeyCredentialDto credential,
+  ) = _PasskeyRegSuccess;
   const factory PasskeyRegisterState.loadFailure(NetworkExceptions failure) =
       _PasskeyRegNetworkExceptions;
 
@@ -398,7 +422,7 @@ abstract class PasskeyRegisterState with _$PasskeyRegisterState {
 
 class PasskeyRegisterNotifier extends StateNotifier<PasskeyRegisterState> {
   PasskeyRegisterNotifier({required this.passkeyService})
-      : super(const PasskeyRegisterState.initial());
+    : super(const PasskeyRegisterState.initial());
 
   final PasskeyService passkeyService;
 
@@ -419,10 +443,10 @@ class PasskeyRegisterNotifier extends StateNotifier<PasskeyRegisterState> {
 
 final passkeyRegisterProvider =
     StateNotifierProvider<PasskeyRegisterNotifier, PasskeyRegisterState>((ref) {
-  return PasskeyRegisterNotifier(
-    passkeyService: ref.watch(passkeyServiceProvider),
-  );
-});
+      return PasskeyRegisterNotifier(
+        passkeyService: ref.watch(passkeyServiceProvider),
+      );
+    });
 
 // ============================================================================
 // PASSKEY — authentication (sign in with passkey, no password)
@@ -432,7 +456,7 @@ final passkeyRegisterProvider =
 /// [AuthResponseDto]. On success triggers a session recheck.
 class PasskeyAuthNotifier extends StateNotifier<LoginState> {
   PasskeyAuthNotifier({required this.ref, required this.passkeyService})
-      : super(const LoginState.initial());
+    : super(const LoginState.initial());
 
   final Ref ref;
   final PasskeyService passkeyService;
@@ -464,11 +488,11 @@ class PasskeyAuthNotifier extends StateNotifier<LoginState> {
 
 final passkeyAuthProvider =
     StateNotifierProvider<PasskeyAuthNotifier, LoginState>((ref) {
-  return PasskeyAuthNotifier(
-    ref: ref,
-    passkeyService: ref.watch(passkeyServiceProvider),
-  );
-});
+      return PasskeyAuthNotifier(
+        ref: ref,
+        passkeyService: ref.watch(passkeyServiceProvider),
+      );
+    });
 
 // ============================================================================
 // PASSKEY — bootstrap signup (passkey-first: bare account + passkey + session)
@@ -479,14 +503,16 @@ final passkeyAuthProvider =
 /// authenticated.
 class PasskeyBootstrapNotifier extends StateNotifier<LoginState> {
   PasskeyBootstrapNotifier({required this.ref, required this.passkeyService})
-      : super(const LoginState.initial());
+    : super(const LoginState.initial());
 
   final Ref ref;
   final PasskeyService passkeyService;
 
   Future<void> signup({required String displayName}) async {
     state = const LoginState.loadInProgress();
-    final result = await passkeyService.bootstrapSignup(displayName: displayName);
+    final result = await passkeyService.bootstrapSignup(
+      displayName: displayName,
+    );
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
@@ -499,11 +525,11 @@ class PasskeyBootstrapNotifier extends StateNotifier<LoginState> {
 
 final passkeyBootstrapProvider =
     StateNotifierProvider<PasskeyBootstrapNotifier, LoginState>((ref) {
-  return PasskeyBootstrapNotifier(
-    ref: ref,
-    passkeyService: ref.watch(passkeyServiceProvider),
-  );
-});
+      return PasskeyBootstrapNotifier(
+        ref: ref,
+        passkeyService: ref.watch(passkeyServiceProvider),
+      );
+    });
 
 // ============================================================================
 // DISPLAY NAME — set the account display name after sign-in (e.g. magic-link)
@@ -514,7 +540,8 @@ abstract class DisplayNameUpdateState with _$DisplayNameUpdateState {
   const DisplayNameUpdateState._();
 
   const factory DisplayNameUpdateState.initial() = _DisplayNameInitial;
-  const factory DisplayNameUpdateState.loadInProgress() = _DisplayNameInProgress;
+  const factory DisplayNameUpdateState.loadInProgress() =
+      _DisplayNameInProgress;
   const factory DisplayNameUpdateState.loadSuccess() = _DisplayNameSuccess;
   const factory DisplayNameUpdateState.loadFailure(NetworkExceptions failure) =
       _DisplayNameFailure;
@@ -527,7 +554,7 @@ abstract class DisplayNameUpdateState with _$DisplayNameUpdateState {
 /// post-sign-in "What's your name?" step when the account has no confirmed name.
 class DisplayNameNotifier extends StateNotifier<DisplayNameUpdateState> {
   DisplayNameNotifier({required this.authRepository})
-      : super(const DisplayNameUpdateState.initial());
+    : super(const DisplayNameUpdateState.initial());
 
   final AuthRepository authRepository;
 
@@ -551,10 +578,10 @@ class DisplayNameNotifier extends StateNotifier<DisplayNameUpdateState> {
 
 final displayNameProvider =
     StateNotifierProvider<DisplayNameNotifier, DisplayNameUpdateState>((ref) {
-  return DisplayNameNotifier(
-    authRepository: ref.watch(authRepositoryProvider),
-  );
-});
+      return DisplayNameNotifier(
+        authRepository: ref.watch(authRepositoryProvider),
+      );
+    });
 
 // ============================================================================
 // OAUTH — social sign-in (Google / Facebook)
@@ -584,7 +611,7 @@ final oauthFlowProvider = StateProvider<OAuthFlow>((ref) => const OAuthFlow());
 /// [LoginState] since success yields an [AuthResponseDto]).
 class OAuthSignInNotifier extends StateNotifier<LoginState> {
   OAuthSignInNotifier({required this.ref, required this.authRepository})
-      : super(const LoginState.initial());
+    : super(const LoginState.initial());
 
   final Ref ref;
   final AuthRepository authRepository;
@@ -603,8 +630,10 @@ class OAuthSignInNotifier extends StateNotifier<LoginState> {
         return null;
       },
       (dto) {
-        ref.read(oauthFlowProvider.notifier).state =
-            OAuthFlow(provider: provider, state: dto.state);
+        ref.read(oauthFlowProvider.notifier).state = OAuthFlow(
+          provider: provider,
+          state: dto.state,
+        );
         state = const LoginState.initial();
         return dto.authorizationUrl;
       },
@@ -619,8 +648,10 @@ class OAuthSignInNotifier extends StateNotifier<LoginState> {
     required String oauthState,
   }) async {
     state = const LoginState.loadInProgress();
-    final result =
-        await authRepository.oauthCallback(code: code, state: oauthState);
+    final result = await authRepository.oauthCallback(
+      code: code,
+      state: oauthState,
+    );
     state = result.fold(LoginState.loadFailure, LoginState.loadSuccess);
     if (state is _LoginSuccess) {
       await ref.read(sessionControllerProvider.notifier).recheck();
@@ -635,8 +666,8 @@ class OAuthSignInNotifier extends StateNotifier<LoginState> {
 
 final oauthSignInProvider =
     StateNotifierProvider<OAuthSignInNotifier, LoginState>((ref) {
-  return OAuthSignInNotifier(
-    ref: ref,
-    authRepository: ref.watch(authRepositoryProvider),
-  );
-});
+      return OAuthSignInNotifier(
+        ref: ref,
+        authRepository: ref.watch(authRepositoryProvider),
+      );
+    });

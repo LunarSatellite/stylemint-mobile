@@ -25,6 +25,16 @@ class CartNotifier extends StateNotifier<CartState> {
 
   final CartRepository _repository;
 
+  /// Clears any leftover cart state from a previous account's session.
+  /// The provider is an app-lifetime singleton, so without this a fresh
+  /// login (or a brand-new signup) after another account's session on the
+  /// same device kept showing that other account's cart until the next
+  /// manual mutation happened to overwrite it.
+  void reset() {
+    state = const CartState.initial();
+    unawaited(fetchCart());
+  }
+
   Future<void> fetchCart() async {
     state = const CartState.loadInProgress();
     final either = await _repository.getCart();
