@@ -4,12 +4,13 @@ import 'package:stylemint_mobile_frontend/features/wallet/domain/entities/wallet
 part 'wallet_balance_dto.freezed.dart';
 part 'wallet_balance_dto.g.dart';
 
-// Backend sends status as int enum: 0=Active, 1=Frozen, 2=Closed
+// Backend sends status as int enum (StyleMint.Modules.Identity.Enums.WalletStatus,
+// 1-based): 1=Active, 2=Frozen, 3=Closed.
 String _statusFromJson(dynamic v) {
   if (v is String) return v;
   return switch (v as int) {
-    1 => 'Frozen',
-    2 => 'Closed',
+    2 => 'Frozen',
+    3 => 'Closed',
     _ => 'Active',
   };
 }
