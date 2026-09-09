@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/profile_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/profile/data/models/user_profile_dto.dart';
+import 'package:stylemint_mobile_frontend/features/profile/domain/entities/creator_social_links.dart';
+import 'package:uuid/uuid.dart';
 
 class ProfileRemoteDataSource {
   ProfileRemoteDataSource({
@@ -49,10 +52,63 @@ class ProfileRemoteDataSource {
       if (bio != null) 'bio': bio,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
       if (gender != null) 'gender': gender,
-      if (dateOfBirth != null) 'dateOfBirth': dateOfBirth.toIso8601String().substring(0, 10),
+      if (dateOfBirth != null)
+        'dateOfBirth': dateOfBirth.toIso8601String().substring(0, 10),
     };
-    final response = await apiClient.patch('/v1/accounts/$accountId', data: data);
+    final response = await apiClient.patch(
+      '/v1/accounts/$accountId',
+      data: data,
+    );
     return UserProfileDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Stages an avatar image with Identity, then persists its URL through the
+  /// existing row-versioned account profile patch.
+  Future<UserProfileDto> uploadAvatar({
+    required String filePath,
+    required String rowVersion,
+  }) async {
+    final fileName = filePath.split(RegExp(r'[/\\]')).last;
+    final upload = await apiClient.post(
+      '/v1/customer/me/avatar',
+      data: FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath, filename: fileName),
+      }),
+      options: Options(headers: {'Idempotency-Key': const Uuid().v4()}),
+    );
+    final avatarUrl = (upload as Map<String, dynamic>)['url'] as String?;
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      // ignore: only_throw_errors
+      throw const NetworkExceptions.unexpectedError();
+    }
+    return updateProfile(avatarUrl: avatarUrl, rowVersion: rowVersion);
+  }
+
+  Future<CreatorSocialLinks> getCreatorSocialLinks() async {
+    final accountId = await _accountId();
+    final response = await apiClient.get(
+      '/v1/accounts/$accountId/creator-profile',
+    );
+    final data = response as Map<String, dynamic>;
+    return CreatorSocialLinks(
+      instagramHandle: data['instagramHandle'] as String?,
+      tiktokHandle: data['tiktokHandle'] as String?,
+    );
+  }
+
+  Future<void> updateCreatorSocialLinks({
+    required String instagramHandle,
+    required String tiktokHandle,
+  }) async {
+    final accountId = await _accountId();
+    await apiClient.patch(
+      '/v1/accounts/$accountId/creator-profile',
+      data: {
+        'instagramHandle': instagramHandle,
+        'tiktokHandle': tiktokHandle,
+      },
+      options: Options(headers: {'Idempotency-Key': const Uuid().v4()}),
+    );
   }
 
   Future<Map<String, dynamic>> getFollowing({
@@ -75,13 +131,29 @@ class ProfileRemoteDataSource {
     await apiClient.authDelete('/v1/connections/$userId');
   }
 
+  /// Submits a GDPR Article 20 export request. The archive itself is produced
+  /// asynchronously and delivered through the secure fulfilment flow.
+  Future<void> requestDataExport() async {
+    final accountId = await _accountId();
+    await apiClient.post(
+      '/v1/accounts/$accountId/data-rights-requests',
+      data: const {
+        // DataRightsRequestType.Portability (GDPR Article 20): the
+        // machine-readable archive behind the "Download My Data" control.
+        'requestType': 5,
+        'description': 'Request a copy of my personal data.',
+      },
+      options: Options(headers: {'Idempotency-Key': const Uuid().v4()}),
+    );
+  }
+
   /// The account endpoint (`getProfileSummary`) doesn't carry the saved /
   /// following / orders counts — each is sourced from its own already-real
   /// endpoint instead of a dedicated (nonexistent) stats endpoint. Each
   /// sub-fetch fails independently to 0 rather than failing the whole
   /// profile load over one flaky count.
   Future<({int savedItemsCount, int followingCount, int ordersCount})>
-      getStatsCounts() async {
+  getStatsCounts() async {
     final results = await Future.wait([
       apiClient
           .get('/v1/cart/saved-for-later')
@@ -91,13 +163,17 @@ class ProfileRemoteDataSource {
           .get('/v1/connections', queryParameters: {'pageSize': 1})
           // The backend returns totalCount: -1 when the list is empty (a
           // server-side bug) — clamp so the profile never shows "-1".
-          .then((r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
-              .clamp(0, 1 << 31))
+          .then(
+            (r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
+                .clamp(0, 1 << 31),
+          )
           .catchError((_) => 0),
       apiClient
           .get('/v1/orders', queryParameters: {'pageSize': 1})
-          .then((r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
-              .clamp(0, 1 << 31))
+          .then(
+            (r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
+                .clamp(0, 1 << 31),
+          )
           .catchError((_) => 0),
     ]);
     return (

@@ -37,6 +37,27 @@ class _VendorApplyStep4ScreenState
   bool _taxCertified = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Re-entering this step pushes a brand-new screen instance (Proceed on
+    // step 3 always `push`es, it doesn't reveal the previous one the way
+    // popping back to it does), so without this the fields silently reset
+    // to empty even though the draft already has the values from the last
+    // time this step was filled in.
+    final draft = ref.read(vendorApplyDraftProvider);
+    if (draft != null) {
+      _accountHolderController.text = draft.accountHolder;
+      _bankNameController.text = draft.bankName;
+      _selectedAccountType = draft.accountType;
+      _routingController.text = draft.routingNumber;
+      _accountNumberController.text = draft.accountNumber;
+      _confirmAccountController.text = draft.accountNumber;
+      _w9FileName = draft.w9FileName;
+      _taxCertified = draft.taxCertified;
+    }
+  }
+
+  @override
   void dispose() {
     _accountHolderController.dispose();
     _bankNameController.dispose();
@@ -164,7 +185,10 @@ class _VendorApplyStep4ScreenState
     );
   }
 
-  void _proceed() {
+  // Shared by both Previous and Proceed — losing whatever's been typed here
+  // just because the user stepped back to fix something on an earlier step
+  // is exactly the bug this method exists to prevent.
+  void _saveDraft() {
     final current = ref.read(vendorApplyDraftProvider);
     if (current != null) {
       ref.read(vendorApplyDraftProvider.notifier).draft = current.copyWith(
@@ -177,7 +201,20 @@ class _VendorApplyStep4ScreenState
         taxCertified: _taxCertified,
       );
     }
+  }
+
+  void _proceed() {
+    _saveDraft();
     unawaited(context.push(RouteNames.vendorApplyStep5));
+  }
+
+  void _goPrevious() {
+    _saveDraft();
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(RouteNames.vendorApplyStep3);
+    }
   }
 
   @override
@@ -191,9 +228,7 @@ class _VendorApplyStep4ScreenState
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-          onPressed: () => context.canPop()
-                  ? context.pop()
-                  : context.go(RouteNames.vendorApplyStep3),
+          onPressed: _goPrevious,
         ),
       ),
       body: SafeArea(
@@ -564,9 +599,7 @@ class _VendorApplyStep4ScreenState
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => context.canPop()
-                  ? context.pop()
-                  : context.go(RouteNames.vendorApplyStep3),
+              onPressed: _goPrevious,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,

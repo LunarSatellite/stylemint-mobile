@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
-import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
@@ -78,7 +77,10 @@ class _ActivePartnershipsScreenState
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
-          tabs: const [Tab(text: 'Active'), Tab(text: 'Ended')],
+          tabs: const [
+            Tab(text: 'Active'),
+            Tab(text: 'Ended'),
+          ],
         ),
       ),
       body: TabBarView(
@@ -159,8 +161,8 @@ class _ActiveTab extends StatelessWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 class _EmptyPartnerships extends StatelessWidget {
@@ -172,8 +174,11 @@ class _EmptyPartnerships extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.handshake_outlined,
-              size: 48, color: DesignTokens.textMuted),
+          Icon(
+            Icons.handshake_outlined,
+            size: 48,
+            color: DesignTokens.textMuted,
+          ),
           SizedBox(height: DesignTokens.s12),
           Text(
             'No active partnerships.',
@@ -297,27 +302,26 @@ class _EndedTab extends StatelessWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 
   Widget _empty() => const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.handshake_outlined,
-                size: 48, color: DesignTokens.textMuted),
-            SizedBox(height: DesignTokens.s12),
-            Text(
-              'No ended partnerships.',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.textMuted,
-              ),
-            ),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.handshake_outlined, size: 48, color: DesignTokens.textMuted),
+        SizedBox(height: DesignTokens.s12),
+        Text(
+          'No ended partnerships.',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            color: DesignTokens.textMuted,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _EndedPartnershipCard extends StatelessWidget {
@@ -375,8 +379,10 @@ class _EndedPartnershipCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: DesignTokens.bgAppBodyLight,
                   borderRadius: BorderRadius.circular(20),
@@ -399,7 +405,9 @@ class _EndedPartnershipCard extends StatelessWidget {
           _InfoRow(
             icon: Icons.calendar_today_outlined,
             label: 'Start Date',
-            trailingText: DateFormat('d MMM, yyyy').format(partnership.startedAt),
+            trailingText: DateFormat(
+              'd MMM, yyyy',
+            ).format(partnership.startedAt),
           ),
           const SizedBox(height: 10),
           _InfoRow(
@@ -831,19 +839,19 @@ class _PartnershipCard extends StatelessWidget {
                 onTap: () {
                   final accountId =
                       (vendorAccountId != null && vendorAccountId!.isNotEmpty)
-                          ? vendorAccountId
-                          : null;
+                      ? vendorAccountId
+                      : null;
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                    // rating/category aren't carried by the active-
-                    // partnership data — honestly left at 0/'' rather than
-                    // fabricated (same convention as brands_screen.dart's
-                    // _toBrandInfoData for fields the endpoint lacks).
-                    builder: (_) => BrandMessagingScreen(
-                      args: BrandMessagingArgs(
-                        brandName: name,
-                        rating: 0,
-                        category: '',
+                      // rating/category aren't carried by the active-
+                      // partnership data — honestly left at 0/'' rather than
+                      // fabricated (same convention as brands_screen.dart's
+                      // _toBrandInfoData for fields the endpoint lacks).
+                      builder: (_) => BrandMessagingScreen(
+                        args: BrandMessagingArgs(
+                          brandName: name,
+                          rating: 0,
+                          category: '',
                           otherParticipantId: accountId,
                           profileId: accountId == null ? vendorProfileId : null,
                         ),
@@ -920,32 +928,10 @@ class _PartnershipCard extends StatelessWidget {
             trailingText: '$activeCampaigns',
           ),
           const SizedBox(height: DesignTokens.s16),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  label: 'End Partnership',
-                  filled: false,
-                  // No end/leave/terminate method exists anywhere on the
-                  // creator partnerships repository/domain interface (unlike
-                  // vendor's partnerships repo, which has end()) — this is a
-                  // genuine backend contract gap, not just unwired UI.
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Ending a partnership is coming soon.'),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: _ActionButton(
-                  label: 'View Analytics',
-                  filled: true,
-                  onTap: () => context.push(RouteNames.creatorAnalytics),
-                ),
-              ),
-            ],
+          _ActionButton(
+            label: 'View Analytics',
+            filled: true,
+            onTap: () => context.push(RouteNames.creatorAnalytics),
           ),
         ],
       ),
@@ -965,8 +951,8 @@ Future<void> _showTermsSheet(BuildContext context, String partnershipId) {
 // Three-dot popup menu attached to each active partnership item card.
 // Includes the Messages action that wires into the existing
 // BrandMessagingScreen + ChatView pipeline (Realtime SignalR-backed
-// conversations with the brand). Other entries delegate to existing
-// handlers (terms sheet, analytics route, end-partnership snackbar).
+// conversations with the brand). Creator-side partnership termination is not
+// offered: signed terms are immutable and vendor/admin workflow owns closure.
 class _PartnershipCardMenu extends StatelessWidget {
   const _PartnershipCardMenu({
     required this.partnershipId,
@@ -1000,8 +986,8 @@ class _PartnershipCardMenu extends StatelessWidget {
             // account id is available.
             final accountId =
                 (vendorAccountId != null && vendorAccountId!.isNotEmpty)
-                    ? vendorAccountId
-                    : null;
+                ? vendorAccountId
+                : null;
             context.push(
               RouteNames.brandMessaging,
               extra: BrandMessagingArgs(
@@ -1019,13 +1005,6 @@ class _PartnershipCardMenu extends StatelessWidget {
           case 'analytics':
             context.push(RouteNames.creatorAnalytics);
             break;
-          case 'end':
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ending a partnership is coming soon.'),
-              ),
-            );
-            break;
         }
       },
       itemBuilder: (_) => const [
@@ -1033,8 +1012,11 @@ class _PartnershipCardMenu extends StatelessWidget {
           value: 'messages',
           child: Row(
             children: [
-              Icon(Icons.chat_bubble_outline_rounded,
-                  size: 18, color: DesignTokens.textWhite),
+              Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 18,
+                color: DesignTokens.textWhite,
+              ),
               SizedBox(width: 12),
               Text(
                 'Messages',
@@ -1047,8 +1029,11 @@ class _PartnershipCardMenu extends StatelessWidget {
           value: 'terms',
           child: Row(
             children: [
-              Icon(Icons.description_outlined,
-                  size: 18, color: DesignTokens.textWhite),
+              Icon(
+                Icons.description_outlined,
+                size: 18,
+                color: DesignTokens.textWhite,
+              ),
               SizedBox(width: 12),
               Text(
                 'View Terms',
@@ -1061,26 +1046,15 @@ class _PartnershipCardMenu extends StatelessWidget {
           value: 'analytics',
           child: Row(
             children: [
-              Icon(Icons.insights_rounded,
-                  size: 18, color: DesignTokens.textWhite),
+              Icon(
+                Icons.insights_rounded,
+                size: 18,
+                color: DesignTokens.textWhite,
+              ),
               SizedBox(width: 12),
               Text(
                 'View Analytics',
                 style: TextStyle(color: DesignTokens.textWhite),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'end',
-          child: Row(
-            children: [
-              Icon(Icons.handshake_outlined,
-                  size: 18, color: DesignTokens.colorError),
-              SizedBox(width: 12),
-              Text(
-                'End Partnership',
-                style: TextStyle(color: DesignTokens.colorError),
               ),
             ],
           ),
@@ -1105,7 +1079,9 @@ class _TermsBottomSheet extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1138,8 +1114,11 @@ class _TermsBottomSheet extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: DesignTokens.textLight, size: 22),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: DesignTokens.textLight,
+                    size: 22,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -1150,7 +1129,8 @@ class _TermsBottomSheet extends ConsumerWidget {
               padding: EdgeInsets.symmetric(vertical: 32),
               child: Center(
                 child: CircularProgressIndicator(
-                    color: DesignTokens.primaryGreen),
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ),
             error: (_, __) => const Padding(
@@ -1208,11 +1188,14 @@ class _TermsSection extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s12),
         if (section.bullets.isEmpty)
-          const Text('—',
-              style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.textMuted))
+          const Text(
+            '—',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              color: DesignTokens.textMuted,
+            ),
+          )
         else
           for (final b in section.bullets)
             Padding(
@@ -1222,8 +1205,11 @@ class _TermsSection extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 6, right: DesignTokens.s8),
-                    child: Icon(Icons.circle,
-                        size: 6, color: DesignTokens.textLight),
+                    child: Icon(
+                      Icons.circle,
+                      size: 6,
+                      color: DesignTokens.textLight,
+                    ),
                   ),
                   Expanded(
                     child: Text(
@@ -1333,7 +1319,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         height: 42,
         decoration: BoxDecoration(
-          color: filled ? DesignTokens.primaryGreen : DesignTokens.bgAppBodyLight,
+          color: filled
+              ? DesignTokens.primaryGreen
+              : DesignTokens.bgAppBodyLight,
           borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
         ),
         alignment: Alignment.center,
@@ -1420,7 +1408,8 @@ class _FilterSheetContentState extends State<_FilterSheetContent> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

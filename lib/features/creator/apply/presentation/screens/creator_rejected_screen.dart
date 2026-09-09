@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/notifiers/creator_documents_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -21,13 +20,9 @@ class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
   Future<void> _onApplyAgain() async {
     if (_loading) return;
     setState(() => _loading = true);
-    // Backend gap: neither /v1/creator/apply (returns 409 — application
-    // exists) nor /v1/accounts/{accountId}/creator-profile/reapply (returns
-    // 404 — no CreatorProfile yet) supports re-applying from a rejected
-    // CreatorApplication that never became a CreatorProfile. For now, just
-    // open the wizard pre-filled from the rejected application so the user
-    // can edit; the backend team needs to add a re-submit-from-rejected
-    // endpoint before the submit step can succeed.
+    // Keep the rejected application in notifier state while pre-filling the
+    // wizard. Its final submit then selects POST /v1/creator/reapply, the
+    // backend's atomic Rejected → Submitted transition.
     await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
     if (!mounted) return;
     final state = ref.read(creatorApplyNotifierProvider);
@@ -62,8 +57,10 @@ class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, DesignTokens.s40,
-                  DesignTokens.s16, DesignTokens.s32,
+                  DesignTokens.s16,
+                  DesignTokens.s40,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
                 ),
                 child: Column(
                   children: [
@@ -108,13 +105,14 @@ class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
               decoration: const BoxDecoration(
                 color: DesignTokens.bgAppFoundation,
                 border: Border(
-                  top: BorderSide(
-                      color: DesignTokens.borderDefault, width: 1),
+                  top: BorderSide(color: DesignTokens.borderDefault, width: 1),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s16,
-                DesignTokens.s16, DesignTokens.s32,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s32,
               ),
               child: SafeArea(
                 top: false,
@@ -125,16 +123,18 @@ class _CreatorRejectedScreenState extends ConsumerState<CreatorRejectedScreen> {
                       children: [
                         Text(
                           'Need Help?  ',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textLight),
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textLight,
+                          ),
                         ),
                         GestureDetector(
-                          onTap: () => context
-                              .push(RouteNames.creatorSupportContact),
+                          onTap: () =>
+                              context.push(RouteNames.creatorSupportContact),
                           child: Text(
                             'Contact Support',
-                            style: DesignTokens.mediumSemibold
-                                .copyWith(color: DesignTokens.primaryGreen),
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -185,14 +185,17 @@ class _ReturnToHomeButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.home_rounded,
-                  size: DesignTokens.iconSmall,
-                  color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.home_rounded,
+                size: DesignTokens.iconSmall,
+                color: DesignTokens.primaryGreen,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Text(
                 'Return to Home',
-                style: DesignTokens.oneLinerSemibold
-                    .copyWith(color: DesignTokens.primaryGreen),
+                style: DesignTokens.oneLinerSemibold.copyWith(
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ],
           ),
@@ -232,14 +235,17 @@ class _ApplyAgainButton extends StatelessWidget {
                   ),
                 )
               else
-                const Icon(Icons.refresh_rounded,
-                    size: DesignTokens.iconSmall,
-                    color: DesignTokens.buttonPrimaryText),
+                const Icon(
+                  Icons.refresh_rounded,
+                  size: DesignTokens.iconSmall,
+                  color: DesignTokens.buttonPrimaryText,
+                ),
               const SizedBox(width: DesignTokens.s8),
               Text(
                 loading ? 'Loading...' : 'Apply Again',
-                style: DesignTokens.oneLinerSemibold
-                    .copyWith(color: DesignTokens.buttonPrimaryText),
+                style: DesignTokens.oneLinerSemibold.copyWith(
+                  color: DesignTokens.buttonPrimaryText,
+                ),
               ),
             ],
           ),
@@ -288,31 +294,42 @@ class _RejectionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DesignTokens.s12),
-          _bullet(const Text('Less social media engagement',
-              style: _bodyStyle)),
-          _bullet(Text.rich(
-            TextSpan(
-              children: [
-                const TextSpan(
+          _bullet(
+            const Text('Less social media engagement', style: _bodyStyle),
+          ),
+          _bullet(
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
                     text: 'Your content may be against our ',
-                    style: _bodyStyle),
-                const TextSpan(
-                    text: 'Creator Guidelines', style: _guidelinesStyle),
-              ],
+                    style: _bodyStyle,
+                  ),
+                  const TextSpan(
+                    text: 'Creator Guidelines',
+                    style: _guidelinesStyle,
+                  ),
+                ],
+              ),
             ),
-          )),
-          _bullet(Text.rich(
-            TextSpan(
-              children: [
-                const TextSpan(
+          ),
+          _bullet(
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
                     text:
                         'Your social media profile numbers does not match our numbers stated in our ',
-                    style: _bodyStyle),
-                const TextSpan(
-                    text: 'Creator Guidelines', style: _guidelinesStyle),
-              ],
+                    style: _bodyStyle,
+                  ),
+                  const TextSpan(
+                    text: 'Creator Guidelines',
+                    style: _guidelinesStyle,
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -324,18 +341,21 @@ class _RejectionCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ',
-              style: TextStyle(
-                color: DesignTokens.colorInfo,
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-              )),
+          const Text(
+            '• ',
+            style: TextStyle(
+              color: DesignTokens.colorInfo,
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+            ),
+          ),
           Expanded(child: content),
         ],
       ),
     );
   }
 }
+
 /// Shows which identity documents a reviewer rejected, and why.
 ///
 /// Without this the rejected screen said only "contact support", leaving the
@@ -390,8 +410,9 @@ class _RejectedDocumentsCardState
                 rejected.length == 1
                     ? 'A document was rejected'
                     : '${rejected.length} documents were rejected',
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.textWhite),
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
               ),
             ],
           ),
@@ -406,8 +427,9 @@ class _RejectedDocumentsCardState
                   Text(
                     d.rejectionReason ??
                         'Please upload a clearer copy when you reapply.',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
                   ),
                 ],
               ),

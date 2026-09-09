@@ -105,7 +105,13 @@ class CheckoutRemoteDataSource {
   //   1. Ensure a session exists (create one if _sessionId is null)
   //   2. PATCH address onto the session
   //   3. PATCH payment method onto the session
-  //   4. POST place — returns orderId
+  //   4. POST place — returns the order number (e.g. "NK2026-00001").
+  //      Every downstream order route (detail/invoice/cancel — see
+  //      OrdersRemoteDataSource, track_orders_screen.dart) is keyed by this
+  //      human-readable order number, not the internal orderId GUID that
+  //      also comes back on this response — returning the GUID here caused
+  //      the post-purchase "View Order" button to 404 while the exact same
+  //      order loaded fine from the Track Order list moments later.
   Future<String> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
@@ -137,7 +143,7 @@ class CheckoutRemoteDataSource {
 
     _sessionId = null; // clear after successful placement
     final data = response as Map<String, dynamic>;
-    return data['orderId'] as String;
+    return data['orderNumber'] as String;
   }
 
   Future<String> _createSession() async {

@@ -6,7 +6,6 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/data/datasources/drop_party_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/entities/drop_party.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/repositories/drop_party_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class DropPartyRepositoryImpl implements DropPartyRepository {
   DropPartyRepositoryImpl({
@@ -19,7 +18,8 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
   static const _uuid = Uuid();
 
   @override
-  Future<Either<NetworkExceptions, List<DropParty>>> getActiveDropParties() async {
+  Future<Either<NetworkExceptions, List<DropParty>>>
+  getActiveDropParties() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getActiveDropParties();
@@ -39,7 +39,9 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, DropParty>> getDropParty(String partyId) async {
+  Future<Either<NetworkExceptions, DropParty>> getDropParty(
+    String partyId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getDropParty(partyId);
@@ -59,28 +61,11 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, DropParty>> createDropParty({
-    required String title,
-    required String description,
-    required String productId,
-    required Money dropPrice,
-    required int maxParticipants,
-    required DateTime startsAt,
-    required DateTime endsAt,
-  }) async {
+  Future<Either<NetworkExceptions, void>> rsvp(String partyId) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.createDropParty(
-          title: title,
-          description: description,
-          productId: productId,
-          dropAmount: dropPrice.amount,
-          maxParticipants: maxParticipants,
-          startsAt: startsAt,
-          endsAt: endsAt,
-          idempotencyKey: _uuid.v4(),
-        );
-        return right(dto.toDomain());
+        await remoteDataSource.rsvp(partyId, _uuid.v4());
+        return right(null);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -96,27 +81,26 @@ class DropPartyRepositoryImpl implements DropPartyRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, DropParty>> joinDropParty(String partyId) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.joinDropParty(partyId, _uuid.v4());
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
+  Future<Either<NetworkExceptions, void>> joinLive(String partyId) async {
+    if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.joinLive(partyId, _uuid.v4());
+      return right(null);
+    } on DioException catch (error) {
+      return left(NetworkExceptions.server(error.message.toString()));
+    } on NetworkExceptions catch (error) {
+      return left(error);
+    } catch (_) {
+      return left(NetworkExceptions.unexpectedError());
     }
   }
 
   @override
-  Future<Either<NetworkExceptions, DropParty>> scanInviteQr(String qrCode) async {
+  Future<Either<NetworkExceptions, DropParty>> scanInviteQr(
+    String qrCode,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.scanInviteQr(qrCode, _uuid.v4());

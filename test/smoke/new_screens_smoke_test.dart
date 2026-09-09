@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/creator/support/presentation/
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/profile_settings_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
@@ -20,6 +21,7 @@ import 'package:stylemint_mobile_frontend/features/payouts/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/about_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/screens/creator_performance_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/screens/vendor_inquiries_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/profile/presentation/screens/vendor_profile_screen.dart';
 
 import 'fake_api_client.dart';
 
@@ -28,9 +30,9 @@ import 'fake_api_client.dart';
 /// AsyncValue.when branches, list builders and null-safety — beyond `analyze`.
 void main() {
   Widget wrap(Widget child) => ProviderScope(
-        overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
-        child: MaterialApp(home: child),
-      );
+    overrides: [apiClientProvider.overrideWithValue(FakeApiClient())],
+    child: MaterialApp(home: child),
+  );
 
   // For screens that read GoRouter from context during build.
   Widget wrapWithRouter(Widget child) {
@@ -75,6 +77,14 @@ void main() {
 
   testWidgets('VendorInquiriesScreen renders', (t) async {
     await pumpAndCheck(t, const VendorInquiriesScreen());
+  });
+
+  testWidgets('DropPartyListScreen renders', (t) async {
+    await pumpAndCheck(t, const DropPartyListScreen());
+  });
+
+  testWidgets('VendorProfileScreen renders', (t) async {
+    await pumpAndCheck(t, const VendorProfileScreen());
   });
 
   testWidgets('ReelDetailsScreen renders', (t) async {

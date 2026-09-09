@@ -407,9 +407,9 @@ const _returnsArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.iconList,
         items: [
-          'Credit/Debit cards: 5–7 business days.',
-          'PayPal & digital wallets: 1–3 business days.',
-          'Bank transfers: 7–10 business days.',
+          'Visa/Mastercard refunds: 5–7 business days.',
+          'PayPal refunds: 1–3 business days.',
+          'eSewa refunds: follow the provider confirmation.',
           'Original payment method credits within the stated window.',
         ],
       ),
@@ -600,20 +600,19 @@ const _paymentArticles = <HelpArticle>[
     date: 'Sunday, 25th Aug, 2024, 9:00 AM',
     views: 3400,
     readMinutes: 3,
-    preview:
-        'Store multiple cards and wallets for quick checkout. Add, edit, or remove payment methods from the Payment Methods screen in your profile...',
+    preview: 'Choose a supported payment method securely when you check out...',
     blocks: [
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Reel Commerce supports credit/debit cards, PayPal, Apple Pay, and Google Pay. You can store multiple methods and set one as your default for faster checkout.',
+            'Style Mint supports Visa/Mastercard, PayPal, eSewa, and Cash on Delivery. Available methods are shown during checkout.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
         items: [
-          'Go to Profile → Payment Methods.',
-          'Tap the green "Add Card +" button.',
-          'Enter your card details securely.',
+          'Add your items to Cart and continue to Checkout.',
+          'Choose Visa/Mastercard, PayPal, eSewa, or Cash on Delivery when available.',
+          'Complete any provider verification in its secure flow.',
           'Check "Set as Default" if you want this card used first.',
         ],
       ),
@@ -621,14 +620,14 @@ const _paymentArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'To remove a saved card, open Payment Methods, tap the three-dot menu on the card, and select "Remove". You cannot remove your only payment method if you have active subscriptions.',
+            'Style Mint never stores raw card details. Manage an eligible payment method through its provider or choose another method at checkout.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,
         items: [
           'Card details are encrypted and never stored on our servers.',
           'Removing a card does not affect past transactions.',
-          'Digital wallets are linked via secure OAuth tokens.',
+          'PayPal and eSewa are completed through their secure provider flows.',
         ],
       ),
     ],
@@ -668,7 +667,7 @@ const _paymentArticles = <HelpArticle>[
         items: [
           'You are not charged for failed transactions.',
           'Pending charges clear automatically within 24 hours.',
-          'Try a digital wallet (Apple/Google Pay) as an alternative.',
+          'Try another supported method: Visa/Mastercard, PayPal, eSewa, or Cash on Delivery.',
         ],
       ),
     ],
@@ -867,7 +866,7 @@ const _creatorArticles = <HelpArticle>[
           'View your earnings in Creator Dashboard → Earnings.',
           'Earnings are settled monthly on the 1st of each month.',
           'Minimum payout threshold: \$25 or equivalent.',
-          'Withdrawals available via bank transfer or PayPal.',
+          'Payouts are available to NIMB Bank, Laxmi Bank, PayPal, or eSewa.',
         ],
       ),
       HelpBlock(type: HelpBlockType.sectionHeader, text: 'Boosted Commissions'),

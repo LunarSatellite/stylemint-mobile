@@ -100,7 +100,7 @@ class ReelImportRemoteDataSource {
         'sourcePlatform': _platformInt(platform),
         'sourceUrl': sourceUrl,
         'externalId': externalId,
-        'durationSeconds': durationSeconds > 0 ? durationSeconds : 30,
+        'durationSeconds': durationSeconds,
         if (caption != null && caption.isNotEmpty) 'caption': caption,
         if (thumbnailCdnUrl != null &&
             thumbnailCdnUrl.isNotEmpty &&
@@ -131,9 +131,7 @@ class ReelImportRemoteDataSource {
                 'sourcePlatform': _platformInt(reel.platform),
                 'sourceUrl': reel.sourceUrl,
                 'externalId': reel.platformPostId,
-                'durationSeconds': reel.videoDuration > 0
-                    ? reel.videoDuration
-                    : 30,
+                'durationSeconds': reel.videoDuration,
                 if (reel.caption.isNotEmpty) 'caption': reel.caption,
                 if (reel.thumbnailUrl.isNotEmpty &&
                     reel.thumbnailUrl.length <= 2048)

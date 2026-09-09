@@ -21,7 +21,7 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
   @override
   Future<Either<NetworkExceptions, List<CategoryOption>>>
-      fetchCategories() async {
+  fetchCategories() async {
     return _guard(() async {
       final dtos = await remoteDataSource.fetchCategories();
       return dtos
@@ -32,14 +32,23 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
   @override
   Future<Either<NetworkExceptions, String>> submitDraft(
-      ProductDraft draft) async {
+    ProductDraft draft,
+  ) async {
     return _guard(() async {
       // POST start creates the draft with basic info; steps 2-4 fill the rest.
-      final productId =
-          await remoteDataSource.startDraft(_basicBody(draft), _uuid.v4());
+      final productId = await remoteDataSource.startDraft(
+        _basicBody(draft),
+        _uuid.v4(),
+      );
       await remoteDataSource.patchStep2(productId, _mediaBodyFromDraft(draft));
-      await remoteDataSource.patchStep3(productId, _pricingBodyFromDraft(draft));
-      await remoteDataSource.patchStep4(productId, _shippingBodyFromDraft(draft));
+      await remoteDataSource.patchStep3(
+        productId,
+        _pricingBodyFromDraft(draft),
+      );
+      await remoteDataSource.patchStep4(
+        productId,
+        _shippingBodyFromDraft(draft),
+      );
       return productId;
     });
   }
@@ -68,18 +77,17 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
   @override
   Future<Either<NetworkExceptions, String>> publishProduct(String productId) {
-    return _guard(
-        () => remoteDataSource.publishProduct(productId, _uuid.v4()));
+    return _guard(() => remoteDataSource.publishProduct(productId, _uuid.v4()));
   }
 
   // --- payload builders (domain -> backend wizard contract) ---
 
   Map<String, dynamic> _basicBody(ProductDraft d) => {
-        'categoryId': d.basicInfo.categoryId,
-        'name': d.basicInfo.productName,
-        'shortDescription': d.basicInfo.shortDescription,
-        'longDescriptionMarkdown': d.basicInfo.description,
-      };
+    'categoryId': d.basicInfo.categoryId,
+    'name': d.basicInfo.productName,
+    'shortDescription': d.basicInfo.shortDescription,
+    'longDescriptionMarkdown': d.basicInfo.description,
+  };
 
   Map<String, dynamic> _mediaBodyFromDraft(ProductDraft d) =>
       _mediaBody(d.imagesInfo);
@@ -95,7 +103,12 @@ class AddProductRepositoryImpl implements AddProductRepository {
             'isPrimary': i == info.primaryImageIndex,
           },
       ],
-      'video': null,
+      'video': info.video == null
+          ? null
+          : {
+              'cdnUrl': info.video!.cdnUrl,
+              'durationSeconds': info.video!.durationSeconds,
+            },
     };
   }
 
@@ -161,20 +174,24 @@ class AddProductRepositoryImpl implements AddProductRepository {
               orElse: () => variants.first,
             ));
 
-      final images = (data['images'] as List<dynamic>? ?? const [])
-          .map((e) => e as Map<String, dynamic>)
-          .toList()
-        ..sort(
-          (a, b) => (a['sortOrder'] as int? ?? 0)
-              .compareTo(b['sortOrder'] as int? ?? 0),
-        );
+      final images =
+          (data['images'] as List<dynamic>? ?? const [])
+              .map((e) => e as Map<String, dynamic>)
+              .toList()
+            ..sort(
+              (a, b) => (a['sortOrder'] as int? ?? 0).compareTo(
+                b['sortOrder'] as int? ?? 0,
+              ),
+            );
 
       final shippingOptions =
           (data['shippingOptions'] as List<dynamic>? ?? const [])
               .map((e) => e as Map<String, dynamic>)
               .toList();
-      final firstShipping =
-          shippingOptions.isEmpty ? null : shippingOptions.first;
+      final firstShipping = shippingOptions.isEmpty
+          ? null
+          : shippingOptions.first;
+      final video = data['video'] as Map<String, dynamic>?;
 
       final priceCurrency = variant['priceCurrency'] as String? ?? 'NPR';
       final weightGrams = variant['weightGrams'] as int? ?? 0;
@@ -195,10 +212,19 @@ class AddProductRepositoryImpl implements AddProductRepository {
               .toList(growable: false),
           primaryImageIndex: images.isEmpty
               ? 0
-              : images.indexWhere((e) => e['isPrimary'] == true).clamp(
-                    0,
-                    images.length - 1,
-                  ),
+              : images
+                    .indexWhere((e) => e['isPrimary'] == true)
+                    .clamp(
+                      0,
+                      images.length - 1,
+                    ),
+          video: video == null
+              ? null
+              : ProductVideoInfo(
+                  cdnUrl: video['cdnUrl'] as String? ?? '',
+                  durationSeconds: (video['durationSeconds'] as num? ?? 0)
+                      .toInt(),
+                ),
         ),
         step3: PricingInfo(
           basePrice: Money(
@@ -234,10 +260,8 @@ class AddProductRepositoryImpl implements AddProductRepository {
                   amount: (firstShipping['feeAmount'] as num).toDouble(),
                   currency: firstShipping['feeCurrency'] as String? ?? 'NPR',
                 ),
-          deliveryEstimateMin:
-              firstShipping?['estimatedDaysMin'] as int? ?? 1,
-          deliveryEstimateMax:
-              firstShipping?['estimatedDaysMax'] as int? ?? 3,
+          deliveryEstimateMin: firstShipping?['estimatedDaysMin'] as int? ?? 1,
+          deliveryEstimateMax: firstShipping?['estimatedDaysMax'] as int? ?? 3,
         ),
       );
     });
@@ -282,7 +306,8 @@ class AddProductRepositoryImpl implements AddProductRepository {
   }
 
   Future<Either<NetworkExceptions, T>> _guard<T>(
-      Future<T> Function() action) async {
+    Future<T> Function() action,
+  ) async {
     if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
     }

@@ -72,8 +72,13 @@ abstract class ShippingAddressSnapshotDto with _$ShippingAddressSnapshotDto {
       _$ShippingAddressSnapshotDtoFromJson(json);
 
   String toDisplayString() {
-    final parts = [addressLine1, if (landmark != null) landmark!, city, state, zipCode]
-        .where((p) => p.isNotEmpty);
+    final parts = [
+      addressLine1,
+      if (landmark != null) landmark!,
+      city,
+      state,
+      zipCode,
+    ].where((p) => p.isNotEmpty);
     return parts.join(', ');
   }
 }
@@ -89,10 +94,13 @@ abstract class OrderDetailDto with _$OrderDetailDto {
   const factory OrderDetailDto({
     required String id,
     required String orderNumber,
-    @Default(1) int state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
+    @Default(1)
+    int
+    state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
     required DateTime placedUtc,
     @Default(ShippingAddressSnapshotDto()) ShippingAddressSnapshotDto shipTo,
-    @Default(4) int paymentMethod, // PaymentMethod: 1=Card,2=PayPal,3=Esewa,4=Cod
+    @Default(4)
+    int paymentMethod, // PaymentMethod: 1=Card,2=PayPal,3=Esewa,4=Cod
     @Default(<SubOrderDto>[]) List<SubOrderDto> subOrders,
     @Default(0) double subtotalAmount,
     @Default('NPR') String subtotalCurrency,
@@ -122,11 +130,19 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       // ships (delivery-routing module).
       estimatedDelivery: placedUtc.add(const Duration(days: 7)),
       items: subOrders
-          .expand((s) => s.lines.map((l) => l.toDomain(_subOrderStateLabel(s.state))))
+          .expand(
+            (s) => s.lines.map((l) => l.toDomain(_subOrderStateLabel(s.state))),
+          )
           .toList(growable: false),
       subtotal: Money(amount: subtotalAmount, currency: subtotalCurrency),
-      shipping: Money(amount: shippingTotalAmount, currency: shippingTotalCurrency),
-      tax: const Money(amount: 0, currency: 'NPR'), // tax is folded into totals, not broken out here
+      shipping: Money(
+        amount: shippingTotalAmount,
+        currency: shippingTotalCurrency,
+      ),
+      tax: const Money(
+        amount: 0,
+        currency: 'NPR',
+      ), // tax is folded into totals, not broken out here
       total: Money(amount: grandTotalAmount, currency: grandTotalCurrency),
       shippingAddress: shipTo.toDisplayString(),
       receiverName: shipTo.receiverName,
@@ -156,23 +172,35 @@ abstract class OrderDetailDto with _$OrderDetailDto {
 
   static String _subOrderStateLabel(int state) {
     switch (state) {
-      case 6: return 'Shipped';
-      case 7: return 'Delivered';
-      case 8: return 'Cancelled';
-      case 9: return 'Returned';
-      case 10: return 'In Transit';
-      case 11: return 'Out for Delivery';
-      default: return 'Confirmed';
+      case 6:
+        return 'Shipped';
+      case 7:
+        return 'Delivered';
+      case 8:
+        return 'Cancelled';
+      case 9:
+        return 'Returned';
+      case 10:
+        return 'In Transit';
+      case 11:
+        return 'Out for Delivery';
+      default:
+        return 'Confirmed';
     }
   }
 
   static String _paymentMethodLabel(int code) {
     switch (code) {
-      case 1: return 'Card';
-      case 2: return 'PayPal';
-      case 3: return 'eSewa';
-      case 4: return 'Cash on Delivery';
-      default: return 'Cash on Delivery';
+      case 1:
+        return 'Card';
+      case 2:
+        return 'PayPal';
+      case 3:
+        return 'eSewa';
+      case 4:
+        return 'Cash on Delivery';
+      default:
+        return 'Cash on Delivery';
     }
   }
 }

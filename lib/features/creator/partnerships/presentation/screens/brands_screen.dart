@@ -19,12 +19,74 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// returns; description / rating / success rate / category are fetched
 /// on mount via brandDetailProvider + brandTrustProvider.
 BrandInfoData _toBrandInfoData(Brand brand) => BrandInfoData(
-      name: brand.businessName,
-      logoUrl: brand.logoUrl,
-      commissionMinPercent: brand.commissionRangeMinPercent,
-      commissionMaxPercent: brand.commissionRangeMaxPercent,
-      vendorProfileId: brand.vendorAccountId,
-    );
+  name: brand.businessName,
+  logoUrl: brand.logoUrl,
+  commissionMinPercent: brand.commissionRangeMinPercent,
+  commissionMaxPercent: brand.commissionRangeMaxPercent,
+  vendorProfileId: brand.vendorAccountId,
+);
+
+/// The Brands filter sheet only uses fields already returned by the public
+/// approved-brand catalog. The API is newest-first, so the [newest] sort
+/// deliberately preserves server order.
+enum _BrandCatalogSort { newest, highestCommission, lowestCommission, name }
+
+class _BrandCatalogFilter {
+  const _BrandCatalogFilter({this.minimum, this.maximum, this.sort});
+
+  final double? minimum;
+  final double? maximum;
+  final _BrandCatalogSort? sort;
+
+  List<Brand> apply(Iterable<Brand> source) {
+    final filtered = source
+        .where((brand) {
+          // A commission range matches when it overlaps the selected range.
+          final aboveMinimum =
+              minimum == null || brand.commissionRangeMaxPercent >= minimum!;
+          final belowMaximum =
+              maximum == null || brand.commissionRangeMinPercent <= maximum!;
+          return aboveMinimum && belowMaximum;
+        })
+        .toList(growable: false);
+
+    switch (sort) {
+      case _BrandCatalogSort.highestCommission:
+        filtered.sort((a, b) {
+          final byMaximum = b.commissionRangeMaxPercent.compareTo(
+            a.commissionRangeMaxPercent,
+          );
+          return byMaximum != 0
+              ? byMaximum
+              : b.commissionRangeMinPercent.compareTo(
+                  a.commissionRangeMinPercent,
+                );
+        });
+      case _BrandCatalogSort.lowestCommission:
+        filtered.sort((a, b) {
+          final byMinimum = a.commissionRangeMinPercent.compareTo(
+            b.commissionRangeMinPercent,
+          );
+          return byMinimum != 0
+              ? byMinimum
+              : a.commissionRangeMaxPercent.compareTo(
+                  b.commissionRangeMaxPercent,
+                );
+        });
+      case _BrandCatalogSort.name:
+        filtered.sort(
+          (a, b) => a.businessName.toLowerCase().compareTo(
+            b.businessName.toLowerCase(),
+          ),
+        );
+      case _BrandCatalogSort.newest:
+      case null:
+        break;
+    }
+
+    return filtered;
+  }
+}
 
 class BrandsScreen extends StatefulWidget {
   const BrandsScreen({super.key});
@@ -34,6 +96,8 @@ class BrandsScreen extends StatefulWidget {
 }
 
 class _BrandsScreenState extends State<BrandsScreen> {
+  _BrandCatalogFilter _filter = const _BrandCatalogFilter();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,7 +138,8 @@ class _BrandsScreenState extends State<BrandsScreen> {
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
                       child: Center(
                         child: CircularProgressIndicator(
-                            color: DesignTokens.primaryGreen),
+                          color: DesignTokens.primaryGreen,
+                        ),
                       ),
                     ),
                     error: (_, _) => const _EmptyBrandsMessage(
@@ -119,36 +184,40 @@ class _BrandsScreenState extends State<BrandsScreen> {
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
                       child: Center(
                         child: CircularProgressIndicator(
-                            color: DesignTokens.primaryGreen),
+                          color: DesignTokens.primaryGreen,
+                        ),
                       ),
                     ),
                     error: (_, _) => const _EmptyBrandsMessage(
                       'Could not load brands.',
                     ),
-                    data: (brands) => brands.isEmpty
-                        ? const _EmptyBrandsMessage(
-                            'No approved brands yet — check back soon.',
-                          )
-                        : Column(
-                            children: [
-                              for (final b in brands)
-                                GestureDetector(
-                                  onTap: () => context.push(
-                                    RouteNames.brandInfo,
-                                    extra: _toBrandInfoData(b),
-                                  ),
-                                  child: _BrandRow(
-                                    logo: _BrandLogo(
-                                      name: b.businessName,
-                                      logoUrl: b.logoUrl,
+                    data: (brands) {
+                      final filteredBrands = _filter.apply(brands);
+                      return filteredBrands.isEmpty
+                          ? const _EmptyBrandsMessage(
+                              'No brands match these filters.',
+                            )
+                          : Column(
+                              children: [
+                                for (final b in filteredBrands)
+                                  GestureDetector(
+                                    onTap: () => context.push(
+                                      RouteNames.brandInfo,
+                                      extra: _toBrandInfoData(b),
                                     ),
-                                    name: b.businessName,
-                                    commission:
-                                        '${b.commissionRangeLabel} Commissions',
+                                    child: _BrandRow(
+                                      logo: _BrandLogo(
+                                        name: b.businessName,
+                                        logoUrl: b.logoUrl,
+                                      ),
+                                      name: b.businessName,
+                                      commission:
+                                          '${b.commissionRangeLabel} Commissions',
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ),
+                              ],
+                            );
+                    },
                   );
                 },
               ),
@@ -159,14 +228,17 @@ class _BrandsScreenState extends State<BrandsScreen> {
     );
   }
 
-  void _showFilterSheet() {
-    showModalBottomSheet<void>(
+  Future<void> _showFilterSheet() async {
+    final filter = await showModalBottomSheet<_BrandCatalogFilter>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.85),
-      builder: (_) => const _FilterPartnershipSheet(),
+      builder: (_) => _FilterPartnershipSheet(initialFilter: _filter),
     );
+    if (filter != null && mounted) {
+      setState(() => _filter = filter);
+    }
   }
 
   Widget _buildTopBar() {
@@ -184,8 +256,11 @@ class _BrandsScreenState extends State<BrandsScreen> {
                     : Container(
                         color: DesignTokens.bgAppBodyLight,
                         alignment: Alignment.center,
-                        child: const Icon(Icons.person_rounded,
-                            size: 22, color: DesignTokens.textMuted),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          size: 22,
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
               ),
             );
@@ -421,7 +496,12 @@ class _RecommendedCard extends StatelessWidget {
           const _DashedDivider(),
           const SizedBox(height: DesignTokens.s12),
           _MetricRow(
-            iconWidget: Image.asset('assets/images/creatordash/material-symbols_money-bag-outline-rounded.png', width: 15, height: 15, color: DesignTokens.textMuted),
+            iconWidget: Image.asset(
+              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+              width: 15,
+              height: 15,
+              color: DesignTokens.textMuted,
+            ),
             label: 'Commission Range',
             trailing: _CommissionChip(commission),
           ),
@@ -674,7 +754,8 @@ class _BrandsBottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accountId = ref.watch(sessionControllerProvider)
+    final accountId = ref
+        .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
       height: 68 + MediaQuery.of(context).padding.bottom,
@@ -687,54 +768,62 @@ class _BrandsBottomNav extends ConsumerWidget {
       child: SafeArea(
         top: false,
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBtn(
-            icon: Icons.home_rounded,
-            label: 'Home',
-            onTap: () => context.go(RouteNames.creatorHome),
-          ),
-          _NavBtn(
-            iconWidget: Image.asset('assets/images/creatordash/Analytics_icon.png', width: 22, height: 22),
-            label: 'Analytics',
-            onTap: () => context.push(RouteNames.creatorAnalytics),
-          ),
-          GestureDetector(
-            onTap: () => context.push(RouteNames.reelImport),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: DesignTokens.primaryGreen,
-                shape: BoxShape.circle,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavBtn(
+              icon: Icons.home_rounded,
+              label: 'Home',
+              onTap: () => context.go(RouteNames.creatorHome),
+            ),
+            _NavBtn(
+              iconWidget: Image.asset(
+                'assets/images/creatordash/Analytics_icon.png',
+                width: 22,
+                height: 22,
               ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 26,
+              label: 'Analytics',
+              onTap: () => context.push(RouteNames.creatorAnalytics),
+            ),
+            GestureDetector(
+              onTap: () => context.push(RouteNames.reelImport),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: DesignTokens.primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
             ),
-          ),
-          _NavBtn(
-            iconWidget: Image.asset('assets/images/creatordash/open_brand_icon.png', width: 22, height: 22),
-            label: 'Brands',
-            active: true,
-            onTap: null,
-          ),
-          _NavBtn(
-            icon: Icons.person_rounded,
-            label: 'Profile',
-            onTap: () => context.push(
-              RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
-              extra: CreatorProfileArgs(
-                accountId: accountId,
-                displayName: '',
-                handle: '',
+            _NavBtn(
+              iconWidget: Image.asset(
+                'assets/images/creatordash/open_brand_icon.png',
+                width: 22,
+                height: 22,
+              ),
+              label: 'Brands',
+              active: true,
+              onTap: null,
+            ),
+            _NavBtn(
+              icon: Icons.person_rounded,
+              label: 'Profile',
+              onTap: () => context.push(
+                RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+                extra: CreatorProfileArgs(
+                  accountId: accountId,
+                  displayName: '',
+                  handle: '',
+                ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -758,8 +847,7 @@ class _NavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
+    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -789,7 +877,9 @@ class _NavBtn extends StatelessWidget {
 // ── Filter Partnership bottom sheet ─────────────────────────────────────────
 
 class _FilterPartnershipSheet extends StatefulWidget {
-  const _FilterPartnershipSheet();
+  const _FilterPartnershipSheet({required this.initialFilter});
+
+  final _BrandCatalogFilter initialFilter;
 
   @override
   State<_FilterPartnershipSheet> createState() =>
@@ -797,12 +887,13 @@ class _FilterPartnershipSheet extends StatefulWidget {
 }
 
 class _FilterPartnershipSheetState extends State<_FilterPartnershipSheet> {
-  final _fromCtrl = TextEditingController();
-  final _toCtrl = TextEditingController();
-  bool _newest = false;
-  bool _highestEarnings = false;
-  bool _lowestEarnings = false;
-  bool _name = false;
+  late final _fromCtrl = TextEditingController(
+    text: widget.initialFilter.minimum?.toStringAsFixed(0) ?? '',
+  );
+  late final _toCtrl = TextEditingController(
+    text: widget.initialFilter.maximum?.toStringAsFixed(0) ?? '',
+  );
+  late _BrandCatalogSort? _sort = widget.initialFilter.sort;
 
   @override
   void dispose() {
@@ -815,21 +906,24 @@ class _FilterPartnershipSheetState extends State<_FilterPartnershipSheet> {
     setState(() {
       _fromCtrl.clear();
       _toCtrl.clear();
-      _newest = false;
-      _highestEarnings = false;
-      _lowestEarnings = false;
-      _name = false;
+      _sort = null;
     });
   }
 
   void _apply() {
-    // TODO: pipe these into the brand-list query params once the
-    // brands endpoint supports commission/status filters.
-    // ignore: avoid_print
-    print('FILTER_APPLY: from=${_fromCtrl.text} to=${_toCtrl.text} '
-        'newest=$_newest highest=$_highestEarnings '
-        'lowest=$_lowestEarnings name=$_name');
-    Navigator.of(context).pop();
+    final minimum = double.tryParse(_fromCtrl.text.trim());
+    final maximum = double.tryParse(_toCtrl.text.trim());
+    if (minimum != null && maximum != null && minimum > maximum) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Minimum commission cannot exceed maximum.'),
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).pop(
+      _BrandCatalogFilter(minimum: minimum, maximum: maximum, sort: _sort),
+    );
   }
 
   @override
@@ -845,151 +939,172 @@ class _FilterPartnershipSheetState extends State<_FilterPartnershipSheet> {
             decoration: BoxDecoration(
               color: DesignTokens.bgAppBody.withOpacity(0.92),
             ),
-        padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16,
-          DesignTokens.s12,
-          DesignTokens.s16,
-          DesignTokens.s16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s12,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header
+                Row(
+                  children: [
+                    const Text(
+                      'Filter Partnership',
+                      style: DesignTokens.sectionInnerTitle,
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      behavior: HitTestBehavior.opaque,
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: DesignTokens.textWhite,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: DesignTokens.s16),
+
+                // Commission range
                 const Text(
-                  'Filter Partnership',
-                  style: DesignTokens.sectionInnerTitle,
+                  'Commission Range',
+                  style: DesignTokens.smallRegular,
                 ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  behavior: HitTestBehavior.opaque,
-                  child: const Icon(Icons.close_rounded,
-                      color: DesignTokens.textWhite, size: 22),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s16),
-
-            // Commission range
-            const Text('Commission Range',
-                style: DesignTokens.smallRegular),
-            const SizedBox(height: DesignTokens.s8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _fromCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    decoration: DesignTokens.inputDecoration(
-                      hintText: 'From',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: TextField(
-                    controller: _toCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    decoration: DesignTokens.inputDecoration(
-                      hintText: 'To',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s20),
-
-            // Status
-            const Text('Status', style: DesignTokens.smallRegular),
-            const SizedBox(height: DesignTokens.s4),
-            _StatusCheckboxRow(
-              label: 'Newest',
-              value: _newest,
-              onChanged: (v) => setState(() => _newest = v),
-            ),
-            _StatusCheckboxRow(
-              label: 'Highest Earnings',
-              value: _highestEarnings,
-              onChanged: (v) => setState(() => _highestEarnings = v),
-            ),
-            _StatusCheckboxRow(
-              label: 'Lowest Earnings',
-              value: _lowestEarnings,
-              onChanged: (v) => setState(() => _lowestEarnings = v),
-            ),
-            _StatusCheckboxRow(
-              label: 'Name',
-              value: _name,
-              onChanged: (v) => setState(() => _name = v),
-            ),
-            const SizedBox(height: DesignTokens.s20),
-
-            // Actions
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: DesignTokens.buttonHeight,
-                    child: OutlinedButton(
-                      onPressed: _clear,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                            color: DesignTokens.borderDefault, width: 1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.buttonRadius),
+                const SizedBox(height: DesignTokens.s8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _fromCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          color: DesignTokens.inputFieldData,
+                        ),
+                        decoration: DesignTokens.inputDecoration(
+                          hintText: 'From',
                         ),
                       ),
-                      child: const Text('Clear',
-                          style: TextStyle(
+                    ),
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: TextField(
+                        controller: _toCtrl,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          color: DesignTokens.inputFieldData,
+                        ),
+                        decoration: DesignTokens.inputDecoration(
+                          hintText: 'To',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: DesignTokens.s20),
+
+                // Status
+                const Text('Status', style: DesignTokens.smallRegular),
+                const SizedBox(height: DesignTokens.s4),
+                _StatusCheckboxRow(
+                  label: 'Newest',
+                  value: _sort == _BrandCatalogSort.newest,
+                  onChanged: (_) =>
+                      setState(() => _sort = _BrandCatalogSort.newest),
+                ),
+                _StatusCheckboxRow(
+                  label: 'Highest Earnings',
+                  value: _sort == _BrandCatalogSort.highestCommission,
+                  onChanged: (_) => setState(
+                    () => _sort = _BrandCatalogSort.highestCommission,
+                  ),
+                ),
+                _StatusCheckboxRow(
+                  label: 'Lowest Earnings',
+                  value: _sort == _BrandCatalogSort.lowestCommission,
+                  onChanged: (_) => setState(
+                    () => _sort = _BrandCatalogSort.lowestCommission,
+                  ),
+                ),
+                _StatusCheckboxRow(
+                  label: 'Name',
+                  value: _sort == _BrandCatalogSort.name,
+                  onChanged: (_) =>
+                      setState(() => _sort = _BrandCatalogSort.name),
+                ),
+                const SizedBox(height: DesignTokens.s20),
+
+                // Actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: DesignTokens.buttonHeight,
+                        child: OutlinedButton(
+                          onPressed: _clear,
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: DesignTokens.borderDefault,
+                              width: 1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.buttonRadius,
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'Clear',
+                            style: TextStyle(
                               fontFamily: DesignTokens.fontFamily,
                               color: DesignTokens.textWhite,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: SizedBox(
-                    height: DesignTokens.buttonHeight,
-                    child: ElevatedButton(
-                      onPressed: _apply,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: DesignTokens.primaryGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(DesignTokens.buttonRadius),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
-                      child: const Text('Apply',
-                          style: TextStyle(
+                    ),
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: SizedBox(
+                        height: DesignTokens.buttonHeight,
+                        child: ElevatedButton(
+                          onPressed: _apply,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: DesignTokens.primaryGreen,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.buttonRadius,
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'Apply',
+                            style: TextStyle(
                               fontFamily: DesignTokens.fontFamily,
                               color: DesignTokens.buttonPrimaryText,
-                              fontWeight: FontWeight.w600)),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 
@@ -1020,21 +1135,25 @@ class _StatusCheckboxRow extends StatelessWidget {
                 value: value,
                 onChanged: (v) => onChanged(v ?? false),
                 side: const BorderSide(
-                    color: DesignTokens.borderDefault, width: 1.5),
+                  color: DesignTokens.borderDefault,
+                  width: 1.5,
+                ),
                 activeColor: DesignTokens.primaryGreen,
                 checkColor: DesignTokens.buttonPrimaryText,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.inputRadius),
+                  borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
                 ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
               ),
             ),
             const SizedBox(width: DesignTokens.s12),
-            Text(label,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textWhite)),
+            Text(
+              label,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
+            ),
           ],
         ),
       ),

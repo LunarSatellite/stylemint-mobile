@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/screens/payout_invoice_screen.dart';
@@ -72,13 +75,28 @@ class _AllPayoutHistoryScreenState
   }
 
   Map<String, List<PayoutHistoryEntry>> _group(
-      List<PayoutHistoryEntry> entries) {
+    List<PayoutHistoryEntry> entries,
+  ) {
     final map = <String, List<PayoutHistoryEntry>>{};
     for (final entry in entries) {
       map.putIfAbsent(_groupKey(entry.dateTime), () => []).add(entry);
     }
     final sortedKeys = map.keys.toList()..sort((a, b) => b.compareTo(a));
     return {for (final k in sortedKeys) k: map[k]!};
+  }
+
+  void _sharePayoutHistory(List<PayoutRecord> records) {
+    final filtered = _filter(records.map(_toEntry).toList(growable: false));
+    final lines = <String>[
+      'Style Mint payout history',
+      'Records: ${filtered.length}',
+      for (final record in filtered)
+        '${DateFormat.yMMMd().format(record.dateTime)} | '
+            '${record.status.name} | ${record.title} | '
+            'Fee: ${record.processingFee.toStringAsFixed(2)} | '
+            'Net: ${record.netPayout.toStringAsFixed(2)}',
+    ];
+    unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));
   }
 
   void _openFilterSheet() {
@@ -108,34 +126,44 @@ class _AllPayoutHistoryScreenState
   @override
   Widget build(BuildContext context) {
     final historyAsync = ref.watch(payoutHistoryProvider);
+    final records = historyAsync.when(
+      data: (value) => value,
+      loading: () => null,
+      error: (_, __) => null,
+    );
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('All Payout History',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'All Payout History',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long_outlined,
-                color: DesignTokens.textWhite),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Exporting payout history is coming soon.'),
-              ),
+            icon: const Icon(
+              Icons.share_outlined,
+              color: DesignTokens.textWhite,
             ),
+            tooltip: 'Share payout history',
+            onPressed: records == null
+                ? null
+                : () => _sharePayoutHistory(records),
           ),
         ],
       ),
       body: historyAsync.when(
         loading: () => const Center(
-          child:
-              CircularProgressIndicator(color: DesignTokens.primaryGreen),
+          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
         ),
         error: (e, _) => _ErrorView(
           message: e is NetworkExceptions
@@ -181,8 +209,9 @@ class _AllPayoutHistoryScreenState
                     ? Center(
                         child: Text(
                           'No payouts found.',
-                          style: DesignTokens.mediumRegular
-                              .copyWith(color: DesignTokens.textMuted),
+                          style: DesignTokens.mediumRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       )
                     : RefreshIndicator(
@@ -205,8 +234,9 @@ class _AllPayoutHistoryScreenState
                                 ),
                                 child: Text(
                                   _groupLabel(grouped[key]!.first.dateTime),
-                                  style: DesignTokens.smallRegular
-                                      .copyWith(color: DesignTokens.textMuted),
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textMuted,
+                                  ),
                                 ),
                               ),
                               _DateGroupCard(
@@ -248,8 +278,9 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style:
-                  DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             const SizedBox(height: DesignTokens.s16),
             ElevatedButton(
@@ -287,7 +318,9 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s12, vertical: DesignTokens.s8),
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s8,
+        ),
         decoration: BoxDecoration(
           color: isActive
               ? DesignTokens.chipsSelectedFill
@@ -303,11 +336,13 @@ class _FilterChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (leadingIcon != null) ...[
-              Icon(leadingIcon,
-                  size: 16,
-                  color: isActive
-                      ? DesignTokens.primaryGreen
-                      : DesignTokens.textLight),
+              Icon(
+                leadingIcon,
+                size: 16,
+                color: isActive
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.textLight,
+              ),
               const SizedBox(width: DesignTokens.s4),
             ],
             Text(
@@ -321,11 +356,13 @@ class _FilterChip extends StatelessWidget {
             ),
             if (trailingIcon != null) ...[
               const SizedBox(width: DesignTokens.s4),
-              Icon(trailingIcon,
-                  size: 16,
-                  color: isActive
-                      ? DesignTokens.primaryGreen
-                      : DesignTokens.textLight),
+              Icon(
+                trailingIcon,
+                size: 16,
+                color: isActive
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.textLight,
+              ),
             ],
           ],
         ),
@@ -358,10 +395,11 @@ class _DateGroupCard extends StatelessWidget {
             ),
             if (i < entries.length - 1)
               const Divider(
-                  color: DesignTokens.borderDefault,
-                  height: 1,
-                  indent: DesignTokens.s16,
-                  endIndent: DesignTokens.s16),
+                color: DesignTokens.borderDefault,
+                height: 1,
+                indent: DesignTokens.s16,
+                endIndent: DesignTokens.s16,
+              ),
           ],
         ],
       ),
@@ -413,14 +451,16 @@ class _PayoutEntryRow extends StatelessWidget {
                     entry.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     '${entry.accountMask} · $time',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                    ),
                   ),
                 ],
               ),
@@ -507,11 +547,16 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Filter Payout History',
-                    style: DesignTokens.sectionInnerTitle),
+                const Text(
+                  'Filter Payout History',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close,
-                      color: DesignTokens.textWhite, size: 22),
+                  icon: const Icon(
+                    Icons.close,
+                    color: DesignTokens.textWhite,
+                    size: 22,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -519,8 +564,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             const SizedBox(height: DesignTokens.s20),
             Text(
               'Date Range',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             Row(
@@ -545,8 +591,9 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             const SizedBox(height: DesignTokens.s20),
             Text(
               'Status',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
             const SizedBox(height: DesignTokens.s8),
             for (final status in PayoutStatus.values)
@@ -563,14 +610,15 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                     onPressed: widget.onClear,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: DesignTokens.textWhite,
-                      side:
-                          const BorderSide(color: DesignTokens.borderDefault),
+                      side: const BorderSide(color: DesignTokens.borderDefault),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                       padding: const EdgeInsets.symmetric(
-                          vertical: DesignTokens.s12),
+                        vertical: DesignTokens.s12,
+                      ),
                     ),
                     child: const Text('Clear'),
                   ),
@@ -593,7 +641,11 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 }
 
 class _DateField extends StatelessWidget {
-  const _DateField({required this.label, required this.date, required this.onTap});
+  const _DateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+  });
 
   final String label;
   final DateTime? date;
@@ -605,7 +657,9 @@ class _DateField extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s12, vertical: DesignTokens.s12),
+          horizontal: DesignTokens.s12,
+          vertical: DesignTokens.s12,
+        ),
         decoration: BoxDecoration(
           color: DesignTokens.bgAppBodyLight,
           borderRadius: BorderRadius.circular(DesignTokens.s8),
@@ -617,13 +671,17 @@ class _DateField extends StatelessWidget {
               child: Text(
                 date != null ? DateFormat('MMM d, yyyy').format(date!) : label,
                 style: DesignTokens.smallRegular.copyWith(
-                  color:
-                      date != null ? DesignTokens.textWhite : DesignTokens.textMuted,
+                  color: date != null
+                      ? DesignTokens.textWhite
+                      : DesignTokens.textMuted,
                 ),
               ),
             ),
-            const Icon(Icons.calendar_today_outlined,
-                size: 16, color: DesignTokens.iconLight),
+            const Icon(
+              Icons.calendar_today_outlined,
+              size: 16,
+              color: DesignTokens.iconLight,
+            ),
           ],
         ),
       ),
@@ -643,10 +701,10 @@ class _StatusRadioTile extends StatelessWidget {
   final void Function(PayoutStatus?) onChanged;
 
   String get _label => switch (status) {
-        PayoutStatus.completed => 'Completed',
-        PayoutStatus.pending => 'Pending',
-        PayoutStatus.failed => 'Failed',
-      };
+    PayoutStatus.completed => 'Completed',
+    PayoutStatus.pending => 'Pending',
+    PayoutStatus.failed => 'Failed',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -657,7 +715,9 @@ class _StatusRadioTile extends StatelessWidget {
       activeColor: DesignTokens.primaryGreen,
       title: Text(
         _label,
-        style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+        style: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.textWhite,
+        ),
       ),
       contentPadding: EdgeInsets.zero,
       dense: true,
@@ -676,24 +736,26 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg, label) = switch (status) {
       PayoutStatus.completed => (
-          const Color(0xFFB9F8CF),
-          const Color(0xFF016630),
-          'Completed',
-        ),
+        const Color(0xFFB9F8CF),
+        const Color(0xFF016630),
+        'Completed',
+      ),
       PayoutStatus.pending => (
-          const Color(0xFFFFF3CD),
-          const Color(0xFF856404),
-          'Pending',
-        ),
+        const Color(0xFFFFF3CD),
+        const Color(0xFF856404),
+        'Pending',
+      ),
       PayoutStatus.failed => (
-          const Color(0xFFFFE0E0),
-          const Color(0xFFB91C1C),
-          'Failed',
-        ),
+        const Color(0xFFFFE0E0),
+        const Color(0xFFB91C1C),
+        'Failed',
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(99),

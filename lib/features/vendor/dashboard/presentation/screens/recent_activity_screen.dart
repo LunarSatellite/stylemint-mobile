@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -123,11 +126,7 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
               width: 22,
               height: 22,
             ),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Exporting activity is coming soon.'),
-              ),
-            ),
+            onPressed: () => _exportActivity(groups),
           ),
         ],
       ),
@@ -139,6 +138,26 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
         ],
       ),
     );
+  }
+
+  void _exportActivity(List<_ActivityGroup> groups) {
+    if (groups.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('There is no activity to export yet.')),
+      );
+      return;
+    }
+
+    final lines = <String>['Style Mint — Recent activity', ''];
+    for (final group in groups) {
+      lines.add(group.date);
+      for (final item in group.items) {
+        final detail = item.description.isEmpty ? '' : ' — ${item.description}';
+        lines.add('• ${item.time}: ${item.title}$detail');
+      }
+      lines.add('');
+    }
+    unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));
   }
 
   Widget _buildBody(

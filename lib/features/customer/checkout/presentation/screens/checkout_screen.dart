@@ -151,12 +151,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   List<PaymentMethod> _buildPaymentMethods(CheckoutSummary summary) {
-    // Use the full list loaded from the payment-methods API when available.
-    if (summary.availablePaymentMethods.isNotEmpty) {
-      return summary.availablePaymentMethods;
+    PaymentMethod? savedCard;
+    for (final method in summary.availablePaymentMethods) {
+      if (method.type == PaymentMethodType.card) {
+        savedCard = method;
+        break;
+      }
     }
-    // Fallback: show only the default payment method from the summary.
-    return [summary.paymentMethod];
+    return checkoutPaymentMethods(savedCard: savedCard);
   }
 
   // ── CART ITEMS SHEET ──────────────────────────────────────────────────────

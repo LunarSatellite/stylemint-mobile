@@ -32,7 +32,10 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       );
       return right(
         ImportableReelsResult(
-          reels: page.reels.map((d) => d.toDomain()).toList(growable: false),
+          reels: page.reels
+              .map((d) => d.toDomain())
+              .where((reel) => reel.videoDuration > 0)
+              .toList(growable: false),
           nextCursor: page.nextCursor,
         ),
       );
@@ -52,6 +55,13 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
     ImportableReel reel,
   ) async {
+    if (reel.videoDuration <= 0) {
+      return left(const NetworkExceptions.validation(
+        code: 'reels.metadata_required',
+        field: 'durationSeconds',
+        message: 'Connect and refresh the source account to verify reel metadata before importing.',
+      ));
+    }
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }

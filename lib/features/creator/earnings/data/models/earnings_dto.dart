@@ -65,9 +65,9 @@ abstract class EarningsLedgerEntryDto with _$EarningsLedgerEntryDto {
   }
 }
 
-// TODO(backend-confirm): verify _kindBank and _kindVenmo with backend
-const int _kindBank = 1;
-const int _kindVenmo = 2;
+// Backend `PayoutDestinationKind`: NIMB=1, Laxmi=2, PayPal=3, eSewa=4.
+const int _kindNimbBank = 1;
+const int _kindLaxmiBank = 2;
 const int _kindPayPal = 3;
 const int _kindEsewa = 4;
 
@@ -77,7 +77,7 @@ abstract class PayoutMethodDto with _$PayoutMethodDto {
     @Default('') String id,
     @Default(1) int kind,
     @Default('') String label,
-    @Default(false) bool isPrimary,
+    @JsonKey(name: 'isDefault') @Default(false) bool isPrimary,
     @Default(0) int status,
   }) = _PayoutMethodDto;
 
@@ -88,11 +88,11 @@ abstract class PayoutMethodDto with _$PayoutMethodDto {
 
   PayoutMethod toDomain() {
     final type = switch (kind) {
-      _kindBank => PayoutMethodType.bankTransfer,
+      _kindNimbBank => PayoutMethodType.nimbBank,
+      _kindLaxmiBank => PayoutMethodType.laxmiBank,
       _kindEsewa => PayoutMethodType.esewa,
       _kindPayPal => PayoutMethodType.paypal,
-      _kindVenmo => PayoutMethodType.venmo,
-      _ => PayoutMethodType.bankTransfer,
+      _ => PayoutMethodType.nimbBank,
     };
     return PayoutMethod(id: id, type: type, label: label, isPrimary: isPrimary);
   }
@@ -102,12 +102,12 @@ abstract class PayoutMethodDto with _$PayoutMethodDto {
 
 // PayoutDestinationKind: 1=NIMB Bank, 2=Laxmi Bank, 3=PayPal, 4=eSewa
 String _destinationLabel(int dest) => switch (dest) {
-      1 => 'NIMB Bank',
-      2 => 'Laxmi Bank',
-      3 => 'PayPal',
-      4 => 'eSewa',
-      _ => 'Bank',
-    };
+  1 => 'NIMB Bank',
+  2 => 'Laxmi Bank',
+  3 => 'PayPal',
+  4 => 'eSewa',
+  _ => 'Bank',
+};
 
 @freezed
 abstract class PayoutDto with _$PayoutDto {

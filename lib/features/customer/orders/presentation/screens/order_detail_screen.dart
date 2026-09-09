@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
@@ -52,11 +53,16 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Order Details', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Order Details',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         centerTitle: true,
       ),
       // Scaffold doesn't inset its body from the bottom by default — the
@@ -72,7 +78,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
           loadFailure: (failure) => SmErrorView(
             message: 'Failed to load order details.',
-            onRetry: () => ref.read(provider.notifier).loadOrder(widget.orderId),
+            onRetry: () =>
+                ref.read(provider.notifier).loadOrder(widget.orderId),
           ),
           actionInProgress: (order) => _OrderDetailBody(
             order: order,
@@ -86,11 +93,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
-class _OrderDetailBody extends StatefulWidget {
+class _OrderDetailBody extends ConsumerStatefulWidget {
   const _OrderDetailBody({
     required this.order,
     required this.notifier,
@@ -102,15 +109,19 @@ class _OrderDetailBody extends StatefulWidget {
   final bool actionPending;
 
   @override
-  State<_OrderDetailBody> createState() => _OrderDetailBodyState();
+  ConsumerState<_OrderDetailBody> createState() => _OrderDetailBodyState();
 }
 
-class _OrderDetailBodyState extends State<_OrderDetailBody> {
+class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
+    final trackingNumber = order.trackingNumber;
+    final story = trackingNumber?.startsWith('SM-D-') == true
+        ? ref.watch(deliveryStoryProvider(trackingNumber!))
+        : null;
     if (order.status == OrderTrackStatus.cancelled) {
       return _buildCancelledView(order);
     }
@@ -125,7 +136,14 @@ class _OrderDetailBodyState extends State<_OrderDetailBody> {
             onToggle: () => setState(() => _expanded = !_expanded),
           ),
           const SizedBox(height: DesignTokens.s24),
-          _TrackingTimeline(status: order.status),
+          story?.when(
+                data: (chapters) => chapters.isEmpty
+                    ? _TrackingTimeline(status: order.status)
+                    : _DeliveryStoryTimeline(chapters: chapters),
+                loading: () => _TrackingTimeline(status: order.status),
+                error: (_, __) => _TrackingTimeline(status: order.status),
+              ) ??
+              _TrackingTimeline(status: order.status),
           if (order.status == OrderTrackStatus.delivered) ...[
             const SizedBox(height: DesignTokens.s24),
             _ReviewableItemsSection(order: order),
@@ -192,17 +210,18 @@ class _TrackSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final placed = DateFormat('HH:mm MMM d, yyyy').format(order.placedAt);
-    // MOCK — spec shows a delivery RANGE; the payload has a single date, so
-    // render a +2-day window from it.
-    final start = order.estimatedDelivery;
-    final end = start.add(const Duration(days: 2));
-    final expected =
-        '${DateFormat('MMM dd').format(start)}-${DateFormat('dd').format(end)} ${start.year}';
+    // The API supplies one estimated delivery date. Do not manufacture a
+    // range that customers could interpret as a delivery commitment.
+    final expected = DateFormat('MMM dd, yyyy').format(
+      order.estimatedDelivery,
+    );
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s16, horizontal: DesignTokens.s12),
+        vertical: DesignTokens.s16,
+        horizontal: DesignTokens.s12,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,26 +239,35 @@ class _TrackSummaryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Order #${order.orderNumber}',
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite)),
+                    Text(
+                      'Order #${order.orderNumber}',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
                     const SizedBox(height: DesignTokens.s4),
                     Row(
                       children: [
                         Flexible(
-                          child: Text('Placed on $placed',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DesignTokens.smallRegular
-                                  .copyWith(color: DesignTokens.textLight)),
+                          child: Text(
+                            'Placed on $placed',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
+                          ),
                         ),
                         const _Dot(),
                         Flexible(
-                          child: Text(formatMoney(order.total),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DesignTokens.smallRegular
-                                  .copyWith(color: DesignTokens.textLight)),
+                          child: Text(
+                            formatMoney(order.total),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -260,10 +288,12 @@ class _TrackSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
-          // Expected Delivery info-tag pill.
+          // Backend-provided estimated-delivery date.
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+              horizontal: DesignTokens.s8,
+              vertical: DesignTokens.s4,
+            ),
             decoration: BoxDecoration(
               color: DesignTokens.tagInfoFill,
               borderRadius: BorderRadius.circular(99),
@@ -271,28 +301,35 @@ class _TrackSummaryCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.local_shipping_outlined,
-                    size: 12, color: DesignTokens.tagInfoText),
+                const Icon(
+                  Icons.local_shipping_outlined,
+                  size: 12,
+                  color: DesignTokens.tagInfoText,
+                ),
                 const SizedBox(width: DesignTokens.s4),
-                Text('Expected Delivery: $expected',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.tagInfoText,
-                      fontWeight: FontWeight.w600,
-                      height: 1.0,
-                    )),
+                Text(
+                  'Estimated delivery: $expected',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.tagInfoText,
+                    fontWeight: FontWeight.w600,
+                    height: 1.0,
+                  ),
+                ),
               ],
             ),
           ),
           if (order.trackingNumber != null) ...[
             const SizedBox(height: DesignTokens.s8),
-            Text('Tracking ID: ${order.trackingNumber}',
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 1.5,
-                  color: Color(0xFF00BCFF),
-                )),
+            Text(
+              'Tracking ID: ${order.trackingNumber}',
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 1.5,
+                color: Color(0xFF00BCFF),
+              ),
+            ),
           ],
         ],
       ),
@@ -304,14 +341,14 @@ class _Dot extends StatelessWidget {
   const _Dot();
   @override
   Widget build(BuildContext context) => Container(
-        width: 3,
-        height: 3,
-        margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-        decoration: const BoxDecoration(
-          color: Color(0xFF71717B),
-          shape: BoxShape.circle,
-        ),
-      );
+    width: 3,
+    height: 3,
+    margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+    decoration: const BoxDecoration(
+      color: Color(0xFF71717B),
+      shape: BoxShape.circle,
+    ),
+  );
 }
 
 // ── Tracking timeline ─────────────────────────────────────────────────────────
@@ -322,15 +359,20 @@ class _TrackingTimeline extends StatelessWidget {
 
   final OrderTrackStatus status;
 
-  static const _stages = ['Shipped', 'In Transit', 'Out for\nDelivery', 'Delivered'];
+  static const _stages = [
+    'Shipped',
+    'In Transit',
+    'Out for\nDelivery',
+    'Delivered',
+  ];
 
   int get _current => switch (status) {
-        OrderTrackStatus.preparingForShipping => 0,
-        OrderTrackStatus.inTransit => 1,
-        OrderTrackStatus.outForDelivery => 2,
-        OrderTrackStatus.delivered => 4,
-        OrderTrackStatus.cancelled => -1,
-      };
+    OrderTrackStatus.preparingForShipping => 0,
+    OrderTrackStatus.inTransit => 1,
+    OrderTrackStatus.outForDelivery => 2,
+    OrderTrackStatus.delivered => 4,
+    OrderTrackStatus.cancelled => -1,
+  };
 
   _StageState _stateFor(int i) {
     if (i < _current) return _StageState.completed;
@@ -416,6 +458,66 @@ class _TrackingTimeline extends StatelessWidget {
   }
 }
 
+/// Uses Delivery's append-only Story Mode projection when a package has a
+/// Style Mint tracking number, rather than guessing events from order state.
+class _DeliveryStoryTimeline extends StatelessWidget {
+  const _DeliveryStoryTimeline({required this.chapters});
+
+  final List<DeliveryStoryChapter> chapters;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    decoration: DesignTokens.cardDecoration(),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tracking Timeline', style: DesignTokens.sectionInnerTitle),
+        const SizedBox(height: DesignTokens.s12),
+        for (final chapter in chapters) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: DesignTokens.primaryGreen,
+                size: 20,
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(chapter.title, style: DesignTokens.oneLinerSemibold),
+                    if (chapter.subtitle.isNotEmpty)
+                      Text(
+                        chapter.subtitle,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    Text(
+                      DateFormat(
+                        'MMM d, h:mm a',
+                      ).format(chapter.occurredUtc.toLocal()),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (chapter != chapters.last)
+            const SizedBox(height: DesignTokens.s16),
+        ],
+      ],
+    ),
+  );
+}
+
 class _StageIndicator extends StatelessWidget {
   const _StageIndicator({
     required this.index,
@@ -441,16 +543,25 @@ class _StageIndicator extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             alignment: Alignment.center,
-            child: _TrackingTimeline._iconForStage(index, DesignTokens.primaryGreen),
+            child: _TrackingTimeline._iconForStage(
+              index,
+              DesignTokens.primaryGreen,
+            ),
           ),
           const SizedBox(height: 4),
           SizedBox(
             height: 14,
             child: state == _StageState.completed
-                ? const Icon(Icons.check_circle_rounded,
-                    size: 14, color: DesignTokens.primaryGreen)
+                ? const Icon(
+                    Icons.check_circle_rounded,
+                    size: 14,
+                    color: DesignTokens.primaryGreen,
+                  )
                 : null,
           ),
           const SizedBox(height: 4),
@@ -530,13 +641,16 @@ class _CancelledSummaryCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$placed · $total',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF3D1111),
                         borderRadius: BorderRadius.circular(999),
@@ -582,11 +696,16 @@ class _CancInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cancelledOn = DateFormat('HH:mm MMM d, yyyy')
-        .format(order.placedAt.add(const Duration(days: 1)));
+    final cancelledOn = DateFormat(
+      'HH:mm MMM d, yyyy',
+    ).format(order.placedAt.add(const Duration(days: 1)));
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s4),
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s4,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,25 +713,30 @@ class _CancInfoCard extends StatelessWidget {
           Text('Cancellation Details', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s12),
           _CancInfoRow(
-              icon: Icons.calendar_today_outlined,
-              label: 'Canceled On',
-              value: cancelledOn),
+            icon: Icons.calendar_today_outlined,
+            label: 'Canceled On',
+            value: cancelledOn,
+          ),
           _CancInfoRow(
-              icon: Icons.credit_card_outlined,
-              label: 'Refund Method',
-              value: order.paymentMethod),
+            icon: Icons.credit_card_outlined,
+            label: 'Refund Method',
+            value: order.paymentMethod,
+          ),
           _CancInfoRow(
-              icon: Icons.receipt_outlined,
-              label: 'Amount',
-              value: formatMoney(order.total)),
+            icon: Icons.receipt_outlined,
+            label: 'Amount',
+            value: formatMoney(order.total),
+          ),
           const _CancInfoRow(
-              icon: Icons.mail_outline,
-              label: 'Confirmation',
-              value: 'Check your email'),
+            icon: Icons.mail_outline,
+            label: 'Confirmation',
+            value: 'Check your email',
+          ),
           const _CancInfoRow(
-              icon: Icons.label_outline,
-              label: 'Refund Status',
-              badge: 'Pending'),
+            icon: Icons.label_outline,
+            label: 'Refund Status',
+            badge: 'Pending',
+          ),
         ],
       ),
     );
@@ -642,9 +766,12 @@ class _CancInfoRow extends StatelessWidget {
           Icon(icon, size: 14, color: DesignTokens.textMuted),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(label,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted)),
+            child: Text(
+              label,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           if (value != null)
@@ -658,8 +785,7 @@ class _CancInfoRow extends StatelessWidget {
             ),
           if (badge != null)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 color: const Color(0xFF0A1F38),
                 borderRadius: BorderRadius.circular(999),
@@ -698,16 +824,23 @@ class _CancelledTimeline3 extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _CancelledStep3(
-                  index: 0, label: 'Shipped', isCompleted: true),
+                index: 0,
+                label: 'Shipped',
+                isCompleted: true,
+              ),
               _dotConnector(),
               const _CancelledStep3(
-                  index: 1, label: 'In Transit', isCompleted: true),
+                index: 1,
+                label: 'In Transit',
+                isCompleted: true,
+              ),
               _dotConnector(),
               const _CancelledStep3(
-                  index: 2,
-                  label: 'Order\nCancelled',
-                  isCompleted: false,
-                  isCancelled: true),
+                index: 2,
+                label: 'Order\nCancelled',
+                isCompleted: false,
+                isCancelled: true,
+              ),
             ],
           ),
         ],
@@ -716,18 +849,18 @@ class _CancelledTimeline3 extends StatelessWidget {
   }
 
   Widget _dotConnector() => Expanded(
-        child: SizedBox(
-          height: 48,
-          child: Center(
-            child: LayoutBuilder(
-              builder: (_, c) => CustomPaint(
-                size: Size(c.maxWidth, 1.5),
-                painter: _CancelDotPainter(),
-              ),
-            ),
+    child: SizedBox(
+      height: 48,
+      child: Center(
+        child: LayoutBuilder(
+          builder: (_, c) => CustomPaint(
+            size: Size(c.maxWidth, 1.5),
+            painter: _CancelDotPainter(),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _CancelledStep3 extends StatelessWidget {
@@ -766,10 +899,12 @@ class _CancelledStep3 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color bg =
-        isCancelled ? const Color(0xFF3D1111) : const Color(0xFF052E16);
-    final Color fg =
-        isCancelled ? const Color(0xFFFF6B6B) : DesignTokens.primaryGreen;
+    final Color bg = isCancelled
+        ? const Color(0xFF3D1111)
+        : const Color(0xFF052E16);
+    final Color fg = isCancelled
+        ? const Color(0xFFFF6B6B)
+        : DesignTokens.primaryGreen;
     return SizedBox(
       width: 72,
       child: Column(
@@ -777,7 +912,10 @@ class _CancelledStep3 extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             alignment: Alignment.center,
             child: _iconFor(index, fg),
           ),
@@ -785,8 +923,11 @@ class _CancelledStep3 extends StatelessWidget {
           SizedBox(
             height: 14,
             child: isCompleted
-                ? const Icon(Icons.check_circle_rounded,
-                    size: 14, color: DesignTokens.primaryGreen)
+                ? const Icon(
+                    Icons.check_circle_rounded,
+                    size: 14,
+                    color: DesignTokens.primaryGreen,
+                  )
                 : null,
           ),
           const SizedBox(height: 4),
@@ -826,8 +967,7 @@ class _OrderHistoryTimeline extends StatelessWidget {
         subItems: [
           _SubEvt(
             text: 'The customer canceled the order',
-            time: fmt
-                .format(placed.add(const Duration(days: 1, hours: 2))),
+            time: fmt.format(placed.add(const Duration(days: 1, hours: 2))),
           ),
         ],
       ),
@@ -843,7 +983,8 @@ class _OrderHistoryTimeline extends StatelessWidget {
             text:
                 'The package has crossed the transit and is on its way to be delivered',
             time: fmt.format(
-                placed.add(const Duration(days: 1, hours: 2, minutes: 15))),
+              placed.add(const Duration(days: 1, hours: 2, minutes: 15)),
+            ),
           ),
           _SubEvt(
             text: 'The package is being checked in the transit',
@@ -861,23 +1002,23 @@ class _OrderHistoryTimeline extends StatelessWidget {
         subItems: [
           _SubEvt(
             text: 'The package has been shipped',
-            time: fmt
-                .format(placed.add(const Duration(hours: 23, minutes: 5))),
+            time: fmt.format(placed.add(const Duration(hours: 23, minutes: 5))),
           ),
           _SubEvt(
             text: 'The package is in the shipping lane',
-            time: fmt
-                .format(placed.add(const Duration(hours: 22, minutes: 30))),
+            time: fmt.format(
+              placed.add(const Duration(hours: 22, minutes: 30)),
+            ),
           ),
           _SubEvt(
             text:
                 'The package is being tagged with the shipping address details',
-            time: fmt
-                .format(placed.add(const Duration(hours: 22, minutes: 20))),
+            time: fmt.format(
+              placed.add(const Duration(hours: 22, minutes: 20)),
+            ),
           ),
           _SubEvt(
-            text:
-                'Order items are being gathered & packaged for shipping',
+            text: 'Order items are being gathered & packaged for shipping',
             time: fmt.format(placed.add(const Duration(hours: 21))),
           ),
         ],
@@ -915,15 +1056,22 @@ class _OrderHistoryTimeline extends StatelessWidget {
     final events = _buildEvents();
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s8),
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s8,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Column(
         children: [
           for (var i = 0; i < events.length; i++)
             _HistSection(event: events[i], isLast: i == events.length - 1),
           const SizedBox(height: DesignTokens.s4),
-          const Icon(Icons.keyboard_arrow_up_rounded,
-              size: 22, color: DesignTokens.textMuted),
+          const Icon(
+            Icons.keyboard_arrow_up_rounded,
+            size: 22,
+            color: DesignTokens.textMuted,
+          ),
         ],
       ),
     );
@@ -949,7 +1097,9 @@ class _HistSection extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                      color: event.iconBg, borderRadius: BorderRadius.circular(8)),
+                    color: event.iconBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   alignment: Alignment.center,
                   child: Icon(event.icon, size: 16, color: event.iconFg),
                 ),
@@ -976,25 +1126,33 @@ class _HistSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Flexible(
-                        child: Text(event.title,
-                            style: DesignTokens.mediumSemibold
-                                .copyWith(color: DesignTokens.textWhite)),
+                        child: Text(
+                          event.title,
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
                       ),
                       if (event.isCompleted) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.check_circle_rounded,
-                            size: 14, color: DesignTokens.primaryGreen),
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          size: 14,
+                          color: DesignTokens.primaryGreen,
+                        ),
                       ],
                       if (event.isCancelled) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.error_rounded,
-                            size: 14, color: Color(0xFFFF6B6B)),
+                        const Icon(
+                          Icons.error_rounded,
+                          size: 14,
+                          color: Color(0xFFFF6B6B),
+                        ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 8),
-                  for (final item in event.subItems)
-                    _HistSubRow(item: item),
+                  for (final item in event.subItems) _HistSubRow(item: item),
                 ],
               ),
             ),
@@ -1029,14 +1187,20 @@ class _HistSubRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(item.text,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight)),
+            child: Text(
+              item.text,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
-          Text(item.time,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted)),
+          Text(
+            item.time,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
         ],
       ),
     );
@@ -1100,15 +1264,21 @@ class _ViewOtherDetails extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding:
-            const EdgeInsets.fromLTRB(0, DesignTokens.s16, 0, DesignTokens.s12),
+        padding: const EdgeInsets.fromLTRB(
+          0,
+          DesignTokens.s16,
+          0,
+          DesignTokens.s12,
+        ),
         child: Row(
           children: [
-            Text(expanded ? 'Hide Other Details' : 'View Other Details',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.primaryGreen,
-                  fontWeight: FontWeight.w600,
-                )),
+            Text(
+              expanded ? 'Hide Other Details' : 'View Other Details',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.primaryGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: DesignTokens.s4),
             Icon(
               expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
@@ -1142,84 +1312,101 @@ class _OtherDetails extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Group 1
-        _ActionRowCard(children: [
-          _ActionRow(
-            iconData: Icons.location_on_outlined,
-            iconColor: DesignTokens.iconLight,
-            iconBg: DesignTokens.bgAppBodyLight,
-            title: 'Shipping Address',
-            subtitle: order.shippingAddress,
-            onTap: () => _showShippingAddressSheet(context, order),
-          ),
-          _rowDivider(),
-          _ActionRow(
-            iconData: Icons.inventory_2_outlined,
-            iconColor: DesignTokens.iconLight,
-            iconBg: DesignTokens.bgAppBodyLight,
-            title: 'Order Summary',
-            subtitle: '$itemCount item${itemCount == 1 ? '' : 's'} • $totalStr Total',
-            onTap: () => _showOrderSummarySheet(context, order),
-          ),
-          _rowDivider(),
-          _ActionRow(
-            iconData: Icons.receipt_long_outlined,
-            iconColor: DesignTokens.iconLight,
-            iconBg: DesignTokens.bgAppBodyLight,
-            title: 'View Invoice',
-            subtitle: 'Your invoice for the order',
-            onTap: () => context.push('/orders/${order.orderNumber}/invoice', extra: order),
-          ),
-        ]),
+        _ActionRowCard(
+          children: [
+            _ActionRow(
+              iconData: Icons.location_on_outlined,
+              iconColor: DesignTokens.iconLight,
+              iconBg: DesignTokens.bgAppBodyLight,
+              title: 'Shipping Address',
+              subtitle: order.shippingAddress,
+              onTap: () => _showShippingAddressSheet(context, order),
+            ),
+            _rowDivider(),
+            _ActionRow(
+              iconData: Icons.inventory_2_outlined,
+              iconColor: DesignTokens.iconLight,
+              iconBg: DesignTokens.bgAppBodyLight,
+              title: 'Order Summary',
+              subtitle:
+                  '$itemCount item${itemCount == 1 ? '' : 's'} • $totalStr Total',
+              onTap: () => _showOrderSummarySheet(context, order),
+            ),
+            _rowDivider(),
+            _ActionRow(
+              iconData: Icons.receipt_long_outlined,
+              iconColor: DesignTokens.iconLight,
+              iconBg: DesignTokens.bgAppBodyLight,
+              title: 'View Invoice',
+              subtitle: 'Your invoice for the order',
+              onTap: () => context.push(
+                '/orders/${order.orderNumber}/invoice',
+                extra: order,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: DesignTokens.s12),
         // Group 2
-        _ActionRowCard(children: [
-          _ActionRow(
-            iconData: Icons.headset_mic_outlined,
-            iconColor: DesignTokens.iconLight,
-            iconBg: DesignTokens.bgAppBodyLight,
-            title: 'Contact Support',
-            subtitle: 'Have any queries? We are here to help',
-            onTap: () => context.push(RouteNames.supportContact),
-          ),
-          _rowDivider(),
-          _ActionRow(
-            iconData: Icons.local_shipping_outlined,
-            iconColor: DesignTokens.iconLight,
-            iconBg: DesignTokens.bgAppBodyLight,
-            title: 'Track with FedEx',
-            subtitle: 'Track your order on FedEx',
-            onTap: () => context.push('/orders/${order.orderNumber}/fedex', extra: order),
-          ),
-          if (order.canCancel) ...[
-            _rowDivider(),
+        _ActionRowCard(
+          children: [
             _ActionRow(
-              iconData: Icons.cancel_outlined,
+              iconData: Icons.headset_mic_outlined,
               iconColor: DesignTokens.iconLight,
               iconBg: DesignTokens.bgAppBodyLight,
-              title: 'Cancel Order',
-              subtitle: 'Order cancellation procedure',
-              onTap: () =>
-                  context.push('/orders/${order.orderNumber}/cancel', extra: order),
+              title: 'Contact Support',
+              subtitle: 'Have any queries? We are here to help',
+              onTap: () => context.push(RouteNames.supportContact),
             ),
-          ],
-          if (order.canReturn) ...[
             _rowDivider(),
             _ActionRow(
-              iconData: Icons.keyboard_return_outlined,
+              iconData: Icons.local_shipping_outlined,
               iconColor: DesignTokens.iconLight,
               iconBg: DesignTokens.bgAppBodyLight,
-              title: 'Request Return',
-              subtitle: 'Start a return for this order',
-              onTap: () => _handleRequestReturn(context),
+              title: 'Track with FedEx',
+              subtitle: 'Track your order on FedEx',
+              onTap: () => context.push(
+                '/orders/${order.orderNumber}/fedex',
+                extra: order,
+              ),
             ),
+            if (order.canCancel) ...[
+              _rowDivider(),
+              _ActionRow(
+                iconData: Icons.cancel_outlined,
+                iconColor: DesignTokens.iconLight,
+                iconBg: DesignTokens.bgAppBodyLight,
+                title: 'Cancel Order',
+                subtitle: 'Order cancellation procedure',
+                onTap: () => context.push(
+                  '/orders/${order.orderNumber}/cancel',
+                  extra: order,
+                ),
+              ),
+            ],
+            if (order.canReturn) ...[
+              _rowDivider(),
+              _ActionRow(
+                iconData: Icons.keyboard_return_outlined,
+                iconColor: DesignTokens.iconLight,
+                iconBg: DesignTokens.bgAppBodyLight,
+                title: 'Request Return',
+                subtitle: 'Start a return for this order',
+                onTap: () => _handleRequestReturn(context),
+              ),
+            ],
           ],
-        ]),
+        ),
       ],
     );
   }
 
-  Widget _rowDivider() =>
-      const Divider(color: DesignTokens.borderDefault, height: 1, indent: 16, endIndent: 16);
+  Widget _rowDivider() => const Divider(
+    color: DesignTokens.borderDefault,
+    height: 1,
+    indent: 16,
+    endIndent: 16,
+  );
 
   void _handleRequestReturn(BuildContext context) {
     showDialog<String>(
@@ -1239,9 +1426,9 @@ class _ActionRowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        decoration: DesignTokens.cardDecoration(),
-        child: Column(children: children),
-      );
+    decoration: DesignTokens.cardDecoration(),
+    child: Column(children: children),
+  );
 }
 
 class _ActionRow extends StatelessWidget {
@@ -1305,8 +1492,11 @@ class _ActionRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: DesignTokens.iconLight, size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: DesignTokens.iconLight,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -1342,15 +1532,21 @@ class _ReturnReasonDialogState extends State<_ReturnReasonDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel',
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted)),
+          child: Text(
+            'Cancel',
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: Text('Submit',
-              style: DesignTokens.mediumSemibold
-                  .copyWith(color: DesignTokens.primaryGreen)),
+          child: Text(
+            'Submit',
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
+          ),
         ),
       ],
     );
@@ -1384,11 +1580,15 @@ class _ActionButton extends StatelessWidget {
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: DesignTokens.textWhite),
+                  strokeWidth: 2,
+                  color: DesignTokens.textWhite,
+                ),
               )
             : Icon(icon, color: color),
-        label: Text(label,
-            style: DesignTokens.mediumSemibold.copyWith(color: color)),
+        label: Text(
+          label,
+          style: DesignTokens.mediumSemibold.copyWith(color: color),
+        ),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: color),
           shape: RoundedRectangleBorder(
@@ -1440,17 +1640,22 @@ class _DetailRow extends StatelessWidget {
       children: [
         Expanded(
           flex: 2,
-          child: Text(label,
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted)),
+          child: Text(
+            label,
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
         ),
         Expanded(
           flex: 3,
-          child: Text(value,
-              textAlign: TextAlign.end,
-              style: (valueStyle ?? DesignTokens.mediumSemibold).copyWith(
-                color: valueColor ?? DesignTokens.textWhite,
-              )),
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: (valueStyle ?? DesignTokens.mediumSemibold).copyWith(
+              color: valueColor ?? DesignTokens.textWhite,
+            ),
+          ),
         ),
       ],
     );
@@ -1487,8 +1692,11 @@ class _ReviewableItemsSection extends StatelessWidget {
                       width: 48,
                       height: 48,
                       color: DesignTokens.bgAppBodyLight,
-                      child: const Icon(Icons.image,
-                          size: 18, color: DesignTokens.textMuted),
+                      child: const Icon(
+                        Icons.image,
+                        size: 18,
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -1498,8 +1706,9 @@ class _ReviewableItemsSection extends StatelessWidget {
                     item.productName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textWhite),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                 ),
                 const SizedBox(width: DesignTokens.s8),
@@ -1509,8 +1718,9 @@ class _ReviewableItemsSection extends StatelessWidget {
                     isScrollControlled: true,
                     backgroundColor: DesignTokens.bgAppBody,
                     shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(DesignTokens.cardRadius)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(DesignTokens.cardRadius),
+                      ),
                     ),
                     builder: (_) => RateReviewSheet(
                       productId: item.productId,
@@ -1518,13 +1728,17 @@ class _ReviewableItemsSection extends StatelessWidget {
                     ),
                   ),
                   style: DesignTokens.outlinedButtonStyle(),
-                  child: Text('Write a Review',
-                      style: DesignTokens.smallRegular
-                          .copyWith(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Write a Review',
+                    style: DesignTokens.smallRegular.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
-            if (item != order.items.last) const SizedBox(height: DesignTokens.s12),
+            if (item != order.items.last)
+              const SizedBox(height: DesignTokens.s12),
           ],
         ],
       ),
@@ -1565,24 +1779,35 @@ class _OrderItemTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.productName,
-                    style: DesignTokens.mediumSemibold,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  item.productName,
+                  style: DesignTokens.mediumSemibold,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: DesignTokens.s4),
-                Text(item.variantName,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted)),
+                Text(
+                  item.variantName,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Qty: ${item.qty}',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textMuted)),
-                    Text(formatMoney(item.unitPrice),
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.primaryGreen)),
+                    Text(
+                      'Qty: ${item.qty}',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                    Text(
+                      formatMoney(item.unitPrice),
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1633,75 +1858,94 @@ class _ShippingAddressSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text('Shipping Address', style: DesignTokens.sectionInnerTitle),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close,
-                    color: DesignTokens.iconLight, size: 22),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0A2E16),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            const SizedBox(height: 16),
+            Row(
               children: [
-                const Icon(Icons.home_outlined,
-                    size: 12, color: DesignTokens.primaryGreen),
-                const SizedBox(width: 4),
-                Text('Home',
-                    style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.primaryGreen,
-                        fontWeight: FontWeight.w600)),
+                Text('Shipping Address', style: DesignTokens.sectionInnerTitle),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.close,
+                    color: DesignTokens.iconLight,
+                    size: 22,
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 12),
-          if (receiverName.isNotEmpty) ...[
-            Text(receiverName,
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.textWhite)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A2E16),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.home_outlined,
+                    size: 12,
+                    color: DesignTokens.primaryGreen,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Home',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (receiverName.isNotEmpty) ...[
+              Text(
+                receiverName,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            if (receiverPhone.isNotEmpty) ...[
+              Text(
+                receiverPhone,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text(
+              address,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+                height: 1.6,
+              ),
+            ),
           ],
-          if (receiverPhone.isNotEmpty) ...[
-            Text(receiverPhone,
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted)),
-            const SizedBox(height: 8),
-          ],
-          Text(address,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight, height: 1.6)),
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -1722,70 +1966,87 @@ class _OrderSummarySheet extends StatelessWidget {
       expand: false,
       builder: (_, sc) => SafeArea(
         child: Container(
-        decoration: const BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 14),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
+          decoration: const BoxDecoration(
+            color: DesignTokens.bgAppBody,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 14),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
                     color: DesignTokens.borderDefault,
-                    borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-              child: Row(
-                children: [
-                  Text('Order Summary', style: DesignTokens.sectionInnerTitle),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close,
-                        color: DesignTokens.iconLight, size: 22),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                ],
+                ),
               ),
-            ),
-            const Divider(color: DesignTokens.borderDefault, height: 1),
-            Expanded(
-              child: ListView(
-                controller: sc,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Text('Items (${order.items.length})',
-                      style: DesignTokens.mediumSemibold),
-                  const SizedBox(height: 12),
-                  for (final item in order.items) _SummaryItemRow(item: item),
-                  const SizedBox(height: 8),
-                  const Divider(color: DesignTokens.borderDefault),
-                  const SizedBox(height: 12),
-                  Text('Bill Details', style: DesignTokens.mediumSemibold),
-                  const SizedBox(height: 12),
-                  _BillRow(
-                      label: 'Subtotal', value: formatMoney(order.subtotal)),
-                  const SizedBox(height: 8),
-                  _BillRow(
-                      label: 'Shipping', value: formatMoney(order.shipping)),
-                  const SizedBox(height: 8),
-                  _BillRow(label: 'Tax', value: formatMoney(order.tax)),
-                  const Divider(color: DesignTokens.borderDefault, height: 24),
-                  _BillRow(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                child: Row(
+                  children: [
+                    Text(
+                      'Order Summary',
+                      style: DesignTokens.sectionInnerTitle,
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.close,
+                        color: DesignTokens.iconLight,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: DesignTokens.borderDefault, height: 1),
+              Expanded(
+                child: ListView(
+                  controller: sc,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Text(
+                      'Items (${order.items.length})',
+                      style: DesignTokens.mediumSemibold,
+                    ),
+                    const SizedBox(height: 12),
+                    for (final item in order.items) _SummaryItemRow(item: item),
+                    const SizedBox(height: 8),
+                    const Divider(color: DesignTokens.borderDefault),
+                    const SizedBox(height: 12),
+                    Text('Bill Details', style: DesignTokens.mediumSemibold),
+                    const SizedBox(height: 12),
+                    _BillRow(
+                      label: 'Subtotal',
+                      value: formatMoney(order.subtotal),
+                    ),
+                    const SizedBox(height: 8),
+                    _BillRow(
+                      label: 'Shipping',
+                      value: formatMoney(order.shipping),
+                    ),
+                    const SizedBox(height: 8),
+                    _BillRow(label: 'Tax', value: formatMoney(order.tax)),
+                    const Divider(
+                      color: DesignTokens.borderDefault,
+                      height: 24,
+                    ),
+                    _BillRow(
                       label: 'Grand Total',
                       value: formatMoney(order.total),
-                      bold: true),
-                  const SizedBox(height: 8),
-                ],
+                      bold: true,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1812,8 +2073,11 @@ class _SummaryItemRow extends StatelessWidget {
                 width: 52,
                 height: 52,
                 color: DesignTokens.bgAppBodyLight,
-                child: const Icon(Icons.image,
-                    size: 20, color: DesignTokens.textMuted),
+                child: const Icon(
+                  Icons.image,
+                  size: 20,
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           ),
@@ -1822,22 +2086,33 @@ class _SummaryItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.productName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite, fontSize: 13)),
+                Text(
+                  item.productName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text('${item.variantName} · Qty ${item.qty}',
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted)),
+                Text(
+                  '${item.variantName} · Qty ${item.qty}',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text(formatMoney(item.unitPrice),
-              style: DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.primaryGreen, fontSize: 13)),
+          Text(
+            formatMoney(item.unitPrice),
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.primaryGreen,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
@@ -1859,20 +2134,27 @@ class _BillRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: bold
-                ? DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.textWhite)
-                : DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted)),
-        Text(value,
-            style: bold
-                ? DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.primaryGreen)
-                : DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight)),
+        Text(
+          label,
+          style: bold
+              ? DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                )
+              : DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+        ),
+        Text(
+          value,
+          style: bold
+              ? DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.primaryGreen,
+                )
+              : DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
+        ),
       ],
     );
   }
 }
-

@@ -91,8 +91,8 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
                           final c = creators[i];
                           return _CreatorCard(
                             creator: c,
-                            following: followed.contains(c.creatorProfileId),
-                            onFollow: () => _toggle(c.creatorProfileId),
+                            following: followed.contains(c.accountId),
+                            onFollow: () => _toggle(c.accountId),
                           );
                         },
                       ),

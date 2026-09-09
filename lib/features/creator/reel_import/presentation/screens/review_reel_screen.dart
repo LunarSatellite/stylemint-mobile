@@ -141,7 +141,8 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
         ),
         title: const Text('Review Details', style: DesignTokens.titleMedium),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -288,6 +289,7 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
             },
           ),
         ],
+        ),
       ),
     );
   }

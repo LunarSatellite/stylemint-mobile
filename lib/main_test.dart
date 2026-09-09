@@ -189,13 +189,13 @@ class _MockEarningsRepository implements EarningsRepository {
   getPayoutMethods() async => right([
     const PayoutMethod(
       id: 'bank-1',
-      type: PayoutMethodType.bankTransfer,
+      type: PayoutMethodType.nimbBank,
       label: 'NIMB Bank a/c — ****8909',
       isPrimary: false,
     ),
     const PayoutMethod(
       id: 'bank-2',
-      type: PayoutMethodType.bankTransfer,
+      type: PayoutMethodType.laxmiBank,
       label: 'Laxmi Bank a/c — ****7787',
       isPrimary: false,
     ),

@@ -133,9 +133,10 @@ import 'package:stylemint_mobile_frontend/features/social/tips/presentation/scre
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/tips_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_article_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_center_screen.dart';
+import 'package:stylemint_mobile_frontend/features/support/presentation/screens/contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_center_content.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_topic_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
-import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/add_product_wizard_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
@@ -271,11 +272,13 @@ String? _vendorManagementRedirect(Ref ref, String path) {
       path.startsWith('/vendor/') && !path.startsWith(RouteNames.vendorApply);
   if (!isVendorManagementRoute) return null;
 
-  final isApprovedVendor = ref.read(vendorApplyNotifierProvider).maybeWhen(
-    loadSuccess: (application) =>
-        application.status == VendorApplicationStatus.approved,
-    orElse: () => false,
-  );
+  final isApprovedVendor = ref
+      .read(vendorApplyNotifierProvider)
+      .maybeWhen(
+        loadSuccess: (application) =>
+            application.status == VendorApplicationStatus.approved,
+        orElse: () => false,
+      );
   return isApprovedVendor ? null : RouteNames.vendorApply;
 }
 
@@ -298,8 +301,25 @@ GoRouter appRouter(Ref ref) {
     debugLogDiagnostics: true,
     refreshListenable: refresh,
     redirect: (ctx, state) {
+      // The Android engine independently forwards a fresh incoming Intent's
+      // data URI to GoRouter's platform route channel (on top of the
+      // app_links-driven `_navigate()` call in main.dart), so a
+      // `stylemint://host/path` deep link can reach here as the RAW uri
+      // instead of a normal `/path`. GoRouter can't match a uri with a
+      // custom scheme against any route, matchedLocation falls back to `/`,
+      // and the redirect below then bounces straight to sign-in — dropping
+      // the OAuth/magic-link callback. Normalize it the same way
+      // `_navigate()` does before falling through to the normal logic.
+      if (state.uri.scheme == 'stylemint' && state.uri.host.isNotEmpty) {
+        final normalizedPath = '/${state.uri.host}${state.uri.path}';
+        final query = state.uri.query.isEmpty ? '' : '?${state.uri.query}';
+        return '$normalizedPath$query';
+      }
+
       final session = ref.read(sessionControllerProvider);
       final path = state.matchedLocation;
+      // ignore: avoid_print
+      print('[OAUTH-DEBUG] router.redirect: uri=${state.uri} matchedLocation=$path session=$session');
       final isPublic = _publicPaths.any((p) => path.startsWith(p));
       final isAuthOnly = _authOnlyPaths.any((p) => path.startsWith(p));
       final atSplash = path == RouteNames.splash;
@@ -544,7 +564,8 @@ GoRouter appRouter(Ref ref) {
       // Trending products
       GoRoute(
         path: RouteNames.searchTrending,
-        builder: (ctx, state) => const ProductListScreen(title: 'Trending Products'),
+        builder: (ctx, state) =>
+            const ProductListScreen(title: 'Trending Products'),
       ),
 
       // Category products
@@ -552,7 +573,10 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.searchCategory,
         builder: (ctx, state) {
           final label = state.uri.queryParameters['label'] ?? 'Products';
-          return ProductListScreen(title: '$label Products');
+          return ProductListScreen(
+            title: '$label Products',
+            categoryId: state.pathParameters['categoryId']!,
+          );
         },
       ),
 
@@ -834,11 +858,17 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const BrandsScreen(),
         routes: [
           GoRoute(
-            path: _subPath(RouteNames.partnerships, RouteNames.activePartnerships),
+            path: _subPath(
+              RouteNames.partnerships,
+              RouteNames.activePartnerships,
+            ),
             builder: (ctx, state) => const ActivePartnershipsScreen(),
           ),
           GoRoute(
-            path: _subPath(RouteNames.partnerships, RouteNames.partnershipRequests),
+            path: _subPath(
+              RouteNames.partnerships,
+              RouteNames.partnershipRequests,
+            ),
             builder: (ctx, state) => const PartnershipRequestsScreen(),
           ),
           GoRoute(
@@ -1269,7 +1299,7 @@ GoRouter appRouter(Ref ref) {
         routes: [
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportContact),
-            builder: (ctx, state) => const VendorContactSupportScreen(),
+            builder: (ctx, state) => const ContactSupportScreen(),
           ),
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportTickets),
@@ -1278,12 +1308,12 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportTopic),
             builder: (ctx, state) =>
-                HelpTopicScreen(topic: state.extra! as HelpTopic),
+                HelpTopicScreen(category: state.extra! as HelpCenterCategory),
           ),
           GoRoute(
             path: _subPath(RouteNames.support, RouteNames.supportArticle),
             builder: (ctx, state) =>
-                HelpArticleScreen(article: state.extra! as HelpArticle),
+                HelpArticleScreen(article: state.extra! as HelpArticleSummary),
           ),
         ],
       ),

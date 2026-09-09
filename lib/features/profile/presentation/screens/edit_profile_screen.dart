@@ -42,11 +42,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _phone = '';
   String _avatarUrl = '';
   File? _localAvatarFile;
+  bool _avatarUploading = false;
 
   // Preference toggles — UI only (no backend field yet).
   bool _sendPersonalized = false;
   bool _shareActivity = false;
   bool _includeBeta = false;
+  bool _preferencesLoaded = false;
+  bool _socialLinksLoaded = false;
 
   @override
   void initState() {
@@ -92,12 +95,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   // ── SAVE ─────────────────────────────────────────────────────────────────────
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    final isCreator = ref.read(isCreatorProvider).asData?.value ?? false;
+    final notificationPrefs = ref
+        .read(settingsNotifierProvider)
+        .maybeWhen(
+          loadSuccess: (prefs) => prefs,
+          orElse: () => null,
+        );
+    if (notificationPrefs != null) {
+      unawaited(
+        ref
+            .read(settingsNotifierProvider.notifier)
+            .savePrefs(
+              notificationPrefs.copyWith(
+                personalizedOffers: _sendPersonalized,
+              ),
+            ),
+      );
+    }
     unawaited(
-      ref.read(editProfileNotifierProvider.notifier).updateProfile(
+      ref
+          .read(editProfileNotifierProvider.notifier)
+          .updateProfile(
             displayName: _nameCtrl.text.trim(),
             bio: _bioCtrl.text.trim(),
             gender: _gender,
             dateOfBirth: _dateOfBirth,
+            instagramHandle: isCreator ? _websiteCtrl.text.trim() : null,
+            tiktokHandle: isCreator ? _tiktokCtrl.text.trim() : null,
           ),
     );
   }
@@ -158,9 +183,33 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       maxWidth: 800,
     );
     if (picked != null) {
-      setState(() => _localAvatarFile = File(picked.path));
-      // TODO: upload picked.path to blob storage → get URL → pass as avatarUrl
-      // unawaited(ref.read(editProfileNotifierProvider.notifier).updateProfile(avatarUrl: uploadedUrl));
+      setState(() {
+        _localAvatarFile = File(picked.path);
+        _avatarUploading = true;
+      });
+      final failure = await ref
+          .read(editProfileNotifierProvider.notifier)
+          .uploadAvatar(picked.path);
+      if (!mounted) return;
+      if (failure != null) {
+        setState(() => _avatarUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Photo upload failed: $failure')),
+        );
+        return;
+      }
+      final profile = ref
+          .read(editProfileNotifierProvider)
+          .maybeWhen(
+            loadSuccess: (value) => value,
+            orElse: () => null,
+          );
+      setState(() {
+        _avatarUrl = profile?.avatarUrl ?? _avatarUrl;
+        _localAvatarFile = null;
+        _avatarUploading = false;
+      });
+      unawaited(ref.read(profileNotifierProvider.notifier).fetchProfile());
     }
   }
 
@@ -177,7 +226,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     ).then((reason) {
       if (reason != null && mounted) {
         unawaited(
-          ref.read(deleteAccountNotifierProvider.notifier).deleteAccount(reason),
+          ref
+              .read(deleteAccountNotifierProvider.notifier)
+              .deleteAccount(reason),
         );
       }
     });
@@ -187,10 +238,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editProfileNotifierProvider);
+    final notificationPrefsState = ref.watch(settingsNotifierProvider);
+    final socialLinksState = ref.watch(creatorSocialLinksProvider);
     final deletionState = ref.watch(pendingDeletionNotifierProvider);
     final pendingRequest = deletionState.whenOrNull(found: (r) => r);
 
-    ref.listen<PendingDeletionState>(pendingDeletionNotifierProvider, (_, next) {
+    notificationPrefsState.whenOrNull(
+      loadSuccess: (prefs) {
+        if (_preferencesLoaded) return;
+        _preferencesLoaded = true;
+        _sendPersonalized = prefs.personalizedOffers;
+      },
+    );
+    socialLinksState.whenData((links) {
+      if (_socialLinksLoaded || links == null) return;
+      _socialLinksLoaded = true;
+      _websiteCtrl.text = links.instagramHandle ?? '';
+      _tiktokCtrl.text = links.tiktokHandle ?? '';
+    });
+
+    ref.listen<PendingDeletionState>(pendingDeletionNotifierProvider, (
+      _,
+      next,
+    ) {
       next.whenOrNull(
         cancelled: () {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -253,7 +323,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Edit Profile', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Edit Profile',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -269,8 +342,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 : 'Delete account',
             onPressed: pendingRequest != null
                 ? () => ref
-                    .read(pendingDeletionNotifierProvider.notifier)
-                    .cancel(pendingRequest.id)
+                      .read(pendingDeletionNotifierProvider.notifier)
+                      .cancel(pendingRequest.id)
                 : _showDeleteSheet,
           ),
         ],
@@ -295,14 +368,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _avatarUrl = profile.avatarUrl;
           return _buildForm(saving: false, pendingRequest: pendingRequest);
         },
-        saveFailure: (_) => _buildForm(saving: false, pendingRequest: pendingRequest),
+        saveFailure: (_) =>
+            _buildForm(saving: false, pendingRequest: pendingRequest),
       ),
     );
   }
 
   Widget _loadingBody() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 
   // ── FORM ──────────────────────────────────────────────────────────────────────
   Widget _buildForm({required bool saving, DeletionRequest? pendingRequest}) {
@@ -324,6 +398,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               _AvatarSection(
                 avatarUrl: _avatarUrl,
                 localFile: _localAvatarFile,
+                isUploading: _avatarUploading,
                 onTap: _showAvatarSheet,
               ),
               const SizedBox(height: DesignTokens.s24),
@@ -338,7 +413,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 controller: _nameCtrl,
                 textInputAction: TextInputAction.next,
                 style: _kInputStyle,
-                decoration: DesignTokens.inputDecoration(labelText: 'Full Name'),
+                decoration: DesignTokens.inputDecoration(
+                  labelText: 'Full Name',
+                ),
               ),
               const SizedBox(height: DesignTokens.s12),
               _ReadOnlyField(label: 'Email Address', value: _email),
@@ -381,33 +458,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 maxLines: 4,
                 maxLength: 500,
                 textInputAction: TextInputAction.newline,
-                buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
-                    const SizedBox.shrink(),
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => const SizedBox.shrink(),
                 style: _kInputStyle,
-                decoration: DesignTokens.inputDecoration(labelText: 'Bio/About Me'),
+                decoration: DesignTokens.inputDecoration(
+                  labelText: 'Bio/About Me',
+                ),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: DesignTokens.s6),
               _HintRow('${_bioCtrl.text.length}/500 Characters'),
               const SizedBox(height: DesignTokens.s24),
 
-              // ── Social Links ─────────────────────────────────────────────────
-              const _SectionHeader('Social Links'),
-              const SizedBox(height: DesignTokens.s12),
-              _SocialField(
-                controller: _websiteCtrl,
-                label: 'Instagram',
-                hint: 'instagram.com/username',
-                prefixIcon: const _InstagramIcon(),
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              _SocialField(
-                controller: _tiktokCtrl,
-                label: 'Tiktok',
-                hint: 'tiktok.com/@username',
-                prefixIcon: const _TiktokIcon(),
-              ),
-              const SizedBox(height: DesignTokens.s24),
+              if (ref.watch(isCreatorProvider).asData?.value ?? false) ...[
+                // ── Creator social links ─────────────────────────────────────
+                const _SectionHeader('Social Links'),
+                const SizedBox(height: DesignTokens.s12),
+                _SocialField(
+                  controller: _websiteCtrl,
+                  label: 'Instagram',
+                  hint: 'instagram.com/username',
+                  prefixIcon: const _InstagramIcon(),
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                _SocialField(
+                  controller: _tiktokCtrl,
+                  label: 'Tiktok',
+                  hint: 'tiktok.com/@username',
+                  prefixIcon: const _TiktokIcon(),
+                ),
+                const SizedBox(height: DesignTokens.s24),
+              ],
 
               // ── Preferences ──────────────────────────────────────────────────
               const _SectionHeader('Preferences'),
@@ -415,7 +501,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               _CheckboxItem(
                 value: _sendPersonalized,
                 label: 'Send me personalized product recommendations',
-                onChanged: (v) => setState(() => _sendPersonalized = v ?? false),
+                onChanged: (v) =>
+                    setState(() => _sendPersonalized = v ?? false),
               ),
               _CheckboxItem(
                 value: _shareActivity,
@@ -434,8 +521,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 isPending: pendingRequest != null,
                 onTap: pendingRequest != null
                     ? () => ref
-                        .read(pendingDeletionNotifierProvider.notifier)
-                        .cancel(pendingRequest.id)
+                          .read(pendingDeletionNotifierProvider.notifier)
+                          .cancel(pendingRequest.id)
                     : _showDeleteSheet,
               ),
               const SizedBox(height: DesignTokens.s24),
@@ -491,11 +578,13 @@ class _AvatarSection extends StatelessWidget {
   const _AvatarSection({
     required this.avatarUrl,
     required this.localFile,
+    required this.isUploading,
     required this.onTap,
   });
 
   final String avatarUrl;
   final File? localFile;
+  final bool isUploading;
   final VoidCallback onTap;
 
   @override
@@ -503,11 +592,11 @@ class _AvatarSection extends StatelessWidget {
     final ImageProvider? image = localFile != null
         ? FileImage(localFile!)
         : avatarUrl.isNotEmpty
-            ? CachedNetworkImageProvider(avatarUrl)
-            : null;
+        ? CachedNetworkImageProvider(avatarUrl)
+        : null;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isUploading ? null : onTap,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -518,7 +607,11 @@ class _AvatarSection extends StatelessWidget {
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [Color(0xFFF1C40F), Color(0xFFF39C12), Color(0xFFE67E22)],
+                colors: [
+                  Color(0xFFF1C40F),
+                  Color(0xFFF39C12),
+                  Color(0xFFE67E22),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -529,10 +622,27 @@ class _AvatarSection extends StatelessWidget {
               backgroundColor: DesignTokens.bgAppBodyLight,
               backgroundImage: image,
               child: image == null
-                  ? const Icon(Icons.person, color: DesignTokens.iconLight, size: 36)
+                  ? const Icon(
+                      Icons.person,
+                      color: DesignTokens.iconLight,
+                      size: 36,
+                    )
                   : null,
             ),
           ),
+          if (isUploading)
+            const Positioned.fill(
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              ),
+            ),
           // Camera chip
           Positioned(
             bottom: 0,
@@ -752,7 +862,11 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                   radius: 1.2,
                 ),
               ),
-              child: const Icon(Icons.close_rounded, color: Colors.white, size: 36),
+              child: const Icon(
+                Icons.close_rounded,
+                color: Colors.white,
+                size: 36,
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -785,7 +899,10 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                 child: Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? DesignTokens.colorError.withValues(alpha: 0.12)
@@ -820,7 +937,9 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 onPressed: _selectedReason == null
@@ -848,7 +967,9 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
                   foregroundColor: DesignTokens.textWhite,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 onPressed: () => Navigator.pop(context),
@@ -1021,7 +1142,9 @@ class _SocialField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textLight),
+          style: DesignTokens.mediumRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
         ),
         const SizedBox(height: DesignTokens.s8),
         TextFormField(
@@ -1118,7 +1241,11 @@ class _InstagramIcon extends StatelessWidget {
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
       ).createShader(bounds),
-      child: const Icon(Icons.photo_camera_outlined, size: 20, color: Colors.white),
+      child: const Icon(
+        Icons.photo_camera_outlined,
+        size: 20,
+        color: Colors.white,
+      ),
     );
   }
 }
@@ -1128,7 +1255,11 @@ class _TiktokIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(Icons.music_note_outlined, size: 20, color: Color(0xFF00F2EA));
+    return const Icon(
+      Icons.music_note_outlined,
+      size: 20,
+      color: Color(0xFF00F2EA),
+    );
   }
 }
 
@@ -1140,10 +1271,12 @@ class _CreatorIdentitySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isCreator = ref.watch(isCreatorProvider).maybeWhen<bool>(
-      data: (v) => v,
-      orElse: () => false,
-    );
+    final isCreator = ref
+        .watch(isCreatorProvider)
+        .maybeWhen<bool>(
+          data: (v) => v,
+          orElse: () => false,
+        );
     if (!isCreator) return const SizedBox.shrink();
 
     final handle = ref.watch(activeHandleProvider);
@@ -1165,8 +1298,9 @@ class _CreatorIdentitySection extends ConsumerWidget {
                   children: [
                     Text(
                       'Creator handle',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                     const SizedBox(height: DesignTokens.s4),
                     handle.when(
@@ -1186,8 +1320,9 @@ class _CreatorIdentitySection extends ConsumerWidget {
                 onPressed: () => context.push(RouteNames.handleSetup),
                 child: Text(
                   'Change',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.primaryGreen),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
                 ),
               ),
             ],

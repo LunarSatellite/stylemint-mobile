@@ -23,12 +23,12 @@ abstract class VendorOrderItemDto with _$VendorOrderItemDto {
       _$VendorOrderItemDtoFromJson(json);
 
   VendorOrderItem toDomain() => VendorOrderItem(
-        productId: productId,
-        productName: productName,
-        imageUrl: absoluteMediaUrl(imageUrl),
-        quantity: quantity,
-        unitPrice: Money(amount: unitPriceAmount, currency: currency),
-      );
+    productId: productId,
+    productName: productName,
+    imageUrl: absoluteMediaUrl(imageUrl),
+    quantity: quantity,
+    unitPrice: Money(amount: unitPriceAmount, currency: currency),
+  );
 }
 
 /// Maps the backend VendorSubOrderListItemDto (Orders module,
@@ -49,6 +49,7 @@ abstract class VendorOrderDto with _$VendorOrderDto {
     @JsonKey(name: 'placedUtc') DateTime? placedAt,
     @JsonKey(name: 'shippedUtc') DateTime? shippedAt,
     @JsonKey(name: 'deliveredUtc') DateTime? deliveredAt,
+    @JsonKey(name: 'receiverName') String? customerName,
   }) = _VendorOrderDto;
 
   const VendorOrderDto._();
@@ -57,17 +58,18 @@ abstract class VendorOrderDto with _$VendorOrderDto {
       _$VendorOrderDtoFromJson(json);
 
   VendorOrder toDomain() => VendorOrder(
-        id: id,
-        orderNumber: orderNumber,
-        itemCount: itemCount,
-        total: Money(amount: totalAmount.toDouble(), currency: currency),
-        status: _statusFromState(stateCode),
-        placedAt: placedAt,
-        shippingMethod: shippingMethod,
-        trackingNumber: trackingNumber,
-        shippedAt: shippedAt,
-        deliveredAt: deliveredAt,
-      );
+    id: id,
+    orderNumber: orderNumber,
+    itemCount: itemCount,
+    total: Money(amount: totalAmount.toDouble(), currency: currency),
+    status: _statusFromState(stateCode),
+    placedAt: placedAt,
+    shippingMethod: shippingMethod,
+    trackingNumber: trackingNumber,
+    shippedAt: shippedAt,
+    deliveredAt: deliveredAt,
+    customerName: customerName,
+  );
 
   /// SubOrderState enum int -> UI status. The internal vendor-workflow states
   /// (Paid/AwaitingFulfillment/ReadyToShip/AwaitingTracking) collapse to

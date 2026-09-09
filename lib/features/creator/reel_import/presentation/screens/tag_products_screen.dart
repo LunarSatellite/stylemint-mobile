@@ -166,7 +166,8 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
         title: const Text('Tag Products', style: DesignTokens.titleMedium),
         elevation: 0,
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           // ── Sticky header ───────────────────────────────────────────────
           Padding(
@@ -305,6 +306,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

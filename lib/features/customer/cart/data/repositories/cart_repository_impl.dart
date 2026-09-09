@@ -4,11 +4,13 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasources/cart_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class CartRepositoryImpl implements CartRepository {
   CartRepositoryImpl({required this.remoteDataSource});
 
   final CartRemoteDataSource remoteDataSource;
+  static const _uuid = Uuid();
 
   // Dio's own connectionError/timeout types already cover "no internet" —
   // a client-side pre-flight connectivity check was previously gating every
@@ -42,6 +44,7 @@ class CartRepositoryImpl implements CartRepository {
     required String productId,
     required int quantity,
     String? variantId,
+    String? reelTagContextId,
     required String idempotencyKey,
   }) async {
     try {
@@ -49,6 +52,7 @@ class CartRepositoryImpl implements CartRepository {
         productId: productId,
         quantity: quantity,
         variantId: variantId,
+        reelTagContextId: reelTagContextId,
         idempotencyKey: idempotencyKey,
       );
       return right(dto.toDomain());
@@ -77,6 +81,43 @@ class CartRepositoryImpl implements CartRepository {
   Future<Either<NetworkExceptions, Cart>> removeCartItem(String itemId) async {
     try {
       final dto = await remoteDataSource.removeCartItem(itemId);
+      return right(dto.toDomain());
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> applyPromo(String code) async {
+    try {
+      final dto = await remoteDataSource.applyPromo(
+        code: code,
+        idempotencyKey: _uuid.v4(),
+      );
+      return right(dto.toDomain());
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> removePromo() async {
+    try {
+      final dto = await remoteDataSource.removePromo(_uuid.v4());
+      return right(dto.toDomain());
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> saveForLater(String lineId) async {
+    try {
+      await remoteDataSource.saveForLater(
+        lineId: lineId,
+        idempotencyKey: _uuid.v4(),
+      );
+      final dto = await remoteDataSource.getCart();
       return right(dto.toDomain());
     } catch (e) {
       return left(_mapError(e));

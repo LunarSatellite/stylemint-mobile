@@ -7,9 +7,17 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart
 abstract interface class DiscoveryRepository {
   Future<Either<NetworkExceptions, DiscoverData>> getDiscoverData();
 
-  Future<Either<NetworkExceptions, ProductDetail>> getProductDetail(String productId);
+  /// The curated product cards for one category landing page.
+  Future<Either<NetworkExceptions, List<TrendingProduct>>> getCategoryProducts(
+    String categoryId,
+  );
 
-  Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>> getProductReviews(
+  Future<Either<NetworkExceptions, ProductDetail>> getProductDetail(
+    String productId,
+  );
+
+  Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
+  getProductReviews(
     String productId, {
     int limit,
     String? cursor,

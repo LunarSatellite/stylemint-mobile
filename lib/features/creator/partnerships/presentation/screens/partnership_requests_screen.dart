@@ -794,7 +794,8 @@ class _DeclineSheetState extends State<_DeclineSheet> {
   @override
   Widget build(BuildContext context) {
     final req = widget.request;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bottom = MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 0),
@@ -1066,7 +1067,8 @@ class _AcceptSheetState extends State<_AcceptSheet> {
   @override
   Widget build(BuildContext context) {
     final req = widget.request;
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bottom = MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom;
 
     return Container(
       padding: EdgeInsets.fromLTRB(

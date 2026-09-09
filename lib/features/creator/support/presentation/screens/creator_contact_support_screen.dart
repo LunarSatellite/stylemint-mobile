@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -31,32 +32,58 @@ class _CreatorContactSupportScreenState
     });
   }
 
-  List<_SupportChannel> _channels(BuildContext context) => [
+  List<_SupportChannel> _channels(
+    BuildContext context,
+    ContactChannels? channels,
+    bool isLoading,
+  ) => [
     _SupportChannel(
       icon: Icons.chat_bubble_outline_rounded,
       title: 'Creator Support Chat',
-      subtitle: 'Available • Wait: 2min',
+      subtitle: channels == null
+          ? isLoading
+                ? 'Checking availability…'
+                : 'Availability unavailable'
+          : channels.liveChatAvailable
+          ? 'Available now • ${channels.liveChatHoursLocal}'
+          : 'Offline • ${channels.liveChatHoursLocal}',
       onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Live chat is coming soon.')),
+        const SnackBar(
+          content: Text(
+            'Live-chat availability is shown above. Chat sessions are not yet available in this app; please create a support ticket.',
+          ),
+        ),
       ),
     ),
     _SupportChannel(
       icon: Icons.email_outlined,
       title: 'Email Support',
-      subtitle: 'Response within 12 hours',
-      onTap: () => unawaited(
-        launchUrl(
-          Uri(scheme: 'mailto', path: 'creator-support@stylemint.com'),
-        ),
-      ),
+      subtitle: channels?.supportEmail.isNotEmpty == true
+          ? channels!.supportEmail
+          : isLoading
+          ? 'Loading support email…'
+          : 'Email unavailable',
+      onTap: channels?.supportEmail.isNotEmpty == true
+          ? () => unawaited(
+              launchUrl(Uri(scheme: 'mailto', path: channels!.supportEmail)),
+            )
+          : null,
     ),
     _SupportChannel(
       icon: Icons.phone_outlined,
-      title: 'Creator Hotline (1-800-CREATE)',
-      subtitle: 'Mon-Fri, 9 AM - 6 PM EST',
-      onTap: () => unawaited(
-        launchUrl(Uri(scheme: 'tel', path: '1-800-273-2283')),
-      ),
+      title: 'Direct Call',
+      subtitle: channels?.directCallPhoneE164.isNotEmpty == true
+          ? channels!.directCallPhoneE164
+          : isLoading
+          ? 'Loading direct-call number…'
+          : 'Phone unavailable',
+      onTap: channels?.directCallPhoneE164.isNotEmpty == true
+          ? () => unawaited(
+              launchUrl(
+                Uri(scheme: 'tel', path: channels!.directCallPhoneE164),
+              ),
+            )
+          : null,
     ),
     _SupportChannel(
       icon: Icons.library_books_outlined,
@@ -67,45 +94,54 @@ class _CreatorContactSupportScreenState
   ];
 
   static const _topics = [
-    _Topic(icon: Icons.account_balance_wallet_outlined, label: 'Earnings & Payouts'),
+    _Topic(
+      icon: Icons.account_balance_wallet_outlined,
+      label: 'Earnings & Payouts',
+    ),
     _Topic(icon: Icons.handshake_outlined, label: 'Brand Partnerships'),
     _Topic(icon: Icons.video_library_outlined, label: 'Content & Reels'),
     _Topic(icon: Icons.analytics_outlined, label: 'Analytics Issues'),
   ];
 
   void _showCreatorResources(BuildContext context) {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: DesignTokens.bgAppBody,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => const _CreatorResourcesSheet(),
       ),
-      builder: (_) => const _CreatorResourcesSheet(),
-    ));
+    );
   }
 
   void _showTicketDetail(BuildContext context, Ticket ticket) {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: DesignTokens.bgAppBody,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => _TicketDetailSheet(ticket: ticket),
       ),
-      builder: (_) => _TicketDetailSheet(ticket: ticket),
-    ));
+    );
   }
 
   void _showCreateTicket(BuildContext context) {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: DesignTokens.bgAppBody,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => const _CreateTicketSheet(),
       ),
-      builder: (_) => const _CreateTicketSheet(),
-    ));
+    );
   }
 
   List<Ticket> _filtered(List<Ticket> tickets) =>
@@ -117,6 +153,7 @@ class _CreatorContactSupportScreenState
   @override
   Widget build(BuildContext context) {
     final ticketsState = ref.watch(supportNotifierProvider);
+    final contactChannels = ref.watch(contactChannelsProvider);
     final isLoading = ticketsState.when(
       initial: () => false,
       loadInProgress: () => true,
@@ -137,24 +174,43 @@ class _CreatorContactSupportScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Contact Support', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Contact Support',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16, DesignTokens.s8,
-                DesignTokens.s16, DesignTokens.s32,
+                DesignTokens.s16,
+                DesignTokens.s8,
+                DesignTokens.s16,
+                DesignTokens.s32,
               ),
               children: [
                 _WelcomeBanner(),
                 const SizedBox(height: DesignTokens.s16),
-                _ChannelList(channels: _channels(context)),
+                _ChannelList(
+                  channels: _channels(
+                    context,
+                    contactChannels.when(
+                      data: (value) => value,
+                      loading: () => null,
+                      error: (_, __) => null,
+                    ),
+                    contactChannels.isLoading,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s16),
                 _TopicsGrid(
                   topics: _topics,
@@ -173,9 +229,18 @@ class _CreatorContactSupportScreenState
                 _FilterTabs(
                   active: _activeFilter,
                   counts: {
-                    _TicketFilter.submitted: _count(tickets, _TicketFilter.submitted),
-                    _TicketFilter.inProgress: _count(tickets, _TicketFilter.inProgress),
-                    _TicketFilter.resolved: _count(tickets, _TicketFilter.resolved),
+                    _TicketFilter.submitted: _count(
+                      tickets,
+                      _TicketFilter.submitted,
+                    ),
+                    _TicketFilter.inProgress: _count(
+                      tickets,
+                      _TicketFilter.inProgress,
+                    ),
+                    _TicketFilter.resolved: _count(
+                      tickets,
+                      _TicketFilter.resolved,
+                    ),
                   },
                   onChanged: (f) => setState(() => _activeFilter = f),
                 ),
@@ -187,10 +252,16 @@ class _CreatorContactSupportScreenState
                   )
                 else if (visible.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s24),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s24,
+                    ),
                     child: Center(
                       child: Text(
-                        'Your ${_activeFilter == _TicketFilter.submitted ? 'submitted' : _activeFilter == _TicketFilter.inProgress ? 'in progress' : 'resolved'} support tickets will show here',
+                        'Your ${_activeFilter == _TicketFilter.submitted
+                            ? 'submitted'
+                            : _activeFilter == _TicketFilter.inProgress
+                            ? 'in progress'
+                            : 'resolved'} support tickets will show here',
                         textAlign: TextAlign.center,
                         style: DesignTokens.smallRegular.copyWith(
                           color: DesignTokens.textMuted,
@@ -212,6 +283,7 @@ class _CreatorContactSupportScreenState
             onTap: () => _showCreateTicket(context),
           ),
         ],
+        ),
       ),
     );
   }
@@ -311,7 +383,9 @@ class _ChannelList extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s12,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -321,8 +395,11 @@ class _ChannelList extends StatelessWidget {
                           color: DesignTokens.bgAppBodyLight,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(ch.icon,
-                            size: 20, color: DesignTokens.textLight),
+                        child: Icon(
+                          ch.icon,
+                          size: 20,
+                          color: DesignTokens.textLight,
+                        ),
                       ),
                       const SizedBox(width: DesignTokens.s12),
                       Expanded(
@@ -350,8 +427,11 @@ class _ChannelList extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded,
-                          size: 20, color: DesignTokens.textMuted),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: DesignTokens.textMuted,
+                      ),
                     ],
                   ),
                 ),
@@ -468,7 +548,9 @@ class _FilterTabs extends StatelessWidget {
               onTap: () => onChanged(f),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+                  horizontal: DesignTokens.s16,
+                  vertical: DesignTokens.s8,
+                ),
                 decoration: BoxDecoration(
                   color: isActive
                       ? DesignTokens.chipsSelectedFill
@@ -548,8 +630,11 @@ class _TicketCard extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 12, color: DesignTokens.textMuted),
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 12,
+                        color: DesignTokens.textMuted,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         _formatTicketDate(ticket.createdAt),
@@ -564,8 +649,11 @@ class _TicketCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: DesignTokens.textMuted),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: DesignTokens.textMuted,
+            ),
           ],
         ),
       ),
@@ -586,10 +674,15 @@ class _BottomButton extends StatelessWidget {
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppFoundation,
         border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
       ),
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s32),
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s32,
+      ),
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -727,7 +820,8 @@ class _CreatorResourcesSheet extends StatelessWidget {
           );
         }),
         SizedBox(
-            height: MediaQuery.of(context).padding.bottom + DesignTokens.s16),
+          height: MediaQuery.of(context).padding.bottom + DesignTokens.s16,
+        ),
       ],
     );
   }
@@ -796,41 +890,47 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
       );
       return;
     }
-    await ref.read(createTicketNotifierProvider.notifier).submit(
-      category: _selectedCategory!,
-      subject: _ticketCategoryLabel(_selectedCategory!),
-      message: desc,
-    );
-    if (!mounted) return;
-    ref.read(createTicketNotifierProvider).when(
-      initial: () {},
-      submitting: () {},
-      success: (_) {
-        unawaited(ref.read(supportNotifierProvider.notifier).loadTickets());
-        Navigator.pop(context);
-      },
-      failure: (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.isNoInternet
-                  ? 'No internet connection'
-                  : 'Failed to submit ticket. Please try again.',
-            ),
-          ),
+    await ref
+        .read(createTicketNotifierProvider.notifier)
+        .submit(
+          category: _selectedCategory!,
+          subject: _ticketCategoryLabel(_selectedCategory!),
+          message: desc,
         );
-      },
-    );
+    if (!mounted) return;
+    ref
+        .read(createTicketNotifierProvider)
+        .when(
+          initial: () {},
+          submitting: () {},
+          success: (_) {
+            unawaited(ref.read(supportNotifierProvider.notifier).loadTickets());
+            Navigator.pop(context);
+          },
+          failure: (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  e.isNoInternet
+                      ? 'No internet connection'
+                      : 'Failed to submit ticket. Please try again.',
+                ),
+              ),
+            );
+          },
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isSubmitting = ref.watch(createTicketNotifierProvider).when(
-      initial: () => false,
-      submitting: () => true,
-      success: (_) => false,
-      failure: (_) => false,
-    );
+    final isSubmitting = ref
+        .watch(createTicketNotifierProvider)
+        .when(
+          initial: () => false,
+          submitting: () => true,
+          success: (_) => false,
+          failure: (_) => false,
+        );
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Padding(
@@ -842,8 +942,10 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s20,
-              DesignTokens.s8, DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s20,
+              DesignTokens.s8,
+              DesignTokens.s16,
             ),
             child: Row(
               children: [
@@ -860,8 +962,11 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close,
-                      size: 20, color: DesignTokens.textMuted),
+                  icon: const Icon(
+                    Icons.close,
+                    size: 20,
+                    color: DesignTokens.textMuted,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -901,25 +1006,30 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.borderDefault),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.borderDefault,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.borderDefault),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.borderDefault,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.primaryGreen),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.primaryGreen,
+                  ),
                 ),
               ),
               items: TicketCategory.values
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(_ticketCategoryLabel(c)),
-                      ))
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(_ticketCategoryLabel(c)),
+                    ),
+                  )
                   .toList(),
               onChanged: isSubmitting
                   ? null
@@ -952,18 +1062,21 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 contentPadding: const EdgeInsets.all(DesignTokens.s16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.borderDefault),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.borderDefault,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.borderDefault),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.borderDefault,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: DesignTokens.primaryGreen),
+                  borderSide: const BorderSide(
+                    color: DesignTokens.primaryGreen,
+                  ),
                 ),
               ),
             ),
@@ -974,8 +1087,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
             SizedBox(
               height: 72,
               child: ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
                 scrollDirection: Axis.horizontal,
                 itemCount: _images.length,
                 separatorBuilder: (_, __) =>
@@ -1013,8 +1127,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: DesignTokens.borderDefault),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
               ),
@@ -1091,8 +1206,11 @@ class _PickedThumb extends StatelessWidget {
                 color: DesignTokens.bgAppFoundation,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close,
-                  size: 12, color: DesignTokens.textWhite),
+              child: const Icon(
+                Icons.close,
+                size: 12,
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
         ),
@@ -1146,8 +1264,10 @@ class _TicketDetailSheet extends StatelessWidget {
     final safeBottom = MediaQuery.of(context).padding.bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        DesignTokens.s16, DesignTokens.s20,
-        DesignTokens.s16, safeBottom + DesignTokens.s16,
+        DesignTokens.s16,
+        DesignTokens.s20,
+        DesignTokens.s16,
+        safeBottom + DesignTokens.s16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1168,8 +1288,11 @@ class _TicketDetailSheet extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close,
-                    size: 20, color: DesignTokens.textMuted),
+                child: const Icon(
+                  Icons.close,
+                  size: 20,
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ],
           ),
@@ -1290,8 +1413,18 @@ String _formatTicketDate(DateTime dt) {
   final min = dt.minute.toString().padLeft(2, '0');
   final ampm = dt.hour < 12 ? 'AM' : 'PM';
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final suffix = _daySuffix(dt.day);
   return '$hour:$min $ampm, ${dt.day}$suffix ${months[dt.month - 1]} ${dt.year}';

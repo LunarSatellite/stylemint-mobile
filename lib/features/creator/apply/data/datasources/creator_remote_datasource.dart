@@ -59,7 +59,7 @@ class CreatorRemoteDataSource {
         'audienceBand': audienceBand,
         'contentCategoryIds': contentCategoryIds,
         if (otherCategoryDescription != null &&
-          otherCategoryDescription.trim().isNotEmpty)
+            otherCategoryDescription.trim().isNotEmpty)
           'otherCategoryDescription': otherCategoryDescription,
         if (socials.isNotEmpty) 'socials': socials,
       },
@@ -67,20 +67,6 @@ class CreatorRemoteDataSource {
     );
     return CreatorApplicationDto.fromJson(response as Map<String, dynamic>);
   }
-
-  /// Re-open a rejected application so the user can edit + resubmit.
-  /// `POST /v1/accounts/{accountId}/creator-profile/reapply` → 204 No
-  /// Content on success; 404 if no rejected application exists.
-  Future<void> reapply({
-    required String accountId,
-    required String idempotencyKey,
-  }) async {
-    await apiClient.post(
-      '/v1/accounts/$accountId/creator-profile/reapply',
-      options: _idempotent(idempotencyKey),
-    );
-  }
-
 
   /// Re-submit a rejected creator application with a fresh payload.
   /// `POST /v1/creator/reapply` → atomic Rejected → Submitted on the most-recent
@@ -101,7 +87,7 @@ class CreatorRemoteDataSource {
         'audienceBand': audienceBand,
         'contentCategoryIds': contentCategoryIds,
         if (otherCategoryDescription != null &&
-          otherCategoryDescription.trim().isNotEmpty)
+            otherCategoryDescription.trim().isNotEmpty)
           'otherCategoryDescription': otherCategoryDescription,
         if (socials.isNotEmpty) 'socials': socials,
       },

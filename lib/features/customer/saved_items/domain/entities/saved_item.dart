@@ -30,7 +30,7 @@ class SavedItem {
   final double rating;
   final DateTime savedAt;
 
-  // Display-only — not yet on the backend DTO; populated by mock or future API.
+  /// Derived from CartCheckout's live variant-inventory enrichment.
   /// 'inStock' | 'lowStock' | 'outOfStock'
   final String stockStatus;
   final Money? originalPrice;

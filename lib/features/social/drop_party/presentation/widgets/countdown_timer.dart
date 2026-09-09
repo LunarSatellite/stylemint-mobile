@@ -51,12 +51,15 @@ class _CountdownTimerState extends State<CountdownTimer>
   @override
   Widget build(BuildContext context) {
     if (_remaining == Duration.zero) {
-      return const Text('Ended',
-          style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.colorError));
+      return const Text(
+        'Ended',
+        style: TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: DesignTokens.colorError,
+        ),
+      );
     }
 
     final days = _remaining.inDays;
@@ -83,19 +86,26 @@ class _CountdownTimerState extends State<CountdownTimer>
   Widget _buildUnit(int value, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.primaryGreenDark,
         borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
         border: Border.all(
-            color: DesignTokens.primaryGreen.withOpacity(0.5), width: 1),
+          color: DesignTokens.primaryGreen.withOpacity(0.5),
+          width: 1,
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('${value.toString().padLeft(2, '0')}',
-              style: DesignTokens.titleMedium.copyWith(
-                  color: DesignTokens.primaryGreen)),
+          Text(
+            '${value.toString().padLeft(2, '0')}',
+            style: DesignTokens.titleMedium.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
+          ),
           Text(label, style: DesignTokens.tiny),
         ],
       ),

@@ -22,6 +22,31 @@ class DiscoveryRemoteDataSource {
     return const DiscoverDataDto();
   }
 
+  /// Category landing is keyed by the category GUID supplied by Explore.
+  /// The discovery surface provides featured product cards rather than a
+  /// synthetic catalog, so retain only fields that API actually returns.
+  Future<List<TrendingProductDto>> getCategoryProducts(
+    String categoryId,
+  ) async {
+    final response = await apiClient.get(
+      '/api/v1/customer/discover/categories/$categoryId',
+    );
+    final data = response as Map<String, dynamic>;
+    return (data['featuredProducts'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (product) => TrendingProductDto(
+            id: product['productId'] as String? ?? '',
+            name: product['name'] as String? ?? '',
+            amount: (product['price'] as num?)?.toDouble() ?? 0,
+            currency: product['currency'] as String? ?? 'NPR',
+            imageUrl: product['heroImageUrl'] as String? ?? '',
+            rating: (product['averageRating'] as num?)?.toDouble() ?? 0,
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<ProductDetailDto> getProductDetail(String productId) async {
     final response = await apiClient.get('/v1/public/products/$productId');
     return ProductDetailDto.fromJson(response as Map<String, dynamic>);

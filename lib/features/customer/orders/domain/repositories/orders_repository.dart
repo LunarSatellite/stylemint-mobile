@@ -12,11 +12,18 @@ abstract interface class OrdersRepository {
 
   Future<Either<NetworkExceptions, OrderDetail>> getOrderDetail(String orderId);
 
+  Future<Either<NetworkExceptions, OrderInvoice>> getOrderInvoice(
+    String orderNumber,
+  );
+
   Future<Either<NetworkExceptions, Unit>> cancelOrder(
     String orderId, {
     required OrderCancellationReason reason,
     String? note,
   });
 
-  Future<Either<NetworkExceptions, Unit>> requestReturn(String orderId, String reason);
+  Future<Either<NetworkExceptions, Unit>> requestReturn(
+    String orderId,
+    String reason,
+  );
 }

@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/data/datasources/reviews_remote_datasource.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reviews/data/models/review_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/repositories/reviews_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -34,7 +33,7 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
           cursor: cursor,
         );
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map((e) => _reviewFromApi(e as Map<String, dynamic>).toDomain())
+            .map((e) => _reviewFromApi(e as Map<String, dynamic>))
             .toList(growable: false);
         return right(PagedResult<Review>(
           items: items,
@@ -98,7 +97,7 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
           _uuid.v4(),
           imagePaths: imagePaths,
         );
-        return right(_reviewFromApi(json).toDomain());
+        return right(_reviewFromApi(json));
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -118,12 +117,14 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
   // identity as `reviewerDisplayName`/`reviewerAvatarUrl`, not
   // `userName`/`userAvatarUrl`. `helpfulCount` has no backend support at
   // all (no review-likes feature) — defaults to 0.
-  ReviewDto _reviewFromApi(Map<String, dynamic> json) {
+  Review _reviewFromApi(Map<String, dynamic> json) {
     final images = (json['images'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>()
         .map((i) => i['cdnUrl'] as String? ?? '')
         .toList(growable: false);
-    return ReviewDto(
+    final kindValue = json['kind'];
+    final isReel = kindValue == 1 || kindValue == 'reel' || kindValue == 'Reel';
+    return Review(
       id: json['id'] as String,
       userId: json['customerAccountId'] as String? ?? '',
       userName: json['reviewerDisplayName'] as String? ?? 'Anonymous',
@@ -132,6 +133,10 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
       comment: json['text'] as String? ?? '',
       createdAt: DateTime.parse(json['createdUtc'] as String),
       images: images,
+      helpfulCount: 0,
+      kind: isReel ? ReviewKind.reel : ReviewKind.written,
+      reelPlatform: json['reelPlatform']?.toString(),
+      reelSourceUrl: json['reelSourceUrl'] as String?,
     );
   }
 }

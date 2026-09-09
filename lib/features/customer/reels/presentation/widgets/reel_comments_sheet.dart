@@ -19,7 +19,11 @@ void showReelCommentsSheet(
 }
 
 class ReelCommentsSheet extends ConsumerStatefulWidget {
-  const ReelCommentsSheet({required this.reelId, this.onCommentPosted, super.key});
+  const ReelCommentsSheet({
+    required this.reelId,
+    this.onCommentPosted,
+    super.key,
+  });
 
   final String reelId;
   final VoidCallback? onCommentPosted;
@@ -87,26 +91,37 @@ class _ReelCommentsSheetState extends ConsumerState<ReelCommentsSheet> {
               child: state.isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: DesignTokens.primaryGreen),
+                        color: DesignTokens.primaryGreen,
+                      ),
                     )
                   : state.comments.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No comments yet. Be the first!',
-                            style: DesignTokens.mediumRegular
-                                .copyWith(color: DesignTokens.textMuted),
-                          ),
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 16),
-                          itemCount: state.comments.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 20),
-                          itemBuilder: (_, i) =>
-                              _CommentRow(comment: state.comments[i]),
+                  ? Center(
+                      child: Text(
+                        'No comments yet. Be the first!',
+                        style: DesignTokens.mediumRegular.copyWith(
+                          color: DesignTokens.textMuted,
                         ),
+                      ),
+                    )
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      itemCount: state.comments.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 20),
+                      itemBuilder: (_, i) => _CommentRow(
+                        comment: state.comments[i],
+                        liked: state.likedCommentIds.contains(
+                          state.comments[i].id,
+                        ),
+                        likeCount: state.likeCounts[state.comments[i].id],
+                        onLike: () => ref
+                            .read(provider.notifier)
+                            .toggleLike(state.comments[i].id),
+                      ),
+                    ),
             ),
 
             // Input bar
@@ -129,22 +144,22 @@ class _ReelCommentsSheetState extends ConsumerState<ReelCommentsSheet> {
 }
 
 // ─── COMMENT ROW ──────────────────────────────────────────────────────────────
-class _CommentRow extends StatefulWidget {
-  const _CommentRow({required this.comment});
+class _CommentRow extends StatelessWidget {
+  const _CommentRow({
+    required this.comment,
+    required this.liked,
+    required this.onLike,
+    this.likeCount,
+  });
 
   final ReelCommentDto comment;
-
-  @override
-  State<_CommentRow> createState() => _CommentRowState();
-}
-
-class _CommentRowState extends State<_CommentRow> {
-  bool _liked = false;
-  late int _likes = widget.comment.likeCount;
+  final bool liked;
+  final int? likeCount;
+  final VoidCallback onLike;
 
   @override
   Widget build(BuildContext context) {
-    final c = widget.comment;
+    final c = comment;
     final handle = '@${c.authorDisplayName ?? 'User'}';
     final avatar = c.authorAvatarUrl ?? '';
 
@@ -157,9 +172,11 @@ class _CommentRowState extends State<_CommentRow> {
             width: 40,
             height: 40,
             child: avatar.isNotEmpty
-                ? Image.network(avatar,
+                ? Image.network(
+                    avatar,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _placeholder())
+                    errorBuilder: (_, __, ___) => _placeholder(),
+                  )
                 : _placeholder(),
           ),
         ),
@@ -200,24 +217,19 @@ class _CommentRowState extends State<_CommentRow> {
 
         // Like
         GestureDetector(
-          onTap: () => setState(() {
-            _liked = !_liked;
-            _likes += _liked ? 1 : -1;
-          }),
+          onTap: onLike,
           behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                _liked ? Icons.favorite : Icons.favorite_border,
+                liked ? Icons.favorite : Icons.favorite_border,
                 size: 20,
-                color: _liked
-                    ? const Color(0xFFFB2C36)
-                    : DesignTokens.iconLight,
+                color: liked ? const Color(0xFFFB2C36) : DesignTokens.iconLight,
               ),
               const SizedBox(height: 2),
               Text(
-                _compact(_likes),
+                _compact(likeCount ?? c.likeCount),
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 11,
@@ -234,10 +246,10 @@ class _CommentRowState extends State<_CommentRow> {
   }
 
   Widget _placeholder() => Container(
-        color: DesignTokens.bgAppBodyLight,
-        alignment: Alignment.center,
-        child: const Icon(Icons.person, size: 22, color: DesignTokens.iconLight),
-      );
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(Icons.person, size: 22, color: DesignTokens.iconLight),
+  );
 
   String _compact(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -276,7 +288,8 @@ class _CommentInputBar extends StatelessWidget {
         decoration: const BoxDecoration(
           color: DesignTokens.bgAppBody,
           border: Border(
-              top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+            top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+          ),
         ),
         child: Row(
           children: [
@@ -287,8 +300,11 @@ class _CommentInputBar extends StatelessWidget {
                 height: 36,
                 color: DesignTokens.bgAppBodyLight,
                 alignment: Alignment.center,
-                child: const Icon(Icons.person,
-                    size: 20, color: DesignTokens.iconLight),
+                child: const Icon(
+                  Icons.person,
+                  size: 20,
+                  color: DesignTokens.iconLight,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -319,21 +335,26 @@ class _CommentInputBar extends StatelessWidget {
                   fillColor: DesignTokens.inputFieldFill,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.inputFieldBorder,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.inputFieldBorder,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.primaryGreen),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.primaryGreen,
+                    ),
                   ),
                   suffixIcon: sending
                       ? const Padding(
@@ -342,16 +363,20 @@ class _CommentInputBar extends StatelessWidget {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: DesignTokens.primaryGreen),
+                              strokeWidth: 2,
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         )
                       : GestureDetector(
                           onTap: onSend,
                           child: const Padding(
                             padding: EdgeInsets.only(right: 12),
-                            child: Icon(Icons.send_rounded,
-                                size: 18, color: DesignTokens.primaryGreen),
+                            child: Icon(
+                              Icons.send_rounded,
+                              size: 18,
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                 ),

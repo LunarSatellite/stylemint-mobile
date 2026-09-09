@@ -14,6 +14,10 @@ abstract class PlaceOrderState with _$PlaceOrderState {
 
   const factory PlaceOrderState.initial() = _OrderInitial;
   const factory PlaceOrderState.processing() = _OrderProcessing;
+  // Despite the name (kept for API-shape familiarity with the repository
+  // method's return type), this carries the order NUMBER (e.g.
+  // "NK2026-00001") — every order route is keyed by that, not the internal
+  // orderId GUID. See CheckoutRemoteDataSource.placeOrder's doc comment.
   const factory PlaceOrderState.success(String orderId) = _OrderSuccess;
   const factory PlaceOrderState.failure(NetworkExceptions failure) = _OrderFailure;
 }
@@ -79,7 +83,12 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
         ? summary.shippingAddress
         : addresses.firstWhere((a) => a.isDefault, orElse: () => addresses.first);
     final defaultMethod = methods.isEmpty
-        ? summary.paymentMethod
+        ? const PaymentMethod(
+            id: 'cod',
+            type: PaymentMethodType.cod,
+            label: 'Cash on Delivery',
+            isDefault: true,
+          )
         : methods.firstWhere((m) => m.isDefault, orElse: () => methods.first);
 
     state = CheckoutState.loadSuccess(

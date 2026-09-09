@@ -56,29 +56,14 @@ class PaymentMethodScreen extends ConsumerWidget {
   }
 
   List<PaymentMethod> _buildMethods(CheckoutSummary summary) {
-    return [
-      PaymentMethod(
-        id: 'card',
-        type: PaymentMethodType.card,
-        label: 'Visa Card',
-        lastFour: summary.paymentMethod.type == PaymentMethodType.card
-            ? summary.paymentMethod.lastFour
-            : null,
-        isDefault: summary.paymentMethod.type == PaymentMethodType.card,
-      ),
-      PaymentMethod(
-        id: 'esewa',
-        type: PaymentMethodType.eSewa,
-        label: 'eSewa',
-        isDefault: summary.paymentMethod.type == PaymentMethodType.eSewa,
-      ),
-      PaymentMethod(
-        id: 'cod',
-        type: PaymentMethodType.cod,
-        label: 'Cash on Delivery',
-        isDefault: summary.paymentMethod.type == PaymentMethodType.cod,
-      ),
-    ];
+    PaymentMethod? savedCard;
+    for (final method in summary.availablePaymentMethods) {
+      if (method.type == PaymentMethodType.card) {
+        savedCard = method;
+        break;
+      }
+    }
+    return checkoutPaymentMethods(savedCard: savedCard);
   }
 }
 

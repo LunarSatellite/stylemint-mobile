@@ -88,12 +88,12 @@ class VendorOrderItem {
 
   @override
   int get hashCode => Object.hash(
-        productId,
-        productName,
-        imageUrl,
-        quantity,
-        unitPrice,
-      );
+    productId,
+    productName,
+    imageUrl,
+    quantity,
+    unitPrice,
+  );
 }
 
 class VendorOrder {
@@ -137,7 +137,7 @@ class VendorOrder {
   final DateTime? shippedAt;
   final DateTime? deliveredAt;
 
-  /// BACKEND GAP: not on /v1/vendor/sub-orders (deferred to a detail endpoint).
+  /// Backend list `receiverName`, denormalized for the vendor order row.
   final String? customerName;
   final String? shippingAddress;
   final List<VendorOrderItem> items;
@@ -193,20 +193,20 @@ class VendorOrder {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        orderNumber,
-        itemCount,
-        Object.hashAll(items),
-        total,
-        status,
-        placedAt,
-        shippingMethod,
-        trackingNumber,
-        shippedAt,
-        deliveredAt,
-        customerName,
-        shippingAddress,
-      );
+    id,
+    orderNumber,
+    itemCount,
+    Object.hashAll(items),
+    total,
+    status,
+    placedAt,
+    shippingMethod,
+    trackingNumber,
+    shippedAt,
+    deliveredAt,
+    customerName,
+    shippingAddress,
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;

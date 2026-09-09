@@ -13,6 +13,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   local_auth_windows
   passkeys_windows
   sentry_flutter
+  share_plus
   url_launcher_windows
 )
 

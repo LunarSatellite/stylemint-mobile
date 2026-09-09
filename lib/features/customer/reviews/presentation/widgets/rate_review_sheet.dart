@@ -70,7 +70,9 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

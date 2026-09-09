@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,8 +6,6 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/upgrade_confirmation_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-
-
 
 class UpgradeSubscriptionScreen extends ConsumerStatefulWidget {
   const UpgradeSubscriptionScreen({super.key});
@@ -26,7 +23,6 @@ class _UpgradeSubscriptionScreenState
   int? _selectedTier;
 
   bool _submitting = false;
-  bool _subDumped = false;
   bool _initialized = false;
 
   /// Picks the plan row matching [tier] + the current [billing] cycle.
@@ -61,8 +57,9 @@ class _UpgradeSubscriptionScreenState
     if (confirmed != true) return;
 
     setState(() => _submitting = true);
-    final result =
-        await ref.read(subscriptionRepositoryProvider).upgrade(planId: plan.id);
+    final result = await ref
+        .read(subscriptionRepositoryProvider)
+        .upgrade(planId: plan.id);
     if (!mounted) return;
     setState(() => _submitting = false);
 
@@ -103,27 +100,17 @@ class _UpgradeSubscriptionScreenState
     // nothing selected so the user must pick.
     final currentTier = currentSubAsync.value?.tier;
 
-    // DEBUG: one-shot print of the current subscription so we can verify
-    // what the backend actually returns. Remove once confirmed.
-    if (!_subDumped) {
-      _subDumped = true;
-      currentSubAsync.whenData((sub) {
-        // ignore: avoid_print
-        print('CURRENT_SUB: ' +
-            (sub == null
-                ? 'null (no active subscription on backend)'
-                : 'tier=${sub.tier} cadence=${sub.cadence} planId=${sub.planId} status=${sub.status}'));
-      });
-    }
-
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -177,21 +164,20 @@ class _UpgradeSubscriptionScreenState
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16),
+                    horizontal: DesignTokens.s16,
+                  ),
                   itemCount: tierGroups.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: DesignTokens.s16),
                   itemBuilder: (context, i) {
                     final group = tierGroups[i];
-                    final selected =
-                        _planFor(plans, group.tier, _billing);
+                    final selected = _planFor(plans, group.tier, _billing);
                     return _PlanCard(
                       planGroup: group,
                       selectedPlan: selected,
                       isYearly: _billing == BillingCycle.yearly,
                       isSelected: _selectedTier == group.tier,
-                      onTap: () =>
-                          setState(() => _selectedTier = group.tier),
+                      onTap: () => setState(() => _selectedTier = group.tier),
                     );
                   },
                 ),
@@ -340,9 +326,7 @@ class _ToggleChip extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected
-                ? DesignTokens.primaryGreen
-                : Colors.transparent,
+            color: selected ? DesignTokens.primaryGreen : Colors.transparent,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Center(
@@ -397,10 +381,12 @@ class _PlanCard extends StatelessWidget {
     final titleBandBg = isSelected
         ? DesignTokens.primaryGreen.withValues(alpha: 0.18)
         : DesignTokens.bgAppBody;
-    final titleBandFg =
-        isSelected ? DesignTokens.primaryGreen : DesignTokens.textWhite;
-    final tagFg =
-        isSelected ? DesignTokens.primaryGreen : DesignTokens.primaryGreen;
+    final titleBandFg = isSelected
+        ? DesignTokens.primaryGreen
+        : DesignTokens.textWhite;
+    final tagFg = isSelected
+        ? DesignTokens.primaryGreen
+        : DesignTokens.primaryGreen;
 
     return Material(
       color: Colors.transparent,
@@ -559,9 +545,11 @@ class _PlanCard extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.check_rounded,
-                                      size: 14,
-                                      color: DesignTokens.primaryGreen),
+                                  const Icon(
+                                    Icons.check_rounded,
+                                    size: 14,
+                                    color: DesignTokens.primaryGreen,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(

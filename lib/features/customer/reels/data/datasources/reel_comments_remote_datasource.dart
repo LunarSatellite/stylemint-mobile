@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_comment_dto.dart';
+import 'package:uuid/uuid.dart';
 
 /// Comments on a reel — `/v1/customer/reels/{reelId}/comments`.
 class ReelCommentsRemoteDataSource {
@@ -29,4 +31,23 @@ class ReelCommentsRemoteDataSource {
     );
     return ReelCommentDto.fromJson(response as Map<String, dynamic>);
   }
+
+  /// Persists an idempotent like on a Style Mint comment.
+  Future<void> like(String reelId, String commentId) => apiClient.post(
+    '/v1/customer/reels/$reelId/comments/$commentId/like',
+    options: _idempotent(),
+  );
+
+  /// Removes the caller's like. The server treats repeated unlikes as a no-op.
+  Future<void> unlike(String reelId, String commentId) => apiClient.authDelete(
+    '/v1/customer/reels/$reelId/comments/$commentId/like',
+    options: _idempotent(),
+  );
+
+  Options _idempotent() => Options(
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': const Uuid().v4(),
+    },
+  );
 }

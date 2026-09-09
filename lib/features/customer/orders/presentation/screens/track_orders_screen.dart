@@ -18,14 +18,17 @@ enum _OrderFilter { all, ongoing, completed, cancelled }
 extension _OrderFilterLabel on _OrderFilter {
   String get label {
     switch (this) {
-      case _OrderFilter.all:       return 'All';
-      case _OrderFilter.ongoing:   return 'Ongoing';
-      case _OrderFilter.completed: return 'Completed';
-      case _OrderFilter.cancelled: return 'Cancelled';
+      case _OrderFilter.all:
+        return 'All';
+      case _OrderFilter.ongoing:
+        return 'Ongoing';
+      case _OrderFilter.completed:
+        return 'Completed';
+      case _OrderFilter.cancelled:
+        return 'Cancelled';
     }
   }
 }
-
 
 class TrackOrdersScreen extends ConsumerStatefulWidget {
   const TrackOrdersScreen({super.key});
@@ -67,9 +70,11 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       result = result
-          .where((o) =>
-              o.orderNumber.toLowerCase().contains(q) ||
-              o.status.label.toLowerCase().contains(q))
+          .where(
+            (o) =>
+                o.orderNumber.toLowerCase().contains(q) ||
+                o.status.label.toLowerCase().contains(q),
+          )
           .toList();
     }
     return result;
@@ -107,12 +112,16 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
                 controller: _searchCtrl,
                 autofocus: true,
                 style: const TextStyle(
-                    color: DesignTokens.textWhite, fontSize: 15),
+                  color: DesignTokens.textWhite,
+                  fontSize: 15,
+                ),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Search orders...',
-                  hintStyle:
-                      TextStyle(color: DesignTokens.textMuted, fontSize: 15),
+                  hintStyle: TextStyle(
+                    color: DesignTokens.textMuted,
+                    fontSize: 15,
+                  ),
                 ),
                 onChanged: (v) => setState(() => _searchQuery = v),
               )
@@ -151,8 +160,12 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
               children: [
                 // ── Filter chips ─────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-                      DesignTokens.s8, DesignTokens.s16, DesignTokens.s16),
+                  padding: const EdgeInsets.fromLTRB(
+                    DesignTokens.s16,
+                    DesignTokens.s8,
+                    DesignTokens.s16,
+                    DesignTokens.s16,
+                  ),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -180,8 +193,12 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
                           icon: Icons.inventory_2,
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-                              0, DesignTokens.s16, DesignTokens.s16),
+                          padding: const EdgeInsets.fromLTRB(
+                            DesignTokens.s16,
+                            0,
+                            DesignTokens.s16,
+                            DesignTokens.s16,
+                          ),
                           itemCount: filtered.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: DesignTokens.s8),
@@ -207,8 +224,9 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
 class _Loader extends StatelessWidget {
   const _Loader();
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+  Widget build(BuildContext context) => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ─── FILTER CHIP ──────────────────────────────────────────────────────────────
@@ -265,7 +283,8 @@ class _OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final date = DateFormat('HH:mm MMM d, yyyy').format(order.placedAt);
     final total = formatMoney(order.total);
-    final meta = '$total  •  $date  •  ${order.itemCount} item${order.itemCount == 1 ? '' : 's'}';
+    final meta =
+        '$total  •  $date  •  ${order.itemCount} item${order.itemCount == 1 ? '' : 's'}';
 
     return GestureDetector(
       onTap: onTap,
@@ -325,8 +344,11 @@ class _OrderCard extends StatelessWidget {
               ),
             ),
 
-            const Icon(Icons.chevron_right_rounded,
-                color: DesignTokens.iconLight, size: 20),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: DesignTokens.iconLight,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -344,17 +366,17 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color bg, Color fg) = switch (status) {
       OrderTrackStatus.cancelled => (
-          const Color(0xFF3D1111),
-          const Color(0xFFFF6B6B),
-        ),
+        const Color(0xFF3D1111),
+        const Color(0xFFFF6B6B),
+      ),
       OrderTrackStatus.delivered => (
-          const Color(0xFF0A2E16),
-          const Color(0xFF4CAF50),
-        ),
+        const Color(0xFF0A2E16),
+        const Color(0xFF4CAF50),
+      ),
       _ => (
-          const Color(0xFF0A1F38),
-          const Color(0xFF4FC3F7),
-        ),
+        const Color(0xFF0A1F38),
+        const Color(0xFF4FC3F7),
+      ),
     };
 
     return Container(
@@ -398,19 +420,25 @@ class _UnauthenticatedView extends StatelessWidget {
                     color: DesignTokens.primaryGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(40),
                   ),
-                  child: const Icon(Icons.inventory_2,
-                      color: DesignTokens.primaryGreen, size: 36),
+                  child: const Icon(
+                    Icons.inventory_2,
+                    color: DesignTokens.primaryGreen,
+                    size: 36,
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s24),
-                Text('Track Your Orders',
-                    style: DesignTokens.titleLarge,
-                    textAlign: TextAlign.center),
+                Text(
+                  'Track Your Orders',
+                  style: DesignTokens.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: DesignTokens.s12),
                 Text(
                   'Sign in to view your order history and track deliveries.',
                   textAlign: TextAlign.center,
-                  style: DesignTokens.mediumRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.mediumRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s24),
                 SizedBox(

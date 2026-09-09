@@ -82,10 +82,26 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  void _onResend() {
-    // TODO: wire the real resend request once available.
-    SmSnackbar.info(context, 'Resend OTP coming soon');
-    setState(_startResendTimer);
+  Future<void> _onResend() async {
+    await ref.read(otpRequestProvider.notifier).requestOtp(
+          identifierType: widget.identifierType,
+          identifier: widget.phone,
+        );
+    if (!mounted) return;
+
+    final requestState = ref.read(otpRequestProvider);
+    requestState.maybeWhen(
+      loadSuccess: (_) {
+        _codeFieldKey.currentState?.clearCode();
+        setState(_startResendTimer);
+        SmSnackbar.success(context, 'A new code has been sent.');
+      },
+      loadFailure: (failure) => SmSnackbar.error(
+        context,
+        _getErrorMessage(failure),
+      ),
+      orElse: () {},
+    );
   }
 
   /// Verify the code as soon as all 5 digits are entered. The name, when the

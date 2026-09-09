@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -16,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/provi
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({required this.productId, super.key});
@@ -23,7 +27,8 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
 
   @override
-  ConsumerState<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
 }
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
@@ -75,19 +80,22 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Future<void> _handleAddToCart(ProductDetail product) async {
     if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!mounted) return;
-    if (!await ensureProfile(context, ref, [ProfileField.shippingAddress])) return;
+    if (!await ensureProfile(context, ref, [ProfileField.shippingAddress]))
+      return;
     if (!mounted) return;
-    // `_selectedVariants` maps an option-group id to the chosen display
-    // value (e.g. "Size" -> "M"), not a real backend variant/SKU id —
-    // passing `.values.first` here sent that raw label as if it were a
-    // variant id. There's no group+value -> variant-id resolution in this
-    // UI yet, so omit it; the backend resolves the product's single
-    // default variant when no variantId is supplied.
+    String? selectedSkuId;
+    for (final group in product.variants) {
+      if (group.type != 'sku' || group.values.isEmpty) continue;
+      final selectedValue = _selectedVariants[group.id] ?? group.values.first;
+      selectedSkuId = group.optionVariantIds[selectedValue];
+      break;
+    }
     final success = await ref
         .read(productDetailNotifierProvider(widget.productId).notifier)
         .addToCart(
           productId: widget.productId,
           qty: _quantity,
+          variantId: selectedSkuId ?? product.defaultVariantId,
         );
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,7 +111,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Future<void> _handleBuyNow(ProductDetail product) async {
     if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!mounted) return;
-    context.push(RouteNames.checkout);
+
+    String? selectedSkuId;
+    for (final group in product.variants) {
+      if (group.type != 'sku' || group.values.isEmpty) continue;
+      final selectedValue = _selectedVariants[group.id] ?? group.values.first;
+      selectedSkuId = group.optionVariantIds[selectedValue];
+      break;
+    }
+
+    final added = await ref
+        .read(productDetailNotifierProvider(widget.productId).notifier)
+        .addToCart(
+          productId: widget.productId,
+          qty: _quantity,
+          variantId: selectedSkuId ?? product.defaultVariantId,
+        );
+    if (!mounted) return;
+
+    if (!added) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't add this item. Please try again."),
+          backgroundColor: DesignTokens.colorError,
+        ),
+      );
+      return;
+    }
+
+    await context.push(RouteNames.checkout);
   }
 
   Future<void> _handleToggleSave() async {
@@ -119,8 +155,9 @@ class _Loader extends StatelessWidget {
   const _Loader();
 
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+  Widget build(BuildContext context) => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ── Body ──────────────────────────────────────────────────────────────────────
@@ -162,24 +199,30 @@ class _ProductBody extends StatelessWidget {
               backgroundColor: DesignTokens.bgAppFoundation,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: DesignTokens.textWhite,
+                ),
                 onPressed: () => context.pop(),
               ),
               actions: [
                 IconButton(
                   icon: Icon(
-                    product.isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: product.isSaved ? DesignTokens.colorError : DesignTokens.textWhite,
+                    product.isSaved
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: product.isSaved
+                        ? DesignTokens.colorError
+                        : DesignTokens.textWhite,
                   ),
                   onPressed: onToggleSave,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.share_outlined, color: DesignTokens.textWhite),
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sharing products is coming soon.'),
-                    ),
+                  icon: const Icon(
+                    Icons.share_outlined,
+                    color: DesignTokens.textWhite,
                   ),
+                  onPressed: () => _shareProduct(product),
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -188,7 +231,9 @@ class _ProductBody extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -217,7 +262,10 @@ class _ProductBody extends StatelessWidget {
                       vendorAvatarUrl: product.vendorAvatarUrl,
                     ),
                     const SizedBox(height: DesignTokens.s12),
-                    _ReviewsSection(productId: product.id, reviewCount: product.reviewCount),
+                    _ReviewsSection(
+                      productId: product.id,
+                      reviewCount: product.reviewCount,
+                    ),
                     const SizedBox(height: DesignTokens.s20),
                     _FromTheReelSection(
                       vendorName: product.vendorName,
@@ -247,6 +295,19 @@ class _ProductBody extends StatelessWidget {
   }
 }
 
+void _shareProduct(ProductDetail product) {
+  unawaited(
+    SharePlus.instance.share(
+      ShareParams(
+        text:
+            'Check out ${product.name} from ${product.vendorName} on '
+            'Style Mint — ${formatMoney(product.price)}. '
+            'Product ID: ${product.id}',
+      ),
+    ),
+  );
+}
+
 // ── Badges ────────────────────────────────────────────────────────────────────
 
 class _BadgesRow extends StatelessWidget {
@@ -256,8 +317,10 @@ class _BadgesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final discountPct = product.compareAtPrice != null && product.compareAtPrice!.amount > 0
-        ? ((1 - product.price.amount / product.compareAtPrice!.amount) * 100).round()
+    final discountPct =
+        product.compareAtPrice != null && product.compareAtPrice!.amount > 0
+        ? ((1 - product.price.amount / product.compareAtPrice!.amount) * 100)
+              .round()
         : null;
 
     return Wrap(
@@ -286,7 +349,11 @@ class _BadgesRow extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.icon, required this.iconColor, required this.label});
+  const _Badge({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+  });
 
   final IconData icon;
   final Color iconColor;
@@ -295,7 +362,10 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
@@ -306,7 +376,12 @@ class _Badge extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: iconColor),
           const SizedBox(width: DesignTokens.s4),
-          Text(label, style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight)),
+          Text(
+            label,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
         ],
       ),
     );
@@ -322,7 +397,9 @@ class _NamePriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unitLabel = product.variants.isNotEmpty ? '/${product.variants.first.name}' : '';
+    final unitLabel = product.variants.isNotEmpty
+        ? '/${product.variants.first.name}'
+        : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -387,9 +464,17 @@ class _ExpandableBlock extends StatelessWidget {
           Text(description, style: DesignTokens.mediumRegular),
           if (specs.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s12),
-            _InfoAccordion(title: 'Key Information', specs: specs, initiallyExpanded: true),
+            _InfoAccordion(
+              title: 'Key Information',
+              specs: specs,
+              initiallyExpanded: true,
+            ),
             const SizedBox(height: DesignTokens.s8),
-            _InfoAccordion(title: 'Other Information', specs: const {}, initiallyExpanded: false),
+            _InfoAccordion(
+              title: 'Other Information',
+              specs: const {},
+              initiallyExpanded: false,
+            ),
           ],
         ],
         const SizedBox(height: DesignTokens.s4),
@@ -397,7 +482,9 @@ class _ExpandableBlock extends StatelessWidget {
           onTap: onToggle,
           child: Text(
             expanded ? 'Read less' : 'Read More',
-            style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.primaryGreen),
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
           ),
         ),
       ],
@@ -446,7 +533,9 @@ class _InfoAccordionState extends State<_InfoAccordion> {
                   Text(widget.title, style: DesignTokens.mediumSemibold),
                   const Spacer(),
                   Icon(
-                    _expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
                     color: DesignTokens.iconLight,
                   ),
                 ],
@@ -458,24 +547,33 @@ class _InfoAccordionState extends State<_InfoAccordion> {
             Padding(
               padding: const EdgeInsets.all(DesignTokens.s16),
               child: Column(
-                children: widget.specs.entries.map((e) => Padding(
-                  padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 100,
-                        child: Text(e.key, style: DesignTokens.smallRegular),
-                      ),
-                      Expanded(
-                        child: Text(
-                          e.value,
-                          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textLight),
+                children: widget.specs.entries
+                    .map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 100,
+                              child: Text(
+                                e.key,
+                                style: DesignTokens.smallRegular,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                e.value,
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textLight,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                )).toList(growable: false),
+                    )
+                    .toList(growable: false),
               ),
             ),
           ],
@@ -502,52 +600,61 @@ class _VariantChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: variants.map((v) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Select ${v.name}',
-              style: DesignTokens.smallRegular.copyWith(
-                fontWeight: FontWeight.w600,
-                color: DesignTokens.textLight,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: v.values.map((val) {
-                  // default-select first value if nothing chosen yet
-                  final isSelected = selected[v.id] == val ||
-                      (selected[v.id] == null && v.values.first == val);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: DesignTokens.s8),
-                    child: GestureDetector(
-                      onTap: () => onSelected(v.id, val),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s16,
-                          vertical: DesignTokens.s8,
-                        ),
-                        decoration: isSelected
-                            ? DesignTokens.chipDecorationSelected()
-                            : DesignTokens.chipDecorationDefault(),
-                        child: Text(
-                          val,
-                          style: DesignTokens.mediumSemibold.copyWith(
-                            color: isSelected ? DesignTokens.primaryGreen : DesignTokens.chipsDefaultText,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(growable: false),
-              ),
-            ),
-          ],
-        );
-      }).toList(growable: false),
+      children: variants
+          .map((v) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Select ${v.name}',
+                  style: DesignTokens.smallRegular.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: v.values
+                        .map((val) {
+                          // default-select first value if nothing chosen yet
+                          final isSelected =
+                              selected[v.id] == val ||
+                              (selected[v.id] == null && v.values.first == val);
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              right: DesignTokens.s8,
+                            ),
+                            child: GestureDetector(
+                              onTap: () => onSelected(v.id, val),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: DesignTokens.s16,
+                                  vertical: DesignTokens.s8,
+                                ),
+                                decoration: isSelected
+                                    ? DesignTokens.chipDecorationSelected()
+                                    : DesignTokens.chipDecorationDefault(),
+                                child: Text(
+                                  val,
+                                  style: DesignTokens.mediumSemibold.copyWith(
+                                    color: isSelected
+                                        ? DesignTokens.primaryGreen
+                                        : DesignTokens.chipsDefaultText,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(growable: false),
+                  ),
+                ),
+              ],
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
@@ -569,24 +676,30 @@ class _SoldByRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
       child: Row(
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: DesignTokens.bgAppBodyLight,
-          backgroundImage: vendorAvatarUrl.isNotEmpty ? CachedNetworkImageProvider(vendorAvatarUrl) : null,
-          child: vendorAvatarUrl.isEmpty
-              ? const Icon(Icons.store_rounded, color: DesignTokens.iconLight, size: 18)
-              : null,
-        ),
-        const SizedBox(width: DesignTokens.s8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Sold By', style: DesignTokens.smallRegular),
-            Text(vendorName, style: DesignTokens.mediumSemibold),
-          ],
-        ),
-      ],
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: DesignTokens.bgAppBodyLight,
+            backgroundImage: vendorAvatarUrl.isNotEmpty
+                ? CachedNetworkImageProvider(vendorAvatarUrl)
+                : null,
+            child: vendorAvatarUrl.isEmpty
+                ? const Icon(
+                    Icons.store_rounded,
+                    color: DesignTokens.iconLight,
+                    size: 18,
+                  )
+                : null,
+          ),
+          const SizedBox(width: DesignTokens.s8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Sold By', style: DesignTokens.smallRegular),
+              Text(vendorName, style: DesignTokens.mediumSemibold),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -634,7 +747,10 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
           // ── header ──────────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, 0,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              0,
             ),
             child: Row(
               children: [
@@ -653,7 +769,8 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
                         top: Radius.circular(DesignTokens.cardRadius),
                       ),
                     ),
-                    builder: (_) => RateReviewSheet(productId: widget.productId),
+                    builder: (_) =>
+                        RateReviewSheet(productId: widget.productId),
                   ),
                   child: Text(
                     'Add review',
@@ -682,7 +799,10 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
               indicatorSize: TabBarIndicatorSize.label,
               dividerColor: Colors.transparent,
               padding: EdgeInsets.zero,
-              tabs: const [Tab(text: 'Reel Reviews'), Tab(text: 'Written Reviews')],
+              tabs: const [
+                Tab(text: 'Reel Reviews'),
+                Tab(text: 'Written Reviews'),
+              ],
             ),
           ),
 
@@ -692,6 +812,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
             builder: (_, __) {
               if (_tabCtrl.index == 0) {
                 return _ReelReviewsContent(
+                  state: reviewsState,
                   onSeeAll: () => context.push(_reviewsRoute),
                 );
               }
@@ -710,34 +831,54 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
 // ── Reel tab ─────────────────────────────────────────────────────────────────
 
 class _ReelReviewsContent extends StatelessWidget {
-  const _ReelReviewsContent({required this.onSeeAll});
+  const _ReelReviewsContent({required this.state, required this.onSeeAll});
+  final ReviewsState state;
   final VoidCallback onSeeAll;
-
-  // ponytail: placeholder counts — swap with reel-reviews API when available
-  static const _counts = ['12.3m', '400k', '1.5m', '989k', '989k', '12.3m', '12.3m', '12.9m', '12.3m'];
 
   @override
   Widget build(BuildContext context) {
+    final reviews = state.maybeWhen(
+      loadSuccess: (items, _, __, ___) => items
+          .where((review) =>
+              review.kind == ReviewKind.reel &&
+              Uri.tryParse(review.reelSourceUrl ?? '') != null)
+          .take(9)
+          .toList(growable: false),
+      orElse: () => const <Review>[],
+    );
     return Column(
       children: [
-        // 3×3 grid — no gap between tabs and grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 2,
-            mainAxisSpacing: 2,
+        if (reviews.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: Text(
+              'No reel reviews yet.',
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 2,
+              mainAxisSpacing: 2,
+            ),
+            itemCount: reviews.length,
+            itemBuilder: (_, index) => _ReelThumb(review: reviews[index]),
           ),
-          itemCount: 9,
-          itemBuilder: (_, i) => _ReelThumb(viewCount: _counts[i]),
-        ),
 
         // ── See all reviews button ─────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s12, DesignTokens.s12, DesignTokens.s12, DesignTokens.s16,
+            DesignTokens.s12,
+            DesignTokens.s12,
+            DesignTokens.s12,
+            DesignTokens.s16,
           ),
           child: GestureDetector(
             onTap: onSeeAll,
@@ -749,7 +890,10 @@ class _ReelReviewsContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
               ),
               alignment: Alignment.center,
-              child: Text('See all reviews', style: DesignTokens.mediumSemibold),
+              child: Text(
+                'See all reviews',
+                style: DesignTokens.mediumSemibold,
+              ),
             ),
           ),
         ),
@@ -759,28 +903,36 @@ class _ReelReviewsContent extends StatelessWidget {
 }
 
 class _ReelThumb extends StatelessWidget {
-  const _ReelThumb({required this.viewCount});
-  final String viewCount;
+  const _ReelThumb({required this.review});
+  final Review review;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ColoredBox(color: DesignTokens.bgAppBodyLight),
-        const Center(
-          child: Icon(Icons.play_circle_outline_rounded, color: Colors.white38, size: 26),
-        ),
-        Positioned(
-          bottom: 4,
-          left: 4,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.play_arrow_rounded, size: 10, color: Colors.white60),
-              const SizedBox(width: 2),
-              Text(
-                viewCount,
+    final source = Uri.tryParse(review.reelSourceUrl ?? '');
+    return Material(
+      color: DesignTokens.bgAppBodyLight,
+      child: InkWell(
+        onTap: source == null
+            ? null
+            : () => launchUrl(source, mode: LaunchMode.externalApplication),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Center(
+              child: Icon(
+                Icons.play_circle_outline_rounded,
+                color: Colors.white38,
+                size: 26,
+              ),
+            ),
+            Positioned(
+              right: 4,
+              bottom: 4,
+              left: 4,
+              child: Text(
+                _platformLabel(review.reelPlatform),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   color: Colors.white,
@@ -788,12 +940,20 @@ class _ReelThumb extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+
+  String _platformLabel(String? platform) => switch (platform) {
+        '0' || 'Instagram' || 'instagram' => 'Instagram',
+        '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
+        '2' || 'TikTok' || 'tiktok' => 'TikTok',
+        '3' || 'Facebook' || 'facebook' => 'Facebook',
+        _ => 'Open reel',
+      };
 }
 
 // ── Written tab ───────────────────────────────────────────────────────────────
@@ -807,7 +967,10 @@ class _WrittenReviewsContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s12, DesignTokens.s8, DesignTokens.s12, DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s8,
+        DesignTokens.s12,
+        DesignTokens.s16,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -817,13 +980,20 @@ class _WrittenReviewsContent extends StatelessWidget {
             loadInProgress: () => const Center(
               child: Padding(
                 padding: EdgeInsets.all(DesignTokens.s24),
-                child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+                child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ),
             loadSuccess: (reviews, _, __, ___) {
-              if (reviews.isEmpty) {
+              final writtenReviews = reviews
+                  .where((review) => review.kind == ReviewKind.written)
+                  .toList(growable: false);
+              if (writtenReviews.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.s16,
+                  ),
                   child: Text(
                     'No written reviews yet.',
                     style: DesignTokens.mediumRegular.copyWith(
@@ -833,7 +1003,7 @@ class _WrittenReviewsContent extends StatelessWidget {
                 );
               }
               return Column(
-                children: reviews
+                children: writtenReviews
                     .take(3)
                     .map((r) => ReviewCard(review: r))
                     .toList(growable: false),
@@ -852,7 +1022,10 @@ class _WrittenReviewsContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
               ),
               alignment: Alignment.center,
-              child: Text('See all reviews', style: DesignTokens.mediumSemibold),
+              child: Text(
+                'See all reviews',
+                style: DesignTokens.mediumSemibold,
+              ),
             ),
           ),
         ],
@@ -892,7 +1065,10 @@ class _FromTheReelSection extends StatelessWidget {
                     ? CachedNetworkImageProvider(vendorAvatarUrl)
                     : null,
                 child: vendorAvatarUrl.isEmpty
-                    ? const Icon(Icons.person_rounded, color: DesignTokens.iconLight)
+                    ? const Icon(
+                        Icons.person_rounded,
+                        color: DesignTokens.iconLight,
+                      )
                     : null,
               ),
               const SizedBox(width: DesignTokens.s12),
@@ -900,7 +1076,12 @@ class _FromTheReelSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('@$vendorName', style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen)),
+                    Text(
+                      '@$vendorName',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
                     Text(
                       'Check out the latest reel featuring this product...',
                       style: DesignTokens.smallRegular,
@@ -910,7 +1091,10 @@ class _FromTheReelSection extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: DesignTokens.iconLight),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DesignTokens.iconLight,
+              ),
             ],
           ),
         ),
@@ -948,18 +1132,22 @@ class _BottomBar extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
-        border: Border(top: BorderSide(color: DesignTokens.borderDefault, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: DesignTokens.borderDefault, width: 0.5),
+        ),
       ),
-      child: product.isInCart ? _InCartBar(
-        price: formatMoney(product.price),
-        quantity: quantity,
-        onQuantityChanged: onQuantityChanged,
-        onBuyNow: onBuyNow,
-      ) : _DefaultBar(
-        isInStock: product.isInStock,
-        onAddToCart: onAddToCart,
-        onBuyNow: onBuyNow,
-      ),
+      child: product.isInCart
+          ? _InCartBar(
+              price: formatMoney(product.price),
+              quantity: quantity,
+              onQuantityChanged: onQuantityChanged,
+              onBuyNow: onBuyNow,
+            )
+          : _DefaultBar(
+              isInStock: product.isInStock,
+              onAddToCart: onAddToCart,
+              onBuyNow: onBuyNow,
+            ),
     );
   }
 }
@@ -996,7 +1184,9 @@ class _DefaultBar extends StatelessWidget {
             style: DesignTokens.primaryButtonStyle(),
             child: Text(
               'Buy Now',
-              style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.buttonPrimaryText,
+              ),
             ),
           ),
         ),
@@ -1027,7 +1217,12 @@ class _InCartBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('Item Total', style: DesignTokens.smallRegular),
-            Text(price, style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.primaryGreen)),
+            Text(
+              price,
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
           ],
         ),
         const SizedBox(width: DesignTokens.s12),
@@ -1050,7 +1245,9 @@ class _InCartBar extends StatelessWidget {
             style: DesignTokens.primaryButtonStyle(),
             child: Text(
               'Buy Now',
-              style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.buttonPrimaryText,
+              ),
             ),
           ),
         ),
@@ -1073,7 +1270,9 @@ class _StepperButton extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: onTap != null ? DesignTokens.bgAppBodyLight : DesignTokens.bgAppBody,
+          color: onTap != null
+              ? DesignTokens.bgAppBodyLight
+              : DesignTokens.bgAppBody,
           borderRadius: BorderRadius.circular(DesignTokens.s8),
           border: Border.all(color: DesignTokens.borderDefault),
         ),

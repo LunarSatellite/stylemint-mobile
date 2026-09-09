@@ -160,22 +160,43 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     if (_selectedState == null) return _showError('State is required');
 
     final websiteText = _websiteController.text.trim();
-    ref.read(vendorApplyDraftProvider.notifier).draft = VendorApplyDraft(
-      accountId: _accountId ?? '',
-      brandName: brandName,
-      legalBusinessName: legalBusinessName,
-      businessType: _selectedBusinessType!,
-      taxId: taxId,
-      businessRegistrationNumber: businessReg,
-      website: websiteText.isEmpty ? null : websiteText,
-      countryRegion: _selectedCountryRegion!,
-      streetAddress: streetAddress,
-      addressLine2: _selectedCountry ?? '',
-      city: city,
-      country: _selectedCountry!,
-      zipCode: zipCode,
-      state: _selectedState!,
-    );
+    // Re-entering Step 1 after filling later steps must not wipe their data —
+    // merge onto the existing draft (if any) rather than always constructing
+    // a fresh one, which previously reset every later step back to defaults.
+    final existing = ref.read(vendorApplyDraftProvider);
+    final draft = existing == null
+        ? VendorApplyDraft(
+            accountId: _accountId ?? '',
+            brandName: brandName,
+            legalBusinessName: legalBusinessName,
+            businessType: _selectedBusinessType!,
+            taxId: taxId,
+            businessRegistrationNumber: businessReg,
+            website: websiteText.isEmpty ? null : websiteText,
+            countryRegion: _selectedCountryRegion!,
+            streetAddress: streetAddress,
+            addressLine2: _selectedCountry ?? '',
+            city: city,
+            country: _selectedCountry!,
+            zipCode: zipCode,
+            state: _selectedState!,
+          )
+        : existing.copyWith(
+            accountId: _accountId,
+            brandName: brandName,
+            legalBusinessName: legalBusinessName,
+            businessType: _selectedBusinessType!,
+            taxId: taxId,
+            businessRegistrationNumber: businessReg,
+            website: websiteText.isEmpty ? null : websiteText,
+            countryRegion: _selectedCountryRegion!,
+            streetAddress: streetAddress,
+            city: city,
+            country: _selectedCountry!,
+            zipCode: zipCode,
+            state: _selectedState!,
+          );
+    ref.read(vendorApplyDraftProvider.notifier).draft = draft;
 
     context.push(RouteNames.vendorApplyStep2);
   }

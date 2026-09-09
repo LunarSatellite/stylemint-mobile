@@ -35,7 +35,9 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
 
   void _pickQuickAmount(int amount) {
     _amountController.text = amount.toString();
-    ref.read(requestPayoutNotifierProvider.notifier).setAmount(amount.toDouble());
+    ref
+        .read(requestPayoutNotifierProvider.notifier)
+        .setAmount(amount.toDouble());
     setState(() {});
   }
 
@@ -61,7 +63,9 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
         selectedId: _selectedMethodId,
         onSelected: (id) {
           setState(() => _selectedMethodId = id);
-          ref.read(requestPayoutNotifierProvider.notifier).setSelectedMethod(id);
+          ref
+              .read(requestPayoutNotifierProvider.notifier)
+              .setSelectedMethod(id);
           Navigator.of(context).pop();
         },
       ),
@@ -117,8 +121,12 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
       );
     });
 
-    final isSubmitting = payoutState.maybeWhen(submitting: () => true, orElse: () => false);
-    final canSubmit = _selectedMethodId != null &&
+    final isSubmitting = payoutState.maybeWhen(
+      submitting: () => true,
+      orElse: () => false,
+    );
+    final canSubmit =
+        _selectedMethodId != null &&
         _amount > 0 &&
         _agreedToTerms &&
         !isSubmitting;
@@ -180,8 +188,9 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                       Expanded(
                         child: TextField(
                           controller: _amountController,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           style: const TextStyle(
                             fontFamily: DesignTokens.fontFamily,
                             fontSize: 32,
@@ -444,14 +453,13 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                   ),
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.disabled)) {
-                      return DesignTokens.primaryGreen
-                          .withValues(alpha: 0.4);
+                      return DesignTokens.primaryGreen.withValues(alpha: 0.4);
                     }
                     return DesignTokens.buttonPrimaryFill;
                   }),
-                  foregroundColor:
-                      const WidgetStatePropertyAll(
-                          DesignTokens.buttonPrimaryText),
+                  foregroundColor: const WidgetStatePropertyAll(
+                    DesignTokens.buttonPrimaryText,
+                  ),
                 ),
                 child: isSubmitting
                     ? const SizedBox(
@@ -705,7 +713,8 @@ class _PaymentMethodSheet extends StatelessWidget {
 
   Widget _iconWidget(PayoutMethodType type) {
     switch (type) {
-      case PayoutMethodType.bankTransfer:
+      case PayoutMethodType.nimbBank:
+      case PayoutMethodType.laxmiBank:
         return Container(
           width: 44,
           height: 44,
@@ -758,24 +767,6 @@ class _PaymentMethodSheet extends StatelessWidget {
             ),
           ),
         );
-      case PayoutMethodType.venmo:
-        return Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFF008CFF),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: const Text(
-            'V',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        );
     }
   }
 
@@ -815,8 +806,7 @@ class _PaymentMethodSheet extends StatelessWidget {
             ],
           ),
         ),
-        for (final method in methods)
-          _buildMethodTile(method),
+        for (final method in methods) _buildMethodTile(method),
         const SizedBox(height: DesignTokens.s16),
       ],
     );
@@ -829,9 +819,7 @@ class _PaymentMethodSheet extends StatelessWidget {
     return GestureDetector(
       onTap: () => onSelected(method.id),
       child: Container(
-        color: isSelected
-            ? const Color(0xFF0D2A1A)
-            : Colors.transparent,
+        color: isSelected ? const Color(0xFF0D2A1A) : Colors.transparent,
         padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s16,
           vertical: DesignTokens.s12,
@@ -962,8 +950,9 @@ class _ConfirmPayoutSheet extends StatelessWidget {
                 backgroundColor: DesignTokens.bgAppBodyLight,
                 foregroundColor: DesignTokens.textWhite,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 elevation: 0,
               ),

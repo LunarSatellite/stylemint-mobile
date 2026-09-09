@@ -21,18 +21,6 @@ class CartScreen extends ConsumerStatefulWidget {
 }
 
 class _CartScreenState extends ConsumerState<CartScreen> {
-  // Promo code applied by the user, null if none.
-  String? _appliedPromoCode;
-
-  // Mock 10% discount — replace with API value when promo endpoint is ready.
-  Money? _promoDiscount(Cart cart) {
-    if (_appliedPromoCode == null) return null;
-    return Money(
-      amount: (cart.subtotal.amount * 0.10).roundToDouble(),
-      currency: cart.subtotal.currency,
-    );
-  }
-
   Future<void> _openPromoSheet() async {
     final code = await showModalBottomSheet<String>(
       context: context,
@@ -41,7 +29,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       builder: (_) => const _PromoBottomSheet(),
     );
     if (code != null && code.isNotEmpty) {
-      setState(() => _appliedPromoCode = code);
+      final applied = await ref
+          .read(cartNotifierProvider.notifier)
+          .applyPromo(code);
+      if (!mounted || applied) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to apply that promo code.')),
+      );
     }
   }
 
@@ -89,7 +83,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
               icon: Icons.shopping_cart_outlined,
             );
           }
-          final discount = _promoDiscount(cart);
           return Column(
             children: [
               Expanded(
@@ -127,7 +120,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           onDelete: () {
                             ref
                                 .read(cartNotifierProvider.notifier)
-                                .removeItem(cart.items[i].id);
+                                  .removeItem(cart.items[i].id);
+                          },
+                          onSaveForLater: () {
+                            ref
+                                .read(cartNotifierProvider.notifier)
+                                .saveForLater(cart.items[i].id);
                           },
                         );
                       }),
@@ -139,7 +137,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             DesignTokens.s16,
                             DesignTokens.s12),
                         child: _PromoRow(
-                          appliedCode: _appliedPromoCode,
+                          appliedCode: cart.appliedPromoCode?.code,
                           onTap: _openPromoSheet,
                         ),
                       ),
@@ -149,8 +147,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             horizontal: DesignTokens.s16),
                         child: _TicketCard(
                           cart: cart,
-                          promoCode: _appliedPromoCode,
-                          promoDiscount: discount,
+                          promoCode: cart.appliedPromoCode?.code,
+                          promoDiscount: cart.appliedPromoCode?.discount,
                         ),
                       ),
                     ],
@@ -562,7 +560,7 @@ class _PromoBottomSheetState extends State<_PromoBottomSheet> {
     final code = _controller.text.trim();
     if (code.isEmpty) return;
     setState(() => _loading = true);
-    // TODO(cart): call promo-code validation API, then pop with validated code.
+    // Validation and discount calculation are performed by the Cart API.
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
       Navigator.of(context).pop(code); // returns code to CartScreen
@@ -571,7 +569,8 @@ class _PromoBottomSheetState extends State<_PromoBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bottom = MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 24, 20, 24 + bottom),
       decoration: const BoxDecoration(

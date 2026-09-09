@@ -11,6 +11,51 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
+typedef ExternalUrlLauncher =
+    Future<bool> Function(
+      Uri url, {
+      LaunchMode mode,
+    });
+
+/// Opens a provider permalink in the best available native experience.
+///
+/// Used by screens outside [ReelPlayer] (e.g. "view on Instagram" actions)
+/// that need an explicit external hand-off even for platforms [ReelPlayer]
+/// itself plays inline. Provider HTTPS links are intentional: Android App
+/// Links and iOS Universal Links hand them to Instagram, TikTok, YouTube, or
+/// Facebook when installed, without relying on undocumented,
+/// provider-specific URL schemes. If no native handler accepts the link, the
+/// same canonical URL opens externally in the browser rather than leaving
+/// the tap unresponsive.
+class ReelExternalLauncher {
+  const ReelExternalLauncher({this.launcher = launchUrl});
+
+  final ExternalUrlLauncher launcher;
+
+  Future<bool> open(Uri permalink) async {
+    // Imported reels are canonical provider HTTPS permalinks. Reject anything
+    // else before it reaches the operating-system URL resolver.
+    if (permalink.scheme != 'https' && permalink.scheme != 'http') {
+      return false;
+    }
+    try {
+      final openedNatively = await launcher(
+        permalink,
+        mode: LaunchMode.externalNonBrowserApplication,
+      );
+      if (openedNatively) return true;
+    } on Exception {
+      // The browser fallback below keeps a valid provider link actionable.
+    }
+
+    try {
+      return await launcher(permalink, mode: LaunchMode.externalApplication);
+    } on Exception {
+      return false;
+    }
+  }
+}
+
 /// Lets an ancestor (e.g. a full-screen tap layer) toggle the player's
 /// play/pause state without owning the underlying controller.
 class ReelPlaybackController {
@@ -803,13 +848,23 @@ class _ReelPlayerState extends State<ReelPlayer>
         fit: StackFit.expand,
         children: [
           if (controller != null)
-            YoutubePlayer(
-              controller: controller,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: DesignTokens.primaryGreen,
-              progressColors: ProgressBarColors(
-                playedColor: DesignTokens.primaryGreen,
-                handleColor: DesignTokens.primaryGreen,
+            // The IFrame player is a native WebView (a platform view), which
+            // can claim touches at the OS level before Flutter's gesture
+            // arena resolves them — swallowing the vertical swipe the
+            // feed's PageView needs to advance to the next reel. Playback is
+            // driven entirely by [controller] (autoplay/pause/loop), so the
+            // WebView never needs to receive touches itself; ignoring
+            // pointers here lets them fall through to the tap-to-toggle and
+            // PageView gesture detectors above/around this widget.
+            IgnorePointer(
+              child: YoutubePlayer(
+                controller: controller,
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: DesignTokens.primaryGreen,
+                progressColors: ProgressBarColors(
+                  playedColor: DesignTokens.primaryGreen,
+                  handleColor: DesignTokens.primaryGreen,
+                ),
               ),
             )
           else if ((widget.reel.thumbnailUrl ?? '').isNotEmpty)

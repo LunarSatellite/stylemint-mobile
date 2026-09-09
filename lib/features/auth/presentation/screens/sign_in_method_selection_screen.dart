@@ -536,7 +536,9 @@ class _DisplayNameSheetState extends State<_DisplayNameSheet> {
         DesignTokens.s16,
         DesignTokens.s24,
         DesignTokens.s16,
-        DesignTokens.s24 + MediaQuery.of(context).viewInsets.bottom,
+        DesignTokens.s24 +
+            MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

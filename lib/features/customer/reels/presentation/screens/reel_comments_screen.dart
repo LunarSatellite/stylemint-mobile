@@ -13,8 +13,7 @@ class ReelCommentsScreen extends ConsumerStatefulWidget {
   final String reelId;
 
   @override
-  ConsumerState<ReelCommentsScreen> createState() =>
-      _ReelCommentsScreenState();
+  ConsumerState<ReelCommentsScreen> createState() => _ReelCommentsScreenState();
 }
 
 class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
@@ -32,9 +31,11 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
     final state = ref.watch(provider);
 
     ref.listen<ReelCommentsState>(provider, (prev, next) {
-      if (next.errorMessage != null && next.errorMessage != prev?.errorMessage) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+      if (next.errorMessage != null &&
+          next.errorMessage != prev?.errorMessage) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
     });
 
@@ -44,20 +45,25 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         centerTitle: true,
         // Spec: header title 16/600/lh1.0 white, centered.
-        title: const Text('Comments',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              height: 1.0,
-              color: DesignTokens.textWhite,
-            )),
+        title: const Text(
+          'Comments',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            height: 1.0,
+            color: DesignTokens.textWhite,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -65,20 +71,34 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
             child: state.isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen))
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  )
                 : state.comments.isEmpty
-                    ? Center(
-                        child: Text('No comments yet. Be the first!',
-                            style: DesignTokens.bodyText),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(DesignTokens.s16),
-                        itemCount: state.comments.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: DesignTokens.s32),
-                        itemBuilder: (_, i) =>
-                            _CommentTile(comment: state.comments[i]),
+                ? Center(
+                    child: Text(
+                      'No comments yet. Be the first!',
+                      style: DesignTokens.bodyText,
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(DesignTokens.s16),
+                    itemCount: state.comments.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: DesignTokens.s32),
+                    itemBuilder: (_, i) => _CommentTile(
+                      comment: state.comments[i],
+                      liked: state.likedCommentIds.contains(
+                        state.comments[i].id,
                       ),
+                      likeCount:
+                          state.likeCounts[state.comments[i].id] ??
+                          state.comments[i].likeCount,
+                      onLike: () => ref
+                          .read(provider.notifier)
+                          .toggleLike(state.comments[i].id),
+                    ),
+                  ),
           ),
           _Composer(
             controller: _inputCtrl,
@@ -95,20 +115,18 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
   }
 }
 
-class _CommentTile extends StatefulWidget {
-  const _CommentTile({required this.comment});
+class _CommentTile extends StatelessWidget {
+  const _CommentTile({
+    required this.comment,
+    required this.liked,
+    required this.likeCount,
+    required this.onLike,
+  });
 
   final ReelCommentDto comment;
-
-  @override
-  State<_CommentTile> createState() => _CommentTileState();
-}
-
-class _CommentTileState extends State<_CommentTile> {
-  // MOCK — the comment DTO has no `isLiked` flag and there's no like endpoint
-  // yet, so the like toggle is local/optimistic only (not persisted).
-  bool _liked = false;
-  late int _likeCount = widget.comment.likeCount;
+  final bool liked;
+  final int likeCount;
+  final VoidCallback onLike;
 
   static const TextStyle _metaStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -118,14 +136,8 @@ class _CommentTileState extends State<_CommentTile> {
     color: DesignTokens.textMuted,
   );
 
-  void _toggleLike() => setState(() {
-        _liked = !_liked;
-        _likeCount += _liked ? 1 : -1;
-      });
-
   @override
   Widget build(BuildContext context) {
-    final comment = widget.comment;
     final avatar = comment.authorAvatarUrl;
     final handle = '@${comment.authorDisplayName ?? 'User'}';
     return Row(
@@ -140,17 +152,25 @@ class _CommentTileState extends State<_CommentTile> {
                 ? Container(
                     color: DesignTokens.bgAppBodyLight,
                     alignment: Alignment.center,
-                    child: const Icon(Icons.person,
-                        size: 22, color: DesignTokens.iconLight),
+                    child: const Icon(
+                      Icons.person,
+                      size: 22,
+                      color: DesignTokens.iconLight,
+                    ),
                   )
-                : Image.network(avatar,
+                : Image.network(
+                    avatar,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                          color: DesignTokens.bgAppBodyLight,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.person,
-                              size: 22, color: DesignTokens.iconLight),
-                        )),
+                      color: DesignTokens.bgAppBodyLight,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.person,
+                        size: 22,
+                        color: DesignTokens.iconLight,
+                      ),
+                    ),
+                  ),
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
@@ -162,16 +182,19 @@ class _CommentTileState extends State<_CommentTile> {
               Row(
                 children: [
                   Flexible(
-                    child: Text(handle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _metaStyle),
+                    child: Text(
+                      handle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _metaStyle,
+                    ),
                   ),
                   Container(
                     width: 3,
                     height: 3,
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s8,
+                    ),
                     decoration: const BoxDecoration(
                       color: Color(0xFF71717B),
                       shape: BoxShape.circle,
@@ -182,14 +205,16 @@ class _CommentTileState extends State<_CommentTile> {
               ),
               const SizedBox(height: DesignTokens.s4),
               // Spec: comment body 12/400/lh1.5 #FFFFFF.
-              Text(comment.body,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    height: 1.5,
-                    color: DesignTokens.textWhite,
-                  )),
+              Text(
+                comment.body,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
             ],
           ),
         ),
@@ -197,18 +222,18 @@ class _CommentTileState extends State<_CommentTile> {
         // Spec: trailing like column — 20px icon (#9F9FA9 / liked #FB2C36) +
         // count 10/600 #9F9FA9 below.
         GestureDetector(
-          onTap: _toggleLike,
+          onTap: onLike,
           behavior: HitTestBehavior.opaque,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                _liked ? Icons.favorite : Icons.favorite_border,
+                liked ? Icons.favorite : Icons.favorite_border,
                 size: 20,
-                color: _liked ? const Color(0xFFFB2C36) : DesignTokens.iconLight,
+                color: liked ? const Color(0xFFFB2C36) : DesignTokens.iconLight,
               ),
               const SizedBox(height: 2),
-              Text(_compact(_likeCount), style: _metaStyle),
+              Text(_compact(likeCount), style: _metaStyle),
             ],
           ),
         ),
@@ -249,8 +274,12 @@ class _Composer extends StatelessWidget {
     return SafeArea(
       child: Container(
         // Spec: composer padding 16/16/16/0, 1px top border, 12px gap.
-        padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s16,
-            DesignTokens.s16, 0),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          0,
+        ),
         decoration: const BoxDecoration(
           color: DesignTokens.bgAppFoundation,
           border: Border(
@@ -281,21 +310,32 @@ class _Composer extends StatelessWidget {
                   isDense: true,
                   // Spec: radius 8, 1px #52525C border, padding 12/10.
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s12, vertical: 10),
+                    horizontal: DesignTokens.s12,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.inputRadius,
+                    ),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.inputFieldBorder,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.inputFieldBorder),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.inputRadius,
+                    ),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.inputFieldBorder,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                    borderSide:
-                        const BorderSide(color: DesignTokens.primaryGreen),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.inputRadius,
+                    ),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.primaryGreen,
+                    ),
                   ),
                 ),
               ),
@@ -308,12 +348,16 @@ class _Composer extends StatelessWidget {
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: DesignTokens.primaryGreen),
+                        strokeWidth: 2,
+                        color: DesignTokens.primaryGreen,
+                      ),
                     ),
                   )
                 : IconButton(
-                    icon: const Icon(Icons.send_rounded,
-                        color: DesignTokens.primaryGreen),
+                    icon: const Icon(
+                      Icons.send_rounded,
+                      color: DesignTokens.primaryGreen,
+                    ),
                     onPressed: onSend,
                   ),
           ],

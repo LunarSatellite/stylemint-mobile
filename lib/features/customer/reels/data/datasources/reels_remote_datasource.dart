@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_dto.dart';
@@ -50,16 +50,19 @@ class ReelsRemoteDataSource {
   Reel _cardJsonToReel(Map<String, dynamic> r) {
     final taggedProducts = (r['taggedProducts'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
-        .map((p) => TaggedProductEntity(
-              id: (p['productId'] as String?) ?? '',
-              name: (p['name'] as String?) ?? '',
-              imageUrl: absoluteMediaUrl(p['imageUrl'] as String?),
-              price: Money(
-                amount: (p['priceAmount'] as num?)?.toDouble() ?? 0,
-                currency: (p['priceCurrency'] as String?) ?? 'NPR',
-              ),
-              quantity: 1,
-            ))
+        .map(
+          (p) => TaggedProductEntity(
+            id: (p['productId'] as String?) ?? '',
+            taggedProductId: p['taggedProductId'] as String?,
+            name: (p['name'] as String?) ?? '',
+            imageUrl: absoluteMediaUrl(p['imageUrl'] as String?),
+            price: Money(
+              amount: (p['priceAmount'] as num?)?.toDouble() ?? 0,
+              currency: (p['priceCurrency'] as String?) ?? 'NPR',
+            ),
+            quantity: 1,
+          ),
+        )
         .toList(growable: false);
 
     final platformStr = (r['sourcePlatform'] as String?) ?? '';
@@ -97,9 +100,11 @@ class ReelsRemoteDataSource {
     if (s == '3' || lower.contains('youtube')) return SocialPlatform.youtube;
     if (s == '2' || lower.contains('tiktok')) return SocialPlatform.tiktok;
     if (s == '4' || lower.contains('facebook')) return SocialPlatform.facebook;
-    if (s == '1' || lower.contains('instagram')) return SocialPlatform.instagram;
+    if (s == '1' || lower.contains('instagram'))
+      return SocialPlatform.instagram;
     return SocialPlatform.instagram;
   }
+
   Future<ReelDto> getReelDetail(String reelId) async {
     final response = await apiClient.get('/v1/public/reels/$reelId');
     return ReelDto.fromJson(response as Map<String, dynamic>);
@@ -138,19 +143,23 @@ class ReelsRemoteDataSource {
     );
   }
 
-  /// POST `/v1/connection-requests` — follow a creator.
+  /// POST `/v1/follows/{accountId}` — one-way creator follow.
+  ///
+  /// The feed's legacy `creatorProfileId` field is populated with the
+  /// creator account id by the Discovery bridge. It must not be sent to the
+  /// Networking connection-request API: friendships are mutual and are a
+  /// separate feature from following a creator.
   Future<void> followCreator(String creatorId, String idempotencyKey) async {
     await apiClient.post(
-      '/v1/connection-requests',
-      data: {'targetAccountId': creatorId},
+      '/v1/follows/$creatorId',
       options: _idempotent(idempotencyKey),
     );
   }
 
-  /// DELETE `/v1/connections/{otherAccountId}` — unfollow a creator.
+  /// DELETE `/v1/follows/{accountId}` — one-way creator unfollow.
   Future<void> unfollowCreator(String creatorId, String idempotencyKey) async {
     await apiClient.authDelete(
-      '/v1/connections/$creatorId',
+      '/v1/follows/$creatorId',
       options: _idempotent(idempotencyKey),
     );
   }

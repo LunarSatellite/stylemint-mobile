@@ -47,7 +47,9 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, OrderDetail>> getOrderDetail(String orderId) async {
+  Future<Either<NetworkExceptions, OrderDetail>> getOrderDetail(
+    String orderId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getOrderDetail(orderId);
@@ -63,6 +65,25 @@ class OrdersRepositoryImpl implements OrdersRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, OrderInvoice>> getOrderInvoice(
+    String orderNumber,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dto = await remoteDataSource.getOrderInvoice(orderNumber);
+      return right(dto.toDomain());
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      }
+      if (e is NetworkExceptions) return left(e);
+      return left(NetworkExceptions.unexpectedError());
     }
   }
 
@@ -96,7 +117,10 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> requestReturn(String orderId, String reason) async {
+  Future<Either<NetworkExceptions, Unit>> requestReturn(
+    String orderId,
+    String reason,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.requestReturn(orderId, reason, _uuid.v4());

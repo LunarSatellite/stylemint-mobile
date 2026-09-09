@@ -21,13 +21,17 @@ final dropPartyRepositoryProvider = Provider<DropPartyRepository>(
 
 final dropPartiesNotifierProvider =
     StateNotifierProvider<DropPartyNotifier, DropPartiesState>(
-  (ref) => DropPartyNotifier(ref.watch(dropPartyRepositoryProvider)),
-);
+      (ref) => DropPartyNotifier(ref.watch(dropPartyRepositoryProvider)),
+    );
 
 final dropPartyDetailNotifierProvider =
-    StateNotifierProvider.family<DropPartyDetailNotifier, DropPartyDetailState, String>(
-  (ref, partyId) => DropPartyDetailNotifier(
-    ref.watch(dropPartyRepositoryProvider),
-    partyId,
-  ),
-);
+    StateNotifierProvider.family<
+      DropPartyDetailNotifier,
+      DropPartyDetailState,
+      String
+    >(
+      (ref, partyId) => DropPartyDetailNotifier(
+        ref.watch(dropPartyRepositoryProvider),
+        partyId,
+      ),
+    );

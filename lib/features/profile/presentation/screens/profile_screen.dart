@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +24,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/theme/theme_mode_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -163,7 +166,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ProfileHeader(
           summary: widget.summary,
           onEdit: () => context.push('${RouteNames.profile}/edit'),
-          onNotifications: () => context.push(RouteNames.customerRecentActivity),
+          onNotifications: () =>
+              context.push(RouteNames.customerRecentActivity),
         ),
         const SizedBox(height: DesignTokens.s20),
         ProfileStatsRow(summary: widget.summary),
@@ -229,9 +233,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             ProfileMenuItem(
               icon: Icons.palette_outlined,
               label: 'Appearance',
-              onTap: () {
-                /* TODO(profile): appearance */
-              },
+              onTap: () => _showAppearanceSheet(context),
             ),
             ProfileMenuItem(
               icon: Icons.notifications_outlined,
@@ -311,6 +313,61 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       ],
     );
   }
+
+  void _showAppearanceSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => Consumer(
+        builder: (_, ref, _) {
+          final selected = ref.watch(themeModeProvider);
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Appearance', style: DesignTokens.h3),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose how Style Mint looks on this device.',
+                    style: DesignTokens.body.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final mode in ThemeMode.values)
+                    RadioListTile<ThemeMode>(
+                      value: mode,
+                      groupValue: selected,
+                      activeColor: DesignTokens.primaryGreen,
+                      title: Text(_themeModeLabel(mode)),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        unawaited(
+                          ref.read(themeModeProvider.notifier).setMode(value),
+                        );
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _themeModeLabel(ThemeMode mode) => switch (mode) {
+    ThemeMode.system => 'Use device setting',
+    ThemeMode.light => 'Light',
+    ThemeMode.dark => 'Dark',
+  };
 }
 
 /// Creator & Vendor entry points + role switcher.
@@ -402,9 +459,13 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
                 .read(sessionControllerProvider)
                 .maybeWhen(authenticated: (id) => id, orElse: () => null);
             if (accountId != null && accountId.isNotEmpty) {
-              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+              await ref
+                  .read(roleNotifierProvider.notifier)
+                  .loadRoles(accountId);
             }
-            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+            final freshRoles = ref
+                .read(roleNotifierProvider)
+                .maybeWhen(
                   loadSuccess: (r) => r,
                   orElse: () => const <RoleProfileDto>[],
                 );
@@ -416,9 +477,7 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
             // resolve the existing application status so a submitted/under-
             // review account lands on the right status screen instead of
             // re-entering the apply form.
-            await ref
-                .read(creatorApplyNotifierProvider.notifier)
-                .checkStatus();
+            await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
             if (!mounted) return;
             final statusState = ref.read(creatorApplyNotifierProvider);
             final route = statusState.maybeWhen(
@@ -454,9 +513,13 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
                 .read(sessionControllerProvider)
                 .maybeWhen(authenticated: (id) => id, orElse: () => null);
             if (accountId != null && accountId.isNotEmpty) {
-              await ref.read(roleNotifierProvider.notifier).loadRoles(accountId);
+              await ref
+                  .read(roleNotifierProvider.notifier)
+                  .loadRoles(accountId);
             }
-            final freshRoles = ref.read(roleNotifierProvider).maybeWhen(
+            final freshRoles = ref
+                .read(roleNotifierProvider)
+                .maybeWhen(
                   loadSuccess: (r) => r,
                   orElse: () => const <RoleProfileDto>[],
                 );
@@ -475,8 +538,7 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
               if (!mounted) return;
               final vendorState = ref.read(vendorApplyNotifierProvider);
               final route = vendorState.maybeWhen(
-                loadSuccess: (application) =>
-                    switch (application.status) {
+                loadSuccess: (application) => switch (application.status) {
                   VendorApplicationStatus.approved =>
                     RouteNames.vendorApplyApproved,
                   VendorApplicationStatus.rejected =>
@@ -498,6 +560,3 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
     );
   }
 }
-
-
-

@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
+import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_center_content.dart';
+import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class HelpTopicScreen extends StatefulWidget {
-  const HelpTopicScreen({required this.topic, super.key});
-  final HelpTopic topic;
+class HelpTopicScreen extends ConsumerStatefulWidget {
+  const HelpTopicScreen({required this.category, super.key});
+  final HelpCenterCategory category;
 
   @override
-  State<HelpTopicScreen> createState() => _HelpTopicScreenState();
+  ConsumerState<HelpTopicScreen> createState() => _HelpTopicScreenState();
 }
 
-class _HelpTopicScreenState extends State<HelpTopicScreen> {
+class _HelpTopicScreenState extends ConsumerState<HelpTopicScreen> {
   String _query = '';
-
-  List<HelpArticle> get _filtered {
-    if (_query.isEmpty) return widget.topic.articles;
-    final q = _query.toLowerCase();
-    return widget.topic.articles
-        .where(
-          (a) =>
-              a.title.toLowerCase().contains(q) ||
-              a.preview.toLowerCase().contains(q),
-        )
-        .toList();
-  }
 
   @override
   Widget build(BuildContext context) {
+    final articles = ref.watch(helpArticlesProvider(widget.category.code));
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -36,73 +28,76 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
           onPressed: () => context.pop(),
-          style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
-        title: Text(widget.topic.title, style: DesignTokens.sectionInnerTitle),
+        title: Text(
+          widget.category.name,
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+      body: Column(
         children: [
-          Text(
-            'View articles related to ${widget.topic.title}',
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // Search
-          Container(
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBody,
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            ),
+          Padding(
+            padding: const EdgeInsets.all(DesignTokens.s16),
             child: TextField(
-              onChanged: (v) => setState(() => _query = v),
-              style: DesignTokens.mediumRegular.copyWith(
-                color: DesignTokens.textWhite,
-              ),
+              onChanged: (value) => setState(() => _query = value),
+              style: DesignTokens.mediumRegular,
               decoration: InputDecoration(
-                hintText: 'Search for keywords..',
-                hintStyle: DesignTokens.mediumRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
-                suffixIcon: const Icon(
-                  Icons.search,
-                  color: DesignTokens.textMuted,
-                  size: 20,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                  vertical: DesignTokens.s12,
+                hintText: 'Search articles',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: DesignTokens.bgAppBody,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: DesignTokens.s16),
-
-          if (_filtered.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: DesignTokens.s32),
-                child: Text(
-                  'No articles found.',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
+          Expanded(
+            child: articles.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  color: DesignTokens.primaryGreen,
                 ),
               ),
-            )
-          else
-            for (final article in _filtered) ...[
-              _ArticleCard(
-                article: article,
-                onTap: () =>
-                    context.push(RouteNames.supportArticle, extra: article),
+              error: (_, _) => _ErrorState(
+                onRetry: () => ref.invalidate(
+                  helpArticlesProvider(widget.category.code),
+                ),
               ),
-              const SizedBox(height: DesignTokens.s12),
-            ],
+              data: (items) {
+                final query = _query.trim().toLowerCase();
+                final visible = query.isEmpty
+                    ? items
+                    : items
+                          .where(
+                            (article) =>
+                                article.title.toLowerCase().contains(query),
+                          )
+                          .toList(growable: false);
+                if (visible.isEmpty) {
+                  return const Center(
+                    child: Text('No published articles found.'),
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                  ),
+                  itemCount: visible.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: DesignTokens.s12),
+                  itemBuilder: (_, index) => _ArticleCard(
+                    article: visible[index],
+                    onTap: () => context.push(
+                      RouteNames.supportArticle,
+                      extra: visible[index],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -111,93 +106,45 @@ class _HelpTopicScreenState extends State<HelpTopicScreen> {
 
 class _ArticleCard extends StatelessWidget {
   const _ArticleCard({required this.article, required this.onTap});
-  final HelpArticle article;
+  final HelpArticleSummary article;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(DesignTokens.s16),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              article.title,
-              style: DesignTokens.mediumSemibold.copyWith(
-                color: DesignTokens.textWhite,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  size: 13,
-                  color: DesignTokens.textMuted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  article.date,
-                  style: DesignTokens.tiny.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              article.preview,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textLight,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            Row(
-              children: [
-                const Icon(
-                  Icons.remove_red_eye_outlined,
-                  size: 14,
-                  color: DesignTokens.textMuted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${_formatViews(article.views)} Views',
-                  style: DesignTokens.tiny.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.s16),
-                const Icon(
-                  Icons.access_time_outlined,
-                  size: 14,
-                  color: DesignTokens.textMuted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '${article.readMinutes} min read',
-                  style: DesignTokens.tiny.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+    child: Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       ),
-    );
-  }
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(article.title, style: DesignTokens.mediumSemibold),
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'Updated ${DateFormat.yMMMd().format(article.updatedUtc.toLocal())}',
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
-  String _formatViews(int v) {
-    if (v >= 1000)
-      return '${(v / 1000).toStringAsFixed(v % 1000 == 0 ? 0 : 3).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')},${(v % 1000).toString().padLeft(3, '0')}';
-    return v.toString();
-  }
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Could not load articles.'),
+        TextButton(onPressed: onRetry, child: const Text('Try again')),
+      ],
+    ),
+  );
 }

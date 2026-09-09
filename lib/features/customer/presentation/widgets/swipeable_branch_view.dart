@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -58,6 +59,10 @@ class _SwipeableBranchViewState extends State<SwipeableBranchView> {
   Widget build(BuildContext context) {
     return PageView.builder(
       controller: _controller,
+      // See the matching comment on ReelsFeedScreen's vertical PageView —
+      // this horizontal one is the outer half of the same nested-PageView
+      // pair, so it gets the same fix for the same reason.
+      dragStartBehavior: DragStartBehavior.down,
       itemCount: widget.branches.length,
       onPageChanged: (index) {
         if (index != widget.navigationShell.currentIndex) {

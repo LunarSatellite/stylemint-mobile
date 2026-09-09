@@ -33,13 +33,30 @@ abstract class ProductDetailDto with _$ProductDetailDto {
     final defaultVariant = variants.isEmpty
         ? null
         : variants.firstWhere((v) => v.isDefault, orElse: () => variants.first);
-    final sortedImages = [...images]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final sortedImages = [...images]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final skuChoices = variants.length > 1
+        ? [
+            ProductVariant(
+              id: 'sku',
+              name: 'option',
+              values: variants
+                  .map((variant) => variant.sku)
+                  .toList(growable: false),
+              type: 'sku',
+              optionVariantIds: {
+                for (final variant in variants) variant.sku: variant.id,
+              },
+            ),
+          ]
+        : const <ProductVariant>[];
 
     return ProductDetail(
       id: id,
       name: name,
-      description:
-          longDescriptionMarkdown.isNotEmpty ? longDescriptionMarkdown : shortDescription,
+      description: longDescriptionMarkdown.isNotEmpty
+          ? longDescriptionMarkdown
+          : shortDescription,
       images: sortedImages.map((i) => i.cdnUrl).toList(growable: false),
       price: Money(
         amount: defaultVariant?.priceAmount ?? 0,
@@ -55,18 +72,19 @@ abstract class ProductDetailDto with _$ProductDetailDto {
       // lookup to populate; left blank rather than blocking the page.
       vendorName: '',
       vendorAvatarUrl: '',
-      isInStock: defaultVariant == null ||
+      isInStock:
+          defaultVariant == null ||
           !defaultVariant.trackInventory ||
           defaultVariant.quantityOnHand > 0,
-      stockCount: defaultVariant?.trackInventory == true ? defaultVariant?.quantityOnHand : null,
-      // Backend variants are per-SKU price/stock rows, not option groups
-      // (e.g. "Size" -> ["S","M","L"]) — this endpoint doesn't expose an
-      // option-axis structure to build that selector from.
-      variants: const [],
+      stockCount: defaultVariant?.trackInventory == true
+          ? defaultVariant?.quantityOnHand
+          : null,
+      variants: skuChoices,
       specifications: const {},
       shippingInfo: '',
       isSaved: false,
       isInCart: false,
+      defaultVariantId: defaultVariant?.id,
     );
   }
 }
@@ -107,6 +125,7 @@ abstract class ProductVariantDto with _$ProductVariantDto {
     name: sku,
     values: const [],
     type: 'sku',
+    optionVariantIds: {sku: id},
   );
 }
 

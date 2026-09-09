@@ -27,12 +27,17 @@ class FedExTrackingScreen extends StatelessWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: DesignTokens.textWhite, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('FedEx Tracking',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'FedEx Tracking',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         centerTitle: true,
       ),
       body: ListView(
@@ -57,8 +62,9 @@ class FedExTrackingScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Order #${order.orderNumber}',
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       const Text(
@@ -74,7 +80,9 @@ class FedExTrackingScreen extends StatelessWidget {
                       // Expected delivery pill
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0A1F38),
                           borderRadius: BorderRadius.circular(99),
@@ -82,9 +90,11 @@ class FedExTrackingScreen extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.local_shipping_outlined,
-                                size: 12,
-                                color: Color(0xFF4FC3F7)),
+                            const Icon(
+                              Icons.local_shipping_outlined,
+                              size: 12,
+                              color: Color(0xFF4FC3F7),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Expected Delivery: $expectedDelivery',
@@ -102,10 +112,8 @@ class FedExTrackingScreen extends StatelessWidget {
                       // Tracking ID
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(
-                              ClipboardData(text: tracking));
-                          SmSnackbar.success(
-                              context, 'Tracking ID copied!');
+                          Clipboard.setData(ClipboardData(text: tracking));
+                          SmSnackbar.success(context, 'Tracking ID copied!');
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -120,8 +128,11 @@ class FedExTrackingScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Icon(Icons.copy_outlined,
-                                size: 14, color: Color(0xFF00BCFF)),
+                            const Icon(
+                              Icons.copy_outlined,
+                              size: 14,
+                              color: Color(0xFF00BCFF),
+                            ),
                           ],
                         ),
                       ),
@@ -140,15 +151,21 @@ class FedExTrackingScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tracking History',
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite)),
+                Text(
+                  'Tracking History',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 _HorizontalTimeline(status: order.status),
                 const SizedBox(height: 12),
                 const Center(
-                  child: Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 22, color: DesignTokens.textMuted),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -170,17 +187,23 @@ class FedExTrackingScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.local_shipping_rounded,
-                      color: Color(0xFFF5A623), size: 22),
+                  child: const Icon(
+                    Icons.local_shipping_rounded,
+                    color: Color(0xFFF5A623),
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Shipping Address',
-                          style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.textWhite)),
+                      Text(
+                        'Shipping Address',
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       const Text(
                         '+977 9840065322  •  customer@stylemint.com',
@@ -194,8 +217,9 @@ class FedExTrackingScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         order.shippingAddress,
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textMuted),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -245,7 +269,8 @@ class FedExTrackingScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -260,8 +285,11 @@ class FedExTrackingScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 6),
-                  Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: Colors.black),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.black,
+                  ),
                 ],
               ),
             ),
@@ -287,12 +315,12 @@ class _HorizontalTimeline extends StatelessWidget {
   ];
 
   int get _currentIndex => switch (status) {
-        OrderTrackStatus.preparingForShipping => 0,
-        OrderTrackStatus.inTransit => 1,
-        OrderTrackStatus.outForDelivery => 2,
-        OrderTrackStatus.delivered => 4,
-        OrderTrackStatus.cancelled => -1,
-      };
+    OrderTrackStatus.preparingForShipping => 0,
+    OrderTrackStatus.inTransit => 1,
+    OrderTrackStatus.outForDelivery => 2,
+    OrderTrackStatus.delivered => 4,
+    OrderTrackStatus.cancelled => -1,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -354,7 +382,9 @@ class _TimelineStep extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-                color: bg, borderRadius: BorderRadius.circular(10)),
+              color: bg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             alignment: Alignment.center,
             child: Icon(icon, color: fg, size: 24),
           ),
@@ -362,17 +392,21 @@ class _TimelineStep extends StatelessWidget {
           SizedBox(
             height: 16,
             child: isDone
-                ? const Icon(Icons.check_circle_rounded,
-                    size: 14, color: DesignTokens.primaryGreen)
+                ? const Icon(
+                    Icons.check_circle_rounded,
+                    size: 14,
+                    color: DesignTokens.primaryGreen,
+                  )
                 : isCurrent
-                    ? Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: Color(0xFF4FC3F7),
-                            shape: BoxShape.circle),
-                      )
-                    : null,
+                ? Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4FC3F7),
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 4),
           Text(

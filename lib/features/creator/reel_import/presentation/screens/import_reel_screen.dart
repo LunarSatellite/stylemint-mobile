@@ -73,17 +73,17 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
       builder: (_) => _UrlPasteSheet(platform: _selectedPlatform),
     ).then((url) {
       if (url == null || url.isEmpty || !mounted) return;
-      final externalId = _extractExternalId(url);
-      final pastedReel = ImportableReel(
-        id: externalId,
-        platform: _selectedPlatform,
-        platformPostId: externalId,
-        sourceUrl: url,
-        thumbnailUrl: '',
-        caption: '',
-        createdAt: DateTime.now(),
-        videoDuration: 0,
-      );
+      final pastedReel = _findVerifiedReel(url);
+      if (pastedReel == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Connect and refresh this account, then choose the reel from the verified list.',
+            ),
+          ),
+        );
+        return;
+      }
       unawaited(
         context.push(
           RouteNames.reelImportPreview,
@@ -93,15 +93,17 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
     }).ignore();
   }
 
-  String _extractExternalId(String url) {
-    try {
-      final segments = Uri.parse(
-        url,
-      ).pathSegments.where((s) => s.isNotEmpty).toList();
-      return segments.isNotEmpty ? segments.last : url;
-    } on Exception catch (_) {
-      return url;
+  ImportableReel? _findVerifiedReel(String sourceUrl) {
+    final candidates = ref
+        .read(reelImportNotifierProvider)
+        .maybeWhen(
+          loadSuccess: (reels, _, __) => reels,
+          orElse: () => const <ImportableReel>[],
+        );
+    for (final reel in candidates) {
+      if (reel.sourceUrl == sourceUrl && reel.videoDuration > 0) return reel;
     }
+    return null;
   }
 
   @override
@@ -660,7 +662,9 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -669,7 +673,8 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
           const Text('Paste a Reel URL', style: DesignTokens.titleMedium),
           const SizedBox(height: DesignTokens.s4),
           Text(
-            'Paste the link to your ${widget.platform.displayName} reel.',
+            'Paste a link from your connected ${widget.platform.displayName} '
+            "account. We'll verify it before importing.",
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textMuted,
             ),

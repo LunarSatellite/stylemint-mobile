@@ -43,7 +43,9 @@ class _RequestCreateSheetState extends State<RequestCreateSheet> {
         DesignTokens.s16,
         DesignTokens.s16,
         DesignTokens.s16,
-        MediaQuery.of(context).viewInsets.bottom + DesignTokens.s16,
+        MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

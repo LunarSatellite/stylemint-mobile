@@ -130,6 +130,7 @@ class Reel implements ReelMedia {
 class TaggedProductEntity {
   const TaggedProductEntity({
     required this.id,
+    this.taggedProductId,
     required this.name,
     required this.imageUrl,
     required this.price,
@@ -137,6 +138,10 @@ class TaggedProductEntity {
   });
 
   final String id;
+
+  /// Immutable server-side reel-tag ID. Passing it to Cart preserves the
+  /// creator and commission snapshot for a reel-driven purchase.
+  final String? taggedProductId;
   final String name;
   final String imageUrl;
   final Money price;

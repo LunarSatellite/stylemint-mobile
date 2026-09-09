@@ -16,6 +16,7 @@ class CartRemoteDataSource {
     required String productId,
     required int quantity,
     String? variantId,
+    String? reelTagContextId,
     required String idempotencyKey,
   }) async {
     final response = await apiClient.post(
@@ -28,6 +29,7 @@ class CartRemoteDataSource {
         // single default variant. Day 1 has no real per-variant SKU ids on
         // the client to send here.
         if (variantId != null) 'productVariantId': variantId,
+        if (reelTagContextId != null) 'reelTagContextId': reelTagContextId,
       },
       options: _idempotent(idempotencyKey),
     );
@@ -49,6 +51,34 @@ class CartRemoteDataSource {
     final response = await apiClient.authDelete('/v1/cart/lines/$itemId');
     return CartDto.fromJson(response as Map<String, dynamic>);
   }
+
+  Future<CartDto> applyPromo({
+    required String code,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/cart/promo',
+      data: {'code': code},
+      options: _idempotent(idempotencyKey),
+    );
+    return CartDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<CartDto> removePromo(String idempotencyKey) async {
+    final response = await apiClient.authDelete(
+      '/v1/cart/promo',
+      options: _idempotent(idempotencyKey),
+    );
+    return CartDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<void> saveForLater({
+    required String lineId,
+    required String idempotencyKey,
+  }) => apiClient.post(
+    '/v1/cart/saved-for-later/from-cart/$lineId',
+    options: _idempotent(idempotencyKey),
+  );
 
   Options _idempotent(String idempotencyKey) => Options(
     headers: {

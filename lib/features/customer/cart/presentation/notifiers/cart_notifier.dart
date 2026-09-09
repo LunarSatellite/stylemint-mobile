@@ -44,6 +44,7 @@ class CartNotifier extends StateNotifier<CartState> {
     required String productId,
     required int quantity,
     String? variantId,
+    String? reelTagContextId,
     required String idempotencyKey,
   }) async {
     state = const CartState.loadInProgress();
@@ -51,6 +52,7 @@ class CartNotifier extends StateNotifier<CartState> {
       productId: productId,
       quantity: quantity,
       variantId: variantId,
+      reelTagContextId: reelTagContextId,
       idempotencyKey: idempotencyKey,
     );
     state = either.fold(
@@ -100,5 +102,23 @@ class CartNotifier extends StateNotifier<CartState> {
       CartState.loadFailure,
       CartState.loadSuccess,
     );
+  }
+
+  Future<bool> applyPromo(String code) async {
+    final either = await _repository.applyPromo(code);
+    state = either.fold(CartState.loadFailure, CartState.loadSuccess);
+    return either.isRight();
+  }
+
+  Future<bool> removePromo() async {
+    final either = await _repository.removePromo();
+    state = either.fold(CartState.loadFailure, CartState.loadSuccess);
+    return either.isRight();
+  }
+
+  Future<bool> saveForLater(String lineId) async {
+    final either = await _repository.saveForLater(lineId);
+    state = either.fold(CartState.loadFailure, CartState.loadSuccess);
+    return either.isRight();
   }
 }

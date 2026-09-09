@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -35,6 +36,7 @@ class _VendorContactSupportScreenState
 
   @override
   Widget build(BuildContext context) {
+    final contactChannels = ref.watch(contactChannelsProvider);
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
@@ -50,7 +52,8 @@ class _VendorContactSupportScreenState
         ),
         title: Text('Contact Support', style: DesignTokens.oneLinerSemibold),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -63,7 +66,14 @@ class _VendorContactSupportScreenState
                 children: [
                   _buildWelcomeCard(),
                   const SizedBox(height: DesignTokens.s16),
-                  _buildSupportChannels(),
+                  _buildSupportChannels(
+                    contactChannels.when(
+                      data: (value) => value,
+                      loading: () => null,
+                      error: (_, __) => null,
+                    ),
+                    contactChannels.isLoading,
+                  ),
                   const SizedBox(height: DesignTokens.s16),
                   _buildQuickActions(),
                   const SizedBox(height: DesignTokens.s20),
@@ -75,6 +85,7 @@ class _VendorContactSupportScreenState
           ),
           _buildCreateTicketButton(),
         ],
+        ),
       ),
     );
   }
@@ -128,34 +139,63 @@ class _VendorContactSupportScreenState
 
   // ── Support channels ─────────────────────────────────────────────────────
 
-  Widget _buildSupportChannels() {
+  Widget _buildSupportChannels(
+    ContactChannels? contactChannels,
+    bool isLoading,
+  ) {
     final channels = [
       _Channel(
         icon: Icons.chat_outlined,
         title: 'Vendor Support Chat',
-        subtitle: 'Available · Wait: 1min',
-        onTap: () => SmSnackbar.info(context, 'Live chat is coming soon.'),
+        subtitle: contactChannels == null
+            ? (isLoading
+                  ? 'Checking availability…'
+                  : 'Availability unavailable')
+            : contactChannels.liveChatAvailable
+            ? 'Available now · ${contactChannels.liveChatHoursLocal}'
+            : 'Offline · ${contactChannels.liveChatHoursLocal}',
+        onTap: () => SmSnackbar.info(
+          context,
+          'Live-chat availability is shown above. Chat sessions are not yet available in this app; please create a support ticket.',
+        ),
         customIcon: 'assets/images/vendordashboard/icon_chat.png',
         subtitleColor: const Color(0xFF9F9FA9),
       ),
       _Channel(
         icon: Icons.mail_outline,
         title: 'Email Support',
-        subtitle: 'Response within 15 min',
-        onTap: () => unawaited(
-          launchUrl(
-            Uri(scheme: 'mailto', path: 'vendor-support@stylemint.com'),
-          ),
-        ),
+        subtitle: contactChannels?.supportEmail.isNotEmpty == true
+            ? contactChannels!.supportEmail
+            : isLoading
+            ? 'Loading support email…'
+            : 'Email unavailable',
+        onTap: contactChannels?.supportEmail.isNotEmpty == true
+            ? () => unawaited(
+                launchUrl(
+                  Uri(scheme: 'mailto', path: contactChannels!.supportEmail),
+                ),
+              )
+            : null,
         customIcon: 'assets/images/vendordashboard/icon_email.png',
       ),
       _Channel(
         icon: Icons.phone_outlined,
-        title: 'Creator Hotline (1-800-VENDOR)',
-        subtitle: 'Mon-Fri, 9 AM – 6 PM EST',
-        onTap: () => unawaited(
-          launchUrl(Uri(scheme: 'tel', path: '1-800-836-3667')),
-        ),
+        title: 'Direct Call',
+        subtitle: contactChannels?.directCallPhoneE164.isNotEmpty == true
+            ? contactChannels!.directCallPhoneE164
+            : isLoading
+            ? 'Loading direct-call number…'
+            : 'Phone unavailable',
+        onTap: contactChannels?.directCallPhoneE164.isNotEmpty == true
+            ? () => unawaited(
+                launchUrl(
+                  Uri(
+                    scheme: 'tel',
+                    path: contactChannels!.directCallPhoneE164,
+                  ),
+                ),
+              )
+            : null,
         customIcon: 'assets/images/vendordashboard/icon_phone.png',
       ),
       _Channel(
@@ -868,8 +908,8 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   /// is selected.
   static TicketCategory _categoryFor(SupportCategory? category) =>
       category == null
-          ? TicketCategory.forVendors
-          : TicketCategory.values[int.parse(category.id) - 1];
+      ? TicketCategory.forVendors
+      : TicketCategory.values[int.parse(category.id) - 1];
 
   @override
   void initState() {
@@ -912,7 +952,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1173,14 +1215,14 @@ class _Channel {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
     this.customIcon,
     this.subtitleColor,
   });
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String? customIcon;
   final Color? subtitleColor;
 }

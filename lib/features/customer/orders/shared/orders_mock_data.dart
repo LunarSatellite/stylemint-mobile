@@ -164,7 +164,7 @@ final kMockOrderDetails = <String, OrderDetail>{
     tax: _npr(100),
     total: _npr(5200),
     shippingAddress: 'Sailesh Aryal, Baneshwor-10, Kathmandu 44600, Nepal',
-    paymentMethod: 'Khalti',
+    paymentMethod: 'eSewa',
     canCancel: true,
     canReturn: false,
   ),

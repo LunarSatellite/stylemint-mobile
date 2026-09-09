@@ -7,9 +7,10 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Ship": 48px icon tile, Order #, "{customer} • {N} items", a Shipping-Method
 /// info pill, and the order date.
 ///
-/// Shipping method (carrier) appears once the order is shipped. Customer name
-/// and a "Ship By" deadline aren't on /v1/vendor/sub-orders yet (BACKEND GAP),
-/// so the row falls back to the item count and the real order date.
+/// Shipping method (carrier) appears once the order is shipped. The backend
+/// list projection supplies the receiver name and the row shows the real
+/// order placement date; a separate "Ship By" deadline is not a defined
+/// Orders-domain field.
 class VendorOrderTile extends StatelessWidget {
   const VendorOrderTile({required this.order, required this.onTap, super.key});
 
@@ -24,7 +25,9 @@ class VendorOrderTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s6),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s6,
+        ),
         padding: const EdgeInsets.all(DesignTokens.s16),
         decoration: DesignTokens.cardDecoration(),
         child: Row(
@@ -40,45 +43,58 @@ class VendorOrderTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.inventory_2_outlined,
-                  size: 32, color: DesignTokens.secondaryYellow),
+              child: const Icon(
+                Icons.inventory_2_outlined,
+                size: 32,
+                color: DesignTokens.secondaryYellow,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Order #${order.orderNumber}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.mediumSemibold
-                          .copyWith(color: DesignTokens.textWhite)),
+                  Text(
+                    'Order #${order.orderNumber}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
                   const SizedBox(height: DesignTokens.s4),
-                  // {customer} • {N} items  (customer hidden until backend adds it)
+                  // {customer} • {N} items from the one-round-trip list DTO.
                   Row(
                     children: [
                       if (order.customerName != null) ...[
                         Flexible(
-                          child: Text(order.customerName!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DesignTokens.smallRegular
-                                  .copyWith(color: DesignTokens.textWhite)),
+                          child: Text(
+                            order.customerName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
                         ),
                         Container(
                           width: 3,
                           height: 3,
                           margin: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s8),
+                            horizontal: DesignTokens.s8,
+                          ),
                           decoration: const BoxDecoration(
                             color: Color(0xFF71717B),
                             shape: BoxShape.circle,
                           ),
                         ),
                       ],
-                      Text('${order.itemCount} items',
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textMuted)),
+                      Text(
+                        '${order.itemCount} items',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
                     ],
                   ),
                   // Shipping-method info pill — only once a carrier is set.
@@ -87,25 +103,31 @@ class VendorOrderTile extends StatelessWidget {
                     const SizedBox(height: DesignTokens.s8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s8,
-                          vertical: DesignTokens.s4),
+                        horizontal: DesignTokens.s8,
+                        vertical: DesignTokens.s4,
+                      ),
                       decoration: BoxDecoration(
                         color: DesignTokens.tagInfoFill,
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: Text('Shipping Method: ${order.shippingMethod}',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.tagInfoText,
-                            fontWeight: FontWeight.w600,
-                            height: 1.0,
-                          )),
+                      child: Text(
+                        'Shipping Method: ${order.shippingMethod}',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.tagInfoText,
+                          fontWeight: FontWeight.w600,
+                          height: 1.0,
+                        ),
+                      ),
                     ),
                   ],
                   if (order.placedAt != null) ...[
                     const SizedBox(height: DesignTokens.s8),
-                    Text('Order Date: ${dateFmt.format(order.placedAt!)}',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textMuted)),
+                    Text(
+                      'Order Date: ${dateFmt.format(order.placedAt!)}',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
                   ],
                 ],
               ),

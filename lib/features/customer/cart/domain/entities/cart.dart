@@ -94,7 +94,10 @@ class Cart {
     required this.shippingTotal,
     required this.taxTotal,
     required this.total,
+    this.discount = const Money(amount: 0, currency: 'NPR'),
     this.supportedCreatorsCount = 0,
+    this.appliedPromoCode,
+    this.savedForLater = const <SavedForLaterItem>[],
   });
 
   final String id;
@@ -103,10 +106,13 @@ class Cart {
   final Money shippingTotal;
   final Money taxTotal;
   final Money total;
+  final Money discount;
 
   /// "You are appreciated" — number of distinct creators this order supports
   /// (backend CartAppreciationSummaryDto.supportedCreatorsCount).
   final int supportedCreatorsCount;
+  final AppliedPromoCode? appliedPromoCode;
+  final List<SavedForLaterItem> savedForLater;
 
   Cart copyWith({
     String? id,
@@ -115,7 +121,10 @@ class Cart {
     Money? shippingTotal,
     Money? taxTotal,
     Money? total,
+    Money? discount,
     int? supportedCreatorsCount,
+    AppliedPromoCode? appliedPromoCode,
+    List<SavedForLaterItem>? savedForLater,
   }) {
     return Cart(
       id: id ?? this.id,
@@ -124,8 +133,11 @@ class Cart {
       shippingTotal: shippingTotal ?? this.shippingTotal,
       taxTotal: taxTotal ?? this.taxTotal,
       total: total ?? this.total,
+      discount: discount ?? this.discount,
       supportedCreatorsCount:
           supportedCreatorsCount ?? this.supportedCreatorsCount,
+      appliedPromoCode: appliedPromoCode ?? this.appliedPromoCode,
+      savedForLater: savedForLater ?? this.savedForLater,
     );
   }
 
@@ -138,6 +150,7 @@ class Cart {
       other.shippingTotal == shippingTotal &&
       other.taxTotal == taxTotal &&
       other.total == total &&
+      other.discount == discount &&
       other.supportedCreatorsCount == supportedCreatorsCount;
 
   @override
@@ -148,6 +161,7 @@ class Cart {
         shippingTotal,
         taxTotal,
         total,
+        discount,
         supportedCreatorsCount,
       );
 
@@ -159,4 +173,29 @@ class Cart {
     }
     return true;
   }
+}
+
+class AppliedPromoCode {
+  const AppliedPromoCode({required this.code, required this.discount});
+
+  final String code;
+  final Money discount;
+}
+
+class SavedForLaterItem {
+  const SavedForLaterItem({
+    required this.id,
+    required this.productName,
+    required this.variantName,
+    required this.productImageUrl,
+    required this.quantity,
+    required this.unitPrice,
+  });
+
+  final String id;
+  final String productName;
+  final String variantName;
+  final String productImageUrl;
+  final int quantity;
+  final Money unitPrice;
 }

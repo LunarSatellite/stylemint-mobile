@@ -100,6 +100,7 @@ class ImagesInfo {
   const ImagesInfo({
     required this.images,
     required this.primaryImageIndex,
+    this.video,
   });
 
   // Backend enforces 5-10 images at publish time
@@ -109,14 +110,18 @@ class ImagesInfo {
 
   final List<String> images;
   final int primaryImageIndex;
+  final ProductVideoInfo? video;
 
   ImagesInfo copyWith({
     List<String>? images,
     int? primaryImageIndex,
+    ProductVideoInfo? video,
+    bool clearVideo = false,
   }) {
     return ImagesInfo(
       images: images ?? this.images,
       primaryImageIndex: primaryImageIndex ?? this.primaryImageIndex,
+      video: clearVideo ? null : (video ?? this.video),
     );
   }
 
@@ -124,10 +129,12 @@ class ImagesInfo {
   bool operator ==(Object other) =>
       other is ImagesInfo &&
       _listEquals(other.images, images) &&
-      other.primaryImageIndex == primaryImageIndex;
+      other.primaryImageIndex == primaryImageIndex &&
+      other.video == video;
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(images), primaryImageIndex);
+  int get hashCode =>
+      Object.hash(Object.hashAll(images), primaryImageIndex, video);
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;
@@ -137,6 +144,27 @@ class ImagesInfo {
     }
     return true;
   }
+}
+
+/// Optional externally hosted product-media reference. Style Mint stores this
+/// metadata and never receives or serves the video bytes.
+class ProductVideoInfo {
+  const ProductVideoInfo({
+    required this.cdnUrl,
+    required this.durationSeconds,
+  });
+
+  final String cdnUrl;
+  final int durationSeconds;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProductVideoInfo &&
+      other.cdnUrl == cdnUrl &&
+      other.durationSeconds == durationSeconds;
+
+  @override
+  int get hashCode => Object.hash(cdnUrl, durationSeconds);
 }
 
 class PricingInfo {

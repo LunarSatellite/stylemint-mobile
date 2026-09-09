@@ -10,12 +10,16 @@ class ReelCommentsState {
     this.isPosting = false,
     this.errorMessage,
     this.comments = const [],
+    this.likedCommentIds = const {},
+    this.likeCounts = const {},
   });
 
   final bool isLoading;
   final bool isPosting;
   final String? errorMessage;
   final List<ReelCommentDto> comments;
+  final Set<String> likedCommentIds;
+  final Map<String, int> likeCounts;
 
   ReelCommentsState copyWith({
     bool? isLoading,
@@ -23,19 +27,23 @@ class ReelCommentsState {
     String? errorMessage,
     bool clearError = false,
     List<ReelCommentDto>? comments,
+    Set<String>? likedCommentIds,
+    Map<String, int>? likeCounts,
   }) {
     return ReelCommentsState(
       isLoading: isLoading ?? this.isLoading,
       isPosting: isPosting ?? this.isPosting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       comments: comments ?? this.comments,
+      likedCommentIds: likedCommentIds ?? this.likedCommentIds,
+      likeCounts: likeCounts ?? this.likeCounts,
     );
   }
 }
 
 class ReelCommentsController extends StateNotifier<ReelCommentsState> {
   ReelCommentsController(this._ds, this._reelId)
-      : super(const ReelCommentsState()) {
+    : super(const ReelCommentsState()) {
     load();
   }
 
@@ -53,63 +61,20 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
       if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
-        comments: comments.isEmpty ? _mockComments() : comments,
+        comments: comments,
+        likedCommentIds: comments
+            .where((comment) => comment.isLikedByCurrentAccount)
+            .map((comment) => comment.id)
+            .toSet(),
       );
     } catch (_) {
       if (!mounted) return;
-      state = state.copyWith(isLoading: false, comments: _mockComments());
+      state = state.copyWith(
+        isLoading: false,
+        comments: const [],
+        errorMessage: 'Could not load comments.',
+      );
     }
-  }
-
-  static List<ReelCommentDto> _mockComments() {
-    final now = DateTime.now();
-    return [
-      ReelCommentDto(
-        id: 'mc1',
-        body: 'This should come with a warning 😤',
-        likeCount: 234,
-        parentCommentId: null,
-        createdUtc: now.subtract(const Duration(minutes: 3)),
-        authorDisplayName: 'Shree Teen',
-        authorAvatarUrl: '',
-      ),
-      ReelCommentDto(
-        id: 'mc2',
-        body: 'The texture, the richness, the way this cake looks so soft and indulgent… this is the kind of dessert you think about all day 😋🍰',
-        likeCount: 2100,
-        parentCommentId: null,
-        createdUtc: now.subtract(const Duration(minutes: 47)),
-        authorDisplayName: 'lucasSins',
-        authorAvatarUrl: '',
-      ),
-      ReelCommentDto(
-        id: 'mc3',
-        body: 'I can literally taste this through the screen',
-        likeCount: 0,
-        parentCommentId: null,
-        createdUtc: now.subtract(const Duration(hours: 5)),
-        authorDisplayName: 'steviewonders',
-        authorAvatarUrl: '',
-      ),
-      ReelCommentDto(
-        id: 'mc4',
-        body: 'That slice pull tho 😮',
-        likeCount: 3,
-        parentCommentId: null,
-        createdUtc: now.subtract(const Duration(days: 2)),
-        authorDisplayName: 'madmax',
-        authorAvatarUrl: '',
-      ),
-      ReelCommentDto(
-        id: 'mc5',
-        body: 'Perfect layers, silky frosting, and a finish that looks melt-in-your-mouth good. This is cake done right',
-        likeCount: 456,
-        parentCommentId: null,
-        createdUtc: now.subtract(const Duration(days: 21)),
-        authorDisplayName: 'robinsparkles',
-        authorAvatarUrl: '',
-      ),
-    ];
   }
 
   /// Returns whether the post succeeded — callers use this instead of
@@ -135,19 +100,71 @@ class ReelCommentsController extends StateNotifier<ReelCommentsState> {
     } catch (_) {
       if (!mounted) return false;
       state = state.copyWith(
-          isPosting: false, errorMessage: 'Could not post your comment.');
+        isPosting: false,
+        errorMessage: 'Could not post your comment.',
+      );
       return false;
+    }
+  }
+
+  /// Optimistically persists a comment like/unlike and restores the exact
+  /// prior UI state if the authenticated backend mutation fails.
+  Future<void> toggleLike(String commentId) async {
+    ReelCommentDto? comment;
+    for (final item in state.comments) {
+      if (item.id == commentId) {
+        comment = item;
+        break;
+      }
+    }
+    if (comment == null) return;
+    final selectedComment = comment;
+
+    final priorLiked = Set<String>.from(state.likedCommentIds);
+    final priorCounts = Map<String, int>.from(state.likeCounts);
+    final wasLiked = priorLiked.contains(commentId);
+    final currentCount = priorCounts[commentId] ?? selectedComment.likeCount;
+    final liked = Set<String>.from(priorLiked);
+    final counts = Map<String, int>.from(priorCounts);
+    if (wasLiked) {
+      liked.remove(commentId);
+      counts[commentId] = currentCount > 0 ? currentCount - 1 : 0;
+    } else {
+      liked.add(commentId);
+      counts[commentId] = currentCount + 1;
+    }
+    state = state.copyWith(
+      likedCommentIds: liked,
+      likeCounts: counts,
+      clearError: true,
+    );
+
+    try {
+      if (wasLiked) {
+        await _ds.unlike(_reelId, commentId);
+      } else {
+        await _ds.like(_reelId, commentId);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      state = state.copyWith(
+        likedCommentIds: priorLiked,
+        likeCounts: priorCounts,
+        errorMessage: 'Could not update your like. Please try again.',
+      );
     }
   }
 }
 
-final _reelCommentsDataSourceProvider =
-    Provider<ReelCommentsRemoteDataSource>(
-  (ref) => ReelCommentsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+final _reelCommentsDataSourceProvider = Provider<ReelCommentsRemoteDataSource>(
+  (ref) =>
+      ReelCommentsRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
 final reelCommentsControllerProvider = StateNotifierProvider.family
     .autoDispose<ReelCommentsController, ReelCommentsState, String>(
-  (ref, reelId) => ReelCommentsController(
-      ref.watch(_reelCommentsDataSourceProvider), reelId),
-);
+      (ref, reelId) => ReelCommentsController(
+        ref.watch(_reelCommentsDataSourceProvider),
+        reelId,
+      ),
+    );

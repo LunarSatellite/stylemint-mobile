@@ -9,11 +9,11 @@ class VendorOrdersRemoteDataSource {
   final ApiClient apiClient;
 
   Options _idempotent(String idempotencyKey) => Options(
-        headers: {
-          'requiresToken': true,
-          'Idempotency-Key': idempotencyKey,
-        },
-      );
+    headers: {
+      'requiresToken': true,
+      'Idempotency-Key': idempotencyKey,
+    },
+  );
 
   Future<Map<String, dynamic>> getOrders({
     required int limit,
@@ -94,8 +94,8 @@ class VendorOrdersRemoteDataSource {
   }
 
   /// POST /v1/vendor/sub-orders/{subOrderId}/tracking — "Assign Tracking No."
-  /// TODO(swagger): body field names (carrier/trackingNumber) are guessed —
-  /// confirm against the real request schema.
+  /// The backend SetTrackingVm contract requires `carrier` and
+  /// `trackingNumber` (maximum lengths 100 and 200 respectively).
   Future<VendorOrderDto> addTracking(
     String orderId,
     String carrier,
@@ -123,8 +123,8 @@ class VendorOrdersRemoteDataSource {
   }
 
   /// GET /v1/vendor/sub-orders/{subOrderId}/packing-slip — Vendor §3D,
-  /// read-only projection. Shape isn't in Swagger yet; returned raw so the
-  /// repository can parse defensively.
+  /// read-only PackingSlipDto projection. Returned raw so the repository can
+  /// translate the backend DTO into the presentation entity.
   Future<Map<String, dynamic>> getPackingSlip(String orderId) async {
     final response = await apiClient.get(
       '/v1/vendor/sub-orders/$orderId/packing-slip',
@@ -136,8 +136,7 @@ class VendorOrdersRemoteDataSource {
   /// POST /v1/vendor/sub-orders/bulk/ready-to-ship — Vendor §3B "Mark
   /// Multiple as Shipped". Outer 200 with a per-row BulkResult even if some
   /// ids fail individually.
-  /// TODO(swagger): request/response field names are guessed — confirm
-  /// against the real schema once published.
+  /// The backend BulkSubOrderIdsVm request field is `subOrderIds`.
   Future<Map<String, dynamic>> bulkReadyToShip(
     List<String> orderIds,
     String idempotencyKey,
@@ -152,7 +151,7 @@ class VendorOrdersRemoteDataSource {
 
   /// POST /v1/vendor/sub-orders/bulk/packing-slips — Vendor §3C "Print All
   /// Packing Slips". Pure read; no state change.
-  /// TODO(swagger): request/response field names are guessed.
+  /// The backend BulkSubOrderIdsVm request field is `subOrderIds`.
   Future<Map<String, dynamic>> bulkPackingSlips(List<String> orderIds) async {
     final response = await apiClient.post(
       '/v1/vendor/sub-orders/bulk/packing-slips',

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
@@ -63,6 +64,14 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            // Track the drag from the initial touch-down rather than from
+            // where the recognizer eventually "starts" — this feed's
+            // vertical PageView is nested inside SwipeableBranchView's
+            // horizontal one, and starting from `down` gives the vertical
+            // recognizer the full gesture (and its true velocity) instead of
+            // only what's left after the two axes finish resolving which one
+            // owns the pointer.
+            dragStartBehavior: DragStartBehavior.down,
             itemCount: reels.length,
             // Build the adjacent reels offscreen so the next one's video has
             // already initialised/buffered by the time it's swiped into view —

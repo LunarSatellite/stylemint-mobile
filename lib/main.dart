@@ -76,6 +76,7 @@ class _MockCartRepository implements CartRepository {
     required String productId,
     required int quantity,
     String? variantId,
+    String? reelTagContextId,
     required String idempotencyKey,
   }) async => right(_cart);
 
@@ -99,54 +100,27 @@ class _MockCartRepository implements CartRepository {
     );
     return right(_cart);
   }
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> applyPromo(String code) async =>
+      right(_cart);
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> removePromo() async => right(_cart);
+
+  @override
+  Future<Either<NetworkExceptions, Cart>> saveForLater(String lineId) async =>
+      right(_cart);
 }
+
 // ─── MOCK CHECKOUT REPOSITORY ────────────────────────────────────────────────
 class _MockCheckoutRepository implements CheckoutRepository {
   @override
-  Future<Either<NetworkExceptions, CheckoutSummary>> getCheckoutSummary() async {
-    return right(CheckoutSummary(
-      shippingAddress: const ShippingAddress(
-        id: 'addr-1',
-        label: 'Home',
-        line1: 'Thamel Marg',
-        city: 'Kathmandu',
-        stateProvince: 'Bagmati',
-        postalCode: '44600',
-        countryCode: 'NP',
-        isDefault: true,
-      ),
-      paymentMethod: const PaymentMethod(
-        id: 'pm-1',
-        type: PaymentMethodType.card,
-        label: 'Visa',
-        lastFour: '4242',
-        isDefault: true,
-      ),
-      items: const [
-        CheckoutItem(
-          productId: 'prod-1',
-          productName: 'Oversized Linen Co-ord Set',
-          imageUrl: 'https://picsum.photos/seed/item1/56/56',
-          variantName: 'Beige / Size M',
-          quantity: 1,
-          unitPrice: Money(amount: 3499, currency: _npr),
-        ),
-        CheckoutItem(
-          productId: 'prod-2',
-          productName: 'Vintage Wash Denim Jacket',
-          imageUrl: 'https://picsum.photos/seed/item2/56/56',
-          variantName: 'Light Blue / Size L',
-          quantity: 2,
-          unitPrice: Money(amount: 5199, currency: _npr),
-        ),
-      ],
-      subtotal: const Money(amount: 13897, currency: _npr),
-      shipping: const Money(amount: 0, currency: _npr),
-      tax: const Money(amount: 1807, currency: _npr),
-      discount: const Money(amount: 0, currency: _npr),
-      total: const Money(amount: 15704, currency: _npr),
-      availableAddresses: const [
-        ShippingAddress(
+  Future<Either<NetworkExceptions, CheckoutSummary>>
+  getCheckoutSummary() async {
+    return right(
+      CheckoutSummary(
+        shippingAddress: const ShippingAddress(
           id: 'addr-1',
           label: 'Home',
           line1: 'Thamel Marg',
@@ -156,73 +130,115 @@ class _MockCheckoutRepository implements CheckoutRepository {
           countryCode: 'NP',
           isDefault: true,
         ),
-        ShippingAddress(
-          id: 'addr-2',
-          label: 'Office',
-          line1: 'Pulchowk-20',
-          city: 'Lalitpur',
-          stateProvince: 'Bagmati',
-          postalCode: '44700',
-          countryCode: 'NP',
-          isDefault: false,
-        ),
-      ],
-      availablePaymentMethods: const [
-        PaymentMethod(
+        paymentMethod: const PaymentMethod(
           id: 'pm-1',
           type: PaymentMethodType.card,
-          label: 'Visa Card',
+          label: 'Visa',
           lastFour: '4242',
           isDefault: true,
         ),
-        PaymentMethod(
-          id: 'pm-2',
-          type: PaymentMethodType.paypal,
-          label: 'Paypal',
-          lastFour: '@shreeteen123',
-          isDefault: false,
-        ),
-        PaymentMethod(
-          id: 'pm-3',
-          type: PaymentMethodType.eSewa,
-          label: 'eSewa',
-          lastFour: '9840098522',
-          isDefault: false,
-        ),
-        PaymentMethod(
-          id: 'pm-4',
-          type: PaymentMethodType.cod,
-          label: 'Cash on Delivery',
-          isDefault: false,
-        ),
-      ],
-    ));
+        items: const [
+          CheckoutItem(
+            productId: 'prod-1',
+            productName: 'Oversized Linen Co-ord Set',
+            imageUrl: 'https://picsum.photos/seed/item1/56/56',
+            variantName: 'Beige / Size M',
+            quantity: 1,
+            unitPrice: Money(amount: 3499, currency: _npr),
+          ),
+          CheckoutItem(
+            productId: 'prod-2',
+            productName: 'Vintage Wash Denim Jacket',
+            imageUrl: 'https://picsum.photos/seed/item2/56/56',
+            variantName: 'Light Blue / Size L',
+            quantity: 2,
+            unitPrice: Money(amount: 5199, currency: _npr),
+          ),
+        ],
+        subtotal: const Money(amount: 13897, currency: _npr),
+        shipping: const Money(amount: 0, currency: _npr),
+        tax: const Money(amount: 1807, currency: _npr),
+        discount: const Money(amount: 0, currency: _npr),
+        total: const Money(amount: 15704, currency: _npr),
+        availableAddresses: const [
+          ShippingAddress(
+            id: 'addr-1',
+            label: 'Home',
+            line1: 'Thamel Marg',
+            city: 'Kathmandu',
+            stateProvince: 'Bagmati',
+            postalCode: '44600',
+            countryCode: 'NP',
+            isDefault: true,
+          ),
+          ShippingAddress(
+            id: 'addr-2',
+            label: 'Office',
+            line1: 'Pulchowk-20',
+            city: 'Lalitpur',
+            stateProvince: 'Bagmati',
+            postalCode: '44700',
+            countryCode: 'NP',
+            isDefault: false,
+          ),
+        ],
+        availablePaymentMethods: const [
+          PaymentMethod(
+            id: 'pm-1',
+            type: PaymentMethodType.card,
+            label: 'Visa Card',
+            lastFour: '4242',
+            isDefault: true,
+          ),
+          PaymentMethod(
+            id: 'pm-2',
+            type: PaymentMethodType.paypal,
+            label: 'Paypal',
+            lastFour: '@shreeteen123',
+            isDefault: false,
+          ),
+          PaymentMethod(
+            id: 'pm-3',
+            type: PaymentMethodType.eSewa,
+            label: 'eSewa',
+            lastFour: '9840098522',
+            isDefault: false,
+          ),
+          PaymentMethod(
+            id: 'pm-4',
+            type: PaymentMethodType.cod,
+            label: 'Cash on Delivery',
+            isDefault: false,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
-  Future<Either<NetworkExceptions, List<ShippingAddress>>> getShippingAddresses() async =>
-      right([
-        const ShippingAddress(
-          id: 'addr-1',
-          label: 'Home',
-          line1: 'Thamel Marg',
-          city: 'Kathmandu',
-          stateProvince: 'Bagmati',
-          postalCode: '44600',
-          countryCode: 'NP',
-          isDefault: true,
-        ),
-        const ShippingAddress(
-          id: 'addr-2',
-          label: 'Office',
-          line1: 'Pulchowk-20',
-          city: 'Lalitpur',
-          stateProvince: 'Bagmati',
-          postalCode: '44700',
-          countryCode: 'NP',
-          isDefault: false,
-        ),
-      ]);
+  Future<Either<NetworkExceptions, List<ShippingAddress>>>
+  getShippingAddresses() async => right([
+    const ShippingAddress(
+      id: 'addr-1',
+      label: 'Home',
+      line1: 'Thamel Marg',
+      city: 'Kathmandu',
+      stateProvince: 'Bagmati',
+      postalCode: '44600',
+      countryCode: 'NP',
+      isDefault: true,
+    ),
+    const ShippingAddress(
+      id: 'addr-2',
+      label: 'Office',
+      line1: 'Pulchowk-20',
+      city: 'Lalitpur',
+      stateProvince: 'Bagmati',
+      postalCode: '44700',
+      countryCode: 'NP',
+      isDefault: false,
+    ),
+  ]);
 
   @override
   Future<Either<NetworkExceptions, ShippingAddress>> addAddress({
@@ -237,52 +253,52 @@ class _MockCheckoutRepository implements CheckoutRepository {
     required String zipCode,
     bool makeDefault = false,
     required String idempotencyKey,
-  }) async =>
-      right(ShippingAddress(
-        id: 'addr-mock',
-        label: label,
-        line1: addressLine1,
-        line2: landmark,
-        city: city,
-        stateProvince: state,
-        postalCode: zipCode,
-        countryCode: country,
-        isDefault: makeDefault,
-      ));
+  }) async => right(
+    ShippingAddress(
+      id: 'addr-mock',
+      label: label,
+      line1: addressLine1,
+      line2: landmark,
+      city: city,
+      stateProvince: state,
+      postalCode: zipCode,
+      countryCode: country,
+      isDefault: makeDefault,
+    ),
+  );
 
   @override
-  Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async =>
-      right([
-        const PaymentMethod(
-          id: 'pm-1',
-          type: PaymentMethodType.card,
-          label: 'Visa Card',
-          lastFour: '4242',
-          isDefault: true,
-        ),
-        const PaymentMethod(
-          id: 'pm-3',
-          type: PaymentMethodType.eSewa,
-          label: 'eSewa',
-          lastFour: '9840098522',
-          isDefault: false,
-        ),
-        const PaymentMethod(
-          id: 'pm-4',
-          type: PaymentMethodType.cod,
-          label: 'Cash on Delivery',
-          lastFour: null,
-          isDefault: false,
-        ),
-      ]);
+  Future<Either<NetworkExceptions, List<PaymentMethod>>>
+  getPaymentMethods() async => right([
+    const PaymentMethod(
+      id: 'pm-1',
+      type: PaymentMethodType.card,
+      label: 'Visa Card',
+      lastFour: '4242',
+      isDefault: true,
+    ),
+    const PaymentMethod(
+      id: 'pm-3',
+      type: PaymentMethodType.eSewa,
+      label: 'eSewa',
+      lastFour: '9840098522',
+      isDefault: false,
+    ),
+    const PaymentMethod(
+      id: 'pm-4',
+      type: PaymentMethodType.cod,
+      label: 'Cash on Delivery',
+      lastFour: null,
+      isDefault: false,
+    ),
+  ]);
 
   @override
   Future<Either<NetworkExceptions, String>> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
-  }) async =>
-      right('mock-order-001');
+  }) async => right('mock-order-001');
 }
 
 // GoRouter for the single-screen preview (cart → checkout flow only).
@@ -378,8 +394,10 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     _listenDeepLinks();
     // Replay any deferred deep link as soon as the session leaves `unknown`.
     ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
-      final stillUnknown =
-          next.maybeWhen(unknown: () => true, orElse: () => false);
+      final stillUnknown = next.maybeWhen(
+        unknown: () => true,
+        orElse: () => false,
+      );
       final pending = _pendingUri;
       if (!stillUnknown && pending != null) {
         _pendingUri = null;
@@ -415,17 +433,32 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   }
 
   void _listenDeepLinks() {
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] _listenDeepLinks: subscribing to uriLinkStream');
     _appLinks.uriLinkStream.listen(
       (uri) => _handleUri(uri),
-      onError: (_) {}, // silently ignore malformed links
+      onError: (e) {
+        // ignore: avoid_print
+        print('[OAUTH-DEBUG] uriLinkStream error: $e');
+      },
     );
     // Also handle the initial link that launched the app cold.
-    _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleUri(uri);
-    }).catchError((_) {});
+    _appLinks
+        .getInitialLink()
+        .then((uri) {
+          // ignore: avoid_print
+          print('[OAUTH-DEBUG] getInitialLink: $uri');
+          if (uri != null) _handleUri(uri);
+        })
+        .catchError((e) {
+          // ignore: avoid_print
+          print('[OAUTH-DEBUG] getInitialLink error: $e');
+        });
   }
 
   void _handleUri(Uri uri) {
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] _handleUri: $uri scheme=${uri.scheme} host=${uri.host} path=${uri.path} query=${uri.query}');
     // Backend API URLs (e.g. the OAuth callback
     // /v1/social/connect/*/callback) are NOT app routes. They must be handled
     // server-side; if one reaches us (App Links can over-match on the shared
@@ -441,7 +474,9 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       // On failure the backend appends `&error=<reason>` (e.g. invalid_grant,
       // provider_unavailable). Pass it through so the reason is logged/surfaced
       // instead of the browser silently closing with no feedback.
-      ref.read(socialConnectNotifierProvider.notifier).onConnectReturn(
+      ref
+          .read(socialConnectNotifierProvider.notifier)
+          .onConnectReturn(
             ok: ok,
             errorCode: uri.queryParameters['error'],
           );
@@ -476,6 +511,8 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final query = uri.queryParametersAll.isEmpty
         ? ''
         : '?${uri.queryParameters.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] _navigate: router.go(\'$path$query\')');
     router.go('$path$query');
   }
 

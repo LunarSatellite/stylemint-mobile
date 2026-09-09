@@ -96,3 +96,82 @@ class OrderDetail {
     );
   }
 }
+
+/// Immutable receipt projection returned by `GET /v1/orders/{number}/invoice`.
+/// Unlike [OrderDetail], this is the source of truth for an invoice: payment
+/// state, item prices, and totals are all snapshotted by the backend.
+class OrderInvoiceLine {
+  const OrderInvoiceLine({
+    required this.productTitle,
+    required this.variantLabel,
+    required this.quantity,
+    required this.unitPrice,
+    required this.lineSubtotal,
+  });
+
+  final String productTitle;
+  final String? variantLabel;
+  final int quantity;
+  final Money unitPrice;
+  final Money lineSubtotal;
+}
+
+class OrderInvoice {
+  const OrderInvoice({
+    required this.invoiceNumber,
+    required this.orderNumber,
+    required this.issuedAt,
+    required this.placedAt,
+    required this.shippingAddress,
+    required this.receiverName,
+    required this.paymentMethod,
+    required this.paymentStatus,
+    required this.subtotal,
+    required this.shipping,
+    required this.total,
+    required this.items,
+  });
+
+  final String invoiceNumber;
+  final String orderNumber;
+  final DateTime issuedAt;
+  final DateTime placedAt;
+  final String shippingAddress;
+  final String receiverName;
+  final String paymentMethod;
+  final String paymentStatus;
+  final Money subtotal;
+  final Money shipping;
+  final Money total;
+  final List<OrderInvoiceLine> items;
+
+  OrderDetail toOrderDetail() => OrderDetail(
+    id: orderNumber,
+    orderNumber: orderNumber,
+    status: OrderTrackStatus.preparingForShipping,
+    placedAt: placedAt,
+    estimatedDelivery: placedAt,
+    items: items
+        .map(
+          (item) => OrderDetailItem(
+            productId: item.productTitle,
+            productName: item.productTitle,
+            imageUrl: '',
+            variantName: item.variantLabel ?? '',
+            qty: item.quantity,
+            unitPrice: item.unitPrice,
+            status: paymentStatus,
+          ),
+        )
+        .toList(growable: false),
+    subtotal: subtotal,
+    shipping: shipping,
+    tax: Money(amount: 0, currency: total.currency),
+    total: total,
+    shippingAddress: shippingAddress,
+    receiverName: receiverName,
+    paymentMethod: paymentMethod,
+    canCancel: false,
+    canReturn: false,
+  );
+}

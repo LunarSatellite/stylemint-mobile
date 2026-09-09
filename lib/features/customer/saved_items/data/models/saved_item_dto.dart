@@ -18,6 +18,9 @@ abstract class SavedItemDto with _$SavedItemDto {
     @JsonKey(name: 'unitPriceAmount') required num priceAmount,
     @JsonKey(name: 'unitPriceCurrency') @Default('NPR') String currency,
     @JsonKey(name: 'createdUtc') required DateTime savedAt,
+    int? quantityOnHand,
+    bool? trackInventory,
+    bool? allowOverselling,
   }) = _SavedItemDto;
 
   const SavedItemDto._();
@@ -26,14 +29,32 @@ abstract class SavedItemDto with _$SavedItemDto {
       _$SavedItemDtoFromJson(json);
 
   SavedItem toDomain() => SavedItem(
-        id: id,
-        productId: productId,
-        productName: productName,
-        productImageUrl: productImageUrl ?? '',
-        variantLabel: variantLabel,
-        price: Money(amount: priceAmount.toDouble(), currency: currency),
-        // SavedForLaterItemDto carries no rating; the card hides it when 0.
-        rating: 0,
-        savedAt: savedAt,
-      );
+    id: id,
+    productId: productId,
+    productName: productName,
+    productImageUrl: productImageUrl ?? '',
+    variantLabel: variantLabel,
+    price: Money(amount: priceAmount.toDouble(), currency: currency),
+    // SavedForLaterItemDto carries no rating; the card hides it when 0.
+    rating: 0,
+    savedAt: savedAt,
+    stockStatus: _stockStatus(
+      quantityOnHand: quantityOnHand,
+      trackInventory: trackInventory,
+      allowOverselling: allowOverselling,
+    ),
+  );
+
+  static String _stockStatus({
+    required int? quantityOnHand,
+    required bool? trackInventory,
+    required bool? allowOverselling,
+  }) {
+    // An absent stock payload must not produce a false out-of-stock banner.
+    // The backend defaults the same way if its Catalog enrichment misses.
+    if (trackInventory != true || allowOverselling == true) return 'inStock';
+    return quantityOnHand != null && quantityOnHand <= 0
+        ? 'outOfStock'
+        : 'inStock';
+  }
 }

@@ -1,28 +1,43 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-class OrderInvoiceScreen extends StatelessWidget {
+class OrderInvoiceScreen extends ConsumerWidget {
   const OrderInvoiceScreen({required this.order, super.key});
 
   final OrderDetail order;
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final invoice = ref.watch(orderInvoiceProvider(order.orderNumber));
+    return invoice.when(
+      loading: () => const _InvoiceLoading(),
+      error: (_, __) => _InvoiceError(
+        onRetry: () => ref.invalidate(orderInvoiceProvider(order.orderNumber)),
+      ),
+      data: (value) => _AuthoritativeInvoice(invoice: value),
+    );
+  }
+}
+
+class _AuthoritativeInvoice extends StatelessWidget {
+  const _AuthoritativeInvoice({required this.invoice});
+
+  final OrderInvoice invoice;
+
+  @override
   Widget build(BuildContext context) {
-    final invoiceNum = 'INV-${order.orderNumber}';
-    final txn = 'TXN-${order.orderNumber}-2024';
-    final dateStr = DateFormat('MMMM dd, yyyy').format(order.placedAt);
-    final rawDiscount = order.subtotal.amount +
-        order.shipping.amount +
-        order.tax.amount -
-        order.total.amount;
-    final hasDiscount = rawDiscount > 0.0;
+    final invoiceNum = invoice.invoiceNumber;
+    final dateStr = DateFormat('MMMM dd, yyyy').format(invoice.placedAt);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -30,17 +45,24 @@ class OrderInvoiceScreen extends StatelessWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: DesignTokens.textWhite, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('Invoice', style: DesignTokens.sectionInnerTitle),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.print_outlined,
-                color: DesignTokens.textWhite, size: 22),
-            onPressed: () => SmSnackbar.info(context, 'Print not available yet.'),
+            icon: const Icon(
+              Icons.share_outlined,
+              color: DesignTokens.textWhite,
+              size: 22,
+            ),
+            tooltip: 'Share invoice',
+            onPressed: () => _shareOrderInvoice(invoice),
           ),
         ],
       ),
@@ -74,8 +96,9 @@ class OrderInvoiceScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       dateStr,
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textMuted),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -91,15 +114,14 @@ class OrderInvoiceScreen extends StatelessWidget {
             child: Column(
               children: [
                 _InvRow(label: 'Invoice No.', value: invoiceNum),
-                _InvRow(label: 'Order No.', value: order.orderNumber),
+                _InvRow(label: 'Order No.', value: invoice.orderNumber),
                 _InvRow(label: 'Date', value: dateStr),
-                _InvRow(label: 'Payment', value: order.paymentMethod),
-                _InvRow(label: 'TXN', value: txn),
-                const _InvRow(label: 'Payment Status', value: 'Paid'),
+                _InvRow(label: 'Payment', value: invoice.paymentMethod),
+                _InvRow(label: 'Payment Status', value: invoice.paymentStatus),
                 _InvRow(
-                    label: 'Shipping Address', value: order.shippingAddress),
-                const _InvRow(
-                    label: 'Vendor', value: 'StyleMint Official Store'),
+                  label: 'Shipping Address',
+                  value: invoice.shippingAddress,
+                ),
               ],
             ),
           ),
@@ -126,7 +148,9 @@ class OrderInvoiceScreen extends StatelessWidget {
                 // Table header row
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 8),
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: DesignTokens.bgAppBodyLight,
                     borderRadius: BorderRadius.circular(6),
@@ -165,27 +189,35 @@ class OrderInvoiceScreen extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 // Item rows
-                for (final item in order.items)
+                for (final item in invoice.items)
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 7),
+                      horizontal: 8,
+                      vertical: 7,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
                           flex: 5,
                           child: Text(
-                            item.productName,
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textLight),
+                            [
+                              item.productTitle,
+                              if (item.variantLabel?.isNotEmpty == true)
+                                item.variantLabel!,
+                            ].join('\n'),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
                           ),
                         ),
                         SizedBox(
                           width: 52,
                           child: Text(
-                            '${item.qty}',
+                            '${item.quantity}',
                             textAlign: TextAlign.end,
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textLight),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
                           ),
                         ),
                         SizedBox(
@@ -193,18 +225,19 @@ class OrderInvoiceScreen extends StatelessWidget {
                           child: Text(
                             item.unitPrice.amount.toStringAsFixed(0),
                             textAlign: TextAlign.end,
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textLight),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
                           ),
                         ),
                         SizedBox(
                           width: 52,
                           child: Text(
-                            (item.qty * item.unitPrice.amount)
-                                .toStringAsFixed(0),
+                            item.lineSubtotal.amount.toStringAsFixed(0),
                             textAlign: TextAlign.end,
-                            style: DesignTokens.smallRegular
-                                .copyWith(color: DesignTokens.textLight),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
                           ),
                         ),
                       ],
@@ -215,27 +248,16 @@ class OrderInvoiceScreen extends StatelessWidget {
 
                 // Subtotals
                 _TotalRow(
-                    label: 'Sub Total',
-                    value: formatMoney(order.subtotal)),
-                const SizedBox(height: 8),
-                _TotalRow(
-                  label: 'Shipping',
-                  value: order.shipping.amount == 0
-                      ? 'FREE'
-                      : formatMoney(order.shipping),
+                  label: 'Sub Total',
+                  value: formatMoney(invoice.subtotal),
                 ),
                 const SizedBox(height: 8),
                 _TotalRow(
-                    label: 'Tax (Estimated 13%)',
-                    value: formatMoney(order.tax)),
-                if (hasDiscount) ...[
-                  const SizedBox(height: 8),
-                  _TotalRow(
-                    label: 'Promo Code Discount',
-                    value: '-${formatMoney(Money(amount: rawDiscount, currency: order.total.currency))}',
-                    valueColor: DesignTokens.colorError,
-                  ),
-                ],
+                  label: 'Shipping',
+                  value: invoice.shipping.amount == 0
+                      ? 'FREE'
+                      : formatMoney(invoice.shipping),
+                ),
 
                 const Divider(color: DesignTokens.borderDefault, height: 20),
 
@@ -254,7 +276,7 @@ class OrderInvoiceScreen extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      formatMoney(order.total),
+                      formatMoney(invoice.total),
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 18,
@@ -277,12 +299,14 @@ class OrderInvoiceScreen extends StatelessWidget {
           child: SizedBox(
             height: 52,
             child: ElevatedButton.icon(
-              onPressed: () =>
-                  SmSnackbar.success(context, 'Invoice saved to your downloads.'),
-              icon: const Icon(Icons.download_outlined,
-                  size: 18, color: Colors.black),
+              onPressed: () => _shareOrderInvoice(invoice),
+              icon: const Icon(
+                Icons.share_outlined,
+                size: 18,
+                color: Colors.black,
+              ),
               label: const Text(
-                'Save Invoice',
+                'Share Invoice',
                 style: TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 15,
@@ -293,7 +317,8 @@ class OrderInvoiceScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ),
@@ -301,6 +326,49 @@ class OrderInvoiceScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _shareOrderInvoice(OrderInvoice invoice) {
+  final lines = <String>[
+    'Style Mint invoice ${invoice.invoiceNumber}',
+    'Order: ${invoice.orderNumber}',
+    'Placed: ${DateFormat.yMMMd().add_jm().format(invoice.placedAt)}',
+    'Payment: ${invoice.paymentMethod} (${invoice.paymentStatus})',
+    'Subtotal: ${formatMoney(invoice.subtotal)}',
+    'Shipping: ${formatMoney(invoice.shipping)}',
+    'Grand total: ${formatMoney(invoice.total)}',
+  ];
+  unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));
+}
+
+class _InvoiceLoading extends StatelessWidget {
+  const _InvoiceLoading();
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+    backgroundColor: DesignTokens.bgAppFoundation,
+    body: Center(
+      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+    ),
+  );
+}
+
+class _InvoiceError extends StatelessWidget {
+  const _InvoiceError({required this.onRetry});
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: DesignTokens.bgAppFoundation,
+    appBar: AppBar(backgroundColor: DesignTokens.bgAppFoundation),
+    body: Center(
+      child: ElevatedButton(
+        onPressed: onRetry,
+        style: DesignTokens.primaryButtonStyle(),
+        child: const Text('Retry'),
+      ),
+    ),
+  );
 }
 
 // ── Invoice field row ─────────────────────────────────────────────────────────
@@ -321,16 +389,18 @@ class _InvRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
           ),
         ],
@@ -342,26 +412,27 @@ class _InvRow extends StatelessWidget {
 // ── Totals row ────────────────────────────────────────────────────────────────
 
 class _TotalRow extends StatelessWidget {
-  const _TotalRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _TotalRow({required this.label, required this.value});
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(label,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted)),
+        Text(
+          label,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
         const Spacer(),
-        Text(value,
-            style: DesignTokens.smallRegular.copyWith(
-                color: valueColor ?? DesignTokens.textLight)),
+        Text(
+          value,
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textLight,
+          ),
+        ),
       ],
     );
   }

@@ -9,6 +9,7 @@ class CartItemTile extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.onDelete,
+    required this.onSaveForLater,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class CartItemTile extends StatelessWidget {
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onDelete;
+  final VoidCallback onSaveForLater;
 
   @override
   Widget build(BuildContext context) {
@@ -96,9 +98,7 @@ class CartItemTile extends StatelessWidget {
                         ],
                         const SizedBox(height: DesignTokens.s4),
                         GestureDetector(
-                          onTap: () {
-                            // TODO(cart): save for later
-                          },
+                          onTap: onSaveForLater,
                           child: Text(
                             'Save for later',
                             style: DesignTokens.smallRegular.copyWith(

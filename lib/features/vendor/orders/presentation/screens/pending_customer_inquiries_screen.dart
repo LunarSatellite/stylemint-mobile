@@ -226,7 +226,10 @@ class _ReplySheetState extends State<_ReplySheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
+      ),
       child: Container(
         padding: const EdgeInsets.fromLTRB(
           DesignTokens.s16, DesignTokens.s16, DesignTokens.s16, DesignTokens.s24,

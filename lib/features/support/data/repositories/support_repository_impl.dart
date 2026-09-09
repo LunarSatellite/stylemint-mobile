@@ -4,6 +4,8 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/support/data/datasources/support_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_center_content.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/repositories/support_repository.dart';
 
@@ -15,6 +17,25 @@ class SupportRepositoryImpl implements SupportRepository {
 
   final SupportRemoteDataSource remoteDataSource;
   final NetworkInfoConnectivity networkInfo;
+
+  @override
+  Future<Either<NetworkExceptions, ContactChannels>>
+  getContactChannels() async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+
+    try {
+      final dto = await remoteDataSource.getContactChannels();
+      return right(dto.toDomain());
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      }
+      if (e is NetworkExceptions) return left(e);
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
 
   @override
   Future<Either<NetworkExceptions, List<Ticket>>> getTickets() async {
@@ -104,6 +125,51 @@ class SupportRepositoryImpl implements SupportRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<HelpCenterCategory>>>
+  getHelpCategories() => _helpRequest(
+    () async => (await remoteDataSource.getHelpCategories())
+        .map((item) => item.toDomain())
+        .toList(growable: false),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, List<HelpArticleSummary>>> getHelpArticles(
+    String categoryCode,
+  ) => _helpRequest(
+    () async => (await remoteDataSource.getHelpArticles(
+      categoryCode,
+    )).map((item) => item.toDomain(categoryCode)).toList(growable: false),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, HelpArticleContent>> getHelpArticle(
+    String categoryCode,
+    String slug,
+  ) => _helpRequest(
+    () async => (await remoteDataSource.getHelpArticle(
+      categoryCode,
+      slug,
+    )).toDomain(categoryCode),
+  );
+
+  Future<Either<NetworkExceptions, T>> _helpRequest<T>(
+    Future<T> Function() request,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await request());
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      }
+      if (e is NetworkExceptions) return left(e);
+      return left(NetworkExceptions.unexpectedError());
     }
   }
 }

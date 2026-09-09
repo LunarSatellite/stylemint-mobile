@@ -45,12 +45,16 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   }
 
   Future<void> _handleCallback() async {
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] _handleCallback: code=${widget.code} state=${widget.state} error=${widget.error}');
     if (_started) return;
     _started = true;
 
     // User declined in the provider sheet, or the provider returned an error.
     if ((widget.error != null && widget.error!.isNotEmpty) ||
         widget.code.isEmpty) {
+      // ignore: avoid_print
+      print('[OAUTH-DEBUG] bailing: provider error or empty code');
       _bail('Sign-in was cancelled.');
       return;
     }
@@ -58,18 +62,28 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     // CSRF check — the state must match the one we stashed when starting the
     // flow. The server also validates server-side; this is defense in depth.
     final expected = ref.read(oauthFlowProvider).state;
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] CSRF check: expected=$expected received=${widget.state}');
     if (expected == null || expected != widget.state) {
+      // ignore: avoid_print
+      print('[OAUTH-DEBUG] bailing: CSRF mismatch');
       _bail('Sign-in could not be verified. Please try again.');
       return;
     }
 
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] calling completeCallback...');
     await ref.read(oauthSignInProvider.notifier).completeCallback(
           code: widget.code,
           oauthState: widget.state,
         );
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] completeCallback returned');
   }
 
   void _bail(String message) {
+    // ignore: avoid_print
+    print('[OAUTH-DEBUG] _bail: $message (mounted=$mounted)');
     if (!mounted) return;
     SmSnackbar.error(context, message);
     context.go(RouteNames.signInMethod);
@@ -78,6 +92,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<LoginState>(oauthSignInProvider, (previous, next) {
+      // ignore: avoid_print
+      print('[OAUTH-DEBUG] oauthSignInProvider changed: $previous -> $next');
       next.maybeWhen(
         loadSuccess: (auth) {
           if (auth.isNewAccount) {

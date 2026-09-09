@@ -42,6 +42,26 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, List<TrendingProduct>>> getCategoryProducts(
+    String categoryId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+
+    try {
+      final products = await remoteDataSource.getCategoryProducts(categoryId);
+      return right(products.map((product) => product.toDomain()).toList());
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      }
+      if (e is NetworkExceptions) return left(e);
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, ProductDetail>> getProductDetail(
     String productId,
   ) async {
@@ -64,7 +84,8 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>> getProductReviews(
+  Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
+  getProductReviews(
     String productId, {
     int limit = 10,
     String? cursor,
@@ -78,9 +99,9 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
         final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
             .map(
-              (e) =>
-                  ProductReviewPreviewDto.fromJson(e as Map<String, dynamic>)
-                      .toDomain(),
+              (e) => ProductReviewPreviewDto.fromJson(
+                e as Map<String, dynamic>,
+              ).toDomain(),
             )
             .toList(growable: false);
         return right(

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class PrivacyPolicyScreen extends StatelessWidget {
+class PrivacyPolicyScreen extends ConsumerWidget {
   const PrivacyPolicyScreen({super.key});
 
   static const _quickNav = [
@@ -24,24 +26,52 @@ class PrivacyPolicyScreen extends StatelessWidget {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _requestDataExport(BuildContext context, WidgetRef ref) async {
+    final result = await ref
+        .read(profileRepositoryProvider)
+        .requestDataExport();
+    if (!context.mounted) return;
+    result.fold(
+      (_) => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not request your data export.')),
+      ),
+      (_) => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your data export request was received. We will notify you when it is ready.',
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Privacy Policy',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Privacy Policy',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16, DesignTokens.s8, DesignTokens.s16, DesignTokens.s32),
+          DesignTokens.s16,
+          DesignTokens.s8,
+          DesignTokens.s16,
+          DesignTokens.s32,
+        ),
         children: [
           _LastUpdated('Thursday, 15th Aug, 2023, 12:45 AM'),
           const SizedBox(height: DesignTokens.s24),
@@ -58,30 +88,39 @@ class PrivacyPolicyScreen extends StatelessWidget {
           _SectionHeading('1. Information We Collect'),
           const SizedBox(height: DesignTokens.s8),
           const _Body(
-              'We collect information you provide directly to us including:'),
+            'We collect information you provide directly to us including:',
+          ),
           const SizedBox(height: DesignTokens.s8),
           const _Bullet(
-              'Account Information: Name, email address, phone number, password, date of birth'),
+            'Account Information: Name, email address, phone number, password, date of birth',
+          ),
           const _Bullet(
-              'Profile Information: Profile photo, bio, preferences, social media links'),
+            'Profile Information: Profile photo, bio, preferences, social media links',
+          ),
           const _Bullet(
-              'Purchase Information: Shipping address, billing address, payment method details'),
+            'Purchase Information: Shipping address, billing address, payment method details',
+          ),
+          const _Bullet('Communications: Messages, support tickets, reviews'),
           const _Bullet(
-              'Communications: Messages, support tickets, reviews'),
+            "Creator Content: If you're a creator, links to your social media content",
+          ),
           const _Bullet(
-              "Creator Content: If you're a creator, links to your social media content"),
-          const _Bullet(
-              'Vendor Information: Business details, tax IDs, banking information'),
+            'Vendor Information: Business details, tax IDs, banking information',
+          ),
           const SizedBox(height: DesignTokens.s12),
           const _Body(
-              'Automatically Collected Information. When you use our Service, we automatically collect:'),
+            'Automatically Collected Information. When you use our Service, we automatically collect:',
+          ),
           const SizedBox(height: DesignTokens.s8),
           const _Bullet(
-              'Device Information: Device type, operating system, unique device identifiers, IP address'),
+            'Device Information: Device type, operating system, unique device identifiers, IP address',
+          ),
           const _Bullet(
-              'Usage Data: Pages viewed, features used, time spent, clicks, scrolls, reels watched'),
+            'Usage Data: Pages viewed, features used, time spent, clicks, scrolls, reels watched',
+          ),
           const _Bullet(
-              'Location Data: Approximate location based on IP (precise location only with permission)'),
+            'Location Data: Approximate location based on IP (precise location only with permission)',
+          ),
           const _Bullet('Cookies and Similar Technologies: See Section 6'),
           const SizedBox(height: DesignTokens.s24),
 
@@ -99,10 +138,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s12),
           const _Body('To exercise these rights:'),
           const SizedBox(height: DesignTokens.s8),
-          _BulletLink('Request Data Access',
-              onTap: () => _launch('mailto:privacy@reelcommerce.com')),
-          _BulletLink('Download My Data',
-              onTap: () => _launch('mailto:privacy@reelcommerce.com')),
+          _BulletLink(
+            'Request Data Access',
+            onTap: () => _launch('mailto:privacy@reelcommerce.com'),
+          ),
+          _BulletLink(
+            'Download My Data',
+            onTap: () => _requestDataExport(context, ref),
+          ),
           _BulletLink('Delete My Account', onTap: () {}),
           const SizedBox(height: DesignTokens.s24),
 
@@ -119,9 +162,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
             label: 'Mail: ',
-            linkText: 'ReelCommerce Inc., 123 Privacy Lane San Francisco, CA 94102',
+            linkText:
+                'ReelCommerce Inc., 123 Privacy Lane San Francisco, CA 94102',
             onTap: () => _launch(
-                'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102'),
+              'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102',
+            ),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
@@ -144,8 +189,11 @@ class _LastUpdated extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.calendar_today_outlined,
-            size: 14, color: DesignTokens.textMuted),
+        const Icon(
+          Icons.calendar_today_outlined,
+          size: 14,
+          color: DesignTokens.textMuted,
+        ),
         const SizedBox(width: DesignTokens.s8),
         Expanded(
           child: Text(
@@ -208,7 +256,9 @@ class _Bullet extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(top: 6, right: 8),
             child: CircleAvatar(
-                radius: 3, backgroundColor: DesignTokens.textLight),
+              radius: 3,
+              backgroundColor: DesignTokens.textLight,
+            ),
           ),
           Expanded(
             child: Text(
@@ -242,7 +292,9 @@ class _BulletLink extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(top: 6, right: 8),
             child: CircleAvatar(
-                radius: 3, backgroundColor: DesignTokens.primaryGreen),
+              radius: 3,
+              backgroundColor: DesignTokens.primaryGreen,
+            ),
           ),
           GestureDetector(
             onTap: onTap,
@@ -281,8 +333,10 @@ class _LabelLink extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 6, right: 8),
-          child:
-              CircleAvatar(radius: 3, backgroundColor: DesignTokens.textLight),
+          child: CircleAvatar(
+            radius: 3,
+            backgroundColor: DesignTokens.textLight,
+          ),
         ),
         Expanded(
           child: Wrap(

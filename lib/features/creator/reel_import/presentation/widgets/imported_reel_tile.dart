@@ -1,85 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ImportedReelTile extends StatelessWidget {
   const ImportedReelTile({super.key, required this.reel});
 
   final ImportedReel reel;
+  static const _externalLauncher = ReelExternalLauncher();
+
+  Future<void> _openSource() async {
+    final source = Uri.tryParse(reel.sourceUrl);
+    if (source == null || !source.hasScheme) return;
+    await _externalLauncher.open(source);
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: reel.sourceUrl.isNotEmpty
-          ? () => launchUrl(
-                Uri.parse(reel.sourceUrl),
-                mode: LaunchMode.externalApplication,
-              )
-          : null,
+      onTap: reel.sourceUrl.isNotEmpty ? _openSource : null,
       child: Container(
-      margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.s8),
-            child: Image.network(
-              reel.thumbnailUrl,
-              width: 60,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+        margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+              child: Image.network(
+                reel.thumbnailUrl,
                 width: 60,
                 height: 80,
-                color: DesignTokens.bgAppBodyLight,
-                child: const Icon(Icons.image, color: DesignTokens.textMuted),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 60,
+                  height: 80,
+                  color: DesignTokens.bgAppBodyLight,
+                  child: const Icon(Icons.image, color: DesignTokens.textMuted),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reel.caption.isNotEmpty ? reel.caption : 'Untitled',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.oneLinerSemibold,
-                ),
-                const SizedBox(height: DesignTokens.s4),
-                Row(
-                  children: [
-                    _StatusBadge(status: reel.status),
-                    const SizedBox(width: DesignTokens.s8),
+            const SizedBox(width: DesignTokens.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    reel.caption.isNotEmpty ? reel.caption : 'Untitled',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                  const SizedBox(height: DesignTokens.s4),
+                  Row(
+                    children: [
+                      _StatusBadge(status: reel.status),
+                      const SizedBox(width: DesignTokens.s8),
+                      Text(
+                        _formatDate(reel.importedAt),
+                        style: DesignTokens.tiny,
+                      ),
+                    ],
+                  ),
+                  if (reel.tags.isNotEmpty) ...[
+                    const SizedBox(height: DesignTokens.s4),
                     Text(
-                      _formatDate(reel.importedAt),
-                      style: DesignTokens.tiny,
+                      '${reel.tags.length} products tagged',
+                      style: DesignTokens.tiny.copyWith(
+                        color: DesignTokens.primaryGreen,
+                      ),
                     ),
                   ],
-                ),
-                if (reel.tags.isNotEmpty) ...[
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    '${reel.tags.length} products tagged',
-                    style: DesignTokens.tiny.copyWith(
-                      color: DesignTokens.primaryGreen,
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-          Icon(reel.platform.icon, color: reel.platform.color, size: 20),
-        ],
+            Icon(reel.platform.icon, color: reel.platform.color, size: 20),
+          ],
+        ),
       ),
-    ),
     );
   }
 

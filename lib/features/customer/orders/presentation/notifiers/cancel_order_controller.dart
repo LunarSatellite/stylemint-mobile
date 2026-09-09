@@ -42,8 +42,11 @@ class CancelOrderController extends StateNotifier<CancelOrderUiState> {
     String? note,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
-    final either =
-        await _repository.cancelOrder(orderId, reason: reason, note: note);
+    final either = await _repository.cancelOrder(
+      orderId,
+      reason: reason,
+      note: note,
+    );
     state = either.fold(
       (_) => state.copyWith(
         isSubmitting: false,

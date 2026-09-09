@@ -1,30 +1,61 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// "Top Creators" card: avatar, name/handle, follow toggle, category,
 /// description, rating + followers.
-class DiscoverCreatorCard extends StatefulWidget {
+class DiscoverCreatorCard extends ConsumerStatefulWidget {
   const DiscoverCreatorCard({required this.creator, super.key});
 
   final DiscoverCreator creator;
 
   @override
-  State<DiscoverCreatorCard> createState() => _DiscoverCreatorCardState();
+  ConsumerState<DiscoverCreatorCard> createState() => _DiscoverCreatorCardState();
 }
 
-class _DiscoverCreatorCardState extends State<DiscoverCreatorCard> {
-  late bool _isFollowing = widget.creator.isFollowing;
+class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
+  bool _busy = false;
 
-  void _toggleFollow() {
-    setState(() => _isFollowing = !_isFollowing);
-    // TODO(discovery): call follow/unfollow via a Riverpod notifier.
+  @override
+  void initState() {
+    super.initState();
+    final creator = widget.creator;
+    if (creator.id.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref
+              .read(followNotifierProvider.notifier)
+              .seed(creator.id, following: creator.isFollowing);
+        }
+      });
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (!await ensureAuth(context, ref, reason: AuthReason.follow)) return;
+    final id = widget.creator.id;
+    if (id.isEmpty || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(followNotifierProvider.notifier).toggle(id);
+    } catch (_) {
+      if (mounted) {
+        SmSnackbar.error(context, "Couldn't update follow. Please try again.");
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.creator;
+    final isFollowing = ref.watch(followNotifierProvider).contains(c.id);
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: BoxDecoration(
@@ -71,7 +102,10 @@ class _DiscoverCreatorCardState extends State<DiscoverCreatorCard> {
                   ],
                 ),
               ),
-              _FollowButton(isFollowing: _isFollowing, onTap: _toggleFollow),
+              _FollowButton(
+                isFollowing: isFollowing,
+                onTap: _busy ? null : _toggleFollow,
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s12),
@@ -131,7 +165,7 @@ class _FollowButton extends StatelessWidget {
   const _FollowButton({required this.isFollowing, required this.onTap});
 
   final bool isFollowing;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

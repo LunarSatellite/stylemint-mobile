@@ -38,16 +38,21 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
           status: status,
         );
         final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-            .map((e) => VendorOrderDto.fromJson(e as Map<String, dynamic>).toDomain())
+            .map(
+              (e) =>
+                  VendorOrderDto.fromJson(e as Map<String, dynamic>).toDomain(),
+            )
             .toList(growable: false);
-        return right(PagedResult(
-          items: items,
-          totalCount: data['totalCount'] as int? ?? items.length,
-          pageSize: data['pageSize'] as int? ?? limit,
-          nextCursor: data['nextCursor'] as String?,
-          previousCursor: data['previousCursor'] as String?,
-          hasMore: data['hasMore'] as bool? ?? false,
-        ));
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? limit,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -83,7 +88,9 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, VendorOrder>> getOrderDetail(String orderId) async {
+  Future<Either<NetworkExceptions, VendorOrder>> getOrderDetail(
+    String orderId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getOrderDetail(orderId);
@@ -150,14 +157,16 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
               ).toDomain(),
             )
             .toList(growable: false);
-        return right(PagedResult(
-          items: items,
-          totalCount: data['totalCount'] as int? ?? items.length,
-          pageSize: data['pageSize'] as int? ?? pageSize,
-          nextCursor: data['nextCursor'] as String?,
-          previousCursor: data['previousCursor'] as String?,
-          hasMore: data['hasMore'] as bool? ?? false,
-        ));
+        return right(
+          PagedResult(
+            items: items,
+            totalCount: data['totalCount'] as int? ?? items.length,
+            pageSize: data['pageSize'] as int? ?? pageSize,
+            nextCursor: data['nextCursor'] as String?,
+            previousCursor: data['previousCursor'] as String?,
+            hasMore: data['hasMore'] as bool? ?? false,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -378,31 +387,36 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     }
   }
 
-  /// TODO(swagger): exact packing-slip response shape isn't published —
-  /// parses the same `shipTo`/`lines` shape as the order-detail endpoint,
-  /// falling back gracefully if fields are missing.
+  /// Maps the backend `PackingSlipDto`: its lines are published as `items`
+  /// and its delivery address as `shipTo`.
   static PackingSlip _parsePackingSlip(
     String orderId,
     Map<String, dynamic> json,
   ) {
     final shipTo = json['shipTo'] as Map<String, dynamic>?;
-    final lines = (json['lines'] as List<dynamic>? ??
-            json['items'] as List<dynamic>? ??
-            const <dynamic>[])
-        .cast<Map<String, dynamic>>();
+    final lines =
+        (json['lines'] as List<dynamic>? ??
+                json['items'] as List<dynamic>? ??
+                const <dynamic>[])
+            .cast<Map<String, dynamic>>();
     return PackingSlip(
       orderId: orderId,
       orderNumber: json['orderNumber'] as String? ?? '',
+      packingSlipNumber: json['packingSlipNumber'] as String?,
       receiverName: shipTo?['receiverName'] as String?,
       shippingAddress: _formatAddress(shipTo),
       carrier: json['carrier'] as String?,
+      trackingNumber: json['trackingNumber'] as String?,
       items: lines
-          .map((l) => PackingSlipItem(
-                productName: (l['productTitleSnapshot'] as String?) ??
-                    (l['productName'] as String?) ??
-                    '',
-                quantity: (l['quantity'] as num?)?.toInt() ?? 0,
-              ))
+          .map(
+            (l) => PackingSlipItem(
+              productName:
+                  (l['productTitleSnapshot'] as String?) ??
+                  (l['productName'] as String?) ??
+                  '',
+              quantity: (l['quantity'] as num?)?.toInt() ?? 0,
+            ),
+          )
           .toList(growable: false),
     );
   }
@@ -412,9 +426,10 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     final parts = <String>[
       (a['addressLine1'] as String?) ?? '',
       (a['city'] as String?) ?? '',
-      [(a['state'] as String?) ?? '', (a['zipCode'] as String?) ?? '']
-          .where((s) => s.isNotEmpty)
-          .join(' '),
+      [
+        (a['state'] as String?) ?? '',
+        (a['zipCode'] as String?) ?? '',
+      ].where((s) => s.isNotEmpty).join(' '),
     ].where((s) => s.isNotEmpty).toList();
     return parts.isEmpty ? null : parts.join(', ');
   }
@@ -428,10 +443,11 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     Map<String, dynamic> json,
     List<String> requestedIds,
   ) {
-    final rows = (json['items'] as List<dynamic>? ??
-            json['results'] as List<dynamic>? ??
-            const <dynamic>[])
-        .cast<Map<String, dynamic>>();
+    final rows =
+        (json['items'] as List<dynamic>? ??
+                json['results'] as List<dynamic>? ??
+                const <dynamic>[])
+            .cast<Map<String, dynamic>>();
     if (rows.isEmpty) {
       return BulkActionResult(succeededIds: requestedIds, failed: const {});
     }
@@ -443,9 +459,9 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       final id = (index != null && index >= 0 && index < requestedIds.length)
           ? requestedIds[index]
           : (value?['subOrderId'] as String?) ??
-              (row['id'] as String?) ??
-              (row['subOrderId'] as String?) ??
-              '';
+                (row['id'] as String?) ??
+                (row['subOrderId'] as String?) ??
+                '';
       final errorCode = row['errorCode'] as String? ?? row['error'] as String?;
       if (errorCode == null) {
         succeeded.add(id);

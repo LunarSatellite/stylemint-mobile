@@ -33,25 +33,22 @@ class TrendingProductCard extends StatelessWidget {
               child: SizedBox(
                 width: 56,
                 height: 56,
-                child:
-                    product.imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                          imageUrl: product.imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder:
-                              (_, _) => const ColoredBox(
-                                color: DesignTokens.bgAppBodyLight,
-                              ),
-                          errorWidget:
-                              (_, _, _) => const ColoredBox(
-                                color: DesignTokens.bgAppBodyLight,
-                                child: Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: DesignTokens.iconLight,
-                                ),
-                              ),
-                        )
-                        : const ColoredBox(color: DesignTokens.bgAppBodyLight),
+                child: product.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: product.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) => const ColoredBox(
+                          color: DesignTokens.bgAppBodyLight,
+                        ),
+                        errorWidget: (_, _, _) => const ColoredBox(
+                          color: DesignTokens.bgAppBodyLight,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: DesignTokens.iconLight,
+                          ),
+                        ),
+                      )
+                    : const ColoredBox(color: DesignTokens.bgAppBodyLight),
               ),
             ),
             const SizedBox(width: DesignTokens.s12),
@@ -89,13 +86,15 @@ class TrendingProductCard extends StatelessWidget {
                           color: DesignTokens.textWhite,
                         ),
                       ),
-                      const SizedBox(width: DesignTokens.s8),
-                      Text(
-                        '🔥 ${_compact(product.soldToday)} sold today',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
+                      if (product.soldToday > 0) ...[
+                        const SizedBox(width: DesignTokens.s8),
+                        Text(
+                          '🔥 ${_compact(product.soldToday)} sold today',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],

@@ -11,7 +11,6 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creat
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Single-reel detail (creator) — same full-screen layout as the Home feed's
 /// [ReelCard]/[CreatorInfo]/[TaggedProductsSection] (Figma-designed), reused
@@ -202,6 +201,14 @@ class _ReelInfo extends StatefulWidget {
 }
 
 class _ReelInfoState extends State<_ReelInfo> {
+  static const _externalLauncher = ReelExternalLauncher();
+
+  Future<void> _openSource() async {
+    final source = Uri.tryParse(widget.reel.sourceUrl);
+    if (source == null || !source.hasScheme) return;
+    await _externalLauncher.open(source);
+  }
+
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
@@ -215,10 +222,7 @@ class _ReelInfoState extends State<_ReelInfo> {
             if (reel.sourceUrl.isNotEmpty) ...[
               const SizedBox(width: DesignTokens.s8),
               GestureDetector(
-                onTap: () => launchUrl(
-                  Uri.parse(reel.sourceUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
+                onTap: _openSource,
                 child: const Icon(
                   Icons.open_in_new,
                   size: 16,

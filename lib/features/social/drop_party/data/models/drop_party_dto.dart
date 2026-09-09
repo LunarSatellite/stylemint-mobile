@@ -1,90 +1,92 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/entities/drop_party.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
-part 'drop_party_dto.freezed.dart';
-part 'drop_party_dto.g.dart';
+class DropPartyDto {
+  const DropPartyDto({
+    required this.id,
+    required this.creatorProfileId,
+    required this.vendorProfileId,
+    required this.reelId,
+    required this.title,
+    required this.description,
+    required this.startsUtc,
+    required this.duration,
+    required this.joinCode,
+    required this.state,
+    required this.attendeeCount,
+    required this.reelIsOrphaned,
+    this.wentLiveUtc,
+    this.endedUtc,
+    this.cancellationReason,
+  });
 
-@freezed
-abstract class DropPartyDto with _$DropPartyDto {
-  const factory DropPartyDto({
-    required String id,
-    required String title,
-    required String description,
-    required String productId,
-    required String productName,
-    required String productImageUrl,
-    required double originalAmount,
-    @Default('NPR') String originalCurrency,
-    required double dropAmount,
-    @Default('NPR') String dropCurrency,
-    required int maxParticipants,
-    required int currentParticipants,
-    required DateTime startsAt,
-    required DateTime endsAt,
-    // Backend field is `joinCode` (same shape as CoWatch's join code).
-    @JsonKey(name: 'joinCode') required String inviteCode,
-    required String status,
-    required String hostId,
-    required String hostName,
-    required String hostAvatarUrl,
-    @Default(false) bool isJoined,
-  }) = _DropPartyDto;
+  factory DropPartyDto.fromJson(Map<String, dynamic> json) => DropPartyDto(
+    id: json['id'] as String? ?? '',
+    creatorProfileId: json['creatorProfileId'] as String? ?? '',
+    vendorProfileId: json['vendorProfileId'] as String? ?? '',
+    reelId: json['reelId'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    startsUtc: DateTime.parse(json['startsUtc'] as String),
+    duration: Duration(seconds: _durationSeconds(json['duration'])),
+    joinCode: json['joinCode'] as String? ?? '',
+    state: (json['state'] as num?)?.toInt() ?? 1,
+    attendeeCount: (json['attendeeCount'] as num?)?.toInt() ?? 0,
+    reelIsOrphaned: json['reelIsOrphaned'] as bool? ?? false,
+    wentLiveUtc: _readDate(json['wentLiveUtc']),
+    endedUtc: _readDate(json['endedUtc']),
+    cancellationReason: json['cancellationReason'] as String?,
+  );
 
-  const DropPartyDto._();
-
-  factory DropPartyDto.fromJson(Map<String, dynamic> json) =>
-      _$DropPartyDtoFromJson(json);
+  final String id;
+  final String creatorProfileId;
+  final String vendorProfileId;
+  final String reelId;
+  final String title;
+  final String description;
+  final DateTime startsUtc;
+  final Duration duration;
+  final String joinCode;
+  final int state;
+  final int attendeeCount;
+  final bool reelIsOrphaned;
+  final DateTime? wentLiveUtc;
+  final DateTime? endedUtc;
+  final String? cancellationReason;
 
   DropParty toDomain() => DropParty(
     id: id,
+    creatorProfileId: creatorProfileId,
+    vendorProfileId: vendorProfileId,
+    reelId: reelId,
     title: title,
     description: description,
-    productId: productId,
-    productName: productName,
-    productImageUrl: productImageUrl,
-    originalPrice: Money(amount: originalAmount, currency: originalCurrency),
-    dropPrice: Money(amount: dropAmount, currency: dropCurrency),
-    maxParticipants: maxParticipants,
-    currentParticipants: currentParticipants,
-    startsAt: startsAt,
-    endsAt: endsAt,
-    inviteCode: inviteCode,
-    status: _parseStatus(status),
-    hostId: hostId,
-    hostName: hostName,
-    hostAvatarUrl: hostAvatarUrl,
-    isJoined: isJoined,
+    startsAt: startsUtc.toLocal(),
+    duration: duration,
+    joinCode: joinCode,
+    status: switch (state) {
+      1 => DropPartyStatus.scheduled,
+      2 => DropPartyStatus.live,
+      3 => DropPartyStatus.ended,
+      4 => DropPartyStatus.cancelled,
+      _ => DropPartyStatus.scheduled,
+    },
+    attendeeCount: attendeeCount,
+    reelIsOrphaned: reelIsOrphaned,
+    wentLiveAt: wentLiveUtc?.toLocal(),
+    endedAt: endedUtc?.toLocal(),
+    cancellationReason: cancellationReason,
   );
 
-  static DropPartyStatus _parseStatus(String s) {
-    switch (s) {
-      case 'upcoming':
-        return DropPartyStatus.upcoming;
-      case 'live':
-        return DropPartyStatus.live;
-      case 'sold_out':
-        return DropPartyStatus.soldOut;
-      default:
-        return DropPartyStatus.ended;
-    }
+  static DateTime? _readDate(Object? value) =>
+      value is String ? DateTime.tryParse(value) : null;
+
+  static int _durationSeconds(Object? value) {
+    if (value is num) return value.toInt();
+    if (value is! String) return 0;
+    final parts = value.split(':');
+    if (parts.length != 3) return 0;
+    return (int.tryParse(parts[0]) ?? 0) * 3600 +
+        (int.tryParse(parts[1]) ?? 0) * 60 +
+        (double.tryParse(parts[2]) ?? 0).round();
   }
-}
-
-@freezed
-abstract class DropPartyInviteDto with _$DropPartyInviteDto {
-  const factory DropPartyInviteDto({
-    required String id,
-    required String partyId,
-    required String invitedBy,
-    required String invitedUserId,
-    required String invitedUserName,
-    required String status,
-    required DateTime createdAt,
-  }) = _DropPartyInviteDto;
-
-  const DropPartyInviteDto._();
-
-  factory DropPartyInviteDto.fromJson(Map<String, dynamic> json) =>
-      _$DropPartyInviteDtoFromJson(json);
 }

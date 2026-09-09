@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
 
 /// Remote datasource for customer orders. Throws on failure; the repository
@@ -33,6 +34,12 @@ class OrdersRemoteDataSource {
   Future<OrderDetailDto> getOrderDetail(String orderId) async {
     final response = await apiClient.get('/v1/orders/$orderId');
     return OrderDetailDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/orders/{orderNumber}/invoice` — immutable receipt projection.
+  Future<OrderInvoiceDto> getOrderInvoice(String orderNumber) async {
+    final response = await apiClient.get('/v1/orders/$orderNumber/invoice');
+    return OrderInvoiceDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST `/v1/orders/{orderNumber}/cancel` — cancel an order.

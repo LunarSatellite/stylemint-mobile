@@ -6,6 +6,7 @@ import 'core/busy/busy_overlay.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/design_tokens.dart';
+import 'theme/theme_mode_provider.dart';
 
 class StyleMintApp extends ConsumerWidget {
   const StyleMintApp({super.key});
@@ -13,13 +14,14 @@ class StyleMintApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Style Mint',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
       // Global, non-blocking "please wait" bar shown while any API call runs.
       //
@@ -37,12 +39,14 @@ class StyleMintApp extends ConsumerWidget {
             systemNavigationBarColor: isDark
                 ? DesignTokens.bgAppFoundation
                 : Colors.white,
-            systemNavigationBarIconBrightness:
-                isDark ? Brightness.light : Brightness.dark,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
             systemNavigationBarDividerColor: Colors.transparent,
             statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                isDark ? Brightness.light : Brightness.dark,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
           ),
           child: BusyOverlay(child: child ?? const SizedBox.shrink()),
         );

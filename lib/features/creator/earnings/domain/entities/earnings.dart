@@ -90,7 +90,9 @@ class EarningsLedgerEntry {
   }
 }
 
-enum PayoutMethodType { bankTransfer, esewa, paypal, venmo }
+/// Mirrors backend `PayoutDestinationKind`: NIMB=1, Laxmi=2, PayPal=3,
+/// eSewa=4. These are the only payout destinations supported in v1.
+enum PayoutMethodType { nimbBank, laxmiBank, paypal, esewa }
 
 enum PayoutState { requested, processing, paid, failed, held }
 

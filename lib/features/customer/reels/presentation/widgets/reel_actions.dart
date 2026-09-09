@@ -1,20 +1,24 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Right-rail reel actions: like, comment, share, cart (Design Spec Doc —
 /// Home Page Reel.pdf, "Reel Interactions" §1-4).
 ///
-/// Like and comment work without authentication (optimistic local state).
-/// Share and cart are gated through [ensureAuth].
+/// Comments are native Style Mint interactions. A reel's likes are owned by
+/// its source platform, so the heart hands off to that provider instead of
+/// showing a misleading local-only toggle. Share and cart are authenticated.
 class ReelActions extends ConsumerStatefulWidget {
   const ReelActions({required this.reel, super.key});
 
@@ -25,18 +29,26 @@ class ReelActions extends ConsumerStatefulWidget {
 }
 
 class _ReelActionsState extends ConsumerState<ReelActions> {
-  late bool _isLiked = widget.reel.isLikedByUser ?? false;
-  late int _likeCount = widget.reel.likeCount;
+  static const _externalLauncher = ReelExternalLauncher();
   // Optimistic local override — reel.commentCount is a frozen snapshot from
   // the feed fetch that nothing else refreshes, so a successful post has to
   // update this directly or the badge never reflects it.
   late int _commentCount = widget.reel.commentCount;
 
-  void _toggleLike() {
-    setState(() {
-      _isLiked = !_isLiked;
-      _likeCount += _isLiked ? 1 : -1;
-    });
+  Future<void> _likeOnProvider() async {
+    final url = Uri.tryParse(widget.reel.sourceUrl);
+    if (url == null || !url.hasScheme) {
+      _showProviderUnavailable();
+      return;
+    }
+    final opened = await _externalLauncher.open(url);
+    if (mounted && !opened) _showProviderUnavailable();
+  }
+
+  void _showProviderUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Unable to open the source reel.')),
+    );
   }
 
   void _openComments() {
@@ -52,7 +64,9 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     final reel = widget.reel;
     // Cart badge — so "did my add-to-cart tap do anything?" has a visible
     // answer right on the rail, not just inside the cart screen itself.
-    final cartItemCount = ref.watch(cartNotifierProvider).maybeWhen(
+    final cartItemCount = ref
+        .watch(cartNotifierProvider)
+        .maybeWhen(
           loadSuccess: (cart) =>
               cart.items.fold<int>(0, (sum, i) => sum + i.quantity),
           orElse: () => 0,
@@ -61,10 +75,9 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
       mainAxisSize: MainAxisSize.min,
       children: [
         _ActionButton(
-          icon: _isLiked ? Icons.favorite : Icons.favorite_outline,
-          label: _formatCount(_likeCount),
-          color: _isLiked ? DesignTokens.colorError : DesignTokens.iconWhite,
-          onTap: _toggleLike,
+          icon: Icons.favorite_outline,
+          label: _formatCount(reel.likeCount),
+          onTap: () => _likeOnProvider(),
         ),
         const SizedBox(height: DesignTokens.s12),
         _ActionButton(
@@ -78,7 +91,15 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
           label: _formatCount(reel.shareCount),
           onTap: () async {
             if (await ensureAuth(context, ref, reason: AuthReason.share)) {
-              // share action
+              unawaited(
+                SharePlus.instance.share(
+                  ShareParams(
+                    text:
+                        "${reel.caption}\n\nWatch ${reel.creatorName}'s reel "
+                        'on Style Mint: ${reel.sourceUrl}',
+                  ),
+                ),
+              );
             }
           },
         ),

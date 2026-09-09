@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/audience_age_bucket.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/audience_location.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/entities/creator_reel_analytics.dart';
@@ -38,8 +40,7 @@ enum _DateFilter {
   final String label;
   final int days;
 
-  DateTime get fromUtc =>
-      DateTime.now().toUtc().subtract(Duration(days: days));
+  DateTime get fromUtc => DateTime.now().toUtc().subtract(Duration(days: days));
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -62,6 +63,10 @@ class _ReelDetailAnalyticsScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(
       creatorReelAnalyticsNotifierProvider(widget.reelId),
+    );
+    final analytics = state.maybeWhen(
+      loadSuccess: (value) => value,
+      orElse: () => null,
     );
 
     return Scaffold(
@@ -91,11 +96,7 @@ class _ReelDetailAnalyticsScreenState
               Icons.more_vert_rounded,
               color: DesignTokens.textWhite,
             ),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Exporting/sharing reel reports is coming soon.'),
-              ),
-            ),
+            onPressed: analytics == null ? null : () => _shareReport(analytics),
           ),
         ],
       ),
@@ -112,8 +113,9 @@ class _ReelDetailAnalyticsScreenState
                 failure.isNoInternet
                     ? 'No internet connection'
                     : 'Failed to load reel analytics',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
               const SizedBox(height: DesignTokens.s16),
               ElevatedButton(
@@ -139,6 +141,36 @@ class _ReelDetailAnalyticsScreenState
     ref
         .read(creatorReelAnalyticsNotifierProvider(widget.reelId).notifier)
         .fetch(fromUtc: _filter.fromUtc);
+  }
+
+  void _shareReport(CreatorReelAnalytics analytics) {
+    final reel = analytics.reel;
+    final stats = analytics.statistics;
+    final lines = <String>[
+      'Style Mint — Reel analytics',
+      reel.title?.isNotEmpty == true ? reel.title! : 'Untitled reel',
+      '',
+      'Earnings: ${analytics.totalEarnings.currency} ${analytics.totalEarnings.amount.toStringAsFixed(2)}',
+      'Views: ${reel.views}',
+      'Likes: ${reel.likes}',
+      'Comments: ${reel.comments}',
+      'Watch time: ${analytics.watchTimeMinutes} minutes',
+      'Conversion rate: ${stats.conversionRate.toStringAsFixed(2)}%',
+      'Click-through rate: ${stats.clickThroughRate.toStringAsFixed(2)}%',
+      'Completion rate: ${stats.completionRate.toStringAsFixed(2)}%',
+      'Unique viewers: ${stats.uniqueViewersEstimate}',
+      '',
+      'Product earnings',
+      ...analytics.earningsDistribution.map(
+        (slice) =>
+            '${slice.name ?? 'Product'} — ${slice.amount.currency} ${slice.amount.amount.toStringAsFixed(2)} (${slice.quantity} sold)',
+      ),
+    ];
+    if (reel.sourceUrl?.isNotEmpty == true) {
+      lines.add('');
+      lines.add('Watch reel: ${reel.sourceUrl}');
+    }
+    unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));
   }
 }
 
@@ -186,8 +218,7 @@ class _Body extends StatelessWidget {
           const SizedBox(height: DesignTokens.s16),
 
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -208,8 +239,10 @@ class _Body extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   "Analytics data for each tagged product's earnings",
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted, fontSize: 12),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: DesignTokens.s12),
                 _EarningsDistributionCard(
@@ -293,8 +326,7 @@ class _FilterChipsRow extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: DesignTokens.fontFamily,
                   fontSize: 12,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color: selected
                       ? DesignTokens.primaryGreen
                       : DesignTokens.textLight,
@@ -317,8 +349,9 @@ class _ReelInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        (reel.title?.isNotEmpty ?? false) ? reel.title! : 'Untitled reel';
+    final title = (reel.title?.isNotEmpty ?? false)
+        ? reel.title!
+        : 'Untitled reel';
     final posted = reel.publishedAtUtc != null
         ? 'Posted on: ${DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAtUtc!.toLocal())}'
         : '';
@@ -481,8 +514,9 @@ class _EarningsDistributionCard extends StatelessWidget {
         padding: const EdgeInsets.all(DesignTokens.s16),
         child: Text(
           'No product data yet.',
-          style:
-              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
       );
     }
@@ -530,16 +564,14 @@ class _EarningsDistributionCard extends StatelessWidget {
           ),
           // Segmented bar
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s8),
               child: SizedBox(
                 height: 36,
                 child: Row(
                   children: slices.asMap().entries.map((e) {
-                    final color =
-                        _kChartColors[e.key % _kChartColors.length];
+                    final color = _kChartColors[e.key % _kChartColors.length];
                     final pct = e.value.percentOfTotal.round();
                     return Expanded(
                       flex: pct.clamp(1, 100),
@@ -566,8 +598,9 @@ class _EarningsDistributionCard extends StatelessWidget {
           ...slices.asMap().entries.map((e) {
             final slice = e.value;
             final color = _kChartColors[e.key % _kChartColors.length];
-            final name =
-                (slice.name?.isNotEmpty ?? false) ? slice.name! : 'Product';
+            final name = (slice.name?.isNotEmpty ?? false)
+                ? slice.name!
+                : 'Product';
             return Column(
               children: [
                 const Divider(
@@ -595,8 +628,9 @@ class _EarningsDistributionCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           name,
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textWhite),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
                           maxLines: 2,
                         ),
                       ),
@@ -869,8 +903,9 @@ class _EarningsOverviewSection extends StatelessWidget {
         if (trend.isEmpty)
           Text(
             'No earnings data for this period.',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           )
         else
           Container(
@@ -911,17 +946,19 @@ class _EarningsLinePainter extends CustomPainter {
     final chartW = size.width - _leftPad;
     final chartH = size.height - _bottomPad;
 
-    final pts = List.generate(data.length, (i) => Offset(
-          _leftPad + i * chartW / (data.length - 1).clamp(1, double.infinity),
-          chartH - (maxVal > 0 ? (data[i] / maxVal) * chartH : 0),
-        ));
+    final pts = List.generate(
+      data.length,
+      (i) => Offset(
+        _leftPad + i * chartW / (data.length - 1).clamp(1, double.infinity),
+        chartH - (maxVal > 0 ? (data[i] / maxVal) * chartH : 0),
+      ),
+    );
 
     // Area fill
     final areaPath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      areaPath.cubicTo(
-          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      areaPath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
     areaPath
       ..lineTo(pts.last.dx, chartH)
@@ -944,8 +981,7 @@ class _EarningsLinePainter extends CustomPainter {
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
     for (int i = 1; i < pts.length; i++) {
       final cx = (pts[i - 1].dx + pts[i].dx) / 2;
-      linePath.cubicTo(
-          cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
+      linePath.cubicTo(cx, pts[i - 1].dy, cx, pts[i].dy, pts[i].dx, pts[i].dy);
     }
     canvas.drawPath(
       linePath,
@@ -962,11 +998,11 @@ class _EarningsLinePainter extends CustomPainter {
       ..strokeWidth = 0.5;
     for (int i = 0; i <= ySteps; i++) {
       final y = chartH - (i / ySteps) * chartH;
-      canvas.drawLine(
-          Offset(_leftPad, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(Offset(_leftPad, y), Offset(size.width, y), gridPaint);
       final val = (maxVal * i / ySteps).round();
-      final label =
-          val >= 1000 ? '${(val / 1000).toStringAsFixed(0)}k' : '$val';
+      final label = val >= 1000
+          ? '${(val / 1000).toStringAsFixed(0)}k'
+          : '$val';
       final tp = TextPainter(
         text: TextSpan(
           text: label,
@@ -1000,15 +1036,13 @@ class _EarningsLinePainter extends CustomPainter {
           ),
           textDirection: ui.TextDirection.ltr,
         )..layout();
-        tp.paint(
-            canvas, Offset(xPositions[i] - tp.width / 2, chartH + 5));
+        tp.paint(canvas, Offset(xPositions[i] - tp.width / 2, chartH + 5));
       }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _EarningsLinePainter old) =>
-      old.trend != trend;
+  bool shouldRepaint(covariant _EarningsLinePainter old) => old.trend != trend;
 }
 
 // ── Audience demographic ──────────────────────────────────────────────────────
@@ -1035,15 +1069,17 @@ class _AudienceDemographicSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'According to demographics according to age groups',
-          style:
-              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
         const SizedBox(height: DesignTokens.s12),
         if (buckets.isEmpty)
           Text(
             'No demographic data yet.',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           )
         else
           Container(
@@ -1071,8 +1107,7 @@ class _AudienceDemographicSection extends StatelessWidget {
                   runSpacing: DesignTokens.s8,
                   alignment: WrapAlignment.center,
                   children: buckets.asMap().entries.map((e) {
-                    final color =
-                        _kChartColors[e.key % _kChartColors.length];
+                    final color = _kChartColors[e.key % _kChartColors.length];
                     final label = e.value.ageRange ?? '?';
                     return Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1149,8 +1184,7 @@ class _GenderDistributionSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: entries.map((g) {
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: DesignTokens.s16),
+                      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                       child: Row(
                         children: [
                           Container(
@@ -1165,8 +1199,9 @@ class _GenderDistributionSection extends StatelessWidget {
                           Expanded(
                             child: Text(
                               g.$1,
-                              style: DesignTokens.smallRegular
-                                  .copyWith(color: DesignTokens.textMuted),
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textMuted,
+                              ),
                             ),
                           ),
                           Text(
@@ -1190,9 +1225,7 @@ class _GenderDistributionSection extends StatelessWidget {
                 height: 110,
                 child: CustomPaint(
                   painter: _DonutPainter(
-                    segments: entries
-                        .map((g) => (g.$3 / 100.0, g.$2))
-                        .toList(),
+                    segments: entries.map((g) => (g.$3 / 100.0, g.$2)).toList(),
                     strokeWidth: 22,
                   ),
                 ),
@@ -1229,15 +1262,17 @@ class _TopLocationsSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Audience demographics according to different locations',
-          style:
-              DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
         ),
         const SizedBox(height: DesignTokens.s12),
         if (locations.isEmpty)
           Text(
             'No location data yet.',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           )
         else
           Container(
@@ -1267,8 +1302,7 @@ class _TopLocationsSection extends StatelessWidget {
                   runSpacing: DesignTokens.s8,
                   alignment: WrapAlignment.center,
                   children: locations.asMap().entries.map((e) {
-                    final color =
-                        _kChartColors[e.key % _kChartColors.length];
+                    final color = _kChartColors[e.key % _kChartColors.length];
                     return Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

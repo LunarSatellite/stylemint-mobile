@@ -6,13 +6,19 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/provi
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-// TODO(backend-confirm): verify _kindBank and _kindVenmo with backend
-const int _kindBank = 1;
-const int _kindVenmo = 2;
+// Backend `PayoutDestinationKind`: NIMB=1, Laxmi=2, PayPal=3, eSewa=4.
+const int _kindNimbBank = 1;
+const int _kindLaxmiBank = 2;
 const int _kindPayPal = 3;
 const int _kindEsewa = 4;
 
-enum _Platform { bank, paypal, venmo, esewa }
+enum _Platform { nimbBank, laxmiBank, paypal, esewa }
+
+String _bankLabel(_Platform platform) => switch (platform) {
+  _Platform.nimbBank => 'NIMB Bank',
+  _Platform.laxmiBank => 'Laxmi Bank',
+  _ => throw ArgumentError.value(platform, 'platform', 'Expected a bank'),
+};
 
 class AddPaymentMethodScreen extends ConsumerStatefulWidget {
   const AddPaymentMethodScreen({super.key});
@@ -24,10 +30,9 @@ class AddPaymentMethodScreen extends ConsumerStatefulWidget {
 
 class _AddPaymentMethodScreenState
     extends ConsumerState<AddPaymentMethodScreen> {
-  _Platform _selected = _Platform.bank;
+  _Platform _selected = _Platform.nimbBank;
 
   // Bank A/C
-  String? _bankName;
   final _holderCtrl = TextEditingController();
   final _routingCtrl = TextEditingController();
   final _accountCtrl = TextEditingController();
@@ -36,34 +41,8 @@ class _AddPaymentMethodScreenState
   // PayPal
   final _paypalCtrl = TextEditingController();
 
-  // Venmo
-  final _venmoCtrl = TextEditingController();
-
   // Esewa
   final _esewaCtrl = TextEditingController();
-
-  static const _banks = [
-    'Nepal Bank Limited',
-    'Rastriya Banijya Bank',
-    'Nabil Bank',
-    'Standard Chartered Bank',
-    'Himalayan Bank',
-    'Nepal Investment Bank',
-    'Everest Bank',
-    'Global IME Bank',
-    'NMB Bank',
-    'Kumari Bank',
-    'Laxmi Sunrise Bank',
-    'Citizens Bank',
-    'Prime Commercial Bank',
-    'Machhapuchchhre Bank',
-    'Siddhartha Bank',
-    'NIC Asia Bank',
-    'Prabhu Bank',
-    'Sanima Bank',
-    'Bank of Kathmandu',
-    'Chase Bank',
-  ];
 
   static const _accountTypes = ['Savings', 'Checking', 'Current'];
 
@@ -73,23 +52,20 @@ class _AddPaymentMethodScreenState
     _routingCtrl.dispose();
     _accountCtrl.dispose();
     _paypalCtrl.dispose();
-    _venmoCtrl.dispose();
     _esewaCtrl.dispose();
     super.dispose();
   }
 
   bool get _canProceed {
     switch (_selected) {
-      case _Platform.bank:
-        return _bankName != null &&
-            _holderCtrl.text.trim().isNotEmpty &&
+      case _Platform.nimbBank:
+      case _Platform.laxmiBank:
+        return _holderCtrl.text.trim().isNotEmpty &&
             _routingCtrl.text.trim().isNotEmpty &&
             _accountCtrl.text.trim().isNotEmpty &&
             _accountType != null;
       case _Platform.paypal:
         return _paypalCtrl.text.trim().isNotEmpty;
-      case _Platform.venmo:
-        return _venmoCtrl.text.trim().isNotEmpty;
       case _Platform.esewa:
         return _esewaCtrl.text.trim().isNotEmpty;
     }
@@ -97,14 +73,13 @@ class _AddPaymentMethodScreenState
 
   String _buildLabel() {
     switch (_selected) {
-      case _Platform.bank:
+      case _Platform.nimbBank:
+      case _Platform.laxmiBank:
         final acct = _accountCtrl.text.trim();
         final last4 = acct.length >= 4 ? acct.substring(acct.length - 4) : acct;
-        return '${_bankName!} — ****$last4';
+        return '${_bankLabel(_selected)} — ${_holderCtrl.text.trim()} — ****$last4';
       case _Platform.paypal:
         return 'PayPal — ${_paypalCtrl.text.trim()}';
-      case _Platform.venmo:
-        return 'Venmo — ${_venmoCtrl.text.trim()}';
       case _Platform.esewa:
         return 'eSewa — ${_esewaCtrl.text.trim()}';
     }
@@ -113,14 +88,15 @@ class _AddPaymentMethodScreenState
   Future<void> _onProceed() async {
     final notifier = ref.read(addPayoutMethodNotifierProvider.notifier);
     switch (_selected) {
-      case _Platform.bank:
+      case _Platform.nimbBank:
+      case _Platform.laxmiBank:
         final acct = _accountCtrl.text.trim();
-        final last4 =
-            acct.length >= 4 ? acct.substring(acct.length - 4) : acct;
         await notifier.addBank(
-          kind: _kindBank,
+          kind: _selected == _Platform.nimbBank
+              ? _kindNimbBank
+              : _kindLaxmiBank,
           label: _buildLabel(),
-          maskedAccountNumber: '****$last4',
+          maskedAccountNumber: acct,
           beneficiaryName: _holderCtrl.text.trim(),
           processorReference: _routingCtrl.text.trim(),
         );
@@ -129,12 +105,6 @@ class _AddPaymentMethodScreenState
           kind: _kindPayPal,
           label: _buildLabel(),
           externalIdentifier: _paypalCtrl.text.trim(),
-        );
-      case _Platform.venmo:
-        await notifier.addExternalWallet(
-          kind: _kindVenmo,
-          label: _buildLabel(),
-          externalIdentifier: _venmoCtrl.text.trim(),
         );
       case _Platform.esewa:
         await notifier.addExternalWallet(
@@ -151,7 +121,8 @@ class _AddPaymentMethodScreenState
       next.whenOrNull(
         data: (_) {
           ref.read(earningsNotifierProvider.notifier).load();
-          if (_selected == _Platform.bank) {
+          if (_selected == _Platform.nimbBank ||
+              _selected == _Platform.laxmiBank) {
             context.push(RouteNames.creatorBankVerification);
           } else {
             context.pop();
@@ -161,8 +132,9 @@ class _AddPaymentMethodScreenState
           final msg = error is NetworkExceptions
               ? NetworkExceptions.getMessage(error)
               : 'Failed to add payment method.';
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(msg)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         },
       );
     });
@@ -176,28 +148,38 @@ class _AddPaymentMethodScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Add Payment Method',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Add Payment Method',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(DesignTokens.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select Platform',
-                style: DesignTokens.mediumSemibold
-                    .copyWith(color: DesignTokens.textWhite)),
+            Text(
+              'Select Platform',
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
+            ),
             const SizedBox(height: DesignTokens.s12),
             Row(
               children: _Platform.values.map((p) {
                 final isLast = p == _Platform.values.last;
                 return Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(right: isLast ? 0 : DesignTokens.s4),
+                    padding: EdgeInsets.only(
+                      right: isLast ? 0 : DesignTokens.s4,
+                    ),
                     child: _PlatformCard(
                       platform: p,
                       selected: _selected == p,
@@ -222,8 +204,11 @@ class _AddPaymentMethodScreenState
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16, DesignTokens.s8,
-              DesignTokens.s16, DesignTokens.s16),
+            DesignTokens.s16,
+            DesignTokens.s8,
+            DesignTokens.s16,
+            DesignTokens.s16,
+          ),
           child: SizedBox(
             height: DesignTokens.buttonHeight,
             width: double.infinity,
@@ -231,12 +216,14 @@ class _AddPaymentMethodScreenState
               onPressed: (_canProceed && !isLoading) ? _onProceed : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: DesignTokens.primaryGreen,
-                disabledBackgroundColor:
-                    DesignTokens.primaryGreen.withValues(alpha: 0.4),
+                disabledBackgroundColor: DesignTokens.primaryGreen.withValues(
+                  alpha: 0.4,
+                ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
               ),
               child: isLoading
@@ -251,12 +238,18 @@ class _AddPaymentMethodScreenState
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Proceed',
-                            style: DesignTokens.mediumSemibold
-                                .copyWith(color: DesignTokens.buttonPrimaryText)),
+                        Text(
+                          'Proceed',
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        ),
                         const SizedBox(width: DesignTokens.s8),
-                        Icon(Icons.arrow_forward_rounded,
-                            color: DesignTokens.buttonPrimaryText, size: 18),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: DesignTokens.buttonPrimaryText,
+                          size: 18,
+                        ),
                       ],
                     ),
             ),
@@ -268,15 +261,15 @@ class _AddPaymentMethodScreenState
 
   Widget _buildForm() {
     switch (_selected) {
-      case _Platform.bank:
+      case _Platform.nimbBank:
+      case _Platform.laxmiBank:
         return Column(
           children: [
-            _DropdownField<String>(
-              hint: 'Bank Name',
-              value: _bankName,
-              items: _banks,
-              itemLabel: (b) => b,
-              onChanged: (v) => setState(() => _bankName = v),
+            Text(
+              _bankLabel(_selected),
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
             const SizedBox(height: DesignTokens.s12),
             _InputField(
@@ -315,12 +308,6 @@ class _AddPaymentMethodScreenState
           keyboardType: TextInputType.emailAddress,
           onChanged: (_) => setState(() {}),
         );
-      case _Platform.venmo:
-        return _InputField(
-          ctrl: _venmoCtrl,
-          hint: 'Venmo Username',
-          onChanged: (_) => setState(() {}),
-        );
       case _Platform.esewa:
         return _InputField(
           ctrl: _esewaCtrl,
@@ -346,9 +333,9 @@ class _PlatformCard extends StatelessWidget {
   final VoidCallback onTap;
 
   static const _labels = {
-    _Platform.bank: 'Bank A/C',
+    _Platform.nimbBank: 'NIMB Bank',
+    _Platform.laxmiBank: 'Laxmi Bank',
     _Platform.paypal: 'Paypal',
-    _Platform.venmo: 'Venmo',
     _Platform.esewa: 'Esewa',
   };
 
@@ -362,7 +349,9 @@ class _PlatformCard extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-                vertical: 14, horizontal: DesignTokens.s8),
+              vertical: 14,
+              horizontal: DesignTokens.s8,
+            ),
             decoration: BoxDecoration(
               color: DesignTokens.bgAppBodyLight,
               borderRadius: BorderRadius.circular(10),
@@ -400,8 +389,11 @@ class _PlatformCard extends StatelessWidget {
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
-                    size: 13, color: DesignTokens.primaryGreen),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 13,
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ),
         ],
@@ -417,7 +409,8 @@ class _PlatformIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (platform) {
-      case _Platform.bank:
+      case _Platform.nimbBank:
+      case _Platform.laxmiBank:
         return Image.asset(
           'assets/images/creatordash/Institution.png',
           width: 46,
@@ -427,13 +420,6 @@ class _PlatformIcon extends StatelessWidget {
       case _Platform.paypal:
         return Image.asset(
           'assets/images/creatordash/paypal.png',
-          width: 46,
-          height: 46,
-          fit: BoxFit.contain,
-        );
-      case _Platform.venmo:
-        return Image.asset(
-          'assets/images/creatordash/venmo.png',
           width: 46,
           height: 46,
           fit: BoxFit.contain,
@@ -498,42 +484,48 @@ class _DropdownField<T> extends StatelessWidget {
       value: value,
       onChanged: onChanged,
       dropdownColor: DesignTokens.bgAppBody,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded,
-          color: DesignTokens.textMuted),
+      icon: const Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: DesignTokens.textMuted,
+      ),
       style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
       decoration: _dec(hint),
       items: items
-          .map((i) => DropdownMenuItem<T>(
-                value: i,
-                child: Text(itemLabel(i)),
-              ))
+          .map(
+            (i) => DropdownMenuItem<T>(
+              value: i,
+              child: Text(itemLabel(i)),
+            ),
+          )
           .toList(),
     );
   }
 }
 
 InputDecoration _dec(String hint) => InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        fontFamily: DesignTokens.fontFamily,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: DesignTokens.textMuted,
-      ),
-      filled: true,
-      fillColor: DesignTokens.bgAppBodyLight,
-      contentPadding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16, vertical: DesignTokens.s12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-        borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-        borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-        borderSide: const BorderSide(color: DesignTokens.primaryGreen),
-      ),
-    );
+  hintText: hint,
+  hintStyle: const TextStyle(
+    fontFamily: DesignTokens.fontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: DesignTokens.textMuted,
+  ),
+  filled: true,
+  fillColor: DesignTokens.bgAppBodyLight,
+  contentPadding: const EdgeInsets.symmetric(
+    horizontal: DesignTokens.s16,
+    vertical: DesignTokens.s12,
+  ),
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+    borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+    borderSide: const BorderSide(color: DesignTokens.inputFieldBorder),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+    borderSide: const BorderSide(color: DesignTokens.primaryGreen),
+  ),
+);

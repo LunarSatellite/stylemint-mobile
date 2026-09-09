@@ -17,7 +17,8 @@ abstract class TrackOrdersState with _$TrackOrdersState {
   const factory TrackOrdersState.loadInProgress() = _LoadInProgress;
   const factory TrackOrdersState.loadSuccess(List<TrackedOrder> orders) =
       _LoadSuccess;
-  const factory TrackOrdersState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory TrackOrdersState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class TrackOrdersNotifier extends StateNotifier<TrackOrdersState> {
@@ -47,15 +48,19 @@ abstract class OrderDetailState with _$OrderDetailState {
 
   const factory OrderDetailState.initial() = _OrderInitial;
   const factory OrderDetailState.loadInProgress() = _OrderLoadInProgress;
-  const factory OrderDetailState.loadSuccess(OrderDetail order) = _OrderLoadSuccess;
-  const factory OrderDetailState.loadFailure(NetworkExceptions failure) = _OrderLoadFailure;
-  const factory OrderDetailState.actionInProgress(OrderDetail order) = _OrderActionInProgress;
-  const factory OrderDetailState.actionFailure(NetworkExceptions failure) = _OrderActionFailure;
+  const factory OrderDetailState.loadSuccess(OrderDetail order) =
+      _OrderLoadSuccess;
+  const factory OrderDetailState.loadFailure(NetworkExceptions failure) =
+      _OrderLoadFailure;
+  const factory OrderDetailState.actionInProgress(OrderDetail order) =
+      _OrderActionInProgress;
+  const factory OrderDetailState.actionFailure(NetworkExceptions failure) =
+      _OrderActionFailure;
 }
 
 class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
   OrderDetailNotifier(this._repository)
-      : super(const OrderDetailState.initial());
+    : super(const OrderDetailState.initial());
 
   final OrdersRepository _repository;
 
@@ -76,7 +81,10 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.requestReturn(order.orderNumber, reason);
+        final either = await _repository.requestReturn(
+          order.orderNumber,
+          reason,
+        );
         state = either.fold(
           (failure) {
             _onActionFailure(order, failure);
@@ -93,7 +101,10 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     );
   }
 
-  Future<void> _onActionFailure(OrderDetail order, NetworkExceptions failure) async {
+  Future<void> _onActionFailure(
+    OrderDetail order,
+    NetworkExceptions failure,
+  ) async {
     state = OrderDetailState.actionFailure(failure);
     await Future<void>.delayed(const Duration(seconds: 2));
     state.maybeWhen(

@@ -8,6 +8,7 @@ class ReelCommentDto {
     required this.createdUtc,
     required this.authorDisplayName,
     required this.authorAvatarUrl,
+    required this.isLikedByCurrentAccount,
   });
 
   final String id;
@@ -17,6 +18,7 @@ class ReelCommentDto {
   final DateTime? createdUtc;
   final String? authorDisplayName;
   final String? authorAvatarUrl;
+  final bool isLikedByCurrentAccount;
 
   factory ReelCommentDto.fromJson(Map<String, dynamic> json) {
     return ReelCommentDto(
@@ -27,6 +29,8 @@ class ReelCommentDto {
       createdUtc: DateTime.tryParse(json['createdUtc'] as String? ?? ''),
       authorDisplayName: json['authorDisplayName'] as String?,
       authorAvatarUrl: json['authorAvatarUrl'] as String?,
+      isLikedByCurrentAccount:
+          json['isLikedByCurrentAccount'] as bool? ?? false,
     );
   }
 }

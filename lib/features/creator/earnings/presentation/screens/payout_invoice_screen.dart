@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
@@ -53,6 +54,30 @@ class PayoutInvoiceArgs {
 String _fmtAmount(double v) =>
     'Rs ${NumberFormat('#,##0.##', 'en_US').format(v)}';
 
+void _shareInvoice(PayoutInvoice invoice) {
+  final invoiceNumber = invoice.invoiceNumber.isEmpty
+      ? invoice.payoutId
+      : invoice.invoiceNumber;
+  final paidOrRequested = invoice.paidAt ?? invoice.requestedAt;
+  final lines = <String>[
+    'Style Mint payout invoice $invoiceNumber',
+    'Status: ${invoice.state.name}',
+    'Requested: ${DateFormat.yMMMd().add_jm().format(paidOrRequested)}',
+    'Destination: ${invoice.destinationLabel}'
+        '${invoice.destinationRef == null ? '' : ' (${invoice.destinationRef})'}',
+    'Gross: ${_fmtAmount(invoice.grossAmount.amount)}',
+    'Fee: ${_fmtAmount(invoice.feeAmount.amount)}',
+    'Net payout: ${_fmtAmount(invoice.netAmount.amount)}',
+  ];
+  if (invoice.providerPayoutId?.isNotEmpty == true) {
+    lines.add('Provider reference: ${invoice.providerPayoutId}');
+  }
+
+  unawaited(
+    SharePlus.instance.share(ShareParams(text: lines.join('\n'))),
+  );
+}
+
 PayoutHistoryEntry _invoiceToEntry(PayoutInvoice invoice) {
   final feePercent = invoice.grossAmount.amount > 0
       ? (invoice.feeAmount.amount / invoice.grossAmount.amount * 100)
@@ -65,11 +90,13 @@ PayoutHistoryEntry _invoiceToEntry(PayoutInvoice invoice) {
   final receiptNo = invoice.invoiceNumber.isNotEmpty
       ? invoice.invoiceNumber
       : invoice.payoutId.substring(0, 8).toUpperCase();
-  final txnId = invoice.providerPayoutId ??
+  final txnId =
+      invoice.providerPayoutId ??
       invoice.payoutId.substring(0, 8).toUpperCase();
   return PayoutHistoryEntry(
     id: invoice.payoutId,
-    title: '${_fmtAmount(invoice.grossAmount.amount)} Payout'
+    title:
+        '${_fmtAmount(invoice.grossAmount.amount)} Payout'
         ' to ${invoice.destinationLabel}',
     accountMask: invoice.destinationRef ?? '',
     dateTime: invoice.paidAt ?? invoice.requestedAt,
@@ -93,8 +120,13 @@ class PayoutInvoiceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final invoiceState =
-        ref.watch(payoutInvoiceNotifierProvider(args.payoutId));
+    final invoiceState = ref.watch(
+      payoutInvoiceNotifierProvider(args.payoutId),
+    );
+    final invoice = invoiceState.maybeWhen(
+      loadSuccess: (value) => value,
+      orElse: () => null,
+    );
     final cancelState = ref.watch(cancelPayoutNotifierProvider);
 
     ref.listen<CancelPayoutState>(cancelPayoutNotifierProvider, (_, next) {
@@ -108,8 +140,8 @@ class PayoutInvoiceScreen extends ConsumerWidget {
         },
         failure: (NetworkExceptions f) =>
             ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(NetworkExceptions.getMessage(f))),
-        ),
+              SnackBar(content: Text(NetworkExceptions.getMessage(f))),
+            ),
         orElse: () {},
       );
     });
@@ -125,28 +157,29 @@ class PayoutInvoiceScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         title: const Text('Invoice', style: DesignTokens.sectionInnerTitle),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_outlined,
-                color: DesignTokens.textWhite),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Downloading invoices is coming soon.'),
-              ),
+            icon: const Icon(
+              Icons.share_outlined,
+              color: DesignTokens.textWhite,
             ),
+            tooltip: 'Share invoice',
+            onPressed: invoice == null ? null : () => _shareInvoice(invoice),
           ),
           IconButton(
-            icon: const Icon(Icons.print_outlined,
-                color: DesignTokens.textWhite),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Printing invoices is coming soon.'),
-              ),
+            icon: const Icon(
+              Icons.print_outlined,
+              color: DesignTokens.textWhite,
             ),
+            tooltip: 'Printing is unavailable on this device',
+            onPressed: null,
           ),
         ],
       ),
@@ -156,8 +189,7 @@ class PayoutInvoiceScreen extends ConsumerWidget {
         loadSuccess: (PayoutInvoice invoice) => _InvoiceBody(
           invoice: invoice,
           isCancelling: isCancelling,
-          onCancel: () =>
-              _showCancelSheet(context, ref, invoice.payoutId),
+          onCancel: () => _showCancelSheet(context, ref, invoice.payoutId),
         ),
         loadFailure: (NetworkExceptions failure) => _ErrorView(
           message: NetworkExceptions.getMessage(failure),
@@ -189,9 +221,7 @@ class PayoutInvoiceScreen extends ConsumerWidget {
           onConfirm: () {
             Navigator.of(context).pop();
             unawaited(
-              ref
-                  .read(cancelPayoutNotifierProvider.notifier)
-                  .cancel(payoutId),
+              ref.read(cancelPayoutNotifierProvider.notifier).cancel(payoutId),
             );
           },
         ),
@@ -244,8 +274,9 @@ class _InvoiceBody extends StatelessWidget {
                     foregroundColor: DesignTokens.colorError,
                     side: const BorderSide(color: DesignTokens.colorError),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
                   ),
                   child: isCancelling
@@ -295,8 +326,9 @@ class _CancelConfirmSheet extends StatelessWidget {
           Text(
             'The requested amount will be returned to your available '
             'balance. This action cannot be undone once processing begins.',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
           ),
           const SizedBox(height: DesignTokens.s24),
           Row(
@@ -308,11 +340,13 @@ class _CancelConfirmSheet extends StatelessWidget {
                     foregroundColor: DesignTokens.textWhite,
                     side: const BorderSide(color: DesignTokens.borderDefault),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s12,
+                    ),
                   ),
                   child: const Text('Keep'),
                 ),
@@ -325,11 +359,13 @@ class _CancelConfirmSheet extends StatelessWidget {
                     backgroundColor: DesignTokens.colorError,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s12,
+                    ),
                   ),
                   child: const Text('Cancel Payout'),
                 ),
@@ -373,8 +409,9 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             const SizedBox(height: DesignTokens.s16),
             ElevatedButton(
@@ -436,7 +473,8 @@ class _ReceiptCard extends StatelessWidget {
                 value: _fmtAmount(entry.subTotalAmount),
               ),
               _ReceiptRow(
-                label: 'Processing Fee '
+                label:
+                    'Processing Fee '
                     '(${entry.processingFeePercent.toStringAsFixed(0)}%)',
                 value: '-${_fmtAmount(entry.processingFee)}',
                 valueColor: const Color(0xFFEF4444),
@@ -496,8 +534,11 @@ class _ReceiptHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(DesignTokens.s8),
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.shopping_bag_outlined,
-              size: 28, color: DesignTokens.primaryGreen),
+          child: const Icon(
+            Icons.shopping_bag_outlined,
+            size: 28,
+            color: DesignTokens.primaryGreen,
+          ),
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
@@ -517,8 +558,9 @@ class _ReceiptHeader extends StatelessWidget {
               const SizedBox(height: DesignTokens.s4),
               Text(
                 DateFormat('MMM d, yyyy · HH:mm').format(entry.dateTime),
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
               ),
             ],
           ),
@@ -551,12 +593,14 @@ class _ReceiptRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(width: DesignTokens.s16),
           Flexible(
-            child: valueBadge ??
+            child:
+                valueBadge ??
                 Text(
                   value,
                   textAlign: TextAlign.right,
@@ -581,24 +625,26 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg, label) = switch (status) {
       PayoutStatus.completed => (
-          const Color(0xFFB9F8CF),
-          const Color(0xFF016630),
-          'Completed',
-        ),
+        const Color(0xFFB9F8CF),
+        const Color(0xFF016630),
+        'Completed',
+      ),
       PayoutStatus.pending => (
-          const Color(0xFFFFF3CD),
-          const Color(0xFF856404),
-          'Pending',
-        ),
+        const Color(0xFFFFF3CD),
+        const Color(0xFF856404),
+        'Pending',
+      ),
       PayoutStatus.failed => (
-          const Color(0xFFFFE0E0),
-          const Color(0xFFB91C1C),
-          'Failed',
-        ),
+        const Color(0xFFFFE0E0),
+        const Color(0xFFB91C1C),
+        'Failed',
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(99),
@@ -627,8 +673,7 @@ class _DashedDivider extends StatelessWidget {
         const dashWidth = 6.0;
         const dashGap = 4.0;
         const dashHeight = 1.0;
-        final count =
-            (constraints.maxWidth / (dashWidth + dashGap)).floor();
+        final count = (constraints.maxWidth / (dashWidth + dashGap)).floor();
         return Row(
           children: List.generate(count, (_) {
             return const Padding(

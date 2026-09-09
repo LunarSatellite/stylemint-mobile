@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
@@ -13,12 +15,38 @@ final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
   (ref) => OrdersRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
 
+/// Delivery Story Mode is the authoritative customer-facing tracking history
+/// for first-party P2P shipments. External carriers keep their own timeline.
+final deliveryStoryProvider = FutureProvider.autoDispose
+    .family<List<DeliveryStoryChapter>, String>((ref, trackingNumber) async {
+      final api = ref.watch(apiClientProvider);
+      final response = await api.get('/v1/deliveries/$trackingNumber/story');
+      return (response as List<dynamic>? ?? const <dynamic>[])
+          .whereType<Map<String, dynamic>>()
+          .map(DeliveryStoryChapter.fromJson)
+          .toList(growable: false)
+        ..sort((a, b) => a.sequence.compareTo(b.sequence));
+    });
+
 final ordersRepositoryProvider = Provider<OrdersRepository>(
   (ref) => OrdersRepositoryImpl(
     remoteDataSource: ref.watch(ordersRemoteDataSourceProvider),
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
   ),
 );
+
+final orderInvoiceProvider = FutureProvider.autoDispose
+    .family<OrderInvoice, String>((ref, orderNumber) async {
+      final result = await ref
+          .watch(ordersRepositoryProvider)
+          .getOrderInvoice(
+            orderNumber,
+          );
+      return result.match(
+        (failure) => throw StateError(failure.toString()),
+        (invoice) => invoice,
+      );
+    });
 
 final trackOrdersNotifierProvider =
     StateNotifierProvider.autoDispose<TrackOrdersNotifier, TrackOrdersState>(
@@ -42,10 +70,14 @@ final ordersTabVisitedProvider = StateProvider<int>((ref) => 0);
 // showing whatever was last loaded into the shared singleton.
 final orderDetailNotifierProvider = StateNotifierProvider.family
     .autoDispose<OrderDetailNotifier, OrderDetailState, String>(
-  (ref, orderNumber) => OrderDetailNotifier(ref.watch(ordersRepositoryProvider)),
-);
+      (ref, orderNumber) =>
+          OrderDetailNotifier(ref.watch(ordersRepositoryProvider)),
+    );
 
-final cancelOrderControllerProvider = StateNotifierProvider.autoDispose<
-    CancelOrderController, CancelOrderUiState>(
-  (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
-);
+final cancelOrderControllerProvider =
+    StateNotifierProvider.autoDispose<
+      CancelOrderController,
+      CancelOrderUiState
+    >(
+      (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
+    );

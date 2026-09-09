@@ -17,7 +17,8 @@ abstract class ProfileState with _$ProfileState {
   const factory ProfileState.initial() = _Initial;
   const factory ProfileState.loadInProgress() = _LoadInProgress;
   const factory ProfileState.loadSuccess(ProfileSummary summary) = _LoadSuccess;
-  const factory ProfileState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory ProfileState.loadFailure(NetworkExceptions failure) =
+      _LoadFailure;
 }
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
@@ -57,15 +58,20 @@ abstract class EditProfileState with _$EditProfileState {
 
   const factory EditProfileState.initial() = _EditInitial;
   const factory EditProfileState.loadInProgress() = _EditLoadInProgress;
-  const factory EditProfileState.loadSuccess(UserProfile profile) = _EditLoadSuccess;
-  const factory EditProfileState.loadFailure(NetworkExceptions failure) = _EditLoadFailure;
+  const factory EditProfileState.loadSuccess(UserProfile profile) =
+      _EditLoadSuccess;
+  const factory EditProfileState.loadFailure(NetworkExceptions failure) =
+      _EditLoadFailure;
   const factory EditProfileState.saving() = _EditSaving;
-  const factory EditProfileState.saveSuccess(UserProfile profile) = _EditSaveSuccess;
-  const factory EditProfileState.saveFailure(NetworkExceptions failure) = _EditSaveFailure;
+  const factory EditProfileState.saveSuccess(UserProfile profile) =
+      _EditSaveSuccess;
+  const factory EditProfileState.saveFailure(NetworkExceptions failure) =
+      _EditSaveFailure;
 }
 
 class EditProfileNotifier extends StateNotifier<EditProfileState> {
-  EditProfileNotifier(this._repository) : super(const EditProfileState.initial()) {
+  EditProfileNotifier(this._repository)
+    : super(const EditProfileState.initial()) {
     unawaited(loadProfile());
   }
 
@@ -86,6 +92,8 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
     String? avatarUrl,
     String? gender,
     DateTime? dateOfBirth,
+    String? instagramHandle,
+    String? tiktokHandle,
   }) async {
     final current = state.maybeWhen(
       loadSuccess: (p) => p,
@@ -101,10 +109,61 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       dateOfBirth: dateOfBirth,
       rowVersion: current?.rowVersion ?? '',
     );
-    state = either.fold(
-      EditProfileState.saveFailure,
-      EditProfileState.saveSuccess,
+    final profile = either.fold<UserProfile?>(
+      (failure) {
+        state = EditProfileState.saveFailure(failure);
+        return null;
+      },
+      (value) => value,
     );
+    if (profile == null) return;
+
+    if (instagramHandle != null && tiktokHandle != null) {
+      final socialFailure = await updateCreatorSocialLinks(
+        instagramHandle: instagramHandle,
+        tiktokHandle: tiktokHandle,
+      );
+      if (socialFailure != null) {
+        state = EditProfileState.saveFailure(socialFailure);
+        return;
+      }
+    }
+    state = EditProfileState.saveSuccess(profile);
+  }
+
+  /// Uploads the picked avatar and preserves the edit screen. Unlike a full
+  /// profile save this returns its result to the field-level UI, so selecting
+  /// a photo never navigates away from the rest of the form.
+  Future<NetworkExceptions?> uploadAvatar(String filePath) async {
+    final current = state.maybeWhen(
+      loadSuccess: (p) => p,
+      saveSuccess: (p) => p,
+      orElse: () => null,
+    );
+    if (current == null) return NetworkExceptions.unexpectedError();
+
+    final either = await _repository.uploadAvatar(
+      filePath: filePath,
+      rowVersion: current.rowVersion,
+    );
+    return either.fold(
+      (failure) => failure,
+      (profile) {
+        state = EditProfileState.loadSuccess(profile);
+        return null;
+      },
+    );
+  }
+
+  Future<NetworkExceptions?> updateCreatorSocialLinks({
+    required String instagramHandle,
+    required String tiktokHandle,
+  }) async {
+    final result = await _repository.updateCreatorSocialLinks(
+      instagramHandle: instagramHandle,
+      tiktokHandle: tiktokHandle,
+    );
+    return result.fold((failure) => failure, (_) => null);
   }
 }
 
@@ -114,8 +173,10 @@ abstract class FollowingState with _$FollowingState {
 
   const factory FollowingState.initial() = _FollowingInitial;
   const factory FollowingState.loadInProgress() = _FollowingLoadInProgress;
-  const factory FollowingState.loadSuccess(List<FollowingUser> users) = _FollowingLoadSuccess;
-  const factory FollowingState.loadFailure(NetworkExceptions failure) = _FollowingLoadFailure;
+  const factory FollowingState.loadSuccess(List<FollowingUser> users) =
+      _FollowingLoadSuccess;
+  const factory FollowingState.loadFailure(NetworkExceptions failure) =
+      _FollowingLoadFailure;
 }
 
 class FollowingNotifier extends StateNotifier<FollowingState> {

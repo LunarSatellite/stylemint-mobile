@@ -22,6 +22,7 @@ class ProductDetail {
     required this.shippingInfo,
     required this.isSaved,
     required this.isInCart,
+    this.defaultVariantId,
   });
 
   final String id;
@@ -44,6 +45,9 @@ class ProductDetail {
   final bool isSaved;
   final bool isInCart;
 
+  /// Backend SKU to use where the product has no customer choice to make.
+  final String? defaultVariantId;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -64,6 +68,7 @@ class ProductDetail {
     String? shippingInfo,
     bool? isSaved,
     bool? isInCart,
+    String? defaultVariantId,
   }) {
     return ProductDetail(
       id: id ?? this.id,
@@ -85,6 +90,7 @@ class ProductDetail {
       shippingInfo: shippingInfo ?? this.shippingInfo,
       isSaved: isSaved ?? this.isSaved,
       isInCart: isInCart ?? this.isInCart,
+      defaultVariantId: defaultVariantId ?? this.defaultVariantId,
     );
   }
 }
@@ -96,6 +102,7 @@ class ProductVariant {
     required this.name,
     required this.values,
     required this.type,
+    this.optionVariantIds = const {},
   });
 
   final String id;
@@ -103,17 +110,22 @@ class ProductVariant {
   final List<String> values;
   final String type;
 
+  /// Display option → backend ProductVariant ID. Empty for legacy mock groups.
+  final Map<String, String> optionVariantIds;
+
   ProductVariant copyWith({
     String? id,
     String? name,
     List<String>? values,
     String? type,
+    Map<String, String>? optionVariantIds,
   }) {
     return ProductVariant(
       id: id ?? this.id,
       name: name ?? this.name,
       values: values ?? this.values,
       type: type ?? this.type,
+      optionVariantIds: optionVariantIds ?? this.optionVariantIds,
     );
   }
 }

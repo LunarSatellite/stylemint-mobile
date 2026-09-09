@@ -39,7 +39,8 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
         title: const Text('Preview Your Reel', style: DesignTokens.titleMedium),
         elevation: 0,
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -147,6 +148,7 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

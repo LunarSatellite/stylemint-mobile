@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/notifiers/saved_items_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
@@ -10,18 +11,20 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:uuid/uuid.dart';
 
 /// Saved Items — rebuilt to the design-PDF spec: filter chips, a vertical list
 /// of saved-item rows (64x64 thumbnail, name, variant info, price + old price,
 /// stock tag, per-item action), a "Pro Tip" card, and bottom Add-All / Clear-All
 /// actions.
 ///
-/// Real data: id, name, image, price. The PDF also shows variant info, an old
-/// (strikethrough) price, and a stock status — none of which are on [SavedItem]
-/// yet, so they're rendered as deterministic `MOCK` values per row until the
-/// API exposes them.
+/// Data is sourced from the customer saved-items API. Variant and inventory
+/// state come from the saved-line snapshot and live Catalog enrichment; an
+/// original price is rendered only when the API supplies one.
 class SavedItemsScreen extends ConsumerWidget {
   const SavedItemsScreen({super.key});
+
+  static const _uuid = Uuid();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,8 +35,10 @@ class SavedItemsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('Saved Items', style: DesignTokens.sectionInnerTitle),
@@ -47,6 +52,30 @@ class SavedItemsScreen extends ConsumerWidget {
             return _EmptyState(onContinue: () => context.go(RouteNames.home));
           }
           final notifier = ref.read(savedItemsNotifierProvider.notifier);
+          Future<bool> addToCart(SavedItem item) async {
+            if (item.stockStatus == 'outOfStock') {
+              if (context.mounted) {
+                SmSnackbar.error(context, 'This item is out of stock.');
+              }
+              return false;
+            }
+            final added = await ref
+                .read(cartNotifierProvider.notifier)
+                .addItem(
+                  productId: item.productId,
+                  quantity: 1,
+                  idempotencyKey: _uuid.v4(),
+                );
+            if (context.mounted) {
+              if (added) {
+                SmSnackbar.success(context, 'Added to cart.');
+              } else {
+                SmSnackbar.error(context, 'Unable to add this item to cart.');
+              }
+            }
+            return added;
+          }
+
           return RefreshIndicator(
             color: DesignTokens.primaryGreen,
             onRefresh: () => notifier.load(),
@@ -68,8 +97,7 @@ class SavedItemsScreen extends ConsumerWidget {
                     return _SavedItemRow(
                       item: items[i],
                       onRemove: () => notifier.removeItem(items[i].id),
-                      onAction: () => SmSnackbar.success(
-                          context, 'Added to cart (coming soon).'),
+                      onAction: () => addToCart(items[i]),
                     );
                   }),
                   const SizedBox(height: DesignTokens.s8),
@@ -81,8 +109,18 @@ class SavedItemsScreen extends ConsumerWidget {
                     borderRadius: DesignTokens.buttonRadius,
                     color: DesignTokens.primaryGreen,
                     labelColor: DesignTokens.buttonPrimaryText,
-                    onPressed: () async => SmSnackbar.success(
-                        context, 'Added all to cart (coming soon).'),
+                    onPressed: () async {
+                      var added = 0;
+                      for (final item in items) {
+                        if (await addToCart(item)) added++;
+                      }
+                      if (context.mounted && added > 1) {
+                        SmSnackbar.success(
+                          context,
+                          '$added items added to cart.',
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: DesignTokens.s8),
                   TextButton(
@@ -92,16 +130,22 @@ class SavedItemsScreen extends ConsumerWidget {
                       }
                     },
                     style: TextButton.styleFrom(
-                      minimumSize:
-                          const Size.fromHeight(DesignTokens.buttonHeight),
+                      minimumSize: const Size.fromHeight(
+                        DesignTokens.buttonHeight,
+                      ),
                       backgroundColor: DesignTokens.bgAppBodyLight,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                     ),
-                    child: Text('Clear All Saved Items',
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite)),
+                    child: Text(
+                      'Clear All Saved Items',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: DesignTokens.s16),
                 ],
@@ -118,8 +162,8 @@ class SavedItemsScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ── Filter chips ──────────────────────────────────────────────────────────────
@@ -154,8 +198,10 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(right: DesignTokens.s8),
-      padding:
-          const EdgeInsets.symmetric(horizontal: DesignTokens.s12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s12,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: DesignTokens.chipsDefaultBorder),
@@ -167,9 +213,12 @@ class _Chip extends StatelessWidget {
             Icon(icon, size: 16, color: DesignTokens.iconLight),
             const SizedBox(width: DesignTokens.s4),
           ],
-          Text(label,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight)),
+          Text(
+            label,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
         ],
       ),
     );
@@ -201,7 +250,9 @@ class _SavedItemRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: DesignTokens.s12),
       padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
+        vertical: DesignTokens.s12,
+        horizontal: DesignTokens.s16,
+      ),
       decoration: DesignTokens.cardDecoration(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,8 +268,10 @@ class _SavedItemRow extends StatelessWidget {
                 width: 64,
                 height: 64,
                 color: DesignTokens.bgAppBodyLight,
-                child: const Icon(Icons.image_not_supported_outlined,
-                    color: DesignTokens.iconLight),
+                child: const Icon(
+                  Icons.image_not_supported_outlined,
+                  color: DesignTokens.iconLight,
+                ),
               ),
             ),
           ),
@@ -231,11 +284,14 @@ class _SavedItemRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(item.productName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textLight)),
+                      child: Text(
+                        item.productName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
                     ),
                     // Spec: 20px gray ghost remove icon.
                     GestureDetector(
@@ -243,8 +299,11 @@ class _SavedItemRow extends StatelessWidget {
                       behavior: HitTestBehavior.opaque,
                       child: const Padding(
                         padding: EdgeInsets.all(DesignTokens.s4),
-                        child: Icon(Icons.delete_outline,
-                            size: 20, color: DesignTokens.iconLight),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: DesignTokens.iconLight,
+                        ),
                       ),
                     ),
                   ],
@@ -252,20 +311,24 @@ class _SavedItemRow extends StatelessWidget {
                 if (item.variantLabel != null &&
                     item.variantLabel!.isNotEmpty) ...[
                   const SizedBox(height: DesignTokens.s4),
-                  Text(item.variantLabel!,
-                      style: DesignTokens.smallRegular.copyWith(
-                        fontSize: 11,
-                        color: DesignTokens.textMuted,
-                      )),
+                  Text(
+                    item.variantLabel!,
+                    style: DesignTokens.smallRegular.copyWith(
+                      fontSize: 11,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: DesignTokens.s8),
                 Row(
                   children: [
-                    Text(formatMoney(item.price),
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
-                          fontWeight: FontWeight.w600,
-                        )),
+                    Text(
+                      formatMoney(item.price),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     if (item.originalPrice != null) ...[
                       const SizedBox(width: DesignTokens.s8),
                       Text(
@@ -323,36 +386,40 @@ class _StockTag extends StatelessWidget {
   Widget build(BuildContext context) {
     final (String label, Color bg, Color fg) = switch (stock) {
       _Stock.inStock => (
-          'In Stock',
-          const Color(0xFFCDF4DD),
-          const Color(0xFF016630)
-        ),
+        'In Stock',
+        const Color(0xFFCDF4DD),
+        const Color(0xFF016630),
+      ),
       _Stock.lowStock => (
-          'Only 3 Left !',
-          const Color(0xFFFFF085),
-          const Color(0xFF894B00)
-        ),
+        'Only 3 Left !',
+        const Color(0xFFFFF085),
+        const Color(0xFF894B00),
+      ),
       _Stock.outOfStock => (
-          'Out of Stock',
-          const Color(0xFFFFC9C9),
-          const Color(0xFF9F0712)
-        ),
+        'Out of Stock',
+        const Color(0xFFFFC9C9),
+        const Color(0xFF9F0712),
+      ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(99),
       ),
-      child: Text(label,
-          style: TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            height: 1.0,
-            color: fg,
-          )),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          height: 1.0,
+          color: fg,
+        ),
+      ),
     );
   }
 }
@@ -402,7 +469,10 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(99),
@@ -412,14 +482,16 @@ class _Badge extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: fg),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: fg,
-                height: 1.0,
-              )),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: fg,
+              height: 1.0,
+            ),
+          ),
         ],
       ),
     );
@@ -452,12 +524,14 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DesignTokens.s24),
-          Text('No Saved Items Yet',
-              style: DesignTokens.sectionInnerTitle.copyWith(
-                color: DesignTokens.textWhite,
-                fontSize: 20,
-              ),
-              textAlign: TextAlign.center),
+          Text(
+            'No Saved Items Yet',
+            style: DesignTokens.sectionInnerTitle.copyWith(
+              color: DesignTokens.textWhite,
+              fontSize: 20,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: DesignTokens.s12),
           Text(
             'When you tap the heart icon in the product detail screen you will be able to view it here',
@@ -510,12 +584,14 @@ class _PlaceholderCard extends StatelessWidget {
             CircleAvatar(
               radius: 14,
               backgroundColor: DesignTokens.primaryGreen,
-              child: Text(initials,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w700,
-                  )),
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -558,7 +634,9 @@ class _ProTip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
+        vertical: DesignTokens.s12,
+        horizontal: DesignTokens.s16,
+      ),
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -574,22 +652,30 @@ class _ProTip extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.lightbulb_outline_rounded,
-                size: 18, color: DesignTokens.secondaryYellow),
+            child: const Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 18,
+              color: DesignTokens.secondaryYellow,
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Pro Tip',
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite)),
+                Text(
+                  'Pro Tip',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   'Enable price drop alerts in notification settings to get the best deals on your saved items!',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textWhite, height: 1.4),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),

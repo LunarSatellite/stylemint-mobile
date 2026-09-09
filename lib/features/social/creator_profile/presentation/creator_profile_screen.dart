@@ -1328,7 +1328,7 @@ class _BottomNav extends StatelessWidget {
           _NavBtn(
             icon: Icons.explore_outlined,
             label: 'Explore',
-            onTap: () {},
+            onTap: () => context.push(RouteNames.creatorSearch),
           ),
           const _NavBtn(
             icon: Icons.person_rounded,

@@ -9,6 +9,7 @@ abstract interface class CartRepository {
     required String productId,
     required int quantity,
     String? variantId,
+    String? reelTagContextId,
     required String idempotencyKey,
   });
 
@@ -18,4 +19,10 @@ abstract interface class CartRepository {
   });
 
   Future<Either<NetworkExceptions, Cart>> removeCartItem(String itemId);
+
+  Future<Either<NetworkExceptions, Cart>> applyPromo(String code);
+
+  Future<Either<NetworkExceptions, Cart>> removePromo();
+
+  Future<Either<NetworkExceptions, Cart>> saveForLater(String lineId);
 }

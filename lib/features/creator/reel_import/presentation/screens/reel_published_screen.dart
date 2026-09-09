@@ -6,7 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 
 class ReelPublishedScreen extends StatelessWidget {
   const ReelPublishedScreen({super.key, required this.args});
@@ -24,10 +24,14 @@ class ReelPublishedScreen extends StatelessWidget {
 
   static String _svgAsset(SocialPlatform p) {
     switch (p) {
-      case SocialPlatform.instagram: return 'assets/icons/instagram.svg';
-      case SocialPlatform.tiktok:    return 'assets/icons/tiktok.svg';
-      case SocialPlatform.youtube:   return 'assets/icons/youtube.svg';
-      case SocialPlatform.facebook:  return 'assets/icons/facebook.svg';
+      case SocialPlatform.instagram:
+        return 'assets/icons/instagram.svg';
+      case SocialPlatform.tiktok:
+        return 'assets/icons/tiktok.svg';
+      case SocialPlatform.youtube:
+        return 'assets/icons/youtube.svg';
+      case SocialPlatform.facebook:
+        return 'assets/icons/facebook.svg';
     }
   }
 
@@ -59,7 +63,11 @@ class ReelPublishedScreen extends StatelessWidget {
                 ),
                 GestureDetector(
                   onTap: () => Navigator.of(sheetCtx).pop(),
-                  child: const Icon(Icons.close_rounded, color: DesignTokens.textMuted, size: 22),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: DesignTokens.textMuted,
+                    size: 22,
+                  ),
                 ),
               ],
             ),
@@ -73,7 +81,13 @@ class ReelPublishedScreen extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('• ', style: TextStyle(color: DesignTokens.textWhite, fontSize: 14)),
+                  const Text(
+                    '• ',
+                    style: TextStyle(
+                      color: DesignTokens.textWhite,
+                      fontSize: 14,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       text,
@@ -185,7 +199,8 @@ class ReelPublishedScreen extends StatelessWidget {
                                     ? Image.network(
                                         reel!.thumbnailUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => _thumbnailPlaceholder(),
+                                        errorBuilder: (_, __, ___) =>
+                                            _thumbnailPlaceholder(),
                                       )
                                     : _thumbnailPlaceholder(),
                               ),
@@ -222,10 +237,11 @@ class ReelPublishedScreen extends StatelessWidget {
                                       const SizedBox(width: 6),
                                       Text(
                                         'Imported from ${platform.displayName}',
-                                        style: DesignTokens.smallRegular.copyWith(
-                                          color: DesignTokens.textMuted,
-                                          fontSize: 11,
-                                        ),
+                                        style: DesignTokens.smallRegular
+                                            .copyWith(
+                                              color: DesignTokens.textMuted,
+                                              fontSize: 11,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -259,7 +275,8 @@ class ReelPublishedScreen extends StatelessWidget {
                             height: 18,
                           ),
                           label: 'Potential Earnings',
-                          value: 'Rs ${_formatAmount(projectedEarnings)} with $projectedSales sales',
+                          value:
+                              'Rs ${_formatAmount(projectedEarnings)} with $projectedSales sales',
                         ),
                       ],
                     ),
@@ -279,7 +296,9 @@ class ReelPublishedScreen extends StatelessWidget {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -300,7 +319,11 @@ class ReelPublishedScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: DesignTokens.textMuted, size: 22),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: DesignTokens.textMuted,
+                            size: 22,
+                          ),
                         ],
                       ),
                     ),
@@ -320,18 +343,23 @@ class ReelPublishedScreen extends StatelessWidget {
                           label: 'View\nAnalytics',
                           onTap: args.publishedReelId?.isNotEmpty == true
                               ? () => context.go(
-                                    RouteNames.creatorReelAnalyticsDetail.replaceFirst(
-                                      ':reelId',
-                                      args.publishedReelId!,
-                                    ),
-                                  )
+                                  RouteNames.creatorReelAnalyticsDetail
+                                      .replaceFirst(
+                                        ':reelId',
+                                        args.publishedReelId!,
+                                      ),
+                                )
                               : null,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _ActionButton(
-                          iconWidget: const Icon(Icons.add_rounded, color: DesignTokens.textMuted, size: 24),
+                          iconWidget: const Icon(
+                            Icons.add_rounded,
+                            color: DesignTokens.textMuted,
+                            size: 24,
+                          ),
                           label: 'Import\nAnother Reel',
                           onTap: () => context.go(RouteNames.reelImport),
                         ),
@@ -339,13 +367,24 @@ class ReelPublishedScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _ActionButton(
-                          iconWidget: const Icon(Icons.play_circle_outline_rounded, color: DesignTokens.textMuted, size: 24),
+                          iconWidget: const Icon(
+                            Icons.play_circle_outline_rounded,
+                            color: DesignTokens.textMuted,
+                            size: 24,
+                          ),
                           label: 'Watch\nReel',
                           onTap: args.reel?.sourceUrl.isNotEmpty == true
-                              ? () => launchUrl(
-                                    Uri.parse(args.reel!.sourceUrl),
-                                    mode: LaunchMode.externalApplication,
-                                  )
+                              ? () async {
+                                  final source = Uri.tryParse(
+                                    args.reel!.sourceUrl,
+                                  );
+                                  if (source == null || !source.hasScheme) {
+                                    return;
+                                  }
+                                  await const ReelExternalLauncher().open(
+                                    source,
+                                  );
+                                }
                               : null,
                         ),
                       ),
@@ -364,7 +403,9 @@ class ReelPublishedScreen extends StatelessWidget {
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFFF59E0B,
+                            ).withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
                           child: Image.asset(
@@ -412,7 +453,10 @@ class ReelPublishedScreen extends StatelessWidget {
           // ── Go to Dashboard button ───────────────────────────────────────
           Container(
             padding: EdgeInsets.fromLTRB(
-              16, 8, 16, MediaQuery.of(context).padding.bottom + 16,
+              16,
+              8,
+              16,
+              MediaQuery.of(context).padding.bottom + 16,
             ),
             color: DesignTokens.bgAppFoundation,
             child: SizedBox(
@@ -432,17 +476,21 @@ class ReelPublishedScreen extends StatelessWidget {
   }
 
   static Widget _thumbnailPlaceholder() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: const Center(
-          child: Icon(Icons.play_circle_outline_rounded, color: Colors.white38, size: 24),
-        ),
-      );
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFF2A1A0A), Color(0xFF0D0D1A)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ),
+    ),
+    child: const Center(
+      child: Icon(
+        Icons.play_circle_outline_rounded,
+        color: Colors.white38,
+        size: 24,
+      ),
+    ),
+  );
 }
 
 // ── Action button ─────────────────────────────────────────────────────────────
@@ -524,7 +572,9 @@ class _StatRow extends StatelessWidget {
               color: DesignTokens.textLight,
               decoration: labelUnderlined ? TextDecoration.underline : null,
               decorationColor: DesignTokens.textLight,
-              decorationStyle: labelUnderlined ? TextDecorationStyle.dotted : null,
+              decorationStyle: labelUnderlined
+                  ? TextDecorationStyle.dotted
+                  : null,
             ),
           ),
         ),

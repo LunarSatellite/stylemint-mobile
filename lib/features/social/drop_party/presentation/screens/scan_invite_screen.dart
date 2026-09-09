@@ -51,8 +51,10 @@ class _ScanInviteScreenState extends ConsumerState<ScanInviteScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
-        title: const Text('Scan Invite QR',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Scan Invite QR',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         actions: [
           if (!_isScanning)
             TextButton(
@@ -73,8 +75,11 @@ class _ScanInviteScreenState extends ConsumerState<ScanInviteScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
-                child: Icon(Icons.qr_code_scanner,
-                    size: 120, color: DesignTokens.primaryGreen),
+                child: Icon(
+                  Icons.qr_code_scanner,
+                  size: 120,
+                  color: DesignTokens.primaryGreen,
+                ),
               ),
             ),
             const SizedBox(height: DesignTokens.s24),

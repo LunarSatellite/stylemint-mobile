@@ -16,6 +16,7 @@ class Step2ImagesScreen extends ConsumerStatefulWidget {
 class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
   final List<String> _images = [];
   int _primaryIndex = 0;
+  ProductVideoInfo? _video;
   bool _uploading = false;
 
   @override
@@ -30,6 +31,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                 setState(() {
                   _images.addAll(fs.step2!.images);
                   _primaryIndex = fs.step2!.primaryImageIndex;
+                  _video = fs.step2!.video;
                 });
               }
             },
@@ -47,6 +49,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
               ..clear()
               ..addAll(fs.step2!.images);
             _primaryIndex = fs.step2!.primaryImageIndex;
+            _video = fs.step2!.video;
             _uploading = false;
           });
         }
@@ -95,8 +98,87 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ImagesInfo(
             images: List.from(_images),
             primaryImageIndex: _primaryIndex,
+            video: _video,
           ),
         );
+  }
+
+  Future<void> _editVideo() async {
+    final urlController = TextEditingController(text: _video?.cdnUrl ?? '');
+    final durationController = TextEditingController(
+      text: _video?.durationSeconds.toString() ?? '',
+    );
+    final updated = await showDialog<ProductVideoInfo>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: const Text('Add product video link'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: urlController,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'HTTPS video URL',
+                hintText: 'https://cdn.example.com/video.mp4',
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            TextField(
+              controller: durationController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Duration in seconds (1–60)',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final url = urlController.text.trim();
+              final duration = int.tryParse(durationController.text);
+              final parsedUrl = Uri.tryParse(url);
+              if (parsedUrl == null ||
+                  !parsedUrl.hasScheme ||
+                  !parsedUrl.hasAuthority ||
+                  duration == null ||
+                  duration < 1 ||
+                  duration > 60) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Enter a valid video URL and a duration from 1 to 60 seconds.',
+                    ),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(
+                dialogContext,
+                ProductVideoInfo(cdnUrl: url, durationSeconds: duration),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    urlController.dispose();
+    durationController.dispose();
+    if (updated == null || !mounted) return;
+    setState(() => _video = updated);
+    _emitUpdate();
+  }
+
+  void _removeVideo() {
+    setState(() => _video = null);
+    _emitUpdate();
   }
 
   void _onProceed() {
@@ -231,7 +313,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ),
                   const SizedBox(height: DesignTokens.s8),
                   const Text(
-                    'Upload product video (max 60 sec)',
+                    'Add an externally hosted product video (max 60 sec)',
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
                       fontSize: 12,
@@ -242,10 +324,36 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   const SizedBox(height: DesignTokens.s8),
 
                   _GrayOutlineButton(
-                    icon: Icons.upload_outlined,
-                    label: 'Upload Video',
-                    onTap: () {},
+                    icon: Icons.link_rounded,
+                    label: _video == null
+                        ? 'Add Video Link'
+                        : 'Replace Video Link',
+                    onTap: _editVideo,
                   ),
+                  if (_video != null) ...[
+                    const SizedBox(height: DesignTokens.s8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.video_library_outlined,
+                          color: DesignTokens.primaryGreen,
+                        ),
+                        const SizedBox(width: DesignTokens.s8),
+                        Expanded(
+                          child: Text(
+                            '${_video!.durationSeconds}s video attached',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textLight,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _removeVideo,
+                          child: const Text('Remove'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

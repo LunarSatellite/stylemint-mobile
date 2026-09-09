@@ -148,6 +148,40 @@ class PaymentMethod {
   int get hashCode => Object.hash(id, type, label, lastFour, isDefault);
 }
 
+/// The four v1 payment rails supported by Style Mint. A saved card only
+/// enriches the card row with its display data; it must never hide the other
+/// payment choices at checkout.
+List<PaymentMethod> checkoutPaymentMethods({PaymentMethod? savedCard}) {
+  final card = savedCard?.type == PaymentMethodType.card ? savedCard : null;
+  return [
+    PaymentMethod(
+      id: card?.id ?? 'card',
+      type: PaymentMethodType.card,
+      label: card?.label ?? 'Visa / Mastercard',
+      lastFour: card?.lastFour,
+      isDefault: card?.isDefault ?? false,
+    ),
+    const PaymentMethod(
+      id: 'paypal',
+      type: PaymentMethodType.paypal,
+      label: 'PayPal',
+      isDefault: false,
+    ),
+    const PaymentMethod(
+      id: 'esewa',
+      type: PaymentMethodType.eSewa,
+      label: 'eSewa',
+      isDefault: false,
+    ),
+    const PaymentMethod(
+      id: 'cod',
+      type: PaymentMethodType.cod,
+      label: 'Cash on Delivery',
+      isDefault: false,
+    ),
+  ];
+}
+
 class CheckoutItem {
   const CheckoutItem({
     required this.productId,

@@ -6,7 +6,6 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/entities/drop_party.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/repositories/drop_party_repository.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'drop_party_notifier.freezed.dart';
 
@@ -37,7 +36,7 @@ abstract class DropPartyDetailState with _$DropPartyDetailState {
 
 class DropPartyNotifier extends StateNotifier<DropPartiesState> {
   DropPartyNotifier(this._repository)
-      : super(const DropPartiesState.initial()) {
+    : super(const DropPartiesState.initial()) {
     unawaited(loadAll());
   }
 
@@ -52,40 +51,6 @@ class DropPartyNotifier extends StateNotifier<DropPartiesState> {
     );
   }
 
-  Future<Either<NetworkExceptions, DropParty>> create({
-    required String title,
-    required String description,
-    required String productId,
-    required Money dropPrice,
-    required int maxParticipants,
-    required DateTime startsAt,
-    required DateTime endsAt,
-  }) async {
-    final either = await _repository.createDropParty(
-      title: title,
-      description: description,
-      productId: productId,
-      dropPrice: dropPrice,
-      maxParticipants: maxParticipants,
-      startsAt: startsAt,
-      endsAt: endsAt,
-    );
-    either.fold(
-      (_) {},
-      (_) => unawaited(loadAll()),
-    );
-    return either;
-  }
-
-  Future<Either<NetworkExceptions, DropParty>> join(String partyId) async {
-    final either = await _repository.joinDropParty(partyId);
-    either.fold(
-      (_) {},
-      (_) => unawaited(loadAll()),
-    );
-    return either;
-  }
-
   Future<Either<NetworkExceptions, DropParty>> scanQr(String qrCode) async {
     final either = await _repository.scanInviteQr(qrCode);
     either.fold(
@@ -98,7 +63,7 @@ class DropPartyNotifier extends StateNotifier<DropPartiesState> {
 
 class DropPartyDetailNotifier extends StateNotifier<DropPartyDetailState> {
   DropPartyDetailNotifier(this._repository, String partyId)
-      : super(const DropPartyDetailState.initial()) {
+    : super(const DropPartyDetailState.initial()) {
     unawaited(loadParty(partyId));
   }
 
@@ -113,12 +78,9 @@ class DropPartyDetailNotifier extends StateNotifier<DropPartyDetailState> {
     );
   }
 
-  Future<Either<NetworkExceptions, DropParty>> join(String partyId) async {
-    final either = await _repository.joinDropParty(partyId);
-    either.fold(
-      (_) {},
-      (party) => state = DropPartyDetailState.loadSuccess(party),
-    );
-    return either;
-  }
+  Future<Either<NetworkExceptions, void>> rsvp(String partyId) =>
+      _repository.rsvp(partyId);
+
+  Future<Either<NetworkExceptions, void>> joinLive(String partyId) =>
+      _repository.joinLive(partyId);
 }

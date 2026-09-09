@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
@@ -26,13 +25,6 @@ class CustomerShellScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // DEBUG: print the current access token so it can be copied manually
-    // (e.g. for curl / Postman). Fires every time the shell builds.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final token = await ref.read(tokenStorageProvider).accessToken;
-      // ignore: avoid_print
-      print('AUTH_TOKEN: ' + (token ?? '<null>'));
-    });
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: CustomerBottomNavBar(

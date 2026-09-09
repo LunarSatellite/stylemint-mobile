@@ -14,10 +14,8 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// a two-tone balances + payout-request card, an "Earnings Breakdown This
 /// Month" card, a "Payout History" list, and a "Payment Methods" list.
 ///
-/// Real data: available/pending balance, this-month earnings, payout-type
-/// ledger entries, and the payout methods. The per-reel breakdown metrics
-/// (sales count, average, highest) aren't on the summary payload yet — those
-/// are clearly-marked `MOCK` until the API exposes them.
+/// All displayed balances, payout entries, payment methods, and monthly
+/// performance metrics are supplied by the earnings API.
 class EarningsScreen extends ConsumerWidget {
   const EarningsScreen({super.key});
 
@@ -29,8 +27,10 @@ class EarningsScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Earnings & Payments',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Earnings & Payments',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: state.when(
         initial: _loader,
@@ -41,13 +41,15 @@ class EarningsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(DesignTokens.s16),
             children: [
-              const Text('Total Balance',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: DesignTokens.textLight,
-                  )),
+              const Text(
+                'Total Balance',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: DesignTokens.textLight,
+                ),
+              ),
               const SizedBox(height: DesignTokens.s12),
               _BalancesPayoutCard(summary: summary),
               const SizedBox(height: DesignTokens.s24),
@@ -69,8 +71,8 @@ class EarningsScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ── Balances + payout request (two-tone card) ─────────────────────────────────
@@ -93,12 +95,15 @@ class _BalancesPayoutCard extends StatelessWidget {
             width: double.infinity,
             color: DesignTokens.bgAppBody,
             padding: const EdgeInsets.symmetric(
-                vertical: DesignTokens.s20, horizontal: DesignTokens.s16),
+              vertical: DesignTokens.s20,
+              horizontal: DesignTokens.s16,
+            ),
             child: Column(
               children: [
                 _BalanceMetric(
                   iconBg: DesignTokens.primaryGreenDark,
-                  imagePath: 'assets/images/creatordash/material-symbols_money-bag-rounded.png',
+                  imagePath:
+                      'assets/images/creatordash/material-symbols_money-bag-rounded.png',
                   label: 'Available Balance (In NPR)',
                   value: formatMoney(summary.availableBalance),
                 ),
@@ -122,48 +127,52 @@ class _BalancesPayoutCard extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: ClipPath(
               clipper: const _ScallopedTopClipper(),
-            child: Container(
-              width: double.infinity,
-              color: DesignTokens.secondaryYellow,
-              padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.s16, 22, DesignTokens.s16, DesignTokens.s16),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/creatordash/Payout.png',
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(width: DesignTokens.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Request Payout Withdrawal',
-                          style: DesignTokens.mediumSemibold.copyWith(
-                            color: DesignTokens.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: DesignTokens.s4),
-                        Text(
-                          'Payouts are processed weekly on fridays.\nThe minimum withdraw amount is Rs 5,000.00',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textDark,
-                          ),
-                        ),
-                      ],
+              child: Container(
+                width: double.infinity,
+                color: DesignTokens.secondaryYellow,
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  22,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                ),
+                child: Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/creatordash/Payout.png',
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: DesignTokens.textDark,
-                    size: 22,
-                  ),
-                ],
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Request Payout Withdrawal',
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: DesignTokens.s4),
+                          Text(
+                            'Payouts are processed weekly on fridays.\nThe minimum withdraw amount is Rs 5,000.00',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: DesignTokens.textDark,
+                      size: 22,
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
           ),
         ],
@@ -199,27 +208,37 @@ class _BalanceMetric extends StatelessWidget {
             borderRadius: BorderRadius.circular(DesignTokens.s8),
           ),
           alignment: Alignment.center,
-          child: iconChild ??
-              Image.asset(imagePath!, width: 28, height: 28,
-                  fit: BoxFit.contain),
+          child:
+              iconChild ??
+              Image.asset(
+                imagePath!,
+                width: 28,
+                height: 28,
+                fit: BoxFit.contain,
+              ),
         ),
         const SizedBox(width: DesignTokens.s12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight)),
+              Text(
+                label,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textLight,
+                ),
+              ),
               const SizedBox(height: DesignTokens.s4),
-              Text(value,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    height: 1.3,
-                    color: DesignTokens.textWhite,
-                  )),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                  color: DesignTokens.textWhite,
+                ),
+              ),
             ],
           ),
         ),
@@ -256,13 +275,15 @@ class _EarningsBreakdown extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Earnings Breakdown This Month',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: DesignTokens.textLight,
-            )),
+        const Text(
+          'Earnings Breakdown This Month',
+          style: TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: DesignTokens.textLight,
+          ),
+        ),
         const SizedBox(height: DesignTokens.s12),
         Container(
           padding: const EdgeInsets.all(DesignTokens.s16),
@@ -270,43 +291,53 @@ class _EarningsBreakdown extends ConsumerWidget {
           child: Column(
             children: [
               _BreakdownRow(
-                  iconWidget: Image.asset(
-                      'assets/images/creatordash/material-symbols_package-2-outline.png',
-                      width: 14, height: 14),
-                  label: salesLabel,
-                  value: salesValue),
+                iconWidget: Image.asset(
+                  'assets/images/creatordash/material-symbols_package-2-outline.png',
+                  width: 14,
+                  height: 14,
+                ),
+                label: salesLabel,
+                value: salesValue,
+              ),
               const SizedBox(height: DesignTokens.s8),
               _BreakdownRow(
-                  iconWidget: Image.asset(
-                      'assets/images/creatordash/universal-currency.png',
-                      width: 14, height: 14),
-                  label: 'Average',
-                  value: avg),
+                iconWidget: Image.asset(
+                  'assets/images/creatordash/universal-currency.png',
+                  width: 14,
+                  height: 14,
+                ),
+                label: 'Average',
+                value: avg,
+              ),
               const SizedBox(height: DesignTokens.s8),
               _BreakdownRow(
-                  iconWidget: Image.asset(
-                      'assets/images/creatordash/material-symbols_animated-images-outline-rounded.png',
-                      width: 14, height: 14),
-                  label: 'Highest Earned from a Reel',
-                  value: highest),
+                iconWidget: Image.asset(
+                  'assets/images/creatordash/material-symbols_animated-images-outline-rounded.png',
+                  width: 14,
+                  height: 14,
+                ),
+                label: 'Highest Earned from a Reel',
+                value: highest,
+              ),
               const SizedBox(height: DesignTokens.s8),
               _BreakdownRow(
-                  iconWidget: Image.asset(
-                      'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-                      width: 14, height: 14),
-                  label: 'Total Earned',
-                  value: total),
-              const SizedBox(height: DesignTokens.s8),
-              _BreakdownRow(
-                  icon: Icons.percent_rounded,
-                  label: 'Platform Fee (0%)',
-                  value: '-0.00'),
+                iconWidget: Image.asset(
+                  'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+                  width: 14,
+                  height: 14,
+                ),
+                label: 'Total Earned',
+                value: total,
+              ),
               const Divider(
-                  color: DesignTokens.borderDefault, height: DesignTokens.s24),
+                color: DesignTokens.borderDefault,
+                height: DesignTokens.s24,
+              ),
               _BreakdownRow(
-                  label: 'Net Earnings',
-                  value: total,
-                  emphasize: true),
+                label: 'Net Earnings',
+                value: total,
+                emphasize: true,
+              ),
             ],
           ),
         ),
@@ -316,8 +347,13 @@ class _EarningsBreakdown extends ConsumerWidget {
 }
 
 class _BreakdownRow extends StatelessWidget {
-  const _BreakdownRow(
-      {required this.label, required this.value, this.emphasize = false, this.icon, this.iconWidget});
+  const _BreakdownRow({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+    this.icon,
+    this.iconWidget,
+  });
 
   final String label;
   final String value;
@@ -327,7 +363,11 @@ class _BreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leading = iconWidget ?? (icon != null ? Icon(icon, size: 14, color: DesignTokens.textMuted) : null);
+    final leading =
+        iconWidget ??
+        (icon != null
+            ? Icon(icon, size: 14, color: DesignTokens.textMuted)
+            : null);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -337,20 +377,25 @@ class _BreakdownRow extends StatelessWidget {
           const SizedBox(width: DesignTokens.s8),
         ],
         Expanded(
-          child: Text(label,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textLight,
-                fontWeight: emphasize ? FontWeight.w700 : FontWeight.w400,
-              )),
+          child: Text(
+            label,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
         ),
         const SizedBox(width: DesignTokens.s12),
-        Text(value,
-            style: DesignTokens.mediumSemibold.copyWith(
-              fontSize: emphasize ? 16 : 14,
-              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w400,
-              color:
-                  emphasize ? DesignTokens.primaryGreen : DesignTokens.textWhite,
-            )),
+        Text(
+          value,
+          style: DesignTokens.mediumSemibold.copyWith(
+            fontSize: emphasize ? 16 : 14,
+            fontWeight: emphasize ? FontWeight.w700 : FontWeight.w400,
+            color: emphasize
+                ? DesignTokens.primaryGreen
+                : DesignTokens.textWhite,
+          ),
+        ),
       ],
     );
   }
@@ -377,9 +422,12 @@ class _PayoutHistory extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s12),
         if (payouts.isEmpty)
-          Text('No payouts yet.',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted))
+          Text(
+            'No payouts yet.',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          )
         else
           Container(
             decoration: DesignTokens.cardDecoration(),
@@ -439,11 +487,14 @@ class _PayoutRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${formatMoney(entry.amount)} ${entry.description}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite)),
+                Text(
+                  '${formatMoney(entry.amount)} ${entry.description}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   entry.reference != null
@@ -451,8 +502,9 @@ class _PayoutRow extends StatelessWidget {
                       : when,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
                 ),
               ],
             ),
@@ -461,19 +513,23 @@ class _PayoutRow extends StatelessWidget {
           // "Completed" status tag.
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s8, vertical: DesignTokens.s4),
+              horizontal: DesignTokens.s8,
+              vertical: DesignTokens.s4,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFB9F8CF),
               borderRadius: BorderRadius.circular(99),
             ),
-            child: const Text('Completed',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  height: 1.0,
-                  color: Color(0xFF016630),
-                )),
+            child: const Text(
+              'Completed',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
+                color: Color(0xFF016630),
+              ),
+            ),
           ),
         ],
       ),
@@ -499,9 +555,12 @@ class _PaymentMethods extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.s12),
         if (methods.isEmpty)
-          Text('No payout methods yet.',
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted))
+          Text(
+            'No payout methods yet.',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          )
         else
           ...methods.map((m) => _PaymentMethodRow(method: m)),
       ],
@@ -515,11 +574,11 @@ class _PaymentMethodRow extends StatelessWidget {
   final PayoutMethod method;
 
   String get _typeLabel => switch (method.type) {
-        PayoutMethodType.bankTransfer => 'Bank A/C',
-        PayoutMethodType.esewa => 'Wallet',
-        PayoutMethodType.paypal => 'Wallet',
-        PayoutMethodType.venmo => 'Wallet',
-      };
+    PayoutMethodType.nimbBank => 'Bank A/C',
+    PayoutMethodType.laxmiBank => 'Bank A/C',
+    PayoutMethodType.esewa => 'Wallet',
+    PayoutMethodType.paypal => 'Wallet',
+  };
 
   void _showActions(BuildContext context) {
     showModalBottomSheet<void>(
@@ -565,8 +624,11 @@ class _PaymentMethodRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(DesignTokens.s8),
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.account_balance_outlined,
-                size: 24, color: DesignTokens.iconLight),
+            child: const Icon(
+              Icons.account_balance_outlined,
+              size: 24,
+              color: DesignTokens.iconLight,
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
@@ -575,33 +637,42 @@ class _PaymentMethodRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(_typeLabel,
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite)),
+                    Text(
+                      _typeLabel,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
                     if (method.isPrimary) ...[
                       const SizedBox(width: DesignTokens.s8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s8,
-                            vertical: DesignTokens.s4),
+                          horizontal: DesignTokens.s8,
+                          vertical: DesignTokens.s4,
+                        ),
                         decoration: BoxDecoration(
                           color: DesignTokens.tagInfoFill,
                           borderRadius: BorderRadius.circular(99),
                         ),
-                        child: Text('Default',
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.tagInfoText,
-                              fontWeight: FontWeight.w600,
-                              height: 1.0,
-                            )),
+                        child: Text(
+                          'Default',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.tagInfoText,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                          ),
+                        ),
                       ),
                     ],
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s4),
-                Text(method.label,
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textLight)),
+                Text(
+                  method.label,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
               ],
             ),
           ),
@@ -610,8 +681,11 @@ class _PaymentMethodRow extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: const Padding(
               padding: EdgeInsets.all(DesignTokens.s4),
-              child: Icon(Icons.more_vert_rounded,
-                  size: 18, color: DesignTokens.textMuted),
+              child: Icon(
+                Icons.more_vert_rounded,
+                size: 18,
+                color: DesignTokens.textMuted,
+              ),
             ),
           ),
         ],
@@ -655,8 +729,11 @@ class _PaymentMethodActionsSheet extends StatelessWidget {
             },
           ),
           const Divider(
-              color: DesignTokens.borderDefault, height: 1,
-              indent: DesignTokens.s16, endIndent: DesignTokens.s16),
+            color: DesignTokens.borderDefault,
+            height: 1,
+            indent: DesignTokens.s16,
+            endIndent: DesignTokens.s16,
+          ),
           _ActionRow(
             icon: Icons.delete_outline_rounded,
             label: 'Remove Payment Method',
@@ -675,11 +752,11 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
   final PayoutMethod method;
 
   String get _typeLabel => switch (method.type) {
-        PayoutMethodType.bankTransfer => 'Bank A/C',
-        PayoutMethodType.esewa => 'Wallet',
-        PayoutMethodType.paypal => 'Wallet',
-        PayoutMethodType.venmo => 'Wallet',
-      };
+    PayoutMethodType.nimbBank => 'Bank A/C',
+    PayoutMethodType.laxmiBank => 'Bank A/C',
+    PayoutMethodType.esewa => 'Wallet',
+    PayoutMethodType.paypal => 'Wallet',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -731,14 +808,16 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
             Text(
               'Are you sure you want to remove this\npayment method?',
               textAlign: TextAlign.center,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
             const SizedBox(height: DesignTokens.s20),
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s12,
-                  vertical: DesignTokens.s12),
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s12,
+              ),
               decoration: BoxDecoration(
                 color: DesignTokens.bgAppBody,
                 borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -753,20 +832,29 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(DesignTokens.s8),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.account_balance_outlined,
-                        size: 20, color: DesignTokens.iconLight),
+                    child: const Icon(
+                      Icons.account_balance_outlined,
+                      size: 20,
+                      color: DesignTokens.iconLight,
+                    ),
                   ),
                   const SizedBox(width: DesignTokens.s12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_typeLabel,
-                          style: DesignTokens.mediumSemibold
-                              .copyWith(color: DesignTokens.textWhite)),
+                      Text(
+                        _typeLabel,
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(method.label,
-                          style: DesignTokens.smallRegular
-                              .copyWith(color: DesignTokens.textLight)),
+                      Text(
+                        method.label,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -780,14 +868,15 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
                 onPressed: state.isLoading
                     ? null
                     : () => ref
-                        .read(addPayoutMethodNotifierProvider.notifier)
-                        .remove(method.id),
+                          .read(addPayoutMethodNotifierProvider.notifier)
+                          .remove(method.id),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
                 child: state.isLoading
@@ -799,9 +888,12 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
                           color: DesignTokens.buttonPrimaryText,
                         ),
                       )
-                    : Text('Remove Payment Method',
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.buttonPrimaryText)),
+                    : Text(
+                        'Remove Payment Method',
+                        style: DesignTokens.mediumSemibold.copyWith(
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
@@ -809,19 +901,24 @@ class _RemovePaymentMethodSheet extends ConsumerWidget {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed:
-                    state.isLoading ? null : () => Navigator.of(context).pop(),
+                onPressed: state.isLoading
+                    ? null
+                    : () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.bgAppBody,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(DesignTokens.buttonRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 ),
-                child: Text('Cancel',
-                    style: DesignTokens.mediumSemibold
-                        .copyWith(color: DesignTokens.textWhite)),
+                child: Text(
+                  'Cancel',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: DesignTokens.s16),
@@ -849,18 +946,26 @@ class _ActionRow extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s16,
+        ),
         child: Row(
           children: [
             Icon(icon, size: 20, color: DesignTokens.textWhite),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
-              child: Text(label,
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.textWhite)),
+              child: Text(
+                label,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 18, color: DesignTokens.textMuted),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: DesignTokens.textMuted,
+            ),
           ],
         ),
       ),
@@ -870,8 +975,11 @@ class _ActionRow extends StatelessWidget {
 
 // ── Shared section header (title + green action link) ─────────────────────────
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(
-      {required this.title, required this.action, required this.onAction});
+  const _SectionHeader({
+    required this.title,
+    required this.action,
+    required this.onAction,
+  });
 
   final String title;
   final String action;
@@ -882,26 +990,33 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: DesignTokens.textLight,
-            )),
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: DesignTokens.textLight,
+          ),
+        ),
         GestureDetector(
           onTap: onAction,
           behavior: HitTestBehavior.opaque,
           child: Row(
             children: [
-              Text(action,
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.primaryGreen,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                action,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(width: DesignTokens.s4),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 12, color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 12,
+                color: DesignTokens.primaryGreen,
+              ),
             ],
           ),
         ),

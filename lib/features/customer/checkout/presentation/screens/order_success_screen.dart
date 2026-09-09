@@ -7,6 +7,9 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class OrderSuccessScreen extends StatefulWidget {
   const OrderSuccessScreen({super.key, required this.orderId});
 
+  // Despite the name, this is the order NUMBER (e.g. "NK2026-00001") from
+  // PlaceOrderState.success — every order route (detail/invoice/cancel) is
+  // keyed by that, not the internal orderId GUID.
   final String orderId;
 
   @override

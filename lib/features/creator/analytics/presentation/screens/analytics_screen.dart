@@ -118,9 +118,7 @@ class _FullReportButton extends StatelessWidget {
       height: 48,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // TODO: Navigate to full report
-        },
+        onPressed: () => context.push(RouteNames.creatorFullAnalyticsReport),
         style: ElevatedButton.styleFrom(
           backgroundColor: DesignTokens.primaryGreen,
           foregroundColor: DesignTokens.buttonPrimaryText,

@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_s
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductReviewsScreen extends ConsumerWidget {
   const ProductReviewsScreen({required this.productId, super.key});
@@ -63,68 +64,100 @@ class ProductReviewsScreen extends ConsumerWidget {
 
 // ── Reel Reviews Tab ──────────────────────────────────────────────────────────
 
-// ponytail: grid uses placeholder tiles — swap with reel-reviews API when available
-class _ReelReviewsTab extends StatelessWidget {
+class _ReelReviewsTab extends ConsumerWidget {
   const _ReelReviewsTab({required this.productId});
 
   final String productId;
 
   @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(3),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 3,
-        mainAxisSpacing: 3,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(reviewsNotifierProvider(productId));
+    return state.maybeWhen(
+      loadSuccess: (reviews, _, __, ___) {
+        final reelReviews = reviews
+            .where((review) =>
+                review.kind == ReviewKind.reel &&
+                Uri.tryParse(review.reelSourceUrl ?? '') != null)
+            .toList(growable: false);
+        if (reelReviews.isEmpty) {
+          return const SmEmptyState(
+            message: 'No reel reviews yet.',
+            icon: Icons.play_circle_outline_rounded,
+          );
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(3),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 3,
+            mainAxisSpacing: 3,
+          ),
+          itemCount: reelReviews.length,
+          itemBuilder: (_, index) =>
+              _ReelThumbnailTile(review: reelReviews[index]),
+        );
+      },
+      loadFailure: (_) => SmErrorView(
+        message: 'Failed to load reviews.',
+        onRetry: () => ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
       ),
-      itemCount: 9,
-      itemBuilder: (_, i) => _ReelThumbnailTile(fakeViewCount: _fakeCount(i)),
+      orElse: () => const Center(
+        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+      ),
     );
-  }
-
-  static String _fakeCount(int i) {
-    const counts = ['12.3m', '400k', '1.5m', '900k', '500k', '12.3m', '12.3m', '12.9m', '12.3m'];
-    return counts[i % counts.length];
   }
 }
 
 class _ReelThumbnailTile extends StatelessWidget {
-  const _ReelThumbnailTile({required this.fakeViewCount});
+  const _ReelThumbnailTile({required this.review});
 
-  final String fakeViewCount;
+  final Review review;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(color: DesignTokens.bgAppBodyLight),
-        const Center(
-          child: Icon(Icons.play_circle_outline_rounded, color: Colors.white54, size: 32),
-        ),
-        Positioned(
-          bottom: 6,
-          left: 6,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.play_arrow_rounded, size: 12, color: Colors.white70),
-              const SizedBox(width: 2),
-              Text(
-                fakeViewCount,
+    final source = Uri.tryParse(review.reelSourceUrl ?? '');
+    final provider = _providerName(review.reelPlatform);
+    return Material(
+      color: DesignTokens.bgAppBodyLight,
+      child: InkWell(
+        onTap: source == null
+            ? null
+            : () => launchUrl(source, mode: LaunchMode.externalApplication),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const Center(
+              child: Icon(Icons.play_circle_outline_rounded,
+                  color: Colors.white54, size: 32),
+            ),
+            Positioned(
+              right: 6,
+              bottom: 6,
+              left: 6,
+              child: Text(
+                provider,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+
+  String _providerName(String? platform) => switch (platform) {
+        '0' || 'Instagram' || 'instagram' => 'Instagram',
+        '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
+        '2' || 'TikTok' || 'tiktok' => 'TikTok',
+        '3' || 'Facebook' || 'facebook' => 'Facebook',
+        _ => 'Open reel',
+      };
 }
 
 // ── Written Reviews Tab ───────────────────────────────────────────────────────
@@ -161,7 +194,10 @@ class _WrittenReviewsTab extends ConsumerWidget {
       initial: _loader,
       loadInProgress: _loader,
       loadSuccess: (reviews, _, hasMore, __) {
-        if (reviews.isEmpty) {
+        final writtenReviews = reviews
+            .where((review) => review.kind == ReviewKind.written)
+            .toList(growable: false);
+        if (writtenReviews.isEmpty) {
           return const SmEmptyState(
             message: 'No reviews yet. Be the first to review this product!',
             icon: Icons.rate_review_outlined,
@@ -175,10 +211,10 @@ class _WrittenReviewsTab extends ConsumerWidget {
               horizontal: DesignTokens.s16,
               vertical: DesignTokens.s12,
             ),
-            itemCount: reviews.length + (hasMore ? 1 : 0),
+            itemCount: writtenReviews.length + (hasMore ? 1 : 0),
             separatorBuilder: (_, __) => const SizedBox.shrink(),
             itemBuilder: (_, i) {
-              if (i == reviews.length) {
+              if (i == writtenReviews.length) {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: DesignTokens.s8),
                   child: Center(
@@ -192,7 +228,7 @@ class _WrittenReviewsTab extends ConsumerWidget {
                   ),
                 );
               }
-              return ReviewCard(review: reviews[i]);
+              return ReviewCard(review: writtenReviews[i]);
             },
           ),
         );

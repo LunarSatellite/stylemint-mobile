@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
@@ -33,6 +35,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(supportNotifierProvider);
+    final channels = ref.watch(contactChannelsProvider);
 
     final allTickets = state.maybeWhen(
       loadSuccess: (t) => t,
@@ -71,7 +74,8 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
           style: DesignTokens.sectionInnerTitle,
         ),
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -87,7 +91,10 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                   const SizedBox(height: DesignTokens.s16),
 
                   // ── Contact channels ────────────────────────────────
-                  _ChannelsCard(),
+                  _ChannelsCard(
+                    channels: channels,
+                    onLiveChat: () => _showLiveChatAvailability(context),
+                  ),
                   const SizedBox(height: DesignTokens.s16),
 
                   // ── Quick actions ───────────────────────────────────
@@ -177,6 +184,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -207,6 +215,16 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
       ),
       builder: (ctx) => _CreateTicketSheet(prefilledIssue: prefilledIssue),
     ).ignore();
+  }
+
+  void _showLiveChatAvailability(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Live-chat availability is shown above. Chat sessions are not yet available in this app; please create a support ticket.',
+        ),
+      ),
+    );
   }
 }
 
@@ -297,26 +315,68 @@ class _WelcomeBanner extends StatelessWidget {
 // ── Contact channels card ─────────────────────────────────────────────────────
 
 class _ChannelsCard extends StatelessWidget {
-  static const _channels = [
-    (
-      icon: Icons.chat_bubble_outline_rounded,
-      title: 'Live Chat',
-      subtitle: 'Available • Wait: 2min',
-    ),
-    (
-      icon: Icons.mail_outline_rounded,
-      title: 'Email Support',
-      subtitle: 'Responses within 24 hours',
-    ),
-    (
-      icon: Icons.phone_outlined,
-      title: 'Direct Call (1-800-Reel-Com)',
-      subtitle: 'Mon-Fri, 9 AM – 6 PM EST',
-    ),
-  ];
+  const _ChannelsCard({required this.channels, required this.onLiveChat});
+
+  final AsyncValue<ContactChannels> channels;
+  final VoidCallback onLiveChat;
 
   @override
   Widget build(BuildContext context) {
+    final data = channels.when(
+      data: (value) => value,
+      loading: () => null,
+      error: (_, __) => null,
+    );
+    final isLoading = channels.isLoading;
+    final liveChatSubtitle = data == null
+        ? (isLoading ? 'Checking availability…' : 'Availability unavailable')
+        : data.liveChatAvailable
+        ? 'Available now • ${data.liveChatHoursLocal}'
+        : 'Offline • ${data.liveChatHoursLocal}';
+    final rows =
+        <
+          ({
+            IconData icon,
+            String title,
+            String subtitle,
+            VoidCallback? onTap,
+          })
+        >[
+          (
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'Live Chat',
+            subtitle: liveChatSubtitle,
+            onTap: onLiveChat,
+          ),
+          (
+            icon: Icons.mail_outline_rounded,
+            title: 'Email Support',
+            subtitle: data?.supportEmail.isNotEmpty == true
+                ? data!.supportEmail
+                : isLoading
+                ? 'Loading support email…'
+                : 'Email unavailable',
+            onTap: data?.supportEmail.isNotEmpty == true
+                ? () =>
+                      launchUrl(Uri(scheme: 'mailto', path: data!.supportEmail))
+                : null,
+          ),
+          (
+            icon: Icons.phone_outlined,
+            title: 'Direct Call',
+            subtitle: data?.directCallPhoneE164.isNotEmpty == true
+                ? data!.directCallPhoneE164
+                : isLoading
+                ? 'Loading direct-call number…'
+                : 'Phone unavailable',
+            onTap: data?.directCallPhoneE164.isNotEmpty == true
+                ? () => launchUrl(
+                    Uri(scheme: 'tel', path: data!.directCallPhoneE164),
+                  )
+                : null,
+          ),
+        ];
+
     return Container(
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
@@ -324,7 +384,7 @@ class _ChannelsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          for (var i = 0; i < _channels.length; i++) ...[
+          for (var i = 0; i < rows.length; i++) ...[
             if (i > 0)
               const Divider(
                 height: 1,
@@ -333,9 +393,10 @@ class _ChannelsCard extends StatelessWidget {
                 endIndent: DesignTokens.s16,
               ),
             _ChannelTile(
-              icon: _channels[i].icon,
-              title: _channels[i].title,
-              subtitle: _channels[i].subtitle,
+              icon: rows[i].icon,
+              title: rows[i].title,
+              subtitle: rows[i].subtitle,
+              onTap: rows[i].onTap,
             ),
           ],
         ],
@@ -349,15 +410,17 @@ class _ChannelTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: DesignTokens.s16,
@@ -1065,7 +1128,9 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -294,7 +294,9 @@ class _AddDestinationSheetState extends State<_AddDestinationSheet> {
         left: DesignTokens.s16,
         right: DesignTokens.s16,
         top: DesignTokens.s16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s16,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom +
+            DesignTokens.s16,
       ),
       child: SingleChildScrollView(
         child: Column(

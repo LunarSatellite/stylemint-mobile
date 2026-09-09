@@ -37,6 +37,25 @@ class _VendorApplyStep2ScreenState
   final _selectedHours = <String>{};
 
   @override
+  void initState() {
+    super.initState();
+    // Re-entering this step pushes a brand-new screen instance, so without
+    // this the fields silently reset to empty even though the draft already
+    // has the values from the last time this step was filled in.
+    final draft = ref.read(vendorApplyDraftProvider);
+    if (draft != null) {
+      _supportEmailController.text = draft.supportEmail;
+      _supportPhoneController.text = draft.supportPhone;
+      _returnPolicyController.text = draft.returnPolicyUrl ?? '';
+      _fullNameController.text = draft.contactFullName;
+      _positionController.text = draft.contactPosition;
+      _emailController.text = draft.contactEmail;
+      _phoneController.text = draft.contactPhone;
+      _selectedHours.addAll(draft.businessHours);
+    }
+  }
+
+  @override
   void dispose() {
     _supportEmailController.dispose();
     _supportPhoneController.dispose();
@@ -48,7 +67,10 @@ class _VendorApplyStep2ScreenState
     super.dispose();
   }
 
-  void _proceed() {
+  // Shared by both Previous and Proceed — losing whatever's been typed here
+  // just because the user stepped back to fix something on an earlier step
+  // is exactly the bug this method exists to prevent.
+  void _saveDraft() {
     final current = ref.read(vendorApplyDraftProvider);
     if (current != null) {
       final policy = _returnPolicyController.text.trim();
@@ -63,7 +85,20 @@ class _VendorApplyStep2ScreenState
         businessHours: _selectedHours.toList(growable: false),
       );
     }
+  }
+
+  void _proceed() {
+    _saveDraft();
     unawaited(context.push(RouteNames.vendorApplyStep3));
+  }
+
+  void _goPrevious() {
+    _saveDraft();
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(RouteNames.vendorApply);
+    }
   }
 
   @override
@@ -83,9 +118,7 @@ class _VendorApplyStep2ScreenState
             Icons.arrow_back_ios_new,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.canPop()
-                  ? context.pop()
-                  : context.go(RouteNames.vendorApply),
+          onPressed: _goPrevious,
         ),
       ),
       body: SafeArea(
@@ -318,9 +351,7 @@ class _VendorApplyStep2ScreenState
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: () => context.canPop()
-                  ? context.pop()
-                  : context.go(RouteNames.vendorApply),
+              onPressed: _goPrevious,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),
                 foregroundColor: DesignTokens.textWhite,

@@ -1,4 +1,6 @@
 /// Pure Dart domain entities for reviews — no JSON, no Dio.
+enum ReviewKind { written, reel }
+
 class Review {
   const Review({
     required this.id,
@@ -10,6 +12,9 @@ class Review {
     required this.createdAt,
     required this.images,
     required this.helpfulCount,
+    this.kind = ReviewKind.written,
+    this.reelPlatform,
+    this.reelSourceUrl,
   });
 
   final String id;
@@ -21,6 +26,9 @@ class Review {
   final DateTime createdAt;
   final List<String> images;
   final int helpfulCount;
+  final ReviewKind kind;
+  final String? reelPlatform;
+  final String? reelSourceUrl;
 
   Review copyWith({
     String? id,
@@ -32,6 +40,9 @@ class Review {
     DateTime? createdAt,
     List<String>? images,
     int? helpfulCount,
+    ReviewKind? kind,
+    String? reelPlatform,
+    String? reelSourceUrl,
   }) {
     return Review(
       id: id ?? this.id,
@@ -43,6 +54,9 @@ class Review {
       createdAt: createdAt ?? this.createdAt,
       images: images ?? this.images,
       helpfulCount: helpfulCount ?? this.helpfulCount,
+      kind: kind ?? this.kind,
+      reelPlatform: reelPlatform ?? this.reelPlatform,
+      reelSourceUrl: reelSourceUrl ?? this.reelSourceUrl,
     );
   }
 }

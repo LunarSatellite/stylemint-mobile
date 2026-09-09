@@ -14,8 +14,8 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// `GET /api/v1/customer/feed/creators-you-may-like`.
 ///
 /// The Follow toggle calls the real follow graph (POST/DELETE /v1/follows/{id})
-/// via [followNotifierProvider]. The chip's `creatorProfileId` holds the
-/// creator's account id server-side, so it is the correct follow target.
+/// via [followNotifierProvider]. The chip's `accountId` is the correct follow
+/// and profile-navigation target.
 final _suggestedCreatorsProvider =
     FutureProvider.autoDispose<List<CreatorChipDto>>((ref) async {
       final ApiClient api = ref.watch(apiClientProvider);
@@ -144,12 +144,12 @@ class _FollowCreatorsDiscoveryScreenState
                 final c = creators[i];
                 return _CreatorRow(
                   creator: c,
-                  following: followed.contains(c.creatorProfileId),
-                  onToggle: () => _toggle(c.creatorProfileId),
+                  following: followed.contains(c.accountId),
+                  onToggle: () => _toggle(c.accountId),
                   onOpen: () => context.push(
-                    '/creator-profile/${c.creatorProfileId}',
+                    '/creator-profile/${c.accountId}',
                     extra: CreatorProfileArgs(
-                      accountId: c.creatorProfileId,
+                      accountId: c.accountId,
                       displayName: c.displayName,
                       handle: c.handle,
                       avatarUrl: c.avatarUrl,

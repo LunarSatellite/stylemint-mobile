@@ -21,7 +21,9 @@ abstract class TrackedOrderDto with _$TrackedOrderDto {
     @Default('NPR') String grandTotalCurrency,
     required DateTime placedUtc,
     @Default(0) int itemCount,
-    @Default(1) int state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
+    @Default(1)
+    int
+    state, // OrderState: 1=Placed,2=Paid,3=Fulfilling,4=Completed,5=Cancelled
   }) = _TrackedOrderDto;
 
   const TrackedOrderDto._();

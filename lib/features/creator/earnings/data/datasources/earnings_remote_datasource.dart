@@ -1,7 +1,5 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
-import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/data/models/earnings_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings_breakdown.dart';
@@ -10,17 +8,9 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 class EarningsRemoteDataSource {
   EarningsRemoteDataSource({
     required this.apiClient,
-    required this.tokenStorage,
   });
 
   final ApiClient apiClient;
-  final TokenStorage tokenStorage;
-
-  Future<String> _accountId() async {
-    final id = await tokenStorage.accountId;
-    if (id == null || id.isEmpty) throw const NetworkExceptions.auth();
-    return id;
-  }
 
   Future<EarningsSummaryDto> getSummary() async {
     final response = await apiClient.get('/v1/earnings/balance');
@@ -101,9 +91,9 @@ class EarningsRemoteDataSource {
   }
 
   Future<List<PayoutMethodDto>> getPayoutMethods() async {
-    final accountId = await _accountId();
     final response = await apiClient.get(
-      '/v1/accounts/$accountId/payout-methods',
+      '/v1/payout-destinations',
+      queryParameters: {'role': 1},
     );
     return (response as List<dynamic>)
         .map((e) => PayoutMethodDto.fromJson(e as Map<String, dynamic>))
@@ -119,9 +109,9 @@ class EarningsRemoteDataSource {
     await apiClient.post(
       '/v1/payouts/on-demand',
       data: {
-        'amount': amount,
-        'currency': currency,
-        'payoutMethodId': payoutMethodId,
+        'role': 1,
+        'destinationId': payoutMethodId,
+        'requestedAmount': amount,
       },
       options: Options(
         headers: {
@@ -140,17 +130,15 @@ class EarningsRemoteDataSource {
     String? beneficiaryName,
     String? processorReference,
   }) async {
-    final accountId = await _accountId();
     final response = await apiClient.post(
-      '/v1/accounts/$accountId/payout-methods/bank',
+      '/v1/payout-destinations',
       data: {
+        'role': 1,
         'kind': kind,
         'label': label,
-        if (maskedAccountNumber != null)
-          'maskedAccountNumber': maskedAccountNumber,
-        if (beneficiaryName != null) 'beneficiaryName': beneficiaryName,
-        if (processorReference != null)
-          'processorReference': processorReference,
+        'accountIdentifier': maskedAccountNumber,
+        'branchOrIfsc': processorReference,
+        'makeDefault': true,
       },
       options: Options(
         headers: {
@@ -169,16 +157,14 @@ class EarningsRemoteDataSource {
     String? externalIdentifier,
     String? processorReference,
   }) async {
-    final accountId = await _accountId();
     final response = await apiClient.post(
-      '/v1/accounts/$accountId/payout-methods/external-wallet',
+      '/v1/payout-destinations',
       data: {
+        'role': 1,
         'kind': kind,
         'label': label,
-        if (externalIdentifier != null)
-          'externalIdentifier': externalIdentifier,
-        if (processorReference != null)
-          'processorReference': processorReference,
+        'accountIdentifier': externalIdentifier,
+        'makeDefault': true,
       },
       options: Options(
         headers: {
@@ -205,9 +191,8 @@ class EarningsRemoteDataSource {
   }
 
   Future<void> removePayoutMethod(String methodId) async {
-    final accountId = await _accountId();
     await apiClient.authDelete(
-      '/v1/accounts/$accountId/payout-methods/$methodId',
+      '/v1/payout-destinations/$methodId',
     );
   }
 

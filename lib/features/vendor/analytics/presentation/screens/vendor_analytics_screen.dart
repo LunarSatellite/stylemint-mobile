@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class VendorAnalyticsScreen extends ConsumerWidget {
@@ -15,6 +17,10 @@ class VendorAnalyticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(analyticsNotifierProvider);
+    final summary = state.maybeWhen(
+      loadSuccess: (value) => value,
+      orElse: () => null,
+    );
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -65,10 +71,7 @@ class VendorAnalyticsScreen extends ConsumerWidget {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () => SmSnackbar.info(
-                  context,
-                  'Report export is coming soon.',
-                ),
+                onPressed: summary == null ? null : () => _shareReport(summary),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: Colors.black,
@@ -97,6 +100,37 @@ class VendorAnalyticsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _shareReport(VendorAnalyticsSummary summary) {
+    final overview = summary.revenueOverview;
+    final lines = <String>[
+      'Style Mint — Vendor Analytics (last 30 days)',
+      '',
+      'Gross sales: ${overview.currency} ${overview.grossSales.toStringAsFixed(2)} (${overview.grossSalesBadge})',
+      'Net revenue: ${overview.currency} ${overview.netRevenue.toStringAsFixed(2)} (${overview.netRevenueBadge})',
+      'Conversion rate: ${overview.conversionRate.toStringAsFixed(2)}% (${overview.conversionRateBadge})',
+      'Total orders: ${overview.totalOrders} (${overview.totalOrdersBadge})',
+      '',
+      'Top products',
+      ...summary.topProducts.map(
+        (product) =>
+            '${product.rank}. ${product.name} — ${product.unitsSold} sold, ${product.currency} ${product.price.toStringAsFixed(2)}',
+      ),
+      '',
+      'Top creators',
+      ...summary.topCreators.map(
+        (creator) =>
+            '${creator.rank}. ${creator.formattedHandle} — ${creator.currency} ${creator.attributedRevenue.toStringAsFixed(2)} from ${creator.distinctReelCount} reels',
+      ),
+      '',
+      'Traffic sources',
+      ...summary.trafficSources.map(
+        (source) =>
+            '${source.platform}: ${source.percentage.toStringAsFixed(1)}%',
+      ),
+    ];
+    unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));
   }
 }
 

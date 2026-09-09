@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -65,9 +66,19 @@ class _VendorApplyStep6ScreenState
     ref.listen(vendorApplyNotifierProvider, (_, next) {
       if (!_isSubmitting) return;
       next.whenOrNull(
-        loadSuccess: (_) {
+        loadSuccess: (application) {
           setState(() => _isSubmitting = false);
-          context.go(RouteNames.vendorApplySubmitted);
+          final submittedAt = application.submittedAt;
+          context.go(
+            Uri(
+              path: RouteNames.vendorApplySubmitted,
+              queryParameters: {
+                'applicationId': application.id,
+                if (submittedAt != null)
+                  'submittedAt': DateFormat('MMM d, y').format(submittedAt),
+              },
+            ).toString(),
+          );
         },
         loadFailure: (failure) {
           setState(() => _isSubmitting = false);

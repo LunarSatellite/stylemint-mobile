@@ -17,7 +17,7 @@ class ReviewsRemoteDataSource {
     final response = await apiClient.get(
       '/v1/public/products/$productId/reviews',
       queryParameters: {
-        'limit': limit,
+        'pageSize': limit,
         if (cursor != null) 'cursor': cursor,
       },
     );

@@ -20,41 +20,21 @@ class DropPartyRemoteDataSource {
     return DropPartyDto.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<DropPartyDto> createDropParty({
-    required String title,
-    required String description,
-    required String productId,
-    required double dropAmount,
-    required int maxParticipants,
-    required DateTime startsAt,
-    required DateTime endsAt,
-    required String idempotencyKey,
-  }) async {
-    final response = await apiClient.post(
-      '/v1/drop-parties',
-      data: {
-        'title': title,
-        'description': description,
-        'productId': productId,
-        'dropAmount': dropAmount,
-        'maxParticipants': maxParticipants,
-        'startsAt': startsAt.toIso8601String(),
-        'endsAt': endsAt.toIso8601String(),
-      },
-      options: _idempotent(idempotencyKey),
-    );
-    return DropPartyDto.fromJson(response as Map<String, dynamic>);
-  }
-
-  Future<DropPartyDto> joinDropParty(
+  Future<void> rsvp(
     String partyId,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
+      '/v1/drop-parties/$partyId/rsvp',
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  Future<void> joinLive(String partyId, String idempotencyKey) async {
+    await apiClient.post(
       '/v1/drop-parties/$partyId/join-live',
       options: _idempotent(idempotencyKey),
     );
-    return DropPartyDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// Invite is client-side only now (native share sheet of the invite

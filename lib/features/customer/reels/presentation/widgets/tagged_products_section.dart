@@ -44,15 +44,23 @@ class _ProductTile extends ConsumerWidget {
   Future<void> _addToCart(BuildContext context, WidgetRef ref) async {
     if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!context.mounted) return;
-    final succeeded = await ref.read(cartNotifierProvider.notifier).addItem(
+    final succeeded = await ref
+        .read(cartNotifierProvider.notifier)
+        .addItem(
           productId: product.id,
           quantity: 1,
+          reelTagContextId: product.taggedProductId,
           idempotencyKey:
               'reel-atc-${product.id}-${DateTime.now().millisecondsSinceEpoch}',
         );
     if (!context.mounted) return;
     if (succeeded) {
-      await context.push('/cart');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Added to cart'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -72,7 +80,9 @@ class _ProductTile extends ConsumerWidget {
     if (newQuantity <= 0) {
       ref.read(cartNotifierProvider.notifier).removeItem(item.id);
     } else {
-      ref.read(cartNotifierProvider.notifier).updateItem(
+      ref
+          .read(cartNotifierProvider.notifier)
+          .updateItem(
             itemId: item.id,
             quantity: newQuantity,
           );
@@ -81,7 +91,9 @@ class _ProductTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartItem = ref.watch(cartNotifierProvider).maybeWhen(
+    final cartItem = ref
+        .watch(cartNotifierProvider)
+        .maybeWhen(
           loadSuccess: (cart) {
             for (final item in cart.items) {
               if (item.productId == product.id) return item;
@@ -118,129 +130,144 @@ class _ProductTile extends ConsumerWidget {
               padding: const EdgeInsets.all(DesignTokens.s8),
               child: Row(
                 children: [
-              // Tapping the image opens the product detail page.
-              GestureDetector(
-                onTap: () => _openProduct(context),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: product.imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: product.imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, _) => const ColoredBox(
-                                color: DesignTokens.bgAppBodyLight),
-                            errorWidget: (_, _, _) => const ColoredBox(
+                  // Tapping the image opens the product detail page.
+                  GestureDetector(
+                    onTap: () => _openProduct(context),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: product.imageUrl.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: product.imageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (_, _) => const ColoredBox(
+                                  color: DesignTokens.bgAppBodyLight,
+                                ),
+                                errorWidget: (_, _, _) => const ColoredBox(
+                                  color: DesignTokens.bgAppBodyLight,
+                                  child: Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: DesignTokens.iconLight,
+                                  ),
+                                ),
+                              )
+                            : const ColoredBox(
                                 color: DesignTokens.bgAppBodyLight,
-                                child: Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: DesignTokens.iconLight,
-                                )),
-                          )
-                        : const ColoredBox(color: DesignTokens.bgAppBodyLight),
-                  ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              // Tapping the name/price row also opens the product detail page.
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _openProduct(context),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: DesignTokens.mediumSemibold
-                            .copyWith(color: DesignTokens.textWhite),
+                              ),
                       ),
-                      const SizedBox(height: 2),
-                      MoneyText(
-                        product.price,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s8),
-              // Once it's in the cart, swap the "add" pill for a real
-              // quantity stepper so +/- works right here instead of just
-              // showing a static "added" icon that does nothing further. An
-              // explicit green "In Cart" badge sits above it so the state is
-              // obvious at a glance, not just implied by the stepper shape.
-              if (inCart)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_circle_rounded,
-                            size: 12, color: DesignTokens.primaryGreen),
-                        const SizedBox(width: 3),
-                        Text(
-                          'In Cart',
-                          style: DesignTokens.tiny
-                              .copyWith(color: DesignTokens.primaryGreen),
-                        ),
-                      ],
                     ),
-                    const SizedBox(height: 4),
-                    _QuantityStepper(
-                      quantity: cartItem.quantity,
-                      onDecrement: () => _changeQuantity(ref, cartItem, -1),
-                      onIncrement: () => _changeQuantity(ref, cartItem, 1),
-                    ),
-                  ],
-                )
-              else
-                // A real, filled pill button — not a text link — so it reads
-                // instantly as "you can buy this right here."
-                Material(
-                  color: DesignTokens.primaryGreen,
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-                    onTap: () => _addToCart(context, ref),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s12,
-                        vertical: DesignTokens.s8,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
-                        boxShadow: [
-                          BoxShadow(
-                            color: DesignTokens.primaryGreen
-                                .withValues(alpha: 0.5),
-                            blurRadius: 10,
-                            spreadRadius: -2,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  // Tapping the name/price row also opens the product detail page.
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _openProduct(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          MoneyText(
+                            product.price,
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              height: 1.3,
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.add_shopping_cart_rounded,
-                        size: 18,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: DesignTokens.s8),
+                  // Once it's in the cart, swap the "add" pill for a real
+                  // quantity stepper so +/- works right here instead of just
+                  // showing a static "added" icon that does nothing further. An
+                  // explicit green "In Cart" badge sits above it so the state is
+                  // obvious at a glance, not just implied by the stepper shape.
+                  if (inCart)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              size: 12,
+                              color: DesignTokens.primaryGreen,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'In Cart',
+                              style: DesignTokens.tiny.copyWith(
+                                color: DesignTokens.primaryGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        _QuantityStepper(
+                          quantity: cartItem.quantity,
+                          onDecrement: () => _changeQuantity(ref, cartItem, -1),
+                          onIncrement: () => _changeQuantity(ref, cartItem, 1),
+                        ),
+                      ],
+                    )
+                  else
+                    // A real, filled pill button — not a text link — so it reads
+                    // instantly as "you can buy this right here."
+                    Material(
+                      color: DesignTokens.primaryGreen,
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
+                        onTap: () => _addToCart(context, ref),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: DesignTokens.s12,
+                            vertical: DesignTokens.s8,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.buttonRadius,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: DesignTokens.primaryGreen.withValues(
+                                  alpha: 0.5,
+                                ),
+                                blurRadius: 10,
+                                spreadRadius: -2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.add_shopping_cart_rounded,
+                            size: 18,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -279,8 +306,9 @@ class _QuantityStepper extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
           child: Text(
             '$quantity',
-            style: DesignTokens.oneLinerSemibold
-                .copyWith(color: DesignTokens.primaryGreen),
+            style: DesignTokens.oneLinerSemibold.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
           ),
         ),
         _StepperSquare(icon: Icons.add_rounded, onTap: onIncrement),

@@ -1,10 +1,19 @@
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/support/data/models/ticket_dto.dart';
+import 'package:stylemint_mobile_frontend/features/support/data/models/contact_channels_dto.dart';
+import 'package:stylemint_mobile_frontend/features/support/data/models/help_center_dto.dart';
 
 class SupportRemoteDataSource {
   SupportRemoteDataSource({required this.apiClient});
 
   final ApiClient apiClient;
+
+  /// `GET /v1/support/contact-channels` supplies the operator-configured
+  /// email, direct-call number, and current live-chat-hours status.
+  Future<ContactChannelsDto> getContactChannels() async {
+    final response = await apiClient.get('/v1/support/contact-channels');
+    return ContactChannelsDto.fromJson(response as Map<String, dynamic>);
+  }
 
   /// `GET /v1/support/tickets` returns a skip/take `PagedList`, not a bare
   /// array.
@@ -55,5 +64,35 @@ class SupportRemoteDataSource {
         })
         .toList(growable: false);
     return items;
+  }
+
+  Future<List<HelpCenterCategoryDto>> getHelpCategories() async {
+    final response = await apiClient.get('/v1/help/categories');
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(HelpCenterCategoryDto.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<List<HelpArticleSummaryDto>> getHelpArticles(
+    String categoryCode,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/help/categories/$categoryCode/articles',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(HelpArticleSummaryDto.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<HelpArticleContentDto> getHelpArticle(
+    String categoryCode,
+    String slug,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/help/categories/$categoryCode/articles/$slug',
+    );
+    return HelpArticleContentDto.fromJson(response as Map<String, dynamic>);
   }
 }
