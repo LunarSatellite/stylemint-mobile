@@ -246,7 +246,7 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: DesignTokens.buttonPrimaryText),
                     )
                   : Text(
-                      'Submit Ticket',
+                      'Submit Review',
                       style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.buttonPrimaryText),
                     ),
             ),
