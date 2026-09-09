@@ -11,6 +11,10 @@ Future<void> showCreatorMoreMenu(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: DesignTokens.bgAppBodyLight,
+    // Without this the sheet is capped at ~9/16 of the screen height by
+    // default, which isn't enough for all 8 menu items + dividers —
+    // confirmed live ("BOTTOM OVERFLOWED BY 17 PIXELS").
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -43,67 +47,69 @@ class _CreatorMoreMenu extends StatelessWidget {
           horizontal: DesignTokens.s16,
           vertical: DesignTokens.s8,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(999),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-            ),
-            _MoreItem(
-              icon: Icons.bar_chart_rounded,
-              title: 'Analytics',
-              onTap: () => _go(context, RouteNames.creatorAnalytics),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.payments_outlined,
-              title: 'Earnings',
-              onTap: () => _go(context, RouteNames.earnings),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.groups_outlined,
-              title: 'Partnerships',
-              onTap: () => _go(context, RouteNames.partnerships),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.video_library_outlined,
-              title: 'Reel Studio',
-              onTap: () => _go(context, RouteNames.reelStudio),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.campaign_outlined,
-              title: 'Reach',
-              onTap: () => _go(context, RouteNames.reach),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.settings_outlined,
-              title: 'Settings',
-              onTap: () => _go(context, RouteNames.settings),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.help_outline,
-              title: 'Help & Support',
-              onTap: () => _go(context, RouteNames.creatorSupportContact),
-            ),
-            const _MoreDivider(),
-            _MoreItem(
-              icon: Icons.logout_rounded,
-              title: 'Log Out',
-              destructive: true,
-              onTap: () => _logout(context),
-            ),
-          ],
+              _MoreItem(
+                icon: Icons.bar_chart_rounded,
+                title: 'Analytics',
+                onTap: () => _go(context, RouteNames.creatorAnalytics),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.payments_outlined,
+                title: 'Earnings',
+                onTap: () => _go(context, RouteNames.earnings),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.groups_outlined,
+                title: 'Partnerships',
+                onTap: () => _go(context, RouteNames.partnerships),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.video_library_outlined,
+                title: 'Reel Studio',
+                onTap: () => _go(context, RouteNames.reelStudio),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.campaign_outlined,
+                title: 'Reach',
+                onTap: () => _go(context, RouteNames.reach),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                onTap: () => _go(context, RouteNames.settings),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.help_outline,
+                title: 'Help & Support',
+                onTap: () => _go(context, RouteNames.creatorSupportContact),
+              ),
+              const _MoreDivider(),
+              _MoreItem(
+                icon: Icons.logout_rounded,
+                title: 'Log Out',
+                destructive: true,
+                onTap: () => _logout(context),
+              ),
+            ],
+          ),
         ),
       ),
     );
