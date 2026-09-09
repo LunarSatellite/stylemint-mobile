@@ -92,7 +92,11 @@ class ShippingAddressesScreen extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        SvgPicture.asset('assets/icons/Ideaicon.svg', width: 28, height: 35),
+                        SvgPicture.asset(
+                          'assets/icons/Ideaicon.svg',
+                          width: 28,
+                          height: 35,
+                        ),
                         const SizedBox(width: DesignTokens.s12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +119,9 @@ class ShippingAddressesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(DesignTokens.s16),
                     child: ElevatedButton(
                       onPressed: () async {
-                        final result = await context.push<bool>(RouteNames.shippingAddEdit);
+                        final result = await context.push<bool>(
+                          RouteNames.shippingAddEdit,
+                        );
                         if (result == true) notifier.load();
                       },
                       style: DesignTokens.primaryButtonStyle(),
@@ -150,48 +156,57 @@ class ShippingAddressesScreen extends ConsumerWidget {
         ),
       ),
       builder: (sheetCtx) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _DragHandle(),
-            _OptionTile(
-              icon: Icons.edit_outlined,
-              label: 'Edit Address Details',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                context
-                    .push<bool>(RouteNames.shippingAddEdit, extra: address)
-                    .then((result) {
-                  if (result == true) notifier.load();
-                });
-              },
-            ),
-            _OptionTile(
-              icon: Icons.remove_red_eye_outlined,
-              label: 'View Address Details',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                context.push(RouteNames.shippingView, extra: address);
-              },
-            ),
-            _OptionTile(
-              icon: Icons.star_outline_rounded,
-              label: 'Set as Default',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                notifier.setDefault(address.id);
-              },
-            ),
-            _OptionTile(
-              icon: Icons.delete_outline_rounded,
-              label: 'Delete Address',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                _showDeleteConfirm(context, () => notifier.delete(address.id));
-              },
-            ),
-            const SizedBox(height: DesignTokens.s16),
-          ],
+        // Without SafeArea the bottom-most row (Delete Address) renders
+        // under the system gesture nav area, so a tap there hits the OS
+        // home gesture instead of the button — the app backgrounds
+        // instead of showing the delete confirmation.
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _DragHandle(),
+              _OptionTile(
+                icon: Icons.edit_outlined,
+                label: 'Edit Address Details',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  context
+                      .push<bool>(RouteNames.shippingAddEdit, extra: address)
+                      .then((result) {
+                        if (result == true) notifier.load();
+                      });
+                },
+              ),
+              _OptionTile(
+                icon: Icons.remove_red_eye_outlined,
+                label: 'View Address Details',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  context.push(RouteNames.shippingView, extra: address);
+                },
+              ),
+              _OptionTile(
+                icon: Icons.star_outline_rounded,
+                label: 'Set as Default',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  notifier.setDefault(address.id);
+                },
+              ),
+              _OptionTile(
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete Address',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _showDeleteConfirm(
+                    context,
+                    () => notifier.delete(address.id),
+                  );
+                },
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
         );
       },
     );
@@ -226,10 +241,17 @@ class ShippingAddressesScreen extends ConsumerWidget {
                   color: DesignTokens.colorInfo,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.info_rounded, color: Colors.white, size: 28),
+                child: const Icon(
+                  Icons.info_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(height: DesignTokens.s16),
-              const Text('Confirm Delete', style: DesignTokens.sectionInnerTitle),
+              const Text(
+                'Confirm Delete',
+                style: DesignTokens.sectionInnerTitle,
+              ),
               const SizedBox(height: DesignTokens.s8),
               Text(
                 'Are you sure you want to delete this shipping address?',
@@ -261,13 +283,20 @@ class ShippingAddressesScreen extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DesignTokens.buttonGrayFill,
                     foregroundColor: DesignTokens.buttonGrayText,
-                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s16,
+                    ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
+                      ),
                     ),
                     minimumSize: const Size(0, DesignTokens.buttonHeight),
                   ),
-                  child: const Text('Cancel', style: DesignTokens.mediumSemibold),
+                  child: const Text(
+                    'Cancel',
+                    style: DesignTokens.mediumSemibold,
+                  ),
                 ),
               ),
             ],
@@ -281,8 +310,9 @@ class ShippingAddressesScreen extends ConsumerWidget {
 class _Loader extends StatelessWidget {
   const _Loader();
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+  Widget build(BuildContext context) => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 class _AddressTile extends StatelessWidget {
@@ -296,7 +326,8 @@ class _AddressTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary = '${address.addressLine1}, ${address.city}, ${address.country}';
+    final summary =
+        '${address.addressLine1}, ${address.city}, ${address.country}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),
@@ -370,7 +401,6 @@ class _AddressTile extends StatelessWidget {
   }
 }
 
-
 class _DragHandle extends StatelessWidget {
   const _DragHandle();
 
@@ -407,8 +437,17 @@ class _OptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: DesignTokens.textLight, size: DesignTokens.iconMedium),
-      title: Text(label, style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite)),
+      leading: Icon(
+        icon,
+        color: DesignTokens.textLight,
+        size: DesignTokens.iconMedium,
+      ),
+      title: Text(
+        label,
+        style: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.textWhite,
+        ),
+      ),
       trailing: const Icon(Icons.chevron_right, color: DesignTokens.textMuted),
     );
   }
