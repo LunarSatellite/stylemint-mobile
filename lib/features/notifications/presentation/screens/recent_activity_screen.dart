@@ -64,8 +64,7 @@ class RecentActivityScreen extends ConsumerStatefulWidget {
       _RecentActivityScreenState();
 }
 
-class _RecentActivityScreenState
-    extends ConsumerState<RecentActivityScreen> {
+class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
   _ActivityCategory _filter = _ActivityCategory.all;
 
   void _openFilterSheet(BuildContext context) {
@@ -206,9 +205,7 @@ class _RecentActivityScreenState
               data: (items) {
                 final filtered = _filter == _ActivityCategory.all
                     ? items
-                    : items
-                        .where((i) => i.category == _filter)
-                        .toList();
+                    : items.where((i) => i.category == _filter).toList();
 
                 if (filtered.isEmpty) {
                   return Center(
@@ -275,9 +272,7 @@ class _RecentActivityScreenState
       map[label]!.add(item);
     }
 
-    return order
-        .map((k) => _Group(label: k, items: map[k]!))
-        .toList();
+    return order.map((k) => _Group(label: k, items: map[k]!)).toList();
   }
 }
 
@@ -297,65 +292,70 @@ class _FilterSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: DesignTokens.s12),
-        Center(
-          child: Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: DesignTokens.borderDefault,
-              borderRadius: BorderRadius.circular(2),
+    // Without SafeArea the last option (e.g. "Accounts") renders under
+    // the system gesture-nav area on gesture-nav devices, same class of
+    // bug as the shipping-address options sheet.
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: DesignTokens.s12),
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DesignTokens.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16,
-            vertical: DesignTokens.s12,
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s16,
+              vertical: DesignTokens.s12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Filter Activity',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close,
+                    size: 20,
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Filter Activity',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+          for (final cat in _ActivityCategory.values)
+            RadioListTile<_ActivityCategory>(
+              value: cat,
+              groupValue: current,
+              onChanged: (val) {
+                if (val != null) onSelected(val);
+              },
+              activeColor: DesignTokens.primaryGreen,
+              title: Text(
+                cat.label,
+                style: DesignTokens.oneLinerRegular.copyWith(
                   color: DesignTokens.textWhite,
                 ),
               ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close,
-                  size: 20,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-        for (final cat in _ActivityCategory.values)
-          RadioListTile<_ActivityCategory>(
-            value: cat,
-            groupValue: current,
-            onChanged: (val) {
-              if (val != null) onSelected(val);
-            },
-            activeColor: DesignTokens.primaryGreen,
-            title: Text(
-              cat.label,
-              style: DesignTokens.oneLinerRegular.copyWith(
-                color: DesignTokens.textWhite,
-              ),
             ),
-          ),
-        const SizedBox(height: DesignTokens.s16),
-      ],
+          const SizedBox(height: DesignTokens.s16),
+        ],
+      ),
     );
   }
 }
