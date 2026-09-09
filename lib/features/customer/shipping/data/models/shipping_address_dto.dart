@@ -4,18 +4,28 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/enti
 part 'shipping_address_dto.freezed.dart';
 part 'shipping_address_dto.g.dart';
 
+/// Maps `ShippingAddressDto` from `StyleMint.Modules.CartCheckout`
+/// (`/v1/addresses`) — the real, checkout-connected address book. Field
+/// names match the backend's actual wire shape (`addressLine1`/`state`/
+/// `zipCode`/`country`/`receiverName`/`receiverPhone`), not the old
+/// `line1`/`stateProvince`/`postalCode`/`countryCode` guess that pointed at
+/// Identity's dead-end `/v1/accounts/{id}/addresses` book.
 @freezed
 abstract class ShippingAddressDto with _$ShippingAddressDto {
   const factory ShippingAddressDto({
     required String id,
     @Default('') String accountId,
     @Default('Home') String label,
-    required String line1,
-    String? line2,
+    @Default('') String receiverName,
+    @Default('') String receiverPhone,
+    required String addressLine1,
+    String? landmark,
+    @Default('NP') String country,
+    @Default('') String state,
     required String city,
-    String? stateProvince,
-    String? postalCode,
-    required String countryCode,
+    @Default('') String zipCode,
+    double? latitude,
+    double? longitude,
     @Default(false) bool isDefault,
     @Default('') String rowVersion,
     DateTime? createdUtc,
@@ -30,25 +40,29 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
   // Manual toJson sends only the write fields the API expects.
   Map<String, dynamic> toJson() => {
     'label': label,
-    'line1': line1,
-    if (line2 != null && line2!.isNotEmpty) 'line2': line2,
+    'receiverName': receiverName,
+    'receiverPhone': receiverPhone,
+    'addressLine1': addressLine1,
+    if (landmark != null && landmark!.isNotEmpty) 'landmark': landmark,
+    'country': country,
+    'state': state,
     'city': city,
-    if (stateProvince != null && stateProvince!.isNotEmpty) 'stateProvince': stateProvince,
-    if (postalCode != null && postalCode!.isNotEmpty) 'postalCode': postalCode,
-    'countryCode': countryCode,
-    'isDefault': isDefault,
-    if (rowVersion.isNotEmpty) 'rowVersion': rowVersion,
+    'zipCode': zipCode,
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
   };
 
   ShippingAddress toDomain() => ShippingAddress(
     id: id,
     label: label,
-    line1: line1,
-    line2: line2,
+    receiverName: receiverName,
+    receiverPhone: receiverPhone,
+    addressLine1: addressLine1,
+    landmark: landmark,
     city: city,
-    stateProvince: stateProvince,
-    postalCode: postalCode,
-    countryCode: countryCode,
+    state: state,
+    zipCode: zipCode,
+    country: country,
     isDefault: isDefault,
     rowVersion: rowVersion,
   );

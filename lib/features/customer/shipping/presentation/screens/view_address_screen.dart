@@ -21,20 +21,24 @@ class ViewAddressScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Field(label: 'Address Line 1', value: address.line1),
-            if (address.line2 != null && address.line2!.isNotEmpty) ...[
+            _Field(label: 'Receiver Name', value: address.receiverName),
+            const SizedBox(height: DesignTokens.s20),
+            _Field(label: 'Receiver Phone', value: address.receiverPhone),
+            const SizedBox(height: DesignTokens.s20),
+            _Field(label: 'Address Line 1', value: address.addressLine1),
+            if (address.landmark != null && address.landmark!.isNotEmpty) ...[
               const SizedBox(height: DesignTokens.s20),
-              _Field(label: 'Nearest Landmark (Optional)', value: address.line2!),
+              _Field(label: 'Nearest Landmark (Optional)', value: address.landmark!),
             ],
             const SizedBox(height: DesignTokens.s20),
-            _Field(label: 'Country', value: address.countryCode),
-            if (address.stateProvince != null && address.stateProvince!.isNotEmpty) ...[
+            _Field(label: 'Country', value: address.country),
+            if (address.state.isNotEmpty) ...[
               const SizedBox(height: DesignTokens.s20),
-              _Field(label: 'State/Province', value: address.stateProvince!),
+              _Field(label: 'State/Province', value: address.state),
             ],
-            if (address.postalCode != null && address.postalCode!.isNotEmpty) ...[
+            if (address.zipCode.isNotEmpty) ...[
               const SizedBox(height: DesignTokens.s20),
-              _Field(label: 'Zip/Postal Code', value: address.postalCode!),
+              _Field(label: 'Zip/Postal Code', value: address.zipCode),
             ],
             const SizedBox(height: DesignTokens.s20),
             _Field(label: 'City', value: address.city),

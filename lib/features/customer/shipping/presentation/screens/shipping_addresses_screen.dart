@@ -296,7 +296,7 @@ class _AddressTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary = '${address.line1}, ${address.city}, ${address.countryCode}';
+    final summary = '${address.addressLine1}, ${address.city}, ${address.country}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),

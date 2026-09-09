@@ -19,9 +19,11 @@ class AddEditAddressScreen extends ConsumerStatefulWidget {
 class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  late TextEditingController _receiverNameCtl;
+  late TextEditingController _receiverPhoneCtl;
   late TextEditingController _line1Ctl;
   late TextEditingController _landmarkCtl;
-  late TextEditingController _postalCodeCtl;
+  late TextEditingController _zipCodeCtl;
   late TextEditingController _cityCtl;
   late TextEditingController _labelCtl;
 
@@ -48,23 +50,27 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   void initState() {
     super.initState();
     final a = widget.address;
-    _line1Ctl = TextEditingController(text: a?.line1 ?? '');
-    _landmarkCtl = TextEditingController(text: a?.line2 ?? '');
-    _postalCodeCtl = TextEditingController(text: a?.postalCode ?? '');
+    _receiverNameCtl = TextEditingController(text: a?.receiverName ?? '');
+    _receiverPhoneCtl = TextEditingController(text: a?.receiverPhone ?? '');
+    _line1Ctl = TextEditingController(text: a?.addressLine1 ?? '');
+    _landmarkCtl = TextEditingController(text: a?.landmark ?? '');
+    _zipCodeCtl = TextEditingController(text: a?.zipCode ?? '');
     _cityCtl = TextEditingController(text: a?.city ?? '');
     _labelCtl = TextEditingController(text: a?.label ?? 'Home');
-    final existing = a?.countryCode;
+    final existing = a?.country;
     _country = _countryMap.containsValue(existing)
         ? existing!
         : (_countryMap[existing] ?? 'NP');
-    _province = _nepalProvinces.contains(a?.stateProvince) ? (a!.stateProvince!) : 'Bagmati';
+    _province = _nepalProvinces.contains(a?.state) ? (a!.state) : 'Bagmati';
   }
 
   @override
   void dispose() {
+    _receiverNameCtl.dispose();
+    _receiverPhoneCtl.dispose();
     _line1Ctl.dispose();
     _landmarkCtl.dispose();
-    _postalCodeCtl.dispose();
+    _zipCodeCtl.dispose();
     _cityCtl.dispose();
     _labelCtl.dispose();
     super.dispose();
@@ -78,12 +84,14 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     final address = ShippingAddress(
       id: widget.address?.id ?? '',
       label: _labelCtl.text.trim().isEmpty ? 'Home' : _labelCtl.text.trim(),
-      line1: _line1Ctl.text.trim(),
-      line2: _landmarkCtl.text.trim().isEmpty ? null : _landmarkCtl.text.trim(),
-      countryCode: _country,
+      receiverName: _receiverNameCtl.text.trim(),
+      receiverPhone: _receiverPhoneCtl.text.trim(),
+      addressLine1: _line1Ctl.text.trim(),
+      landmark: _landmarkCtl.text.trim().isEmpty ? null : _landmarkCtl.text.trim(),
+      country: _country,
       city: _cityCtl.text.trim(),
-      stateProvince: _province,
-      postalCode: _postalCodeCtl.text.trim().isEmpty ? null : _postalCodeCtl.text.trim(),
+      state: _province,
+      zipCode: _zipCodeCtl.text.trim(),
       isDefault: widget.address?.isDefault ?? false,
       rowVersion: widget.address?.rowVersion ?? '',
     );
@@ -126,6 +134,15 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(DesignTokens.s16),
                 children: [
+                  _field('Receiver Name', _receiverNameCtl, required: true),
+                  const SizedBox(height: DesignTokens.s16),
+                  _field(
+                    'Receiver Phone',
+                    _receiverPhoneCtl,
+                    keyboardType: TextInputType.phone,
+                    required: true,
+                  ),
+                  const SizedBox(height: DesignTokens.s16),
                   _field('Address Line 1', _line1Ctl, required: true),
                   const SizedBox(height: DesignTokens.s16),
                   _field('Nearest Landmark (Optional)', _landmarkCtl),
@@ -155,8 +172,9 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                   const SizedBox(height: DesignTokens.s16),
                   _field(
                     'Zip/Postal Code',
-                    _postalCodeCtl,
+                    _zipCodeCtl,
                     keyboardType: TextInputType.number,
+                    required: true,
                   ),
                   const SizedBox(height: DesignTokens.s16),
                   _field('City', _cityCtl, required: true),

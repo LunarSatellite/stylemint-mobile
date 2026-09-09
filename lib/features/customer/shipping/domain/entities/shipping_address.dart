@@ -2,48 +2,56 @@ class ShippingAddress {
   const ShippingAddress({
     required this.id,
     required this.label,
-    required this.line1,
-    this.line2,
+    required this.receiverName,
+    required this.receiverPhone,
+    required this.addressLine1,
+    this.landmark,
     required this.city,
-    this.stateProvince,
-    this.postalCode,
-    required this.countryCode,
+    required this.state,
+    required this.zipCode,
+    required this.country,
     required this.isDefault,
     this.rowVersion = '',
   });
 
   final String id;
   final String label;
-  final String line1;
-  final String? line2;
+  final String receiverName;
+  final String receiverPhone;
+  final String addressLine1;
+  final String? landmark;
   final String city;
-  final String? stateProvince;
-  final String? postalCode;
-  final String countryCode;
+  final String state;
+  final String zipCode;
+  final String country;
   final bool isDefault;
   final String rowVersion;
 
   ShippingAddress copyWith({
     String? id,
     String? label,
-    String? line1,
-    String? line2,
+    String? receiverName,
+    String? receiverPhone,
+    String? addressLine1,
+    String? landmark,
     String? city,
-    String? stateProvince,
-    String? postalCode,
-    String? countryCode,
+    String? state,
+    String? zipCode,
+    String? country,
     bool? isDefault,
     String? rowVersion,
   }) {
     return ShippingAddress(
       id: id ?? this.id,
       label: label ?? this.label,
-      line1: line1 ?? this.line1,
-      line2: line2 ?? this.line2,
+      receiverName: receiverName ?? this.receiverName,
+      receiverPhone: receiverPhone ?? this.receiverPhone,
+      addressLine1: addressLine1 ?? this.addressLine1,
+      landmark: landmark ?? this.landmark,
       city: city ?? this.city,
-      stateProvince: stateProvince ?? this.stateProvince,
-      postalCode: postalCode ?? this.postalCode,
-      countryCode: countryCode ?? this.countryCode,
+      state: state ?? this.state,
+      zipCode: zipCode ?? this.zipCode,
+      country: country ?? this.country,
       isDefault: isDefault ?? this.isDefault,
       rowVersion: rowVersion ?? this.rowVersion,
     );
