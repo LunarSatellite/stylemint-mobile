@@ -20,12 +20,19 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
   @override
   void initState() {
     super.initState();
+    // Seed from the device locale immediately so something is selected
+    // while the real saved preference loads, then replace it below — the
+    // backend is the source of truth, not the device's active locale.
     Future.microtask(() {
       if (mounted) {
         setState(() {
           _selectedCode = Localizations.localeOf(context).languageCode;
         });
       }
+      ref.read(settingsRepositoryProvider).getCurrentLanguage().then((either) {
+        if (!mounted) return;
+        either.fold((_) {}, (code) => setState(() => _selectedCode = code));
+      });
     });
   }
 
