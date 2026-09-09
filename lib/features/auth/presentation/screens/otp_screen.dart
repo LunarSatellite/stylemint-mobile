@@ -218,7 +218,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     Text(
-                      'Please enter the OTP code we sent you in the phone number',
+                      widget.identifierType == 'email'
+                          ? 'Please enter the OTP code we sent to your email'
+                          : 'Please enter the OTP code we sent you in the phone number',
                       textAlign: TextAlign.center,
                       style: DesignTokens.bodyText,
                     ),
