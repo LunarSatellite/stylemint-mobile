@@ -12,6 +12,7 @@ class OrderInvoiceDto {
     required this.paymentStatus,
     required this.subtotalAmount,
     required this.shippingTotalAmount,
+    required this.taxTotalAmount,
     required this.grandTotalAmount,
     required this.currency,
     required this.items,
@@ -37,6 +38,7 @@ class OrderInvoiceDto {
       subtotalAmount: (json['subtotalAmount'] as num? ?? 0).toDouble(),
       shippingTotalAmount: (json['shippingTotalAmount'] as num? ?? 0)
           .toDouble(),
+      taxTotalAmount: (json['taxTotalAmount'] as num? ?? 0).toDouble(),
       grandTotalAmount: (json['grandTotalAmount'] as num? ?? 0).toDouble(),
       currency: json['currency'] as String? ?? 'NPR',
       items: (json['items'] as List<dynamic>? ?? const [])
@@ -57,6 +59,7 @@ class OrderInvoiceDto {
   final String paymentStatus;
   final double subtotalAmount;
   final double shippingTotalAmount;
+  final double taxTotalAmount;
   final double grandTotalAmount;
   final String currency;
   final List<OrderInvoiceLineDto> items;
@@ -72,6 +75,7 @@ class OrderInvoiceDto {
     paymentStatus: paymentStatus,
     subtotal: Money(amount: subtotalAmount, currency: currency),
     shipping: Money(amount: shippingTotalAmount, currency: currency),
+    tax: Money(amount: taxTotalAmount, currency: currency),
     total: Money(amount: grandTotalAmount, currency: currency),
     items: items.map((item) => item.toDomain(currency)).toList(growable: false),
   );

@@ -106,6 +106,8 @@ abstract class OrderDetailDto with _$OrderDetailDto {
     @Default('NPR') String subtotalCurrency,
     @Default(0) double shippingTotalAmount,
     @Default('NPR') String shippingTotalCurrency,
+    @Default(0) double taxTotalAmount,
+    @Default('NPR') String taxTotalCurrency,
     @Default(0) double grandTotalAmount,
     @Default('NPR') String grandTotalCurrency,
   }) = _OrderDetailDto;
@@ -139,10 +141,7 @@ abstract class OrderDetailDto with _$OrderDetailDto {
         amount: shippingTotalAmount,
         currency: shippingTotalCurrency,
       ),
-      tax: const Money(
-        amount: 0,
-        currency: 'NPR',
-      ), // tax is folded into totals, not broken out here
+      tax: Money(amount: taxTotalAmount, currency: taxTotalCurrency),
       total: Money(amount: grandTotalAmount, currency: grandTotalCurrency),
       shippingAddress: shipTo.toDisplayString(),
       receiverName: shipTo.receiverName,

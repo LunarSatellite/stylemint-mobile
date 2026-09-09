@@ -258,6 +258,13 @@ class _AuthoritativeInvoice extends StatelessWidget {
                       ? 'FREE'
                       : formatMoney(invoice.shipping),
                 ),
+                if (invoice.tax.amount > 0) ...[
+                  const SizedBox(height: 8),
+                  _TotalRow(
+                    label: 'Tax',
+                    value: formatMoney(invoice.tax),
+                  ),
+                ],
 
                 const Divider(color: DesignTokens.borderDefault, height: 20),
 
@@ -336,6 +343,7 @@ void _shareOrderInvoice(OrderInvoice invoice) {
     'Payment: ${invoice.paymentMethod} (${invoice.paymentStatus})',
     'Subtotal: ${formatMoney(invoice.subtotal)}',
     'Shipping: ${formatMoney(invoice.shipping)}',
+    if (invoice.tax.amount > 0) 'Tax: ${formatMoney(invoice.tax)}',
     'Grand total: ${formatMoney(invoice.total)}',
   ];
   unawaited(SharePlus.instance.share(ShareParams(text: lines.join('\n'))));

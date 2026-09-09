@@ -128,6 +128,7 @@ class OrderInvoice {
     required this.paymentStatus,
     required this.subtotal,
     required this.shipping,
+    required this.tax,
     required this.total,
     required this.items,
   });
@@ -142,6 +143,7 @@ class OrderInvoice {
   final String paymentStatus;
   final Money subtotal;
   final Money shipping;
+  final Money tax;
   final Money total;
   final List<OrderInvoiceLine> items;
 
@@ -166,7 +168,7 @@ class OrderInvoice {
         .toList(growable: false),
     subtotal: subtotal,
     shipping: shipping,
-    tax: Money(amount: 0, currency: total.currency),
+    tax: tax,
     total: total,
     shippingAddress: shippingAddress,
     receiverName: receiverName,
