@@ -159,15 +159,17 @@ class ProfileRemoteDataSource {
           .get('/v1/cart/saved-for-later')
           .then((r) => (r as List<dynamic>).length)
           .catchError((_) => 0),
-      apiClient
-          .get('/v1/connections', queryParameters: {'pageSize': 1})
-          // The backend returns totalCount: -1 when the list is empty (a
-          // server-side bug) — clamp so the profile never shows "-1".
-          .then(
-            (r) => ((r as Map<String, dynamic>)['totalCount'] as int? ?? 0)
-                .clamp(0, 1 << 31),
-          )
-          .catchError((_) => 0),
+      // NOT /v1/connections — that's Networking's mutual friendships, a
+      // different feature from one-way creator follows (see skill: "Following
+      // is one-way (social-graph). Friendship is mutual (networking). Never
+      // conflate."). The follow/unfollow actions post to /v1/follows, so the
+      // count has to come from the same module's stats endpoint.
+      _accountId().then(
+        (accountId) => apiClient
+            .get('/v1/follows/$accountId/stats')
+            .then((r) => (r as Map<String, dynamic>)['following'] as int? ?? 0)
+            .catchError((_) => 0),
+      ),
       apiClient
           .get('/v1/orders', queryParameters: {'pageSize': 1})
           .then(
