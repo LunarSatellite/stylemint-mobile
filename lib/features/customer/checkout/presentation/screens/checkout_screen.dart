@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -48,6 +49,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       next.placeOrderState.maybeWhen(
         success: (orderId) {
+          // The backend clears the cart server-side once the order is
+          // placed, but the client's cart state is a singleton that's
+          // never told to re-fetch — without this, the just-ordered
+          // item kept showing in "Your Cart" (and the tab badge) until
+          // some unrelated mutation happened to refresh it, even though
+          // it was already the subject of a completed order.
+          ref.read(cartNotifierProvider.notifier).fetchCart();
           context.pushReplacement(
             RouteNames.orderSuccess.replaceAll(':orderId', orderId),
           );
