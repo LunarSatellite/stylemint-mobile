@@ -1,139 +1,194 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/notification_prefs.dart';
 
-part 'notification_prefs_dto.freezed.dart';
-part 'notification_prefs_dto.g.dart';
+/// Mirrors the backend Identity module's `NotificationPreferencesDto` — a
+/// flat Email/Push/Sms x category shape (Security, OrderUpdates,
+/// DeliveryUpdates, Messages, ReelActivity, FriendActivity, Marketing,
+/// SystemAnnouncements), NOT the nested `{toggles, quietHours}` shape this
+/// file used to declare. That nested shape, and its priceDrops/backInStock/
+/// newArrivals/etc field names, don't exist anywhere in the backend — every
+/// save silently sent a payload the `UpdateNotificationTogglesVm` model
+/// binder couldn't match a single field of, and every load crashed parsing
+/// a `toggles` key the response never had. See
+/// `NotificationPreferencesDto.cs` / `UpdateNotificationTogglesVm.cs` in the
+/// Identity module for the authoritative shape.
+class NotificationPreferencesDto {
+  const NotificationPreferencesDto({
+    required this.emailEnabledMaster,
+    required this.pushEnabledMaster,
+    required this.smsEnabledMaster,
+    required this.emailSecurity,
+    required this.pushSecurity,
+    required this.emailOrderUpdates,
+    required this.pushOrderUpdates,
+    required this.emailDeliveryUpdates,
+    required this.pushDeliveryUpdates,
+    required this.emailMessages,
+    required this.pushMessages,
+    required this.emailReelActivity,
+    required this.pushReelActivity,
+    required this.emailFriendActivity,
+    required this.pushFriendActivity,
+    required this.emailMarketing,
+    required this.pushMarketing,
+    required this.emailSystemAnnouncements,
+    required this.pushSystemAnnouncements,
+    required this.quietHoursEnabled,
+    required this.quietHoursStartLocal,
+    required this.quietHoursEndLocal,
+  });
 
-/// Mirrors the backend's `NotificationTogglesDto` (Support module) field for
-/// field — this is the full toggle set the PATCH endpoint expects; there is
-/// no partial-toggle dictionary in v1, so every field must be sent.
-@freezed
-abstract class NotificationTogglesDto with _$NotificationTogglesDto {
-  const factory NotificationTogglesDto({
-    // pushEnabledMaster removed: backend does not yet expose it in v1
-    @Default(true) bool ordersPlaced,
-    @Default(true) bool ordersShipped,
-    @Default(true) bool ordersDelivered,
-    @Default(true) bool ordersRefunded,
-    @Default(true) bool returnsUpdates,
-    @Default(true) bool promotions,
-    @Default(true) bool priceDrops,
-    @Default(true) bool backInStock,
-    @Default(false) bool newReelsFromFollowed,
-    @Default(false) bool newFollower,
-    @Default(true) bool commentReplies,
-    @Default(true) bool saleNotifications,
-    @Default(true) bool payoutEvents,
-    @Default(true) bool newOrderForVendor,
-    @Default(true) bool partnershipEvents,
-    @Default(true) bool ticketUpdates,
-    @Default(true) bool securityAlerts,
-    @Default(true) bool signInFromNewDevice,
-    @Default(false) bool emailNewsletter,
-    @Default(false) bool productTips,
-  }) = _NotificationTogglesDto;
+  final bool emailEnabledMaster;
+  final bool pushEnabledMaster;
+  final bool smsEnabledMaster;
+  final bool emailSecurity;
+  final bool pushSecurity;
+  final bool emailOrderUpdates;
+  final bool pushOrderUpdates;
+  final bool emailDeliveryUpdates;
+  final bool pushDeliveryUpdates;
+  final bool emailMessages;
+  final bool pushMessages;
+  final bool emailReelActivity;
+  final bool pushReelActivity;
+  final bool emailFriendActivity;
+  final bool pushFriendActivity;
+  final bool emailMarketing;
+  final bool pushMarketing;
+  final bool emailSystemAnnouncements;
+  final bool pushSystemAnnouncements;
+  final bool quietHoursEnabled;
 
-  factory NotificationTogglesDto.fromJson(Map<String, dynamic> json) =>
-      _$NotificationTogglesDtoFromJson(json);
-}
-
-/// Mirrors the backend's `PreferenceQuietHoursDto`. `startLocalTime`/
-/// `endLocalTime` are `TimeOnly` on the backend, serialized as `"HH:mm:ss"`.
-@freezed
-abstract class PreferenceQuietHoursDto with _$PreferenceQuietHoursDto {
-  const factory PreferenceQuietHoursDto({
-    @Default(true) bool enabled,
-    @Default('22:00:00') String startLocalTime,
-    @Default('08:00:00') String endLocalTime,
-    @Default('Asia/Kathmandu') String timezone,
-  }) = _PreferenceQuietHoursDto;
-
-  factory PreferenceQuietHoursDto.fromJson(Map<String, dynamic> json) =>
-      _$PreferenceQuietHoursDtoFromJson(json);
-}
-
-/// GET/PATCH `/v1/notifications/preferences` response shape.
-@freezed
-abstract class NotificationPreferencesDto with _$NotificationPreferencesDto {
-  const factory NotificationPreferencesDto({
-    required NotificationTogglesDto toggles,
-    required PreferenceQuietHoursDto quietHours,
-  }) = _NotificationPreferencesDto;
-
-  const NotificationPreferencesDto._();
+  /// "HH:mm:ss" — backend `TimeOnly`.
+  final String quietHoursStartLocal;
+  final String quietHoursEndLocal;
 
   factory NotificationPreferencesDto.fromJson(Map<String, dynamic> json) =>
-      _$NotificationPreferencesDtoFromJson(json);
+      NotificationPreferencesDto(
+        emailEnabledMaster: json['emailEnabledMaster'] as bool? ?? true,
+        pushEnabledMaster: json['pushEnabledMaster'] as bool? ?? true,
+        smsEnabledMaster: json['smsEnabledMaster'] as bool? ?? false,
+        emailSecurity: json['emailSecurity'] as bool? ?? true,
+        pushSecurity: json['pushSecurity'] as bool? ?? true,
+        emailOrderUpdates: json['emailOrderUpdates'] as bool? ?? true,
+        pushOrderUpdates: json['pushOrderUpdates'] as bool? ?? true,
+        emailDeliveryUpdates: json['emailDeliveryUpdates'] as bool? ?? true,
+        pushDeliveryUpdates: json['pushDeliveryUpdates'] as bool? ?? true,
+        emailMessages: json['emailMessages'] as bool? ?? true,
+        pushMessages: json['pushMessages'] as bool? ?? true,
+        emailReelActivity: json['emailReelActivity'] as bool? ?? false,
+        pushReelActivity: json['pushReelActivity'] as bool? ?? false,
+        emailFriendActivity: json['emailFriendActivity'] as bool? ?? false,
+        pushFriendActivity: json['pushFriendActivity'] as bool? ?? false,
+        emailMarketing: json['emailMarketing'] as bool? ?? true,
+        pushMarketing: json['pushMarketing'] as bool? ?? true,
+        emailSystemAnnouncements: json['emailSystemAnnouncements'] as bool? ?? true,
+        pushSystemAnnouncements: json['pushSystemAnnouncements'] as bool? ?? true,
+        quietHoursEnabled: json['quietHoursEnabled'] as bool? ?? true,
+        quietHoursStartLocal: json['quietHoursStartLocal'] as String? ?? '22:00:00',
+        quietHoursEndLocal: json['quietHoursEndLocal'] as String? ?? '08:00:00',
+      );
+
+  /// Body for `PATCH .../notification-preferences/toggles`
+  /// (`UpdateNotificationTogglesVm` — no quiet-hours fields; those go
+  /// through the separate `.../quiet-hours` endpoint).
+  Map<String, dynamic> toJson() => {
+    'pushEnabledMaster': pushEnabledMaster,
+    'emailEnabledMaster': emailEnabledMaster,
+    'smsEnabledMaster': smsEnabledMaster,
+    'emailOrderUpdates': emailOrderUpdates,
+    'pushOrderUpdates': pushOrderUpdates,
+    'emailDeliveryUpdates': emailDeliveryUpdates,
+    'pushDeliveryUpdates': pushDeliveryUpdates,
+    'emailMessages': emailMessages,
+    'pushMessages': pushMessages,
+    'emailReelActivity': emailReelActivity,
+    'pushReelActivity': pushReelActivity,
+    'emailFriendActivity': emailFriendActivity,
+    'pushFriendActivity': pushFriendActivity,
+    'emailMarketing': emailMarketing,
+    'pushMarketing': pushMarketing,
+    'emailSystemAnnouncements': emailSystemAnnouncements,
+    'pushSystemAnnouncements': pushSystemAnnouncements,
+  };
 
   static String _hhmm(String hhmmss) =>
       hhmmss.length >= 5 ? hhmmss.substring(0, 5) : hhmmss;
 
   static String _hhmmss(String hhmm) => hhmm.length == 5 ? '$hhmm:00' : hhmm;
 
+  /// Backend has no dedicated categories for most of the toggles this screen
+  /// shows (priceDrops, backInStock, flashSales, newArrivals, returns,
+  /// payments, login/password alerts, product recs, ...) — only the eight
+  /// Email/Push categories above exist. Each UI toggle is mapped onto the
+  /// closest real category; several UI toggles necessarily share one
+  /// backend field (documented per line below) until the backend grows
+  /// dedicated categories for them.
   NotificationPreferences toDomain() => NotificationPreferences(
-    pushEnabled: true, // was: toggles.pushEnabledMaster
-    orderStatusChanges: toggles.ordersPlaced,
-    deliveryUpdates: toggles.ordersShipped,
-    returnStatus: toggles.ordersRefunded || toggles.returnsUpdates,
-    priceDrops: toggles.priceDrops,
-    backInStock: toggles.backInStock,
-    flashSales: toggles.saleNotifications,
-    newArrivals: toggles.promotions,
-    newReelsFromCreators: toggles.newReelsFromFollowed,
-    creatorRecommendations: toggles.newFollower,
-    loginAlerts: toggles.signInFromNewDevice,
-    passwordChanges: toggles.securityAlerts,
-    paymentUpdates: toggles.payoutEvents,
-    personalizedOffers: toggles.promotions,
-    productRecommendations: toggles.productTips,
-    newsletter: toggles.emailNewsletter,
-    emailNotifications: toggles.emailNewsletter,
-    smsNotifications: false,
-    quietHoursEnabled: quietHours.enabled,
-    quietHoursStart: _hhmm(quietHours.startLocalTime),
-    quietHoursEnd: _hhmm(quietHours.endLocalTime),
-    commentReplies: toggles.commentReplies,
-    newOrderForVendor: toggles.newOrderForVendor,
-    partnershipEvents: toggles.partnershipEvents,
-    ticketUpdates: toggles.ticketUpdates,
-    ordersDelivered: toggles.ordersDelivered,
+    pushEnabled: pushEnabledMaster,
+    orderStatusChanges: pushOrderUpdates,
+    deliveryUpdates: pushDeliveryUpdates,
+    returnStatus: pushMessages, // "Messages" is otherwise unused — best available slot
+    priceDrops: pushMarketing,
+    backInStock: pushMarketing,
+    flashSales: pushMarketing,
+    newArrivals: pushMarketing,
+    newReelsFromCreators: pushReelActivity,
+    creatorRecommendations: pushFriendActivity,
+    loginAlerts: pushSecurity,
+    passwordChanges: pushSecurity,
+    paymentUpdates: pushSystemAnnouncements,
+    personalizedOffers: pushMarketing,
+    productRecommendations: pushMarketing,
+    newsletter: emailMarketing,
+    emailNotifications: emailEnabledMaster,
+    smsNotifications: smsEnabledMaster,
+    quietHoursEnabled: quietHoursEnabled,
+    quietHoursStart: _hhmm(quietHoursStartLocal),
+    quietHoursEnd: _hhmm(quietHoursEndLocal),
+    commentReplies: pushFriendActivity,
+    newOrderForVendor: pushOrderUpdates,
+    partnershipEvents: pushSystemAnnouncements,
+    ticketUpdates: pushSystemAnnouncements,
+    ordersDelivered: pushDeliveryUpdates,
   );
 
   /// Builds the PATCH payload from a (possibly UI-edited) domain entity.
-  /// Fields the notification-prefs screen doesn't expose a toggle for
-  /// (commentReplies, newOrderForVendor, partnershipEvents, ticketUpdates,
-  /// ordersDelivered) are threaded through from what was loaded rather than
-  /// reset to a hardcoded default — see NotificationPreferences.copyWith.
+  /// Inverse of the best-effort mapping in [toDomain] — see its comment.
+  ///
+  /// Deliberately does NOT OR in [NotificationPreferences] fields that have
+  /// no UI toggle of their own (ordersDelivered, commentReplies,
+  /// newOrderForVendor, partnershipEvents, ticketUpdates) — those are pure
+  /// mirrors of another field, populated by [toDomain] from whatever was
+  /// last loaded. ORing a stale mirror back in here means toggling its
+  /// "real" sibling off would never actually clear the shared backend field
+  /// (a mirror recorded as `true` at load time keeps winning the OR
+  /// forever). Only fields the screen actually renders a switch for are
+  /// combined.
   static NotificationPreferencesDto fromDomain(NotificationPreferences p) =>
       NotificationPreferencesDto(
-        toggles: NotificationTogglesDto(
-          // pushEnabledMaster omitted: backend does not yet expose it
-          ordersPlaced: p.orderStatusChanges,
-          ordersShipped: p.deliveryUpdates,
-          ordersDelivered: p.ordersDelivered,
-          ordersRefunded: p.returnStatus,
-          returnsUpdates: p.returnStatus,
-          promotions: p.newArrivals || p.personalizedOffers,
-          priceDrops: p.priceDrops,
-          backInStock: p.backInStock,
-          newReelsFromFollowed: p.newReelsFromCreators,
-          newFollower: p.creatorRecommendations,
-          commentReplies: p.commentReplies,
-          saleNotifications: p.flashSales,
-          payoutEvents: p.paymentUpdates,
-          newOrderForVendor: p.newOrderForVendor,
-          partnershipEvents: p.partnershipEvents,
-          ticketUpdates: p.ticketUpdates,
-          securityAlerts: p.passwordChanges,
-          signInFromNewDevice: p.loginAlerts,
-          emailNewsletter: p.newsletter || p.emailNotifications,
-          productTips: p.productRecommendations,
-        ),
-        quietHours: PreferenceQuietHoursDto(
-          enabled: p.quietHoursEnabled,
-          startLocalTime: _hhmmss(p.quietHoursStart ?? '22:00'),
-          endLocalTime: _hhmmss(p.quietHoursEnd ?? '08:00'),
-        ),
+        emailEnabledMaster: p.emailNotifications,
+        pushEnabledMaster: p.pushEnabled,
+        smsEnabledMaster: p.smsNotifications,
+        emailSecurity: p.loginAlerts || p.passwordChanges,
+        pushSecurity: p.loginAlerts || p.passwordChanges,
+        emailOrderUpdates: p.orderStatusChanges,
+        pushOrderUpdates: p.orderStatusChanges,
+        emailDeliveryUpdates: p.deliveryUpdates,
+        pushDeliveryUpdates: p.deliveryUpdates,
+        emailMessages: p.returnStatus,
+        pushMessages: p.returnStatus,
+        emailReelActivity: p.newReelsFromCreators,
+        pushReelActivity: p.newReelsFromCreators,
+        emailFriendActivity: p.creatorRecommendations,
+        pushFriendActivity: p.creatorRecommendations,
+        emailMarketing: p.newsletter || p.priceDrops || p.backInStock || p.flashSales ||
+            p.newArrivals || p.personalizedOffers || p.productRecommendations,
+        pushMarketing: p.priceDrops || p.backInStock || p.flashSales || p.newArrivals ||
+            p.personalizedOffers || p.productRecommendations,
+        emailSystemAnnouncements: p.paymentUpdates,
+        pushSystemAnnouncements: p.paymentUpdates,
+        quietHoursEnabled: p.quietHoursEnabled,
+        quietHoursStartLocal: _hhmmss(p.quietHoursStart ?? '22:00'),
+        quietHoursEndLocal: _hhmmss(p.quietHoursEnd ?? '08:00'),
       );
 }
-

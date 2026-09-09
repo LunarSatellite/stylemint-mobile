@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/models/deletion_request_dto.dart';
@@ -28,17 +29,15 @@ class SettingsRemoteDataSource {
     NotificationPreferencesDto prefs,
   ) async {
     final accountId = await _accountId();
-    try {
-      final response = await apiClient.patch(
-        '/v1/accounts/$accountId/notification-preferences/toggles',
-        data: prefs.toJson(),
-      );
-      return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
-    } catch (e) {
-      // Log actual error for debugging
-      print('DEBUG updateNotificationPreferences error: $e');
-      rethrow;
-    }
+    final response = await apiClient.patch(
+      '/v1/accounts/$accountId/notification-preferences/toggles',
+      data: prefs.toJson(),
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': const Uuid().v4(),
+      }),
+    );
+    return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
   }
 
   // No dedicated language endpoint exists — locale lives on the account
