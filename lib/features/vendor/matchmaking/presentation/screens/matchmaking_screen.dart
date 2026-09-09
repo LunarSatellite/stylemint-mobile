@@ -143,8 +143,12 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
               const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Text(
-                  '@${recommendation.creatorHandle}',
+                  recommendation.creatorHandle.startsWith('@')
+                      ? recommendation.creatorHandle
+                      : '@${recommendation.creatorHandle}',
                   style: DesignTokens.oneLinerSemibold,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               CompatibilityScoreWidget(
@@ -176,11 +180,18 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => _dismiss(recommendation.id),
-                  child: const Text('Dismiss'),
+                child: SizedBox(
+                  height: DesignTokens.buttonHeight,
+                  child: OutlinedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => _dismiss(recommendation.id),
+                    child: const Text(
+                      'Dismiss',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
@@ -202,7 +213,11 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Invite to Partnership'),
+                        : const Text(
+                            'Invite to Partnership',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                   ),
                 ),
               ),
