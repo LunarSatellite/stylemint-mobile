@@ -12,7 +12,8 @@ import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/pr
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/social_account_summary.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/social_platform_popup.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_summary.dart';
-import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart' as reels_providers;
+import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart'
+    as reels_providers;
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/badge_award.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/creator_profile.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
@@ -81,19 +82,23 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   void _showBadgesSheet() {
     final showcased = ref.watch(showcasedBadgesProvider);
     if (showcased.isEmpty) return;
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _BadgesSheet(badges: showcased),
-    ));
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _BadgesSheet(badges: showcased),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final sessionId = ref.watch(sessionControllerProvider)
+    final sessionId = ref
+        .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
-    final effectiveAccountId =
-        widget.args.accountId.isNotEmpty ? widget.args.accountId : sessionId;
+    final effectiveAccountId = widget.args.accountId.isNotEmpty
+        ? widget.args.accountId
+        : sessionId;
 
     ref.listen<CreatorProfileState>(
       creatorProfileNotifierProvider(effectiveAccountId),
@@ -163,14 +168,20 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
               // ─── Hanging stats row (light card with shadow) ───
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
                 child: Transform.translate(
                   offset: const Offset(0, -36), // pull up to overlap
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.s16,
+                    ),
                     decoration: BoxDecoration(
                       color: DesignTokens.bgAppBodyLight,
-                      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.cardRadius,
+                      ),
                     ),
                     child: _statsRow(loadedProfile, lightTheme: false),
                   ),
@@ -198,31 +209,43 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   Widget _topBar(String effectiveAccountId, CreatorProfile? loadedProfile) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+        horizontal: DesignTokens.s16,
+        vertical: DesignTokens.s8,
+      ),
       child: Row(
         children: [
           if (context.canPop())
             GestureDetector(
               onTap: () => context.pop(),
-              child: const Icon(Icons.arrow_back_ios_new,
-                  size: 18, color: DesignTokens.textWhite),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 18,
+                color: DesignTokens.textWhite,
+              ),
             ),
           const Spacer(),
-          const Icon(Icons.notifications_outlined,
-              color: DesignTokens.textWhite, size: 22),
+          const Icon(
+            Icons.notifications_outlined,
+            color: DesignTokens.textWhite,
+            size: 22,
+          ),
           const SizedBox(width: DesignTokens.s16),
           GestureDetector(
             onTap: () => context.push(
               RouteNames.creatorProfileSettings,
               extra: CreatorProfileArgs(
                 accountId: effectiveAccountId,
-                displayName: loadedProfile?.displayName ?? widget.args.displayName,
+                displayName:
+                    loadedProfile?.displayName ?? widget.args.displayName,
                 handle: loadedProfile?.handle ?? widget.args.handle,
                 avatarUrl: loadedProfile?.avatarUrl ?? widget.args.avatarUrl,
               ),
             ),
-            child: const Icon(Icons.settings_outlined,
-                color: DesignTokens.textWhite, size: 22),
+            child: const Icon(
+              Icons.settings_outlined,
+              color: DesignTokens.textWhite,
+              size: 22,
+            ),
           ),
         ],
       ),
@@ -246,10 +269,12 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
               child: localPath != null
                   ? Image.file(File(localPath), fit: BoxFit.cover)
                   : (url != null && url.isNotEmpty)
-                      ? Image.network(url,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, _e) => _avatarFallback())
-                      : _avatarFallback(),
+                  ? Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, _e) => _avatarFallback(),
+                    )
+                  : _avatarFallback(),
             ),
           ),
         ],
@@ -258,20 +283,19 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   }
 
   Widget _avatarFallback() => Container(
-        color: DesignTokens.bgAppBodyLight,
-        alignment: Alignment.center,
-        child: const Icon(Icons.person,
-            size: 40, color: DesignTokens.iconLight),
-      );
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(Icons.person, size: 40, color: DesignTokens.iconLight),
+  );
 
   Widget _nameRow(CreatorProfileEditData profileData, CreatorProfile? loaded) {
     final name = loaded?.displayName.isNotEmpty == true
         ? loaded!.displayName
         : (profileData.displayName.isNotEmpty
-            ? profileData.displayName
-            : (widget.args.displayName.isNotEmpty
-                ? widget.args.displayName
-                : 'Creator'));
+              ? profileData.displayName
+              : (widget.args.displayName.isNotEmpty
+                    ? widget.args.displayName
+                    : 'Creator'));
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -349,8 +373,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           children: [
             ...visible.map(
               (badge) => Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: DesignTokens.s4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s4,
+                ),
                 child: Image.network(
                   badge.badgeIconUrl,
                   width: 36,
@@ -406,14 +431,14 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
       child: Row(
         children: [
           ...visible.asMap().entries.map(
-                (e) => Padding(
-                  padding: const EdgeInsets.only(right: DesignTokens.s8),
-                  child: _PartnerChip(
-                    emoji: null, // Backend tag data drives emoji selection later.
-                    label: e.value.vendorName,
-                  ),
-                ),
+            (e) => Padding(
+              padding: const EdgeInsets.only(right: DesignTokens.s8),
+              child: _PartnerChip(
+                emoji: null, // Backend tag data drives emoji selection later.
+                label: e.value.vendorName,
               ),
+            ),
+          ),
           if (remaining > 0)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -476,8 +501,10 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
             GestureDetector(
               onTap: _showBadgesSheet,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: DesignTokens.bgAppBodyLight,
                   borderRadius: BorderRadius.circular(12),
@@ -500,8 +527,12 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   // Updated stats row – now accepts lightTheme flag
   Widget _statsRow(CreatorProfile? loaded, {bool lightTheme = false}) {
-    final valueColor = lightTheme ? DesignTokens.textDark : DesignTokens.textWhite;
-    final labelColor = lightTheme ? DesignTokens.textMuted : DesignTokens.textWhite;
+    final valueColor = lightTheme
+        ? DesignTokens.textDark
+        : DesignTokens.textWhite;
+    final labelColor = lightTheme
+        ? DesignTokens.textMuted
+        : DesignTokens.textWhite;
 
     return Row(
       children: [
@@ -544,39 +575,50 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   // Divider with light theme support
   Widget _vDivider({bool lightTheme = false}) {
-    final color = lightTheme ? Colors.grey.shade300 : DesignTokens.borderDefault;
+    final color = lightTheme
+        ? Colors.grey.shade300
+        : DesignTokens.borderDefault;
     return Container(width: 1, height: 36, color: color);
   }
 
   Widget _socialPlatforms(String accountId) {
-    final connectedSet = ref
-        .watch(creatorConnectedSocialIdsProvider(accountId));
+    final connectedSet = ref.watch(
+      creatorConnectedSocialIdsProvider(accountId),
+    );
     final connectedList = ref
         .watch(creatorConnectedAccountsProvider(accountId))
-        .maybeWhen(data: (l) => l, orElse: () => const <SocialAccountSummary>[]);
+        .maybeWhen(
+          data: (l) => l,
+          orElse: () => const <SocialAccountSummary>[],
+        );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           for (var i = 0; i < kCreatorPlatforms.length; i++) ...[
-            Builder(builder: (context) {
-              final summary = connectedList.where(
-                (s) => s.slug == kCreatorPlatforms[i].id,
-              ).cast<SocialAccountSummary?>().firstWhere(
-                    (s) => s != null,
-                    orElse: () => null,
-                  );
-              return _SocialIcon(
-                svgPath: kCreatorPlatforms[i].assetPath,
-                warning: !connectedSet.contains(kCreatorPlatforms[i].id),
-                onTap: () => showSocialPlatformPopup(
-                  context,
-                  platformId: kCreatorPlatforms[i].id,
-                  summary: summary,
-                ),
-              );
-            }),
+            Builder(
+              builder: (context) {
+                final summary = connectedList
+                    .where(
+                      (s) => s.slug == kCreatorPlatforms[i].id,
+                    )
+                    .cast<SocialAccountSummary?>()
+                    .firstWhere(
+                      (s) => s != null,
+                      orElse: () => null,
+                    );
+                return _SocialIcon(
+                  svgPath: kCreatorPlatforms[i].assetPath,
+                  warning: !connectedSet.contains(kCreatorPlatforms[i].id),
+                  onTap: () => showSocialPlatformPopup(
+                    context,
+                    platformId: kCreatorPlatforms[i].id,
+                    summary: summary,
+                  ),
+                );
+              },
+            ),
             if (i != kCreatorPlatforms.length - 1)
               const SizedBox(width: DesignTokens.s12),
           ],
@@ -589,7 +631,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     const truncateAt = 120;
     final fullBio = loadedProfile?.bio ?? '';
     final needsTruncation = fullBio.length > truncateAt;
-    final truncated = needsTruncation ? fullBio.substring(0, truncateAt) : fullBio;
+    final truncated = needsTruncation
+        ? fullBio.substring(0, truncateAt)
+        : fullBio;
     return SizedBox(
       width: double.infinity,
       child: Padding(
@@ -648,15 +692,16 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
           ],
         ),
       ),
-  );
-}
+    );
+  }
 
   Widget _categoryNiche(String accountId) {
     final nichesAsync = ref.watch(creatorNicheNamesProvider(accountId));
     return nichesAsync.maybeWhen(
       data: (niches) {
         if (niches.isEmpty) return const SizedBox.shrink();
-        final sortedNiches = [...niches]..sort((a, b) => a.length.compareTo(b.length));
+        final sortedNiches = [...niches]
+          ..sort((a, b) => a.length.compareTo(b.length));
         return SizedBox(
           width: double.infinity,
           child: Padding(
@@ -677,7 +722,9 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 Wrap(
                   spacing: DesignTokens.s8,
                   runSpacing: DesignTokens.s8,
-                  children: sortedNiches.map((n) => _NicheChip(label: n, icon: _iconForNiche(n))).toList(),
+                  children: sortedNiches
+                      .map((n) => _NicheChip(label: n, icon: _iconForNiche(n)))
+                      .toList(),
                 ),
               ],
             ),
@@ -715,8 +762,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                 ),
               ),
               Spacer(),
-              Icon(Icons.search_rounded,
-                  color: DesignTokens.textMuted, size: 20),
+              Icon(
+                Icons.search_rounded,
+                color: DesignTokens.textMuted,
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
@@ -927,8 +977,10 @@ class _SocialIcon extends StatelessWidget {
                   ? const Color(0xFFFFAA00)
                   : DesignTokens.primaryGreen,
               shape: BoxShape.circle,
-              border:
-                  Border.all(color: DesignTokens.bgAppFoundation, width: 1.5),
+              border: Border.all(
+                color: DesignTokens.bgAppFoundation,
+                width: 1.5,
+              ),
             ),
             alignment: Alignment.center,
             child: Icon(
@@ -1008,7 +1060,10 @@ IconData _iconForNiche(String niche) {
   if (n.contains('pet') || n.contains('dog') || n.contains('cat')) {
     return Icons.pets;
   }
-  if (n.contains('parent') || n.contains('kid') || n.contains('baby') || n.contains('child')) {
+  if (n.contains('parent') ||
+      n.contains('kid') ||
+      n.contains('baby') ||
+      n.contains('child')) {
     return Icons.child_care;
   }
   if (n.contains('outdoor') || n.contains('camp') || n.contains('hike')) {
@@ -1051,8 +1106,11 @@ class _NicheChip extends StatelessWidget {
 }
 
 class _FilterTab extends StatelessWidget {
-  const _FilterTab(
-      {required this.label, required this.selected, required this.onTap});
+  const _FilterTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -1131,8 +1189,11 @@ class _ReelCard extends ConsumerWidget {
               left: 8,
               child: Row(
                 children: [
-                  const Icon(Icons.play_arrow_rounded,
-                      size: 13, color: Colors.white),
+                  const Icon(
+                    Icons.play_arrow_rounded,
+                    size: 13,
+                    color: Colors.white,
+                  ),
                   const SizedBox(width: 2),
                   Text(
                     _fmtCount(reel.views),
@@ -1157,7 +1218,9 @@ class _ReelCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Reel'),
-        content: const Text('Are you sure you want to delete this reel? This cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to delete this reel? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -1176,11 +1239,14 @@ class _ReelCard extends ConsumerWidget {
   }
 
   Widget _placeholder() => Container(
-        color: DesignTokens.bgAppBodyLight,
-        alignment: Alignment.center,
-        child: const Icon(Icons.play_circle_outline,
-            color: DesignTokens.textMuted, size: 32),
-      );
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(
+      Icons.play_circle_outline,
+      color: DesignTokens.textMuted,
+      size: 32,
+    ),
+  );
 
   String _fmtCount(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -1197,71 +1263,69 @@ class _BadgesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        MediaQuery.of(context).padding.bottom + DesignTokens.s16;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s12,
-        DesignTokens.s16,
-        bottomPadding,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Row(
-            children: [
-              const Text(
-                'Your Badges',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: DesignTokens.textWhite,
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s12,
+          DesignTokens.s16,
+          DesignTokens.s16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: DesignTokens.textMuted,
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: badges.length,
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: DesignTokens.s12,
-              crossAxisSpacing: DesignTokens.s12,
             ),
-            itemBuilder: (_, i) => _BadgeDisplayTile(badge: badges[i]),
-          ),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+            Row(
+              children: [
+                const Text(
+                  'Your Badges',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: DesignTokens.textMuted,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: badges.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: DesignTokens.s12,
+                crossAxisSpacing: DesignTokens.s12,
+              ),
+              itemBuilder: (_, i) => _BadgeDisplayTile(badge: badges[i]),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1303,40 +1367,41 @@ class _BottomNav extends StatelessWidget {
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppFoundation,
         border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBtn(
-            icon: Icons.home_rounded,
-            label: 'Home',
-            onTap: () => context.canPop() ? context.pop() : null,
-          ),
-          _NavBtn(
-            icon: Icons.auto_graph_rounded,
-            iconWidget: Image.asset(
-              'assets/images/creatordash/Analytics_icon.png',
-              width: 22,
-              height: 22,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavBtn(
+              icon: Icons.home_rounded,
+              label: 'Home',
+              onTap: () => context.canPop() ? context.pop() : null,
             ),
-            label: 'Analytics',
-            onTap: () => context.push(RouteNames.creatorAnalytics),
-          ),
-          _NavBtn(
-            icon: Icons.explore_outlined,
-            label: 'Explore',
-            onTap: () => context.push(RouteNames.creatorSearch),
-          ),
-          const _NavBtn(
-            icon: Icons.person_rounded,
-            label: 'Profile',
-            active: true,
-            onTap: null,
-          ),
-        ],
+            _NavBtn(
+              icon: Icons.auto_graph_rounded,
+              iconWidget: Image.asset(
+                'assets/images/creatordash/Analytics_icon.png',
+                width: 22,
+                height: 22,
+              ),
+              label: 'Analytics',
+              onTap: () => context.push(RouteNames.creatorAnalytics),
+            ),
+            _NavBtn(
+              icon: Icons.explore_outlined,
+              label: 'Explore',
+              onTap: () => context.push(RouteNames.creatorSearch),
+            ),
+            const _NavBtn(
+              icon: Icons.person_rounded,
+              label: 'Profile',
+              active: true,
+              onTap: null,
+            ),
+          ],
         ),
       ),
     );
@@ -1360,8 +1425,7 @@ class _NavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
+    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

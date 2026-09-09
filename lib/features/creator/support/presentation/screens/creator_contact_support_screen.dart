@@ -188,101 +188,101 @@ class _CreatorContactSupportScreenState
       ),
       body: SafeArea(
         child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                DesignTokens.s16,
-                DesignTokens.s8,
-                DesignTokens.s16,
-                DesignTokens.s32,
-              ),
-              children: [
-                _WelcomeBanner(),
-                const SizedBox(height: DesignTokens.s16),
-                _ChannelList(
-                  channels: _channels(
-                    context,
-                    contactChannels.when(
-                      data: (value) => value,
-                      loading: () => null,
-                      error: (_, __) => null,
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s8,
+                  DesignTokens.s16,
+                  DesignTokens.s32,
+                ),
+                children: [
+                  _WelcomeBanner(),
+                  const SizedBox(height: DesignTokens.s16),
+                  _ChannelList(
+                    channels: _channels(
+                      context,
+                      contactChannels.when(
+                        data: (value) => value,
+                        loading: () => null,
+                        error: (_, __) => null,
+                      ),
+                      contactChannels.isLoading,
                     ),
-                    contactChannels.isLoading,
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-                _TopicsGrid(
-                  topics: _topics,
-                  // No 1:1 mapping from these creator-facing topic buckets
-                  // to the backend's generic TicketCategory taxonomy, so
-                  // just open ticket creation rather than guessing a
-                  // category — better than a silent no-op.
-                  onTopicTap: () => _showCreateTicket(context),
-                ),
-                const SizedBox(height: DesignTokens.s24),
-                const Text(
-                  'Your Support Tickets',
-                  style: DesignTokens.oneLinerSemibold,
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                _FilterTabs(
-                  active: _activeFilter,
-                  counts: {
-                    _TicketFilter.submitted: _count(
-                      tickets,
-                      _TicketFilter.submitted,
-                    ),
-                    _TicketFilter.inProgress: _count(
-                      tickets,
-                      _TicketFilter.inProgress,
-                    ),
-                    _TicketFilter.resolved: _count(
-                      tickets,
-                      _TicketFilter.resolved,
-                    ),
-                  },
-                  onChanged: (f) => setState(() => _activeFilter = f),
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (visible.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: DesignTokens.s24,
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Your ${_activeFilter == _TicketFilter.submitted
-                            ? 'submitted'
-                            : _activeFilter == _TicketFilter.inProgress
-                            ? 'in progress'
-                            : 'resolved'} support tickets will show here',
-                        textAlign: TextAlign.center,
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
+                  const SizedBox(height: DesignTokens.s16),
+                  _TopicsGrid(
+                    topics: _topics,
+                    // No 1:1 mapping from these creator-facing topic buckets
+                    // to the backend's generic TicketCategory taxonomy, so
+                    // just open ticket creation rather than guessing a
+                    // category — better than a silent no-op.
+                    onTopicTap: () => _showCreateTicket(context),
+                  ),
+                  const SizedBox(height: DesignTokens.s24),
+                  const Text(
+                    'Your Support Tickets',
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  _FilterTabs(
+                    active: _activeFilter,
+                    counts: {
+                      _TicketFilter.submitted: _count(
+                        tickets,
+                        _TicketFilter.submitted,
+                      ),
+                      _TicketFilter.inProgress: _count(
+                        tickets,
+                        _TicketFilter.inProgress,
+                      ),
+                      _TicketFilter.resolved: _count(
+                        tickets,
+                        _TicketFilter.resolved,
+                      ),
+                    },
+                    onChanged: (f) => setState(() => _activeFilter = f),
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (visible.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: DesignTokens.s24,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Your ${_activeFilter == _TicketFilter.submitted
+                              ? 'submitted'
+                              : _activeFilter == _TicketFilter.inProgress
+                              ? 'in progress'
+                              : 'resolved'} support tickets will show here',
+                          textAlign: TextAlign.center,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
                         ),
                       ),
+                    )
+                  else
+                    ...visible.map(
+                      (t) => _TicketCard(
+                        ticket: t,
+                        onTap: () => _showTicketDetail(context, t),
+                      ),
                     ),
-                  )
-                else
-                  ...visible.map(
-                    (t) => _TicketCard(
-                      ticket: t,
-                      onTap: () => _showTicketDetail(context, t),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          _BottomButton(
-            onTap: () => _showCreateTicket(context),
-          ),
-        ],
+            _BottomButton(
+              onTap: () => _showCreateTicket(context),
+            ),
+          ],
         ),
       ),
     );
@@ -759,70 +759,72 @@ class _CreatorResourcesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: DesignTokens.borderDefault,
-            borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: DesignTokens.s12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: DesignTokens.borderDefault,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ),
-        ...List.generate(_resources.length, (i) {
-          final isLast = i == _resources.length - 1;
-          return Column(
-            children: [
-              InkWell(
-                // No help-article backend exists (support module only
-                // models tickets, not a CMS) — same as the vendor
-                // Resources sheet, this just closes rather than opening
-                // content that doesn't exist.
-                onTap: () => Navigator.of(context).pop(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
-                    vertical: DesignTokens.s16,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _resources[i],
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: DesignTokens.textWhite,
+          ...List.generate(_resources.length, (i) {
+            final isLast = i == _resources.length - 1;
+            return Column(
+              children: [
+                InkWell(
+                  // No help-article backend exists (support module only
+                  // models tickets, not a CMS) — same as the vendor
+                  // Resources sheet, this just closes rather than opening
+                  // content that doesn't exist.
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s16,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _resources[i],
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: DesignTokens.textWhite,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ],
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (!isLast)
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: DesignTokens.borderDefault,
-                  indent: DesignTokens.s16,
-                  endIndent: DesignTokens.s16,
-                ),
-            ],
-          );
-        }),
-        SizedBox(
-          height: MediaQuery.of(context).padding.bottom + DesignTokens.s16,
-        ),
-      ],
+                if (!isLast)
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: DesignTokens.borderDefault,
+                    indent: DesignTokens.s16,
+                    endIndent: DesignTokens.s16,
+                  ),
+              ],
+            );
+          }),
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom + DesignTokens.s16,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -933,241 +935,243 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         );
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s20,
-              DesignTokens.s8,
-              DesignTokens.s16,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s20,
+                DesignTokens.s8,
+                DesignTokens.s16,
+              ),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Create Support Ticket',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 20,
+                      color: DesignTokens.textMuted,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Create Support Ticket',
-                    style: TextStyle(
+            // Category dropdown
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              child: DropdownButtonFormField<TicketCategory>(
+                value: _selectedCategory,
+                hint: const Text(
+                  'Issue Category',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: DesignTokens.textMuted,
+                ),
+                dropdownColor: DesignTokens.bgAppBodyLight,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.textWhite,
+                ),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: DesignTokens.bgAppBodyLight,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                    vertical: 14,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.borderDefault,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.borderDefault,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ),
+                items: TicketCategory.values
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(_ticketCategoryLabel(c)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: isSubmitting
+                    ? null
+                    : (v) => setState(() => _selectedCategory = v),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            // Describe issue textarea
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              child: TextFormField(
+                controller: _descController,
+                maxLines: 5,
+                minLines: 4,
+                enabled: !isSubmitting,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.textWhite,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Describe Issue',
+                  hintStyle: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    color: DesignTokens.textMuted,
+                  ),
+                  filled: true,
+                  fillColor: DesignTokens.bgAppBodyLight,
+                  contentPadding: const EdgeInsets.all(DesignTokens.s16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.borderDefault,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.borderDefault,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Picked image previews
+            if (_images.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s12),
+              SizedBox(
+                height: 72,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                  ),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _images.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: DesignTokens.s8),
+                  itemBuilder: (_, i) => _PickedThumb(
+                    file: _images[i],
+                    onRemove: () => setState(() => _images.removeAt(i)),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: DesignTokens.s12),
+            // Upload Images
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              child: SizedBox(
+                width: double.infinity,
+                height: DesignTokens.buttonHeight,
+                child: OutlinedButton.icon(
+                  onPressed: isSubmitting ? null : _pickImages,
+                  icon: const Icon(
+                    Icons.upload_outlined,
+                    size: 18,
+                    color: DesignTokens.textWhite,
+                  ),
+                  label: Text(
+                    _images.isEmpty ? 'Upload Images' : 'Add More Images',
+                    style: const TextStyle(
                       fontFamily: DesignTokens.fontFamily,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                       color: DesignTokens.textWhite,
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(
-                    Icons.close,
-                    size: 20,
-                    color: DesignTokens.textMuted,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-                const SizedBox(width: DesignTokens.s8),
-              ],
-            ),
-          ),
-          // Category dropdown
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: DropdownButtonFormField<TicketCategory>(
-              value: _selectedCategory,
-              hint: const Text(
-                'Issue Category',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-              icon: const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: DesignTokens.textMuted,
-              ),
-              dropdownColor: DesignTokens.bgAppBodyLight,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.textWhite,
-              ),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: DesignTokens.bgAppBodyLight,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.borderDefault,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.borderDefault,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
-              ),
-              items: TicketCategory.values
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(_ticketCategoryLabel(c)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: isSubmitting
-                  ? null
-                  : (v) => setState(() => _selectedCategory = v),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          // Describe issue textarea
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: TextFormField(
-              controller: _descController,
-              maxLines: 5,
-              minLines: 4,
-              enabled: !isSubmitting,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.textWhite,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Describe Issue',
-                hintStyle: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 14,
-                  color: DesignTokens.textMuted,
-                ),
-                filled: true,
-                fillColor: DesignTokens.bgAppBodyLight,
-                contentPadding: const EdgeInsets.all(DesignTokens.s16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.borderDefault,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.borderDefault,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          // Picked image previews
-          if (_images.isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s12),
-            SizedBox(
-              height: 72,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                ),
-                scrollDirection: Axis.horizontal,
-                itemCount: _images.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: DesignTokens.s8),
-                itemBuilder: (_, i) => _PickedThumb(
-                  file: _images[i],
-                  onRemove: () => setState(() => _images.removeAt(i)),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: DesignTokens.s12),
-          // Upload Images
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: OutlinedButton.icon(
-                onPressed: isSubmitting ? null : _pickImages,
-                icon: const Icon(
-                  Icons.upload_outlined,
-                  size: 18,
-                  color: DesignTokens.textWhite,
-                ),
-                label: Text(
-                  _images.isEmpty ? 'Upload Images' : 'Add More Images',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: DesignTokens.borderDefault),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      DesignTokens.buttonRadius,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          // Submit Ticket
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-            child: SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                onPressed: isSubmitting ? null : _submit,
-                style: DesignTokens.primaryButtonStyle(),
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
-                      )
-                    : const Text(
-                        'Submit Ticket',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: DesignTokens.borderDefault),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.buttonRadius,
                       ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          SizedBox(height: safeBottom + DesignTokens.s16),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+            // Submit Ticket
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+              child: SizedBox(
+                width: double.infinity,
+                height: DesignTokens.buttonHeight,
+                child: ElevatedButton(
+                  onPressed: isSubmitting ? null : _submit,
+                  style: DesignTokens.primaryButtonStyle(),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        )
+                      : const Text(
+                          'Submit Ticket',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            SizedBox(height: safeBottom + DesignTokens.s16),
+          ],
+        ),
       ),
     );
   }
@@ -1262,144 +1266,146 @@ class _TicketDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s20,
-        DesignTokens.s16,
-        safeBottom + DesignTokens.s16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Ticket ID: ${ticket.ticketNumber}',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(
-                  Icons.close,
-                  size: 20,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          const Text(
-            'Issue Category',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 12,
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            ticket.subject,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: _statusBg(ticket.status),
-              borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-              border: Border.all(color: _statusAccent(ticket.status)),
-            ),
-            child: Text(
-              _statusLabel(ticket.status),
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _statusAccent(ticket.status),
-              ),
-            ),
-          ),
-          ...[
-            const SizedBox(height: DesignTokens.s12),
-            Text(
-              'Last update: ${_formatTicketDate(ticket.lastUpdated)}',
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                color: DesignTokens.textWhite,
-                height: 1.5,
-              ),
-            ),
-          ],
-          const SizedBox(height: DesignTokens.s16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s20,
+          DesignTokens.s16,
+          safeBottom + DesignTokens.s16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Created On',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        color: DesignTokens.textMuted,
-                      ),
+                Expanded(
+                  child: Text(
+                    'Ticket ID: ${ticket.ticketNumber}',
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: DesignTokens.textWhite,
                     ),
-                    Text(
-                      _formatTicketDate(ticket.createdAt),
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                const Text(
-                  'Attachments',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    color: DesignTokens.textMuted,
                   ),
                 ),
-                const SizedBox(height: DesignTokens.s8),
-                const Text(
-                  'No attachments',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.close,
+                    size: 20,
                     color: DesignTokens.textMuted,
-                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+            const Text(
+              'Issue Category',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 12,
+                color: DesignTokens.textMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              ticket.subject,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: DesignTokens.textWhite,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: _statusBg(ticket.status),
+                borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                border: Border.all(color: _statusAccent(ticket.status)),
+              ),
+              child: Text(
+                _statusLabel(ticket.status),
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _statusAccent(ticket.status),
+                ),
+              ),
+            ),
+            ...[
+              const SizedBox(height: DesignTokens.s12),
+              Text(
+                'Last update: ${_formatTicketDate(ticket.lastUpdated)}',
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 14,
+                  color: DesignTokens.textWhite,
+                  height: 1.5,
+                ),
+              ),
+            ],
+            const SizedBox(height: DesignTokens.s16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Created On',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 13,
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                      Text(
+                        _formatTicketDate(ticket.createdAt),
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 13,
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  const Text(
+                    'Attachments',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  const Text(
+                    'No attachments',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      color: DesignTokens.textMuted,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

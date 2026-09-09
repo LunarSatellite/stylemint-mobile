@@ -46,7 +46,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     ref.listen<CartState>(cartNotifierProvider, (previous, next) {
       next.maybeWhen(
         loadSuccess: (cart) {
-          final hadItems = previous?.maybeWhen(
+          final hadItems =
+              previous?.maybeWhen(
                 loadSuccess: (c) => c.items.isNotEmpty,
                 orElse: () => false,
               ) ??
@@ -66,8 +67,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('Your Cart', style: DesignTokens.sectionInnerTitle),
@@ -97,7 +100,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         return CartItemTile(
                           item: cart.items[i],
                           onIncrement: () {
-                            ref.read(cartNotifierProvider.notifier).updateItem(
+                            ref
+                                .read(cartNotifierProvider.notifier)
+                                .updateItem(
                                   itemId: cart.items[i].id,
                                   quantity: cart.items[i].quantity + 1,
                                 );
@@ -120,7 +125,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                           onDelete: () {
                             ref
                                 .read(cartNotifierProvider.notifier)
-                                  .removeItem(cart.items[i].id);
+                                .removeItem(cart.items[i].id);
                           },
                           onSaveForLater: () {
                             ref
@@ -132,10 +137,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       // Promo pill
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DesignTokens.s16,
-                            DesignTokens.s16,
-                            DesignTokens.s16,
-                            DesignTokens.s12),
+                          DesignTokens.s16,
+                          DesignTokens.s16,
+                          DesignTokens.s16,
+                          DesignTokens.s12,
+                        ),
                         child: _PromoRow(
                           appliedCode: cart.appliedPromoCode?.code,
                           onTap: _openPromoSheet,
@@ -144,7 +150,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       // Ticket card: bill details + scallop + appreciation stub
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s16),
+                          horizontal: DesignTokens.s16,
+                        ),
                         child: _TicketCard(
                           cart: cart,
                           promoCode: cart.appliedPromoCode?.code,
@@ -171,8 +178,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ─── PROMO PILL ───────────────────────────────────────────────────────────────
@@ -301,7 +308,9 @@ class _TicketCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: DesignTokens.primaryGreen.withOpacity(0.15),
                         border: Border.all(
-                            color: DesignTokens.primaryGreen, width: 1.2),
+                          color: DesignTokens.primaryGreen,
+                          width: 1.2,
+                        ),
                       ),
                       child: const Icon(
                         Icons.local_offer_rounded,
@@ -378,8 +387,11 @@ class _TicketCard extends StatelessWidget {
                       color: const Color(0xFFE53935),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child:
-                        const Icon(Icons.favorite, size: 22, color: Colors.white),
+                    child: const Icon(
+                      Icons.favorite,
+                      size: 22,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -423,8 +435,10 @@ class _BillRow extends StatelessWidget {
     this.value,
     this.valueBadge,
     this.valueColor,
-  }) : assert(icon != null || iconWidget != null,
-            '_BillRow requires icon or iconWidget');
+  }) : assert(
+         icon != null || iconWidget != null,
+         '_BillRow requires icon or iconWidget',
+       );
 
   final IconData? icon;
   final Widget? iconWidget;
@@ -438,14 +452,14 @@ class _BillRow extends StatelessWidget {
     return Row(
       children: [
         // Custom widget takes priority over IconData
-        iconWidget ??
-            Icon(icon!, size: 14, color: DesignTokens.textMuted),
+        iconWidget ?? Icon(icon!, size: 14, color: DesignTokens.textMuted),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textWhite),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
+            ),
           ),
         ),
         if (valueBadge != null)
@@ -470,8 +484,9 @@ class _BillRow extends StatelessWidget {
             style: DesignTokens.smallRegular.copyWith(
               color: valueColor ?? DesignTokens.textLight,
               fontSize: 12,
-              fontWeight:
-                  valueColor != null ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: valueColor != null
+                  ? FontWeight.w600
+                  : FontWeight.normal,
             ),
           ),
       ],
@@ -516,10 +531,14 @@ class _ScallopPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, radius),
-        Paint()..color = topColor);
-    canvas.drawRect(Rect.fromLTWH(0, radius, size.width, radius),
-        Paint()..color = stubColor);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, radius),
+      Paint()..color = topColor,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, radius, size.width, radius),
+      Paint()..color = stubColor,
+    );
     final holePaint = Paint()
       ..color = holeColor
       ..style = PaintingStyle.fill;
@@ -569,90 +588,104 @@ class _PromoBottomSheetState extends State<_PromoBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom +
+    final bottom =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, 24 + bottom),
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Enter your promo code',
-                style: DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.textWhite,
-                  fontSize: 20,
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20, 24, 20, 24 + bottom),
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Enter your promo code',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                    fontSize: 20,
+                  ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(Icons.close,
-                    size: 20, color: DesignTokens.textLight),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textWhite, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: 'Promo Code',
-              hintStyle: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textMuted, fontSize: 14),
-              filled: true,
-              fillColor: DesignTokens.bgAppBodyLight,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close,
+                    size: 20,
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+              ],
             ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _apply(),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.primaryGreen,
-                foregroundColor: Colors.black,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Promo Code',
+                hintStyle: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: DesignTokens.bgAppBodyLight,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
                 ),
               ),
-              onPressed: _loading ? null : _apply,
-              child: _loading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.black),
-                    )
-                  : const Text(
-                      'Apply',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _apply(),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                ),
+                onPressed: _loading ? null : _apply,
+                child: _loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Text(
+                        'Apply',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -669,11 +702,16 @@ class _CheckoutBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s16),
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        DesignTokens.s16,
+      ),
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
       ),
       child: SafeArea(
         child: Column(
@@ -681,14 +719,20 @@ class _CheckoutBar extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.shopping_cart_outlined,
-                    size: 18, color: DesignTokens.textWhite),
+                const Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 18,
+                  color: DesignTokens.textWhite,
+                ),
                 const SizedBox(width: DesignTokens.s8),
                 const Text('Total Order', style: DesignTokens.mediumSemibold),
                 const Spacer(),
-                Text(formatMoney(cart.total),
-                    style: DesignTokens.oneLinerSemibold
-                        .copyWith(color: DesignTokens.textWhite)),
+                Text(
+                  formatMoney(cart.total),
+                  style: DesignTokens.oneLinerSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: DesignTokens.s12),
@@ -701,7 +745,8 @@ class _CheckoutBar extends StatelessWidget {
                   foregroundColor: Colors.black,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26)),
+                    borderRadius: BorderRadius.circular(26),
+                  ),
                 ),
                 onPressed: onCheckout,
                 child: const Row(
@@ -717,8 +762,11 @@ class _CheckoutBar extends StatelessWidget {
                       ),
                     ),
                     SizedBox(width: DesignTokens.s8),
-                    Icon(Icons.arrow_forward_rounded,
-                        size: 18, color: DesignTokens.buttonPrimaryText),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
                   ],
                 ),
               ),

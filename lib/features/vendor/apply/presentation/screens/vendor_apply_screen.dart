@@ -111,16 +111,20 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     _hasCheckedStatus = true;
 
     // Prefer session state; fall back to token storage as ground truth
-    var accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => null,
-    );
+    var accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
     accountId ??= await ref.read(tokenStorageProvider).accountId;
 
     if (!mounted) return;
     if (accountId != null && accountId.isNotEmpty) {
       setState(() => _accountId = accountId);
-      await ref.read(vendorApplyNotifierProvider.notifier).checkStatus(accountId);
+      await ref
+          .read(vendorApplyNotifierProvider.notifier)
+          .checkStatus(accountId);
     }
   }
 
@@ -225,50 +229,57 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         ),
       ),
       builder: (ctx) {
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(ctx).size.height * 0.6,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: DesignTokens.s12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: DesignTokens.borderDefault,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(title, style: DesignTokens.oneLinerSemibold),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: DesignTokens.s12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
                     color: DesignTokens.borderDefault,
-                    height: 1,
-                  ),
-                  itemBuilder: (_, i) => ListTile(
-                    title: Text(items[i], style: DesignTokens.oneLinerRegular),
-                    onTap: () {
-                      onSelected(items[i]);
-                      Navigator.of(ctx).pop();
-                    },
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-            ],
+                const SizedBox(height: DesignTokens.s16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(title, style: DesignTokens.oneLinerSemibold),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(
+                      color: DesignTokens.borderDefault,
+                      height: 1,
+                    ),
+                    itemBuilder: (_, i) => ListTile(
+                      title: Text(
+                        items[i],
+                        style: DesignTokens.oneLinerRegular,
+                      ),
+                      onTap: () {
+                        onSelected(items[i]);
+                        Navigator.of(ctx).pop();
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s16),
+              ],
+            ),
           ),
         );
       },
@@ -315,7 +326,10 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.canPop()
               ? context.pop()
               : context.go(RouteNames.userTypeSelection),
@@ -522,7 +536,9 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Street Address'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Street Address',
+            ),
           ),
           const SizedBox(height: DesignTokens.s20),
 
@@ -626,23 +642,23 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
           onPressed: _submit,
           style: DesignTokens.primaryButtonStyle(),
           child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Proceed',
-                    style: DesignTokens.oneLinerSemibold.copyWith(
-                      color: DesignTokens.buttonPrimaryText,
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s8),
-                  const Icon(
-                    Icons.arrow_forward,
-                    color: DesignTokens.buttonPrimaryText,
-                    size: 18,
-                  ),
-                ],
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Proceed',
+                style: DesignTokens.oneLinerSemibold.copyWith(
+                  color: DesignTokens.buttonPrimaryText,
                 ),
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              const Icon(
+                Icons.arrow_forward,
+                color: DesignTokens.buttonPrimaryText,
+                size: 18,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -711,7 +727,9 @@ class _ApplicationStatusCard extends ConsumerWidget {
                     padding: const EdgeInsets.all(DesignTokens.s12),
                     decoration: BoxDecoration(
                       color: DesignTokens.colorError.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.inputRadius,
+                      ),
                     ),
                     child: Text(
                       application.rejectionReason!,
@@ -747,10 +765,12 @@ class _ApplicationStatusCard extends ConsumerWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  var id = ref.read(sessionControllerProvider).maybeWhen(
-                    authenticated: (v) => v,
-                    orElse: () => null,
-                  );
+                  var id = ref
+                      .read(sessionControllerProvider)
+                      .maybeWhen(
+                        authenticated: (v) => v,
+                        orElse: () => null,
+                      );
                   id ??= await ref.read(tokenStorageProvider).accountId;
                   if (id != null && id.isNotEmpty) {
                     unawaited(notifier.checkStatus(id, force: true));
@@ -790,10 +810,12 @@ class _ApplicationStatusCard extends ConsumerWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  var id = ref.read(sessionControllerProvider).maybeWhen(
-                    authenticated: (v) => v,
-                    orElse: () => null,
-                  );
+                  var id = ref
+                      .read(sessionControllerProvider)
+                      .maybeWhen(
+                        authenticated: (v) => v,
+                        orElse: () => null,
+                      );
                   id ??= await ref.read(tokenStorageProvider).accountId;
                   if (id != null && id.isNotEmpty) {
                     unawaited(notifier.checkStatus(id, force: true));
@@ -833,17 +855,18 @@ class _KycUploadTileState extends ConsumerState<_KycUploadTile> {
   Future<void> _pick() async {
     if (_uploading) return;
 
-    final picked = 
-    await ImagePicker().pickImage(
+    final picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (picked == null) return;
 
-    var accountId = ref.read(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => null,
-    );
+    var accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => null,
+        );
     accountId ??= await ref.read(tokenStorageProvider).accountId;
     if (accountId == null || accountId.isEmpty) return;
     setState(() => _uploading = true);

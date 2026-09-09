@@ -21,11 +21,27 @@ class _VendorApplyStep5ScreenState
   static const int _currentStep = 5;
 
   static const _categories = [
-    'Shoes', 'Watches', 'Electronics', 'Sports Wear', 'Fitness',
-    'Home Appliances', 'Mobile Accessories', 'Beauty Products', 'Jackets',
-    'Women\'s Clothing', 'Computers & Laptops', 'Books & Magazines',
-    'Skin Care', 'Kitchen Supplies', 'Men\'s Clothing', 'Stationary',
-    'Decorations', 'Action Figures', 'TV\'s', 'Jewellery', 'Keyboards',
+    'Shoes',
+    'Watches',
+    'Electronics',
+    'Sports Wear',
+    'Fitness',
+    'Home Appliances',
+    'Mobile Accessories',
+    'Beauty Products',
+    'Jackets',
+    'Women\'s Clothing',
+    'Computers & Laptops',
+    'Books & Magazines',
+    'Skin Care',
+    'Kitchen Supplies',
+    'Men\'s Clothing',
+    'Stationary',
+    'Decorations',
+    'Action Figures',
+    'TV\'s',
+    'Jewellery',
+    'Keyboards',
     'Furniture',
   ];
 
@@ -93,49 +109,60 @@ class _VendorApplyStep5ScreenState
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.5,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: DesignTokens.s12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Estimated Product Catalog Size',
-                    style: DesignTokens.oneLinerSemibold),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _catalogSizes.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(color: DesignTokens.borderDefault, height: 1),
-                itemBuilder: (_, i) => ListTile(
-                  title: Text(_catalogSizes[i], style: DesignTokens.oneLinerRegular),
-                  onTap: () {
-                    setState(() => _selectedCatalogSize = _catalogSizes[i]);
-                    Navigator.of(ctx).pop();
-                  },
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.5,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: DesignTokens.s12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-          ],
+              const SizedBox(height: DesignTokens.s16),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Estimated Product Catalog Size',
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _catalogSizes.length,
+                  separatorBuilder: (_, __) => const Divider(
+                    color: DesignTokens.borderDefault,
+                    height: 1,
+                  ),
+                  itemBuilder: (_, i) => ListTile(
+                    title: Text(
+                      _catalogSizes[i],
+                      style: DesignTokens.oneLinerRegular,
+                    ),
+                    onTap: () {
+                      setState(() => _selectedCatalogSize = _catalogSizes[i]);
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
         ),
       ),
     ).ignore();
@@ -188,7 +215,10 @@ class _VendorApplyStep5ScreenState
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: _goPrevious,
         ),
       ),
@@ -268,29 +298,31 @@ class _VendorApplyStep5ScreenState
           Wrap(
             spacing: DesignTokens.s8,
             runSpacing: DesignTokens.s8,
-            children: _categories.map((category) {
-              final isSelected = _selectedCategories.contains(category);
-              return GestureDetector(
-                onTap: () => _toggleCategory(category),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s12,
-                    vertical: DesignTokens.s8,
-                  ),
-                  decoration: isSelected
-                      ? DesignTokens.chipDecorationSelected()
-                      : DesignTokens.chipDecorationDefault(),
-                  child: Text(
-                    category,
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: isSelected
-                          ? DesignTokens.primaryGreen
-                          : DesignTokens.textLight,
+            children: _categories
+                .map((category) {
+                  final isSelected = _selectedCategories.contains(category);
+                  return GestureDetector(
+                    onTap: () => _toggleCategory(category),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s12,
+                        vertical: DesignTokens.s8,
+                      ),
+                      decoration: isSelected
+                          ? DesignTokens.chipDecorationSelected()
+                          : DesignTokens.chipDecorationDefault(),
+                      child: Text(
+                        category,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: isSelected
+                              ? DesignTokens.primaryGreen
+                              : DesignTokens.textLight,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+                  );
+                })
+                .toList(growable: false),
           ),
           const SizedBox(height: DesignTokens.s16),
 
@@ -379,7 +411,10 @@ class _VendorApplyStep5ScreenState
           const SizedBox(height: DesignTokens.s20),
 
           // Creator Commission Settings
-          Text('Creator Commission Settings', style: DesignTokens.mediumSemibold),
+          Text(
+            'Creator Commission Settings',
+            style: DesignTokens.mediumSemibold,
+          ),
           const SizedBox(height: DesignTokens.s12),
 
           Row(
@@ -491,7 +526,9 @@ class _VendorApplyStep5ScreenState
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 minimumSize: const Size(0, DesignTokens.buttonHeight),
                 elevation: 0,

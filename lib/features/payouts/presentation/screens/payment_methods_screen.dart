@@ -289,79 +289,79 @@ class _AddDestinationSheetState extends State<_AddDestinationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: DesignTokens.s16,
-        right: DesignTokens.s16,
-        top: DesignTokens.s16,
-        bottom: MediaQuery.of(context).viewInsets.bottom +
-            MediaQuery.of(context).padding.bottom +
-            DesignTokens.s16,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Add Payment Method', style: DesignTokens.sectionInnerTitle),
-            const SizedBox(height: DesignTokens.s16),
-            Wrap(
-              spacing: DesignTokens.s8,
-              children: [
-                for (final k in PayoutDestinationKind.values)
-                  ChoiceChip(
-                    label: Text(k.label),
-                    selected: _kind == k,
-                    onSelected: (_) => setState(() => _kind = k),
-                    backgroundColor: DesignTokens.bgAppFoundation,
-                    selectedColor: DesignTokens.chipsSelectedFill,
-                    labelStyle: DesignTokens.smallRegular.copyWith(
-                      color: _kind == k
-                          ? DesignTokens.primaryGreen
-                          : DesignTokens.textLight,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: DesignTokens.s16,
+          right: DesignTokens.s16,
+          top: DesignTokens.s16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s16,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Add Payment Method', style: DesignTokens.sectionInnerTitle),
+              const SizedBox(height: DesignTokens.s16),
+              Wrap(
+                spacing: DesignTokens.s8,
+                children: [
+                  for (final k in PayoutDestinationKind.values)
+                    ChoiceChip(
+                      label: Text(k.label),
+                      selected: _kind == k,
+                      onSelected: (_) => setState(() => _kind = k),
+                      backgroundColor: DesignTokens.bgAppFoundation,
+                      selectedColor: DesignTokens.chipsSelectedFill,
+                      labelStyle: DesignTokens.smallRegular.copyWith(
+                        color: _kind == k
+                            ? DesignTokens.primaryGreen
+                            : DesignTokens.textLight,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            _field(_labelCtrl, 'Label (e.g. My salary account)'),
-            const SizedBox(height: DesignTokens.s12),
-            _field(_idCtrl, _kind.identifierHint),
-            if (_kind.requiresBranch) ...[
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              _field(_labelCtrl, 'Label (e.g. My salary account)'),
               const SizedBox(height: DesignTokens.s12),
-              _field(_branchCtrl, 'Branch / IFSC'),
+              _field(_idCtrl, _kind.identifierHint),
+              if (_kind.requiresBranch) ...[
+                const SizedBox(height: DesignTokens.s12),
+                _field(_branchCtrl, 'Branch / IFSC'),
+              ],
+              const SizedBox(height: DesignTokens.s8),
+              CheckboxListTile(
+                value: _makeDefault,
+                onChanged: (v) => setState(() => _makeDefault = v ?? false),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                activeColor: DesignTokens.primaryGreen,
+                title: Text('Set as default', style: DesignTokens.bodyText),
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              SmPrimaryButton(
+                label: 'Save',
+                height: DesignTokens.buttonHeight,
+                borderRadius: DesignTokens.buttonRadius,
+                color: DesignTokens.primaryGreen,
+                labelColor: DesignTokens.buttonPrimaryText,
+                disabled: !_valid || _submitting,
+                isLoadingInitially: _submitting,
+                onPressed: () async {
+                  setState(() => _submitting = true);
+                  await widget.onSubmit(
+                    _kind,
+                    _labelCtrl.text.trim(),
+                    _idCtrl.text.trim(),
+                    _kind.requiresBranch ? _branchCtrl.text.trim() : null,
+                    _makeDefault,
+                  );
+                  if (mounted) setState(() => _submitting = false);
+                },
+              ),
             ],
-            const SizedBox(height: DesignTokens.s8),
-            CheckboxListTile(
-              value: _makeDefault,
-              onChanged: (v) => setState(() => _makeDefault = v ?? false),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: DesignTokens.primaryGreen,
-              title: Text('Set as default', style: DesignTokens.bodyText),
-            ),
-            const SizedBox(height: DesignTokens.s8),
-            SmPrimaryButton(
-              label: 'Save',
-              height: DesignTokens.buttonHeight,
-              borderRadius: DesignTokens.buttonRadius,
-              color: DesignTokens.primaryGreen,
-              labelColor: DesignTokens.buttonPrimaryText,
-              disabled: !_valid || _submitting,
-              isLoadingInitially: _submitting,
-              onPressed: () async {
-                setState(() => _submitting = true);
-                await widget.onSubmit(
-                  _kind,
-                  _labelCtrl.text.trim(),
-                  _idCtrl.text.trim(),
-                  _kind.requiresBranch ? _branchCtrl.text.trim() : null,
-                  _makeDefault,
-                );
-                if (mounted) setState(() => _submitting = false);
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );

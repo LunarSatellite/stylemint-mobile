@@ -50,7 +50,9 @@ class PaymentMethodsScreen extends ConsumerWidget {
                 _CardsSection(
                   cards: cards,
                   onAddCard: () async {
-                    final result = await context.push<bool>(RouteNames.paymentAddCard);
+                    final result = await context.push<bool>(
+                      RouteNames.paymentAddCard,
+                    );
                     if (result == true) notifier.load();
                   },
                   onOptions: (card) => _showOptions(context, card, notifier),
@@ -82,42 +84,44 @@ class PaymentMethodsScreen extends ConsumerWidget {
         ),
       ),
       builder: (sheetCtx) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _DragHandle(),
-            _OptionTile(
-              icon: Icons.edit_outlined,
-              label: 'Edit Card Details',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                context
-                    .push<bool>(RouteNames.paymentEditCard, extra: card)
-                    .then((result) {
-                  if (result == true) notifier.load();
-                });
-              },
-            ),
-            const Divider(height: 1, color: DesignTokens.borderDefault),
-            _OptionTile(
-              icon: Icons.star_outline_rounded,
-              label: 'Set as Default',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                notifier.setDefault(card.id);
-              },
-            ),
-            const Divider(height: 1, color: DesignTokens.borderDefault),
-            _OptionTile(
-              icon: Icons.delete_outline_rounded,
-              label: 'Remove',
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                _showRemoveConfirm(context, () => notifier.delete(card.id));
-              },
-            ),
-            const SizedBox(height: DesignTokens.s16),
-          ],
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _DragHandle(),
+              _OptionTile(
+                icon: Icons.edit_outlined,
+                label: 'Edit Card Details',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  context
+                      .push<bool>(RouteNames.paymentEditCard, extra: card)
+                      .then((result) {
+                        if (result == true) notifier.load();
+                      });
+                },
+              ),
+              const Divider(height: 1, color: DesignTokens.borderDefault),
+              _OptionTile(
+                icon: Icons.star_outline_rounded,
+                label: 'Set as Default',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  notifier.setDefault(card.id);
+                },
+              ),
+              const Divider(height: 1, color: DesignTokens.borderDefault),
+              _OptionTile(
+                icon: Icons.delete_outline_rounded,
+                label: 'Remove',
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _showRemoveConfirm(context, () => notifier.delete(card.id));
+                },
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
         );
       },
     );
@@ -133,70 +137,86 @@ class PaymentMethodsScreen extends ConsumerWidget {
         ),
       ),
       builder: (sheetCtx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s24,
-            0,
-            DesignTokens.s24,
-            DesignTokens.s24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const _DragHandle(),
-              const SizedBox(height: DesignTokens.s20),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(
-                  color: DesignTokens.colorInfo,
-                  shape: BoxShape.circle,
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s24,
+              0,
+              DesignTokens.s24,
+              DesignTokens.s24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _DragHandle(),
+                const SizedBox(height: DesignTokens.s20),
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: DesignTokens.colorInfo,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.info_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
-                child: const Icon(Icons.info_rounded, color: Colors.white, size: 28),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              const Text('Confirm Remove', style: DesignTokens.sectionInnerTitle),
-              const SizedBox(height: DesignTokens.s8),
-              Text(
-                'Are your sure you want to remove this payment method?',
-                textAlign: TextAlign.center,
-                style: DesignTokens.mediumRegular,
-              ),
-              const SizedBox(height: DesignTokens.s24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(sheetCtx);
-                    onConfirm();
-                  },
-                  style: DesignTokens.primaryButtonStyle(),
-                  child: Text(
-                    'Confirm',
-                    style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.buttonPrimaryText,
+                const SizedBox(height: DesignTokens.s16),
+                const Text(
+                  'Confirm Remove',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  'Are your sure you want to remove this payment method?',
+                  textAlign: TextAlign.center,
+                  style: DesignTokens.mediumRegular,
+                ),
+                const SizedBox(height: DesignTokens.s24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(sheetCtx);
+                      onConfirm();
+                    },
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: Text(
+                      'Confirm',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(sheetCtx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DesignTokens.buttonGrayFill,
-                    foregroundColor: DesignTokens.buttonGrayText,
-                    padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                const SizedBox(height: DesignTokens.s12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignTokens.buttonGrayFill,
+                      foregroundColor: DesignTokens.buttonGrayText,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: DesignTokens.s16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
+                      ),
+                      minimumSize: const Size(0, DesignTokens.buttonHeight),
                     ),
-                    minimumSize: const Size(0, DesignTokens.buttonHeight),
+                    child: const Text(
+                      'Cancel',
+                      style: DesignTokens.mediumSemibold,
+                    ),
                   ),
-                  child: const Text('Cancel', style: DesignTokens.mediumSemibold),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -216,7 +236,11 @@ class _SecureBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset('assets/icons/SecureIcon.svg', width: 40, height: 40),
+          SvgPicture.asset(
+            'assets/icons/SecureIcon.svg',
+            width: 40,
+            height: 40,
+          ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
@@ -226,7 +250,9 @@ class _SecureBanner extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   "Don't worry about your payment details, they are protected with high level encryption",
-                  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -258,7 +284,9 @@ class _CardsSection extends StatelessWidget {
           children: [
             Text(
               'Cards',
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
             GestureDetector(
               onTap: onAddCard,
@@ -284,7 +312,9 @@ class _CardsSection extends StatelessWidget {
             child: Text(
               'No cards saved yet',
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           )
         else
@@ -303,7 +333,10 @@ class _CardsSection extends StatelessWidget {
                       endIndent: DesignTokens.s16,
                       color: DesignTokens.borderDefault,
                     ),
-                  _CardTile(card: cards[i], onOptionsTap: () => onOptions(cards[i])),
+                  _CardTile(
+                    card: cards[i],
+                    onOptionsTap: () => onOptions(cards[i]),
+                  ),
                 ],
               ],
             ),
@@ -352,41 +385,43 @@ class _CardTile extends StatelessWidget {
                       ),
                     )
                   : isMc
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned(
-                              left: 12,
-                              child: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFEB001B),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+                  ? Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          left: 12,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEB001B),
+                              shape: BoxShape.circle,
                             ),
-                            Positioned(
-                              right: 12,
-                              child: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF79E1B),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          brand.substring(0, brand.length.clamp(0, 2)).toUpperCase(),
-                          style: const TextStyle(
-                            color: Color(0xFF333333),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
                           ),
                         ),
+                        Positioned(
+                          right: 12,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF79E1B),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      brand
+                          .substring(0, brand.length.clamp(0, 2))
+                          .toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF333333),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: DesignTokens.s12),
@@ -423,18 +458,23 @@ class _CardTile extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     [
-                      if (card.cardholderName != null && card.cardholderName!.isNotEmpty)
+                      if (card.cardholderName != null &&
+                          card.cardholderName!.isNotEmpty)
                         card.cardholderName!,
                       if (card.expiryDate != null) 'Expires ${card.expiryDate}',
                     ].join(' • '),
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
                 if (card.lastFour != null) ...[
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     '$brand ending in ${card.lastFour}',
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ],
@@ -442,7 +482,11 @@ class _CardTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: onOptionsTap,
-            icon: const Icon(Icons.more_vert, color: DesignTokens.textMuted, size: DesignTokens.iconMedium),
+            icon: const Icon(
+              Icons.more_vert,
+              color: DesignTokens.textMuted,
+              size: DesignTokens.iconMedium,
+            ),
           ),
         ],
       ),
@@ -455,8 +499,9 @@ class _CardTile extends StatelessWidget {
 class _Loader extends StatelessWidget {
   const _Loader();
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+  Widget build(BuildContext context) => const Center(
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 class _DragHandle extends StatelessWidget {
@@ -495,8 +540,17 @@ class _OptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: DesignTokens.textLight, size: DesignTokens.iconMedium),
-      title: Text(label, style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite)),
+      leading: Icon(
+        icon,
+        color: DesignTokens.textLight,
+        size: DesignTokens.iconMedium,
+      ),
+      title: Text(
+        label,
+        style: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.textWhite,
+        ),
+      ),
       trailing: const Icon(Icons.chevron_right, color: DesignTokens.textMuted),
     );
   }

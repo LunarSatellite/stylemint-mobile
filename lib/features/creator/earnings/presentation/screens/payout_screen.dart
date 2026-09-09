@@ -772,43 +772,45 @@ class _PaymentMethodSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s20,
-            DesignTokens.s16,
-            DesignTokens.s16,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Select payment method',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: DesignTokens.textWhite,
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s20,
+              DesignTokens.s16,
+              DesignTokens.s16,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Select payment method',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close,
-                  size: 20,
-                  color: DesignTokens.textMuted,
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close,
+                    size: 20,
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        for (final method in methods) _buildMethodTile(method),
-        const SizedBox(height: DesignTokens.s16),
-      ],
+          for (final method in methods) _buildMethodTile(method),
+          const SizedBox(height: DesignTokens.s16),
+        ],
+      ),
     );
   }
 
@@ -875,92 +877,94 @@ class _ConfirmPayoutSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: DesignTokens.s8),
-          const Text(
-            'Confirm Payout Request',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Center(
-            child: Image.asset(
-              'assets/images/vendordashboard/infoicon.png',
-              width: 56,
-              height: 56,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          Container(
-            padding: const EdgeInsets.all(DesignTokens.s12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B2F45),
-              borderRadius: BorderRadius.circular(DesignTokens.s8),
-              border: Border.all(
-                color: const Color(0xFF2D5A8E),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: DesignTokens.s8),
+            const Text(
+              'Confirm Payout Request',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.textWhite,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Keep in mind the following:',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                _BulletPoint(text: 'Weekly Payout Process is live'),
-                const SizedBox(height: DesignTokens.s4),
-                _BulletPoint(
-                  text: 'Earnings from last 7 days pending',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s20),
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: onConfirm,
-              style: DesignTokens.primaryButtonStyle(),
-              child: const Text('Confirm'),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.bgAppBodyLight,
-                foregroundColor: DesignTokens.textWhite,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    DesignTokens.buttonRadius,
-                  ),
-                ),
-                elevation: 0,
+            const SizedBox(height: DesignTokens.s16),
+            Center(
+              child: Image.asset(
+                'assets/images/vendordashboard/infoicon.png',
+                width: 56,
+                height: 56,
               ),
-              child: const Text('Cancel'),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+            Container(
+              padding: const EdgeInsets.all(DesignTokens.s12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B2F45),
+                borderRadius: BorderRadius.circular(DesignTokens.s8),
+                border: Border.all(
+                  color: const Color(0xFF2D5A8E),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Keep in mind the following:',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  _BulletPoint(text: 'Weekly Payout Process is live'),
+                  const SizedBox(height: DesignTokens.s4),
+                  _BulletPoint(
+                    text: 'Earnings from last 7 days pending',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s20),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                onPressed: onConfirm,
+                style: DesignTokens.primaryButtonStyle(),
+                child: const Text('Confirm'),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.bgAppBodyLight,
+                  foregroundColor: DesignTokens.textWhite,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Cancel'),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s8),
+          ],
+        ),
       ),
     );
   }

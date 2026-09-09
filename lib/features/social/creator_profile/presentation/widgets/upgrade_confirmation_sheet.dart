@@ -94,215 +94,222 @@ class _UpgradeSheet extends StatelessWidget {
         // Sheet card aligned to the bottom.
         Align(
           alignment: Alignment.bottomCenter,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: DesignTokens.bgAppBody,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              bottomPadding,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Drag handle
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DesignTokens.borderDefault,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s24),
-
-                // ── Plan header: medal + plan name + cycle chip.
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color:
-                          DesignTokens.primaryGreen.withValues(alpha: 0.4),
+          child: SafeArea(
+            top: false,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: DesignTokens.bgAppBody,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s12,
+                DesignTokens.s16,
+                bottomPadding,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag handle
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: DesignTokens.borderDefault,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      // Medal asset — same one the plan card uses.
-                      Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: DesignTokens.bgAppFoundation,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Image.asset(
-                          _badgeAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.workspace_premium_rounded,
-                            size: 24,
-                            color: DesignTokens.primaryGreen,
+                  const SizedBox(height: DesignTokens.s24),
+
+                  // ── Plan header: medal + plan name + cycle chip.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: DesignTokens.primaryGreen.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Medal asset — same one the plan card uses.
+                        Container(
+                          width: 48,
+                          height: 48,
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: DesignTokens.bgAppFoundation,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Image.asset(
+                            _badgeAsset,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Icon(
+                              Icons.workspace_premium_rounded,
+                              size: 24,
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: DesignTokens.s12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _planTitle,
-                              style: const TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: DesignTokens.textWhite,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _cycleLabel,
-                              style: const TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 12,
-                                color: DesignTokens.primaryGreen,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-
-                // ── Price summary.
-                Text(
-                  cycle == BillingCycle.yearly
-                      ? 'Rs ${plan.priceAmount.round()} $_billingLabel ${_yearlyEquivalent}'
-                      : 'Rs ${plan.priceAmount.round()} $_billingLabel',
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s20),
-
-                // ── Feature list.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Includes',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: DesignTokens.s8),
-                      ...features.map(
-                        (f) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
+                        const SizedBox(width: DesignTokens.s12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                Icons.check_rounded,
-                                size: 16,
-                                color: DesignTokens.primaryGreen,
+                              Text(
+                                _planTitle,
+                                style: const TextStyle(
+                                  fontFamily: DesignTokens.fontFamily,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: DesignTokens.textWhite,
+                                ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  f,
-                                  style: const TextStyle(
-                                    fontFamily: DesignTokens.fontFamily,
-                                    fontSize: 13,
-                                    color: DesignTokens.textLight,
-                                  ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _cycleLabel,
+                                style: const TextStyle(
+                                  fontFamily: DesignTokens.fontFamily,
+                                  fontSize: 12,
+                                  color: DesignTokens.primaryGreen,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s20),
-
-                // ── Action buttons.
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.primaryGreen,
-                      foregroundColor: DesignTokens.baseBlack,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Proceed',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: DesignTokens.baseBlack,
-                          ),
-                        ),
-                        SizedBox(width: DesignTokens.s8),
-                        Icon(Icons.arrow_forward_rounded,
-                            size: 18, color: DesignTokens.baseBlack),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.bgAppBodyLight,
-                      foregroundColor: DesignTokens.textWhite,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+                  const SizedBox(height: DesignTokens.s16),
+
+                  // ── Price summary.
+                  Text(
+                    cycle == BillingCycle.yearly
+                        ? 'Rs ${plan.priceAmount.round()} $_billingLabel ${_yearlyEquivalent}'
+                        : 'Rs ${plan.priceAmount.round()} $_billingLabel',
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: DesignTokens.textWhite,
                     ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  const SizedBox(height: DesignTokens.s20),
+
+                  // ── Feature list.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Includes',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.s8),
+                        ...features.map(
+                          (f) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: DesignTokens.primaryGreen,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    f,
+                                    style: const TextStyle(
+                                      fontFamily: DesignTokens.fontFamily,
+                                      fontSize: 13,
+                                      color: DesignTokens.textLight,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s20),
+
+                  // ── Action buttons.
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.primaryGreen,
+                        foregroundColor: DesignTokens.baseBlack,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Proceed',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: DesignTokens.baseBlack,
+                            ),
+                          ),
+                          SizedBox(width: DesignTokens.s8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 18,
+                            color: DesignTokens.baseBlack,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: DesignTokens.s12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        foregroundColor: DesignTokens.textWhite,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

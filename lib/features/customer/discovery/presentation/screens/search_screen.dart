@@ -37,7 +37,11 @@ class SearchScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Search', style: DesignTokens.titleLarge),
-                  Icon(Icons.tune_rounded, color: DesignTokens.iconWhite, size: 22),
+                  Icon(
+                    Icons.tune_rounded,
+                    color: DesignTokens.iconWhite,
+                    size: 22,
+                  ),
                 ],
               ),
             ),
@@ -52,8 +56,9 @@ class SearchScreen extends ConsumerWidget {
                 loadSuccess: (data) => _DiscoverBody(data: data),
                 loadFailure: (failure) => SmErrorView(
                   message: 'Failed to load Discover.',
-                  onRetry: () =>
-                      ref.read(discoverNotifierProvider.notifier).fetchDiscover(),
+                  onRetry: () => ref
+                      .read(discoverNotifierProvider.notifier)
+                      .fetchDiscover(),
                 ),
               ),
             ),
@@ -64,8 +69,8 @@ class SearchScreen extends ConsumerWidget {
   }
 
   Widget _loader() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ─── SEARCH BAR ───────────────────────────────────────────────────────────────
@@ -179,7 +184,10 @@ class _DiscoverBody extends StatelessWidget {
                 _CategoryPill(
                   label: '${cat.emoji} ${cat.label}'.trim(),
                   onTap: () => context.push(
-                    RouteNames.searchCategory.replaceFirst(':categoryId', cat.id) +
+                    RouteNames.searchCategory.replaceFirst(
+                          ':categoryId',
+                          cat.id,
+                        ) +
                         '?label=${Uri.encodeComponent(cat.label)}',
                   ),
                 ),
@@ -381,69 +389,74 @@ class _MoreCategoriesSheet extends StatelessWidget {
       minChildSize: 0.35,
       maxChildSize: 0.88,
       expand: false,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 14),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: DesignTokens.borderDefault,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (_, controller) => SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: DesignTokens.bgAppBody,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 14),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: DesignTokens.borderDefault,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
-            // Title + close
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'More Categories',
-                    style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.close,
-                        color: DesignTokens.textWhite, size: 22),
-                  ),
-                ],
-              ),
-            ),
-
-            // Scrollable category grid
-            Expanded(
-              child: SingleChildScrollView(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                child: Wrap(
-                  spacing: DesignTokens.s8,
-                  runSpacing: DesignTokens.s12,
+              // Title + close
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    for (final cat in categories)
-                      _CategoryPill(
-                        label: '${cat.emoji} ${cat.label}'.trim(),
-                        onTap: () => onSelect(cat),
+                    Text(
+                      'More Categories',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.close,
+                        color: DesignTokens.textWhite,
+                        size: 22,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Scrollable category grid
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: controller,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                  child: Wrap(
+                    spacing: DesignTokens.s8,
+                    runSpacing: DesignTokens.s12,
+                    children: [
+                      for (final cat in categories)
+                        _CategoryPill(
+                          label: '${cat.emoji} ${cat.label}'.trim(),
+                          onTap: () => onSelect(cat),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

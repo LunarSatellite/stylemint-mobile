@@ -24,9 +24,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref
-          .read(groupsNotifierProvider.notifier)
-          .loadGroup(widget.groupId);
+      ref.read(groupsNotifierProvider.notifier).loadGroup(widget.groupId);
     });
   }
 
@@ -160,8 +158,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                         ),
                         backgroundColor: DesignTokens.primaryGreenLight,
                         padding: EdgeInsets.zero,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       if (group.topProducts.isNotEmpty) ...[
                         const SizedBox(height: DesignTokens.s20),
@@ -183,8 +180,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                 width: 140,
                                 decoration: DesignTokens.cardDecoration(),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     ClipRRect(
                                       borderRadius: const BorderRadius.vertical(
@@ -197,8 +193,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                         height: 100,
                                         width: double.infinity,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            Container(
+                                        errorBuilder: (_, __, ___) => Container(
                                           height: 100,
                                           color: DesignTokens.bgAppBodyLight,
                                         ),
@@ -214,31 +209,23 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                         children: [
                                           Text(
                                             product.productName,
-                                            style:
-                                                DesignTokens
-                                                    .smallRegular
-                                                    .copyWith(
-                                                      color:
-                                                          DesignTokens
-                                                              .textWhite,
-                                                    ),
+                                            style: DesignTokens.smallRegular
+                                                .copyWith(
+                                                  color: DesignTokens.textWhite,
+                                                ),
                                             maxLines: 1,
-                                            overflow:
-                                                TextOverflow.ellipsis,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(
                                             height: DesignTokens.s4,
                                           ),
                                           Text(
                                             formatMoney(product.price),
-                                            style:
-                                                DesignTokens
-                                                    .smallRegular
-                                                    .copyWith(
-                                                      color:
-                                                          DesignTokens
-                                                              .primaryGreen,
-                                                    ),
+                                            style: DesignTokens.smallRegular
+                                                .copyWith(
+                                                  color:
+                                                      DesignTokens.primaryGreen,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -280,14 +267,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
             ],
           );
         },
-        loadFailure:
-            (failure) => SmErrorView(
-              message: 'Failed to load group.',
-              onRetry: () =>
-                  ref
-                      .read(groupsNotifierProvider.notifier)
-                      .loadGroup(widget.groupId),
-            ),
+        loadFailure: (failure) => SmErrorView(
+          message: 'Failed to load group.',
+          onRetry: () => ref
+              .read(groupsNotifierProvider.notifier)
+              .loadGroup(widget.groupId),
+        ),
       ),
       floatingActionButton: detailState.maybeWhen(
         loadSuccess: (group, _, __, ___) {
@@ -414,51 +399,53 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
         ),
       ),
       builder: (_) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s16,
-            DesignTokens.s16,
-            MediaQuery.of(context).viewInsets.bottom +
-                MediaQuery.of(context).padding.bottom +
-                DesignTokens.s16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Post in $groupName',
-                style: DesignTokens.sectionInnerTitle,
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              TextField(
-                controller: _postController,
-                maxLines: 3,
-                style: DesignTokens.bodyText,
-                decoration: DesignTokens.inputDecoration(
-                  hintText: "What's on your mind?",
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              MediaQuery.of(context).viewInsets.bottom + DesignTokens.s16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Post in $groupName',
+                  style: DesignTokens.sectionInnerTitle,
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final content = _postController.text.trim();
-                    if (content.isEmpty) return;
-                    ref.read(groupsNotifierProvider.notifier).createPost(
-                      groupId: widget.groupId,
-                      content: content,
-                    );
-                    _postController.clear();
-                    Navigator.of(context).pop();
-                  },
-                  style: DesignTokens.primaryButtonStyle(),
-                  child: const Text('Post'),
+                const SizedBox(height: DesignTokens.s16),
+                TextField(
+                  controller: _postController,
+                  maxLines: 3,
+                  style: DesignTokens.bodyText,
+                  decoration: DesignTokens.inputDecoration(
+                    hintText: "What's on your mind?",
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: DesignTokens.s16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final content = _postController.text.trim();
+                      if (content.isEmpty) return;
+                      ref
+                          .read(groupsNotifierProvider.notifier)
+                          .createPost(
+                            groupId: widget.groupId,
+                            content: content,
+                          );
+                      _postController.clear();
+                      Navigator.of(context).pop();
+                    },
+                    style: DesignTokens.primaryButtonStyle(),
+                    child: const Text('Post'),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

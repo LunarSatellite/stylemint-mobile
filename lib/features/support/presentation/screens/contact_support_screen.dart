@@ -76,114 +76,114 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
       ),
       body: SafeArea(
         child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s16,
-                vertical: DesignTokens.s8,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Welcome banner ──────────────────────────────────
-                  _WelcomeBanner(),
-                  const SizedBox(height: DesignTokens.s16),
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                  vertical: DesignTokens.s8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Welcome banner ──────────────────────────────────
+                    _WelcomeBanner(),
+                    const SizedBox(height: DesignTokens.s16),
 
-                  // ── Contact channels ────────────────────────────────
-                  _ChannelsCard(
-                    channels: channels,
-                    onLiveChat: () => _showLiveChatAvailability(context),
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
+                    // ── Contact channels ────────────────────────────────
+                    _ChannelsCard(
+                      channels: channels,
+                      onLiveChat: () => _showLiveChatAvailability(context),
+                    ),
+                    const SizedBox(height: DesignTokens.s16),
 
-                  // ── Quick actions ───────────────────────────────────
-                  _QuickActions(onTap: _showCreateTicketSheet),
-                  const SizedBox(height: DesignTokens.s20),
+                    // ── Quick actions ───────────────────────────────────
+                    _QuickActions(onTap: _showCreateTicketSheet),
+                    const SizedBox(height: DesignTokens.s20),
 
-                  // ── Your Support Tickets ────────────────────────────
-                  Text(
-                    'Your Support Tickets',
-                    style: DesignTokens.mediumSemibold,
-                  ),
-                  const SizedBox(height: DesignTokens.s12),
+                    // ── Your Support Tickets ────────────────────────────
+                    Text(
+                      'Your Support Tickets',
+                      style: DesignTokens.mediumSemibold,
+                    ),
+                    const SizedBox(height: DesignTokens.s12),
 
-                  // Filter tabs
-                  Row(
-                    children: [
-                      for (var i = 0; i < tabs.length; i++) ...[
-                        if (i > 0) const SizedBox(width: DesignTokens.s8),
-                        _FilterChip(
-                          label: '${tabs[i].label}(${tabs[i].count})',
-                          selected: _selectedTab == i,
-                          onTap: () => setState(() => _selectedTab = i),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: DesignTokens.s12),
-
-                  // Ticket list or empty state
-                  if (state.maybeWhen(
-                    loadInProgress: () => true,
-                    orElse: () => false,
-                  ))
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: DesignTokens.s32,
-                        ),
-                        child: CircularProgressIndicator(
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ),
-                    )
-                  else if (currentTickets.isEmpty)
-                    const _EmptyTickets()
-                  else
-                    Column(
+                    // Filter tabs
+                    Row(
                       children: [
-                        for (final t in currentTickets) ...[
-                          _TicketTile(
-                            ticket: t,
-                            onTap: () => _showTicketDetail(t),
+                        for (var i = 0; i < tabs.length; i++) ...[
+                          if (i > 0) const SizedBox(width: DesignTokens.s8),
+                          _FilterChip(
+                            label: '${tabs[i].label}(${tabs[i].count})',
+                            selected: _selectedTab == i,
+                            onTap: () => setState(() => _selectedTab = i),
                           ),
-                          const SizedBox(height: DesignTokens.s8),
                         ],
                       ],
                     ),
+                    const SizedBox(height: DesignTokens.s12),
 
-                  const SizedBox(height: DesignTokens.s16),
-                ],
+                    // Ticket list or empty state
+                    if (state.maybeWhen(
+                      loadInProgress: () => true,
+                      orElse: () => false,
+                    ))
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: DesignTokens.s32,
+                          ),
+                          child: CircularProgressIndicator(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
+                      )
+                    else if (currentTickets.isEmpty)
+                      const _EmptyTickets()
+                    else
+                      Column(
+                        children: [
+                          for (final t in currentTickets) ...[
+                            _TicketTile(
+                              ticket: t,
+                              onTap: () => _showTicketDetail(t),
+                            ),
+                            const SizedBox(height: DesignTokens.s8),
+                          ],
+                        ],
+                      ),
+
+                    const SizedBox(height: DesignTokens.s16),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // ── Pinned button ───────────────────────────────────────────
-          Container(
-            color: DesignTokens.bgAppFoundation,
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s24,
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                onPressed: _showCreateTicketSheet,
-                style: DesignTokens.primaryButtonStyle(),
-                child: Text(
-                  'Create Support Ticket',
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.buttonPrimaryText,
+            // ── Pinned button ───────────────────────────────────────────
+            Container(
+              color: DesignTokens.bgAppFoundation,
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s12,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: DesignTokens.buttonHeight,
+                child: ElevatedButton(
+                  onPressed: _showCreateTicketSheet,
+                  style: DesignTokens.primaryButtonStyle(),
+                  child: Text(
+                    'Create Support Ticket',
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -836,128 +836,130 @@ class _TicketDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s20,
-        DesignTokens.s16,
-        DesignTokens.s32,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title + close
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Ticket ID: ${ticket.ticketNumber}',
-                  style: DesignTokens.mediumSemibold.copyWith(fontSize: 20),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close,
-                  color: DesignTokens.textWhite,
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // Issue Category
-          Text(
-            'Issue Category',
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            _issueCategory(ticket.subject),
-            style: DesignTokens.mediumRegular,
-          ),
-          const SizedBox(height: DesignTokens.s12),
-
-          // Status chip
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s12,
-              vertical: DesignTokens.s6,
-            ),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _statusLabel(ticket.status),
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textWhite,
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-
-          // Description
-          Text(
-            ticket.subject,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // Info card: Created On + Attachments
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppFoundation,
-              borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s20,
+          DesignTokens.s16,
+          DesignTokens.s32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title + close
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Created On',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                    Text(
-                      _fmt(ticket.createdAt),
-                      style: DesignTokens.smallRegular,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                Text(
-                  'Attachments',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.textMuted,
+                Expanded(
+                  child: Text(
+                    'Ticket ID: ${ticket.ticketNumber}',
+                    style: DesignTokens.mediumSemibold.copyWith(fontSize: 20),
                   ),
                 ),
-                const SizedBox(height: DesignTokens.s8),
-                // Placeholder attachment thumbnails
-                Row(
-                  children: [
-                    _Thumbnail(),
-                    const SizedBox(width: DesignTokens.s8),
-                    _Thumbnail(),
-                    const SizedBox(width: DesignTokens.s8),
-                    _Thumbnail(overflow: '+2'),
-                  ],
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close,
+                    color: DesignTokens.textWhite,
+                    size: 22,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: DesignTokens.s16),
+
+            // Issue Category
+            Text(
+              'Issue Category',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              _issueCategory(ticket.subject),
+              style: DesignTokens.mediumRegular,
+            ),
+            const SizedBox(height: DesignTokens.s12),
+
+            // Status chip
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s6,
+              ),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _statusLabel(ticket.status),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+
+            // Description
+            Text(
+              ticket.subject,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s16),
+
+            // Info card: Created On + Attachments
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppFoundation,
+                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Created On',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                      Text(
+                        _fmt(ticket.createdAt),
+                        style: DesignTokens.smallRegular,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  Text(
+                    'Attachments',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  // Placeholder attachment thumbnails
+                  Row(
+                    children: [
+                      _Thumbnail(),
+                      const SizedBox(width: DesignTokens.s8),
+                      _Thumbnail(),
+                      const SizedBox(width: DesignTokens.s8),
+                      _Thumbnail(overflow: '+2'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1123,225 +1125,227 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: DesignTokens.s16,
-        right: DesignTokens.s16,
-        top: DesignTokens.s20,
-        bottom: MediaQuery.of(context).viewInsets.bottom +
-            MediaQuery.of(context).padding.bottom +
-            DesignTokens.s24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Create Support Ticket',
-                  style: DesignTokens.sectionInnerTitle,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: DesignTokens.s16,
+          right: DesignTokens.s16,
+          top: DesignTokens.s20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Create Support Ticket',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.close,
-                  color: DesignTokens.textMuted,
-                  size: 22,
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Icon(
+                    Icons.close,
+                    color: DesignTokens.textMuted,
+                    size: 22,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s20),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s20),
 
-          // Issue Category dropdown
-          GestureDetector(
-            onTap: _showCategoryPicker,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s16,
-                vertical: DesignTokens.s16,
-              ),
-              decoration: BoxDecoration(
-                color: DesignTokens.inputFieldFill,
-                borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
-                border: Border.all(
-                  color: _selectedCategory != null
-                      ? DesignTokens.primaryGreen
-                      : DesignTokens.inputFieldBorder,
+            // Issue Category dropdown
+            GestureDetector(
+              onTap: _showCategoryPicker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                  vertical: DesignTokens.s16,
                 ),
-              ),
-              child: _selectedCategory != null
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Issue Category',
-                          style: DesignTokens.tiny.copyWith(
-                            color: DesignTokens.primaryGreen,
+                decoration: BoxDecoration(
+                  color: DesignTokens.inputFieldFill,
+                  borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                  border: Border.all(
+                    color: _selectedCategory != null
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.inputFieldBorder,
+                  ),
+                ),
+                child: _selectedCategory != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Issue Category',
+                            style: DesignTokens.tiny.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _selectedCategory!.title,
-                                style: DesignTokens.mediumRegular.copyWith(
-                                  color: DesignTokens.inputFieldData,
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedCategory!.title,
+                                  style: DesignTokens.mediumRegular.copyWith(
+                                    color: DesignTokens.inputFieldData,
+                                  ),
                                 ),
                               ),
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                color: DesignTokens.inputFieldDropdownIcon,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Issue Category',
+                              style: DesignTokens.mediumRegular.copyWith(
+                                color: DesignTokens.inputFieldPlaceholder,
+                              ),
                             ),
-                            const Icon(
-                              Icons.keyboard_arrow_down,
-                              color: DesignTokens.inputFieldDropdownIcon,
-                              size: 20,
-                            ),
-                          ],
+                          ),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: DesignTokens.inputFieldDropdownIcon,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+
+            // Order No. (Optional)
+            TextField(
+              controller: _orderCtrl,
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.inputFieldData,
+              ),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Order No. (Optional)',
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+
+            // Describe Issue
+            TextField(
+              controller: _descCtrl,
+              maxLines: 5,
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.inputFieldData,
+              ),
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Describe Issue',
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+
+            // Image previews
+            if (_images.isNotEmpty) ...[
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _images.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: DesignTokens.s8),
+                  itemBuilder: (_, i) => Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.inputRadius,
                         ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Issue Category',
-                            style: DesignTokens.mediumRegular.copyWith(
-                              color: DesignTokens.inputFieldPlaceholder,
+                        child: Image.file(
+                          File(_images[i].path),
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _images.removeAt(i)),
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 12,
                             ),
                           ),
                         ),
-                        const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: DesignTokens.inputFieldDropdownIcon,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+            ],
 
-          // Order No. (Optional)
-          TextField(
-            controller: _orderCtrl,
-            style: DesignTokens.mediumRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              hintText: 'Order No. (Optional)',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-
-          // Describe Issue
-          TextField(
-            controller: _descCtrl,
-            maxLines: 5,
-            style: DesignTokens.mediumRegular.copyWith(
-              color: DesignTokens.inputFieldData,
-            ),
-            decoration: DesignTokens.inputDecoration(
-              hintText: 'Describe Issue',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-
-          // Image previews
-          if (_images.isNotEmpty) ...[
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _images.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: DesignTokens.s8),
-                itemBuilder: (_, i) => Stack(
+            // Upload Images
+            GestureDetector(
+              onTap: _pickImages,
+              child: Container(
+                width: double.infinity,
+                height: DesignTokens.buttonHeight,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
+                  border: Border.all(color: DesignTokens.borderDefault),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                        DesignTokens.inputRadius,
-                      ),
-                      child: Image.file(
-                        File(_images[i].path),
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                      ),
+                    const Icon(
+                      Icons.upload_outlined,
+                      color: DesignTokens.textWhite,
+                      size: 20,
                     ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _images.removeAt(i)),
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 12,
-                          ),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    Text('Upload Images', style: DesignTokens.mediumSemibold),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: DesignTokens.s12),
-          ],
+            const SizedBox(height: DesignTokens.s16),
 
-          // Upload Images
-          GestureDetector(
-            onTap: _pickImages,
-            child: Container(
+            // Submit
+            SizedBox(
               width: double.infinity,
               height: DesignTokens.buttonHeight,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-                border: Border.all(color: DesignTokens.borderDefault),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.upload_outlined,
-                    color: DesignTokens.textWhite,
-                    size: 20,
+              child: ElevatedButton(
+                onPressed: _submit,
+                style: DesignTokens.primaryButtonStyle(),
+                child: Text(
+                  'Submit Ticket',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.buttonPrimaryText,
                   ),
-                  const SizedBox(width: DesignTokens.s8),
-                  Text('Upload Images', style: DesignTokens.mediumSemibold),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-
-          // Submit
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: _submit,
-              style: DesignTokens.primaryButtonStyle(),
-              child: Text(
-                'Submit Ticket',
-                style: DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.buttonPrimaryText,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1358,75 +1362,77 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
       builder: (ctx) => Consumer(
         builder: (ctx, ref, _) {
           final categoriesState = ref.watch(categoriesNotifierProvider);
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: DesignTokens.s12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: DesignTokens.borderDefault,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s16,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Issue Category',
-                    style: DesignTokens.sectionInnerTitle,
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: DesignTokens.s12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: DesignTokens.borderDefault,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              categoriesState.when(
-                initial: _categoryPickerLoader,
-                loadInProgress: _categoryPickerLoader,
-                loadFailure: (failure) => Padding(
+                const SizedBox(height: DesignTokens.s16),
+                Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: DesignTokens.s16,
-                    vertical: DesignTokens.s16,
                   ),
-                  child: Text(
-                    'Could not load categories.',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Issue Category',
+                      style: DesignTokens.sectionInnerTitle,
                     ),
                   ),
                 ),
-                loadSuccess: (categories) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final cat in categories)
-                      ListTile(
-                        title: Text(
-                          cat.title,
-                          style: DesignTokens.mediumRegular.copyWith(
-                            color: DesignTokens.textWhite,
-                          ),
-                        ),
-                        trailing: _selectedCategory?.id == cat.id
-                            ? const Icon(
-                                Icons.check,
-                                color: DesignTokens.primaryGreen,
-                                size: 18,
-                              )
-                            : null,
-                        onTap: () {
-                          setState(() => _selectedCategory = cat);
-                          Navigator.of(ctx).pop();
-                        },
+                const SizedBox(height: DesignTokens.s8),
+                categoriesState.when(
+                  initial: _categoryPickerLoader,
+                  loadInProgress: _categoryPickerLoader,
+                  loadFailure: (failure) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s16,
+                    ),
+                    child: Text(
+                      'Could not load categories.',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
                       ),
-                  ],
+                    ),
+                  ),
+                  loadSuccess: (categories) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final cat in categories)
+                        ListTile(
+                          title: Text(
+                            cat.title,
+                            style: DesignTokens.mediumRegular.copyWith(
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
+                          trailing: _selectedCategory?.id == cat.id
+                              ? const Icon(
+                                  Icons.check,
+                                  color: DesignTokens.primaryGreen,
+                                  size: 18,
+                                )
+                              : null,
+                          onTap: () {
+                            setState(() => _selectedCategory = cat);
+                            Navigator.of(ctx).pop();
+                          },
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: DesignTokens.s16),
-            ],
+                const SizedBox(height: DesignTokens.s16),
+              ],
+            ),
           );
         },
       ),

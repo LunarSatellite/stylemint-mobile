@@ -76,48 +76,60 @@ class _VendorApplyStep4ScreenState
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.5,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: DesignTokens.s12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Account Type', style: DesignTokens.oneLinerSemibold),
-              ),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            Flexible(
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _accountTypes.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(color: DesignTokens.borderDefault, height: 1),
-                itemBuilder: (_, i) => ListTile(
-                  title: Text(_accountTypes[i], style: DesignTokens.oneLinerRegular),
-                  onTap: () {
-                    setState(() => _selectedAccountType = _accountTypes[i]);
-                    Navigator.of(ctx).pop();
-                  },
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.5,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: DesignTokens.s12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-          ],
+              const SizedBox(height: DesignTokens.s16),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Account Type',
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _accountTypes.length,
+                  separatorBuilder: (_, __) => const Divider(
+                    color: DesignTokens.borderDefault,
+                    height: 1,
+                  ),
+                  itemBuilder: (_, i) => ListTile(
+                    title: Text(
+                      _accountTypes[i],
+                      style: DesignTokens.oneLinerRegular,
+                    ),
+                    onTap: () {
+                      setState(() => _selectedAccountType = _accountTypes[i]);
+                      Navigator.of(ctx).pop();
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: DesignTokens.s16),
+            ],
+          ),
         ),
       ),
     ).ignore();
@@ -227,7 +239,10 @@ class _VendorApplyStep4ScreenState
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: _goPrevious,
         ),
       ),
@@ -288,7 +303,10 @@ class _VendorApplyStep4ScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bank Account Information', style: DesignTokens.sectionInnerTitle),
+          Text(
+            'Bank Account Information',
+            style: DesignTokens.sectionInnerTitle,
+          ),
           const SizedBox(height: DesignTokens.s4),
           Text('For receiving payouts', style: DesignTokens.smallRegular),
           const SizedBox(height: DesignTokens.s16),
@@ -302,7 +320,11 @@ class _VendorApplyStep4ScreenState
             ),
             child: Row(
               children: [
-                Image.asset('assets/images/vendordashboard/lock.png', width: 28, height: 28),
+                Image.asset(
+                  'assets/images/vendordashboard/lock.png',
+                  width: 28,
+                  height: 28,
+                ),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
                   child: Text(
@@ -379,7 +401,9 @@ class _VendorApplyStep4ScreenState
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Routing Number'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Routing Number',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -390,7 +414,9 @@ class _VendorApplyStep4ScreenState
             style: DesignTokens.oneLinerRegular.copyWith(
               color: DesignTokens.inputFieldData,
             ),
-            decoration: DesignTokens.inputDecoration(hintText: 'Account Number'),
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Account Number',
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
 
@@ -504,7 +530,9 @@ class _VendorApplyStep4ScreenState
                 height: DesignTokens.buttonHeight,
                 decoration: BoxDecoration(
                   color: DesignTokens.bgAppBody,
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                   border: Border.all(color: DesignTokens.borderDefault),
                 ),
                 child: _uploadingW9
@@ -605,7 +633,9 @@ class _VendorApplyStep4ScreenState
                 foregroundColor: DesignTokens.textWhite,
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.buttonRadius,
+                  ),
                 ),
                 minimumSize: const Size(0, DesignTokens.buttonHeight),
                 elevation: 0,

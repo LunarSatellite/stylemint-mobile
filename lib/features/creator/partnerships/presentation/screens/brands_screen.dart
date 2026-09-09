@@ -929,177 +929,179 @@ class _FilterPartnershipSheetState extends State<_FilterPartnershipSheet> {
   @override
   Widget build(BuildContext context) {
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: viewInsets),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-          child: Container(
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBody.withOpacity(0.92),
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s16,
-              DesignTokens.s12,
-              DesignTokens.s16,
-              DesignTokens.s16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    const Text(
-                      'Filter Partnership',
-                      style: DesignTokens.sectionInnerTitle,
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      behavior: HitTestBehavior.opaque,
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: DesignTokens.textWhite,
-                        size: 22,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: viewInsets),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+            child: Container(
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBody.withOpacity(0.92),
+              ),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s12,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      const Text(
+                        'Filter Partnership',
+                        style: DesignTokens.sectionInnerTitle,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DesignTokens.s16),
-
-                // Commission range
-                const Text(
-                  'Commission Range',
-                  style: DesignTokens.smallRegular,
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _fromCtrl,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14,
-                          color: DesignTokens.inputFieldData,
-                        ),
-                        decoration: DesignTokens.inputDecoration(
-                          hintText: 'From',
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        behavior: HitTestBehavior.opaque,
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: DesignTokens.textWhite,
+                          size: 22,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
-                    Expanded(
-                      child: TextField(
-                        controller: _toCtrl,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14,
-                          color: DesignTokens.inputFieldData,
-                        ),
-                        decoration: DesignTokens.inputDecoration(
-                          hintText: 'To',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: DesignTokens.s20),
-
-                // Status
-                const Text('Status', style: DesignTokens.smallRegular),
-                const SizedBox(height: DesignTokens.s4),
-                _StatusCheckboxRow(
-                  label: 'Newest',
-                  value: _sort == _BrandCatalogSort.newest,
-                  onChanged: (_) =>
-                      setState(() => _sort = _BrandCatalogSort.newest),
-                ),
-                _StatusCheckboxRow(
-                  label: 'Highest Earnings',
-                  value: _sort == _BrandCatalogSort.highestCommission,
-                  onChanged: (_) => setState(
-                    () => _sort = _BrandCatalogSort.highestCommission,
+                    ],
                   ),
-                ),
-                _StatusCheckboxRow(
-                  label: 'Lowest Earnings',
-                  value: _sort == _BrandCatalogSort.lowestCommission,
-                  onChanged: (_) => setState(
-                    () => _sort = _BrandCatalogSort.lowestCommission,
-                  ),
-                ),
-                _StatusCheckboxRow(
-                  label: 'Name',
-                  value: _sort == _BrandCatalogSort.name,
-                  onChanged: (_) =>
-                      setState(() => _sort = _BrandCatalogSort.name),
-                ),
-                const SizedBox(height: DesignTokens.s20),
+                  const SizedBox(height: DesignTokens.s16),
 
-                // Actions
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: DesignTokens.buttonHeight,
-                        child: OutlinedButton(
-                          onPressed: _clear,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: DesignTokens.borderDefault,
-                              width: 1,
+                  // Commission range
+                  const Text(
+                    'Commission Range',
+                    style: DesignTokens.smallRegular,
+                  ),
+                  const SizedBox(height: DesignTokens.s8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _fromCtrl,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            color: DesignTokens.inputFieldData,
+                          ),
+                          decoration: DesignTokens.inputDecoration(
+                            hintText: 'From',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: TextField(
+                          controller: _toCtrl,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            color: DesignTokens.inputFieldData,
+                          ),
+                          decoration: DesignTokens.inputDecoration(
+                            hintText: 'To',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DesignTokens.s20),
+
+                  // Status
+                  const Text('Status', style: DesignTokens.smallRegular),
+                  const SizedBox(height: DesignTokens.s4),
+                  _StatusCheckboxRow(
+                    label: 'Newest',
+                    value: _sort == _BrandCatalogSort.newest,
+                    onChanged: (_) =>
+                        setState(() => _sort = _BrandCatalogSort.newest),
+                  ),
+                  _StatusCheckboxRow(
+                    label: 'Highest Earnings',
+                    value: _sort == _BrandCatalogSort.highestCommission,
+                    onChanged: (_) => setState(
+                      () => _sort = _BrandCatalogSort.highestCommission,
+                    ),
+                  ),
+                  _StatusCheckboxRow(
+                    label: 'Lowest Earnings',
+                    value: _sort == _BrandCatalogSort.lowestCommission,
+                    onChanged: (_) => setState(
+                      () => _sort = _BrandCatalogSort.lowestCommission,
+                    ),
+                  ),
+                  _StatusCheckboxRow(
+                    label: 'Name',
+                    value: _sort == _BrandCatalogSort.name,
+                    onChanged: (_) =>
+                        setState(() => _sort = _BrandCatalogSort.name),
+                  ),
+                  const SizedBox(height: DesignTokens.s20),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: OutlinedButton(
+                            onPressed: _clear,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: DesignTokens.borderDefault,
+                                width: 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.buttonRadius,
+                                ),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                DesignTokens.buttonRadius,
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                color: DesignTokens.textWhite,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          child: const Text(
-                            'Clear',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              color: DesignTokens.textWhite,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: DesignTokens.s12),
-                    Expanded(
-                      child: SizedBox(
-                        height: DesignTokens.buttonHeight,
-                        child: ElevatedButton(
-                          onPressed: _apply,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: DesignTokens.primaryGreen,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                DesignTokens.buttonRadius,
+                      const SizedBox(width: DesignTokens.s12),
+                      Expanded(
+                        child: SizedBox(
+                          height: DesignTokens.buttonHeight,
+                          child: ElevatedButton(
+                            onPressed: _apply,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: DesignTokens.primaryGreen,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.buttonRadius,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Apply',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                color: DesignTokens.buttonPrimaryText,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          child: const Text(
-                            'Apply',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              color: DesignTokens.buttonPrimaryText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

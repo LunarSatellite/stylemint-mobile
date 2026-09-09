@@ -42,69 +42,71 @@ class ReelPublishedScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (sheetCtx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'What happens now ?',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(sheetCtx).pop(),
-                  child: const Icon(
-                    Icons.close_rounded,
-                    color: DesignTokens.textMuted,
-                    size: 22,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            for (final text in const [
-              'Your reel will appear in customer feeds',
-              'Tagged products shown at bottom of reel in the order you set',
-              'You earn commission on every sale',
-              'Track performance in real-time',
-            ]) ...[
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '• ',
-                    style: TextStyle(
-                      color: DesignTokens.textWhite,
-                      fontSize: 14,
+                  const Expanded(
+                    child: Text(
+                      'What happens now ?',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      text,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: DesignTokens.textWhite,
-                        height: 1.5,
-                      ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(sheetCtx).pop(),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: DesignTokens.textMuted,
+                      size: 22,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
+              for (final text in const [
+                'Your reel will appear in customer feeds',
+                'Tagged products shown at bottom of reel in the order you set',
+                'You earn commission on every sale',
+                'Track performance in real-time',
+              ]) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '• ',
+                      style: TextStyle(
+                        color: DesignTokens.textWhite,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: DesignTokens.textWhite,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

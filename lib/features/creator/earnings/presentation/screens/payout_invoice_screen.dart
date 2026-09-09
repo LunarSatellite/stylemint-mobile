@@ -307,73 +307,75 @@ class _CancelConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(DesignTokens.s20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Cancel this payout?',
-            style: TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.s20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cancel this payout?',
+              style: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: DesignTokens.textWhite,
+              ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          Text(
-            'The requested amount will be returned to your available '
-            'balance. This action cannot be undone once processing begins.',
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
+            const SizedBox(height: DesignTokens.s12),
+            Text(
+              'The requested amount will be returned to your available '
+              'balance. This action cannot be undone once processing begins.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: DesignTokens.textWhite,
-                    side: const BorderSide(color: DesignTokens.borderDefault),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        DesignTokens.buttonRadius,
+            const SizedBox(height: DesignTokens.s24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: DesignTokens.textWhite,
+                      side: const BorderSide(color: DesignTokens.borderDefault),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: DesignTokens.s12,
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: DesignTokens.s12,
-                    ),
+                    child: const Text('Keep'),
                   ),
-                  child: const Text('Keep'),
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DesignTokens.colorError,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        DesignTokens.buttonRadius,
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onConfirm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignTokens.colorError,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: DesignTokens.s12,
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: DesignTokens.s12,
-                    ),
+                    child: const Text('Cancel Payout'),
                   ),
-                  child: const Text('Cancel Payout'),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s8),
-        ],
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s8),
+          ],
+        ),
       ),
     );
   }

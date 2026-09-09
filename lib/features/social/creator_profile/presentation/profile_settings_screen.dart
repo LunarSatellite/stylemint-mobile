@@ -31,16 +31,17 @@ class ProfileSettingsScreen extends ConsumerStatefulWidget {
       _ProfileSettingsScreenState();
 }
 
-class _ProfileSettingsScreenState
-    extends ConsumerState<ProfileSettingsScreen> {
+class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   XFile? _pickedImage;
 
   @override
   Widget build(BuildContext context) {
-    final accountId = ref.watch(sessionControllerProvider).maybeWhen(
-      authenticated: (id) => id,
-      orElse: () => '',
-    );
+    final accountId = ref
+        .watch(sessionControllerProvider)
+        .maybeWhen(
+          authenticated: (id) => id,
+          orElse: () => '',
+        );
 
     final profile = ref
         .watch(creatorProfileNotifierProvider(accountId))
@@ -55,8 +56,11 @@ class _ProfileSettingsScreenState
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -71,7 +75,9 @@ class _ProfileSettingsScreenState
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s24),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s24,
+        ),
         child: Column(
           children: [
             _AvatarSection(
@@ -114,8 +120,8 @@ class _ProfileSettingsScreenState
                     height: 20,
                   ),
                   label: 'Upgrade Subscription Plan',
-                  onTap: () => context.push(
-                      RouteNames.creatorUpgradeSubscription),
+                  onTap: () =>
+                      context.push(RouteNames.creatorUpgradeSubscription),
                 ),
                 _MenuItem(
                   icon: Icons.manage_accounts_outlined,
@@ -137,8 +143,7 @@ class _ProfileSettingsScreenState
                 _MenuItem(
                   icon: Icons.category_outlined,
                   label: 'Category Niche',
-                  onTap: () =>
-                      context.push(RouteNames.creatorCategoryNiche),
+                  onTap: () => context.push(RouteNames.creatorCategoryNiche),
                 ),
                 _MenuItem(
                   icon: Icons.key_outlined,
@@ -173,7 +178,9 @@ class _ProfileSettingsScreenState
 // ── Avatar with edit pencil ───────────────────────────────────────────────────
 
 void _showAvatarPickerSheet(
-    BuildContext context, ValueChanged<XFile> onImagePicked) {
+  BuildContext context,
+  ValueChanged<XFile> onImagePicked,
+) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
@@ -204,9 +211,12 @@ class _AvatarSection extends StatelessWidget {
               child: pickedImage != null
                   ? Image.file(File(pickedImage!.path), fit: BoxFit.cover)
                   : (avatarUrl != null && avatarUrl!.isNotEmpty)
-                      ? Image.network(avatarUrl!, fit: BoxFit.cover,
-                          errorBuilder: (_, __, _e) => _placeholder())
-                      : _placeholder(),
+                  ? Image.network(
+                      avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, _e) => _placeholder(),
+                    )
+                  : _placeholder(),
             ),
           ),
           Positioned(
@@ -221,10 +231,15 @@ class _AvatarSection extends StatelessWidget {
                   color: DesignTokens.bgAppBodyLight,
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: DesignTokens.bgAppFoundation, width: 2),
+                    color: DesignTokens.bgAppFoundation,
+                    width: 2,
+                  ),
                 ),
-                child: const Icon(Icons.edit,
-                    size: 13, color: DesignTokens.textLight),
+                child: const Icon(
+                  Icons.edit,
+                  size: 13,
+                  color: DesignTokens.textLight,
+                ),
               ),
             ),
           ),
@@ -234,11 +249,10 @@ class _AvatarSection extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: DesignTokens.bgAppBodyLight,
-        alignment: Alignment.center,
-        child: const Icon(Icons.person,
-            size: 40, color: DesignTokens.iconLight),
-      );
+    color: DesignTokens.bgAppBodyLight,
+    alignment: Alignment.center,
+    child: const Icon(Icons.person, size: 40, color: DesignTokens.iconLight),
+  );
 }
 
 // ── Avatar picker bottom sheet ────────────────────────────────────────────────
@@ -260,42 +274,45 @@ class _AvatarPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom +
-            MediaQuery.of(context).padding.bottom +
-            DesignTokens.s8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: DesignTokens.s12),
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: DesignTokens.borderDefault,
-              borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + DesignTokens.s8,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: DesignTokens.s12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DesignTokens.borderDefault,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _PickerOption(
-            icon: Icons.image_outlined,
-            label: 'Upload from photos',
-            onTap: () => _pick(context, ImageSource.gallery),
-          ),
-          const Divider(
-              height: 1, thickness: 1, color: DesignTokens.borderDefault),
-          _PickerOption(
-            icon: Icons.camera_alt_outlined,
-            label: 'Take a picture',
-            onTap: () => _pick(context, ImageSource.camera),
-          ),
-        ],
+            const SizedBox(height: DesignTokens.s8),
+            _PickerOption(
+              icon: Icons.image_outlined,
+              label: 'Upload from photos',
+              onTap: () => _pick(context, ImageSource.gallery),
+            ),
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: DesignTokens.borderDefault,
+            ),
+            _PickerOption(
+              icon: Icons.camera_alt_outlined,
+              label: 'Take a picture',
+              onTap: () => _pick(context, ImageSource.camera),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -317,7 +334,9 @@ class _PickerOption extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s16,
+        ),
         child: Row(
           children: [
             Icon(icon, size: 22, color: DesignTokens.textLight),
@@ -332,8 +351,11 @@ class _PickerOption extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                size: 20, color: DesignTokens.textMuted),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: DesignTokens.textMuted,
+            ),
           ],
         ),
       ),
@@ -355,7 +377,9 @@ class _BecomeBrandBannerState extends ConsumerState<_BecomeBrandBanner> {
     if (_loading) return;
     setState(() => _loading = true);
 
-    final accountId = ref.read(sessionControllerProvider).maybeWhen(
+    final accountId = ref
+        .read(sessionControllerProvider)
+        .maybeWhen(
           authenticated: (id) => id,
           orElse: () => '',
         );
@@ -468,14 +492,20 @@ class _BecomeBrandBannerState extends ConsumerState<_BecomeBrandBanner> {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, _e) => const Padding(
                     padding: EdgeInsets.all(16),
-                    child: Icon(Icons.storefront_rounded,
-                        color: DesignTokens.primaryGreen, size: 48),
+                    child: Icon(
+                      Icons.storefront_rounded,
+                      color: DesignTokens.primaryGreen,
+                      size: 48,
+                    ),
                   ),
                 ),
                 const Padding(
                   padding: EdgeInsets.only(right: DesignTokens.s12),
-                  child: Icon(Icons.chevron_right_rounded,
-                      color: DesignTokens.textWhite, size: 22),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: DesignTokens.textWhite,
+                    size: 22,
+                  ),
                 ),
               ],
             ),
@@ -489,8 +519,7 @@ class _BecomeBrandBannerState extends ConsumerState<_BecomeBrandBanner> {
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.4,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
                   ),
@@ -555,14 +584,17 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        item.destructive ? DesignTokens.colorError : DesignTokens.textLight;
+    final color = item.destructive
+        ? DesignTokens.colorError
+        : DesignTokens.textLight;
     return InkWell(
       onTap: item.onTap,
       borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16, vertical: DesignTokens.s16),
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s16,
+        ),
         child: Row(
           children: [
             item.iconWidget ?? Icon(item.icon, size: 20, color: color),
@@ -578,8 +610,11 @@ class _MenuTile extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                size: 18, color: DesignTokens.textMuted),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: DesignTokens.textMuted,
+            ),
           ],
         ),
       ),

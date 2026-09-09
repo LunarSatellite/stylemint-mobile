@@ -657,64 +657,67 @@ class _UrlPasteSheetState extends State<_UrlPasteSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.only(
-        left: DesignTokens.s16,
-        right: DesignTokens.s16,
-        top: DesignTokens.s24,
-        bottom: MediaQuery.of(context).viewInsets.bottom +
-            MediaQuery.of(context).padding.bottom +
-            DesignTokens.s24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Paste a Reel URL', style: DesignTokens.titleMedium),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Paste a link from your connected ${widget.platform.displayName} '
-            "account. We'll verify it before importing.",
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textWhite,
-            ),
-            decoration: InputDecoration(
-              hintText: 'https://',
-              hintStyle: DesignTokens.smallRegular.copyWith(
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          left: DesignTokens.s16,
+          right: DesignTokens.s16,
+          top: DesignTokens.s24,
+          bottom:
+              MediaQuery.of(context).viewInsets.bottom +
+              MediaQuery.of(context).padding.bottom +
+              DesignTokens.s24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Paste a Reel URL', style: DesignTokens.titleMedium),
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              'Paste a link from your connected ${widget.platform.displayName} '
+              "account. We'll verify it before importing.",
+              style: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.textMuted,
               ),
-              filled: true,
-              fillColor: DesignTokens.bgAppFoundation,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(DesignTokens.s8),
-                borderSide: BorderSide.none,
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s12,
-                vertical: DesignTokens.s12,
+              decoration: InputDecoration(
+                hintText: 'https://',
+                hintStyle: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+                filled: true,
+                fillColor: DesignTokens.bgAppFoundation,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DesignTokens.s8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                  vertical: DesignTokens.s12,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s16),
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              style: DesignTokens.primaryButtonStyle(),
-              onPressed: () =>
-                  Navigator.of(context).pop(_controller.text.trim()),
-              child: const Text('Continue'),
+            const SizedBox(height: DesignTokens.s16),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                style: DesignTokens.primaryButtonStyle(),
+                onPressed: () =>
+                    Navigator.of(context).pop(_controller.text.trim()),
+                child: const Text('Continue'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

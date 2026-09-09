@@ -21,11 +21,11 @@ enum _TimeFilter {
 
 extension _TopReelsSortLabel on TopReelsSort {
   String get label => switch (this) {
-        TopReelsSort.highestEarnings => 'Highest Earnings',
-        TopReelsSort.mostViewed => 'Most Viewed',
-        TopReelsSort.highestConversion => 'Highest Conversion Rate',
-        TopReelsSort.mostEngagement => 'Most Engagement',
-      };
+    TopReelsSort.highestEarnings => 'Highest Earnings',
+    TopReelsSort.mostViewed => 'Most Viewed',
+    TopReelsSort.highestConversion => 'Highest Conversion Rate',
+    TopReelsSort.mostEngagement => 'Most Engagement',
+  };
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -44,12 +44,14 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
   bool get _isFilterActive => _timeFilter != _TimeFilter.allTime;
 
   DateTime? get _fromUtc => switch (_timeFilter) {
-        _TimeFilter.allTime => null,
-        _TimeFilter.thisWeek =>
-          DateTime.now().toUtc().subtract(const Duration(days: 7)),
-        _TimeFilter.thisMonth =>
-          DateTime.now().toUtc().subtract(const Duration(days: 30)),
-      };
+    _TimeFilter.allTime => null,
+    _TimeFilter.thisWeek => DateTime.now().toUtc().subtract(
+      const Duration(days: 7),
+    ),
+    _TimeFilter.thisMonth => DateTime.now().toUtc().subtract(
+      const Duration(days: 30),
+    ),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +145,9 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
   }
 
   void _fetch() {
-    ref.read(creatorTopReelsNotifierProvider.notifier).fetch(
+    ref
+        .read(creatorTopReelsNotifierProvider.notifier)
+        .fetch(
           sortBy: _sort,
           fromUtc: _fromUtc,
         );
@@ -307,33 +311,35 @@ class _SortSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: DesignTokens.s12),
-        _SheetHandle(),
-        const SizedBox(height: DesignTokens.s4),
-        _SheetHeader(
-          title: 'Sort By',
-          onClose: () => Navigator.of(context).pop(),
-        ),
-        for (final opt in _options)
-          RadioListTile<TopReelsSort>(
-            value: opt,
-            groupValue: current,
-            onChanged: (val) {
-              if (val != null) onSelected(val);
-            },
-            activeColor: DesignTokens.primaryGreen,
-            title: Text(
-              opt.label,
-              style: DesignTokens.oneLinerRegular.copyWith(
-                color: DesignTokens.textWhite,
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: DesignTokens.s12),
+          _SheetHandle(),
+          const SizedBox(height: DesignTokens.s4),
+          _SheetHeader(
+            title: 'Sort By',
+            onClose: () => Navigator.of(context).pop(),
+          ),
+          for (final opt in _options)
+            RadioListTile<TopReelsSort>(
+              value: opt,
+              groupValue: current,
+              onChanged: (val) {
+                if (val != null) onSelected(val);
+              },
+              activeColor: DesignTokens.primaryGreen,
+              title: Text(
+                opt.label,
+                style: DesignTokens.oneLinerRegular.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
               ),
             ),
-          ),
-        const SizedBox(height: DesignTokens.s16),
-      ],
+          const SizedBox(height: DesignTokens.s16),
+        ],
+      ),
     );
   }
 }
@@ -372,7 +378,8 @@ class _FilterSheetState extends State<_FilterSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
@@ -466,8 +473,9 @@ class _FilterSheetState extends State<_FilterSheet> {
                       foregroundColor: DesignTokens.textWhite,
                       minimumSize: const Size(0, DesignTokens.buttonHeight),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(DesignTokens.buttonRadius),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.buttonRadius,
+                        ),
                       ),
                     ),
                     child: const Text('Clear'),
@@ -558,8 +566,9 @@ class _RankedReelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = reel.title.isEmpty ? 'Untitled reel' : reel.title;
-    final posted =
-        DateFormat('d MMM, yyyy hh:mm a').format(reel.publishedAtUtc.toLocal());
+    final posted = DateFormat(
+      'd MMM, yyyy hh:mm a',
+    ).format(reel.publishedAtUtc.toLocal());
 
     return Container(
       padding: const EdgeInsets.fromLTRB(

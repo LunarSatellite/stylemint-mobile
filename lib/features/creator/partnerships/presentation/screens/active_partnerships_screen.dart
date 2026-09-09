@@ -517,170 +517,172 @@ class _SortSheetContentState extends State<_SortSheetContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E22),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1E1E22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Sort By',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Sort By',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: DesignTokens.textLight,
-                    size: 22,
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: DesignTokens.textLight,
+                      size: 22,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          ...List.generate(_options.length, (i) {
-            final selected = _selected == i;
-            return InkWell(
-              onTap: () => setState(() => _selected = i),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _options[i],
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 14,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: selected
-                              ? DesignTokens.textWhite
-                              : DesignTokens.textLight,
+            const SizedBox(height: DesignTokens.s8),
+            ...List.generate(_options.length, (i) {
+              final selected = _selected == i;
+              return InkWell(
+                onTap: () => setState(() => _selected = i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _options[i],
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 14,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: selected
+                                ? DesignTokens.textWhite
+                                : DesignTokens.textLight,
+                          ),
                         ),
                       ),
-                    ),
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected
-                              ? DesignTokens.primaryGreen
-                              : DesignTokens.borderDefault,
-                          width: 2,
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: selected
+                                ? DesignTokens.primaryGreen
+                                : DesignTokens.borderDefault,
+                            width: 2,
+                          ),
                         ),
-                      ),
-                      child: selected
-                          ? Center(
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: const BoxDecoration(
-                                  color: DesignTokens.primaryGreen,
-                                  shape: BoxShape.circle,
+                        child: selected
+                            ? Center(
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: const BoxDecoration(
+                                    color: DesignTokens.primaryGreen,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                              ),
-                            )
-                          : null,
-                    ),
-                  ],
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
+              );
+            }),
+            const SizedBox(height: DesignTokens.s8),
+            // Buttons
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selected = 0),
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.bgAppBodyLight,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Reset',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.textWhite,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.primaryGreen,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Apply',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            );
-          }),
-          const SizedBox(height: DesignTokens.s8),
-          // Buttons
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selected = 0),
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Reset',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: DesignTokens.s12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.primaryGreen,
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Apply',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1079,7 +1081,8 @@ class _TermsBottomSheet extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom +
             24,
       ),
@@ -1408,7 +1411,8 @@ class _FilterSheetContentState extends State<_FilterSheetContent> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom +
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom,
       ),
       child: Column(
