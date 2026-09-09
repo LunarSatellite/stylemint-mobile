@@ -926,14 +926,27 @@ class _TrafficSourcesCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              for (int i = 0; i < sources.length; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(child: _buildTile(sources[i])),
+          if (sources.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No traffic data yet',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 13,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                for (int i = 0; i < sources.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(child: _buildTile(sources[i])),
+                ],
               ],
-            ],
-          ),
+            ),
         ],
       ),
     );
