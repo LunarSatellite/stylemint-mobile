@@ -36,7 +36,13 @@ class _ProductAnalyticsScreenState
   @override
   void initState() {
     super.initState();
-    _load();
+    // Riverpod forbids modifying a provider's state synchronously during
+    // the widget tree's initial build — initState still counts. Defer to
+    // the post-frame callback like the other screens that load on mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _load();
+    });
   }
 
   (DateTime, DateTime) _rangeFor(int filterIndex) {
