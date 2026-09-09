@@ -201,6 +201,10 @@ class AddProductRepositoryImpl implements AddProductRepository {
         currentStep: 1,
         step1: BasicInfo(
           productName: data['name'] as String? ?? '',
+          // The Step 1 SKU field displays this, but the backend's real SKU
+          // lives on the variant (PatchStep3) — read it from there so Edit
+          // doesn't show the field blank when the product already has one.
+          sku: variant['sku'] as String? ?? '',
           shortDescription: data['shortDescription'] as String? ?? '',
           description: data['longDescriptionMarkdown'] as String? ?? '',
           categoryId: data['categoryId'] as String? ?? '',
