@@ -68,58 +68,60 @@ class VendorOrdersRemoteDataSource {
     return VendorOrderDetailDto.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<VendorOrderDto> updateOrderStatus(
+  // updateOrderStatus, markReadyToShip, addTracking and markDelivered all
+  // respond with the backend's thin SubOrderDto (id/state/carrier/tracking
+  // only — no orderNumber or subtotal), not the richer VendorOrderDto shape
+  // the order-detail screen renders. Discard the response body rather than
+  // parsing it as a VendorOrderDto — the repository re-fetches full detail
+  // via getOrderDetail() afterward.
+  Future<void> updateOrderStatus(
     String orderId,
     String newStatus,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
       '/v1/vendor/sub-orders/$orderId/$newStatus',
       options: _idempotent(idempotencyKey),
     );
-    return VendorOrderDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST /v1/vendor/sub-orders/{subOrderId}/ready-to-ship — Vendor §3B
   /// single-id variant. "Mark as Shipped" in the UI maps to this transition.
-  Future<VendorOrderDto> markReadyToShip(
+  Future<void> markReadyToShip(
     String orderId,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
       '/v1/vendor/sub-orders/$orderId/ready-to-ship',
       options: _idempotent(idempotencyKey),
     );
-    return VendorOrderDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST /v1/vendor/sub-orders/{subOrderId}/tracking — "Assign Tracking No."
   /// The backend SetTrackingVm contract requires `carrier` and
   /// `trackingNumber` (maximum lengths 100 and 200 respectively).
-  Future<VendorOrderDto> addTracking(
+  Future<void> addTracking(
     String orderId,
     String carrier,
     String trackingNumber,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
       '/v1/vendor/sub-orders/$orderId/tracking',
       data: {'carrier': carrier, 'trackingNumber': trackingNumber},
       options: _idempotent(idempotencyKey),
     );
-    return VendorOrderDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST /v1/vendor/sub-orders/{subOrderId}/delivered
-  Future<VendorOrderDto> markDelivered(
+  Future<void> markDelivered(
     String orderId,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
       '/v1/vendor/sub-orders/$orderId/delivered',
       options: _idempotent(idempotencyKey),
     );
-    return VendorOrderDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// GET /v1/vendor/sub-orders/{subOrderId}/packing-slip — Vendor §3D,

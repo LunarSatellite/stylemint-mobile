@@ -69,6 +69,17 @@ class _VendorOrderDetailScreenState
             SnackBar(content: Text(NetworkExceptions.getMessage(failure))),
           );
         },
+        loadSuccess: (_) {
+          final wasInProgress = previous?.maybeWhen(
+            actionInProgress: (_) => true,
+            orElse: () => false,
+          );
+          if (wasInProgress == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Order updated.')),
+            );
+          }
+        },
         orElse: () {},
       );
     });

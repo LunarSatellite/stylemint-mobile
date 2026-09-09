@@ -117,11 +117,13 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.updateOrderStatus(
+        // Same thin-response issue as markReadyToShip below.
+        await remoteDataSource.updateOrderStatus(
           orderId,
           newStatus.name,
           _uuid.v4(),
         );
+        final dto = await remoteDataSource.getOrderDetail(orderId);
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -249,10 +251,13 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.markReadyToShip(
-          orderId,
-          _uuid.v4(),
-        );
+        // The ready-to-ship endpoint responds with the backend's thin
+        // SubOrderDto (id/state/carrier/tracking only — no orderNumber or
+        // subtotal), not the richer shape the order-detail screen renders.
+        // Re-fetch the full detail rather than parsing that response as a
+        // VendorOrderDto, which would throw on the missing required fields.
+        await remoteDataSource.markReadyToShip(orderId, _uuid.v4());
+        final dto = await remoteDataSource.getOrderDetail(orderId);
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -276,12 +281,15 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.addTracking(
+        // Same thin-response issue as markReadyToShip below — re-fetch
+        // the full detail instead of parsing the SubOrderDto response.
+        await remoteDataSource.addTracking(
           orderId,
           carrier,
           trackingNumber,
           _uuid.v4(),
         );
+        final dto = await remoteDataSource.getOrderDetail(orderId);
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -303,7 +311,9 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.markDelivered(orderId, _uuid.v4());
+        // Same thin-response issue as markReadyToShip above.
+        await remoteDataSource.markDelivered(orderId, _uuid.v4());
+        final dto = await remoteDataSource.getOrderDetail(orderId);
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
