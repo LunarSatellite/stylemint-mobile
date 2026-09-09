@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/data/datasources/vendor_orders_remote_datasource.dart';
@@ -55,7 +56,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -75,7 +76,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(count);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -97,7 +98,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -124,7 +125,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -169,7 +170,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         );
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -194,7 +195,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(VendorReturnRequestDto.fromJson(data).toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -221,7 +222,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(VendorReturnRequestDto.fromJson(data).toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -255,7 +256,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -284,7 +285,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -306,7 +307,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -328,7 +329,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(_parsePackingSlip(orderId, json));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -353,7 +354,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(_parseBulkResult(json, orderIds));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
@@ -375,7 +376,7 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
         return right(_parseBulkResult(json, orderIds));
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {
