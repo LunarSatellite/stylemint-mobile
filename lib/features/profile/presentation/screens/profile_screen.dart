@@ -345,7 +345,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       value: mode,
                       groupValue: selected,
                       activeColor: DesignTokens.primaryGreen,
-                      title: Text(_themeModeLabel(mode)),
+                      title: Text(
+                        _themeModeLabel(mode),
+                        style: DesignTokens.body.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
+                      ),
                       onChanged: (value) {
                         if (value == null) return;
                         unawaited(
