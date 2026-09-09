@@ -1353,6 +1353,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   void _showCategoryPicker() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -1363,75 +1364,77 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         builder: (ctx, ref, _) {
           final categoriesState = ref.watch(categoriesNotifierProvider);
           return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: DesignTokens.s12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DesignTokens.borderDefault,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Issue Category',
-                      style: DesignTokens.sectionInnerTitle,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: DesignTokens.s12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: DesignTokens.borderDefault,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                categoriesState.when(
-                  initial: _categoryPickerLoader,
-                  loadInProgress: _categoryPickerLoader,
-                  loadFailure: (failure) => Padding(
+                  const SizedBox(height: DesignTokens.s16),
+                  Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s16,
                     ),
-                    child: Text(
-                      'Could not load categories.',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Issue Category',
+                        style: DesignTokens.sectionInnerTitle,
                       ),
                     ),
                   ),
-                  loadSuccess: (categories) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final cat in categories)
-                        ListTile(
-                          title: Text(
-                            cat.title,
-                            style: DesignTokens.mediumRegular.copyWith(
-                              color: DesignTokens.textWhite,
-                            ),
-                          ),
-                          trailing: _selectedCategory?.id == cat.id
-                              ? const Icon(
-                                  Icons.check,
-                                  color: DesignTokens.primaryGreen,
-                                  size: 18,
-                                )
-                              : null,
-                          onTap: () {
-                            setState(() => _selectedCategory = cat);
-                            Navigator.of(ctx).pop();
-                          },
+                  const SizedBox(height: DesignTokens.s8),
+                  categoriesState.when(
+                    initial: _categoryPickerLoader,
+                    loadInProgress: _categoryPickerLoader,
+                    loadFailure: (failure) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s16,
+                      ),
+                      child: Text(
+                        'Could not load categories.',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
                         ),
-                    ],
+                      ),
+                    ),
+                    loadSuccess: (categories) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final cat in categories)
+                          ListTile(
+                            title: Text(
+                              cat.title,
+                              style: DesignTokens.mediumRegular.copyWith(
+                                color: DesignTokens.textWhite,
+                              ),
+                            ),
+                            trailing: _selectedCategory?.id == cat.id
+                                ? const Icon(
+                                    Icons.check,
+                                    color: DesignTokens.primaryGreen,
+                                    size: 18,
+                                  )
+                                : null,
+                            onTap: () {
+                              setState(() => _selectedCategory = cat);
+                              Navigator.of(ctx).pop();
+                            },
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-              ],
+                  const SizedBox(height: DesignTokens.s16),
+                ],
+              ),
             ),
           );
         },
