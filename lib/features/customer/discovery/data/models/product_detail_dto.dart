@@ -6,16 +6,20 @@ part 'product_detail_dto.freezed.dart';
 part 'product_detail_dto.g.dart';
 
 /// Maps `GET /v1/public/products/{id}` — backend `ProductDto`
-/// (StyleMint.Modules.Catalog). There is no top-level price, vendor name,
-/// or "compare at" price on this DTO: price/stock live per-SKU on
-/// [variants], and the vendor's display name isn't returned by this
-/// endpoint at all (only [vendorAccountId] — a raw GUID, no profile join).
+/// (StyleMint.Modules.Catalog). There is no top-level price or "compare at"
+/// price on this DTO: price/stock live per-SKU on [variants]. The vendor's
+/// display name/avatar are hydrated server-side from Identity's
+/// VendorProfile (business_name/logo_url) via `IVendorProfileService` and
+/// come through as [vendorDisplayName]/[vendorAvatarUrl] — null when the
+/// vendor profile is missing or unapproved.
 @freezed
 abstract class ProductDetailDto with _$ProductDetailDto {
   const factory ProductDetailDto({
     required String id,
     required String vendorAccountId,
     required String name,
+    String? vendorDisplayName,
+    String? vendorAvatarUrl,
     @Default('') String shortDescription,
     @Default('') String longDescriptionMarkdown,
     @Default(0) double averageRating,
@@ -68,10 +72,8 @@ abstract class ProductDetailDto with _$ProductDetailDto {
       reviewCount: reviewCount,
       soldCount: 0,
       vendorId: vendorAccountId,
-      // Not returned by this endpoint — needs a separate vendor-profile
-      // lookup to populate; left blank rather than blocking the page.
-      vendorName: '',
-      vendorAvatarUrl: '',
+      vendorName: vendorDisplayName ?? '',
+      vendorAvatarUrl: vendorAvatarUrl ?? '',
       isInStock:
           defaultVariant == null ||
           !defaultVariant.trackInventory ||
