@@ -214,7 +214,11 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
         ),
       ),
       builder: (ctx) => _CreateTicketSheet(prefilledIssue: prefilledIssue),
-    ).ignore();
+    ).then((_) {
+      if (mounted) {
+        ref.read(supportNotifierProvider.notifier).loadTickets();
+      }
+    }).ignore();
   }
 
   void _showLiveChatAvailability(BuildContext context) {
@@ -1107,20 +1111,20 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     if (picked.isNotEmpty) setState(() => _images.addAll(picked));
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_descCtrl.text.trim().isEmpty) return;
     // Attachments aren't sent — see the vendor Contact Support screen's
     // _submit() for why (no blob/file upload endpoint in the backend yet).
-    unawaited(
-      ref
-          .read(createTicketNotifierProvider.notifier)
-          .submit(
-            subject: _descCtrl.text.trim(),
-            message: _descCtrl.text.trim(),
-            category: _categoryFor(_selectedCategory),
-          ),
-    );
-    Navigator.of(context).pop();
+    // Awaited (rather than fire-and-forget) so the sheet doesn't close and
+    // trigger the parent's ticket-list refresh before the ticket exists.
+    await ref
+        .read(createTicketNotifierProvider.notifier)
+        .submit(
+          subject: _descCtrl.text.trim(),
+          message: _descCtrl.text.trim(),
+          category: _categoryFor(_selectedCategory),
+        );
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -1334,7 +1338,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
               width: double.infinity,
               height: DesignTokens.buttonHeight,
               child: ElevatedButton(
-                onPressed: _submit,
+                onPressed: () => unawaited(_submit()),
                 style: DesignTokens.primaryButtonStyle(),
                 child: Text(
                   'Submit Ticket',
