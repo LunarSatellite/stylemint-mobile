@@ -140,7 +140,7 @@ class PrivacyPolicyScreen extends ConsumerWidget {
           const SizedBox(height: DesignTokens.s8),
           _BulletLink(
             'Request Data Access',
-            onTap: () => _launch('mailto:privacy@reelcommerce.com'),
+            onTap: () => _launch('mailto:privacy@stylemint.com'),
           ),
           _BulletLink(
             'Download My Data',
@@ -156,14 +156,14 @@ class PrivacyPolicyScreen extends ConsumerWidget {
           const SizedBox(height: DesignTokens.s8),
           _LabelLink(
             label: 'Email: ',
-            linkText: 'privacy@reelcommerce.com',
-            onTap: () => _launch('mailto:privacy@reelcommerce.com'),
+            linkText: 'privacy@stylemint.com',
+            onTap: () => _launch('mailto:privacy@stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
             label: 'Mail: ',
             linkText:
-                'ReelCommerce Inc., 123 Privacy Lane San Francisco, CA 94102',
+                'StyleMint Inc., 123 Privacy Lane San Francisco, CA 94102',
             onTap: () => _launch(
               'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102',
             ),
@@ -171,8 +171,8 @@ class PrivacyPolicyScreen extends ConsumerWidget {
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
             label: 'Data Protection Officer: ',
-            linkText: 'dpo@reelcommerce.com',
-            onTap: () => _launch('mailto:dpo@reelcommerce.com'),
+            linkText: 'dpo@stylemint.com',
+            onTap: () => _launch('mailto:dpo@stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s32),
         ],

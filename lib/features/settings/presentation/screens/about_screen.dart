@@ -70,7 +70,7 @@ class AboutScreen extends StatelessWidget {
           const _SectionHeading('Our Mission'),
           const SizedBox(height: DesignTokens.s8),
           const _Body(
-            'ReelCommerce is revolutionizing e-commerce by connecting customers with '
+            'StyleMint is revolutionizing e-commerce by connecting customers with '
             'products through engaging short-form video content, empowering creators '
             'to earn while helping shoppers discover amazing products in an entertaining way.',
           ),
@@ -141,22 +141,22 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           _LabelLink(
             label: 'Email: ',
-            linkText: 'hello@reelcommerce.com',
-            onTap: () => _launch('mailto:hello@reelcommerce.com'),
+            linkText: 'hello@stylemint.com',
+            onTap: () => _launch('mailto:hello@stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
             label: 'Headquarters: ',
             linkText:
-                'ReelCommerce Inc., 123 Privacy Lane San Francisco, CA 94102',
+                'StyleMint Inc., 123 Privacy Lane San Francisco, CA 94102',
             onTap: () => _launch(
                 'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102'),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
             label: 'Website: ',
-            linkText: 'www.reelcommerce.com',
-            onTap: () => _launch('https://www.reelcommerce.com'),
+            linkText: 'www.stylemint.com',
+            onTap: () => _launch('https://www.stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s32),
 
@@ -211,7 +211,7 @@ class AboutScreen extends StatelessWidget {
           _BulletLink('Help Center',
               onTap: () => context.push(RouteNames.support)),
           _BulletLink('Become a Creator', onTap: () {}),
-          _BulletLink('Sell on ReelCommerce', onTap: () {}),
+          _BulletLink('Sell on StyleMint', onTap: () {}),
           _BulletLink('Press Kit', onTap: () {}),
           _BulletLink('Careers', onTap: () {}),
           _BulletLink('Blog', onTap: () {}),
@@ -239,7 +239,7 @@ class AboutScreen extends StatelessWidget {
           // Footer
           const Center(
             child: Text(
-              '© 2024 ReelCommerce Inc. All rights reserved.',
+              '© 2024 StyleMint Inc. All rights reserved.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: DesignTokens.fontFamily,

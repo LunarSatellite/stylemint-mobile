@@ -24,7 +24,9 @@ class SettingsScreen extends ConsumerWidget {
         ),
         failure: (f) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Delete failed: ${f.toString()}')),
+            const SnackBar(
+              content: Text('Failed to delete account. Please try again.'),
+            ),
           );
         },
       );
@@ -85,7 +87,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           _MenuTile(
             icon: Icons.info_outline,
-            label: 'About ReelCommerce',
+            label: 'About StyleMint',
             onTap: () => context.push(RouteNames.settingsAbout),
           ),
 

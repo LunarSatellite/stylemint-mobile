@@ -162,7 +162,7 @@ const kHelpTopics = <HelpTopic>[
   HelpTopic(
     id: 'vendors',
     title: 'For Vendors',
-    subtitle: 'Selling on Style Mint',
+    subtitle: 'Selling on StyleMint',
     icon: Icons.storefront_outlined,
     articles: _vendorArticles,
   ),
@@ -184,7 +184,7 @@ const _ordersArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Once your order is confirmed and dispatched, you can track it in real time from the Style Mint app. Tracking details are automatically updated every time the package moves through a new checkpoint.',
+            'Once your order is confirmed and dispatched, you can track it in real time from the StyleMint app. Tracking details are automatically updated every time the package moves through a new checkpoint.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -273,7 +273,7 @@ const _ordersArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Style Mint partners with multiple courier services to ensure fast and reliable delivery. The shipping option available to you depends on your location and the vendor fulfilling your order.',
+            'StyleMint partners with multiple courier services to ensure fast and reliable delivery. The shipping option available to you depends on your location and the vendor fulfilling your order.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -518,7 +518,7 @@ const _accountArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'We recommend changing your password every 3–6 months and immediately if you suspect unauthorised access. Style Mint will never ask for your password via email or chat.',
+            'We recommend changing your password every 3–6 months and immediately if you suspect unauthorised access. StyleMint will never ask for your password via email or chat.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -605,7 +605,7 @@ const _paymentArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Style Mint supports Visa/Mastercard, PayPal, eSewa, and Cash on Delivery. Available methods are shown during checkout.',
+            'StyleMint supports Visa/Mastercard, PayPal, eSewa, and Cash on Delivery. Available methods are shown during checkout.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -620,7 +620,7 @@ const _paymentArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Style Mint never stores raw card details. Manage an eligible payment method through its provider or choose another method at checkout.',
+            'StyleMint never stores raw card details. Manage an eligible payment method through its provider or choose another method at checkout.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,
@@ -690,7 +690,7 @@ const _safetyArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Style Mint is built with privacy by design. We collect only the data necessary to provide our service, and we protect it with multiple layers of security.',
+            'StyleMint is built with privacy by design. We collect only the data necessary to provide our service, and we protect it with multiple layers of security.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -785,7 +785,7 @@ const _safetyArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Style Mint will never ask for your password, OTP, or full card details via email, SMS, or phone. If you receive such a request, it is a phishing attempt — do not respond and forward it to security@stylemint.com.',
+            'StyleMint will never ask for your password, OTP, or full card details via email, SMS, or phone. If you receive such a request, it is a phishing attempt — do not respond and forward it to security@stylemint.com.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,
@@ -815,7 +815,7 @@ const _creatorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'The Style Mint Creator Programme lets you earn commission by tagging products in your short-form videos. Creator accounts activate instantly — there is no review queue.',
+            'The StyleMint Creator Programme lets you earn commission by tagging products in your short-form videos. Creator accounts activate instantly — there is no review queue.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -903,7 +903,7 @@ const _vendorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Becoming a vendor on Style Mint allows you to reach millions of potential buyers through creator-driven short-form video. To get started, complete KYC verification and set up your shop profile.',
+            'Becoming a vendor on StyleMint allows you to reach millions of potential buyers through creator-driven short-form video. To get started, complete KYC verification and set up your shop profile.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -918,7 +918,7 @@ const _vendorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'There is no monthly subscription fee. Style Mint charges a platform fee of 8–12% per successful sale, depending on your vendor tier. This fee covers payment processing, logistics support, and platform maintenance.',
+            'There is no monthly subscription fee. StyleMint charges a platform fee of 8–12% per successful sale, depending on your vendor tier. This fee covers payment processing, logistics support, and platform maintenance.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,

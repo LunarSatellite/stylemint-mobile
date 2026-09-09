@@ -37,7 +37,7 @@ class TermsConditionsScreen extends StatelessWidget {
           _SectionHeading('1. Acceptance of Terms'),
           const SizedBox(height: DesignTokens.s8),
           _Body(
-            'By accessing or using the ReelCommerce platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.',
+            'By accessing or using the StyleMint platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.',
           ),
           const SizedBox(height: DesignTokens.s24),
 
@@ -64,14 +64,14 @@ class TermsConditionsScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s8),
           _LinkRow(
             label: 'Email: ',
-            linkText: 'legal@reelcommerce.com',
-            onTap: () => _launch('mailto:legal@reelcommerce.com'),
+            linkText: 'legal@stylemint.com',
+            onTap: () => _launch('mailto:legal@stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LinkRow(
             label: 'Legal Officer: ',
-            linkText: 'lgo@reelcommerce.com',
-            onTap: () => _launch('mailto:lgo@reelcommerce.com'),
+            linkText: 'lgo@stylemint.com',
+            onTap: () => _launch('mailto:lgo@stylemint.com'),
           ),
           const SizedBox(height: DesignTokens.s32),
         ],

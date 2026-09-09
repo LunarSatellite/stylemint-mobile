@@ -141,7 +141,9 @@ class _NotificationPrefsScreenState
           const SnackBar(content: Text('Preferences saved')),
         ),
         saveFailure: (f) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Save failed: ${f.toString()}')),
+          const SnackBar(
+            content: Text('Failed to save preferences. Please try again.'),
+          ),
         ),
       );
     });
@@ -164,7 +166,7 @@ class _NotificationPrefsScreenState
                 _SectionCard(items: [
                   _ToggleItem(
                     title: 'Enable Push Notifications',
-                    subtitle: 'Allow Style Mint to send you push notifications',
+                    subtitle: 'Allow StyleMint to send you push notifications',
                     value: _pushEnabled,
                     onChanged: (v) {
                       setState(() => _pushEnabled = v);
