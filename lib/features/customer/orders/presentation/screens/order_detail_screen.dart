@@ -248,6 +248,10 @@ class _TrackSummaryCard extends StatelessWidget {
                     const SizedBox(height: DesignTokens.s4),
                     Row(
                       children: [
+                        // The price is short and fixed-width; give the date
+                        // (the longer, more important string) the flexible
+                        // slot instead of splitting the row 50/50, which
+                        // truncated it down to a few characters.
                         Flexible(
                           child: Text(
                             'Placed on $placed',
@@ -259,14 +263,12 @@ class _TrackSummaryCard extends StatelessWidget {
                           ),
                         ),
                         const _Dot(),
-                        Flexible(
-                          child: Text(
-                            formatMoney(order.total),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textLight,
-                            ),
+                        Text(
+                          formatMoney(order.total),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textLight,
                           ),
                         ),
                       ],
