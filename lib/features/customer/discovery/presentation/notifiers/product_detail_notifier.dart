@@ -55,9 +55,16 @@ class ProductDetailNotifier extends StateNotifier<ProductDetailState> {
   }
 
   Future<bool> toggleSave(String productId) async {
+    // `product.variants` here is the list of *selectable option groups*
+    // (e.g. a single synthetic "sku" group holding every SKU choice) —
+    // its `.first.id` is the literal string 'sku', never a real backend
+    // variant id, and it's empty entirely for single-SKU products. Use
+    // defaultVariantId (the actual backing SKU id) instead, the same
+    // fallback Add to Cart / Buy Now already use — without it, saving
+    // any single-SKU product (the common case) silently failed because
+    // the datasource throws when variantId is null.
     final variantId = state.whenOrNull(
-      loadSuccess: (product) =>
-          product.variants.isNotEmpty ? product.variants.first.id : null,
+      loadSuccess: (product) => product.defaultVariantId,
     );
     final either = await _repository.toggleSaved(productId, variantId: variantId);
     return either.fold(

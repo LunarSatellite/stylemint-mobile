@@ -143,9 +143,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Future<void> _handleToggleSave() async {
-    await ref
+    final success = await ref
         .read(productDetailNotifierProvider(widget.productId).notifier)
         .toggleSave(widget.productId);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't save this item. Please try again."),
+          backgroundColor: DesignTokens.colorError,
+        ),
+      );
+    }
   }
 }
 
