@@ -109,7 +109,7 @@ const kContactOptions = <ContactOption>[
   ),
   ContactOption(
     icon: Icons.phone_outlined,
-    title: 'Direct Call (1-800-Reel-Com)',
+    title: 'Direct Call (1-800-STYLEMINT)',
     subtitle: 'Mon-Fri, 9 AM – 6 PM EST',
   ),
 ];
@@ -162,7 +162,7 @@ const kHelpTopics = <HelpTopic>[
   HelpTopic(
     id: 'vendors',
     title: 'For Vendors',
-    subtitle: 'Selling on ReelCommerce',
+    subtitle: 'Selling on Style Mint',
     icon: Icons.storefront_outlined,
     articles: _vendorArticles,
   ),
@@ -184,7 +184,7 @@ const _ordersArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Once your order is confirmed and dispatched, you can track it in real time from the Reel Commerce app. Tracking details are automatically updated every time the package moves through a new checkpoint.',
+            'Once your order is confirmed and dispatched, you can track it in real time from the Style Mint app. Tracking details are automatically updated every time the package moves through a new checkpoint.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -273,7 +273,7 @@ const _ordersArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Reel Commerce partners with multiple courier services to ensure fast and reliable delivery. The shipping option available to you depends on your location and the vendor fulfilling your order.',
+            'Style Mint partners with multiple courier services to ensure fast and reliable delivery. The shipping option available to you depends on your location and the vendor fulfilling your order.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -518,7 +518,7 @@ const _accountArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'We recommend changing your password every 3–6 months and immediately if you suspect unauthorised access. Reel Commerce will never ask for your password via email or chat.',
+            'We recommend changing your password every 3–6 months and immediately if you suspect unauthorised access. Style Mint will never ask for your password via email or chat.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -690,7 +690,7 @@ const _safetyArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Reel Commerce is built with privacy by design. We collect only the data necessary to provide our service, and we protect it with multiple layers of security.',
+            'Style Mint is built with privacy by design. We collect only the data necessary to provide our service, and we protect it with multiple layers of security.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -785,14 +785,14 @@ const _safetyArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Reel Commerce will never ask for your password, OTP, or full card details via email, SMS, or phone. If you receive such a request, it is a phishing attempt — do not respond and forward it to security@reelcommerce.com.',
+            'Style Mint will never ask for your password, OTP, or full card details via email, SMS, or phone. If you receive such a request, it is a phishing attempt — do not respond and forward it to security@stylemint.com.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,
         items: [
           'We never request passwords via any channel.',
-          'Official emails come only from @reelcommerce.com.',
-          'Report phishing to security@reelcommerce.com.',
+          'Official emails come only from @stylemint.com.',
+          'Report phishing to security@stylemint.com.',
         ],
       ),
     ],
@@ -815,7 +815,7 @@ const _creatorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'The Reel Commerce Creator Programme lets you earn commission by tagging products in your short-form videos. Creator accounts activate instantly — there is no review queue.',
+            'The Style Mint Creator Programme lets you earn commission by tagging products in your short-form videos. Creator accounts activate instantly — there is no review queue.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -903,7 +903,7 @@ const _vendorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'Becoming a vendor on Reel Commerce allows you to reach millions of potential buyers through creator-driven short-form video. To get started, complete KYC verification and set up your shop profile.',
+            'Becoming a vendor on Style Mint allows you to reach millions of potential buyers through creator-driven short-form video. To get started, complete KYC verification and set up your shop profile.',
       ),
       HelpBlock(
         type: HelpBlockType.iconList,
@@ -918,7 +918,7 @@ const _vendorArticles = <HelpArticle>[
       HelpBlock(
         type: HelpBlockType.paragraph,
         text:
-            'There is no monthly subscription fee. Reel Commerce charges a platform fee of 8–12% per successful sale, depending on your vendor tier. This fee covers payment processing, logistics support, and platform maintenance.',
+            'There is no monthly subscription fee. Style Mint charges a platform fee of 8–12% per successful sale, depending on your vendor tier. This fee covers payment processing, logistics support, and platform maintenance.',
       ),
       HelpBlock(
         type: HelpBlockType.checkList,

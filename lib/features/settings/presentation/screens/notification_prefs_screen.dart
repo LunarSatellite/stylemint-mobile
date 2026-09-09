@@ -164,7 +164,7 @@ class _NotificationPrefsScreenState
                 _SectionCard(items: [
                   _ToggleItem(
                     title: 'Enable Push Notifications',
-                    subtitle: 'Allow Reel Commerce to send you push notifications',
+                    subtitle: 'Allow Style Mint to send you push notifications',
                     value: _pushEnabled,
                     onChanged: (v) {
                       setState(() => _pushEnabled = v);
