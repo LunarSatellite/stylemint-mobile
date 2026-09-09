@@ -61,7 +61,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(loading: true, error: null);
     final result = await _repository.listMessages(threadId);
     state = result.fold(
-      (f) => state.copyWith(loading: false, error: f.toString()),
+      (f) => state.copyWith(
+        loading: false,
+        error: 'Failed to load messages. Please try again.',
+      ),
       (page) {
         // API returns DESC (newest first); reverse for chat display order.
         final ordered = page.items.reversed.toList(growable: false);
@@ -76,7 +79,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(sending: true, error: null);
     final result = await _repository.postMessage(threadId: threadId, body: body);
     state = result.fold(
-      (f) => state.copyWith(sending: false, error: f.toString()),
+      (f) => state.copyWith(
+        sending: false,
+        error: 'Failed to send message. Please try again.',
+      ),
       // We deliberately do NOT append the returned message here. The
       // backend also fires `thread-message` over SignalR to BOTH
       // participants (including the sender) via

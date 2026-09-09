@@ -34,7 +34,7 @@ class MyTicketsScreen extends ConsumerWidget {
         loadInProgress: _loader,
         loadFailure: (failure) => Center(
           child: Text(
-            'Failed to load: ${failure.toString()}',
+            'Failed to load tickets. Please try again.',
             style: DesignTokens.smallRegular,
           ),
         ),

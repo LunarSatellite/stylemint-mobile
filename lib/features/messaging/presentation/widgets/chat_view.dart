@@ -122,7 +122,10 @@ class _ChatViewState extends ConsumerState<ChatView> {
     if (!mounted) return;
     setState(() {
       _opening = false;
-      _openError = result.fold((f) => f.toString(), (_) => null);
+      _openError = result.fold(
+        (f) => 'Failed to open conversation. Please try again.',
+        (_) => null,
+      );
     });
     result.fold(
       (_) => null,

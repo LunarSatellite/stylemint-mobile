@@ -221,7 +221,7 @@ class _VendorPartnershipsScreenState
             (failure) {
           SmSnackbar.error(
             context,
-            'Failed to open conversation. ${failure.toString()}',
+            'Failed to open conversation. Please try again.',
           );
         },
             (thread) {

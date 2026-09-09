@@ -40,7 +40,9 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
           context.pop();
         },
         failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${f.toString()}')),
+          const SnackBar(
+            content: Text('Failed to update language. Please try again.'),
+          ),
         ),
       );
     });

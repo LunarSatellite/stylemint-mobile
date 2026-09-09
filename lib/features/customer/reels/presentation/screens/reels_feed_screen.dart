@@ -94,7 +94,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
           // from the UI alone.
           final message = failure.isNoInternet
               ? 'No internet connection.'
-              : 'Failed to load reels: ${failure.toString()}';
+              : 'Failed to load reels. Please try again.';
           return SmErrorView(
             message: message,
             onRetry: () =>
