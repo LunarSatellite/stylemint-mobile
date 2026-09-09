@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -180,7 +182,10 @@ class _PartnershipRequestScreenState
         );
       }
       if (!mounted) return;
-      SmSnackbar.error(context, 'Could not send request. Please try again.');
+      final message = NetworkExceptions.getMessage(
+        mapDioExceptionToNetworkException(e),
+      );
+      SmSnackbar.error(context, message);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
