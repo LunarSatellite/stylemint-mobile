@@ -810,7 +810,26 @@ class _PaymentMethodSheet extends StatelessWidget {
               ],
             ),
           ),
-          for (final method in methods) _buildMethodTile(method),
+          if (methods.isEmpty)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                0,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
+              child: Text(
+                'No payout methods added yet. Add a bank account, PayPal, '
+                'or eSewa in Settings to request a withdrawal.',
+                style: TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 13,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            )
+          else
+            for (final method in methods) _buildMethodTile(method),
           const SizedBox(height: DesignTokens.s16),
         ],
       ),
