@@ -213,7 +213,9 @@ class _RecentActivityScreenState
                 if (filtered.isEmpty) {
                   return Center(
                     child: Text(
-                      'No ${_filter.label.toLowerCase()} activity yet.',
+                      _filter == _ActivityCategory.all
+                          ? 'No activity yet.'
+                          : 'No ${_filter.label.toLowerCase()} activity yet.',
                       style: DesignTokens.smallRegular.copyWith(
                         color: DesignTokens.textMuted,
                       ),
