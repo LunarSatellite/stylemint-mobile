@@ -36,6 +36,10 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   double get _processingFee => _amount * _feePercent;
   double get _grandTotal => _amount - _processingFee;
 
+  String _formatQuickAmount(int amount) {
+    return amount >= 1000 ? '${amount ~/ 1000}k' : '$amount';
+  }
+
   void _pickQuickAmount(int amount) {
     _amountController.text = amount.toString();
     ref
@@ -245,7 +249,9 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  '$amt',
+                                  _formatQuickAmount(amt),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: DesignTokens.smallRegular.copyWith(
                                     color: DesignTokens.textWhite,
                                     fontWeight: FontWeight.w500,
