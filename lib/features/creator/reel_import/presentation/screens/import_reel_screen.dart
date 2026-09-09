@@ -338,9 +338,15 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
                             },
                             style: DesignTokens.primaryButtonStyle(),
                             child: const Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('Import Reel'),
+                                Flexible(
+                                  child: Text(
+                                    'Import Reel',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                                 SizedBox(width: DesignTokens.s8),
                                 Icon(Icons.download_rounded, size: 18),
                               ],
