@@ -132,9 +132,18 @@ class _AuthInterceptor extends Interceptor {
 
   /// Bare client used only for the refresh call — never carries this
   /// interceptor, so a failed refresh can't recurse.
+  ///
+  /// Explicit timeouts are required here (unlike relying on Dio's default of
+  /// "none"): _refreshToken() is single-flight — every other in-flight
+  /// request awaits the same Completer — so a refresh call that hangs with
+  /// no timeout freezes every authenticated action in the app forever, with
+  /// no error ever surfaced to the user.
   late final Dio _refreshDio = Dio(BaseOptions(
     baseUrl: baseUrl,
     headers: {'Accept': 'application/json'},
+    connectTimeout: ApiConfig.connectTimeout,
+    receiveTimeout: ApiConfig.receiveTimeout,
+    sendTimeout: ApiConfig.sendTimeout,
   ));
 
   static const _retriedKey = 'auth_retried';
