@@ -559,7 +559,11 @@ class _VendorContactSupportScreenState
         ),
       ),
       builder: (ctx) => _CreateTicketSheet(prefilledIssue: prefilledIssue),
-    ).ignore();
+    ).then((_) {
+      if (mounted) {
+        ref.read(supportNotifierProvider.notifier).loadTickets();
+      }
+    }).ignore();
   }
 }
 
@@ -931,22 +935,22 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_descController.text.trim().isEmpty) return;
     // Attachments aren't sent: the backend only accepts pre-uploaded
     // attachmentUrls and there is no blob/file upload endpoint anywhere in
     // the API (see stylemint-support skill / API_INTEGRATION_GUIDE.md) — the
     // picker above is left in place for when that endpoint exists.
-    unawaited(
-      ref
-          .read(createTicketNotifierProvider.notifier)
-          .submit(
-            subject: _descController.text.trim(),
-            message: _descController.text.trim(),
-            category: _categoryFor(_selectedCategory),
-          ),
-    );
-    Navigator.of(context).pop();
+    // Awaited (rather than fire-and-forget) so the sheet doesn't close and
+    // trigger the parent's ticket-list refresh before the ticket exists.
+    await ref
+        .read(createTicketNotifierProvider.notifier)
+        .submit(
+          subject: _descController.text.trim(),
+          message: _descController.text.trim(),
+          category: _categoryFor(_selectedCategory),
+        );
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -1119,7 +1123,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
                 width: double.infinity,
                 height: DesignTokens.buttonHeight,
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: () => unawaited(_submit()),
                   style: DesignTokens.primaryButtonStyle(),
                   child: Text(
                     'Submit Ticket',
@@ -1139,6 +1143,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   void _showCategoryPicker() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -1149,73 +1154,75 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
         builder: (ctx, ref, _) {
           final categoriesState = ref.watch(categoriesNotifierProvider);
           return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: DesignTokens.s12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DesignTokens.borderDefault,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s16,
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Issue Category',
-                      style: DesignTokens.oneLinerSemibold,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: DesignTokens.s12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: DesignTokens.borderDefault,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                categoriesState.when(
-                  initial: _categoryPickerLoader,
-                  loadInProgress: _categoryPickerLoader,
-                  loadFailure: (failure) => Padding(
+                  const SizedBox(height: DesignTokens.s16),
+                  Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s16,
                     ),
-                    child: Text(
-                      'Could not load categories.',
-                      style: DesignTokens.oneLinerRegular.copyWith(
-                        color: DesignTokens.textMuted,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Issue Category',
+                        style: DesignTokens.oneLinerSemibold,
                       ),
                     ),
                   ),
-                  loadSuccess: (categories) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final cat in categories)
-                        ListTile(
-                          title: Text(
-                            cat.title,
-                            style: DesignTokens.oneLinerRegular,
-                          ),
-                          trailing: _selectedCategory?.id == cat.id
-                              ? const Icon(
-                                  Icons.check,
-                                  color: DesignTokens.primaryGreen,
-                                  size: 18,
-                                )
-                              : null,
-                          onTap: () {
-                            setState(() => _selectedCategory = cat);
-                            Navigator.of(ctx).pop();
-                          },
+                  const SizedBox(height: DesignTokens.s8),
+                  categoriesState.when(
+                    initial: _categoryPickerLoader,
+                    loadInProgress: _categoryPickerLoader,
+                    loadFailure: (failure) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s16,
+                      ),
+                      child: Text(
+                        'Could not load categories.',
+                        style: DesignTokens.oneLinerRegular.copyWith(
+                          color: DesignTokens.textMuted,
                         ),
-                    ],
+                      ),
+                    ),
+                    loadSuccess: (categories) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final cat in categories)
+                          ListTile(
+                            title: Text(
+                              cat.title,
+                              style: DesignTokens.oneLinerRegular,
+                            ),
+                            trailing: _selectedCategory?.id == cat.id
+                                ? const Icon(
+                                    Icons.check,
+                                    color: DesignTokens.primaryGreen,
+                                    size: 18,
+                                  )
+                                : null,
+                            onTap: () {
+                              setState(() => _selectedCategory = cat);
+                              Navigator.of(ctx).pop();
+                            },
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: DesignTokens.s16),
-              ],
+                  const SizedBox(height: DesignTokens.s16),
+                ],
+              ),
             ),
           );
         },
