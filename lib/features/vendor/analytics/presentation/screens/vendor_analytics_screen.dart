@@ -517,20 +517,25 @@ class _LineChart extends StatelessWidget {
               ),
               SizedBox(
                 height: bottomH,
+                // A daily point per label (e.g. 30 for a 30-day window)
+                // packed into one unconstrained Row overflows the chart's
+                // width well before running out of points — show only
+                // first/middle/last, same as the product analytics chart.
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: xLabels
-                      .map(
-                        (l) => Text(
-                          l,
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 9,
-                            color: Color(0xFF9F9FA9),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  children: List.generate(xLabels.length, (i) {
+                    final show = i == 0 ||
+                        i == xLabels.length - 1 ||
+                        i == xLabels.length ~/ 2;
+                    return Text(
+                      show ? xLabels[i] : '',
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 9,
+                        color: Color(0xFF9F9FA9),
+                      ),
+                    );
+                  }),
                 ),
               ),
             ],
