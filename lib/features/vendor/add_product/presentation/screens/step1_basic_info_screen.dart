@@ -60,6 +60,7 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
     if (info == null) return;
     setState(() {
       _nameController.text = info.productName;
+      _skuController.text = info.sku;
       _shortDescController.text = info.shortDescription;
       _descriptionController.text = info.description;
       _selectedCategoryId =
@@ -84,6 +85,7 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
   void _onNext() {
     final info = BasicInfo(
       productName: _nameController.text.trim(),
+      sku: _skuController.text.trim(),
       shortDescription: _shortDescController.text.trim(),
       description: _descriptionController.text.trim(),
       categoryId: _selectedCategoryId ?? '',
@@ -186,11 +188,34 @@ class _Step1BasicInfoScreenState extends ConsumerState<Step1BasicInfoScreen> {
                         ),
                       ),
                     ),
-                    error: (e, _) => _CategoryShell(
-                      child: Text(
-                        'Failed to load categories',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.colorError,
+                    error: (e, _) => GestureDetector(
+                      // FutureProvider caches its error indefinitely once
+                      // read — without an explicit retry, a single failure
+                      // (e.g. a transient network blip) blocks category
+                      // selection for the rest of the app session.
+                      onTap: () => ref.invalidate(productCategoriesProvider),
+                      child: _CategoryShell(
+                        child: Row(
+                          children: [
+                            Text(
+                              'Failed to load categories',
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.colorError,
+                              ),
+                            ),
+                            const SizedBox(width: DesignTokens.s8),
+                            Text(
+                              'Tap to retry',
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.primaryGreen,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.refresh,
+                              size: 16,
+                              color: DesignTokens.primaryGreen,
+                            ),
+                          ],
                         ),
                       ),
                     ),

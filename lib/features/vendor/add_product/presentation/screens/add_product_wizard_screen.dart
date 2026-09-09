@@ -54,9 +54,14 @@ class _AddProductWizardScreenState
     if (_isEditMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadForEdit());
     } else {
-      // No async load — render the empty Create form immediately.
+      // No async load, but the notifier is a singleton that outlives one
+      // wizard run — clear any leftover state from a previous Add Product
+      // session before rendering, so images/pricing/shipping (and SKU)
+      // don't silently carry over into an unrelated new product.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _loading = false);
+        if (!mounted) return;
+        ref.read(addProductNotifierProvider.notifier).reset();
+        setState(() => _loading = false);
       });
     }
   }

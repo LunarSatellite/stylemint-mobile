@@ -52,7 +52,16 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
           orElse: () => null,
         );
     final p = fs?.step3;
-    if (p == null) return;
+    if (p == null) {
+      // First time reaching Step 3 — fall back to the SKU typed on Step 1
+      // (its own field there doesn't submit anywhere; this is the field the
+      // backend actually requires) so it isn't silently lost.
+      final step1Sku = fs?.step1?.sku;
+      if (step1Sku != null && step1Sku.isNotEmpty && mounted) {
+        setState(() => _skuController.text = step1Sku);
+      }
+      return;
+    }
     setState(() {
       _basePriceController.text = p.basePrice.amount > 0
           ? p.basePrice.amount.toString()
@@ -70,6 +79,9 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
       _quantityController.text = p.quantityOnHand.toString();
       _trackInventory = p.trackInventory;
       _allowOverselling = p.allowOverselling;
+      if (p.commissionRate != null) {
+        _commissionRateController.text = p.commissionRate!.toString();
+      }
     });
   }
 
@@ -134,6 +146,7 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
           int.tryParse(_quantityController.text.trim()) ?? 0,
       trackInventory: _trackInventory,
       allowOverselling: _allowOverselling,
+      commissionRate: _commissionRate,
     );
   }
 
@@ -146,6 +159,21 @@ class _Step3PricingScreenState extends ConsumerState<Step3PricingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The wizard keeps every step alive in an IndexedStack, so this screen's
+    // initState/postFrameCallback hydration ran once at wizard-mount time —
+    // long before Step 1 had a SKU typed into it. Listen instead, so the
+    // fallback applies whenever Step 1's SKU actually changes.
+    ref.listen<AddProductState>(addProductNotifierProvider, (_, next) {
+      if (_skuController.text.isNotEmpty) return;
+      final step1Sku = next.maybeWhen(
+        loadSuccess: (fs) => fs.step1?.sku,
+        orElse: () => null,
+      );
+      if (step1Sku != null && step1Sku.isNotEmpty) {
+        _skuController.text = step1Sku;
+      }
+    });
+
     final notifier = ref.read(addProductNotifierProvider.notifier);
     final canProceed = _basePriceController.text.isNotEmpty;
 

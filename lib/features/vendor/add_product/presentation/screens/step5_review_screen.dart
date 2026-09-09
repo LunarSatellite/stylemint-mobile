@@ -86,6 +86,9 @@ class Step5ReviewScreen extends ConsumerWidget {
     final profit = effectivePrice - costAmt;
     final profitPct =
         effectivePrice > 0 ? (profit / effectivePrice * 100) : 0.0;
+    final commissionRate = pricing.commissionRate;
+    final creatorsEarn =
+        commissionRate != null ? effectivePrice * commissionRate / 100 : null;
 
     // Shipping options text
     final shippingOptions = <String>[];
@@ -223,9 +226,19 @@ class Step5ReviewScreen extends ConsumerWidget {
                 _ReviewSection(
                   title: 'Creator Commission',
                   onEdit: () => notifier.goToStep(3),
-                  children: const [
-                    _DataRow(label: 'Commission Rate', value: '-'),
-                    _DataRow(label: 'Creators Earn', value: '-'),
+                  children: [
+                    _DataRow(
+                      label: 'Commission Rate',
+                      value: commissionRate != null
+                          ? '${commissionRate.toStringAsFixed(0)}%'
+                          : '-',
+                    ),
+                    _DataRow(
+                      label: 'Creators Earn',
+                      value: creatorsEarn != null
+                          ? 'Rs ${creatorsEarn.toStringAsFixed(2)}'
+                          : '-',
+                    ),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s12),
@@ -560,8 +573,10 @@ class _ImagesThumbnailRow extends StatelessWidget {
     final visible = images.take(visibleMax).toList();
     final overflow = images.length - visibleMax;
 
-    return Row(
-      children: [
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
         ...visible.asMap().entries.map((e) {
           final isPrimary = e.key == primaryIndex;
           return Padding(
@@ -634,7 +649,8 @@ class _ImagesThumbnailRow extends StatelessWidget {
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -297,7 +297,11 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       next.whenOrNull(
         loadSuccess: (app) {
           if (app.status == VendorApplicationStatus.approved) {
-            context.pushReplacement(RouteNames.vendorApplyApproved);
+            // Straight to the dashboard — this screen is a catch-all landed
+            // on from several places (role-check fallbacks, direct nav), so
+            // routing every one of them through the one-time congrats screen
+            // instead made it reappear on every visit.
+            context.pushReplacement(RouteNames.vendorHome);
           }
         },
       );
@@ -363,7 +367,8 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
       case VendorApplicationStatus.approved:
         Future.microtask(() {
           if (context.mounted) {
-            context.pushReplacement(RouteNames.vendorApplyApproved);
+            // Straight to the dashboard — see the ref.listen above for why.
+            context.pushReplacement(RouteNames.vendorHome);
           }
         });
         return _loader();

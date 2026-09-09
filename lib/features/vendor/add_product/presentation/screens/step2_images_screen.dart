@@ -237,7 +237,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     remaining > 0
-                        ? "$_images.length/${ProductFormState.maxImagesAtPublish} added \u2014 $remaining more required"
+                        ? "${_images.length}/${ProductFormState.maxImagesAtPublish} added \u2014 $remaining more required"
                         : "${_images.length}/${ProductFormState.maxImagesAtPublish} added \u2014 ready to publish",
                     style: TextStyle(
                       fontFamily: DesignTokens.fontFamily,
@@ -418,17 +418,20 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          canProceed
-                              ? 'Proceed'
-                              : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: canProceed
-                                ? DesignTokens.buttonPrimaryText
-                                : DesignTokens.textMuted,
+                        Flexible(
+                          child: Text(
+                            canProceed
+                                ? 'Proceed'
+                                : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: canProceed
+                                  ? DesignTokens.buttonPrimaryText
+                                  : DesignTokens.textMuted,
+                            ),
                           ),
                         ),
                         const SizedBox(width: DesignTokens.s8),

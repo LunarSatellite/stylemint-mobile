@@ -372,7 +372,11 @@ class _BecomeBrandBannerState extends ConsumerState<_BecomeBrandBanner> {
         loadSuccess: (application) {
           switch (application.status) {
             case VendorApplicationStatus.approved:
-              route = RouteNames.vendorApplyApproved;
+              // Straight to the dashboard — the "Application Approved"
+              // screen is a one-time congrats (shown from the under-review
+              // polling loop when status first flips), not a landing page
+              // for every repeat visit to an already-approved vendor's menu.
+              route = RouteNames.vendorHome;
             case VendorApplicationStatus.rejected:
               route = RouteNames.vendorApplyRejected;
               extra = application.rejectionReason;

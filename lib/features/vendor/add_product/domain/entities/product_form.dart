@@ -18,6 +18,7 @@ class CategoryOption {
 class BasicInfo {
   const BasicInfo({
     required this.productName,
+    this.sku = '',
     required this.shortDescription,
     required this.description,
     required this.categoryId,
@@ -27,6 +28,11 @@ class BasicInfo {
   });
 
   final String productName;
+
+  /// Captured here since it's what the user sees first, but the backend's
+  /// real SKU requirement lives on PatchStep3 (Inventory) — Step 3 falls
+  /// back to this value so a SKU typed on Step 1 isn't silently discarded.
+  final String sku;
 
   /// One-line summary -> backend StartDraft/Step-1 `shortDescription`.
   final String shortDescription;
@@ -46,6 +52,7 @@ class BasicInfo {
 
   BasicInfo copyWith({
     String? productName,
+    String? sku,
     String? shortDescription,
     String? description,
     String? categoryId,
@@ -55,6 +62,7 @@ class BasicInfo {
   }) {
     return BasicInfo(
       productName: productName ?? this.productName,
+      sku: sku ?? this.sku,
       shortDescription: shortDescription ?? this.shortDescription,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
@@ -68,6 +76,7 @@ class BasicInfo {
   bool operator ==(Object other) =>
       other is BasicInfo &&
       other.productName == productName &&
+      other.sku == sku &&
       other.shortDescription == shortDescription &&
       other.description == description &&
       other.categoryId == categoryId &&
@@ -78,6 +87,7 @@ class BasicInfo {
   @override
   int get hashCode => Object.hash(
     productName,
+    sku,
     shortDescription,
     description,
     categoryId,
@@ -181,6 +191,7 @@ class PricingInfo {
     this.allowOverselling = false,
     this.productKind = 1,
     this.billingCadence = 1,
+    this.commissionRate,
   });
 
   final Money basePrice;
@@ -189,6 +200,12 @@ class PricingInfo {
   final double taxRate;
   final bool discountEnabled;
   final double? discountPercent;
+
+  /// Vendor-set creator commission percent for this product (e.g. 15 = 15%).
+  /// Local-preview-only field (drives the "Creators Earn" estimate on Step 3
+  /// and the review screen) — not yet part of the backend PatchStep3Vm
+  /// contract.
+  final double? commissionRate;
 
   // --- Backend Step-3 fields (catalog PatchStep3Vm) ---
   /// Stock keeping unit -> backend `sku`.
@@ -224,6 +241,7 @@ class PricingInfo {
     bool? allowOverselling,
     int? productKind,
     int? billingCadence,
+    double? commissionRate,
   }) {
     return PricingInfo(
       basePrice: basePrice ?? this.basePrice,
@@ -238,6 +256,7 @@ class PricingInfo {
       allowOverselling: allowOverselling ?? this.allowOverselling,
       productKind: productKind ?? this.productKind,
       billingCadence: billingCadence ?? this.billingCadence,
+      commissionRate: commissionRate ?? this.commissionRate,
     );
   }
 
@@ -255,7 +274,8 @@ class PricingInfo {
       other.trackInventory == trackInventory &&
       other.allowOverselling == allowOverselling &&
       other.productKind == productKind &&
-      other.billingCadence == billingCadence;
+      other.billingCadence == billingCadence &&
+      other.commissionRate == commissionRate;
 
   @override
   int get hashCode => Object.hash(
@@ -271,6 +291,7 @@ class PricingInfo {
     allowOverselling,
     productKind,
     billingCadence,
+    commissionRate,
   );
 }
 

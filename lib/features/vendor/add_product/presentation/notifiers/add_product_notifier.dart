@@ -61,6 +61,17 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     if (!_isDirty) _isDirty = true;
   }
 
+  /// Clears any leftover wizard state (images, pricing, shipping, etc.)
+  /// from a previous Create-mode session. The provider is a singleton that
+  /// outlives one Add Product run, so without this a fresh "Add Product"
+  /// silently reused the last product's Step 2-4 data — including its SKU,
+  /// which then collided with the just-published product on submit.
+  void reset() {
+    _formState = const ProductFormState(currentStep: 1);
+    _isDirty = false;
+    state = const AddProductState.initial();
+  }
+
   void nextStep() {
     if (_formState.currentStep < 5) {
       _formState = _formState.copyWith(

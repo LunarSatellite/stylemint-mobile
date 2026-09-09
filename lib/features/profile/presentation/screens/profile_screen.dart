@@ -539,8 +539,11 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
               final vendorState = ref.read(vendorApplyNotifierProvider);
               final route = vendorState.maybeWhen(
                 loadSuccess: (application) => switch (application.status) {
-                  VendorApplicationStatus.approved =>
-                    RouteNames.vendorApplyApproved,
+                  // Already approved — go straight to the dashboard. The
+                  // "Application Approved" screen is a one-time congrats
+                  // shown when the status first flips (from the under-review
+                  // polling loop), not a landing page for every repeat visit.
+                  VendorApplicationStatus.approved => RouteNames.vendorHome,
                   VendorApplicationStatus.rejected =>
                     RouteNames.vendorApplyRejected,
                   VendorApplicationStatus.pending ||
