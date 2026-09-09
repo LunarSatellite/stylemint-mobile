@@ -21,7 +21,10 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   bool _agreedToTerms = false;
 
   static const double _feePercent = 0.02;
-  static const List<int> _quickAmounts = [500, 1000, 3000, 5000, 8000];
+  // Must stay within the Rs 10,000–70,000 on-demand payout bounds shown
+  // just below these chips — the previous values (500-8000) were all
+  // under the minimum, so every quick-select chip failed validation.
+  static const List<int> _quickAmounts = [10000, 20000, 30000, 50000, 70000];
 
   @override
   void dispose() {
