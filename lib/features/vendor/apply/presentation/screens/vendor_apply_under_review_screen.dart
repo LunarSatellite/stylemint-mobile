@@ -40,7 +40,14 @@ class _VendorApplyUnderReviewScreenState
       );
     });
 
-    final email = widget.userEmail ?? 'your email';
+    // Nothing in the vendor apply flow currently threads the account's
+    // real email into this screen (unlike the creator flow's
+    // creatorFormProvider.email) — the ?userEmail= query param this
+    // relies on is never populated by any caller, so it always fell
+    // back to a literal "your email" placeholder that read like a
+    // broken interpolation ("Check your email (your email)"). Fall back
+    // to generic phrasing instead until the account email is wired in.
+    final email = widget.userEmail;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -148,7 +155,7 @@ class _VendorApplyUnderReviewScreenState
     );
   }
 
-  Widget _buildWhileYouWait({required String email}) {
+  Widget _buildWhileYouWait({required String? email}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(DesignTokens.s16),
@@ -163,7 +170,11 @@ class _VendorApplyUnderReviewScreenState
           Text('While you wait', style: DesignTokens.mediumSemibold),
           const SizedBox(height: DesignTokens.s12),
           _buildWaitItem('Make sure notifications are enabled'),
-          _buildWaitItem('Check your email ($email)'),
+          _buildWaitItem(
+            email != null
+                ? 'Check your email ($email)'
+                : 'Check your email inbox',
+          ),
           _buildWaitLinkItem('Review our ', 'Vendor Guidelines'),
           _buildWaitLinkItem('Watch ', 'Getting Started Videos'),
           _buildWaitItem('Prepare your product catalog'),
