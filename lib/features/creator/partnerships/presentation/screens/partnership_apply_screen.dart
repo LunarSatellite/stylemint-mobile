@@ -215,10 +215,15 @@ class _PartnershipRequestScreenState
       data: (d) => d,
       orElse: () => const <String>[],
     );
-    final nicheOptions = allCategories
-        .where((c) => specializationIds.contains(c.id))
-        .map((c) => c.name)
-        .toList();
+    // Fall back to the full category list when the creator hasn't set any
+    // specializations yet — otherwise this picker renders with zero options
+    // and no way to proceed.
+    final nicheOptions = specializationIds.isEmpty
+        ? allCategories.map((c) => c.name).toList()
+        : allCategories
+              .where((c) => specializationIds.contains(c.id))
+              .map((c) => c.name)
+              .toList();
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
