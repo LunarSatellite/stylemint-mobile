@@ -292,7 +292,14 @@ class _ProductBody extends StatelessWidget {
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,
                     ),
-                    const SizedBox(height: 100),
+                    // Reserves space for the overlaid _BottomBar, whose own
+                    // height grows with MediaQuery's bottom safe-area inset
+                    // (see its padding) — without adding that same inset
+                    // here, the last section sits under the bar on devices
+                    // with a 3-button nav bar instead of gesture nav.
+                    SizedBox(
+                      height: 100 + MediaQuery.of(context).padding.bottom,
+                    ),
                   ],
                 ),
               ),
@@ -754,8 +761,7 @@ class _AskQuestionDialog extends ConsumerStatefulWidget {
   final String productId;
 
   @override
-  ConsumerState<_AskQuestionDialog> createState() =>
-      _AskQuestionDialogState();
+  ConsumerState<_AskQuestionDialog> createState() => _AskQuestionDialogState();
 }
 
 class _AskQuestionDialogState extends ConsumerState<_AskQuestionDialog> {
@@ -984,9 +990,11 @@ class _ReelReviewsContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final reviews = state.maybeWhen(
       loadSuccess: (items, _, __, ___) => items
-          .where((review) =>
-              review.kind == ReviewKind.reel &&
-              Uri.tryParse(review.reelSourceUrl ?? '') != null)
+          .where(
+            (review) =>
+                review.kind == ReviewKind.reel &&
+                Uri.tryParse(review.reelSourceUrl ?? '') != null,
+          )
           .take(9)
           .toList(growable: false),
       orElse: () => const <Review>[],
@@ -1093,12 +1101,12 @@ class _ReelThumb extends StatelessWidget {
   }
 
   String _platformLabel(String? platform) => switch (platform) {
-        '0' || 'Instagram' || 'instagram' => 'Instagram',
-        '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
-        '2' || 'TikTok' || 'tiktok' => 'TikTok',
-        '3' || 'Facebook' || 'facebook' => 'Facebook',
-        _ => 'Open reel',
-      };
+    '0' || 'Instagram' || 'instagram' => 'Instagram',
+    '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
+    '2' || 'TikTok' || 'tiktok' => 'TikTok',
+    '3' || 'Facebook' || 'facebook' => 'Facebook',
+    _ => 'Open reel',
+  };
 }
 
 // ── Written tab ───────────────────────────────────────────────────────────────
