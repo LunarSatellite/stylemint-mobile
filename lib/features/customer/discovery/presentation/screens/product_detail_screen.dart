@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -155,6 +156,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           backgroundColor: DesignTokens.colorError,
         ),
       );
+      return;
+    }
+    // Profile's Saved Items screen (and its stats-row count) reads from a
+    // singleton provider that only ever fetched once at first access —
+    // without this it silently kept showing whatever it loaded before this
+    // save/unsave happened, even though the backend was updated correctly.
+    if (success) {
+      ref.read(savedItemsNotifierProvider.notifier).load();
     }
   }
 }
