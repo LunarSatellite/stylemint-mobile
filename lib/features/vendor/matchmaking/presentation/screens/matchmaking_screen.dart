@@ -39,6 +39,12 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
             ),
           );
           ref.read(inviteCreatorNotifierProvider.notifier).reset();
+          // Invite is a one-shot action per match, same as dismiss — drop it
+          // from the list so the card doesn't stay actionable and inviting
+          // the same creator again with no indication the first went through.
+          if (_invitingMatchId case final matchId?) {
+            ref.read(matchmakingNotifierProvider.notifier).removeMatch(matchId);
+          }
           setState(() => _invitingMatchId = null);
         },
         failure: (_) {

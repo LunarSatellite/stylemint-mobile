@@ -94,13 +94,24 @@ class MatchmakingNotifier extends StateNotifier<RecommendationsState> {
     if (current is! _RecommendationsLoadSuccess) return false;
     final result = await _repository.dismissMatch(matchId);
     return result.fold((_) => false, (_) {
-      state = current.copyWith(
-        recommendations: current.recommendations
-            .where((r) => r.id != matchId)
-            .toList(growable: false),
-      );
+      removeMatch(matchId);
       return true;
     });
+  }
+
+  /// Drops a recommendation from the list without a backend call — used
+  /// after a successful invite, which (like dismiss) is a one-shot action
+  /// per match. Without this the card stayed in the list with an active
+  /// "Invite to Partnership" button, letting the same creator be invited
+  /// repeatedly with no indication the first invite had gone through.
+  void removeMatch(String matchId) {
+    final current = state;
+    if (current is! _RecommendationsLoadSuccess) return;
+    state = current.copyWith(
+      recommendations: current.recommendations
+          .where((r) => r.id != matchId)
+          .toList(growable: false),
+    );
   }
 }
 
