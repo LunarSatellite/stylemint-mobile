@@ -334,31 +334,37 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   Text('Appearance', style: DesignTokens.h3),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose how Style Mint looks on this device.',
+                    // Style Mint's screens are built with fixed dark colors
+                    // throughout (not Theme.of(context)-driven), so Light
+                    // and "use device setting" have no visible effect today
+                    // even though the underlying MaterialApp theme switch
+                    // exists — only offer the mode that actually changes
+                    // anything, rather than a picker that silently does
+                    // nothing for two of its three options.
+                    'Style Mint currently supports Dark mode only.',
                     style: DesignTokens.body.copyWith(
                       color: DesignTokens.textMuted,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  for (final mode in ThemeMode.values)
-                    RadioListTile<ThemeMode>(
-                      value: mode,
-                      groupValue: selected,
-                      activeColor: DesignTokens.primaryGreen,
-                      title: Text(
-                        _themeModeLabel(mode),
-                        style: DesignTokens.body.copyWith(
-                          color: DesignTokens.textWhite,
-                        ),
+                  RadioListTile<ThemeMode>(
+                    value: ThemeMode.dark,
+                    groupValue: selected,
+                    activeColor: DesignTokens.primaryGreen,
+                    title: Text(
+                      _themeModeLabel(ThemeMode.dark),
+                      style: DesignTokens.body.copyWith(
+                        color: DesignTokens.textWhite,
                       ),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        unawaited(
-                          ref.read(themeModeProvider.notifier).setMode(value),
-                        );
-                        Navigator.pop(sheetContext);
-                      },
                     ),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      unawaited(
+                        ref.read(themeModeProvider.notifier).setMode(value),
+                      );
+                      Navigator.pop(sheetContext);
+                    },
+                  ),
                 ],
               ),
             ),

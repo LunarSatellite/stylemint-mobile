@@ -13,7 +13,13 @@ final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
 );
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  // Every screen hardcodes dark DesignTokens colors rather than reading
+  // Theme.of(context), so ThemeMode.system/light only mismatch native
+  // Material widgets (dialogs, text selection) against the rest of the
+  // app without changing anything else — dark is the only mode that
+  // actually looks consistent, so it's the default and the only one the
+  // Appearance picker offers.
+  ThemeModeNotifier() : super(ThemeMode.dark) {
     unawaited(_restore());
   }
 
@@ -22,8 +28,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     final value = preferences.getString(_themeModeKey);
     state = switch (value) {
       'light' => ThemeMode.light,
-      'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      _ => ThemeMode.dark,
     };
   }
 
