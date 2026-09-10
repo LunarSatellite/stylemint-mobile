@@ -75,7 +75,12 @@ class CoWatchSessionScreen extends ConsumerWidget {
                       padding: const EdgeInsets.only(right: 4),
                       child: CircleAvatar(
                         radius: 14,
-                        backgroundImage: NetworkImage(p.userAvatarUrl),
+                        backgroundImage: p.userAvatarUrl.isEmpty
+                            ? null
+                            : NetworkImage(p.userAvatarUrl),
+                        child: p.userAvatarUrl.isEmpty
+                            ? const Icon(Icons.person, size: 14)
+                            : null,
                       ),
                     ),
                   ),
@@ -104,10 +109,21 @@ class CoWatchSessionScreen extends ConsumerWidget {
             child: Stack(
               children: [
                 Center(
-                  child: Image.network(
-                    session.thumbnailUrl,
-                    fit: BoxFit.contain,
-                  ),
+                  child: session.thumbnailUrl.isEmpty
+                      ? const Icon(
+                          Icons.play_circle_outline,
+                          size: 80,
+                          color: DesignTokens.iconLight,
+                        )
+                      : Image.network(
+                          session.thumbnailUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.broken_image_outlined,
+                            size: 80,
+                            color: DesignTokens.iconLight,
+                          ),
+                        ),
                 ),
                 const Positioned(
                   bottom: DesignTokens.s8,
@@ -131,11 +147,17 @@ class CoWatchSessionScreen extends ConsumerWidget {
             children: _reactions
                 .map(
                   (emoji) => GestureDetector(
-                    onTap: () {
-                      ref
-                          .read(coWatchSessionsNotifierProvider.notifier)
-                          .sendReaction(session.id, emoji);
-                    },
+                    onTap: session.status == CoWatchSessionStatus.live
+                        ? () {
+                            unawaited(
+                              ref
+                                  .read(
+                                    coWatchSessionsNotifierProvider.notifier,
+                                  )
+                                  .sendReaction(session.id, emoji),
+                            );
+                          }
+                        : null,
                     child: Container(
                       padding: const EdgeInsets.all(DesignTokens.s8),
                       decoration: BoxDecoration(
@@ -155,11 +177,17 @@ class CoWatchSessionScreen extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(DesignTokens.s12),
           child: OutlinedButton(
-            onPressed: () {
-              ref
+            onPressed: () async {
+              final result = await ref
                   .read(coWatchSessionsNotifierProvider.notifier)
                   .leave(session.id);
-              Navigator.of(context).pop();
+              if (!context.mounted) return;
+              result.fold(
+                (_) => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to leave session.')),
+                ),
+                (_) => Navigator.of(context).pop(),
+              );
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: DesignTokens.colorError,

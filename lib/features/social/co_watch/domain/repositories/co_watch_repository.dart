@@ -13,11 +13,13 @@ abstract interface class CoWatchRepository {
     String reelId,
   );
 
-  Future<Either<NetworkExceptions, CoWatchSession>> joinSession(String sessionId);
+  Future<Either<NetworkExceptions, CoWatchSession>> joinSession(
+    String joinCode,
+  );
 
   Future<Either<NetworkExceptions, Unit>> leaveSession(String sessionId);
 
-  Future<Either<NetworkExceptions, CoWatchReaction>> sendReaction(
+  Future<Either<NetworkExceptions, Unit>> sendReaction(
     String sessionId,
     String reaction,
   );

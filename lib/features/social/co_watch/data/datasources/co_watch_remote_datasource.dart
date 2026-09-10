@@ -8,16 +8,25 @@ class CoWatchRemoteDataSource {
   final ApiClient apiClient;
 
   Future<List<CoWatchSessionDto>> getActiveSessions() async {
-    final response = await apiClient.get('/v1/co-watch');
-    final items = (response as List<dynamic>?)
-        ?.map((e) => CoWatchSessionDto.fromJson(e as Map<String, dynamic>))
+    final response = await apiClient.get(
+      '/v1/co-watch',
+      queryParameters: const {'pageSize': 20},
+    );
+    final data = response as Map<String, dynamic>;
+    return (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (item) => CoWatchSessionDto.fromSessionJson(
+            item as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
-    return items ?? const [];
   }
 
   Future<CoWatchSessionDto> getSession(String sessionId) async {
     final response = await apiClient.get('/v1/co-watch/$sessionId');
-    return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
+    return CoWatchSessionDto.fromSessionJson(
+      response as Map<String, dynamic>,
+    );
   }
 
   Future<CoWatchSessionDto> createSession(
@@ -29,22 +38,25 @@ class CoWatchRemoteDataSource {
       data: {'reelId': reelId},
       options: _idempotent(idempotencyKey),
     );
-    return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
+    return CoWatchSessionDto.fromSessionJson(
+      response as Map<String, dynamic>,
+    );
   }
 
   Future<CoWatchSessionDto> joinSession(
-    String sessionId,
+    String joinCode,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
       '/v1/co-watch/join',
-      data: {'sessionId': sessionId},
+      data: {'joinCode': joinCode},
       options: _idempotent(idempotencyKey),
     );
-    return CoWatchSessionDto.fromJson(response as Map<String, dynamic>);
+    return CoWatchSessionDto.fromSessionJson(
+      response as Map<String, dynamic>,
+    );
   }
 
-  // Co-watch is 2 people; "leave" ends the session for both.
   Future<void> leaveSession(
     String sessionId,
     String idempotencyKey,
@@ -55,24 +67,28 @@ class CoWatchRemoteDataSource {
     );
   }
 
-  Future<CoWatchReactionDto> sendReaction(
+  Future<void> sendReaction(
     String sessionId,
     String reaction,
     String idempotencyKey,
   ) async {
-    final response = await apiClient.post(
+    await apiClient.post(
       '/v1/co-watch/$sessionId/reactions',
       data: {'reaction': reaction},
       options: _idempotent(idempotencyKey),
     );
-    return CoWatchReactionDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<List<CoWatchReactionDto>> getReactions(String sessionId) async {
-    final response =
-        await apiClient.get('/v1/co-watch/$sessionId/reactions');
+    final response = await apiClient.get(
+      '/v1/co-watch/$sessionId/reactions',
+    );
     final items = (response as List<dynamic>?)
-        ?.map((e) => CoWatchReactionDto.fromJson(e as Map<String, dynamic>))
+        ?.map(
+          (item) => CoWatchReactionDto.fromAggregateJson(
+            item as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
     return items ?? const [];
   }

@@ -79,9 +79,9 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
   }
 
   Future<Either<NetworkExceptions, CoWatchSession>> join(
-    String sessionId,
+    String joinCode,
   ) async {
-    final either = await _repository.joinSession(sessionId);
+    final either = await _repository.joinSession(joinCode);
     either.fold(
       (_) {},
       (_) => unawaited(loadSessions()),
@@ -98,7 +98,7 @@ class CoWatchNotifier extends StateNotifier<CoWatchSessionsState> {
     return either;
   }
 
-  Future<Either<NetworkExceptions, CoWatchReaction>> sendReaction(
+  Future<Either<NetworkExceptions, Unit>> sendReaction(
     String sessionId,
     String reaction,
   ) async {

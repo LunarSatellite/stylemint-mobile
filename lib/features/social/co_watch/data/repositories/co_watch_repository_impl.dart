@@ -84,11 +84,11 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
 
   @override
   Future<Either<NetworkExceptions, CoWatchSession>> joinSession(
-    String sessionId,
+    String joinCode,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.joinSession(sessionId, _uuid.v4());
+        final dto = await remoteDataSource.joinSession(joinCode, _uuid.v4());
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -125,18 +125,18 @@ class CoWatchRepositoryImpl implements CoWatchRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, CoWatchReaction>> sendReaction(
+  Future<Either<NetworkExceptions, Unit>> sendReaction(
     String sessionId,
     String reaction,
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.sendReaction(
+        await remoteDataSource.sendReaction(
           sessionId,
           reaction,
           _uuid.v4(),
         );
-        return right(dto.toDomain());
+        return right(unit);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

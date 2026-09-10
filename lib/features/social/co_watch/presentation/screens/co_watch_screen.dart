@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/domain/entities/co_watch.dart';
@@ -100,7 +102,7 @@ class CoWatchScreen extends ConsumerWidget {
       child: ListView.separated(
         padding: const EdgeInsets.all(DesignTokens.s16),
         itemCount: sessions.length,
-        separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
+        separatorBuilder: (_, _) => const SizedBox(height: DesignTokens.s12),
         itemBuilder: (context, index) {
           final session = sessions[index];
           return _buildSessionTile(context, session);
@@ -112,9 +114,11 @@ class CoWatchScreen extends ConsumerWidget {
   Widget _buildSessionTile(BuildContext context, CoWatchSession session) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CoWatchSessionScreen(sessionId: session.id),
+        unawaited(
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => CoWatchSessionScreen(sessionId: session.id),
+            ),
           ),
         );
       },
@@ -125,12 +129,25 @@ class CoWatchScreen extends ConsumerWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s8),
-              child: Image.network(
-                session.thumbnailUrl,
-                width: 72,
-                height: 72,
-                fit: BoxFit.cover,
-              ),
+              child: session.thumbnailUrl.isEmpty
+                  ? Container(
+                      width: 72,
+                      height: 72,
+                      color: DesignTokens.bgAppBodyLight,
+                      child: const Icon(Icons.play_circle_outline),
+                    )
+                  : Image.network(
+                      session.thumbnailUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 72,
+                        height: 72,
+                        color: DesignTokens.bgAppBodyLight,
+                        child: const Icon(Icons.broken_image_outlined),
+                      ),
+                    ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -141,7 +158,12 @@ class CoWatchScreen extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         radius: 12,
-                        backgroundImage: NetworkImage(session.hostAvatarUrl),
+                        backgroundImage: session.hostAvatarUrl.isEmpty
+                            ? null
+                            : NetworkImage(session.hostAvatarUrl),
+                        child: session.hostAvatarUrl.isEmpty
+                            ? const Icon(Icons.person, size: 14)
+                            : null,
                       ),
                       const SizedBox(width: DesignTokens.s8),
                       Expanded(
@@ -179,16 +201,13 @@ class CoWatchScreen extends ConsumerWidget {
               ),
             ),
             ElevatedButton(
-              // ElevatedButton consumes its own tap, so the parent
-              // GestureDetector's onTap (which does this same navigation)
-              // never fires when this specific button is pressed — was
-              // previously `() {}`, a silent no-op that made "Join" do
-              // nothing on an actually-live, joinable session.
               onPressed: session.status == CoWatchSessionStatus.live
-                  ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            CoWatchSessionScreen(sessionId: session.id),
+                  ? () => unawaited(
+                      Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              CoWatchSessionScreen(sessionId: session.id),
+                        ),
                       ),
                     )
                   : null,
@@ -200,7 +219,7 @@ class CoWatchScreen extends ConsumerWidget {
                   vertical: DesignTokens.s8,
                 ),
               ),
-              child: const Text('Join'),
+              child: const Text('Open'),
             ),
           ],
         ),
@@ -228,7 +247,7 @@ class CoWatchScreen extends ConsumerWidget {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
       ),
       child: Text(label, style: DesignTokens.tiny.copyWith(color: color)),

@@ -37,7 +37,8 @@ abstract class CoWatchSessionDto with _$CoWatchSessionDto {
     required String contentId,
     required String contentUrl,
     required String thumbnailUrl,
-    @Default(<CoWatchParticipantDto>[]) List<CoWatchParticipantDto> participants,
+    @Default(<CoWatchParticipantDto>[])
+    List<CoWatchParticipantDto> participants,
     required String status,
     required DateTime startedAt,
   }) = _CoWatchSessionDto;
@@ -46,6 +47,52 @@ abstract class CoWatchSessionDto with _$CoWatchSessionDto {
 
   factory CoWatchSessionDto.fromJson(Map<String, dynamic> json) =>
       _$CoWatchSessionDtoFromJson(json);
+
+  factory CoWatchSessionDto.fromSessionJson(Map<String, dynamic> json) {
+    final hostId = (json['hostId'] ?? json['hostAccountId']).toString();
+    final guestId = json['guestAccountId']?.toString();
+    final createdAt = DateTime.parse(
+      (json['startedAt'] ?? json['createdUtc']).toString(),
+    );
+    final joinedAt = json['joinedUtc'] == null
+        ? createdAt
+        : DateTime.parse(json['joinedUtc'].toString());
+    final rawState = json['status'] ?? json['state'];
+    final stateText = rawState.toString().toLowerCase();
+    final status = rawState == 2 || stateText == 'active' || stateText == 'live'
+        ? 'live'
+        : rawState == 1 || stateText == 'pending' || stateText == 'waiting'
+        ? 'waiting'
+        : 'ended';
+
+    return CoWatchSessionDto(
+      id: json['id'].toString(),
+      hostId: hostId,
+      hostName: (json['hostName'] ?? 'Host').toString(),
+      hostAvatarUrl: (json['hostAvatarUrl'] ?? '').toString(),
+      contentType: 'reel',
+      contentId: (json['contentId'] ?? json['reelId']).toString(),
+      contentUrl: (json['contentUrl'] ?? '').toString(),
+      thumbnailUrl: (json['thumbnailUrl'] ?? '').toString(),
+      participants: [
+        CoWatchParticipantDto(
+          userId: hostId,
+          userName: (json['hostName'] ?? 'Host').toString(),
+          userAvatarUrl: (json['hostAvatarUrl'] ?? '').toString(),
+          joinedAt: createdAt,
+        ),
+        if (guestId != null)
+          CoWatchParticipantDto(
+            userId: guestId,
+            userName: (json['guestName'] ?? 'Guest').toString(),
+            userAvatarUrl: (json['guestAvatarUrl'] ?? '').toString(),
+            joinedAt: joinedAt,
+          ),
+      ],
+      status: status,
+      startedAt: createdAt,
+    );
+  }
 
   CoWatchSession toDomain() => CoWatchSession(
     id: id,
@@ -56,8 +103,7 @@ abstract class CoWatchSessionDto with _$CoWatchSessionDto {
     contentId: contentId,
     contentUrl: contentUrl,
     thumbnailUrl: thumbnailUrl,
-    participants:
-        participants.map((p) => p.toDomain()).toList(growable: false),
+    participants: participants.map((p) => p.toDomain()).toList(growable: false),
     status: _parseStatus(status),
     startedAt: startedAt,
   );
@@ -92,6 +138,18 @@ abstract class CoWatchReactionDto with _$CoWatchReactionDto {
 
   factory CoWatchReactionDto.fromJson(Map<String, dynamic> json) =>
       _$CoWatchReactionDtoFromJson(json);
+
+  factory CoWatchReactionDto.fromAggregateJson(Map<String, dynamic> json) =>
+      CoWatchReactionDto(
+        id: json['id'].toString(),
+        sessionId: (json['sessionId'] ?? json['coWatchSessionId']).toString(),
+        userId: '',
+        userName: 'Everyone',
+        reaction: (json['reaction'] ?? json['emojiCode']).toString(),
+        timestamp: DateTime.parse(
+          (json['timestamp'] ?? json['updatedUtc']).toString(),
+        ),
+      );
 
   CoWatchReaction toDomain() => CoWatchReaction(
     id: id,
