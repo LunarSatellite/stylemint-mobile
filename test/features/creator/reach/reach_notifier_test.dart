@@ -29,16 +29,14 @@ class _FakeRepository implements ReachRepository {
   Future<NetworkEither<ReachAnalytics>> getAnalytics({
     DateTime? periodStart,
     DateTime? periodEnd,
-  }) async =>
-      analytics ?? networkRight(_analytics());
+  }) async => analytics ?? networkRight(_analytics());
 
   @override
   Future<NetworkEither<Unit>> schedulePublish({
     required String draftId,
     required List<String> platformNames,
     required DateTime scheduledAt,
-  }) async =>
-      networkRight(unit);
+  }) async => networkRight(unit);
 
   @override
   Future<NetworkEither<BoostCampaign>> createBoostCampaign({
@@ -46,18 +44,17 @@ class _FakeRepository implements ReachRepository {
     required String platform,
     required Money budget,
     required int durationDays,
-  }) async =>
-      networkLeft(const NetworkExceptions.unexpectedError());
+  }) async => networkLeft(const NetworkExceptions.unexpectedError());
 }
 
 ReachAnalytics _analytics() => ReachAnalytics(
-      totalImpressions: 1000,
-      totalClicks: 50,
-      totalEngagements: 75,
-      totalSpent: const Money(amount: 500, currency: 'NPR'),
-      periodStart: DateTime.utc(2026),
-      periodEnd: DateTime.utc(2026, 2),
-    );
+  totalReach: 1000,
+  totalPostsPublished: 50,
+  totalEngagements: 75,
+  totalSpent: const Money(amount: 500, currency: 'NPR'),
+  periodStart: DateTime.utc(2026),
+  periodEnd: DateTime.utc(2026, 2),
+);
 
 Future<ReachNotifier> _settled(_FakeRepository repo) async {
   final notifier = ReachNotifier(repo);
@@ -67,18 +64,20 @@ Future<ReachNotifier> _settled(_FakeRepository repo) async {
 
 void main() {
   group('ReachNotifier', () {
-    test('composes targets, campaigns and analytics into one success state',
-        () async {
-      final notifier = await _settled(_FakeRepository());
+    test(
+      'composes targets, campaigns and analytics into one success state',
+      () async {
+        final notifier = await _settled(_FakeRepository());
 
-      expect(
-        notifier.state.maybeWhen(
-          loadSuccess: (_, _, analytics) => analytics.totalImpressions,
-          orElse: () => -1,
-        ),
-        1000,
-      );
-    });
+        expect(
+          notifier.state.maybeWhen(
+            loadSuccess: (_, _, analytics) => analytics.totalReach,
+            orElse: () => -1,
+          ),
+          1000,
+        );
+      },
+    );
 
     test('a failing targets call fails the load', () async {
       final notifier = await _settled(

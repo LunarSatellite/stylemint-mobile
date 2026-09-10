@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -85,6 +85,7 @@ class ReelPlayer extends StatefulWidget {
     required this.reel,
     required this.isActive,
     this.playbackController,
+    this.externalLauncher = const ReelExternalLauncher(),
     this.autoplay = false,
     super.key,
   });
@@ -99,6 +100,10 @@ class ReelPlayer extends StatefulWidget {
   /// Optional handle so an ancestor can toggle play/pause on tap.
   final ReelPlaybackController? playbackController;
 
+  /// Opens provider permalinks in the native app with a browser fallback.
+  /// Injectable so the hand-off behavior can be verified without leaving tests.
+  final ReelExternalLauncher externalLauncher;
+
   /// When true the player auto-starts on first render and (for YouTube)
   /// is created already unmuted so the IFrame autoplay policy does not
   /// silently drop programmatic playVideo() calls. Defaults to false
@@ -111,8 +116,7 @@ class ReelPlayer extends StatefulWidget {
   State<ReelPlayer> createState() => _ReelPlayerState();
 }
 
-class _ReelPlayerState extends State<ReelPlayer>
-    with WidgetsBindingObserver {
+class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
   // Direct .mp4 playback (Instagram).
   VideoPlayerController? _controller;
   bool _initialized = false;
@@ -209,11 +213,16 @@ class _ReelPlayerState extends State<ReelPlayer>
       // prefetch has usually landed, so this is a cache hit and starts
       // without touching the network.
       final platform = widget.reel.platform ?? SocialPlatform.instagram;
-      if (widget.isActive && platform == SocialPlatform.instagram && _controller == null && !_hasError) {
+      if (widget.isActive &&
+          platform == SocialPlatform.instagram &&
+          _controller == null &&
+          !_hasError) {
         unawaited(_initInstagramVideo());
       }
       // YouTube: initialize when this reel becomes active
-      if (widget.isActive && platform == SocialPlatform.youtube && _ytController == null) {
+      if (widget.isActive &&
+          platform == SocialPlatform.youtube &&
+          _ytController == null) {
         _initYouTube();
       }
 
@@ -225,8 +234,6 @@ class _ReelPlayerState extends State<ReelPlayer>
     final platform = widget.reel.platform ?? SocialPlatform.instagram;
     switch (platform) {
       case SocialPlatform.instagram:
-        _initInstagramVideo();
-        break;
         // Only the reel actually on screen gets an ExoPlayer. The PageView
         // keeps both neighbours alive (allowImplicitScrolling), and three
         // simultaneous initialise() calls split the connection three ways —
@@ -261,8 +268,7 @@ class _ReelPlayerState extends State<ReelPlayer>
   Future<void> _prefetchInstagramVideo() async {
     final url = widget.reel.videoUrl;
     if (url == null || url.isEmpty) return;
-    await ReelVideoCache.instance
-        .prefetch(cacheKey: _videoCacheKey, url: url);
+    await ReelVideoCache.instance.prefetch(cacheKey: _videoCacheKey, url: url);
   }
 
   Future<void> _initInstagramVideo() async {
@@ -413,7 +419,9 @@ class _ReelPlayerState extends State<ReelPlayer>
   /// walk into the inner document once the player has rendered it.
   /// Retries for ~6 s so we do not race the YT IFrame API on a slow first
   /// paint.
-  Future<void> _injectYouTubeOverlayHidingCss(InAppWebViewController webController) async {
+  Future<void> _injectYouTubeOverlayHidingCss(
+    InAppWebViewController webController,
+  ) async {
     // The listener may have queued this call against a controller
     // that has since been torn down (permalinks changed, widget
     // disposed, user scrolled away mid-loop). The
@@ -642,7 +650,8 @@ class _ReelPlayerState extends State<ReelPlayer>
   }
 })()
 
-''';final js = jsTemplate.replaceFirst(r'$css', css);
+''';
+    final js = jsTemplate.replaceFirst(r'$css', css);
     try {
       await webController.evaluateJavascript(source: js);
     } catch (_) {
@@ -692,9 +701,7 @@ class _ReelPlayerState extends State<ReelPlayer>
     if (_controller != null && _initialized && !_controller!.value.isPlaying) {
       unawaited(_controller!.play());
     }
-    if (_ytReady &&
-        _ytController != null &&
-        !_ytController!.value.isPlaying) {
+    if (_ytReady && _ytController != null && !_ytController!.value.isPlaying) {
       _ytController!.play();
     }
   }
@@ -741,9 +748,9 @@ class _ReelPlayerState extends State<ReelPlayer>
   }
 
   Future<void> _openExternally() async {
-    final url = Uri.tryParse(widget.reel.permalink);
-    if (url == null) return;
-    await launchUrl(url, mode: LaunchMode.externalApplication);
+    final permalink = Uri.tryParse(widget.reel.permalink);
+    if (permalink == null) return;
+    await widget.externalLauncher.open(permalink);
   }
 
   @override
@@ -887,62 +894,70 @@ class _ReelPlayerState extends State<ReelPlayer>
   }
 
   Widget _buildExternalLayer(SocialPlatform platform) {
-    return ColoredBox(
-      color: DesignTokens.baseBlack,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if ((widget.reel.thumbnailUrl ?? '').isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: widget.reel.thumbnailUrl!,
-              fit: BoxFit.cover,
-              placeholder: (_, _) =>
-                  const ColoredBox(color: DesignTokens.bgAppBodyLight),
-              errorWidget: (_, _, _) => const ColoredBox(
-                color: DesignTokens.bgAppBodyLight,
-                child: Icon(
-                  Icons.image_not_supported_outlined,
-                  color: DesignTokens.iconLight,
-                ),
-              ),
-            ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: DesignTokens.baseBlack.withValues(alpha: 0.45),
-                  ),
-                  padding: const EdgeInsets.all(DesignTokens.s16),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    size: DesignTokens.iconLarge,
-                    color: DesignTokens.iconWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s12),
-                TextButton.icon(
-                  onPressed: _openExternally,
-                  icon: const Icon(
-                    Icons.open_in_new_rounded,
-                    size: 18,
-                    color: DesignTokens.iconWhite,
-                  ),
-                  label: Text(
-                    'Watch on ${platform.displayName}',
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      color: DesignTokens.iconWhite,
-                      fontWeight: FontWeight.w600,
+    return Semantics(
+      button: true,
+      label: 'Open reel on ${platform.displayName}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _openExternally,
+        child: ColoredBox(
+          color: DesignTokens.baseBlack,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if ((widget.reel.thumbnailUrl ?? '').isNotEmpty)
+                CachedNetworkImage(
+                  imageUrl: widget.reel.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) =>
+                      const ColoredBox(color: DesignTokens.bgAppBodyLight),
+                  errorWidget: (_, _, _) => const ColoredBox(
+                    color: DesignTokens.bgAppBodyLight,
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      color: DesignTokens.iconLight,
                     ),
                   ),
                 ),
-              ],
-            ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+                      ),
+                      padding: const EdgeInsets.all(DesignTokens.s16),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        size: DesignTokens.iconLarge,
+                        color: DesignTokens.iconWhite,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.s12),
+                    TextButton.icon(
+                      onPressed: _openExternally,
+                      icon: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: DesignTokens.iconWhite,
+                      ),
+                      label: Text(
+                        'Watch on ${platform.displayName}',
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          color: DesignTokens.iconWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

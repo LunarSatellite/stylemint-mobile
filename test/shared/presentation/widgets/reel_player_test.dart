@@ -9,6 +9,9 @@ class _ExternalReel implements ReelMedia {
   const _ExternalReel();
 
   @override
+  String? get platformVideoId => '123';
+
+  @override
   SocialPlatform? get platform => SocialPlatform.tiktok;
 
   @override
