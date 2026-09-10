@@ -7,7 +7,10 @@ abstract interface class AddProductRepository {
   Future<Either<NetworkExceptions, List<CategoryOption>>> fetchCategories();
 
   /// Creates the draft and fills steps 2-4, returning the new product id.
-  Future<Either<NetworkExceptions, String>> submitDraft(ProductDraft draft);
+  Future<Either<NetworkExceptions, String>> submitDraft(
+    ProductDraft draft, {
+    required String idempotencyKey,
+  });
 
   Future<Either<NetworkExceptions, String>> uploadImage(String filePath);
 

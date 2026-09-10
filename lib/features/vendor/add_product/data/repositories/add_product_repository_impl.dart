@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -8,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/data/datas
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/repositories/add_product_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:uuid/uuid.dart';
 
 class AddProductRepositoryImpl implements AddProductRepository {
   AddProductRepositoryImpl({
@@ -33,14 +33,22 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
   @override
   Future<Either<NetworkExceptions, String>> submitDraft(
-    ProductDraft draft,
-  ) async {
+    ProductDraft draft, {
+    required String idempotencyKey,
+  }) async {
     return _guard(() async {
-      // POST start creates the draft with basic info; steps 2-4 fill the rest.
-      final productId = await remoteDataSource.startDraft(
-        _basicBody(draft),
-        _uuid.v4(),
-      );
+      // POST start creates the draft with basic info; subsequent saves update
+      // that same draft. The stable key also makes a retry safe when the first
+      // attempt created the row but failed during a later PATCH.
+      final productId = draft.id.isEmpty
+          ? await remoteDataSource.startDraft(
+              _basicBody(draft),
+              idempotencyKey,
+            )
+          : draft.id;
+      if (draft.id.isNotEmpty) {
+        await remoteDataSource.patchStep1(productId, _basicBody(draft));
+      }
       await remoteDataSource.patchStep2(productId, _mediaBodyFromDraft(draft));
       await remoteDataSource.patchStep3(
         productId,
@@ -135,16 +143,20 @@ class AddProductRepositoryImpl implements AddProductRepository {
       _shippingBody(d.shippingInfo);
 
   Map<String, dynamic> _shippingBody(ShippingInfo s) {
-    final grams =
-        (s.weightUnit.toLowerCase() == 'kg' ? s.weight * 1000 : s.weight)
-            .round();
+    const poundsToGrams = 453.59237;
+    const inchesToCentimeters = 2.54;
+    final grams = switch (s.weightUnit.toLowerCase()) {
+      'kg' => (s.weight * 1000).round(),
+      'lbs' || 'lb' => (s.weight * poundsToGrams).round(),
+      _ => s.weight.round(),
+    };
     return {
       'processingTimeDays': s.deliveryEstimateMin,
       'shipsFromAddressId': null,
       'weightGrams': grams,
-      'lengthCm': s.dimensionsLength.round(),
-      'widthCm': s.dimensionsWidth.round(),
-      'heightCm': s.dimensionsHeight.round(),
+      'lengthCm': (s.dimensionsLength * inchesToCentimeters).round(),
+      'widthCm': (s.dimensionsWidth * inchesToCentimeters).round(),
+      'heightCm': (s.dimensionsHeight * inchesToCentimeters).round(),
       'shippingOptions': [
         if (s.requiresShipping)
           {
@@ -196,6 +208,8 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
       final priceCurrency = variant['priceCurrency'] as String? ?? 'NPR';
       final weightGrams = variant['weightGrams'] as int? ?? 0;
+      const poundsToGrams = 453.59237;
+      const inchesToCentimeters = 2.54;
 
       return ProductFormState(
         currentStep: 1,
@@ -253,11 +267,17 @@ class AddProductRepositoryImpl implements AddProductRepository {
           billingCadence: variant['billingCadence'] as int? ?? 1,
         ),
         step4: ShippingInfo(
-          weight: weightGrams / 1000,
-          weightUnit: 'kg',
-          dimensionsLength: (variant['lengthCm'] as num? ?? 0).toDouble(),
-          dimensionsWidth: (variant['widthCm'] as num? ?? 0).toDouble(),
-          dimensionsHeight: (variant['heightCm'] as num? ?? 0).toDouble(),
+          weight: weightGrams / poundsToGrams,
+          weightUnit: 'lbs',
+          dimensionsLength:
+              (variant['lengthCm'] as num? ?? 0).toDouble() /
+              inchesToCentimeters,
+          dimensionsWidth:
+              (variant['widthCm'] as num? ?? 0).toDouble() /
+              inchesToCentimeters,
+          dimensionsHeight:
+              (variant['heightCm'] as num? ?? 0).toDouble() /
+              inchesToCentimeters,
           requiresShipping: firstShipping != null,
           shippingFee: firstShipping == null
               ? null

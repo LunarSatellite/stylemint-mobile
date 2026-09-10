@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/step1_basic_info_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/step2_images_screen.dart';
@@ -99,6 +100,27 @@ class _AddProductWizardScreenState
     }
   }
 
+  Future<void> _saveDraft() async {
+    setState(() => _saving = true);
+    await ref.read(addProductNotifierProvider.notifier).saveDraft();
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    ref
+        .read(addProductNotifierProvider)
+        .maybeWhen(
+          saveSuccess: (_, _) => SmSnackbar.success(context, 'Draft saved.'),
+          saveFailure: (_, failure) => SmSnackbar.error(
+            context,
+            'Failed to save draft: ${NetworkExceptions.getMessage(failure)}',
+          ),
+          orElse: () => SmSnackbar.info(
+            context,
+            'Complete all steps to save as draft.',
+          ),
+        );
+  }
+
   Future<bool> _confirmDiscardChanges() async {
     final result = await showDialog<bool>(
       context: context,
@@ -143,7 +165,8 @@ class _AddProductWizardScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(addProductNotifierProvider);
 
-    final currentStep = state.maybeWhen(
+    final currentStep = state
+        .maybeWhen(
           loadSuccess: (fs) => fs.currentStep,
           loadInProgress: (fs) => fs.currentStep,
           saveInProgress: (fs) => fs.currentStep,
@@ -158,8 +181,6 @@ class _AddProductWizardScreenState
         // step screens' `nextStep()` calls don't index past the end of
         // the IndexedStack below.
         .clamp(1, _isEditMode ? 4 : 5);
-
-    final notifier = ref.read(addProductNotifierProvider.notifier);
 
     return PopScope(
       // Always intercept the system back gesture so we can prompt on
@@ -198,29 +219,22 @@ class _AddProductWizardScreenState
               )
             else
               TextButton(
-                onPressed: () async {
-                  await notifier.saveDraft();
-                  if (!context.mounted) return;
-                  final saved = ref
-                      .read(addProductNotifierProvider)
-                      .maybeWhen(
-                        saveSuccess: (_, d) => true,
-                        orElse: () => false,
-                      );
-                  if (saved) {
-                    SmSnackbar.success(context, 'Draft saved.');
-                  } else {
-                    SmSnackbar.info(
-                      context,
-                      'Complete all steps to save as draft.',
-                    );
-                  }
-                },
-                child: Text(
-                  'Save as Draft',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.primaryGreen),
-                ),
+                onPressed: _saving ? null : _saveDraft,
+                child: _saving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      )
+                    : Text(
+                        'Save as Draft',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
               ),
           ],
         ),
@@ -231,40 +245,40 @@ class _AddProductWizardScreenState
                 ),
               )
             : _loadFailed
-                ? _LoadFailedView(onRetry: _loadForEdit)
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s16,
-                          vertical: DesignTokens.s12,
-                        ),
-                        child: WizardStepIndicator(
-                          currentStep: currentStep,
-                          totalSteps: _isEditMode ? 4 : 5,
-                        ),
-                      ),
-                      Expanded(
-                        child: IndexedStack(
-                          index: currentStep - 1,
-                          children: _isEditMode
-                              ? const [
-                                  Step1BasicInfoScreen(),
-                                  Step2ImagesScreen(),
-                                  Step3PricingScreen(),
-                                  Step4ShippingScreen(),
-                                ]
-                              : const [
-                                  Step1BasicInfoScreen(),
-                                  Step2ImagesScreen(),
-                                  Step3PricingScreen(),
-                                  Step4ShippingScreen(),
-                                  Step5ReviewScreen(),
-                                ],
-                        ),
-                      ),
-                    ],
+            ? _LoadFailedView(onRetry: _loadForEdit)
+            : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s16,
+                      vertical: DesignTokens.s12,
+                    ),
+                    child: WizardStepIndicator(
+                      currentStep: currentStep,
+                      totalSteps: _isEditMode ? 4 : 5,
+                    ),
                   ),
+                  Expanded(
+                    child: IndexedStack(
+                      index: currentStep - 1,
+                      children: _isEditMode
+                          ? const [
+                              Step1BasicInfoScreen(),
+                              Step2ImagesScreen(),
+                              Step3PricingScreen(),
+                              Step4ShippingScreen(),
+                            ]
+                          : const [
+                              Step1BasicInfoScreen(),
+                              Step2ImagesScreen(),
+                              Step3PricingScreen(),
+                              Step4ShippingScreen(),
+                              Step5ReviewScreen(),
+                            ],
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

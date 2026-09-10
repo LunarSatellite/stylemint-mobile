@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -25,15 +25,6 @@ class Step5ReviewScreen extends ConsumerWidget {
           SmSnackbar.error(
             context,
             'Failed to publish product: ${NetworkExceptions.getMessage(e)}',
-          );
-        },
-        saveSuccess: (_, d) {
-          SmSnackbar.success(context, 'Draft saved!');
-        },
-        saveFailure: (_, e) {
-          SmSnackbar.error(
-            context,
-            'Failed to save draft: ${NetworkExceptions.getMessage(e)}',
           );
         },
         orElse: () {},
@@ -60,8 +51,10 @@ class Step5ReviewScreen extends ConsumerWidget {
       );
     }
 
-    final isPublishing =
-        state.maybeWhen(publishing: (_) => true, orElse: () => false);
+    final isPublishing = state.maybeWhen(
+      publishing: (_) => true,
+      orElse: () => false,
+    );
 
     final pricing = review.pricingInfo;
     final shipping = review.shippingInfo;
@@ -84,11 +77,13 @@ class Step5ReviewScreen extends ConsumerWidget {
     final effectivePrice = baseAmt - discAmt;
     final costAmt = pricing.costPerItem?.amount ?? 0.0;
     final profit = effectivePrice - costAmt;
-    final profitPct =
-        effectivePrice > 0 ? (profit / effectivePrice * 100) : 0.0;
+    final profitPct = effectivePrice > 0
+        ? (profit / effectivePrice * 100)
+        : 0.0;
     final commissionRate = pricing.commissionRate;
-    final creatorsEarn =
-        commissionRate != null ? effectivePrice * commissionRate / 100 : null;
+    final creatorsEarn = commissionRate != null
+        ? effectivePrice * commissionRate / 100
+        : null;
 
     // Shipping options text
     final shippingOptions = <String>[];
@@ -148,12 +143,13 @@ class Step5ReviewScreen extends ConsumerWidget {
                     _BoldValueRow(basic.productName),
                     if (basic.categories.isNotEmpty)
                       _LabelValueRow(basic.categories.join(' - ')),
-                    if (basic.brand != null)
-                      _LabelValueRow(basic.brand!),
-                    _LabelValueRow(basic.shortDescription.isNotEmpty
-                        ? basic.shortDescription
-                        : basic.description,
-                        maxLines: 3),
+                    if (basic.brand != null) _LabelValueRow(basic.brand!),
+                    _LabelValueRow(
+                      basic.shortDescription.isNotEmpty
+                          ? basic.shortDescription
+                          : basic.description,
+                      maxLines: 3,
+                    ),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s12),
@@ -194,8 +190,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                       label: 'Cost Per Item',
                       value: costStr,
                     ),
-                    _ProfitRow(
-                        profit: profit, profitPct: profitPct),
+                    _ProfitRow(profit: profit, profitPct: profitPct),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s12),
@@ -250,8 +245,7 @@ class Step5ReviewScreen extends ConsumerWidget {
                   children: [
                     _DataRow(
                       label: 'Weight',
-                      value:
-                          '${shipping.weight} ${shipping.weightUnit}',
+                      value: '${shipping.weight} ${shipping.weightUnit}',
                     ),
                     _DataRow(
                       label: 'Length',
@@ -269,10 +263,8 @@ class Step5ReviewScreen extends ConsumerWidget {
                       label: 'Shipping Options',
                       value: shippingOptions.join(', '),
                     ),
-                    const _DataRow(
-                        label: 'Ships From', value: '-'),
-                    const _DataRow(
-                        label: 'Processing Time', value: '-'),
+                    const _DataRow(label: 'Ships From', value: '-'),
+                    const _DataRow(label: 'Processing Time', value: '-'),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s16),
@@ -285,48 +277,48 @@ class Step5ReviewScreen extends ConsumerWidget {
         SafeArea(
           top: false,
           child: Container(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s24,
-            DesignTokens.s16,
-            DesignTokens.s16,
-          ),
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppFoundation,
-            border: Border(
-              top: BorderSide(color: DesignTokens.borderDefault),
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s24,
+              DesignTokens.s16,
+              DesignTokens.s16,
             ),
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              onPressed: isPublishing
-                  ? null
-                  : () => ref
-                      .read(addProductNotifierProvider.notifier)
-                      .publish(),
-              style: DesignTokens.primaryButtonStyle(),
-              child: isPublishing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    )
-                  : const Text(
-                      'Publish Product',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: DesignTokens.buttonPrimaryText,
-                      ),
-                    ),
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppFoundation,
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault),
+              ),
             ),
-          ),
+            child: SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                onPressed: isPublishing
+                    ? null
+                    : () => ref
+                          .read(addProductNotifierProvider.notifier)
+                          .publish(),
+                style: DesignTokens.primaryButtonStyle(),
+                child: isPublishing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      )
+                    : const Text(
+                        'Publish Product',
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
+                      ),
+              ),
+            ),
           ),
         ),
       ],
@@ -522,12 +514,15 @@ class _ProfitRow extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s8, vertical: 3),
+              horizontal: DesignTokens.s8,
+              vertical: 3,
+            ),
             decoration: BoxDecoration(
               color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(99),
               border: Border.all(
-                  color: DesignTokens.primaryGreen.withValues(alpha: 0.4)),
+                color: DesignTokens.primaryGreen.withValues(alpha: 0.4),
+              ),
             ),
             child: Text(
               '${profit.toStringAsFixed(0)} (${profitPct.toStringAsFixed(0)}%)',
@@ -577,78 +572,81 @@ class _ImagesThumbnailRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-        ...visible.asMap().entries.map((e) {
-          final isPrimary = e.key == primaryIndex;
-          return Padding(
-            padding:
-                const EdgeInsets.only(right: DesignTokens.s8),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    e.value,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, st) => Container(
+          ...visible.asMap().entries.map((e) {
+            final isPrimary = e.key == primaryIndex;
+            return Padding(
+              padding: const EdgeInsets.only(right: DesignTokens.s8),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      e.value,
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.image,
-                          color: DesignTokens.textMuted),
-                    ),
-                  ),
-                ),
-                if (isPrimary)
-                  Positioned(
-                    bottom: 4,
-                    left: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: DesignTokens.primaryGreen,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'Main',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, st) => Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: DesignTokens.bgAppBodyLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.image,
+                          color: DesignTokens.textMuted,
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
-          );
-        }),
-        if (overflow > 0)
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: DesignTokens.bgAppBodyLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                '+$overflow',
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: DesignTokens.textWhite,
+                  if (isPrimary)
+                    Positioned(
+                      bottom: 4,
+                      left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: DesignTokens.primaryGreen,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Main',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+          if (overflow > 0)
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  '+$overflow',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.textWhite,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

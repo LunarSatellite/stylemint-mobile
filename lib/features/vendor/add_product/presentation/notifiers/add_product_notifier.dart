@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/repositories/add_product_repository.dart';
+import 'package:uuid/uuid.dart';
 
 part 'add_product_notifier.freezed.dart';
 
@@ -33,7 +34,8 @@ abstract class AddProductState with _$AddProductState {
   ) = _SaveFailure;
   const factory AddProductState.publishing(ProductFormState formState) =
       _Publishing;
-  const factory AddProductState.publishSuccess(String productId) = _PublishSuccess;
+  const factory AddProductState.publishSuccess(String productId) =
+      _PublishSuccess;
   const factory AddProductState.publishFailure(
     ProductFormState formState,
     NetworkExceptions failure,
@@ -42,12 +44,15 @@ abstract class AddProductState with _$AddProductState {
 
 class AddProductNotifier extends StateNotifier<AddProductState> {
   AddProductNotifier(this._repository)
-      : super(const AddProductState.initial()) {
+    : super(const AddProductState.initial()) {
     _formState = const ProductFormState(currentStep: 1);
   }
 
   final AddProductRepository _repository;
   late ProductFormState _formState;
+  static const _uuid = Uuid();
+  String _draftIdempotencyKey = _uuid.v4();
+  String? _draftId;
 
   // Tracks whether the form has been modified since the last load/save.
   // Used by the unified ProductFormScreen's unsaved-changes guard so the
@@ -68,6 +73,8 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   /// which then collided with the just-published product on submit.
   void reset() {
     _formState = const ProductFormState(currentStep: 1);
+    _draftIdempotencyKey = _uuid.v4();
+    _draftId = null;
     _isDirty = false;
     state = const AddProductState.initial();
   }
@@ -127,25 +134,34 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }
 
   ProductDraft _draftFrom({String id = ''}) => ProductDraft(
-        id: id,
-        basicInfo: _formState.step1!,
-        imagesInfo: _formState.step2!,
-        pricingInfo: _formState.step3!,
-        shippingInfo: _formState.step4!,
-        status: 'draft',
-      );
+    id: id,
+    basicInfo: _formState.step1!,
+    imagesInfo: _formState.step2!,
+    pricingInfo: _formState.step3!,
+    shippingInfo: _formState.step4!,
+    status: 'draft',
+  );
 
   Future<void> saveDraft({String? draftId}) async {
     if (!_formState.isValid) return;
     state = AddProductState.saveInProgress(_formState);
 
-    final draft = _draftFrom(id: draftId ?? '');
-    final either = await _repository.submitDraft(draft);
+    final draft = _draftFrom(id: draftId ?? _draftId ?? '');
+    final either = await _repository.submitDraft(
+      draft,
+      idempotencyKey: _draftIdempotencyKey,
+    );
 
     state = either.fold(
       (failure) => AddProductState.saveFailure(_formState, failure),
-      (productId) => AddProductState.saveSuccess(
-          _formState, draft.copyWith(id: productId)),
+      (productId) {
+        _draftId = productId;
+        _isDirty = false;
+        return AddProductState.saveSuccess(
+          _formState,
+          draft.copyWith(id: productId),
+        );
+      },
     );
   }
 
@@ -156,9 +172,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       (failure) => AddProductState.loadFailure(_formState, failure),
       (url) {
         final current = _formState.step2;
-        final images = current != null
-            ? [...current.images, url]
-            : [url];
+        final images = current != null ? [...current.images, url] : [url];
         final updated = ImagesInfo(
           images: images,
           primaryImageIndex: current?.primaryImageIndex ?? 0,
@@ -174,13 +188,19 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = AddProductState.publishing(_formState);
 
     // Create + fill the draft (start -> step 2-4), then publish the new id.
-    final submitEither = await _repository.submitDraft(_draftFrom(id: draftId ?? ''));
+    final submitEither = await _repository.submitDraft(
+      _draftFrom(id: draftId ?? _draftId ?? ''),
+      idempotencyKey: _draftIdempotencyKey,
+    );
     final productId = submitEither.fold(
       (failure) {
         state = AddProductState.publishFailure(_formState, failure);
         return null;
       },
-      (id) => id,
+      (id) {
+        _draftId = id;
+        return id;
+      },
     );
     if (productId == null) return;
 
@@ -254,8 +274,10 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   /// not `submitDraft`/`publish`, which are for brand-new products only.
   Future<bool> saveEditedDetails(String productId) async {
     if (!_formState.isValid) return false;
-    final either =
-        await _repository.updateProductDetails(productId, _formState);
+    final either = await _repository.updateProductDetails(
+      productId,
+      _formState,
+    );
     final ok = either.isRight();
     if (ok) {
       // Persisted -- clear the dirty flag so the unsaved-changes guard
