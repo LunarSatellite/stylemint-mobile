@@ -15,7 +15,12 @@ class VendorProductTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onMore;
 
-  static const _lowStockThreshold = 100;
+  // No per-product/vendor threshold exists on the backend yet, so this is a
+  // flat fallback. Was 100 — flagging "Low Stock" on anything under 100
+  // units marks nearly every small vendor's normal inventory (seen live:
+  // 48 units in stock still showed "Low Stock"), which is noise, not a
+  // useful signal. 10 is still a guess, just a much less alarmist one.
+  static const _lowStockThreshold = 10;
 
   bool get _isDraft => product.status == VendorProductStatus.draft;
   bool get _isOutOfStock => product.status == VendorProductStatus.outOfStock;
