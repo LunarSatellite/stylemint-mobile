@@ -267,7 +267,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               icon: Icons.star_outline_rounded,
               label: 'Rate the App',
               onTap: () {
-                /* TODO(profile): in-app review */
+                // In-app review needs a real Play Store/App Store listing,
+                // which this dev build doesn't have — was previously a
+                // silent no-op with no feedback at all when tapped, unlike
+                // every other not-yet-implemented action in this app (Live
+                // Chat, report saving, etc.), which all show a message.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Rating is coming soon.'),
+                  ),
+                );
               },
             ),
           ],
