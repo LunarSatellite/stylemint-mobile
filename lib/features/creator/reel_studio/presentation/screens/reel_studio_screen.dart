@@ -18,6 +18,14 @@ class ReelStudioScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
+      appBar: AppBar(
+        backgroundColor: DesignTokens.bgAppFoundation,
+        title: const Text('Reel Studio', style: DesignTokens.titleMedium),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
+          onPressed: () => context.pop(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: DesignTokens.primaryGreen,
         foregroundColor: DesignTokens.textDark,
