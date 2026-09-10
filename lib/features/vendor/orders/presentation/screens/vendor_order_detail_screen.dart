@@ -207,6 +207,50 @@ class _VendorOrderDetailScreenState
                   ),
                 ),
               if (order.status.isToShip) const SizedBox(height: 10),
+              // The backend's fulfillment lifecycle only ever reaches
+              // Delivered (and, downstream, the vendor's earnings ledger)
+              // through this action — there was previously no UI entry
+              // point for it anywhere in the app, so a vendor could ship
+              // an order but never actually mark it delivered or get paid
+              // out for it.
+              if (order.status.isInTransit)
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: actionInProgress
+                        ? null
+                        : () => ref
+                              .read(vendorOrderDetailNotifierProvider.notifier)
+                              .markDelivered(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DesignTokens.primaryGreen,
+                      foregroundColor: Colors.black,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: actionInProgress
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text(
+                            'Mark as Delivered',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              if (order.status.isInTransit) const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 height: 52,
