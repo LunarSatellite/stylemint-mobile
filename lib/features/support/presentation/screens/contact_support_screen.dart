@@ -98,7 +98,12 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                     const SizedBox(height: DesignTokens.s16),
 
                     // ── Quick actions ───────────────────────────────────
-                    _QuickActions(onTap: _showCreateTicketSheet),
+                    _QuickActions(
+                      onTrackOrder: () =>
+                          _showCreateTicketSheet(initialCategoryIndex: 0),
+                      onRefundReturns: () =>
+                          _showCreateTicketSheet(initialCategoryIndex: 1),
+                    ),
                     const SizedBox(height: DesignTokens.s20),
 
                     // ── Your Support Tickets ────────────────────────────
@@ -203,7 +208,10 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
     ).ignore();
   }
 
-  void _showCreateTicketSheet({String? prefilledIssue}) {
+  void _showCreateTicketSheet({
+    String? prefilledIssue,
+    int? initialCategoryIndex,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -213,7 +221,10 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
           top: Radius.circular(DesignTokens.cardRadius),
         ),
       ),
-      builder: (ctx) => _CreateTicketSheet(prefilledIssue: prefilledIssue),
+      builder: (ctx) => _CreateTicketSheet(
+        prefilledIssue: prefilledIssue,
+        initialCategoryIndex: initialCategoryIndex,
+      ),
     ).then((_) {
       if (mounted) {
         ref.read(supportNotifierProvider.notifier).loadTickets();
@@ -481,8 +492,9 @@ class _ChannelTile extends StatelessWidget {
 // ── Quick actions ─────────────────────────────────────────────────────────────
 
 class _QuickActions extends StatelessWidget {
-  const _QuickActions({required this.onTap});
-  final VoidCallback onTap;
+  const _QuickActions({required this.onTrackOrder, required this.onRefundReturns});
+  final VoidCallback onTrackOrder;
+  final VoidCallback onRefundReturns;
 
   @override
   Widget build(BuildContext context) {
@@ -492,7 +504,7 @@ class _QuickActions extends StatelessWidget {
           child: _QuickTile(
             icon: Icons.chat_bubble_outline_rounded,
             label: 'Track My Order',
-            onTap: onTap,
+            onTap: onTrackOrder,
           ),
         ),
         const SizedBox(width: DesignTokens.s12),
@@ -500,7 +512,7 @@ class _QuickActions extends StatelessWidget {
           child: _QuickTile(
             icon: Icons.assignment_return_outlined,
             label: 'Refund & Returns',
-            onTap: onTap,
+            onTap: onRefundReturns,
           ),
         ),
       ],
@@ -1066,8 +1078,14 @@ class _Thumbnail extends StatelessWidget {
 // ── Create ticket sheet ───────────────────────────────────────────────────────
 
 class _CreateTicketSheet extends ConsumerStatefulWidget {
-  const _CreateTicketSheet({this.prefilledIssue});
+  const _CreateTicketSheet({this.prefilledIssue, this.initialCategoryIndex});
   final String? prefilledIssue;
+
+  /// 0-based index into `SupportCategorySlug.All`/`TicketCategory.values`
+  /// order (0 = Orders & Shipping, 1 = Returns & Refunds, ...) — set when
+  /// this sheet is opened from a quick-action tile that implies a category,
+  /// rather than the generic "Create Support Ticket" entry point.
+  final int? initialCategoryIndex;
 
   @override
   ConsumerState<_CreateTicketSheet> createState() => _CreateTicketSheetState();
@@ -1077,6 +1095,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
   final _orderCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   SupportCategory? _selectedCategory;
+  bool _appliedInitialCategory = false;
   final List<XFile> _images = [];
   final _picker = ImagePicker();
 
@@ -1129,6 +1148,20 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_appliedInitialCategory && widget.initialCategoryIndex != null) {
+      final categoriesState = ref.watch(categoriesNotifierProvider);
+      categoriesState.whenOrNull(
+        loadSuccess: (categories) {
+          final index = widget.initialCategoryIndex!;
+          if (index >= 0 && index < categories.length) {
+            _appliedInitialCategory = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _selectedCategory = categories[index]);
+            });
+          }
+        },
+      );
+    }
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
