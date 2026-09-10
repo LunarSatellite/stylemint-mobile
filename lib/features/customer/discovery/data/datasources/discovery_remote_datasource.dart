@@ -11,15 +11,70 @@ class DiscoveryRemoteDataSource {
 
   static const _uuid = Uuid();
 
+  /// Assembles the Discover landing page from the four curated endpoints
+  /// that actually back it — there is no single `/v1/discover` payload.
+  /// (Previously this called `/v1/feed/explore`, which returns a bare array
+  /// of raw feed posts with none of these fields; the landing page was
+  /// permanently blank as a result.)
   Future<DiscoverDataDto> getDiscoverData() async {
-    final response = await apiClient.get('/v1/feed/explore');
-    // The explore feed returns a JSON array (`[]` when there is nothing to
-    // show). Only an object payload carries the curated discover sections, so
-    // anything that isn't a Map maps to an empty (default) DiscoverDataDto.
-    if (response is Map<String, dynamic>) {
-      return DiscoverDataDto.fromJson(response);
-    }
-    return const DiscoverDataDto();
+    final results = await Future.wait([
+      apiClient.get('/v1/public/categories'),
+      apiClient.get('/v1/public/popular-searches'),
+      apiClient.get('/api/v1/customer/discover/trending', queryParameters: {
+        'window': '7d',
+        'limit': 20,
+      }),
+      apiClient.get('/api/v1/customer/discover/top-creators'),
+    ]);
+
+    final categories = (results[0] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map((c) => DiscoverCategoryDto(
+              id: c['id'] as String? ?? '',
+              label: c['nameEn'] as String? ?? '',
+            ))
+        .where((c) => c.id.isNotEmpty)
+        .toList(growable: false);
+
+    final popularSearches = (results[1] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map((s) => s['label'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
+
+    final trendingPage = results[2] as Map<String, dynamic>? ?? const {};
+    final trending = (trendingPage['items'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['product'] as Map<String, dynamic>?)
+        .whereType<Map<String, dynamic>>()
+        .map((p) => TrendingProductDto(
+              id: p['productId'] as String? ?? '',
+              name: p['name'] as String? ?? '',
+              amount: (p['price'] as num?)?.toDouble() ?? 0,
+              currency: p['currency'] as String? ?? 'NPR',
+              imageUrl: p['heroImageUrl'] as String? ?? '',
+              rating: (p['averageRating'] as num?)?.toDouble() ?? 0,
+            ))
+        .toList(growable: false);
+
+    final topCreators = (results[3] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map((c) => DiscoverCreatorDto(
+              id: c['accountId'] as String? ?? '',
+              name: c['displayName'] as String? ?? '',
+              handle: c['handle'] as String? ?? '',
+              avatarUrl: c['avatarUrl'] as String? ?? '',
+              followers: (c['followerCount'] as num?)?.toInt() ?? 0,
+            ))
+        .where((c) => c.id.isNotEmpty)
+        .toList(growable: false);
+
+    return DiscoverDataDto(
+      popularSearches: popularSearches,
+      categories: categories,
+      trending: trending,
+      topCreators: topCreators,
+    );
   }
 
   /// Category landing is keyed by the category GUID supplied by Explore.
