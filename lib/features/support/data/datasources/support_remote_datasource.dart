@@ -95,4 +95,24 @@ class SupportRemoteDataSource {
     );
     return HelpArticleContentDto.fromJson(response as Map<String, dynamic>);
   }
+
+  /// `POST /v1/product-inquiries` — customer asks the vendor a question
+  /// about a product, optionally scoped to an order (skill §16 PDP / §22
+  /// order detail).
+  Future<void> openProductInquiry({
+    required String vendorAccountId,
+    required String question,
+    String? productId,
+    String? orderId,
+  }) async {
+    await apiClient.post(
+      '/v1/product-inquiries',
+      data: {
+        'vendorAccountId': vendorAccountId,
+        'question': question,
+        if (productId != null) 'productId': productId,
+        if (orderId != null) 'orderId': orderId,
+      },
+    );
+  }
 }

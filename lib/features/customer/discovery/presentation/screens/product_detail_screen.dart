@@ -16,8 +16,10 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -268,6 +270,8 @@ class _ProductBody extends StatelessWidget {
                     _SoldByRow(
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,
+                      vendorId: product.vendorId,
+                      productId: product.id,
                     ),
                     const SizedBox(height: DesignTokens.s12),
                     _ReviewsSection(
@@ -669,14 +673,21 @@ class _VariantChips extends StatelessWidget {
 
 // ── Sold By ───────────────────────────────────────────────────────────────────
 
-class _SoldByRow extends StatelessWidget {
-  const _SoldByRow({required this.vendorName, required this.vendorAvatarUrl});
+class _SoldByRow extends ConsumerWidget {
+  const _SoldByRow({
+    required this.vendorName,
+    required this.vendorAvatarUrl,
+    required this.vendorId,
+    required this.productId,
+  });
 
   final String vendorName;
   final String vendorAvatarUrl;
+  final String vendorId;
+  final String productId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: BoxDecoration(
@@ -700,15 +711,132 @@ class _SoldByRow extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: DesignTokens.s8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Sold By', style: DesignTokens.smallRegular),
-              Text(vendorName, style: DesignTokens.mediumSemibold),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sold By', style: DesignTokens.smallRegular),
+                Text(vendorName, style: DesignTokens.mediumSemibold),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => _AskQuestionDialog(
+                vendorId: vendorId,
+                productId: productId,
+              ),
+            ),
+            style: DesignTokens.outlinedButtonStyle(),
+            icon: const Icon(Icons.help_outline_rounded, size: 16),
+            label: const Text('Ask a question'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AskQuestionDialog extends ConsumerStatefulWidget {
+  const _AskQuestionDialog({required this.vendorId, required this.productId});
+
+  final String vendorId;
+  final String productId;
+
+  @override
+  ConsumerState<_AskQuestionDialog> createState() =>
+      _AskQuestionDialogState();
+}
+
+class _AskQuestionDialogState extends ConsumerState<_AskQuestionDialog> {
+  final _controller = TextEditingController();
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final question = _controller.text.trim();
+    if (question.isEmpty) {
+      setState(() => _error = 'Please enter your question.');
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final either = await ref
+        .read(supportRepositoryProvider)
+        .openProductInquiry(
+          vendorAccountId: widget.vendorId,
+          question: question,
+          productId: widget.productId,
+        );
+    if (!mounted) return;
+    either.fold(
+      (failure) => setState(() {
+        _submitting = false;
+        _error = 'Failed to send your question. Please try again.';
+      }),
+      (_) {
+        Navigator.pop(context);
+        SmSnackbar.success(context, 'Question sent to the vendor!');
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: DesignTokens.bgAppBody,
+      title: Text('Ask a Question', style: DesignTokens.sectionInnerTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            enabled: !_submitting,
+            style: DesignTokens.bodyText,
+            decoration: DesignTokens.inputDecoration(
+              hintText: 'Ask the vendor about this product',
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              _error!,
+              style: DesignTokens.smallRegular.copyWith(color: Colors.red),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.pop(context),
+          child: Text(
+            'Cancel',
+            style: DesignTokens.mediumRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: _submitting ? null : _submit,
+          child: Text(
+            'Send',
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: DesignTokens.primaryGreen,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

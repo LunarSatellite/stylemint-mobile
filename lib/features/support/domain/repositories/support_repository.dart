@@ -32,4 +32,11 @@ abstract interface class SupportRepository {
     String categoryCode,
     String slug,
   );
+
+  Future<Either<NetworkExceptions, Unit>> openProductInquiry({
+    required String vendorAccountId,
+    required String question,
+    String? productId,
+    String? orderId,
+  });
 }

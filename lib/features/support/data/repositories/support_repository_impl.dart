@@ -156,6 +156,22 @@ class SupportRepositoryImpl implements SupportRepository {
     )).toDomain(categoryCode),
   );
 
+  @override
+  Future<Either<NetworkExceptions, Unit>> openProductInquiry({
+    required String vendorAccountId,
+    required String question,
+    String? productId,
+    String? orderId,
+  }) => _helpRequest(() async {
+    await remoteDataSource.openProductInquiry(
+      vendorAccountId: vendorAccountId,
+      question: question,
+      productId: productId,
+      orderId: orderId,
+    );
+    return unit;
+  });
+
   Future<Either<NetworkExceptions, T>> _helpRequest<T>(
     Future<T> Function() request,
   ) async {
