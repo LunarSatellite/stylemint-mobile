@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -80,7 +81,15 @@ class PrivacyPolicyScreen extends ConsumerWidget {
           _SectionHeading('Quick Navigation'),
           const SizedBox(height: DesignTokens.s8),
           for (final item in _quickNav) ...[
-            _BulletLink(item, onTap: () {}),
+            _BulletLink(
+              item,
+              // Jump-to-section needs anchors this ListView doesn't have —
+              // several of these labels don't even correspond to a section
+              // that exists on the page yet. Previously a silent no-op.
+              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Jump to "$item" is coming soon.')),
+              ),
+            ),
           ],
           const SizedBox(height: DesignTokens.s24),
 
@@ -146,7 +155,14 @@ class PrivacyPolicyScreen extends ConsumerWidget {
             'Download My Data',
             onTap: () => _requestDataExport(context, ref),
           ),
-          _BulletLink('Delete My Account', onTap: () {}),
+          _BulletLink(
+            'Delete My Account',
+            // The real deletion flow lives on Edit Profile (delete-account
+            // sheet + pending-deletion tracking) — this link was
+            // previously a silent no-op implying a destructive action
+            // that didn't actually exist yet.
+            onTap: () => context.push(RouteNames.profileEdit),
+          ),
           const SizedBox(height: DesignTokens.s24),
 
           // 3. Contact Us

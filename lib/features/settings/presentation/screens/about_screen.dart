@@ -12,6 +12,15 @@ class AboutScreen extends StatelessWidget {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  // These bullet links were all previously `onTap: () {}` — styled and
+  // laid out exactly like the working links above them, but silently doing
+  // nothing when tapped, with no page or content behind them yet.
+  void _comingSoon(BuildContext context, String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label is coming soon.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,9 +227,18 @@ class AboutScreen extends StatelessWidget {
             'Privacy Policy',
             onTap: () => context.push('${RouteNames.settings}/privacy'),
           ),
-          _BulletLink('Cookie Policy', onTap: () {}),
-          _BulletLink('Community Guidelines', onTap: () {}),
-          _BulletLink('Intellectual Property', onTap: () {}),
+          _BulletLink(
+            'Cookie Policy',
+            onTap: () => _comingSoon(context, 'Cookie Policy'),
+          ),
+          _BulletLink(
+            'Community Guidelines',
+            onTap: () => _comingSoon(context, 'Community Guidelines'),
+          ),
+          _BulletLink(
+            'Intellectual Property',
+            onTap: () => _comingSoon(context, 'Intellectual Property'),
+          ),
           const SizedBox(height: DesignTokens.s32),
 
           // Resources
@@ -230,11 +248,20 @@ class AboutScreen extends StatelessWidget {
             'Help Center',
             onTap: () => context.push(RouteNames.support),
           ),
-          _BulletLink('Become a Creator', onTap: () {}),
-          _BulletLink('Sell on StyleMint', onTap: () {}),
-          _BulletLink('Press Kit', onTap: () {}),
-          _BulletLink('Careers', onTap: () {}),
-          _BulletLink('Blog', onTap: () {}),
+          _BulletLink(
+            'Become a Creator',
+            onTap: () => context.push(RouteNames.creatorApply),
+          ),
+          _BulletLink(
+            'Sell on StyleMint',
+            onTap: () => context.push(RouteNames.vendorApply),
+          ),
+          _BulletLink(
+            'Press Kit',
+            onTap: () => _comingSoon(context, 'Press Kit'),
+          ),
+          _BulletLink('Careers', onTap: () => _comingSoon(context, 'Careers')),
+          _BulletLink('Blog', onTap: () => _comingSoon(context, 'Blog')),
           const SizedBox(height: DesignTokens.s32),
 
           // App Information
@@ -244,8 +271,14 @@ class AboutScreen extends StatelessWidget {
           const _InfoRow(label: 'Build:', value: '456'),
           const _InfoRow(label: 'Released:', value: 'December 15, 2024'),
           const SizedBox(height: DesignTokens.s4),
-          _BulletLink('Check for Updates', onTap: () {}),
-          _BulletLink('View Release Notes', onTap: () {}),
+          _BulletLink(
+            'Check for Updates',
+            onTap: () => _comingSoon(context, 'Update checking'),
+          ),
+          _BulletLink(
+            'View Release Notes',
+            onTap: () => _comingSoon(context, 'Release notes'),
+          ),
           const SizedBox(height: DesignTokens.s32),
 
           // Licenses
@@ -255,7 +288,10 @@ class AboutScreen extends StatelessWidget {
             'Open Source Licenses',
             onTap: () => showLicensePage(context: context),
           ),
-          _BulletLink('Third-Party Services', onTap: () {}),
+          _BulletLink(
+            'Third-Party Services',
+            onTap: () => _comingSoon(context, 'Third-party services list'),
+          ),
           const SizedBox(height: DesignTokens.s32),
 
           // Footer
