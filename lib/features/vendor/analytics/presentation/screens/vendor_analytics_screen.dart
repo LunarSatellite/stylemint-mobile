@@ -820,29 +820,42 @@ Widget _creatorPerformanceSection(
         ],
       ),
       const SizedBox(height: 10),
-      Container(
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBodyLight,
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      if (creators.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'No creator activity yet',
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        )
+      else
+        Container(
+          decoration: BoxDecoration(
+            color: DesignTokens.bgAppBodyLight,
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          ),
+          child: Column(
+            children: creators.asMap().entries.map((e) {
+              final isLast = e.key == creators.length - 1;
+              return Column(
+                children: [
+                  _CreatorRow(creator: e.value),
+                  if (!isLast)
+                    const Divider(
+                      height: 1,
+                      color: DesignTokens.borderDefault,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
+                ],
+              );
+            }).toList(),
+          ),
         ),
-        child: Column(
-          children: creators.asMap().entries.map((e) {
-            final isLast = e.key == creators.length - 1;
-            return Column(
-              children: [
-                _CreatorRow(creator: e.value),
-                if (!isLast)
-                  const Divider(
-                    height: 1,
-                    color: DesignTokens.borderDefault,
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
     ],
   );
 }
