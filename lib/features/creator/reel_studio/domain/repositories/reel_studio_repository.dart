@@ -28,6 +28,7 @@ abstract interface class ReelStudioRepository {
     String? caption,
     List<String>? hashtags,
     List<String>? taggedProductIds,
+    SocialPlatform? platform,
   });
 
   Future<Either<NetworkExceptions, List<ReelDraft>>> getDrafts();

@@ -106,6 +106,7 @@ class ReelStudioRepositoryImpl implements ReelStudioRepository {
     String? caption,
     List<String>? hashtags,
     List<String>? taggedProductIds,
+    SocialPlatform? platform,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -114,6 +115,7 @@ class ReelStudioRepositoryImpl implements ReelStudioRepository {
           caption: caption,
           hashtags: hashtags,
           taggedProductIds: taggedProductIds,
+          platform: platform?.name,
           idempotencyKey: const Uuid().v4(),
         );
         return right(dto.toDomain());

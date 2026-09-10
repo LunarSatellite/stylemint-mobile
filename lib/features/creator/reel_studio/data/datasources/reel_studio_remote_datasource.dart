@@ -102,6 +102,7 @@ class ReelStudioRemoteDataSource {
     String? caption,
     List<String>? hashtags,
     List<String>? taggedProductIds,
+    String? platform,
     required String idempotencyKey,
   }) async {
     final response = await apiClient.put(
@@ -110,6 +111,7 @@ class ReelStudioRemoteDataSource {
         if (caption != null) 'caption': caption,
         if (hashtags != null) 'hashtags': hashtags,
         if (taggedProductIds != null) 'taggedProductIds': taggedProductIds,
+        if (platform != null) 'platform': platform,
       },
       options: Options(headers: {
         'requiresToken': true,

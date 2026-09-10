@@ -184,6 +184,7 @@ class CreateDraftNotifier extends StateNotifier<CreateDraftState> {
             caption: caption,
             hashtags: hashtags,
             taggedProductIds: taggedProductIds,
+            platform: platform,
           )
         : await _repository.createDraft(
             caption: caption,
