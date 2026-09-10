@@ -31,8 +31,10 @@ class GroupCartDetailScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Failed to load cart',
-                  style: DesignTokens.mediumRegular),
+              const Text(
+                'Failed to load cart',
+                style: DesignTokens.mediumRegular,
+              ),
               const SizedBox(height: DesignTokens.s12),
               ElevatedButton(
                 onPressed: () => ref
@@ -48,8 +50,7 @@ class GroupCartDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(
-      BuildContext context, WidgetRef ref, GroupCart cart) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, GroupCart cart) {
     return Column(
       children: [
         Padding(
@@ -61,54 +62,63 @@ class GroupCartDetailScreen extends ConsumerWidget {
               const SizedBox(height: DesignTokens.s8),
               Row(
                 children: [
-                  ...cart.participants.map((p) => Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Tooltip(
-                          message: p.userName,
-                          child: CircleAvatar(
-                            radius: 16,
-                            backgroundImage:
-                                NetworkImage(p.userAvatarUrl),
-                          ),
+                  ...cart.participants.map(
+                    (p) => Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Tooltip(
+                        message: p.userName,
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundImage: NetworkImage(p.userAvatarUrl),
                         ),
-                      )),
-                  const Spacer(),
-                  Text('${cart.items.length} items',
-                      style: DesignTokens.mediumRegular),
-                ],
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: DesignTokens.s12,
-                          vertical: DesignTokens.s8),
-                      decoration: BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.circular(
-                            DesignTokens.inputRadius),
                       ),
-                      child: Text('Code: ${cart.inviteCode}',
-                          style: DesignTokens.mediumRegular),
                     ),
                   ),
-                  const SizedBox(width: DesignTokens.s8),
-                  IconButton(
-                    icon: const Icon(Icons.copy,
-                        color: DesignTokens.primaryGreen),
-                    onPressed: () {
-                      Clipboard.setData(
-                          ClipboardData(text: cart.inviteCode));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Invite code copied!')),
-                      );
-                    },
+                  const Spacer(),
+                  Text(
+                    '${cart.items.length} items',
+                    style: DesignTokens.mediumRegular,
                   ),
                 ],
               ),
+              if (cart.inviteCode.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s12,
+                          vertical: DesignTokens.s8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: DesignTokens.bgAppBodyLight,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.inputRadius,
+                          ),
+                        ),
+                        child: Text(
+                          'Code: ${cart.inviteCode}',
+                          style: DesignTokens.mediumRegular,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.copy,
+                        color: DesignTokens.primaryGreen,
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: cart.inviteCode));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invite code copied!')),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -116,8 +126,11 @@ class GroupCartDetailScreen extends ConsumerWidget {
         Expanded(
           child: cart.items.isEmpty
               ? const Center(
-                  child: Text('No items yet. Add something!',
-                      style: DesignTokens.mediumRegular))
+                  child: Text(
+                    'No items yet. Add something!',
+                    style: DesignTokens.mediumRegular,
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   itemCount: cart.items.length,
@@ -128,8 +141,11 @@ class GroupCartDetailScreen extends ConsumerWidget {
                         item: cart.items[index],
                         onRemove: () {
                           ref
-                              .read(groupCartDetailNotifierProvider(cartId)
-                                  .notifier)
+                              .read(
+                                groupCartDetailNotifierProvider(
+                                  cartId,
+                                ).notifier,
+                              )
                               .removeItem(cart.id, cart.items[index].id);
                         },
                       ),
@@ -142,7 +158,8 @@ class GroupCartDetailScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: DesignTokens.bgAppBody,
             border: const Border(
-                top: BorderSide(color: DesignTokens.borderDefault)),
+              top: BorderSide(color: DesignTokens.borderDefault),
+            ),
           ),
           child: Row(
             children: [
@@ -151,19 +168,24 @@ class GroupCartDetailScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('Total', style: DesignTokens.smallRegular),
-                  Text(formatMoney(cart.subtotal),
-                      style: DesignTokens.sectionInnerTitle.copyWith(
-                          color: DesignTokens.primaryGreen)),
+                  Text(
+                    formatMoney(cart.subtotal),
+                    style: DesignTokens.sectionInnerTitle.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
                 ],
               ),
               const Spacer(),
               ElevatedButton.icon(
-                onPressed: cart.items.isNotEmpty &&
+                onPressed:
+                    cart.items.isNotEmpty &&
                         cart.status == GroupCartStatus.active
                     ? () {
                         ref
-                            .read(groupCartDetailNotifierProvider(cartId)
-                                .notifier)
+                            .read(
+                              groupCartDetailNotifierProvider(cartId).notifier,
+                            )
                             .checkout(cart.id);
                       }
                     : null,
@@ -172,12 +194,19 @@ class GroupCartDetailScreen extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: DesignTokens.buttonPrimaryText,
+                  minimumSize: const Size(
+                    0,
+                    DesignTokens.buttonHeight,
+                  ),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s20,
-                      vertical: DesignTokens.s12),
+                    horizontal: DesignTokens.s20,
+                    vertical: DesignTokens.s12,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius)),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
+                  ),
                 ),
               ),
             ],

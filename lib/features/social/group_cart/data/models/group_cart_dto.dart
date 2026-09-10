@@ -66,7 +66,8 @@ abstract class GroupCartDto with _$GroupCartDto {
     required String inviteCode,
     required String ownerId,
     required String ownerName,
-    @Default(<GroupCartParticipantDto>[]) List<GroupCartParticipantDto> participants,
+    @Default(<GroupCartParticipantDto>[])
+    List<GroupCartParticipantDto> participants,
     @Default(<GroupCartItemDto>[]) List<GroupCartItemDto> items,
     required double subtotalAmount,
     @Default('NPR') String subtotalCurrency,
@@ -79,14 +80,55 @@ abstract class GroupCartDto with _$GroupCartDto {
   factory GroupCartDto.fromJson(Map<String, dynamic> json) =>
       _$GroupCartDtoFromJson(json);
 
+  /// Maps the canonical Social Graph CartShare response into the richer
+  /// presentation model. Optional display fields are used when the backend
+  /// later supplies the denormalized cart/member projection.
+  factory GroupCartDto.fromCartShareJson(Map<String, dynamic> json) {
+    final rawState = json['status'] ?? json['state'];
+    final normalizedState = rawState is num
+        ? (rawState == 2 ? 'completed' : 'active')
+        : rawState.toString().toLowerCase().contains('closed')
+        ? 'completed'
+        : rawState.toString().toLowerCase();
+    final participantJson =
+        json['participants'] as List<dynamic>? ?? const <dynamic>[];
+    final itemJson = json['items'] as List<dynamic>? ?? const <dynamic>[];
+    final createdAtValue = json['createdAt'] ?? json['createdUtc'];
+
+    return GroupCartDto(
+      id: json['id'] as String,
+      name: json['name'] as String? ?? 'Group Cart',
+      inviteCode: json['inviteCode'] as String? ?? '',
+      ownerId: (json['ownerId'] ?? json['ownerAccountId']) as String? ?? '',
+      ownerName: json['ownerName'] as String? ?? 'Cart owner',
+      participants: participantJson
+          .map(
+            (item) => GroupCartParticipantDto.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList(growable: false),
+      items: itemJson
+          .map(
+            (item) => GroupCartItemDto.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList(growable: false),
+      subtotalAmount: (json['subtotalAmount'] as num?)?.toDouble() ?? 0,
+      subtotalCurrency: json['subtotalCurrency'] as String? ?? 'NPR',
+      status: normalizedState,
+      createdAt: DateTime.parse(createdAtValue as String),
+    );
+  }
+
   GroupCart toDomain() => GroupCart(
     id: id,
     name: name,
     inviteCode: inviteCode,
     ownerId: ownerId,
     ownerName: ownerName,
-    participants:
-        participants.map((p) => p.toDomain()).toList(growable: false),
+    participants: participants.map((p) => p.toDomain()).toList(growable: false),
     items: items.map((i) => i.toDomain()).toList(growable: false),
     subtotal: Money(amount: subtotalAmount, currency: subtotalCurrency),
     status: _parseStatus(status),

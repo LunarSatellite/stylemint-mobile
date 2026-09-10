@@ -35,8 +35,7 @@ abstract class GroupCartDetailState with _$GroupCartDetailState {
 }
 
 class GroupCartNotifier extends StateNotifier<GroupCartsState> {
-  GroupCartNotifier(this._repository)
-      : super(const GroupCartsState.initial()) {
+  GroupCartNotifier(this._repository) : super(const GroupCartsState.initial()) {
     unawaited(loadAll());
   }
 
@@ -51,8 +50,8 @@ class GroupCartNotifier extends StateNotifier<GroupCartsState> {
     );
   }
 
-  Future<Either<NetworkExceptions, GroupCart>> create(String name) async {
-    final either = await _repository.createGroupCart(name);
+  Future<Either<NetworkExceptions, GroupCart>> create() async {
+    final either = await _repository.createGroupCart();
     either.fold(
       (_) {},
       (_) => unawaited(loadAll()),
@@ -81,7 +80,7 @@ class GroupCartNotifier extends StateNotifier<GroupCartsState> {
 
 class GroupCartDetailNotifier extends StateNotifier<GroupCartDetailState> {
   GroupCartDetailNotifier(this._repository, String cartId)
-      : super(const GroupCartDetailState.initial()) {
+    : super(const GroupCartDetailState.initial()) {
     unawaited(loadCart(cartId));
   }
 

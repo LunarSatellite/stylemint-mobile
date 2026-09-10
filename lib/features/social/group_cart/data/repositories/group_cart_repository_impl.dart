@@ -38,7 +38,9 @@ class GroupCartRepositoryImpl implements GroupCartRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, GroupCart>> getGroupCart(String cartId) async {
+  Future<Either<NetworkExceptions, GroupCart>> getGroupCart(
+    String cartId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getGroupCart(cartId);
@@ -58,10 +60,10 @@ class GroupCartRepositoryImpl implements GroupCartRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, GroupCart>> createGroupCart(String name) async {
+  Future<Either<NetworkExceptions, GroupCart>> createGroupCart() async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.createGroupCart(name, _uuid.v4());
+        final dto = await remoteDataSource.createGroupCart(_uuid.v4());
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -78,10 +80,15 @@ class GroupCartRepositoryImpl implements GroupCartRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, GroupCart>> joinGroupCart(String inviteCode) async {
+  Future<Either<NetworkExceptions, GroupCart>> joinGroupCart(
+    String inviteCode,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.joinGroupCart(inviteCode, _uuid.v4());
+        final dto = await remoteDataSource.joinGroupCart(
+          inviteCode,
+          _uuid.v4(),
+        );
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {
@@ -150,7 +157,9 @@ class GroupCartRepositoryImpl implements GroupCartRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> checkoutGroupCart(String cartId) async {
+  Future<Either<NetworkExceptions, Unit>> checkoutGroupCart(
+    String cartId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         await remoteDataSource.checkoutGroupCart(cartId, _uuid.v4());

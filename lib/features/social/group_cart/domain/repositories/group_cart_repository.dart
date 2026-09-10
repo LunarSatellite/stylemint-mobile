@@ -7,7 +7,7 @@ abstract interface class GroupCartRepository {
 
   Future<Either<NetworkExceptions, GroupCart>> getGroupCart(String cartId);
 
-  Future<Either<NetworkExceptions, GroupCart>> createGroupCart(String name);
+  Future<Either<NetworkExceptions, GroupCart>> createGroupCart();
 
   Future<Either<NetworkExceptions, GroupCart>> joinGroupCart(String inviteCode);
 

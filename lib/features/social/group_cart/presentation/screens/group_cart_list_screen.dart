@@ -18,8 +18,7 @@ class GroupCartListScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title:
-            const Text('Group Carts', style: DesignTokens.sectionInnerTitle),
+        title: const Text('Group Carts', style: DesignTokens.sectionInnerTitle),
       ),
       body: state.when(
         initial: _loader,
@@ -29,8 +28,10 @@ class GroupCartListScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Failed to load group carts',
-                  style: DesignTokens.mediumRegular),
+              const Text(
+                'Failed to load group carts',
+                style: DesignTokens.mediumRegular,
+              ),
               const SizedBox(height: DesignTokens.s12),
               ElevatedButton(
                 onPressed: () =>
@@ -57,8 +58,10 @@ class GroupCartListScreen extends ConsumerWidget {
             backgroundColor: DesignTokens.primaryGreen,
             onPressed: () => _showCreateDialog(context, ref),
             icon: const Icon(Icons.add, color: DesignTokens.buttonPrimaryText),
-            label: const Text('Create Group Cart',
-                style: TextStyle(color: DesignTokens.buttonPrimaryText)),
+            label: const Text(
+              'Create Group Cart',
+              style: TextStyle(color: DesignTokens.buttonPrimaryText),
+            ),
           ),
         ],
       ),
@@ -66,22 +69,22 @@ class GroupCartListScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(
-      BuildContext context, WidgetRef ref, List<GroupCart> carts) {
+    BuildContext context,
+    WidgetRef ref,
+    List<GroupCart> carts,
+  ) {
     if (carts.isEmpty) {
       return const Center(
-        child: Text('No active group carts',
-            style: DesignTokens.mediumRegular),
+        child: Text('No active group carts', style: DesignTokens.mediumRegular),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: () =>
-          ref.read(groupCartsNotifierProvider.notifier).loadAll(),
+      onRefresh: () => ref.read(groupCartsNotifierProvider.notifier).loadAll(),
       child: ListView.separated(
         padding: const EdgeInsets.all(DesignTokens.s16),
         itemCount: carts.length,
-        separatorBuilder: (_, __) =>
-            const SizedBox(height: DesignTokens.s12),
+        separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
         itemBuilder: (context, index) {
           final cart = carts[index];
           return _buildCartTile(context, cart);
@@ -108,8 +111,7 @@ class GroupCartListScreen extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(cart.name,
-                      style: DesignTokens.oneLinerSemibold),
+                  child: Text(cart.name, style: DesignTokens.oneLinerSemibold),
                 ),
                 _statusBadge(cart.status),
               ],
@@ -120,13 +122,14 @@ class GroupCartListScreen extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ...cart.participants.take(3).map(
+                    ...cart.participants
+                        .take(3)
+                        .map(
                           (p) => Padding(
                             padding: const EdgeInsets.only(right: 2),
                             child: CircleAvatar(
                               radius: 14,
-                              backgroundImage:
-                                  NetworkImage(p.userAvatarUrl),
+                              backgroundImage: NetworkImage(p.userAvatarUrl),
                             ),
                           ),
                         ),
@@ -142,17 +145,26 @@ class GroupCartListScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(width: DesignTokens.s12),
-                Text('${cart.items.length} items',
-                    style: DesignTokens.mediumRegular),
+                Text(
+                  '${cart.items.length} items',
+                  style: DesignTokens.mediumRegular,
+                ),
                 const Spacer(),
-                Text(formatMoney(cart.subtotal),
-                    style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.primaryGreen)),
+                Text(
+                  formatMoney(cart.subtotal),
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.primaryGreen,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: DesignTokens.s8),
-            Text('Code: ${cart.inviteCode}',
-                style: DesignTokens.smallRegular),
+            if (cart.inviteCode.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                'Code: ${cart.inviteCode}',
+                style: DesignTokens.smallRegular,
+              ),
+            ],
           ],
         ),
       ),
@@ -174,28 +186,27 @@ class GroupCartListScreen extends ConsumerWidget {
         label = 'Completed';
     }
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: DesignTokens.s8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
       ),
-      child: Text(label,
-          style: DesignTokens.tiny.copyWith(color: color)),
+      child: Text(label, style: DesignTokens.tiny.copyWith(color: color)),
     );
   }
 
   void _showCreateDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
         title: const Text('Create Group Cart'),
-        content: TextField(
-          controller: controller,
-          decoration: DesignTokens.inputDecoration(hintText: 'Cart name'),
-          style: DesignTokens.oneLinerRegular,
+        content: const Text(
+          'Share your current cart so invited friends can view and vote on it.',
+          style: DesignTokens.mediumRegular,
         ),
         actions: [
           TextButton(
@@ -204,13 +215,8 @@ class GroupCartListScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                ref
-                    .read(groupCartsNotifierProvider.notifier)
-                    .create(name);
-                Navigator.of(ctx).pop();
-              }
+              ref.read(groupCartsNotifierProvider.notifier).create();
+              Navigator.of(ctx).pop();
             },
             style: DesignTokens.primaryButtonStyle(),
             child: const Text('Create'),
@@ -229,8 +235,9 @@ class GroupCartListScreen extends ConsumerWidget {
         title: const Text('Join Group Cart'),
         content: TextField(
           controller: controller,
-          decoration:
-              DesignTokens.inputDecoration(hintText: 'Enter invite code'),
+          decoration: DesignTokens.inputDecoration(
+            hintText: 'Enter invite code',
+          ),
           style: DesignTokens.oneLinerRegular,
         ),
         actions: [
@@ -242,9 +249,7 @@ class GroupCartListScreen extends ConsumerWidget {
             onPressed: () {
               final code = controller.text.trim();
               if (code.isNotEmpty) {
-                ref
-                    .read(groupCartsNotifierProvider.notifier)
-                    .join(code);
+                ref.read(groupCartsNotifierProvider.notifier).join(code);
                 Navigator.of(ctx).pop();
               }
             },

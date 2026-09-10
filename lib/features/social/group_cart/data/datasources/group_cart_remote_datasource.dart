@@ -9,27 +9,31 @@ class GroupCartRemoteDataSource {
 
   Future<List<GroupCartDto>> getGroupCarts() async {
     final response = await apiClient.get('/v1/cart-shares');
-    final items = (response as List<dynamic>?)
-        ?.map((e) => GroupCartDto.fromJson(e as Map<String, dynamic>))
+    final page = response as Map<String, dynamic>;
+    final items = (page['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (e) => GroupCartDto.fromCartShareJson(
+            e as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
-    return items ?? const [];
+    return items;
   }
 
   Future<GroupCartDto> getGroupCart(String cartId) async {
     final response = await apiClient.get('/v1/cart-shares/$cartId');
-    return GroupCartDto.fromJson(response as Map<String, dynamic>);
+    return GroupCartDto.fromCartShareJson(response as Map<String, dynamic>);
   }
 
   Future<GroupCartDto> createGroupCart(
-    String name,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
       '/v1/cart-shares',
-      data: {'name': name},
+      data: <String, dynamic>{},
       options: _idempotent(idempotencyKey),
     );
-    return GroupCartDto.fromJson(response as Map<String, dynamic>);
+    return GroupCartDto.fromCartShareJson(response as Map<String, dynamic>);
   }
 
   Future<GroupCartDto> joinGroupCart(
@@ -43,7 +47,7 @@ class GroupCartRemoteDataSource {
       data: {'token': inviteCode},
       options: _idempotent(idempotencyKey),
     );
-    return GroupCartDto.fromJson(response as Map<String, dynamic>);
+    return GroupCartDto.fromCartShareJson(response as Map<String, dynamic>);
   }
 
   /// TODO(swagger): No cart-share items endpoint — cart lines managed via /v1/cart/lines.
