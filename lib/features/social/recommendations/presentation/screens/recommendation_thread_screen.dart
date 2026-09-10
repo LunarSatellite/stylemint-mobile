@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/domain/entities/recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/presentation/notifiers/recommendations_notifier.dart';
@@ -90,10 +93,9 @@ class _RecommendationThreadScreenState
         },
         threadLoadFailure: (_, __, ___, failure) => SmErrorView(
           message: 'Failed to load thread.',
-          onRetry: () =>
-              ref
-                  .read(recommendationsNotifierProvider.notifier)
-                  .loadThread(widget.requestId),
+          onRetry: () => ref
+              .read(recommendationsNotifierProvider.notifier)
+              .loadThread(widget.requestId),
         ),
       ),
     );
@@ -243,10 +245,9 @@ class _RecommendationThreadScreenState
                   ),
                 ),
                 GestureDetector(
-                  onTap: () =>
-                      ref
-                          .read(recommendationsNotifierProvider.notifier)
-                          .likeReply(reply.id),
+                  onTap: () => ref
+                      .read(recommendationsNotifierProvider.notifier)
+                      .likeReply(reply.id),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -271,7 +272,19 @@ class _RecommendationThreadScreenState
               const SizedBox(height: DesignTokens.s8),
               InkWell(
                 onTap: () {
-                  if (reply.suggestedProductUrl != null) {}
+                  // Backend doesn't populate this field yet (always null in
+                  // practice) — was previously an empty if-block that did
+                  // nothing even when a URL was present, silently eating
+                  // the tap on this chip.
+                  final url = reply.suggestedProductUrl;
+                  if (url != null) {
+                    unawaited(
+                      launchUrl(
+                        Uri.parse(url),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    );
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(DesignTokens.s8),
@@ -339,7 +352,8 @@ class _RecommendationThreadScreenState
           Row(
             children: [
               GestureDetector(
-                onTap: () => setState(() => _showProductField = !_showProductField),
+                onTap: () =>
+                    setState(() => _showProductField = !_showProductField),
                 child: Container(
                   padding: const EdgeInsets.all(DesignTokens.s8),
                   decoration: BoxDecoration(

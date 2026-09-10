@@ -28,17 +28,22 @@ class CoWatchSessionScreen extends ConsumerWidget {
       body: state.when(
         initial: _loader,
         loadInProgress: _loader,
-        loadSuccess: (session) =>
-            _buildContent(context, ref, session),
+        loadSuccess: (session) => _buildContent(context, ref, session),
         loadFailure: (failure) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Failed to load session',
-                  style: DesignTokens.mediumRegular),
+              const Text(
+                'Failed to load session',
+                style: DesignTokens.mediumRegular,
+              ),
               const SizedBox(height: DesignTokens.s12),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () => ref
+                    .read(
+                      coWatchSessionDetailNotifierProvider(sessionId).notifier,
+                    )
+                    .loadSession(sessionId),
                 style: DesignTokens.primaryButtonStyle(),
                 child: const Text('Retry'),
               ),
@@ -50,15 +55,22 @@ class CoWatchSessionScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(
-      BuildContext context, WidgetRef ref, CoWatchSession session) {
+    BuildContext context,
+    WidgetRef ref,
+    CoWatchSession session,
+  ) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s16, vertical: DesignTokens.s8),
+            horizontal: DesignTokens.s16,
+            vertical: DesignTokens.s8,
+          ),
           child: Row(
             children: [
-              ...session.participants.take(5).map(
+              ...session.participants
+                  .take(5)
+                  .map(
                     (p) => Padding(
                       padding: const EdgeInsets.only(right: 4),
                       child: CircleAvatar(
@@ -92,8 +104,10 @@ class CoWatchSessionScreen extends ConsumerWidget {
             child: Stack(
               children: [
                 Center(
-                  child: Image.network(session.thumbnailUrl,
-                      fit: BoxFit.contain),
+                  child: Image.network(
+                    session.thumbnailUrl,
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 const Positioned(
                   bottom: DesignTokens.s8,
@@ -109,7 +123,8 @@ class CoWatchSessionScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: DesignTokens.bgAppBody,
             border: const Border(
-                top: BorderSide(color: DesignTokens.borderDefault)),
+              top: BorderSide(color: DesignTokens.borderDefault),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -126,7 +141,8 @@ class CoWatchSessionScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: DesignTokens.bgAppBodyLight,
                         borderRadius: BorderRadius.circular(
-                            DesignTokens.chipRadius),
+                          DesignTokens.chipRadius,
+                        ),
                       ),
                       child: Text(emoji, style: const TextStyle(fontSize: 28)),
                     ),
@@ -149,8 +165,8 @@ class CoWatchSessionScreen extends ConsumerWidget {
               foregroundColor: DesignTokens.colorError,
               side: const BorderSide(color: DesignTokens.colorError),
               shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(DesignTokens.buttonRadius)),
+                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+              ),
             ),
             child: const Text('Leave Session'),
           ),
@@ -182,15 +198,18 @@ class _FloatingReactionsState extends State<_FloatingReactions>
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 2), (_) {
       setState(() {
-        _reactions.add(_FloatingReaction(
-          emoji: _emojiList[_random.nextInt(_emojiList.length)],
-          left: _random.nextDouble() * 0.6 + 0.2,
-          startTime: DateTime.now(),
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-        ));
+        _reactions.add(
+          _FloatingReaction(
+            emoji: _emojiList[_random.nextInt(_emojiList.length)],
+            left: _random.nextDouble() * 0.6 + 0.2,
+            startTime: DateTime.now(),
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+          ),
+        );
       });
       _reactions.removeWhere(
-          (r) => DateTime.now().difference(r.startTime).inSeconds > 3);
+        (r) => DateTime.now().difference(r.startTime).inSeconds > 3,
+      );
     });
   }
 
@@ -218,8 +237,7 @@ class _FloatingReactionsState extends State<_FloatingReactions>
               opacity: DateTime.now().difference(r.startTime).inSeconds > 2
                   ? 0.0
                   : 1.0,
-              child: Text(r.emoji,
-                  style: const TextStyle(fontSize: 24)),
+              child: Text(r.emoji, style: const TextStyle(fontSize: 24)),
             ),
           );
         }).toList(),

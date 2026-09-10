@@ -126,11 +126,20 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
             ],
           ),
           IconButton(
+            tooltip: 'Activity log',
             icon: const Icon(
               Icons.receipt_long_outlined,
               color: DesignTokens.textWhite,
             ),
-            onPressed: () {},
+            // No destination was ever wired up here — was a silent no-op
+            // with no tooltip and no feedback at all when tapped.
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Full activity log is coming soon.'),
+                ),
+              );
+            },
           ),
         ],
       ),

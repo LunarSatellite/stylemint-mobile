@@ -30,7 +30,8 @@ class StoriesScreen extends ConsumerWidget {
               vertical: DesignTokens.s8,
             ),
             itemCount: groups.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: DesignTokens.s12),
+            separatorBuilder: (_, __) =>
+                const SizedBox(width: DesignTokens.s12),
             itemBuilder: (context, index) {
               if (index == 0) {
                 return StoryCircleAvatar(
@@ -39,7 +40,15 @@ class StoriesScreen extends ConsumerWidget {
                   hasUnwatched: false,
                   isMyStory: true,
                   onTap: () {
-                    // navigate to create story
+                    // Real creation flow needs a media picker + upload UI
+                    // that doesn't exist yet (StoriesNotifier.createStory
+                    // takes a mediaFile) — was previously a silent no-op
+                    // with no explanation at all.
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Posting a story is coming soon.'),
+                      ),
+                    );
                   },
                 );
               }
