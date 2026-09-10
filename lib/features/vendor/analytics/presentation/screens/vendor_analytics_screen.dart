@@ -493,7 +493,10 @@ class _LineChart extends StatelessWidget {
             ? '${thousands.toStringAsFixed(0)}k'
             : '${thousands.toStringAsFixed(1)}k';
       }
-      return v.toStringAsFixed(0);
+      // Same collision just below the 1000 threshold.
+      return v == v.roundToDouble()
+          ? v.toStringAsFixed(0)
+          : v.toStringAsFixed(1);
     });
 
     return Row(
@@ -538,7 +541,8 @@ class _LineChart extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(xLabels.length, (i) {
-                    final show = i == 0 ||
+                    final show =
+                        i == 0 ||
                         i == xLabels.length - 1 ||
                         i == xLabels.length ~/ 2;
                     return Text(

@@ -381,9 +381,12 @@ class _EarningsLinePainter extends CustomPainter {
         .toList(growable: false);
 
     final yMax = (maxVal * 1.1).ceilToDouble();
+    // Not roundToDouble() here — that collapses adjacent gridlines to the
+    // same integer (e.g. yMax=2 gives 0, 0.4, 0.8, 1.2, 1.6, 2.0 rounding
+    // to 0, 0, 1, 1, 2, 2). Let _formatYLabel choose the precision instead.
     final yLabels = List.generate(
       6,
-      (i) => _formatYLabel((yMax * i / 5).roundToDouble()),
+      (i) => _formatYLabel(yMax * i / 5),
     );
 
     final chartW = size.width - _leftPad;
@@ -494,7 +497,10 @@ class _EarningsLinePainter extends CustomPainter {
           ? '${thousands.toStringAsFixed(0)}k'
           : '${thousands.toStringAsFixed(1)}k';
     }
-    return v.toStringAsFixed(0);
+    // Same collision as the "k" branch above, just below the 1000
+    // threshold: rounding e.g. 2.0/1.6/1.2/0.8/0.4/0 straight to 0
+    // decimals collapses adjacent gridlines into "2, 2, 1, 1, 0, 0".
+    return v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
   }
 
   @override
@@ -565,9 +571,11 @@ class _BarChartPainter extends CustomPainter {
         .toList(growable: false);
     final maxVal = barData.reduce(math.max).clamp(1.0, double.infinity) * 1.1;
 
+    // Not roundToDouble() here — same collision as the earnings chart
+    // above; let _formatYLabel choose the precision instead.
     final yLabels = List.generate(
       8,
-      (i) => _formatYLabel((maxVal * i / 7).roundToDouble()),
+      (i) => _formatYLabel(maxVal * i / 7),
     );
     final xLabels = List.generate(
       performance.length,
@@ -649,7 +657,10 @@ class _BarChartPainter extends CustomPainter {
           ? '${thousands.toStringAsFixed(0)}k'
           : '${thousands.toStringAsFixed(1)}k';
     }
-    return v.toStringAsFixed(0);
+    // Same collision as the "k" branch above, just below the 1000
+    // threshold: rounding straight to 0 decimals can collapse adjacent
+    // gridlines into the same label.
+    return v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
   }
 
   @override

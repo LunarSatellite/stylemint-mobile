@@ -85,20 +85,27 @@ class AnalyticsScreen extends ConsumerWidget {
                   : Container(
                       color: DesignTokens.bgAppBodyLight,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.person_rounded,
-                          size: 20, color: DesignTokens.textMuted),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 20,
+                        color: DesignTokens.textMuted,
+                      ),
                     ),
             ),
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.search_rounded,
-                color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.search_rounded,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () => context.push(RouteNames.creatorSearch),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded,
-                color: DesignTokens.textWhite),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: DesignTokens.textWhite,
+            ),
             onPressed: () => context.push(RouteNames.creatorActivity),
           ),
         ],
@@ -123,7 +130,9 @@ class _FullReportButton extends StatelessWidget {
           backgroundColor: DesignTokens.primaryGreen,
           foregroundColor: DesignTokens.buttonPrimaryText,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8), // small radius – rectangle with slight rounding
+            borderRadius: BorderRadius.circular(
+              8,
+            ), // small radius – rectangle with slight rounding
           ),
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
@@ -160,8 +169,7 @@ class _LoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: CircularProgressIndicator(
-        valueColor:
-            AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
+        valueColor: AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
       ),
     );
   }
@@ -179,8 +187,9 @@ class _ErrorView extends StatelessWidget {
         children: [
           Text(
             'Failed to load analytics.',
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
           ElevatedButton(
@@ -543,26 +552,24 @@ class _TopReelsSection extends StatelessWidget {
         if (topReels.isEmpty)
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: DesignTokens.s16),
+              padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
               child: Text(
                 'No reel data available.',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           )
         else
           ...topReels.asMap().entries.map(
-                (e) => Padding(
-                  padding: EdgeInsets.only(
-                    bottom: e.key < topReels.length - 1
-                        ? DesignTokens.s12
-                        : 0,
-                  ),
-                  child: _TopReelCard(reel: e.value),
-                ),
+            (e) => Padding(
+              padding: EdgeInsets.only(
+                bottom: e.key < topReels.length - 1 ? DesignTokens.s12 : 0,
               ),
+              child: _TopReelCard(reel: e.value),
+            ),
+          ),
       ],
     );
   }
@@ -608,8 +615,7 @@ class _TopReelCardState extends State<_TopReelCard> {
                         width: 72,
                         height: 72,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const _PlaceholderThumb(),
+                        errorBuilder: (_, __, ___) => const _PlaceholderThumb(),
                       )
                     : const _PlaceholderThumb(),
               ),
@@ -767,21 +773,22 @@ class _EarningTrendSection extends ConsumerWidget {
               loadFailure: (_) => Center(
                 child: Text(
                   'Could not load trend data.',
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
               loadSuccess: (overview) => overview.earningsTrend.isEmpty
                   ? Center(
                       child: Text(
                         'No trend data available.',
-                        style: DesignTokens.smallRegular
-                            .copyWith(color: DesignTokens.textMuted),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
                       ),
                     )
                   : CustomPaint(
-                      painter:
-                          _TrendChartPainter(overview.earningsTrend),
+                      painter: _TrendChartPainter(overview.earningsTrend),
                       size: Size.infinite,
                     ),
             ),
@@ -799,8 +806,7 @@ class _ChartLoadingPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: CircularProgressIndicator(
-        valueColor:
-            AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
+        valueColor: AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
         strokeWidth: 2,
       ),
     );
@@ -846,24 +852,36 @@ class _TrendChartPainter extends CustomPainter {
       final label = tickValue == 0
           ? '0'
           : tickValue >= 1000000
-              ? '${(tickValue / 1000000).toStringAsFixed(1)}M'
-              : tickValue >= 1000
-                  ? (thousands == thousands.roundToDouble()
-                      ? '${thousands.toStringAsFixed(0)}k'
-                      : '${thousands.toStringAsFixed(1)}k')
-                  : tickValue.toStringAsFixed(0);
+          ? '${(tickValue / 1000000).toStringAsFixed(1)}M'
+          : tickValue >= 1000
+          ? (thousands == thousands.roundToDouble()
+                ? '${thousands.toStringAsFixed(0)}k'
+                : '${thousands.toStringAsFixed(1)}k')
+          // Same collision just below the 1000 threshold — fall
+          // back to 1 decimal whenever the value isn't a whole
+          // number, so adjacent gridlines stay visually distinct.
+          : (tickValue == tickValue.roundToDouble()
+                ? tickValue.toStringAsFixed(0)
+                : tickValue.toStringAsFixed(1));
       _paintText(
-          canvas, label, Offset(0, y - 6), _leftPad - 2, TextAlign.right);
+        canvas,
+        label,
+        Offset(0, y - 6),
+        _leftPad - 2,
+        TextAlign.right,
+      );
     }
 
     if (amounts.length < 2) return;
 
     final pts = <Offset>[];
     for (var i = 0; i < amounts.length; i++) {
-      pts.add(Offset(
-        chartL + i / (amounts.length - 1) * chartW,
-        chartB - amounts[i] / maxValue * chartH,
-      ));
+      pts.add(
+        Offset(
+          chartL + i / (amounts.length - 1) * chartW,
+          chartB - amounts[i] / maxValue * chartH,
+        ),
+      );
     }
 
     final areaPath = Path()..moveTo(pts.first.dx, chartB);
@@ -919,8 +937,18 @@ class _TrendChartPainter extends CustomPainter {
 
   String _formatAxisDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}';
   }
@@ -928,8 +956,7 @@ class _TrendChartPainter extends CustomPainter {
   void _addBezier(Path path, List<Offset> pts) {
     for (var i = 1; i < pts.length; i++) {
       final cpX = (pts[i - 1].dx + pts[i].dx) / 2;
-      path.cubicTo(
-          cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
+      path.cubicTo(cpX, pts[i - 1].dy, cpX, pts[i].dy, pts[i].dx, pts[i].dy);
     }
   }
 
@@ -994,8 +1021,9 @@ class _TopProductsSection extends StatelessWidget {
             child: Center(
               child: Text(
                 'No product data available.',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ),
           )
@@ -1009,8 +1037,7 @@ class _TopProductsSection extends StatelessWidget {
                 name: product.name.isNotEmpty ? product.name : 'Product',
                 totalSales: product.totalSales,
                 commission: _formatMoney(product.totalCommission),
-                rate:
-                    '${product.commissionRatePercent.toStringAsFixed(1)}%',
+                rate: '${product.commissionRatePercent.toStringAsFixed(1)}%',
                 average: _formatMoney(product.avgCommissionPerSale),
                 accentColor: accent,
                 icon: Icons.inventory_2_outlined,
@@ -1081,8 +1108,7 @@ class _TopProductItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
-                const Divider(
-                    color: DesignTokens.borderDefault, height: 1),
+                const Divider(color: DesignTokens.borderDefault, height: 1),
                 const SizedBox(height: DesignTokens.s8),
                 _InfoRow(label: 'Total Commission', value: commission),
                 const SizedBox(height: DesignTokens.s4),
@@ -1140,76 +1166,84 @@ class _AnalyticsBottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accountId = ref.watch(sessionControllerProvider)
+    final accountId = ref
+        .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
     return Container(
       height: 68 + MediaQuery.of(context).padding.bottom,
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavBtn(
-            iconWidget: const Icon(Icons.home_rounded,
-                size: 22, color: DesignTokens.textMuted),
-            label: 'Home',
-            onTap: () => context.go(RouteNames.creatorHome),
-          ),
-          _NavBtn(
-            iconWidget: Image.asset(
-              'assets/images/creatordash/Analytics_Icon_green.png',
-              width: 22,
-              height: 22,
-            ),
-            label: 'Analytics',
-            active: true,
-            onTap: null,
-          ),
-          GestureDetector(
-            onTap: () => context.push(RouteNames.reelImport),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: DesignTokens.primaryGreen,
-                shape: BoxShape.circle,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _NavBtn(
+              iconWidget: const Icon(
+                Icons.home_rounded,
+                size: 22,
+                color: DesignTokens.textMuted,
               ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.add_rounded,
-                color: DesignTokens.buttonPrimaryText,
-                size: 26,
+              label: 'Home',
+              onTap: () => context.go(RouteNames.creatorHome),
+            ),
+            _NavBtn(
+              iconWidget: Image.asset(
+                'assets/images/creatordash/Analytics_Icon_green.png',
+                width: 22,
+                height: 22,
+              ),
+              label: 'Analytics',
+              active: true,
+              onTap: null,
+            ),
+            GestureDetector(
+              onTap: () => context.push(RouteNames.reelImport),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: DesignTokens.primaryGreen,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: DesignTokens.buttonPrimaryText,
+                  size: 26,
+                ),
               ),
             ),
-          ),
-          _NavBtn(
-            iconWidget: Image.asset(
+            _NavBtn(
+              iconWidget: Image.asset(
                 'assets/images/creatordash/Brand_Icon.png',
                 width: 22,
-                height: 22),
-            label: 'Brands',
-            onTap: () => context.push(RouteNames.partnerships),
-          ),
-          _NavBtn(
-            iconWidget: const Icon(Icons.person_rounded,
-                size: 22, color: DesignTokens.textMuted),
-            label: 'Profile',
-            onTap: () => context.push(
-              RouteNames.creatorProfile
-                  .replaceFirst(':accountId', accountId),
-              extra: CreatorProfileArgs(
-                accountId: accountId,
-                displayName: '',
-                handle: '',
+                height: 22,
+              ),
+              label: 'Brands',
+              onTap: () => context.push(RouteNames.partnerships),
+            ),
+            _NavBtn(
+              iconWidget: const Icon(
+                Icons.person_rounded,
+                size: 22,
+                color: DesignTokens.textMuted,
+              ),
+              label: 'Profile',
+              onTap: () => context.push(
+                RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+                extra: CreatorProfileArgs(
+                  accountId: accountId,
+                  displayName: '',
+                  handle: '',
+                ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -1231,8 +1265,7 @@ class _NavBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
+    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -1265,8 +1298,7 @@ class _NavBtn extends StatelessWidget {
 String _formatMoney(Money money) {
   final amount = money.amount;
   final isWhole = amount == amount.truncateToDouble();
-  final raw =
-      isWhole ? amount.toInt().toString() : amount.toStringAsFixed(2);
+  final raw = isWhole ? amount.toInt().toString() : amount.toStringAsFixed(2);
   final parts = raw.split('.');
   final intPart = parts[0].replaceAllMapped(
     RegExp(r'(\d)(?=(\d{3})+$)'),
@@ -1289,8 +1321,18 @@ String _formatCount(int count) {
 
 String _formatPostedAt(DateTime dt) {
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
   final min = dt.minute.toString().padLeft(2, '0');

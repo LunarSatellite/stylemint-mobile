@@ -528,7 +528,9 @@ class _RevenueHeroCard extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 'Total Revenue',
-                style: DesignTokens.tiny.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ],
           ),
@@ -858,9 +860,7 @@ class _ReviewTabButton extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected
-                  ? DesignTokens.primaryGreen
-                  : Colors.transparent,
+              color: selected ? DesignTokens.primaryGreen : Colors.transparent,
               width: 2,
             ),
           ),
@@ -1292,7 +1292,10 @@ class _EarningsChartPainter extends CustomPainter {
           ? (thousands == thousands.roundToDouble()
                 ? '${thousands.toStringAsFixed(0)}k'
                 : '${thousands.toStringAsFixed(1)}k')
-          : value.toStringAsFixed(0);
+          // Same collision just below the 1000 threshold.
+          : (value == value.roundToDouble()
+                ? value.toStringAsFixed(0)
+                : value.toStringAsFixed(1));
       final tp = TextPainter(
         text: TextSpan(text: label, style: labelStyle),
         textDirection: TextDirection.ltr,

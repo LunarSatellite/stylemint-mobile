@@ -999,15 +999,20 @@ class _EarningsLinePainter extends CustomPainter {
     for (int i = 0; i <= ySteps; i++) {
       final y = chartH - (i / ySteps) * chartH;
       canvas.drawLine(Offset(_leftPad, y), Offset(size.width, y), gridPaint);
-      final val = (maxVal * i / ySteps).round();
+      final rawVal = maxVal * i / ySteps;
+      final val = rawVal.round();
       // 0-decimal rounding can collapse adjacent gridlines onto the same
       // label (e.g. 1800 and 2400 both showing "2k") — fall back to 1
       // decimal whenever the value isn't a whole number of thousands.
+      // Same collision applies below 1000: round rawVal (not the already
+      // int-rounded val) so fractional gridlines stay visually distinct.
       final label = val >= 1000
           ? (val % 1000 == 0
                 ? '${val ~/ 1000}k'
                 : '${(val / 1000).toStringAsFixed(1)}k')
-          : '$val';
+          : (rawVal == rawVal.roundToDouble()
+                ? val.toString()
+                : rawVal.toStringAsFixed(1));
       final tp = TextPainter(
         text: TextSpan(
           text: label,
