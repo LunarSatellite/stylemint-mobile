@@ -33,17 +33,7 @@ class SearchScreen extends ConsumerWidget {
                 DesignTokens.s16,
                 0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Search', style: DesignTokens.titleLarge),
-                  Icon(
-                    Icons.tune_rounded,
-                    color: DesignTokens.iconWhite,
-                    size: 22,
-                  ),
-                ],
-              ),
+              child: Text('Search', style: DesignTokens.titleLarge),
             ),
             Padding(
               padding: const EdgeInsets.all(DesignTokens.s16),
