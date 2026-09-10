@@ -1,6 +1,7 @@
 ﻿import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
@@ -15,7 +16,16 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// there's no file/multipart field on the invite contract â€” so the picked
 /// file stays local and is never actually sent anywhere.
 class SendPartnershipRequestScreen extends ConsumerStatefulWidget {
-  const SendPartnershipRequestScreen({super.key});
+  const SendPartnershipRequestScreen({
+    this.initialCreator,
+    this.initialCommissionPercent,
+    this.brandBriefId,
+    super.key,
+  });
+
+  final CreatorInvite? initialCreator;
+  final double? initialCommissionPercent;
+  final String? brandBriefId;
 
   @override
   ConsumerState<SendPartnershipRequestScreen> createState() =>
@@ -28,6 +38,17 @@ class _SendPartnershipRequestScreenState
   final _commissionCtrl = TextEditingController();
   final _messageCtrl = TextEditingController();
   PlatformFile? _termsDocument;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCreator = widget.initialCreator;
+    if (widget.initialCommissionPercent case final rate?) {
+      _commissionCtrl.text = rate
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'\.?0+$'), '');
+    }
+  }
 
   @override
   void dispose() {
@@ -70,6 +91,16 @@ class _SendPartnershipRequestScreenState
     return '$count';
   }
 
+  static String _creatorDetails(CreatorInvite creator) {
+    final details = <String>[
+      if ((creator.displayName ?? '').trim().isNotEmpty &&
+          creator.displayHandle != null)
+        creator.displayHandle!,
+      ...creator.niches,
+    ];
+    return details.isEmpty ? 'Matched creator' : details.join(' • ');
+  }
+
   void _submit() {
     final creator = _selectedCreator;
     final rate = double.tryParse(_commissionCtrl.text);
@@ -80,6 +111,7 @@ class _SendPartnershipRequestScreenState
           creatorAccountId: creator.creatorAccountId,
           commissionMinPercent: rate / 100,
           commissionMaxPercent: rate / 100,
+          brandBriefId: widget.brandBriefId,
           message: _messageCtrl.text.trim().isEmpty
               ? null
               : _messageCtrl.text.trim(),
@@ -101,12 +133,12 @@ class _SendPartnershipRequestScreenState
             const SnackBar(content: Text('Partnership request sent!')),
           );
           ref.read(inviteCreatorNotifierProvider.notifier).reset();
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         },
-        failure: (_) {
+        failure: (failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to send partnership request.'),
+            SnackBar(
+              content: Text(NetworkExceptions.getMessage(failure)),
             ),
           );
         },
@@ -171,12 +203,7 @@ class _SendPartnershipRequestScreenState
                           const SizedBox(height: 4),
                           Text(
                             _selectedCreator != null
-                                ? [
-                                    if (_selectedCreator!.handle != null)
-                                      '@${_selectedCreator!.handle}',
-                                    if (_selectedCreator!.niches.isNotEmpty)
-                                      _selectedCreator!.niches.join(', '),
-                                  ].join(' â€¢ ')
+                                ? _creatorDetails(_selectedCreator!)
                                 : 'Search and select the creator you want send a partnership request',
                             style: DesignTokens.smallRegular.copyWith(
                               color: DesignTokens.textMuted,

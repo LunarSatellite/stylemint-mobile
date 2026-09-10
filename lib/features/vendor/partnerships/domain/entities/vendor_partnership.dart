@@ -152,12 +152,19 @@ class CreatorInvite {
   final List<String> niches;
   final bool hasExistingPartnership;
 
+  String? get normalizedHandle {
+    final value = handle?.trim().replaceFirst(RegExp(r'^@+'), '');
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  String? get displayHandle =>
+      normalizedHandle == null ? null : '@$normalizedHandle';
+
   /// Best available label: display name → @handle → short id fallback.
   String get label {
     final name = displayName?.trim();
     if (name != null && name.isNotEmpty) return name;
-    final h = handle?.trim();
-    if (h != null && h.isNotEmpty) return '@$h';
+    if (displayHandle case final h?) return h;
     return creatorAccountId.length >= 8
         ? 'Creator ••${creatorAccountId.substring(creatorAccountId.length - 4)}'
         : 'Creator';

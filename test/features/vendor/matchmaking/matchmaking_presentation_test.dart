@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/entities/matchmaking.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/widgets/compatibility_score_widget.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
 
 void main() {
   group('MatchRecommendation presentation', () {
@@ -32,6 +35,15 @@ void main() {
     });
   });
 
+  test('creator invite normalizes API handles that already include @', () {
+    const creator = CreatorInvite(
+      creatorAccountId: 'creator-1',
+      handle: '@techwithrohan',
+    );
+
+    expect(creator.displayHandle, '@techwithrohan');
+    expect(creator.label, '@techwithrohan');
+  });
   testWidgets('compatibility score has one meaningful semantics label', (
     tester,
   ) async {
@@ -46,5 +58,32 @@ void main() {
     expect(find.bySemanticsLabel('28%'), findsNothing);
 
     semantics.dispose();
+  });
+  testWidgets('partnership request accepts the matchmaking prefill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: SendPartnershipRequestScreen(
+            initialCreator: CreatorInvite(
+              creatorAccountId: 'creator-1',
+              handle: 'techwithrohan',
+            ),
+            initialCommissionPercent: 12.5,
+            brandBriefId: 'brief-1',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('@techwithrohan'), findsOneWidget);
+    expect(find.text('Matched creator'), findsOneWidget);
+    final commission = tester.widget<TextField>(find.byType(TextField).first);
+    expect(commission.controller!.text, '12.5');
+    expect(
+      tester.widget<ElevatedButton>(find.byType(ElevatedButton)).onPressed,
+      isNotNull,
+    );
   });
 }

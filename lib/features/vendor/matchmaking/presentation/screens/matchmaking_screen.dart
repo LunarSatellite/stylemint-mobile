@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/domain/ent
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/notifiers/matchmaking_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/widgets/compatibility_score_widget.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/entities/vendor_partnership.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/send_partnership_request_screen.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -28,24 +30,8 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
     ref.listen<InviteState>(inviteCreatorNotifierProvider, (_, next) {
       next.maybeWhen(
         success: (prefill) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Creator invited! Suggested commission: '
-                '${prefill.proposedCommissionPercent.toStringAsFixed(0)}% '
-                '(range ${prefill.brandCommissionMinPercent.toStringAsFixed(0)}'
-                '–${prefill.brandCommissionMaxPercent.toStringAsFixed(0)}%)',
-              ),
-            ),
-          );
           ref.read(inviteCreatorNotifierProvider.notifier).reset();
-          // Invite is a one-shot action per match, same as dismiss — drop it
-          // from the list so the card doesn't stay actionable and inviting
-          // the same creator again with no indication the first went through.
-          if (_invitingMatchId case final matchId?) {
-            ref.read(matchmakingNotifierProvider.notifier).removeMatch(matchId);
-          }
-          setState(() => _invitingMatchId = null);
+          unawaited(_openPartnershipRequest(prefill));
         },
         failure: (_) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -241,6 +227,28 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
             recommendation.id,
           ),
     );
+  }
+
+  Future<void> _openPartnershipRequest(PartnershipPrefill prefill) async {
+    final matchId = _invitingMatchId;
+    if (mounted) setState(() => _invitingMatchId = null);
+
+    final sent = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendPartnershipRequestScreen(
+          initialCreator: CreatorInvite(
+            creatorAccountId: prefill.creatorAccountId,
+            handle: prefill.creatorHandle.replaceFirst(RegExp(r'^@+'), ''),
+          ),
+          initialCommissionPercent: prefill.proposedCommissionPercent,
+          brandBriefId: prefill.brandBriefId,
+        ),
+      ),
+    );
+
+    if (sent == true && mounted && matchId != null) {
+      ref.read(matchmakingNotifierProvider.notifier).removeMatch(matchId);
+    }
   }
 
   Future<void> _dismiss(String matchId) async {

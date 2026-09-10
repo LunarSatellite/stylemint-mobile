@@ -1,5 +1,6 @@
 ﻿import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/data/datasources/vendor_partnerships_remote_datasource.dart';
@@ -227,13 +228,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
         );
         return right(null);
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapError(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
@@ -347,8 +342,7 @@ class VendorPartnershipsRepositoryImpl implements VendorPartnershipsRepository {
   }
 
   NetworkExceptions _mapError(Object e) {
-    if (e is DioException)
-      return NetworkExceptions.server(e.message.toString());
+    if (e is DioException) return mapDioExceptionToNetworkException(e);
     if (e is NetworkExceptions) return e;
     return NetworkExceptions.unexpectedError();
   }
