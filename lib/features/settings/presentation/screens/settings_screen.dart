@@ -38,13 +38,19 @@ class SettingsScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text('Settings', style: DesignTokens.sectionInnerTitle),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: DesignTokens.s24),
+        padding: EdgeInsets.only(
+          bottom: DesignTokens.s24 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           const SizedBox(height: DesignTokens.s16),
 
@@ -115,7 +121,10 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: DesignTokens.bgAppBody,
-        title: const Text('Delete Account', style: TextStyle(color: DesignTokens.colorError)),
+        title: const Text(
+          'Delete Account',
+          style: TextStyle(color: DesignTokens.colorError),
+        ),
         content: const Text(
           'This action cannot be undone. All your data will be permanently deleted.',
           style: TextStyle(color: DesignTokens.textLight),
@@ -131,9 +140,13 @@ class SettingsScreen extends ConsumerWidget {
               // Settings screen uses a simple dialog; default reason for brevity.
               ref
                   .read(deleteAccountNotifierProvider.notifier)
-                  .deleteAccount('User requested account deletion from settings');
+                  .deleteAccount(
+                    'User requested account deletion from settings',
+                  );
             },
-            style: TextButton.styleFrom(foregroundColor: DesignTokens.colorError),
+            style: TextButton.styleFrom(
+              foregroundColor: DesignTokens.colorError,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -150,10 +163,17 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, DesignTokens.s8),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        DesignTokens.s8,
+      ),
       child: Text(
         label,
-        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.primaryGreen),
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.primaryGreen,
+        ),
       ),
     );
   }
@@ -176,10 +196,15 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? DesignTokens.colorError : DesignTokens.textWhite;
+    final color = isDestructive
+        ? DesignTokens.colorError
+        : DesignTokens.textWhite;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: 2),
+      margin: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s16,
+        vertical: 2,
+      ),
       child: Material(
         color: DesignTokens.bgAppBody,
         borderRadius: BorderRadius.circular(DesignTokens.s12),
@@ -187,20 +212,29 @@ class _MenuTile extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(DesignTokens.s12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16, vertical: 14),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s16,
+              vertical: 14,
+            ),
             child: Row(
               children: [
                 Icon(icon, color: color, size: DesignTokens.iconMedium),
                 const SizedBox(width: DesignTokens.s12),
                 Expanded(
-                  child: Text(label, style: DesignTokens.mediumRegular.copyWith(color: color)),
+                  child: Text(
+                    label,
+                    style: DesignTokens.mediumRegular.copyWith(color: color),
+                  ),
                 ),
                 if (trailing != null) ...[
                   trailing!,
                   const SizedBox(width: DesignTokens.s8),
                 ],
                 if (!isDestructive)
-                  const Icon(Icons.chevron_right_rounded, color: DesignTokens.iconLight),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: DesignTokens.iconLight,
+                  ),
               ],
             ),
           ),
