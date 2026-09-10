@@ -64,8 +64,9 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
                   size: 20,
                 ),
               ),
-              onChanged: (value) =>
-                  ref.read(followingNotifierProvider.notifier).load(search: value),
+              onChanged: (value) => ref
+                  .read(followingNotifierProvider.notifier)
+                  .load(search: value),
             ),
           ),
           Expanded(
@@ -106,8 +107,8 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
   }
 
   Widget _loadingBody() => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
@@ -161,13 +162,18 @@ class _FollowingCard extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: DesignTokens.oneLinerSemibold,
                     ),
-                    const SizedBox(height: DesignTokens.s4),
-                    Text(
-                      '@${user.handle}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.smallRegular,
-                    ),
+                    // Backend's AccountSummaryDto doesn't carry a handle yet,
+                    // so this is always empty — showing a bare "@" reads as
+                    // broken, so hide the row entirely until handles exist.
+                    if (user.handle.isNotEmpty) ...[
+                      const SizedBox(height: DesignTokens.s4),
+                      Text(
+                        '@${user.handle}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -198,8 +204,9 @@ class _FollowingCard extends ConsumerWidget {
             const SizedBox(height: DesignTokens.s4),
             Text(
               user.bio!,
-              style: DesignTokens.smallRegular
-                  .copyWith(color: DesignTokens.textLight),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
             ),
           ],
 
@@ -225,8 +232,9 @@ class _FollowingCard extends ConsumerWidget {
                     ),
                     TextSpan(
                       text: 'Followers',
-                      style: DesignTokens.smallRegular
-                          .copyWith(color: DesignTokens.textLight),
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textLight,
+                      ),
                     ),
                   ],
                 ),

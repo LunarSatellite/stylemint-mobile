@@ -115,16 +115,44 @@ class _MarkdownBody extends StatelessWidget {
           else
             Padding(
               padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-              child: Text(
-                line.replaceFirst(RegExp(r'^[-*]\s*'), '• '),
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textLight,
-                  height: 1.6,
+              child: RichText(
+                text: _inlineSpans(
+                  // Only a "- " or "* " marker (with a trailing space) is a
+                  // bullet — a bare leading "**" is inline bold emphasis and
+                  // must be left for _inlineSpans to parse.
+                  line.replaceFirst(RegExp(r'^[-*]\s+'), '• '),
+                  DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                    height: 1.6,
+                  ),
                 ),
               ),
             ),
       ],
     );
+  }
+
+  /// Splits a line on `**bold**` markers into plain/bold [TextSpan]s.
+  TextSpan _inlineSpans(String line, TextStyle baseStyle) {
+    final boldPattern = RegExp(r'\*\*(.+?)\*\*');
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final match in boldPattern.allMatches(line)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: line.substring(cursor, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      );
+      cursor = match.end;
+    }
+    if (cursor < line.length) {
+      spans.add(TextSpan(text: line.substring(cursor)));
+    }
+    return TextSpan(style: baseStyle, children: spans);
   }
 }
 
