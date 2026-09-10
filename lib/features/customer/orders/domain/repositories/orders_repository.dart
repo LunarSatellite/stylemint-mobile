@@ -23,7 +23,15 @@ abstract interface class OrdersRepository {
   });
 
   Future<Either<NetworkExceptions, Unit>> requestReturn(
-    String orderId,
-    String reason,
+    String orderId, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+    required String reason,
+    required List<String> photoUrls,
+  });
+
+  Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
+    String filePath,
   );
 }

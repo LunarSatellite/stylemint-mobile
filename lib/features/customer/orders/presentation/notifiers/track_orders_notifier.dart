@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fpdart/fpdart.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -77,13 +78,23 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
   // (CancelOrderScreen + cancelOrderControllerProvider), which collects the
   // reason / note / refund acknowledgement the backend requires.
 
-  Future<void> requestReturn(String reason) async {
-    state.maybeWhen(
+  Future<void> requestReturn({
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+    required String reason,
+    required List<String> photoUrls,
+  }) async {
+    await state.maybeWhen(
       loadSuccess: (order) async {
         state = OrderDetailState.actionInProgress(order);
         final either = await _repository.requestReturn(
           order.orderNumber,
-          reason,
+          subOrderId: subOrderId,
+          subOrderLineId: subOrderLineId,
+          quantity: quantity,
+          reason: reason,
+          photoUrls: photoUrls,
         );
         state = either.fold(
           (failure) {
@@ -97,9 +108,13 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
           },
         );
       },
-      orElse: () {},
+      orElse: () async {},
     );
   }
+
+  Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
+    String filePath,
+  ) => _repository.uploadReturnPhoto(filePath);
 
   Future<void> _onActionFailure(
     OrderDetail order,

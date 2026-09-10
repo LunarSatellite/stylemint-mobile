@@ -12,6 +12,7 @@ part 'order_detail_dto.g.dart';
 @freezed
 abstract class OrderDetailItemDto with _$OrderDetailItemDto {
   const factory OrderDetailItemDto({
+    @Default('') String id,
     required String productVariantId,
     @Default('') String productTitleSnapshot,
     String? variantLabelSnapshot,
@@ -26,21 +27,25 @@ abstract class OrderDetailItemDto with _$OrderDetailItemDto {
   factory OrderDetailItemDto.fromJson(Map<String, dynamic> json) =>
       _$OrderDetailItemDtoFromJson(json);
 
-  OrderDetailItem toDomain(String subOrderStatusLabel) => OrderDetailItem(
-    productId: productVariantId,
-    productName: productTitleSnapshot,
-    imageUrl: thumbnailUrlSnapshot ?? '',
-    variantName: variantLabelSnapshot ?? '',
-    qty: quantity,
-    unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
-    status: subOrderStatusLabel,
-  );
+  OrderDetailItem toDomain(String subOrderId, String subOrderStatusLabel) =>
+      OrderDetailItem(
+        id: id,
+        subOrderId: subOrderId,
+        productId: productVariantId,
+        productName: productTitleSnapshot,
+        imageUrl: thumbnailUrlSnapshot ?? '',
+        variantName: variantLabelSnapshot ?? '',
+        qty: quantity,
+        unitPrice: Money(amount: unitPriceAmount, currency: unitPriceCurrency),
+        status: subOrderStatusLabel,
+      );
 }
 
 /// Maps `SubOrderDto` — one per vendor inside the order.
 @freezed
 abstract class SubOrderDto with _$SubOrderDto {
   const factory SubOrderDto({
+    @Default('') String id,
     @Default(1) int state, // SubOrderState
     String? trackingNumber,
     @Default(<OrderDetailItemDto>[]) List<OrderDetailItemDto> lines,
@@ -133,7 +138,9 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       estimatedDelivery: placedUtc.add(const Duration(days: 7)),
       items: subOrders
           .expand(
-            (s) => s.lines.map((l) => l.toDomain(_subOrderStateLabel(s.state))),
+            (s) => s.lines.map(
+              (l) => l.toDomain(s.id, _subOrderStateLabel(s.state)),
+            ),
           )
           .toList(growable: false),
       subtotal: Money(amount: subtotalAmount, currency: subtotalCurrency),

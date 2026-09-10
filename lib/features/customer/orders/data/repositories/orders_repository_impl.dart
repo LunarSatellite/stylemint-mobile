@@ -118,12 +118,24 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
   @override
   Future<Either<NetworkExceptions, Unit>> requestReturn(
-    String orderId,
-    String reason,
-  ) async {
+    String orderId, {
+    required String subOrderId,
+    required String subOrderLineId,
+    required int quantity,
+    required String reason,
+    required List<String> photoUrls,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.requestReturn(orderId, reason, _uuid.v4());
+        await remoteDataSource.requestReturn(
+          orderId,
+          subOrderId,
+          subOrderLineId,
+          quantity,
+          reason,
+          photoUrls,
+          _uuid.v4(),
+        );
         return right(unit);
       } catch (e) {
         if (e is DioException) {
@@ -136,6 +148,27 @@ class OrdersRepositoryImpl implements OrdersRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
+    String filePath,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final url = await remoteDataSource.uploadReturnPhoto(filePath);
+      return right(url);
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } else if (e is NetworkExceptions) {
+        return left(e);
+      } else {
+        return left(NetworkExceptions.unexpectedError());
+      }
     }
   }
 }

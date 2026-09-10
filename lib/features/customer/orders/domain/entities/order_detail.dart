@@ -3,6 +3,8 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class OrderDetailItem {
   const OrderDetailItem({
+    this.id = '',
+    this.subOrderId = '',
     required this.productId,
     required this.productName,
     required this.imageUrl,
@@ -12,6 +14,12 @@ class OrderDetailItem {
     required this.status,
   });
 
+  /// SubOrderLine id — required by the return-request endpoint. Empty for
+  /// items sourced from the invoice projection (no return flow there).
+  final String id;
+
+  /// Parent SubOrder id — required by the return-request endpoint.
+  final String subOrderId;
   final String productId;
   final String productName;
   final String imageUrl;

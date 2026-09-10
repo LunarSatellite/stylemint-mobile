@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
@@ -1411,12 +1412,18 @@ class _OtherDetails extends StatelessWidget {
   );
 
   void _handleRequestReturn(BuildContext context) {
-    showDialog<String>(
+    showDialog<_ReturnRequestResult>(
       context: context,
-      builder: (ctx) => _ReturnReasonDialog(),
-    ).then((reason) {
-      if (reason != null && reason.isNotEmpty) {
-        notifier.requestReturn(reason);
+      builder: (ctx) => _ReturnRequestDialog(items: order.items, notifier: notifier),
+    ).then((result) {
+      if (result != null) {
+        notifier.requestReturn(
+          subOrderId: result.item.subOrderId,
+          subOrderLineId: result.item.id,
+          quantity: result.quantity,
+          reason: result.reason,
+          photoUrls: result.photoUrls,
+        );
       }
     });
   }
@@ -1506,13 +1513,47 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-class _ReturnReasonDialog extends StatefulWidget {
-  @override
-  State<_ReturnReasonDialog> createState() => _ReturnReasonDialogState();
+/// What [_ReturnRequestDialog] hands back to the caller on Submit.
+class _ReturnRequestResult {
+  const _ReturnRequestResult({
+    required this.item,
+    required this.quantity,
+    required this.reason,
+    required this.photoUrls,
+  });
+
+  final OrderDetailItem item;
+  final int quantity;
+  final String reason;
+  final List<String> photoUrls;
 }
 
-class _ReturnReasonDialogState extends State<_ReturnReasonDialog> {
+/// Collects everything the backend's `SubmitReturnVm` requires: which line
+/// item, how many units, why, and at least one photo (skill §13.7) — a
+/// bare reason string always 400s server-side.
+class _ReturnRequestDialog extends StatefulWidget {
+  const _ReturnRequestDialog({required this.items, required this.notifier});
+
+  final List<OrderDetailItem> items;
+  final OrderDetailNotifier notifier;
+
+  @override
+  State<_ReturnRequestDialog> createState() => _ReturnRequestDialogState();
+}
+
+class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
   final _controller = TextEditingController();
+  late OrderDetailItem _selectedItem;
+  int _quantity = 1;
+  final List<String> _photoUrls = [];
+  bool _uploading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedItem = widget.items.first;
+  }
 
   @override
   void dispose() {
@@ -1520,16 +1561,163 @@ class _ReturnReasonDialogState extends State<_ReturnReasonDialog> {
     super.dispose();
   }
 
+  Future<void> _pickAndUploadPhoto() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+    setState(() {
+      _uploading = true;
+      _error = null;
+    });
+    final either = await widget.notifier.uploadReturnPhoto(picked.path);
+    if (!mounted) return;
+    either.fold(
+      (failure) => setState(() {
+        _uploading = false;
+        _error = 'Photo upload failed. Try again.';
+      }),
+      (url) => setState(() {
+        _uploading = false;
+        _photoUrls.add(url);
+      }),
+    );
+  }
+
+  void _submit() {
+    if (_controller.text.trim().isEmpty) {
+      setState(() => _error = 'Please enter a reason for the return.');
+      return;
+    }
+    if (_photoUrls.isEmpty) {
+      setState(() => _error = 'Please add at least one photo.');
+      return;
+    }
+    Navigator.pop(
+      context,
+      _ReturnRequestResult(
+        item: _selectedItem,
+        quantity: _quantity,
+        reason: _controller.text.trim(),
+        photoUrls: _photoUrls,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: DesignTokens.bgAppBody,
       title: Text('Request Return', style: DesignTokens.sectionInnerTitle),
-      content: TextField(
-        controller: _controller,
-        maxLines: 3,
-        style: DesignTokens.bodyText,
-        decoration: DesignTokens.inputDecoration(hintText: 'Reason for return'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.items.length > 1) ...[
+              Text('Item', style: DesignTokens.smallDescription),
+              const SizedBox(height: DesignTokens.s8),
+              DropdownButton<OrderDetailItem>(
+                isExpanded: true,
+                value: _selectedItem,
+                dropdownColor: DesignTokens.bgAppBody,
+                items: widget.items
+                    .map(
+                      (i) => DropdownMenuItem(
+                        value: i,
+                        child: Text(
+                          i.productName,
+                          style: DesignTokens.bodyText,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (item) => setState(() {
+                  _selectedItem = item ?? _selectedItem;
+                  _quantity = 1;
+                }),
+              ),
+              const SizedBox(height: DesignTokens.s12),
+            ],
+            Row(
+              children: [
+                Text('Quantity', style: DesignTokens.smallDescription),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: DesignTokens.iconLight,
+                  onPressed: _quantity > 1
+                      ? () => setState(() => _quantity--)
+                      : null,
+                ),
+                Text('$_quantity', style: DesignTokens.mediumSemibold),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: DesignTokens.iconLight,
+                  onPressed: _quantity < _selectedItem.qty
+                      ? () => setState(() => _quantity++)
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            TextField(
+              controller: _controller,
+              maxLines: 3,
+              style: DesignTokens.bodyText,
+              decoration: DesignTokens.inputDecoration(
+                hintText: 'Reason for return',
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            if (_photoUrls.isNotEmpty)
+              SizedBox(
+                height: 64,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _photoUrls.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: DesignTokens.s8),
+                  itemBuilder: (_, i) => ClipRRect(
+                    borderRadius: BorderRadius.circular(DesignTokens.s8),
+                    child: Image.network(
+                      _photoUrls[i],
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: DesignTokens.s8),
+            OutlinedButton.icon(
+              onPressed: _uploading ? null : _pickAndUploadPhoto,
+              style: DesignTokens.outlinedButtonStyle(),
+              icon: _uploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.upload_outlined, size: 18),
+              label: Text(
+                _photoUrls.isEmpty ? 'Add Photo' : 'Add Another Photo',
+                style: DesignTokens.mediumSemibold,
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                _error!,
+                style: DesignTokens.smallRegular.copyWith(color: Colors.red),
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -1542,7 +1730,7 @@ class _ReturnReasonDialogState extends State<_ReturnReasonDialog> {
           ),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          onPressed: _uploading ? null : _submit,
           child: Text(
             'Submit',
             style: DesignTokens.mediumSemibold.copyWith(

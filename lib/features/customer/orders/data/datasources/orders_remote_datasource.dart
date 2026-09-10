@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
@@ -63,17 +63,46 @@ class OrdersRemoteDataSource {
   }
 
   /// POST `/v1/orders/{orderNumber}/returns` — request a return.
+  /// Backend `SubmitReturnVm` requires subOrderId/subOrderLineId/quantity/
+  /// reason/photoUrls (skill §5 + §13.7) — a bare reason always 400s.
   Future<void> requestReturn(
     String orderId,
+    String subOrderId,
+    String subOrderLineId,
+    int quantity,
     String reason,
+    List<String> photoUrls,
     String idempotencyKey,
   ) async {
     await apiClient.post(
       '/v1/orders/$orderId/returns',
-      data: {'reason': reason},
+      data: {
+        'subOrderId': subOrderId,
+        'subOrderLineId': subOrderLineId,
+        'quantity': quantity,
+        'reason': reason,
+        'photoUrls': photoUrls,
+      },
       options: _idempotent(idempotencyKey),
     );
   }
+
+  /// POST `/v1/orders/returns/images` — multipart upload, returns the CDN
+  /// URL to submit via `requestReturn`'s `photoUrls`.
+  Future<String> uploadReturnPhoto(String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: 'return.jpg'),
+    });
+    final response = await apiClient.rawPost(
+      '/v1/orders/returns/images',
+      data: formData,
+      options: _authed(),
+    );
+    final data = response.data as Map<String, dynamic>;
+    return data['url'] as String;
+  }
+
+  Options _authed() => Options(headers: {'requiresToken': true});
 
   Options _idempotent(String idempotencyKey) => Options(
     headers: {
