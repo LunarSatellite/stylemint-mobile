@@ -42,7 +42,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
     );
 
     final toShip = orders
-        .where((o) => o.status.isToShip)
+        .where((o) => o.status.isPreShipment)
         .toList(growable: false);
     final inTransit = orders
         .where((o) => o.status.isInTransit)

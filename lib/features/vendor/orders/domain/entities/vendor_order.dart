@@ -19,8 +19,18 @@ enum VendorOrderStatus {
 /// against Swagger, so screens fetch unfiltered and bucket locally using the
 /// same collapsed status the DTOs already compute.
 extension VendorOrderStatusBucketing on VendorOrderStatus {
-  /// Not yet shipped — candidates for "Mark as Shipped" / Ready to Ship.
-  bool get isToShip =>
+  /// Candidates for the "Mark as Shipped" action. The backend's SubOrder
+  /// state machine only allows the ReadyToShip transition from
+  /// AwaitingFulfillment (collapsed into `processing` here) — Pending/Paid
+  /// orders reject with "Cannot transition SubOrder from Pending to
+  /// ReadyToShip." Previously this included pending/confirmed too, which
+  /// showed the button on orders the backend would immediately reject.
+  bool get isToShip => this == VendorOrderStatus.processing;
+
+  /// Orders visible on the "Your Orders" list before shipment — broader than
+  /// [isToShip] since Pending/Confirmed orders are real (just not yet
+  /// actionable). Used for the "To Ship" tab bucket, not the action button.
+  bool get isPreShipment =>
       this == VendorOrderStatus.pending ||
       this == VendorOrderStatus.confirmed ||
       this == VendorOrderStatus.processing;
