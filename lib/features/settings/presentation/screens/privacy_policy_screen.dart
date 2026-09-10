@@ -66,11 +66,11 @@ class PrivacyPolicyScreen extends ConsumerWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           DesignTokens.s16,
           DesignTokens.s8,
           DesignTokens.s16,
-          DesignTokens.s32,
+          DesignTokens.s32 + MediaQuery.of(context).padding.bottom,
         ),
         children: [
           _LastUpdated('Thursday, 15th Aug, 2023, 12:45 AM'),

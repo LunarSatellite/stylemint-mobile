@@ -149,11 +149,14 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
         title: const Text('Request Payout', style: DesignTokens.titleMedium),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           DesignTokens.s16,
           DesignTokens.s16,
           DesignTokens.s16,
-          DesignTokens.s32,
+          // Fixed s32 alone gets eaten by the 3-button nav bar on devices
+          // without gesture nav, hiding the primary "Request Payout" button
+          // underneath the system bar — pad by the real inset too.
+          DesignTokens.s32 + MediaQuery.of(context).padding.bottom,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

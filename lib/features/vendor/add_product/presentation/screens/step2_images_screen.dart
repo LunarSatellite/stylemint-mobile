@@ -360,94 +360,97 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
           ),
         ),
 
-        Container(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s24,
-            DesignTokens.s16,
-            DesignTokens.s16,
-          ),
-          decoration: const BoxDecoration(
-            color: DesignTokens.bgAppFoundation,
-            border: Border(
-              top: BorderSide(color: DesignTokens.borderDefault),
+        SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s24,
+              DesignTokens.s16,
+              DesignTokens.s16,
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: notifier.prevStep,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.bgAppBodyLight,
-                      foregroundColor: DesignTokens.textWhite,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius,
-                        ),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_back, size: 16),
-                        SizedBox(width: DesignTokens.s8),
-                        Text(
-                          'Previous',
-                          style: TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+            decoration: const BoxDecoration(
+              color: DesignTokens.bgAppFoundation,
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: notifier.prevStep,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        foregroundColor: DesignTokens.textWhite,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.buttonRadius,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              Expanded(
-                child: SizedBox(
-                  height: DesignTokens.buttonHeight,
-                  child: ElevatedButton(
-                    onPressed: canProceed ? _onProceed : null,
-                    style: DesignTokens.primaryButtonStyle(),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            canProceed
-                                ? 'Proceed'
-                                : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
-                            overflow: TextOverflow.ellipsis,
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.arrow_back, size: 16),
+                          SizedBox(width: DesignTokens.s8),
+                          Text(
+                            'Previous',
                             style: TextStyle(
                               fontFamily: DesignTokens.fontFamily,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: canProceed
-                                  ? DesignTokens.buttonPrimaryText
-                                  : DesignTokens.textMuted,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: DesignTokens.s8),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: canProceed
-                              ? DesignTokens.buttonPrimaryText
-                              : DesignTokens.textMuted,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: DesignTokens.s16),
+                Expanded(
+                  child: SizedBox(
+                    height: DesignTokens.buttonHeight,
+                    child: ElevatedButton(
+                      onPressed: canProceed ? _onProceed : null,
+                      style: DesignTokens.primaryButtonStyle(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              canProceed
+                                  ? 'Proceed'
+                                  : 'Add $remaining more image${remaining == 1 ? '' : 's'}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: canProceed
+                                    ? DesignTokens.buttonPrimaryText
+                                    : DesignTokens.textMuted,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: DesignTokens.s8),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 16,
+                            color: canProceed
+                                ? DesignTokens.buttonPrimaryText
+                                : DesignTokens.textMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
