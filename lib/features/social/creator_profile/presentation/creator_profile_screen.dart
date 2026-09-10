@@ -323,7 +323,17 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
   Widget _handleText(CreatorProfile? loaded) {
     final h = loaded?.handle.isNotEmpty == true
         ? loaded!.handle
-        : (widget.args.handle.isNotEmpty ? widget.args.handle : '@handle');
+        : widget.args.handle;
+    if (h.isEmpty) {
+      return const Text(
+        'No handle set',
+        style: TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 14,
+          color: DesignTokens.textMuted,
+        ),
+      );
+    }
     return Text(
       h.startsWith('@') ? h : '@$h',
       style: const TextStyle(
