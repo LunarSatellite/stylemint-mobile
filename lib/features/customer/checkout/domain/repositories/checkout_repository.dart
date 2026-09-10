@@ -23,7 +23,7 @@ abstract interface class CheckoutRepository {
 
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods();
 
-  Future<Either<NetworkExceptions, String>> placeOrder({
+  Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,

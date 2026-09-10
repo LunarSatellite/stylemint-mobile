@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/shared/provider
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
 
       next.placeOrderState.maybeWhen(
-        success: (orderId) {
+        success: (orderId) async {
           // The backend clears the cart server-side once the order is
           // placed, but the client's cart state is a singleton that's
           // never told to re-fetch — without this, the just-ordered
@@ -56,8 +57,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           // some unrelated mutation happened to refresh it, even though
           // it was already the subject of a completed order.
           ref.read(cartNotifierProvider.notifier).fetchCart();
+
+          // PayPal/eSewa/Card: the order exists but is NOT paid yet — the
+          // customer still has to complete the provider's payment page.
+          // Send them there before ever showing an order-success screen;
+          // showing it unconditionally (as this app used to) falsely
+          // confirmed purchases that were never actually charged, leaving
+          // the vendor with an order stuck at Pending forever. The
+          // provider's webhook (not this client) is what actually marks
+          // the order paid, so this is a best-effort hand-off, not a wait
+          // for confirmation.
+          final placed = ref.read(checkoutNotifierProvider.notifier).lastPlaceOrderResult;
+          final redirectUrl = placed?.paymentRedirectUrl;
+          final paymentPending = placed?.requiresPaymentAction == true;
+          if (paymentPending && redirectUrl != null && redirectUrl.isNotEmpty) {
+            try {
+              await launchUrl(Uri.parse(redirectUrl), mode: LaunchMode.inAppBrowserView);
+            } catch (_) {
+              // No browser available / malformed URL — fall through to the
+              // order screen anyway; the order exists and is visible in
+              // Order History showing its real (unpaid) status.
+            }
+          }
+
+          if (!context.mounted) return;
           context.pushReplacement(
-            RouteNames.orderSuccess.replaceAll(':orderId', orderId),
+            '${RouteNames.orderSuccess.replaceAll(':orderId', orderId)}'
+            '${paymentPending ? '?paymentPending=1' : ''}',
           );
         },
         failure: (failure) {

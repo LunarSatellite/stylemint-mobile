@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
@@ -148,22 +149,22 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, String>> placeOrder({
+  Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final orderId = await remoteDataSource.placeOrder(
+        final result = await remoteDataSource.placeOrder(
           addressId: addressId,
           paymentMethod: paymentMethod,
           idempotencyKey: idempotencyKey,
         );
-        return right(orderId);
+        return right(result);
       } catch (e) {
         if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
+          return left(mapDioExceptionToNetworkException(e));
         } else if (e is NetworkExceptions) {
           return left(e);
         } else {

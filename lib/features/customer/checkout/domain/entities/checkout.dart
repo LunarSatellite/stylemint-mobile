@@ -329,3 +329,23 @@ class CheckoutSummary {
     return true;
   }
 }
+
+/// Result of placing an order. Cash on Delivery has nothing further for the
+/// customer to do ([requiresPaymentAction] is false). PayPal/eSewa/Card come
+/// back with [requiresPaymentAction] true and a [paymentRedirectUrl] the
+/// customer must complete — the payment is NOT captured yet just because
+/// this call returned; the provider's webhook is what actually marks the
+/// order paid. Showing an unconditional "Payment successful" screen for
+/// every payment method (as this app used to) falsely confirms purchases
+/// that were never actually charged.
+class PlaceOrderResult {
+  const PlaceOrderResult({
+    required this.orderNumber,
+    required this.requiresPaymentAction,
+    this.paymentRedirectUrl,
+  });
+
+  final String orderNumber;
+  final bool requiresPaymentAction;
+  final String? paymentRedirectUrl;
+}

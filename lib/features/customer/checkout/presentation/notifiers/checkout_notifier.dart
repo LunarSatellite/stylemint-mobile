@@ -159,12 +159,26 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
       idempotencyKey: idempotencyKey,
     );
 
+    // Stashed outside the freezed PlaceOrderState (which only carries the
+    // order number, for API-shape/back-compat reasons — see its doc
+    // comment) so the checkout screen can decide whether to send the
+    // customer to finish payment before treating the order as placed.
+    // Cleared on every new attempt so a stale redirect from a previous
+    // call is never accidentally reused.
+    lastPlaceOrderResult = either.fold((_) => null, (r) => r);
+
     state = CheckoutState.loadSuccess(
       summary,
       placeOrderState: either.fold(
         PlaceOrderState.failure,
-        PlaceOrderState.success,
+        (result) => PlaceOrderState.success(result.orderNumber),
       ),
     );
   }
+
+  /// Set alongside [PlaceOrderState.success] on every `placeOrder()` call
+  /// (including failures, where it's null) — carries whether the customer
+  /// still needs to complete payment via [PlaceOrderResult.paymentRedirectUrl]
+  /// before the order can be treated as paid.
+  PlaceOrderResult? lastPlaceOrderResult;
 }

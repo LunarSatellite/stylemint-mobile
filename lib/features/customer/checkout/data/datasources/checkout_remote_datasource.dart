@@ -112,7 +112,7 @@ class CheckoutRemoteDataSource {
   //      also comes back on this response — returning the GUID here caused
   //      the post-purchase "View Order" button to 404 while the exact same
   //      order loaded fine from the Track Order list moments later.
-  Future<String> placeOrder({
+  Future<PlaceOrderResult> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
@@ -143,7 +143,16 @@ class CheckoutRemoteDataSource {
 
     _sessionId = null; // clear after successful placement
     final data = response as Map<String, dynamic>;
-    return data['orderNumber'] as String;
+    // Cash on Delivery has nothing further for the customer to do — the
+    // order is paid-on-fulfillment. PayPal/eSewa/Card come back with
+    // paymentRequiresAction=true and a paymentRedirectUrl the customer
+    // must complete before the payment is actually captured (the provider's
+    // webhook, not this response, is what marks the order paid).
+    return PlaceOrderResult(
+      orderNumber: data['orderNumber'] as String,
+      requiresPaymentAction: data['paymentRequiresAction'] as bool? ?? false,
+      paymentRedirectUrl: data['paymentRedirectUrl'] as String?,
+    );
   }
 
   Future<String> _createSession() async {

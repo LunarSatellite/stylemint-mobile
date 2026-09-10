@@ -5,12 +5,21 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class OrderSuccessScreen extends StatefulWidget {
-  const OrderSuccessScreen({super.key, required this.orderId});
+  const OrderSuccessScreen({
+    super.key,
+    required this.orderId,
+    this.paymentPending = false,
+  });
 
   // Despite the name, this is the order NUMBER (e.g. "NK2026-00001") from
   // PlaceOrderState.success — every order route (detail/invoice/cancel) is
   // keyed by that, not the internal orderId GUID.
   final String orderId;
+
+  // True for PayPal/eSewa/Card orders: the customer was just sent to the
+  // provider's payment page but hasn't necessarily finished it — the order
+  // exists but isn't paid yet, so this screen must not claim it is.
+  final bool paymentPending;
 
   @override
   State<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
@@ -63,12 +72,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                     ),
                   ),
                   const SizedBox(height: 36),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
-                      'Thank you! Your purchase was\nsuccessful.',
+                      widget.paymentPending
+                          ? 'Order placed! Finish your\npayment to confirm it.'
+                          : 'Thank you! Your purchase was\nsuccessful.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -78,12 +89,14 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
                     child: Text(
-                      'You can track your order from the Order History section to see real-time updates and know exactly when it will be delivered.',
+                      widget.paymentPending
+                          ? "We've sent you to complete payment. Once it's confirmed, you'll see it update in Order History — no charge has been made yet."
+                          : 'You can track your order from the Order History section to see real-time updates and know exactly when it will be delivered.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w400,

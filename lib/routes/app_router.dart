@@ -497,6 +497,7 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.orderSuccess,
         builder: (ctx, state) => OrderSuccessScreen(
           orderId: state.pathParameters['orderId']!,
+          paymentPending: state.uri.queryParameters['paymentPending'] == '1',
         ),
       ),
 

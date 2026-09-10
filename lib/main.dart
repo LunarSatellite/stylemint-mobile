@@ -294,11 +294,14 @@ class _MockCheckoutRepository implements CheckoutRepository {
   ]);
 
   @override
-  Future<Either<NetworkExceptions, String>> placeOrder({
+  Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
-  }) async => right('mock-order-001');
+  }) async => right(const PlaceOrderResult(
+    orderNumber: 'mock-order-001',
+    requiresPaymentAction: false,
+  ));
 }
 
 // GoRouter for the single-screen preview (cart → checkout flow only).
