@@ -20,54 +20,44 @@ class TipsRepositoryImpl implements TipsRepository {
 
   @override
   Future<Either<NetworkExceptions, Tip>> sendTip({
-    required String creatorId,
+    required String creatorProfileId,
     required Money amount,
-    String? message,
+    required String paymentIntentId,
     String? reelId,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.sendTip(
-          creatorId: creatorId,
+          creatorProfileId: creatorProfileId,
           amount: amount.amount,
-          message: message,
+          currency: amount.currency,
+          paymentIntentId: paymentIntentId,
           reelId: reelId,
           idempotencyKey: _uuid.v4(),
         );
         return right(dto.toDomain());
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapException(e));
       }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
     }
+    return left(NetworkExceptions.noInternetConnection());
   }
 
   @override
-  Future<Either<NetworkExceptions, List<Tip>>> getTipHistory(
-      {required String type}) async {
+  Future<Either<NetworkExceptions, List<Tip>>> getTipHistory({
+    required String type,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getTipHistory(type: type);
-        return right(dtos.map((dto) => dto.toDomain()).toList(growable: false));
+        return right(
+          dtos.map((dto) => dto.toDomain()).toList(growable: false),
+        );
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapException(e));
       }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
     }
+    return left(NetworkExceptions.noInternetConnection());
   }
 
   @override
@@ -77,16 +67,17 @@ class TipsRepositoryImpl implements TipsRepository {
         final dto = await remoteDataSource.getBalance();
         return right(dto.toDomain());
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        return left(_mapException(e));
       }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
     }
+    return left(NetworkExceptions.noInternetConnection());
+  }
+
+  NetworkExceptions _mapException(Object e) {
+    if (e is DioException) {
+      return NetworkExceptions.server(e.message.toString());
+    }
+    if (e is NetworkExceptions) return e;
+    return NetworkExceptions.unexpectedError();
   }
 }

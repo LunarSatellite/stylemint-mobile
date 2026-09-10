@@ -4,12 +4,20 @@ import 'package:stylemint_mobile_frontend/features/social/tips/domain/entities/t
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class TipHistoryTile extends StatelessWidget {
-  const TipHistoryTile({super.key, required this.tip});
+  const TipHistoryTile({
+    super.key,
+    required this.tip,
+    required this.received,
+  });
 
   final Tip tip;
+  final bool received;
 
   @override
   Widget build(BuildContext context) {
+    final name = received ? tip.senderName : tip.receiverName;
+    final avatarUrl = received ? tip.senderAvatarUrl : tip.receiverAvatarUrl;
+
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: DesignTokens.cardDecoration(),
@@ -17,30 +25,28 @@ class TipHistoryTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundImage: NetworkImage(tip.senderAvatarUrl),
+            backgroundImage: avatarUrl.isEmpty ? null : NetworkImage(avatarUrl),
+            child: avatarUrl.isEmpty ? const Icon(Icons.person_outline) : null,
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tip.senderName, style: DesignTokens.mediumSemibold),
-                if (tip.message.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(tip.message,
-                      style: DesignTokens.smallRegular,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ],
+                Text(name, style: DesignTokens.mediumSemibold),
                 const SizedBox(height: 2),
-                Text(_formatDate(tip.createdAt),
-                    style: DesignTokens.tiny),
+                Text(_formatDate(tip.createdAt), style: DesignTokens.tiny),
               ],
             ),
           ),
-          Text(formatMoney(tip.amount),
-              style: DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.primaryGreen)),
+          Text(
+            '${received ? '+' : '-'}${formatMoney(tip.amount)}',
+            style: DesignTokens.mediumSemibold.copyWith(
+              color: received
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.colorError,
+            ),
+          ),
         ],
       ),
     );

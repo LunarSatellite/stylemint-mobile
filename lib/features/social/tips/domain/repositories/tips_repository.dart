@@ -5,14 +5,15 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 abstract interface class TipsRepository {
   Future<Either<NetworkExceptions, Tip>> sendTip({
-    required String creatorId,
+    required String creatorProfileId,
     required Money amount,
-    String? message,
+    required String paymentIntentId,
     String? reelId,
   });
 
-  Future<Either<NetworkExceptions, List<Tip>>> getTipHistory(
-      {required String type});
+  Future<Either<NetworkExceptions, List<Tip>>> getTipHistory({
+    required String type,
+  });
 
   Future<Either<NetworkExceptions, TipBalance>> getBalance();
 }

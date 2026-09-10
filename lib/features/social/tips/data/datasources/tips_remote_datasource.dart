@@ -8,41 +8,45 @@ class TipsRemoteDataSource {
   final ApiClient apiClient;
 
   Future<TipDto> sendTip({
-    required String creatorId,
+    required String creatorProfileId,
     required double amount,
-    String? message,
+    required String currency,
+    required String paymentIntentId,
     String? reelId,
     required String idempotencyKey,
   }) async {
     final response = await apiClient.post(
       '/v1/tips',
       data: {
-        'creatorId': creatorId,
-        'amount': amount,
-        if (message != null && message.isNotEmpty) 'message': message,
+        'toCreatorProfileId': creatorProfileId,
+        'amountValue': amount,
+        'currency': currency,
+        'paymentIntentId': paymentIntentId,
         if (reelId != null) 'reelId': reelId,
       },
       options: _idempotent(idempotencyKey),
     );
-    return TipDto.fromJson(response as Map<String, dynamic>);
+    return TipDto.fromTipJson(response as Map<String, dynamic>);
   }
 
-  /// TODO(swagger): No tip history endpoint — only GET /v1/tips/{id} (single tip).
   Future<List<TipDto>> getTipHistory({required String type}) async {
     final response = await apiClient.get(
       '/v1/tips/history',
-      queryParameters: {'type': type},
+      queryParameters: {'type': type, 'pageSize': 50},
     );
-    final items = (response as List<dynamic>?)
-        ?.map((e) => TipDto.fromJson(e as Map<String, dynamic>))
+    final page = response as Map<String, dynamic>? ?? const {};
+    final items = page['items'] as List<dynamic>? ?? const [];
+    return items
+        .map((item) => TipDto.fromHistoryJson(item as Map<String, dynamic>))
         .toList(growable: false);
-    return items ?? const [];
   }
 
-  /// TODO(swagger): No tip balance endpoint. Check /v1/earnings/balance for creator earnings.
   Future<TipBalanceDto> getBalance() async {
-    final response = await apiClient.get('/v1/tips/balance');
-    return TipBalanceDto.fromJson(response as Map<String, dynamic>);
+    final response = await apiClient.get(
+      '/v1/tips/balance',
+      queryParameters: const {'currency': 'NPR'},
+    );
+    return TipBalanceDto.fromApiJson(response as Map<String, dynamic>);
   }
 
   Options _idempotent(String idempotencyKey) => Options(

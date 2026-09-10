@@ -62,15 +62,15 @@ class TipsNotifier extends StateNotifier<TipHistoryState> {
   }
 
   Future<Either<NetworkExceptions, Tip>> sendTip({
-    required String creatorId,
+    required String creatorProfileId,
     required Money amount,
-    String? message,
+    required String paymentIntentId,
     String? reelId,
   }) async {
     final either = await _repository.sendTip(
-      creatorId: creatorId,
+      creatorProfileId: creatorProfileId,
       amount: amount,
-      message: message,
+      paymentIntentId: paymentIntentId,
       reelId: reelId,
     );
     either.fold(
@@ -83,7 +83,7 @@ class TipsNotifier extends StateNotifier<TipHistoryState> {
 
 class TipBalanceNotifier extends StateNotifier<TipBalanceState> {
   TipBalanceNotifier(this._repository)
-      : super(const TipBalanceState.initial()) {
+    : super(const TipBalanceState.initial()) {
     unawaited(loadBalance());
   }
 

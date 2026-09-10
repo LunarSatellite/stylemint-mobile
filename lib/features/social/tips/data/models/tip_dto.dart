@@ -24,8 +24,41 @@ abstract class TipDto with _$TipDto {
 
   const TipDto._();
 
-  factory TipDto.fromJson(Map<String, dynamic> json) =>
-      _$TipDtoFromJson(json);
+  factory TipDto.fromJson(Map<String, dynamic> json) => _$TipDtoFromJson(json);
+
+  factory TipDto.fromHistoryJson(Map<String, dynamic> json) {
+    final amount = json['amount'] as Map<String, dynamic>? ?? const {};
+    return TipDto(
+      id: json['id'] as String? ?? '',
+      senderId: json['senderId'] as String? ?? '',
+      senderName: json['senderName'] as String? ?? 'StyleMint customer',
+      senderAvatarUrl: json['senderAvatarUrl'] as String? ?? '',
+      receiverId: json['receiverId'] as String? ?? '',
+      receiverName: json['receiverName'] as String? ?? 'Creator',
+      receiverAvatarUrl: json['receiverAvatarUrl'] as String? ?? '',
+      amount: (amount['amount'] as num?)?.toDouble() ?? 0,
+      currency: amount['currency'] as String? ?? 'NPR',
+      reelId: json['reelId'] as String?,
+      createdAt: _date(json['createdAt']),
+    );
+  }
+
+  factory TipDto.fromTipJson(Map<String, dynamic> json) {
+    final amount = json['amount'] as Map<String, dynamic>? ?? const {};
+    return TipDto(
+      id: json['id'] as String? ?? '',
+      senderId: json['fromAccountId'] as String? ?? '',
+      senderName: 'You',
+      senderAvatarUrl: '',
+      receiverId: json['toCreatorProfileId'] as String? ?? '',
+      receiverName: 'Creator',
+      receiverAvatarUrl: '',
+      amount: (amount['amount'] as num?)?.toDouble() ?? 0,
+      currency: amount['currency'] as String? ?? 'NPR',
+      reelId: json['reelId'] as String?,
+      createdAt: _date(json['initiatedUtc']),
+    );
+  }
 
   Tip toDomain() => Tip(
     id: id,
@@ -40,6 +73,10 @@ abstract class TipDto with _$TipDto {
     reelId: reelId,
     createdAt: createdAt,
   );
+
+  static DateTime _date(dynamic value) =>
+      DateTime.tryParse(value as String? ?? '') ??
+      DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 }
 
 @freezed
@@ -60,14 +97,41 @@ abstract class TipBalanceDto with _$TipBalanceDto {
   factory TipBalanceDto.fromJson(Map<String, dynamic> json) =>
       _$TipBalanceDtoFromJson(json);
 
+  factory TipBalanceDto.fromApiJson(Map<String, dynamic> json) {
+    ({double amount, String currency}) money(String key) {
+      final value = json[key] as Map<String, dynamic>? ?? const {};
+      return (
+        amount: (value['amount'] as num?)?.toDouble() ?? 0,
+        currency: value['currency'] as String? ?? 'NPR',
+      );
+    }
+
+    final available = money('availableBalance');
+    final received = money('totalReceived');
+    final sent = money('totalSent');
+    final pending = money('pendingBalance');
+    return TipBalanceDto(
+      availableAmount: available.amount,
+      availableCurrency: available.currency,
+      totalReceivedAmount: received.amount,
+      totalReceivedCurrency: received.currency,
+      totalSentAmount: sent.amount,
+      totalSentCurrency: sent.currency,
+      pendingAmount: pending.amount,
+      pendingCurrency: pending.currency,
+    );
+  }
+
   TipBalance toDomain() => TipBalance(
-    availableBalance:
-        Money(amount: availableAmount, currency: availableCurrency),
-    totalReceived:
-        Money(amount: totalReceivedAmount, currency: totalReceivedCurrency),
-    totalSent:
-        Money(amount: totalSentAmount, currency: totalSentCurrency),
-    pendingBalance:
-        Money(amount: pendingAmount, currency: pendingCurrency),
+    availableBalance: Money(
+      amount: availableAmount,
+      currency: availableCurrency,
+    ),
+    totalReceived: Money(
+      amount: totalReceivedAmount,
+      currency: totalReceivedCurrency,
+    ),
+    totalSent: Money(amount: totalSentAmount, currency: totalSentCurrency),
+    pendingBalance: Money(amount: pendingAmount, currency: pendingCurrency),
   );
 }
