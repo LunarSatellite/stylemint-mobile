@@ -23,8 +23,24 @@ class SocialConnectScreen extends ConsumerWidget {
   /// in-app browser; the backend exchanges the code server-side and redirects
   /// to `stylemint://social-connected`, which routes back to
   /// [SocialConnectNotifier.onConnectReturn] to close the browser and refresh.
-  Future<void> _connect(WidgetRef ref, SocialPlatform platform) =>
-      ref.read(socialConnectNotifierProvider.notifier).connect(platform);
+  Future<void> _connect(
+    BuildContext context,
+    WidgetRef ref,
+    SocialPlatform platform,
+  ) async {
+    final failure = await ref
+        .read(socialConnectNotifierProvider.notifier)
+        .connect(platform);
+    if (failure != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not connect ${platform.displayName}. Please try again.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -132,7 +148,8 @@ class SocialConnectScreen extends ConsumerWidget {
                               ),
                               child: PlatformCard(
                                 account: a,
-                                onConnect: () => _connect(ref, a.platform),
+                                onConnect: () =>
+                                    _connect(context, ref, a.platform),
                                 onDisconnect: () =>
                                     notifier.disconnect(a.platform),
                               ),
@@ -152,7 +169,7 @@ class SocialConnectScreen extends ConsumerWidget {
                               ),
                               child: _AddPlatformTile(
                                 platform: p,
-                                onTap: () => _connect(ref, p),
+                                onTap: () => _connect(context, ref, p),
                               ),
                             ),
                           ),

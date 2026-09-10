@@ -65,7 +65,6 @@ class CreatorApplyStep2SocialScreenState
     _refreshConnectedFromNotifier();
   }
 
-
   @override
   void dispose() {
     _sampleUrlController.dispose();
@@ -169,14 +168,22 @@ class CreatorApplyStep2SocialScreenState
     _ => null,
   };
 
-  void _onConnectPlatform(CreatorPlatformOption opt) {
+  Future<void> _onConnectPlatform(CreatorPlatformOption opt) async {
     if (_connectedById.containsKey(opt.id)) {
-      SmSnackbar.info(context, ' is already connected.');
+      SmSnackbar.info(context, '${opt.name} is already connected.');
       return;
     }
     final platform = _slugToPlatform(opt.id);
     if (platform == null) return;
-    ref.read(socialConnectNotifierProvider.notifier).connect(platform);
+    final failure = await ref
+        .read(socialConnectNotifierProvider.notifier)
+        .connect(platform);
+    if (failure != null && mounted) {
+      SmSnackbar.error(
+        context,
+        'Could not connect ${opt.name}. Please try again.',
+      );
+    }
   }
 
   void _addSampleUrl() {

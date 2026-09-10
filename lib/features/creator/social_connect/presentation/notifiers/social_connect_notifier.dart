@@ -46,16 +46,14 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
   /// NOT awaited here — the backend exchanges the code server-side and then
   /// redirects to `stylemint://social-connected?status=ok|error`, which the
   /// app's deep-link handler routes to [onConnectReturn].
-  Future<void> connect(SocialPlatform platform) async {
+  Future<NetworkExceptions?> connect(SocialPlatform platform) async {
     final either = await _repository.beginConnect(platform);
-    await either.fold(
-      (failure) async => state = SocialConnectState.loadFailure(failure),
+    return either.fold(
+      (failure) async => failure,
       (auth) async {
         final url = auth.authorizationUrl;
         if (url.isEmpty) {
-          state =
-              SocialConnectState.loadFailure(NetworkExceptions.unexpectedError());
-          return;
+          return const NetworkExceptions.unexpectedError();
         }
         try {
           final launched = await launchUrl(
@@ -63,14 +61,12 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
             mode: LaunchMode.inAppBrowserView,
           );
           if (!launched) {
-            state = SocialConnectState.loadFailure(
-              NetworkExceptions.unexpectedError(),
-            );
+            return const NetworkExceptions.unexpectedError();
           }
+          return null;
         } catch (_) {
           // No browser available / malformed URL.
-          state =
-              SocialConnectState.loadFailure(NetworkExceptions.unexpectedError());
+          return const NetworkExceptions.unexpectedError();
         }
       },
     );

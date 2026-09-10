@@ -6,10 +6,11 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/notifiers/social_connect_notifier.dart';
 
 class _FakeRepository implements SocialConnectRepository {
-  _FakeRepository({this.accounts, this.disconnectResult});
+  _FakeRepository({this.accounts, this.disconnectResult, this.connectResult});
 
   NetworkEither<List<SocialAccount>>? accounts;
   NetworkEither<Unit>? disconnectResult;
+  NetworkEither<SocialAuthorization>? connectResult;
 
   int loadCalls = 0;
   int disconnectCalls = 0;
@@ -24,6 +25,7 @@ class _FakeRepository implements SocialConnectRepository {
   Future<NetworkEither<SocialAuthorization>> beginConnect(
     SocialPlatform platform,
   ) async =>
+      connectResult ??
       networkRight(
         const SocialAuthorization(authorizationUrl: 'https://x', state: 's'),
       );
@@ -39,17 +41,16 @@ class _FakeRepository implements SocialConnectRepository {
 
 SocialAccount _account({
   SocialPlatform platform = SocialPlatform.instagram,
-}) =>
-    SocialAccount(
-      id: 'a1',
-      platform: platform,
-      handle: 'creator',
-      username: 'creator',
-      displayName: 'Creator',
-      avatarUrl: '',
-      followerCount: 100,
-      isConnected: true,
-    );
+}) => SocialAccount(
+  id: 'a1',
+  platform: platform,
+  handle: 'creator',
+  username: 'creator',
+  displayName: 'Creator',
+  avatarUrl: '',
+  followerCount: 100,
+  isConnected: true,
+);
 
 /// The notifier kicks off a load from its constructor, so settle that before
 /// asserting on anything.
@@ -99,13 +100,18 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(repo.disconnectCalls, 1);
-      expect(repo.loadCalls, 2, reason: 'reloads after a successful disconnect');
+      expect(
+        repo.loadCalls,
+        2,
+        reason: 'reloads after a successful disconnect',
+      );
     });
 
     test('a failed disconnect does not refresh or clear the list', () async {
       final repo = _FakeRepository(
-        disconnectResult:
-            networkLeft(const NetworkExceptions.unexpectedError()),
+        disconnectResult: networkLeft(
+          const NetworkExceptions.unexpectedError(),
+        ),
       );
       final notifier = await _settled(repo);
 
@@ -124,6 +130,23 @@ void main() {
       );
     });
 
+    test('a failed connect keeps the loaded account list usable', () async {
+      final repo = _FakeRepository(
+        connectResult: networkLeft(const NetworkExceptions.server('offline')),
+      );
+      final notifier = await _settled(repo);
+
+      final failure = await notifier.connect(SocialPlatform.tiktok);
+
+      expect(failure, const NetworkExceptions.server('offline'));
+      expect(
+        notifier.state.maybeWhen(
+          loadSuccess: (accounts) => accounts.length,
+          orElse: () => -1,
+        ),
+        1,
+      );
+    });
     test('load() can be called again to refresh', () async {
       final repo = _FakeRepository();
       final notifier = await _settled(repo);

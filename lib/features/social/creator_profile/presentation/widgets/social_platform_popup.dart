@@ -175,12 +175,21 @@ class _NotConnectedBody extends ConsumerWidget {
     final notifier = ref.read(socialConnectNotifierProvider.notifier);
     final plat = _slugToPlatform(platform.id);
     if (plat == null) return;
-    await notifier.connect(plat);
-    if (context.mounted) Navigator.of(context).pop();
-    // Result is ignored here — the existing social-connect flow handles its own UI.
+    final failure = await notifier.connect(plat);
+    if (!context.mounted) return;
+    if (failure == null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Could not connect ${platform.name}. Please try again.',
+        ),
+      ),
+    );
   }
 }
-
 // ── Connected ─────────────────────────────────────────────────────────────
 
 class _ConnectedBody extends ConsumerWidget {
