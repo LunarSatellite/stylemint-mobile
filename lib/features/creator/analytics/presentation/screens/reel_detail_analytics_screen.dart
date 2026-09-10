@@ -1000,8 +1000,13 @@ class _EarningsLinePainter extends CustomPainter {
       final y = chartH - (i / ySteps) * chartH;
       canvas.drawLine(Offset(_leftPad, y), Offset(size.width, y), gridPaint);
       final val = (maxVal * i / ySteps).round();
+      // 0-decimal rounding can collapse adjacent gridlines onto the same
+      // label (e.g. 1800 and 2400 both showing "2k") — fall back to 1
+      // decimal whenever the value isn't a whole number of thousands.
       final label = val >= 1000
-          ? '${(val / 1000).toStringAsFixed(0)}k'
+          ? (val % 1000 == 0
+                ? '${val ~/ 1000}k'
+                : '${(val / 1000).toStringAsFixed(1)}k')
           : '$val';
       final tp = TextPainter(
         text: TextSpan(

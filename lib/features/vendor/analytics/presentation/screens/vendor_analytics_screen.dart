@@ -484,7 +484,15 @@ class _LineChart extends StatelessWidget {
     const bottomH = 20.0;
     final yLabels = List.generate(ySteps + 1, (i) {
       final v = (yMax / ySteps) * i;
-      if (v >= 1000) return '${(v / 1000).toStringAsFixed(0)}k';
+      // 0-decimal rounding can collapse adjacent gridlines onto the same
+      // label (e.g. 1800 and 2400 both showing "2k") — fall back to 1
+      // decimal whenever the value isn't a whole number of thousands.
+      if (v >= 1000) {
+        final thousands = v / 1000;
+        return thousands == thousands.roundToDouble()
+            ? '${thousands.toStringAsFixed(0)}k'
+            : '${thousands.toStringAsFixed(1)}k';
+      }
       return v.toStringAsFixed(0);
     });
 

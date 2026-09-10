@@ -839,12 +839,18 @@ class _TrendChartPainter extends CustomPainter {
     for (var i = 0; i <= 5; i++) {
       final y = chartB - i / 5 * chartH;
       final tickValue = maxValue * i / 5;
+      // 0-decimal rounding can collapse adjacent gridlines onto the same
+      // label (e.g. 1800 and 2400 both showing "2k") — fall back to 1
+      // decimal whenever the value isn't a whole number of thousands.
+      final thousands = tickValue / 1000;
       final label = tickValue == 0
           ? '0'
           : tickValue >= 1000000
               ? '${(tickValue / 1000000).toStringAsFixed(1)}M'
               : tickValue >= 1000
-                  ? '${(tickValue / 1000).toStringAsFixed(0)}k'
+                  ? (thousands == thousands.roundToDouble()
+                      ? '${thousands.toStringAsFixed(0)}k'
+                      : '${thousands.toStringAsFixed(1)}k')
                   : tickValue.toStringAsFixed(0);
       _paintText(
           canvas, label, Offset(0, y - 6), _leftPad - 2, TextAlign.right);
