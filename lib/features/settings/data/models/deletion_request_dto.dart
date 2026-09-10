@@ -4,12 +4,17 @@ import 'package:stylemint_mobile_frontend/features/settings/domain/entities/dele
 part 'deletion_request_dto.freezed.dart';
 part 'deletion_request_dto.g.dart';
 
+/// Maps `GET /v1/accounts/{id}/deletion-requests/pending`'s real response
+/// shape — backend `AccountDeletionRequestDto` (StyleMint.Modules.Identity)
+/// uses `requestedUtc`/`executeAtUtc`, not `requestedAt`/
+/// `scheduledDeletionAt` — the old field names never existed on the wire,
+/// so every pending-deletion fetch threw on parse.
 @freezed
 abstract class DeletionRequestDto with _$DeletionRequestDto {
   const factory DeletionRequestDto({
     required String id,
-    required DateTime requestedAt,
-    DateTime? scheduledDeletionAt,
+    required DateTime requestedUtc,
+    required DateTime executeAtUtc,
   }) = _DeletionRequestDto;
 
   const DeletionRequestDto._();
@@ -19,7 +24,7 @@ abstract class DeletionRequestDto with _$DeletionRequestDto {
 
   DeletionRequest toDomain() => DeletionRequest(
         id: id,
-        requestedAt: requestedAt,
-        scheduledDeletionAt: scheduledDeletionAt,
+        requestedAt: requestedUtc,
+        scheduledDeletionAt: executeAtUtc,
       );
 }
