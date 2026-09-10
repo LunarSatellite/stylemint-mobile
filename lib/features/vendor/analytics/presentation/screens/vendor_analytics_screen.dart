@@ -102,15 +102,21 @@ class VendorAnalyticsScreen extends ConsumerWidget {
     );
   }
 
+  /// Trailing change-vs-previous-period badge (e.g. "+12%"), parenthesized
+  /// only when present — an empty badge (no prior-period baseline yet, e.g.
+  /// a brand-new vendor account) previously left a bare "()" on the line.
+  static String _withBadge(String value, String badge) =>
+      badge.isEmpty ? value : '$value ($badge)';
+
   void _shareReport(VendorAnalyticsSummary summary) {
     final overview = summary.revenueOverview;
     final lines = <String>[
       'Style Mint — Vendor Analytics (last 30 days)',
       '',
-      'Gross sales: ${overview.currency} ${overview.grossSales.toStringAsFixed(2)} (${overview.grossSalesBadge})',
-      'Net revenue: ${overview.currency} ${overview.netRevenue.toStringAsFixed(2)} (${overview.netRevenueBadge})',
-      'Conversion rate: ${overview.conversionRate.toStringAsFixed(2)}% (${overview.conversionRateBadge})',
-      'Total orders: ${overview.totalOrders} (${overview.totalOrdersBadge})',
+      'Gross sales: ${_withBadge('${overview.currency} ${overview.grossSales.toStringAsFixed(2)}', overview.grossSalesBadge)}',
+      'Net revenue: ${_withBadge('${overview.currency} ${overview.netRevenue.toStringAsFixed(2)}', overview.netRevenueBadge)}',
+      'Conversion rate: ${_withBadge('${overview.conversionRate.toStringAsFixed(2)}%', overview.conversionRateBadge)}',
+      'Total orders: ${_withBadge('${overview.totalOrders}', overview.totalOrdersBadge)}',
       '',
       'Top products',
       ...summary.topProducts.map(
