@@ -19,16 +19,25 @@ class TermsConditionsScreen extends StatelessWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Terms of Service',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Terms of Service',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16, DesignTokens.s8, DesignTokens.s16, DesignTokens.s32),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s8,
+          DesignTokens.s16,
+          DesignTokens.s32 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           _LastUpdated('Thursday, 15th Aug, 2023, 12:45 AM'),
           const SizedBox(height: DesignTokens.s24),
@@ -47,13 +56,15 @@ class TermsConditionsScreen extends StatelessWidget {
           _SubSection(
             number: '2.1',
             title: 'Eligibility',
-            body: 'You must be at least 13 years old to use this Service. By using the Service, you represent and warrant that you meet this requirement.',
+            body:
+                'You must be at least 13 years old to use this Service. By using the Service, you represent and warrant that you meet this requirement.',
           ),
           const SizedBox(height: DesignTokens.s12),
           _SubSection(
             number: '2.2',
             title: 'Account Registration',
-            body: 'You may be required to create an account to access certain features. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete.',
+            body:
+                'You may be required to create an account to access certain features. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete.',
           ),
           const SizedBox(height: DesignTokens.s24),
 
@@ -88,8 +99,11 @@ class _LastUpdated extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.calendar_today_outlined,
-            size: 14, color: DesignTokens.textMuted),
+        const Icon(
+          Icons.calendar_today_outlined,
+          size: 14,
+          color: DesignTokens.textMuted,
+        ),
         const SizedBox(width: DesignTokens.s8),
         Expanded(
           child: Text(
@@ -135,9 +149,12 @@ class _SubSection extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$number  ',
-            style: DesignTokens.mediumSemibold
-                .copyWith(color: DesignTokens.textWhite)),
+        Text(
+          '$number  ',
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.textWhite,
+          ),
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,13 +203,15 @@ class _LinkRow extends StatelessWidget {
     return Row(
       children: [
         if (label.isNotEmpty)
-          Text(label,
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                height: 1.6,
-                color: DesignTokens.textLight,
-              )),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 14,
+              height: 1.6,
+              color: DesignTokens.textLight,
+            ),
+          ),
         GestureDetector(
           onTap: onTap,
           child: Text(

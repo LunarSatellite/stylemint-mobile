@@ -14,10 +14,18 @@ class ViewAddressScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: const BackButton(color: DesignTokens.textWhite),
-        title: const Text('View Shipping Address', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'View Shipping Address',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -28,7 +36,10 @@ class ViewAddressScreen extends StatelessWidget {
             _Field(label: 'Address Line 1', value: address.addressLine1),
             if (address.landmark != null && address.landmark!.isNotEmpty) ...[
               const SizedBox(height: DesignTokens.s20),
-              _Field(label: 'Nearest Landmark (Optional)', value: address.landmark!),
+              _Field(
+                label: 'Nearest Landmark (Optional)',
+                value: address.landmark!,
+              ),
             ],
             const SizedBox(height: DesignTokens.s20),
             _Field(label: 'Country', value: address.country),

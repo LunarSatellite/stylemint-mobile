@@ -47,7 +47,12 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
         title: const Text('Help Center', style: DesignTokens.sectionInnerTitle),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           Text(
             'How can we help you?',

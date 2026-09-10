@@ -20,22 +20,34 @@ class AboutScreen extends StatelessWidget {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            size: 18,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text('About StyleMint',
-            style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'About StyleMint',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16, DesignTokens.s24, DesignTokens.s16, DesignTokens.s32),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s24,
+          DesignTokens.s16,
+          DesignTokens.s32 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           // Logo + Tagline
           Column(
             children: [
-              const Icon(Icons.shopping_bag_outlined,
-                  size: 56, color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.shopping_bag_outlined,
+                size: 56,
+                color: DesignTokens.primaryGreen,
+              ),
               const SizedBox(height: DesignTokens.s8),
               Text(
                 'STYLE MINT',
@@ -59,8 +71,9 @@ class AboutScreen extends StatelessWidget {
               Text(
                 'Version 1.2.0 (Build 456)',
                 textAlign: TextAlign.center,
-                style:
-                    DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
               ),
             ],
           ),
@@ -150,7 +163,8 @@ class AboutScreen extends StatelessWidget {
             linkText:
                 'StyleMint Inc., 123 Privacy Lane San Francisco, CA 94102',
             onTap: () => _launch(
-                'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102'),
+              'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102',
+            ),
           ),
           const SizedBox(height: DesignTokens.s4),
           _LabelLink(
@@ -196,10 +210,14 @@ class AboutScreen extends StatelessWidget {
           // Legal
           const _SectionHeading('Legal'),
           const SizedBox(height: DesignTokens.s8),
-          _BulletLink('Terms of Service',
-              onTap: () => context.push('${RouteNames.settings}/terms')),
-          _BulletLink('Privacy Policy',
-              onTap: () => context.push('${RouteNames.settings}/privacy')),
+          _BulletLink(
+            'Terms of Service',
+            onTap: () => context.push('${RouteNames.settings}/terms'),
+          ),
+          _BulletLink(
+            'Privacy Policy',
+            onTap: () => context.push('${RouteNames.settings}/privacy'),
+          ),
           _BulletLink('Cookie Policy', onTap: () {}),
           _BulletLink('Community Guidelines', onTap: () {}),
           _BulletLink('Intellectual Property', onTap: () {}),
@@ -208,8 +226,10 @@ class AboutScreen extends StatelessWidget {
           // Resources
           const _SectionHeading('Resources'),
           const SizedBox(height: DesignTokens.s8),
-          _BulletLink('Help Center',
-              onTap: () => context.push(RouteNames.support)),
+          _BulletLink(
+            'Help Center',
+            onTap: () => context.push(RouteNames.support),
+          ),
           _BulletLink('Become a Creator', onTap: () {}),
           _BulletLink('Sell on StyleMint', onTap: () {}),
           _BulletLink('Press Kit', onTap: () {}),
@@ -231,8 +251,10 @@ class AboutScreen extends StatelessWidget {
           // Licenses
           const _SectionHeading('Licenses'),
           const SizedBox(height: DesignTokens.s8),
-          _BulletLink('Open Source Licenses',
-              onTap: () => showLicensePage(context: context)),
+          _BulletLink(
+            'Open Source Licenses',
+            onTap: () => showLicensePage(context: context),
+          ),
           _BulletLink('Third-Party Services', onTap: () {}),
           const SizedBox(height: DesignTokens.s32),
 
@@ -324,8 +346,9 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: DesignTokens.s4),
           Text(
             label,
-            style: DesignTokens.smallRegular
-                .copyWith(color: DesignTokens.textLight),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
           ),
         ],
       ),
@@ -372,7 +395,9 @@ class _BulletLink extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(top: 6, right: 8),
             child: CircleAvatar(
-                radius: 3, backgroundColor: DesignTokens.primaryGreen),
+              radius: 3,
+              backgroundColor: DesignTokens.primaryGreen,
+            ),
           ),
           GestureDetector(
             onTap: onTap,
@@ -414,7 +439,9 @@ class _LabelLink extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(top: 6, right: 8),
             child: CircleAvatar(
-                radius: 3, backgroundColor: DesignTokens.textLight),
+              radius: 3,
+              backgroundColor: DesignTokens.textLight,
+            ),
           ),
           Expanded(
             child: Wrap(
@@ -466,7 +493,9 @@ class _InfoRow extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(top: 6, right: 8),
             child: CircleAvatar(
-                radius: 3, backgroundColor: DesignTokens.textLight),
+              radius: 3,
+              backgroundColor: DesignTokens.textLight,
+            ),
           ),
           Text(
             '$label  ',

@@ -37,7 +37,12 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
         title: const Text('Send Tip', style: DesignTokens.sectionInnerTitle),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -93,8 +98,10 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
               ],
             ),
             const SizedBox(height: DesignTokens.s24),
-            const Text('Message (optional)',
-                style: DesignTokens.oneLinerSemibold),
+            const Text(
+              'Message (optional)',
+              style: DesignTokens.oneLinerSemibold,
+            ),
             const SizedBox(height: DesignTokens.s8),
             TextField(
               controller: _messageController,
@@ -110,13 +117,16 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
               decoration: DesignTokens.cardDecoration(),
               child: Column(
                 children: [
-                  const Text('You are sending',
-                      style: DesignTokens.smallRegular),
+                  const Text(
+                    'You are sending',
+                    style: DesignTokens.smallRegular,
+                  ),
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     'Rs ${_selectedAmount.toStringAsFixed(0)}',
                     style: DesignTokens.titleLarge.copyWith(
-                        color: DesignTokens.primaryGreen),
+                      color: DesignTokens.primaryGreen,
+                    ),
                   ),
                 ],
               ),
@@ -129,8 +139,7 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
                   final creator = _creatorController.text.trim();
                   if (creator.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Please enter a creator')),
+                      const SnackBar(content: Text('Please enter a creator')),
                     );
                     return;
                   }
@@ -138,8 +147,7 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
                       .read(tipsNotifierProvider.notifier)
                       .sendTip(
                         creatorId: creator,
-                        amount: Money(
-                            amount: _selectedAmount, currency: 'NPR'),
+                        amount: Money(amount: _selectedAmount, currency: 'NPR'),
                         message: _messageController.text.trim(),
                       );
                   Navigator.of(context).pop();
@@ -148,13 +156,16 @@ class _SendTipScreenState extends ConsumerState<SendTipScreen> {
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: DesignTokens.buttonPrimaryText,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          DesignTokens.buttonRadius)),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
+                  ),
                 ),
                 child: Text(
                   'Send Tip - Rs ${_selectedAmount.toStringAsFixed(0)}',
                   style: DesignTokens.oneLinerSemibold.copyWith(
-                      color: DesignTokens.buttonPrimaryText),
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
                 ),
               ),
             ),

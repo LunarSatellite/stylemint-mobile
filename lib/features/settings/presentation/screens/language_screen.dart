@@ -63,8 +63,11 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
     final filtered = _query.isEmpty
         ? LanguageOption.supportedLanguages
         : LanguageOption.supportedLanguages
-            .where((l) => l.displayName.toLowerCase().contains(_query.toLowerCase()))
-            .toList();
+              .where(
+                (l) =>
+                    l.displayName.toLowerCase().contains(_query.toLowerCase()),
+              )
+              .toList();
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -78,11 +81,18 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
         title: const Text('Language', style: DesignTokens.sectionInnerTitle),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           Text(
             'Select your preferred language',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s16),
 
@@ -94,11 +104,19 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
             ),
             child: TextField(
               onChanged: (v) => setState(() => _query = v),
-              style: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search language',
-                hintStyle: DesignTokens.mediumRegular.copyWith(color: DesignTokens.textMuted),
-                suffixIcon: const Icon(Icons.search, color: DesignTokens.textMuted, size: 20),
+                hintStyle: DesignTokens.mediumRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+                suffixIcon: const Icon(
+                  Icons.search,
+                  color: DesignTokens.textMuted,
+                  size: 20,
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16,
@@ -148,7 +166,9 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
               child: Center(
                 child: Text(
                   'No languages found',
-                  style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
                 ),
               ),
             ),
@@ -215,7 +235,9 @@ class _LanguageTile extends StatelessWidget {
                 child: Text(
                   option.displayName,
                   style: DesignTokens.mediumSemibold.copyWith(
-                    color: isSelected ? DesignTokens.primaryGreen : DesignTokens.textWhite,
+                    color: isSelected
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.textWhite,
                   ),
                 ),
               ),
@@ -226,7 +248,9 @@ class _LanguageTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? DesignTokens.primaryGreen : DesignTokens.textMuted,
+                    color: isSelected
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.textMuted,
                     width: 1.5,
                   ),
                 ),
