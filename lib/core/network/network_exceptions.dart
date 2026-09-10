@@ -194,14 +194,19 @@ abstract class NetworkExceptions with _$NetworkExceptions {
     if (errors.isNotEmpty) {
       return errors.map((e) => e.toDisplayLine()).join('\n');
     }
-    // Single-field response: prefer the backend's `title` (the most readable
-    // sentence) and prefix the field name when present so the vendor knows
-    // exactly which input to fix.
+    // Single top-level `field` (as opposed to the `errors[]` array above):
+    // this is set on single-error ServiceResults like `.BusinessRule(msg,
+    // field)` or `.Conflict(msg, field)`, where `field` is a C#
+    // `nameof(...)` of whatever entity property the rule failed on (e.g.
+    // "VendorProfileId") — not a visible form input name. The backend's
+    // `title`/message on these is already a complete, human-readable
+    // sentence (per the ServiceResult factory conventions), so prefixing
+    // the raw property name only makes it look like a leaked internal
+    // detail ("VendorProfileId: Vendor has not published partnership terms
+    // yet..."). Only the per-field `errors[]` case above (real
+    // FluentValidation form-field errors) benefits from a field prefix.
     final human = (message ?? '').trim();
     final fieldName = (field ?? '').trim();
-    if (human.isNotEmpty && fieldName.isNotEmpty) {
-      return '$fieldName: $human';
-    }
     if (human.isNotEmpty) return human;
     if (fieldName.isNotEmpty) {
       return 'Field "$fieldName" is invalid (${_humanizeCode(code)}).';
