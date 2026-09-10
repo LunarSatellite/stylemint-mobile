@@ -166,15 +166,22 @@ class ProfileRepositoryImpl implements ProfileRepository {
     if (await networkInfo.isConnected) {
       try {
         final response = await remoteDataSource.getFollowing(
-          search: search,
           limit: limit,
           cursor: cursor,
         );
+        // Backend has no server-side search on this endpoint — filter the
+        // returned page client-side instead.
+        final query = search?.trim().toLowerCase();
         final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
             .map(
               (e) => FollowingUserDto.fromJson(
                 e as Map<String, dynamic>,
               ).toDomain(),
+            )
+            .where(
+              (u) => query == null ||
+                  query.isEmpty ||
+                  u.displayName.toLowerCase().contains(query),
             )
             .toList(growable: false);
         return right(

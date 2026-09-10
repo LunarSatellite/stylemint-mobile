@@ -47,17 +47,18 @@ abstract class UserProfileDto with _$UserProfileDto {
   );
 }
 
+/// Maps `GET /v1/follows/me`'s real response shape — backend
+/// `FollowingListItemDto` (StyleMint.Modules.SocialGraph). Field is
+/// `accountId`, not `id`; there is no `handle`/`category`/`bio` on the
+/// wire (AccountSummaryDto doesn't carry a handle yet).
 @freezed
 abstract class FollowingUserDto with _$FollowingUserDto {
   const factory FollowingUserDto({
-    required String id,
-    required String displayName,
+    required String accountId,
+    @Default('') String displayName,
     @Default('') String avatarUrl,
-    @Default('') String handle,
-    @Default(false) bool isFollowing,
+    @Default(true) bool isFollowing,
     @Default(0) int followerCount,
-    String? category,
-    String? bio,
   }) = _FollowingUserDto;
 
   const FollowingUserDto._();
@@ -66,13 +67,11 @@ abstract class FollowingUserDto with _$FollowingUserDto {
       _$FollowingUserDtoFromJson(json);
 
   FollowingUser toDomain() => FollowingUser(
-    id: id,
+    id: accountId,
     displayName: displayName,
     avatarUrl: avatarUrl,
-    handle: handle,
+    handle: '',
     isFollowing: isFollowing,
     followerCount: followerCount,
-    category: category,
-    bio: bio,
   );
 }

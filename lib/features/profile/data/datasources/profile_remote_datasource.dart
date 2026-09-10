@@ -111,16 +111,21 @@ class ProfileRemoteDataSource {
     );
   }
 
+  /// `GET /v1/follows/me` — the one-way follow graph (SocialGraph module).
+  /// Distinct from `/v1/connections`, which is mutual Friendship
+  /// (Networking module) — conflating the two previously showed the
+  /// caller's friends list here instead of who they actually follow.
+  /// The backend doesn't support server-side `search`; callers filter
+  /// client-side on the returned page.
   Future<Map<String, dynamic>> getFollowing({
     String? search,
     int limit = 20,
     String? cursor,
   }) async {
     final response = await apiClient.get(
-      '/v1/connections',
+      '/v1/follows/me',
       queryParameters: {
-        'limit': limit,
-        if (search != null && search.isNotEmpty) 'search': search,
+        'pageSize': limit,
         if (cursor != null) 'cursor': cursor,
       },
     );
@@ -128,7 +133,7 @@ class ProfileRemoteDataSource {
   }
 
   Future<void> unfollowUser(String userId) async {
-    await apiClient.authDelete('/v1/connections/$userId');
+    await apiClient.authDelete('/v1/follows/$userId');
   }
 
   /// Submits a GDPR Article 20 export request. The archive itself is produced
