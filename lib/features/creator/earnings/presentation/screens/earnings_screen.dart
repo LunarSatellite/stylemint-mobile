@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/payout_rules.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -157,7 +158,7 @@ class _BalancesPayoutCard extends StatelessWidget {
                           ),
                           const SizedBox(height: DesignTokens.s4),
                           Text(
-                            'Payouts are processed weekly on fridays.\nThe minimum withdraw amount is Rs 5,000.00',
+                            'On-demand payouts have a 2% fee and a ${onDemandPayoutPendingWindow.inDays}-day pending period.\nMinimum withdrawal: Rs ${NumberFormat('#,##0', 'en_US').format(onDemandPayoutMinimumNpr)}',
                             style: DesignTokens.smallRegular.copyWith(
                               color: DesignTokens.textDark,
                             ),

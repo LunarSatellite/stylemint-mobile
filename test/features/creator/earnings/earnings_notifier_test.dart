@@ -17,6 +17,7 @@ class _FakeRepository implements EarningsRepository {
   NetworkEither<List<PayoutMethod>>? methods;
 
   int summaryCalls = 0;
+  int requestPayoutCalls = 0;
 
   @override
   Future<NetworkEither<EarningsSummary>> getSummary() async {
@@ -38,7 +39,10 @@ class _FakeRepository implements EarningsRepository {
   Future<NetworkEither<Unit>> requestPayout({
     required Money amount,
     required String payoutMethodId,
-  }) async => networkRight(unit);
+  }) async {
+    requestPayoutCalls++;
+    return networkRight(unit);
+  }
 
   @override
   Future<NetworkEither<Unit>> addBankPayoutMethod({
@@ -174,6 +178,34 @@ void main() {
       await notifier.load();
 
       expect(repo.summaryCalls, 2);
+    });
+  });
+
+  group('RequestPayoutNotifier', () {
+    test('does not submit amounts outside the backend bounds', () async {
+      final repo = _FakeRepository();
+      final notifier = RequestPayoutNotifier(repo);
+      notifier.setSelectedMethod('method-1');
+
+      notifier.setAmount(9999);
+      await notifier.submit();
+      notifier.setAmount(70001);
+      await notifier.submit();
+
+      expect(repo.requestPayoutCalls, 0);
+    });
+
+    test('submits amounts at both backend bounds', () async {
+      final repo = _FakeRepository();
+
+      for (final amount in [10000.0, 70000.0]) {
+        final notifier = RequestPayoutNotifier(repo);
+        notifier.setSelectedMethod('method-1');
+        notifier.setAmount(amount);
+        await notifier.submit();
+      }
+
+      expect(repo.requestPayoutCalls, 2);
     });
   });
 }

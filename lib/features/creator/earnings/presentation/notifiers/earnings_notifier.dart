@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/payout_rules.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/repositories/earnings_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -70,7 +71,8 @@ class EarningsNotifier extends StateNotifier<EarningsState> {
 }
 
 class AddPayoutMethodNotifier extends StateNotifier<AsyncValue<void>> {
-  AddPayoutMethodNotifier(this._repository) : super(const AsyncValue.data(null));
+  AddPayoutMethodNotifier(this._repository)
+    : super(const AsyncValue.data(null));
   final EarningsRepository _repository;
 
   Future<void> addBank({
@@ -151,7 +153,11 @@ class RequestPayoutNotifier extends StateNotifier<RequestPayoutState> {
     final editing = state;
     if (editing is! _RequestPayoutEditing) return;
     final selectedMethodId = editing.selectedMethodId;
-    if (selectedMethodId == null || editing.amount <= 0) return;
+    if (selectedMethodId == null ||
+        editing.amount < onDemandPayoutMinimumNpr ||
+        editing.amount > onDemandPayoutMaximumNpr) {
+      return;
+    }
 
     state = const RequestPayoutState.submitting();
     final either = await _repository.requestPayout(
@@ -172,7 +178,8 @@ abstract class PayoutInvoiceState with _$PayoutInvoiceState {
   const PayoutInvoiceState._();
 
   const factory PayoutInvoiceState.initial() = _PayoutInvoiceInitial;
-  const factory PayoutInvoiceState.loadInProgress() = _PayoutInvoiceLoadInProgress;
+  const factory PayoutInvoiceState.loadInProgress() =
+      _PayoutInvoiceLoadInProgress;
   const factory PayoutInvoiceState.loadSuccess(PayoutInvoice invoice) =
       _PayoutInvoiceLoadSuccess;
   const factory PayoutInvoiceState.loadFailure(NetworkExceptions failure) =
@@ -181,7 +188,7 @@ abstract class PayoutInvoiceState with _$PayoutInvoiceState {
 
 class PayoutInvoiceNotifier extends StateNotifier<PayoutInvoiceState> {
   PayoutInvoiceNotifier(this._repository, this._payoutId)
-      : super(const PayoutInvoiceState.initial()) {
+    : super(const PayoutInvoiceState.initial()) {
     unawaited(load());
   }
 
@@ -212,7 +219,8 @@ abstract class CancelPayoutState with _$CancelPayoutState {
 }
 
 class CancelPayoutNotifier extends StateNotifier<CancelPayoutState> {
-  CancelPayoutNotifier(this._repository) : super(const CancelPayoutState.idle());
+  CancelPayoutNotifier(this._repository)
+    : super(const CancelPayoutState.idle());
 
   final EarningsRepository _repository;
 

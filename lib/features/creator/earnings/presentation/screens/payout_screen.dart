@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
+import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/payout_rules.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -20,7 +21,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   String? _selectedMethodId;
   bool _agreedToTerms = false;
 
-  static const double _feePercent = 0.02;
+  static const double _feePercent = onDemandPayoutFeeRate;
   // Must stay within the Rs 10,000–70,000 on-demand payout bounds shown
   // just below these chips — the previous values (500-8000) were all
   // under the minimum, so every quick-select chip failed validation.
@@ -49,11 +50,8 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   }
 
   String _estimatedArrival() {
-    final now = DateTime.now();
-    final daysToFriday = (5 - now.weekday + 7) % 7;
-    final start = now.add(Duration(days: daysToFriday == 0 ? 7 : daysToFriday));
-    final end = start.add(const Duration(days: 2));
-    return '${DateFormat('MMM d').format(start)}-${DateFormat('d, yyyy').format(end)}';
+    final processingDate = DateTime.now().add(onDemandPayoutPendingWindow);
+    return DateFormat('MMM d, yyyy').format(processingDate);
   }
 
   void _openPaymentMethodSheet(List<PayoutMethod> methods) {
@@ -133,8 +131,11 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
       orElse: () => false,
     );
     final canSubmit =
+        summary != null &&
         _selectedMethodId != null &&
-        _amount > 0 &&
+        _amount >= onDemandPayoutMinimumNpr &&
+        _amount <= onDemandPayoutMaximumNpr &&
+        _amount <= summary.availableBalance.amount &&
         _agreedToTerms &&
         !isSubmitting;
 
@@ -396,7 +397,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Estimated Arrival: ${_estimatedArrival()}',
+                                'Eligible for processing: ${_estimatedArrival()}',
                                 style: const TextStyle(
                                   fontFamily: DesignTokens.fontFamily,
                                   fontSize: 13,
@@ -406,7 +407,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Your payout will be deposited to your selected payment method by the above date',
+                                'On-demand payouts have a ${onDemandPayoutPendingWindow.inDays}-day pending period before processing begins',
                                 style: DesignTokens.smallRegular.copyWith(
                                   color: DesignTokens.textLight,
                                 ),
