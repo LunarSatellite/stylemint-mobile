@@ -27,9 +27,17 @@ class FeedRepositoryImpl implements FeedRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final data = await remoteDataSource.getFeed(limit: limit, cursor: cursor);
-        final items = (data['items'] as List<dynamic>?)
-                ?.map((e) => FeedPostDto.fromJson(e as Map<String, dynamic>).toDomain())
+        final data = await remoteDataSource.getFeed(
+          limit: limit,
+          cursor: cursor,
+        );
+        final items =
+            (data['items'] as List<dynamic>?)
+                ?.map(
+                  (e) => FeedPostDto.fromPostJson(
+                    e as Map<String, dynamic>,
+                  ).toDomain(),
+                )
                 .toList(growable: false) ??
             const <FeedPost>[];
         return right(
@@ -165,8 +173,13 @@ class FeedRepositoryImpl implements FeedRepository {
           limit: limit,
           cursor: cursor,
         );
-        final items = (data['items'] as List<dynamic>?)
-                ?.map((e) => FeedCommentDto.fromJson(e as Map<String, dynamic>).toDomain())
+        final items =
+            (data['items'] as List<dynamic>?)
+                ?.map(
+                  (e) => FeedCommentDto.fromJson(
+                    e as Map<String, dynamic>,
+                  ).toDomain(),
+                )
                 .toList(growable: false) ??
             const <FeedComment>[];
         return right(

@@ -15,7 +15,7 @@ class FeedRemoteDataSource {
     final response = await apiClient.get(
       '/v1/feed',
       queryParameters: {
-        'limit': limit,
+        'pageSize': limit,
         if (cursor != null) 'cursor': cursor,
       },
     );
