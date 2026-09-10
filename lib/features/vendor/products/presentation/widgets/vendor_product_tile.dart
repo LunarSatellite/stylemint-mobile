@@ -44,8 +44,8 @@ class VendorProductTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(DesignTokens.s16),
           child: Column(
-          children: [
-            // ── Top: image + info + 3-dot ─────────────────────────────────
+            children: [
+              // ── Top: image + info + 3-dot ─────────────────────────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -132,16 +132,16 @@ class VendorProductTile extends StatelessWidget {
                   ),
                 ],
               ),
-            // ── Divider ───────────────────────────────────────────────────
-            const SizedBox(height: DesignTokens.s16),
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: DesignTokens.borderDefault,
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            // ── Stats ─────────────────────────────────────────────────────
-            Column(
+              // ── Divider ───────────────────────────────────────────────────
+              const SizedBox(height: DesignTokens.s16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: DesignTokens.borderDefault,
+              ),
+              const SizedBox(height: DesignTokens.s16),
+              // ── Stats ─────────────────────────────────────────────────────
+              Column(
                 children: [
                   // Draft and Active show In Stock; Out of Stock omits it
                   if (!_isOutOfStock) ...[
@@ -157,7 +157,8 @@ class VendorProductTile extends StatelessWidget {
                     _StatRow(
                       icon: Icons.star_outline,
                       label: product.reviewCount != null
-                          ? 'Ratings (${product.reviewCount} Reviews)'
+                          ? 'Ratings (${product.reviewCount} '
+                                '${product.reviewCount == 1 ? 'Review' : 'Reviews'})'
                           : 'Ratings',
                       value: product.rating.toStringAsFixed(1),
                     ),
@@ -172,8 +173,8 @@ class VendorProductTile extends StatelessWidget {
                     ),
                   ],
                 ],
-            ),
-          ],
+              ),
+            ],
           ),
         ),
       ),
