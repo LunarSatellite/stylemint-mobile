@@ -86,58 +86,76 @@ class CreateDraftNotifier extends StateNotifier<CreateDraftState> {
 
   final ReelStudioRepository _repository;
 
+  /// Set when editing an existing draft (tapped from the Reel Studio list)
+  /// rather than starting a new one — routes save() to updateDraft instead
+  /// of createDraft. Reset by [reset] whenever a fresh draft is started.
+  String? _editingDraftId;
+
+  /// Seeds the editor with an existing draft's values ahead of navigating
+  /// to Create Draft, so tapping a saved draft actually opens it instead of
+  /// always starting blank.
+  void editExisting(ReelDraft draft) {
+    _editingDraftId = draft.id;
+    state = CreateDraftState.editing(
+      caption: draft.caption,
+      hashtags: draft.hashtags,
+      taggedProductIds: draft.taggedProductIds,
+      platform: draft.platform,
+    );
+  }
+
+  void reset() {
+    _editingDraftId = null;
+    state = const CreateDraftState.editing();
+  }
+
   void setCaption(String caption) {
     state = state.maybeWhen(
-      editing:
-          (_, hashtags, taggedProductIds, platform) =>
-              CreateDraftState.editing(
-                caption: caption,
-                hashtags: hashtags,
-                taggedProductIds: taggedProductIds,
-                platform: platform,
-              ),
+      editing: (_, hashtags, taggedProductIds, platform) =>
+          CreateDraftState.editing(
+            caption: caption,
+            hashtags: hashtags,
+            taggedProductIds: taggedProductIds,
+            platform: platform,
+          ),
       orElse: () => state,
     );
   }
 
   void setHashtags(List<String> hashtags) {
     state = state.maybeWhen(
-      editing:
-          (caption, _, taggedProductIds, platform) =>
-              CreateDraftState.editing(
-                caption: caption,
-                hashtags: hashtags,
-                taggedProductIds: taggedProductIds,
-                platform: platform,
-              ),
+      editing: (caption, _, taggedProductIds, platform) =>
+          CreateDraftState.editing(
+            caption: caption,
+            hashtags: hashtags,
+            taggedProductIds: taggedProductIds,
+            platform: platform,
+          ),
       orElse: () => state,
     );
   }
 
   void setTaggedProductIds(List<String> ids) {
     state = state.maybeWhen(
-      editing:
-          (caption, hashtags, _, platform) =>
-              CreateDraftState.editing(
-                caption: caption,
-                hashtags: hashtags,
-                taggedProductIds: ids,
-                platform: platform,
-              ),
+      editing: (caption, hashtags, _, platform) => CreateDraftState.editing(
+        caption: caption,
+        hashtags: hashtags,
+        taggedProductIds: ids,
+        platform: platform,
+      ),
       orElse: () => state,
     );
   }
 
   void setPlatform(SocialPlatform platform) {
     state = state.maybeWhen(
-      editing:
-          (caption, hashtags, taggedProductIds, _) =>
-              CreateDraftState.editing(
-                caption: caption,
-                hashtags: hashtags,
-                taggedProductIds: taggedProductIds,
-                platform: platform,
-              ),
+      editing: (caption, hashtags, taggedProductIds, _) =>
+          CreateDraftState.editing(
+            caption: caption,
+            hashtags: hashtags,
+            taggedProductIds: taggedProductIds,
+            platform: platform,
+          ),
       orElse: () => state,
     );
   }
@@ -159,12 +177,20 @@ class CreateDraftNotifier extends StateNotifier<CreateDraftState> {
     List<String> taggedProductIds,
     SocialPlatform platform,
   ) async {
-    final either = await _repository.createDraft(
-      caption: caption,
-      hashtags: hashtags,
-      taggedProductIds: taggedProductIds,
-      platform: platform,
-    );
+    final editingId = _editingDraftId;
+    final either = editingId != null
+        ? await _repository.updateDraft(
+            draftId: editingId,
+            caption: caption,
+            hashtags: hashtags,
+            taggedProductIds: taggedProductIds,
+          )
+        : await _repository.createDraft(
+            caption: caption,
+            hashtags: hashtags,
+            taggedProductIds: taggedProductIds,
+            platform: platform,
+          );
     state = either.fold(
       CreateDraftState.saveFailure,
       CreateDraftState.saved,

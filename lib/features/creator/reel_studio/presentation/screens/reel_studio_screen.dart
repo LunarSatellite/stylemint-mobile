@@ -22,6 +22,7 @@ class ReelStudioScreen extends ConsumerWidget {
         backgroundColor: DesignTokens.primaryGreen,
         foregroundColor: DesignTokens.textDark,
         onPressed: () async {
+          ref.read(createDraftNotifierProvider.notifier).reset();
           // The draft is saved as soon as Create Draft's "Save" succeeds,
           // independent of whether the AI coaching analysis that follows
           // succeeds — but this list previously only refreshed itself on
@@ -48,8 +49,8 @@ class ReelStudioScreen extends ConsumerWidget {
             }
             return RefreshIndicator(
               color: DesignTokens.primaryGreen,
-              onRefresh:
-                  () => ref.read(reelStudioNotifierProvider.notifier).load(),
+              onRefresh: () =>
+                  ref.read(reelStudioNotifierProvider.notifier).load(),
               child: ListView(
                 padding: const EdgeInsets.all(DesignTokens.s16),
                 children: [
@@ -58,12 +59,27 @@ class ReelStudioScreen extends ConsumerWidget {
                       title: 'Your Drafts',
                       count: drafts.length,
                     ),
-                    ...drafts.map((draft) => _DraftTile(
-                          draft: draft,
-                          onDelete: () => ref
-                              .read(reelStudioNotifierProvider.notifier)
-                              .deleteDraft(draft.id),
-                        )),
+                    ...drafts.map(
+                      (draft) => _DraftTile(
+                        draft: draft,
+                        onTap: () async {
+                          ref
+                              .read(createDraftNotifierProvider.notifier)
+                              .editExisting(draft);
+                          await context.push(
+                            '/creator/reel-studio/create',
+                          );
+                          if (context.mounted) {
+                            ref
+                                .read(reelStudioNotifierProvider.notifier)
+                                .load();
+                          }
+                        },
+                        onDelete: () => ref
+                            .read(reelStudioNotifierProvider.notifier)
+                            .deleteDraft(draft.id),
+                      ),
+                    ),
                     const SizedBox(height: DesignTokens.s24),
                   ],
                   if (recipes.isNotEmpty) ...[
@@ -79,8 +95,7 @@ class ReelStudioScreen extends ConsumerWidget {
           },
           loadFailure: (failure) => SmErrorView(
             message: 'Failed to load Reel Studio.',
-            onRetry:
-                () => ref.read(reelStudioNotifierProvider.notifier).load(),
+            onRetry: () => ref.read(reelStudioNotifierProvider.notifier).load(),
           ),
         ),
       ),
@@ -111,74 +126,86 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _DraftTile extends StatelessWidget {
-  const _DraftTile({required this.draft, required this.onDelete});
+  const _DraftTile({
+    required this.draft,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final ReelDraft draft;
+  final VoidCallback onTap;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: DesignTokens.s8),
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(draft.platform.icon, color: draft.platform.color, size: 18),
-              const SizedBox(width: DesignTokens.s8),
-              Expanded(
-                child: Text(
-                  draft.caption.isNotEmpty ? draft.caption : 'Untitled draft',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.oneLinerSemibold,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBody,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  draft.platform.icon,
+                  color: draft.platform.color,
+                  size: 18,
                 ),
-              ),
-              _DraftStatusBadge(status: draft.status),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
-                color: DesignTokens.textMuted,
-                onPressed: onDelete,
-              ),
-            ],
-          ),
-          if (draft.hashtags.isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            Wrap(
-              spacing: DesignTokens.s4,
-              runSpacing: DesignTokens.s4,
-              children:
-                  draft.hashtags
-                      .map(
-                        (h) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s8,
-                            vertical: DesignTokens.s4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: DesignTokens.primaryGreenLight,
-                            borderRadius: BorderRadius.circular(
-                              DesignTokens.chipRadius,
-                            ),
-                          ),
-                          child: Text(
-                            '#$h',
-                            style: DesignTokens.tiny.copyWith(
-                              color: DesignTokens.primaryGreen,
-                            ),
+                const SizedBox(width: DesignTokens.s8),
+                Expanded(
+                  child: Text(
+                    draft.caption.isNotEmpty ? draft.caption : 'Untitled draft',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.oneLinerSemibold,
+                  ),
+                ),
+                _DraftStatusBadge(status: draft.status),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  color: DesignTokens.textMuted,
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+            if (draft.hashtags.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s8),
+              Wrap(
+                spacing: DesignTokens.s4,
+                runSpacing: DesignTokens.s4,
+                children: draft.hashtags
+                    .map(
+                      (h) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: DesignTokens.s8,
+                          vertical: DesignTokens.s4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: DesignTokens.primaryGreenLight,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.chipRadius,
                           ),
                         ),
-                      )
-                      .toList(growable: false),
-            ),
+                        child: Text(
+                          '#$h',
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -245,7 +272,11 @@ class _RecipeTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: DesignTokens.primaryGreen, size: 18),
+              const Icon(
+                Icons.auto_awesome,
+                color: DesignTokens.primaryGreen,
+                size: 18,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: Text(
@@ -255,7 +286,11 @@ class _RecipeTile extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(recipe.platform.icon, color: recipe.platform.color, size: 18),
+              Icon(
+                recipe.platform.icon,
+                color: recipe.platform.color,
+                size: 18,
+              ),
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
@@ -265,29 +300,28 @@ class _RecipeTile extends StatelessWidget {
             Wrap(
               spacing: DesignTokens.s4,
               runSpacing: DesignTokens.s4,
-              children:
-                  recipe.hashtags
-                      .map(
-                        (h) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s8,
-                            vertical: DesignTokens.s4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: DesignTokens.chipsSelectedFill,
-                            borderRadius: BorderRadius.circular(
-                              DesignTokens.chipRadius,
-                            ),
-                          ),
-                          child: Text(
-                            '#$h',
-                            style: DesignTokens.tiny.copyWith(
-                              color: DesignTokens.primaryGreen,
-                            ),
-                          ),
+              children: recipe.hashtags
+                  .map(
+                    (h) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s8,
+                        vertical: DesignTokens.s4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: DesignTokens.chipsSelectedFill,
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.chipRadius,
                         ),
-                      )
-                      .toList(growable: false),
+                      ),
+                      child: Text(
+                        '#$h',
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
             ),
           ],
         ],
