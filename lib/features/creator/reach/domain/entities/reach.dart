@@ -87,32 +87,32 @@ class BoostCampaign {
 
 class ReachAnalytics {
   const ReachAnalytics({
-    required this.totalImpressions,
-    required this.totalClicks,
+    required this.totalReach,
+    required this.totalPostsPublished,
     required this.totalEngagements,
     required this.totalSpent,
     required this.periodStart,
     required this.periodEnd,
   });
 
-  final int totalImpressions;
-  final int totalClicks;
+  final int totalReach;
+  final int totalPostsPublished;
   final int totalEngagements;
   final Money totalSpent;
   final DateTime periodStart;
   final DateTime periodEnd;
 
   ReachAnalytics copyWith({
-    int? totalImpressions,
-    int? totalClicks,
+    int? totalReach,
+    int? totalPostsPublished,
     int? totalEngagements,
     Money? totalSpent,
     DateTime? periodStart,
     DateTime? periodEnd,
   }) {
     return ReachAnalytics(
-      totalImpressions: totalImpressions ?? this.totalImpressions,
-      totalClicks: totalClicks ?? this.totalClicks,
+      totalReach: totalReach ?? this.totalReach,
+      totalPostsPublished: totalPostsPublished ?? this.totalPostsPublished,
       totalEngagements: totalEngagements ?? this.totalEngagements,
       totalSpent: totalSpent ?? this.totalSpent,
       periodStart: periodStart ?? this.periodStart,

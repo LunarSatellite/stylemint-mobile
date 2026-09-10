@@ -119,16 +119,10 @@ class ReachRepositoryImpl implements ReachRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, ReachAnalytics>> getAnalytics({
-    DateTime? periodStart,
-    DateTime? periodEnd,
-  }) async {
+  Future<Either<NetworkExceptions, ReachAnalytics>> getAnalytics() async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getAnalytics(
-          periodStart: periodStart,
-          periodEnd: periodEnd,
-        );
+        final dto = await remoteDataSource.getAnalytics();
         return right(dto.toDomain());
       } catch (e) {
         if (e is DioException) {

@@ -87,16 +87,35 @@ abstract class BoostCampaignDto with _$BoostCampaignDto {
   }
 }
 
+/// Maps backend `PerPlatformSummaryDto` — one row per connected platform
+/// inside `UnifiedReachSnapshotDto.platforms`.
+@freezed
+abstract class PerPlatformSummaryDto with _$PerPlatformSummaryDto {
+  const factory PerPlatformSummaryDto({
+    @Default(0) int postsPublished,
+    @Default(0) int reach,
+    @Default(0) int engagements,
+  }) = _PerPlatformSummaryDto;
+
+  const PerPlatformSummaryDto._();
+
+  factory PerPlatformSummaryDto.fromJson(Map<String, dynamic> json) =>
+      _$PerPlatformSummaryDtoFromJson(json);
+}
+
+/// Maps `GET /v1/reach/dashboard`'s real response shape — backend
+/// `UnifiedReachSnapshotDto` (StyleMint.Modules.Reach). There is no flat
+/// totalImpressions/totalClicks/periodStart on the wire; reach and
+/// engagement totals are summed client-side from `platforms[]`, and there
+/// is no click-through concept in this snapshot at all.
 @freezed
 abstract class ReachAnalyticsDto with _$ReachAnalyticsDto {
   const factory ReachAnalyticsDto({
-    required int totalImpressions,
-    required int totalClicks,
-    required int totalEngagements,
-    required double totalSpentAmount,
-    @Default('NPR') String totalSpentCurrency,
-    required DateTime periodStart,
-    required DateTime periodEnd,
+    @Default(<PerPlatformSummaryDto>[]) List<PerPlatformSummaryDto> platforms,
+    @Default(0) double totalBoostSpendAmount,
+    @Default('NPR') String totalBoostSpendCurrency,
+    required DateTime windowStartUtc,
+    required DateTime windowEndUtc,
   }) = _ReachAnalyticsDto;
 
   const ReachAnalyticsDto._();
@@ -105,11 +124,14 @@ abstract class ReachAnalyticsDto with _$ReachAnalyticsDto {
       _$ReachAnalyticsDtoFromJson(json);
 
   ReachAnalytics toDomain() => ReachAnalytics(
-    totalImpressions: totalImpressions,
-    totalClicks: totalClicks,
-    totalEngagements: totalEngagements,
-    totalSpent: Money(amount: totalSpentAmount, currency: totalSpentCurrency),
-    periodStart: periodStart,
-    periodEnd: periodEnd,
+    totalReach: platforms.fold(0, (sum, p) => sum + p.reach),
+    totalPostsPublished: platforms.fold(0, (sum, p) => sum + p.postsPublished),
+    totalEngagements: platforms.fold(0, (sum, p) => sum + p.engagements),
+    totalSpent: Money(
+      amount: totalBoostSpendAmount,
+      currency: totalBoostSpendCurrency,
+    ),
+    periodStart: windowStartUtc,
+    periodEnd: windowEndUtc,
   );
 }

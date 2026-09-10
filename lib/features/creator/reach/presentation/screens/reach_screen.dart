@@ -165,12 +165,12 @@ class _AnalyticsSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _AnalyticItem(
-                label: 'Impressions',
-                value: _formatCount(analytics.totalImpressions),
+                label: 'Reach',
+                value: _formatCount(analytics.totalReach),
               ),
               _AnalyticItem(
-                label: 'Clicks',
-                value: _formatCount(analytics.totalClicks),
+                label: 'Posts',
+                value: _formatCount(analytics.totalPostsPublished),
               ),
               _AnalyticItem(
                 label: 'Engagements',

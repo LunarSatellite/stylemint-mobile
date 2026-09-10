@@ -21,8 +21,5 @@ abstract interface class ReachRepository {
     required int durationDays,
   });
 
-  Future<Either<NetworkExceptions, ReachAnalytics>> getAnalytics({
-    DateTime? periodStart,
-    DateTime? periodEnd,
-  });
+  Future<Either<NetworkExceptions, ReachAnalytics>> getAnalytics();
 }

@@ -99,17 +99,10 @@ class ReachRemoteDataSource {
     return BoostCampaignDto.fromJson(response as Map<String, dynamic>);
   }
 
-  Future<ReachAnalyticsDto> getAnalytics({
-    DateTime? periodStart,
-    DateTime? periodEnd,
-  }) async {
-    final response = await apiClient.get(
-      '/v1/reach/dashboard',
-      queryParameters: {
-        if (periodStart != null) 'periodStart': periodStart.toIso8601String(),
-        if (periodEnd != null) 'periodEnd': periodEnd.toIso8601String(),
-      },
-    );
+  /// `GET /v1/reach/dashboard` — backend takes a `window` enum
+  /// (DashboardWindow, default Last30Days), not periodStart/periodEnd.
+  Future<ReachAnalyticsDto> getAnalytics() async {
+    final response = await apiClient.get('/v1/reach/dashboard');
     return ReachAnalyticsDto.fromJson(response as Map<String, dynamic>);
   }
 }
