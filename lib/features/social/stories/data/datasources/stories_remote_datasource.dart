@@ -9,10 +9,32 @@ class StoriesRemoteDataSource {
 
   /// GET `/v1/stories` — all story groups.
   Future<List<StoryGroupDto>> getStoryGroups() async {
-    final response = await apiClient.get('/v1/stories');
-    final list = response as List<dynamic>;
-    return list
-        .map((e) => StoryGroupDto.fromJson(e as Map<String, dynamic>))
+    final response = await apiClient.get(
+      '/v1/stories',
+      queryParameters: const {'pageSize': 100},
+    );
+    final data = response as Map<String, dynamic>;
+    final stories = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (item) => StoryDto.fromStoryJson(item as Map<String, dynamic>),
+        )
+        .toList(growable: false);
+    final storiesByUser = <String, List<StoryDto>>{};
+    for (final story in stories) {
+      storiesByUser.putIfAbsent(story.userId, () => <StoryDto>[]).add(story);
+    }
+
+    return storiesByUser.values
+        .map((userStories) {
+          final first = userStories.first;
+          return StoryGroupDto(
+            userId: first.userId,
+            userName: first.userName,
+            userAvatarUrl: first.userAvatarUrl,
+            stories: userStories,
+            hasUnwatched: userStories.any((story) => !story.hasWatched),
+          );
+        })
         .toList(growable: false);
   }
 
@@ -21,7 +43,7 @@ class StoriesRemoteDataSource {
     final response = await apiClient.get('/v1/stories/by-author/$userId');
     final list = response as List<dynamic>;
     return list
-        .map((e) => StoryDto.fromJson(e as Map<String, dynamic>))
+        .map((e) => StoryDto.fromStoryJson(e as Map<String, dynamic>))
         .toList(growable: false);
   }
 

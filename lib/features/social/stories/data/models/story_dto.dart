@@ -25,6 +25,38 @@ abstract class StoryDto with _$StoryDto {
   factory StoryDto.fromJson(Map<String, dynamic> json) =>
       _$StoryDtoFromJson(json);
 
+  factory StoryDto.fromStoryJson(Map<String, dynamic> json) {
+    final rawMediaType = json['mediaType'];
+    final mediaTypeText = rawMediaType.toString().toLowerCase();
+    final isVideo =
+        rawMediaType == 2 ||
+        mediaTypeText == 'video' ||
+        mediaTypeText == 'boomerang';
+    final rawProductIds = json['taggedProductIds'];
+    final productIds = rawProductIds is List
+        ? rawProductIds.map((id) => id.toString()).toList(growable: false)
+        : const <String>[];
+
+    return StoryDto(
+      id: json['id'].toString(),
+      userId: (json['userId'] ?? json['authorAccountId']).toString(),
+      userName:
+          (json['userName'] ?? json['authorDisplayName'] ?? 'StyleMint user')
+              .toString(),
+      userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
+          .toString(),
+      mediaUrl: json['mediaUrl'].toString(),
+      mediaType: isVideo ? 'video' : 'image',
+      expiresAt: DateTime.parse(
+        (json['expiresAt'] ?? json['expiresUtc']).toString(),
+      ),
+      taggedProductIds: productIds,
+      caption: json['caption'] as String?,
+      viewCount: (json['viewCount'] as num?)?.toInt() ?? 0,
+      hasWatched: json['hasWatched'] as bool? ?? false,
+    );
+  }
+
   Story toDomain() => Story(
     id: id,
     userId: userId,
