@@ -14,30 +14,35 @@ class CompatibilityScoreWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 52,
-      height: 52,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(
-              value: score / 100,
-              strokeWidth: 4,
-              backgroundColor: DesignTokens.bgAppBodyLight,
-              valueColor: AlwaysStoppedAnimation<Color>(_color),
-            ),
+    return Semantics(
+      label: '$score% compatibility',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(
+                  value: score / 100,
+                  strokeWidth: 4,
+                  backgroundColor: DesignTokens.bgAppBodyLight,
+                  valueColor: AlwaysStoppedAnimation<Color>(_color),
+                ),
+              ),
+              Text(
+                '$score',
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: _color,
+                  fontSize: 13,
+                ),
+              ),
+            ],
           ),
-          Text(
-            '$score',
-            style: DesignTokens.mediumSemibold.copyWith(
-              color: _color,
-              fontSize: 13,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

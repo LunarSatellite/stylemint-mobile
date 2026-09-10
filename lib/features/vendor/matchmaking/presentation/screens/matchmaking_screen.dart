@@ -140,18 +140,14 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
                 radius: 24,
                 backgroundColor: DesignTokens.bgAppBodyLight,
                 child: Text(
-                  recommendation.creatorHandle.isNotEmpty
-                      ? recommendation.creatorHandle[0].toUpperCase()
-                      : '?',
+                  recommendation.creatorInitial,
                   style: DesignTokens.oneLinerSemibold,
                 ),
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Text(
-                  recommendation.creatorHandle.startsWith('@')
-                      ? recommendation.creatorHandle
-                      : '@${recommendation.creatorHandle}',
+                  recommendation.displayCreatorHandle,
                   style: DesignTokens.oneLinerSemibold,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

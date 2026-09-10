@@ -15,6 +15,17 @@ class MatchRecommendation {
   /// 0-100, derived from the API's 0-1 `score`.
   final int compatibilityScore;
   final String reasonSummary;
+
+  String get normalizedCreatorHandle =>
+      creatorHandle.trim().replaceFirst(RegExp(r'^@+'), '');
+
+  String get displayCreatorHandle => normalizedCreatorHandle.isEmpty
+      ? '@unknown'
+      : '@$normalizedCreatorHandle';
+
+  String get creatorInitial => normalizedCreatorHandle.isEmpty
+      ? '?'
+      : normalizedCreatorHandle[0].toUpperCase();
 }
 
 /// Returned by `POST /v1/vendor/matches/{id}/invite` — pre-fills a
