@@ -21,7 +21,17 @@ class ReelStudioScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: DesignTokens.primaryGreen,
         foregroundColor: DesignTokens.textDark,
-        onPressed: () => context.push('/creator/reel-studio/create'),
+        onPressed: () async {
+          // The draft is saved as soon as Create Draft's "Save" succeeds,
+          // independent of whether the AI coaching analysis that follows
+          // succeeds — but this list previously only refreshed itself on
+          // a *successful* analysis, so a saved draft stayed invisible
+          // here whenever coaching failed (e.g. no AI provider configured).
+          await context.push('/creator/reel-studio/create');
+          if (context.mounted) {
+            ref.read(reelStudioNotifierProvider.notifier).load();
+          }
+        },
         icon: const Icon(Icons.add),
         label: const Text('New Draft'),
       ),

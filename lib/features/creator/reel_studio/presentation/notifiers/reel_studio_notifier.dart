@@ -52,8 +52,9 @@ class ReelStudioNotifier extends StateNotifier<ReelStudioState> {
     final recipesEither = await _repository.getRecipes();
     final draftsEither = await _repository.getDrafts();
 
-    // Drafts currently has no backend list endpoint (404s) — don't let that
-    // block the whole screen when recipes loaded fine; just show no drafts.
+    // A drafts-fetch failure shouldn't block the whole screen when recipes
+    // loaded fine — fall back to an empty drafts list rather than surfacing
+    // loadFailure for the whole screen.
     final drafts = draftsEither.fold((_) => const <ReelDraft>[], (d) => d);
 
     state = recipesEither.fold(
