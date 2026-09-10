@@ -79,7 +79,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _loaded = true;
     _nameCtrl.text = profile.displayName;
     _bioCtrl.text = profile.bio;
-    _websiteCtrl.text = profile.website;
     _gender = profile.gender;
     _dateOfBirth = profile.dateOfBirth;
     _email = profile.email;

@@ -6,7 +6,6 @@ class UserProfile {
     required this.phone,
     required this.avatarUrl,
     required this.bio,
-    required this.website,
     required this.gender,
     required this.dateOfBirth,
     required this.language,
@@ -20,7 +19,6 @@ class UserProfile {
   final String phone;
   final String avatarUrl;
   final String bio;
-  final String website;
   final String? gender;
   final DateTime? dateOfBirth;
   final String language;
@@ -34,7 +32,6 @@ class UserProfile {
     String? phone,
     String? avatarUrl,
     String? bio,
-    String? website,
     String? gender,
     DateTime? dateOfBirth,
     String? language,
@@ -48,7 +45,6 @@ class UserProfile {
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       bio: bio ?? this.bio,
-      website: website ?? this.website,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       language: language ?? this.language,

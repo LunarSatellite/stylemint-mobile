@@ -23,7 +23,6 @@ abstract class UserProfileDto with _$UserProfileDto {
     DateTime? createdUtc,
     @Default('') String rowVersion,
     @Default('') String bio,
-    @Default('') String website,
   }) = _UserProfileDto;
 
   const UserProfileDto._();
@@ -38,7 +37,6 @@ abstract class UserProfileDto with _$UserProfileDto {
     phone: primaryPhone ?? '',
     avatarUrl: avatarUrl ?? '',
     bio: bio,
-    website: website,
     gender: gender,
     dateOfBirth: dateOfBirth,
     language: locale,
