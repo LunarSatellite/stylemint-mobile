@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
@@ -100,14 +101,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           qty: _quantity,
           variantId: selectedSkuId ?? product.defaultVariantId,
         );
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Added to cart'),
-          backgroundColor: DesignTokens.primaryGreen,
-          duration: Duration(seconds: 2),
-        ),
-      );
+    if (success) {
+      // productDetailNotifierProvider.addToCart() writes through its own
+      // Discovery-module repository, not the Cart module's — cartNotifierProvider
+      // is a keepAlive singleton that only fetches once at construction, so
+      // without this it keeps showing the cart as it was before this add (or
+      // empty) until some other screen happens to mutate it. Confirmed live:
+      // "Added to cart" showed, then Your Cart still said empty.
+      unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Added to cart'),
+            backgroundColor: DesignTokens.primaryGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -142,6 +152,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return;
     }
 
+    // Same stale-cart issue as _handleAddToCart: refresh before navigating to
+    // Checkout so it doesn't render off cartNotifierProvider's pre-add state.
+    await ref.read(cartNotifierProvider.notifier).fetchCart();
+    if (!mounted) return;
     await context.push(RouteNames.checkout);
   }
 
