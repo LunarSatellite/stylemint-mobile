@@ -385,8 +385,22 @@ class _BadgesRow extends StatelessWidget {
             iconColor: DesignTokens.primaryGreen,
             label: '$discountPct% Off',
           ),
+        if (product.flashSaleEndsAt != null)
+          _Badge(
+            icon: Icons.bolt_rounded,
+            iconColor: DesignTokens.colorError,
+            label: 'Flash Sale · ends ${_formatCountdown(product.flashSaleEndsAt!)}',
+          ),
       ],
     );
+  }
+
+  static String _formatCountdown(DateTime endsAt) {
+    final remaining = endsAt.difference(DateTime.now());
+    if (remaining.isNegative) return 'soon';
+    if (remaining.inHours >= 1) return 'in ${remaining.inHours}h';
+    if (remaining.inMinutes >= 1) return 'in ${remaining.inMinutes}m';
+    return 'now';
   }
 }
 

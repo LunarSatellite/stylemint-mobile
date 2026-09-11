@@ -26,6 +26,7 @@ abstract class ProductDetailDto with _$ProductDetailDto {
     @Default(0) int reviewCount,
     @Default(<ProductImageDto>[]) List<ProductImageDto> images,
     @Default(<ProductVariantDto>[]) List<ProductVariantDto> variants,
+    ActiveFlashSaleDto? activeFlashSale,
   }) = _ProductDetailDto;
 
   const ProductDetailDto._();
@@ -55,6 +56,7 @@ abstract class ProductDetailDto with _$ProductDetailDto {
           ]
         : const <ProductVariant>[];
 
+    final sale = activeFlashSale;
     return ProductDetail(
       id: id,
       name: name,
@@ -62,12 +64,16 @@ abstract class ProductDetailDto with _$ProductDetailDto {
           ? longDescriptionMarkdown
           : shortDescription,
       images: sortedImages.map((i) => i.cdnUrl).toList(growable: false),
-      price: Money(
-        amount: defaultVariant?.priceAmount ?? 0,
-        currency: defaultVariant?.priceCurrency ?? 'NPR',
-      ),
-      // No "was" price on this contract yet.
-      compareAtPrice: null,
+      price: sale != null
+          ? Money(amount: sale.salePrice, currency: sale.currency)
+          : Money(
+              amount: defaultVariant?.priceAmount ?? 0,
+              currency: defaultVariant?.priceCurrency ?? 'NPR',
+            ),
+      compareAtPrice: sale != null
+          ? Money(amount: sale.originalPrice, currency: sale.currency)
+          : null,
+      flashSaleEndsAt: sale?.endsUtc,
       rating: averageRating,
       reviewCount: reviewCount,
       soldCount: 0,
@@ -89,6 +95,25 @@ abstract class ProductDetailDto with _$ProductDetailDto {
       defaultVariantId: defaultVariant?.id,
     );
   }
+}
+
+/// Maps backend `ActiveFlashSaleDto`, embedded on ProductDto when the
+/// product's default variant currently has a running FlashSale.
+@freezed
+abstract class ActiveFlashSaleDto with _$ActiveFlashSaleDto {
+  const factory ActiveFlashSaleDto({
+    required String flashSaleId,
+    @Default(0) double originalPrice,
+    @Default(0) double salePrice,
+    @Default('NPR') String currency,
+    required DateTime endsUtc,
+    @Default(0) int unitsLeft,
+  }) = _ActiveFlashSaleDto;
+
+  const ActiveFlashSaleDto._();
+
+  factory ActiveFlashSaleDto.fromJson(Map<String, dynamic> json) =>
+      _$ActiveFlashSaleDtoFromJson(json);
 }
 
 @freezed

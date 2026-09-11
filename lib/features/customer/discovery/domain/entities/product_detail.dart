@@ -23,6 +23,7 @@ class ProductDetail {
     required this.isSaved,
     required this.isInCart,
     this.defaultVariantId,
+    this.flashSaleEndsAt,
   });
 
   final String id;
@@ -48,6 +49,10 @@ class ProductDetail {
   /// Backend SKU to use where the product has no customer choice to make.
   final String? defaultVariantId;
 
+  /// When set, [price] is a flash-sale price and [compareAtPrice] holds the
+  /// original price — the sale ends at this instant.
+  final DateTime? flashSaleEndsAt;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -69,6 +74,7 @@ class ProductDetail {
     bool? isSaved,
     bool? isInCart,
     String? defaultVariantId,
+    DateTime? flashSaleEndsAt,
   }) {
     return ProductDetail(
       id: id ?? this.id,
@@ -91,6 +97,7 @@ class ProductDetail {
       isSaved: isSaved ?? this.isSaved,
       isInCart: isInCart ?? this.isInCart,
       defaultVariantId: defaultVariantId ?? this.defaultVariantId,
+      flashSaleEndsAt: flashSaleEndsAt ?? this.flashSaleEndsAt,
     );
   }
 }
