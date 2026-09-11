@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart' show roleNotifierProvider;
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/blocked_users_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/devices_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/email_login_screen.dart';
@@ -273,14 +275,21 @@ String? _vendorManagementRedirect(Ref ref, String path) {
       path.startsWith('/vendor/') && !path.startsWith(RouteNames.vendorApply);
   if (!isVendorManagementRoute) return null;
 
-  final isApprovedVendor = ref
-      .read(vendorApplyNotifierProvider)
-      .maybeWhen(
-        loadSuccess: (application) =>
-            application.status == VendorApplicationStatus.approved,
-        orElse: () => false,
-      );
-  return isApprovedVendor ? null : RouteNames.vendorApply;
+  // Source of truth is identity.role_profiles (the same check the Profile
+  // screen and UserTypeSelectionScreen use to decide "Vendor Dashboard" vs
+  // "Sell on Style Mint"/apply-status routing) — NOT vendorApplyNotifierProvider,
+  // which tracks the KYC application separately and is a different cache that
+  // may never have been populated this session. Confirmed live: a caller that
+  // had already verified an active vendor role_profile and pushed
+  // RouteNames.vendorHome was bounced straight back to the apply form here,
+  // because this redirect's own (unrelated, unpopulated) provider defaulted
+  // to false — a real duplicate-onboarding bug, not a one-off.
+  final rolesState = ref.read(roleNotifierProvider);
+  final isActiveVendor = rolesState.maybeWhen(
+    loadSuccess: (roles) => roles.any((r) => r.role == 3 && r.isActivated),
+    orElse: () => true, // not loaded yet — don't second-guess the caller.
+  );
+  return isActiveVendor ? null : RouteNames.vendorApply;
 }
 
 @riverpod
