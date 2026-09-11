@@ -5,13 +5,17 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart
 
 abstract interface class GroupsRepository {
   Future<Either<NetworkExceptions, List<StyleGroup>>> getGroups({
-    String? category,
+    String? privacy,
     String? search,
+    bool professionalOnly = false,
   });
 
   Future<Either<NetworkExceptions, StyleGroup>> getGroupDetail(String groupId);
 
-  Future<Either<NetworkExceptions, Unit>> joinGroup(String groupId);
+  Future<Either<NetworkExceptions, Unit>> joinGroup(
+    String groupId, {
+    bool requestApproval = false,
+  });
 
   Future<Either<NetworkExceptions, Unit>> leaveGroup(String groupId);
 

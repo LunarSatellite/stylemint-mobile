@@ -10,14 +10,16 @@ class GroupsRemoteDataSource {
 
   /// GET /v1/groups/discover/browse
   Future<List<StyleGroupDto>> getGroups({
-    String? category,
+    String? privacy,
     String? search,
   }) async {
+    final isSearching = search != null && search.trim().isNotEmpty;
     final response = await apiClient.get(
-      '/v1/groups/discover/browse',
+      isSearching ? '/v1/groups/discover/search' : '/v1/groups/discover/browse',
       queryParameters: {
-        if (category != null) 'category': category,
-        if (search != null) 'search': search,
+        if (privacy != null) 'privacy': privacy,
+        if (isSearching) 'q': search!.trim(),
+        'pageSize': 50,
       },
     );
 
@@ -28,6 +30,25 @@ class GroupsRemoteDataSource {
     return items;
   }
 
+  /// GET /v1/professional-circles
+  Future<List<ProfessionalCircleDto>> getProfessionalCircles({
+    String? professionCode,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/professional-circles',
+      queryParameters: {
+        if (professionCode != null && professionCode.trim().isNotEmpty)
+          'professionCode': professionCode.trim(),
+        'pageSize': 50,
+      },
+    );
+    final data = response as Map<String, dynamic>;
+    final rawItems = data['items'] as List<dynamic>? ?? const <dynamic>[];
+    return rawItems
+        .map((e) => ProfessionalCircleDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
   /// GET /v1/groups/{groupId}
   Future<StyleGroupDto> getGroupDetail(String groupId) async {
     final response = await apiClient.get('/v1/groups/$groupId');
@@ -35,9 +56,16 @@ class GroupsRemoteDataSource {
   }
 
   /// POST /v1/groups/{groupId}/members/join
-  Future<void> joinGroup(String groupId, String idempotencyKey) async {
+  Future<void> joinGroup(
+    String groupId,
+    String idempotencyKey, {
+    bool requestApproval = false,
+  }) async {
     await apiClient.post(
-      '/v1/groups/$groupId/members/join',
+      requestApproval
+          ? '/v1/groups/$groupId/members/request-join'
+          : '/v1/groups/$groupId/members/join',
+      data: requestApproval ? {'answersJson': '{}'} : null,
       options: _idempotent(idempotencyKey),
     );
   }
@@ -59,7 +87,7 @@ class GroupsRemoteDataSource {
     final response = await apiClient.get(
       '/v1/groups/$groupId/posts',
       queryParameters: {
-        'limit': limit,
+        'take': limit,
         if (cursor != null) 'cursor': cursor,
       },
     );
@@ -88,8 +116,7 @@ class GroupsRemoteDataSource {
     final response = await apiClient.post(
       '/v1/groups/$groupId/posts',
       data: {
-        'content': content,
-        if (images != null) 'images': images,
+        'body': content,
       },
       options: _idempotent(idempotencyKey),
     );

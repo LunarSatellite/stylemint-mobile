@@ -29,18 +29,27 @@ class GroupCard extends StatelessWidget {
                 SizedBox(
                   height: 100,
                   width: double.infinity,
-                  child: Image.network(
-                    group.coverImageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: DesignTokens.bgAppBodyLight,
-                      child: const Icon(
-                        Icons.group_outlined,
-                        color: DesignTokens.textMuted,
-                        size: DesignTokens.iconLarge,
-                      ),
-                    ),
-                  ),
+                  child: group.coverImageUrl.isEmpty
+                      ? Container(
+                          color: DesignTokens.bgAppBodyLight,
+                          child: const Icon(
+                            Icons.group_outlined,
+                            color: DesignTokens.textMuted,
+                            size: DesignTokens.iconLarge,
+                          ),
+                        )
+                      : Image.network(
+                          group.coverImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: DesignTokens.bgAppBodyLight,
+                            child: const Icon(
+                              Icons.group_outlined,
+                              color: DesignTokens.textMuted,
+                              size: DesignTokens.iconLarge,
+                            ),
+                          ),
+                        ),
                 ),
                 if (group.isPrivate)
                   Positioned(
@@ -105,8 +114,7 @@ class GroupCard extends StatelessWidget {
                         ),
                         backgroundColor: DesignTokens.primaryGreenLight,
                         padding: EdgeInsets.zero,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -116,22 +124,36 @@ class GroupCard extends StatelessWidget {
                     width: double.infinity,
                     height: 32,
                     child: ElevatedButton(
-                      onPressed: onJoin,
+                      onPressed: group.hasPendingJoinRequest
+                          ? null
+                          : group.isJoined || group.isProfessional
+                          ? onTap
+                          : onJoin,
                       style: group.isJoined
                           ? DesignTokens.outlinedButtonStyle().copyWith(
-                            minimumSize: WidgetStateProperty.all(
-                              const Size(0, 32),
-                            ),
-                            padding: WidgetStateProperty.all(EdgeInsets.zero),
-                          )
+                              minimumSize: WidgetStateProperty.all(
+                                const Size(0, 32),
+                              ),
+                              padding: WidgetStateProperty.all(EdgeInsets.zero),
+                            )
                           : DesignTokens.primaryButtonStyle().copyWith(
-                            minimumSize: WidgetStateProperty.all(
-                              const Size(0, 32),
+                              minimumSize: WidgetStateProperty.all(
+                                const Size(0, 32),
+                              ),
+                              padding: WidgetStateProperty.all(EdgeInsets.zero),
                             ),
-                            padding: WidgetStateProperty.all(EdgeInsets.zero),
-                          ),
                       child: Text(
-                        group.isJoined ? 'Joined' : 'Join',
+                        group.isOwner
+                            ? 'Owner'
+                            : group.isJoined
+                            ? 'Joined'
+                            : group.hasPendingJoinRequest
+                            ? 'Pending'
+                            : group.isProfessional
+                            ? 'View requirements'
+                            : group.isPrivate
+                            ? 'Request to join'
+                            : 'Join',
                         style: DesignTokens.smallRegular.copyWith(
                           color: group.isJoined
                               ? DesignTokens.textWhite

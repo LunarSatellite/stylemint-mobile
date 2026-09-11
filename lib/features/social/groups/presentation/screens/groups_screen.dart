@@ -18,17 +18,13 @@ class GroupsScreen extends ConsumerStatefulWidget {
 
 class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   final _searchController = TextEditingController();
-  String? _selectedCategory;
+  String? _selectedPrivacy;
+  bool _professionalOnly = false;
 
-  static const _categories = [
+  static const _privacyFilters = [
     'All',
-    'Streetwear',
-    'Vintage',
-    'Minimalist',
-    'Luxury',
-    'Y2K',
-    'Gorpcore',
-    'K-pop',
+    'Public',
+    'Closed',
   ];
 
   @override
@@ -46,7 +42,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Groups', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Groups & Circles',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(DesignTokens.buttonHeight),
           child: Padding(
@@ -67,8 +66,10 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                     .read(groupsNotifierProvider.notifier)
                     .loadGroups(
                       search: value.isEmpty ? null : value,
-                      category:
-                          _selectedCategory == 'All' ? null : _selectedCategory,
+                      privacy: _selectedPrivacy == 'All'
+                          ? null
+                          : _selectedPrivacy,
+                      professionalOnly: _professionalOnly,
                     );
               },
             ),
@@ -77,58 +78,90 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 44,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.s16,
-                vertical: DesignTokens.s8,
-              ),
-              itemCount: _categories.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: DesignTokens.s8),
-              itemBuilder: (_, index) {
-                final cat = _categories[index];
-                final isSelected =
-                    _selectedCategory == cat ||
-                    (_selectedCategory == null && cat == 'All');
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedCategory = cat);
-                    ref.read(groupsNotifierProvider.notifier).loadGroups(
-                      category: cat == 'All' ? null : cat,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s8,
+              DesignTokens.s16,
+              0,
+            ),
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: false, label: Text('Groups')),
+                ButtonSegment(value: true, label: Text('Professional')),
+              ],
+              selected: {_professionalOnly},
+              onSelectionChanged: (selection) {
+                final professional = selection.first;
+                setState(() {
+                  _professionalOnly = professional;
+                  _selectedPrivacy = null;
+                });
+                ref
+                    .read(groupsNotifierProvider.notifier)
+                    .loadGroups(
+                      professionalOnly: professional,
                     );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s8,
-                    ),
-                    decoration: isSelected
-                        ? DesignTokens.chipDecorationSelected()
-                        : DesignTokens.chipDecorationDefault(),
-                    child: Text(
-                      cat,
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: isSelected
-                            ? DesignTokens.primaryGreen
-                            : DesignTokens.chipsDefaultText,
-                      ),
-                    ),
-                  ),
-                );
               },
             ),
           ),
+          if (!_professionalOnly)
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s16,
+                  vertical: DesignTokens.s8,
+                ),
+                itemCount: _privacyFilters.length,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(width: DesignTokens.s8),
+                itemBuilder: (_, index) {
+                  final privacy = _privacyFilters[index];
+                  final isSelected =
+                      _selectedPrivacy == privacy ||
+                      (_selectedPrivacy == null && privacy == 'All');
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedPrivacy = privacy);
+                      ref
+                          .read(groupsNotifierProvider.notifier)
+                          .loadGroups(
+                            privacy: privacy == 'All' ? null : privacy,
+                          );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s16,
+                        vertical: DesignTokens.s8,
+                      ),
+                      decoration: isSelected
+                          ? DesignTokens.chipDecorationSelected()
+                          : DesignTokens.chipDecorationDefault(),
+                      child: Text(
+                        privacy,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: isSelected
+                              ? DesignTokens.primaryGreen
+                              : DesignTokens.chipsDefaultText,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           Expanded(
             child: listState.when(
               initial: _loader,
               loadInProgress: _loader,
               loadSuccess: (groups) {
                 if (groups.isEmpty) {
-                  return const SmEmptyState(
-                    message: 'No groups found.',
+                  return SmEmptyState(
+                    message: _professionalOnly
+                        ? 'No professional circles found.'
+                        : 'No groups found.',
                     icon: Icons.group_outlined,
                   );
                 }
@@ -149,21 +182,17 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                         groups[index].id,
                       ),
                     ),
-                    onJoin: () =>
-                        ref
-                            .read(groupsNotifierProvider.notifier)
-                            .join(groups[index].id),
+                    onJoin: () => ref
+                        .read(groupsNotifierProvider.notifier)
+                        .join(groups[index]),
                   ),
                 );
               },
-              loadFailure:
-                  (failure) => SmErrorView(
-                    message: 'Failed to load groups.',
-                    onRetry: () =>
-                        ref
-                            .read(groupsNotifierProvider.notifier)
-                            .loadGroups(),
-                  ),
+              loadFailure: (failure) => SmErrorView(
+                message: 'Failed to load groups.',
+                onRetry: () =>
+                    ref.read(groupsNotifierProvider.notifier).loadGroups(),
+              ),
             ),
           ),
         ],

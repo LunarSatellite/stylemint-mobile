@@ -55,13 +55,16 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        group.coverImageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: DesignTokens.bgAppBodyLight,
+                      if (group.coverImageUrl.isEmpty)
+                        Container(color: DesignTokens.bgAppBodyLight)
+                      else
+                        Image.network(
+                          group.coverImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: DesignTokens.bgAppBodyLight,
+                          ),
                         ),
-                      ),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -122,21 +125,38 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: DesignTokens.s16),
                     child: ElevatedButton(
-                      onPressed: () {
-                        if (group.isJoined) {
-                          ref
-                              .read(groupsNotifierProvider.notifier)
-                              .leave(widget.groupId);
-                        } else {
-                          ref
-                              .read(groupsNotifierProvider.notifier)
-                              .join(widget.groupId);
-                        }
-                      },
+                      onPressed:
+                          group.isOwner ||
+                              group.hasPendingJoinRequest ||
+                              (group.isProfessional && !group.isJoined)
+                          ? null
+                          : () {
+                              if (group.isJoined) {
+                                ref
+                                    .read(groupsNotifierProvider.notifier)
+                                    .leave(widget.groupId);
+                              } else {
+                                ref
+                                    .read(groupsNotifierProvider.notifier)
+                                    .join(group);
+                              }
+                            },
                       style: group.isJoined
                           ? DesignTokens.outlinedButtonStyle()
                           : DesignTokens.primaryButtonStyle(),
-                      child: Text(group.isJoined ? 'Leave' : 'Join'),
+                      child: Text(
+                        group.isOwner
+                            ? 'Owner'
+                            : group.isJoined
+                            ? 'Leave'
+                            : group.hasPendingJoinRequest
+                            ? 'Pending approval'
+                            : group.isProfessional
+                            ? 'Verification required'
+                            : group.isPrivate
+                            ? 'Request to join'
+                            : 'Join',
+                      ),
                     ),
                   ),
                 ],
@@ -148,6 +168,13 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(group.description, style: DesignTokens.bodyText),
+                      if (group.isProfessional) ...[
+                        const SizedBox(height: DesignTokens.s12),
+                        Text(
+                          'Membership requires a verified profession and an approved KYC document.',
+                          style: DesignTokens.smallRegular,
+                        ),
+                      ],
                       const SizedBox(height: DesignTokens.s4),
                       Chip(
                         label: Text(

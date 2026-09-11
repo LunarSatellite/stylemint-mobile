@@ -47,18 +47,22 @@ abstract class GroupsViewState with _$GroupsViewState {
 }
 
 class GroupsNotifier extends StateNotifier<GroupsViewState> {
-  GroupsNotifier(this._repository)
-    : super(const GroupsViewState()) {
+  GroupsNotifier(this._repository) : super(const GroupsViewState()) {
     unawaited(loadGroups());
   }
 
   final GroupsRepository _repository;
 
-  Future<void> loadGroups({String? category, String? search}) async {
+  Future<void> loadGroups({
+    String? privacy,
+    String? search,
+    bool professionalOnly = false,
+  }) async {
     state = state.copyWith(listState: const GroupsListState.loadInProgress());
     final either = await _repository.getGroups(
-      category: category,
+      privacy: privacy,
       search: search,
+      professionalOnly: professionalOnly,
     );
     state = state.copyWith(
       listState: either.fold(
@@ -94,10 +98,13 @@ class GroupsNotifier extends StateNotifier<GroupsViewState> {
     );
   }
 
-  Future<void> join(String groupId) async {
-    await _repository.joinGroup(groupId);
-    await loadGroup(groupId);
-    await loadGroups();
+  Future<void> join(StyleGroup group) async {
+    if (group.isProfessional) return;
+    await _repository.joinGroup(
+      group.id,
+      requestApproval: group.isPrivate,
+    );
+    await loadGroup(group.id);
   }
 
   Future<void> leave(String groupId) async {
@@ -106,7 +113,11 @@ class GroupsNotifier extends StateNotifier<GroupsViewState> {
     await loadGroups();
   }
 
-  Future<void> loadFeed(String groupId, {int limit = 20, String? cursor}) async {
+  Future<void> loadFeed(
+    String groupId, {
+    int limit = 20,
+    String? cursor,
+  }) async {
     final either = await _repository.getGroupFeed(
       groupId,
       limit: limit,

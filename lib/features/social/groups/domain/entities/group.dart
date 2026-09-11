@@ -42,6 +42,9 @@ class StyleGroup {
     required this.memberCount,
     required this.isJoined,
     required this.isPrivate,
+    required this.isProfessional,
+    required this.isOwner,
+    required this.hasPendingJoinRequest,
     required this.createdAt,
     required this.topProducts,
   });
@@ -54,6 +57,9 @@ class StyleGroup {
   final int memberCount;
   final bool isJoined;
   final bool isPrivate;
+  final bool isProfessional;
+  final bool isOwner;
+  final bool hasPendingJoinRequest;
   final DateTime createdAt;
   final List<GroupProduct> topProducts;
 
@@ -66,6 +72,9 @@ class StyleGroup {
     int? memberCount,
     bool? isJoined,
     bool? isPrivate,
+    bool? isProfessional,
+    bool? isOwner,
+    bool? hasPendingJoinRequest,
     DateTime? createdAt,
     List<GroupProduct>? topProducts,
   }) {
@@ -78,6 +87,10 @@ class StyleGroup {
       memberCount: memberCount ?? this.memberCount,
       isJoined: isJoined ?? this.isJoined,
       isPrivate: isPrivate ?? this.isPrivate,
+      isProfessional: isProfessional ?? this.isProfessional,
+      isOwner: isOwner ?? this.isOwner,
+      hasPendingJoinRequest:
+          hasPendingJoinRequest ?? this.hasPendingJoinRequest,
       createdAt: createdAt ?? this.createdAt,
       topProducts: topProducts ?? this.topProducts,
     );

@@ -21,16 +21,27 @@ class GroupsRepositoryImpl implements GroupsRepository {
 
   @override
   Future<Either<NetworkExceptions, List<StyleGroup>>> getGroups({
-    String? category,
+    String? privacy,
     String? search,
+    bool professionalOnly = false,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dtos = await remoteDataSource.getGroups(
-          category: category,
+        if (professionalOnly) {
+          final circles = await remoteDataSource.getProfessionalCircles(
+            professionCode: search,
+          );
+          return right(
+            circles.map((d) => d.toDomain()).toList(growable: false),
+          );
+        }
+        final groups = await remoteDataSource.getGroups(
+          privacy: privacy,
           search: search,
         );
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+        return right(
+          groups.map((d) => d.toDomain()).toList(growable: false),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -46,7 +57,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, StyleGroup>> getGroupDetail(String groupId) async {
+  Future<Either<NetworkExceptions, StyleGroup>> getGroupDetail(
+    String groupId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getGroupDetail(groupId);
@@ -66,10 +79,17 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> joinGroup(String groupId) async {
+  Future<Either<NetworkExceptions, Unit>> joinGroup(
+    String groupId, {
+    bool requestApproval = false,
+  }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.joinGroup(groupId, _uuid.v4());
+        await remoteDataSource.joinGroup(
+          groupId,
+          _uuid.v4(),
+          requestApproval: requestApproval,
+        );
         return right(unit);
       } catch (e) {
         if (e is DioException) {

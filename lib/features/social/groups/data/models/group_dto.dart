@@ -1,48 +1,23 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/social/groups/domain/entities/group.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'group_dto.freezed.dart';
 part 'group_dto.g.dart';
-
-@freezed
-abstract class GroupProductDto with _$GroupProductDto {
-  const factory GroupProductDto({
-    required String productId,
-    required String productName,
-    required String imageUrl,
-    required double amount,
-    @Default('NPR') String currency,
-    required String recommenderName,
-  }) = _GroupProductDto;
-
-  const GroupProductDto._();
-
-  factory GroupProductDto.fromJson(Map<String, dynamic> json) =>
-      _$GroupProductDtoFromJson(json);
-
-  GroupProduct toDomain() => GroupProduct(
-    productId: productId,
-    productName: productName,
-    imageUrl: imageUrl,
-    price: Money(amount: amount, currency: currency),
-    recommenderName: recommenderName,
-  );
-}
 
 @freezed
 abstract class StyleGroupDto with _$StyleGroupDto {
   const factory StyleGroupDto({
     required String id,
     required String name,
-    required String description,
-    required String coverImageUrl,
-    required String category,
+    @Default('') String description,
+    String? coverImageUrl,
+    required String categoryId,
+    @JsonKey(fromJson: _enumName) required String privacy,
     @Default(0) int memberCount,
-    @Default(false) bool isJoined,
-    @Default(false) bool isPrivate,
-    required DateTime createdAt,
-    @Default(<GroupProductDto>[]) List<GroupProductDto> topProducts,
+    bool? isMember,
+    bool? isOwner,
+    @JsonKey(fromJson: _nullableEnumName) String? myJoinRequestStatus,
+    required DateTime createdUtc,
   }) = _StyleGroupDto;
 
   const StyleGroupDto._();
@@ -54,14 +29,55 @@ abstract class StyleGroupDto with _$StyleGroupDto {
     id: id,
     name: name,
     description: description,
-    coverImageUrl: coverImageUrl,
-    category: category,
+    coverImageUrl: coverImageUrl ?? '',
+    category: privacy,
     memberCount: memberCount,
-    isJoined: isJoined,
-    isPrivate: isPrivate,
-    createdAt: createdAt,
-    topProducts:
-        topProducts.map((dto) => dto.toDomain()).toList(growable: false),
+    isJoined: isMember ?? isOwner ?? false,
+    isPrivate: privacy.toLowerCase() != 'public',
+    isProfessional: privacy.toLowerCase() == 'professional',
+    isOwner: isOwner ?? false,
+    hasPendingJoinRequest: myJoinRequestStatus?.toLowerCase() == 'pending',
+    createdAt: createdUtc,
+    topProducts: const [],
+  );
+}
+
+@freezed
+abstract class ProfessionalCircleDto with _$ProfessionalCircleDto {
+  const factory ProfessionalCircleDto({
+    required String id,
+    required String groupId,
+    required String professionCode,
+    required String verifyingAuthority,
+    @Default('') String description,
+    @Default(false) bool requiresLicenseNumber,
+    required DateTime createdUtc,
+    required String groupName,
+    @Default(0) int groupMemberCount,
+    @JsonKey(fromJson: _enumName) required String groupPrivacy,
+    required String groupCategoryId,
+    String? groupCoverImageUrl,
+  }) = _ProfessionalCircleDto;
+
+  const ProfessionalCircleDto._();
+
+  factory ProfessionalCircleDto.fromJson(Map<String, dynamic> json) =>
+      _$ProfessionalCircleDtoFromJson(json);
+
+  StyleGroup toDomain() => StyleGroup(
+    id: groupId,
+    name: groupName,
+    description: description,
+    coverImageUrl: groupCoverImageUrl ?? '',
+    category: professionCode.isEmpty ? 'Professional' : professionCode,
+    memberCount: groupMemberCount,
+    isJoined: false,
+    isPrivate: true,
+    isProfessional: true,
+    isOwner: false,
+    hasPendingJoinRequest: false,
+    createdAt: createdUtc,
+    topProducts: const [],
   );
 }
 
@@ -70,14 +86,12 @@ abstract class GroupPostDto with _$GroupPostDto {
   const factory GroupPostDto({
     required String id,
     required String groupId,
-    required String userId,
-    required String userName,
-    required String userAvatarUrl,
-    required String content,
-    @Default(<String>[]) List<String> images,
-    @Default(0) int likeCount,
-    @Default(0) int commentCount,
-    required DateTime createdAt,
+    required String authorAccountId,
+    String? authorDisplayName,
+    String? authorAvatarUrl,
+    required String body,
+    @Default(0) int reactionCount,
+    required DateTime createdUtc,
   }) = _GroupPostDto;
 
   const GroupPostDto._();
@@ -88,13 +102,30 @@ abstract class GroupPostDto with _$GroupPostDto {
   GroupPost toDomain() => GroupPost(
     id: id,
     groupId: groupId,
-    userId: userId,
-    userName: userName,
-    userAvatarUrl: userAvatarUrl,
-    content: content,
-    images: images,
-    likeCount: likeCount,
-    commentCount: commentCount,
-    createdAt: createdAt,
+    userId: authorAccountId,
+    userName: authorDisplayName ?? 'Community member',
+    userAvatarUrl: authorAvatarUrl ?? '',
+    content: body,
+    images: const [],
+    likeCount: reactionCount,
+    commentCount: 0,
+    createdAt: createdUtc,
   );
 }
+
+String _enumName(Object? value) {
+  if (value is String) return value;
+  if (value is int) {
+    return switch (value) {
+      1 => 'Public',
+      2 => 'Closed',
+      3 => 'Secret',
+      4 => 'Professional',
+      _ => value.toString(),
+    };
+  }
+  return value?.toString() ?? '';
+}
+
+String? _nullableEnumName(Object? value) =>
+    value == null ? null : _enumName(value);
