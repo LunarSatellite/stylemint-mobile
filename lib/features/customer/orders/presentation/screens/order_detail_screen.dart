@@ -157,7 +157,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                 story?.when(
                   data: (chapters) => chapters.isEmpty
                       ? _TrackingTimeline(status: order.status)
-                      : _DeliveryStoryTimeline(chapters: chapters),
+                      : _DeliveryStoryTimeline(
+                          status: order.status,
+                          chapters: chapters,
+                        ),
                   loading: () => const _DeliveryStoryLoading(),
                   error: (_, __) => _DeliveryStoryError(
                     onRetry: () => ref.invalidate(
@@ -489,60 +492,100 @@ class _TrackingTimeline extends StatelessWidget {
 /// Uses Delivery's append-only Story Mode projection when a package has a
 /// Style Mint tracking number, rather than guessing events from order state.
 class _DeliveryStoryTimeline extends StatelessWidget {
-  const _DeliveryStoryTimeline({required this.chapters});
+  const _DeliveryStoryTimeline({
+    required this.status,
+    required this.chapters,
+  });
 
+  final OrderTrackStatus status;
   final List<DeliveryStoryChapter> chapters;
 
+  static IconData _iconFor(DeliveryStoryChapterKind kind) => switch (kind) {
+    DeliveryStoryChapterKind.sealed => Icons.inventory_2_outlined,
+    DeliveryStoryChapterKind.pickedUp => Icons.back_hand_outlined,
+    DeliveryStoryChapterKind.onTheMove => Icons.local_shipping_outlined,
+    DeliveryStoryChapterKind.handedOff => Icons.swap_horiz_rounded,
+    DeliveryStoryChapterKind.arrivedLocal => Icons.location_on_outlined,
+    DeliveryStoryChapterKind.outForDelivery => Icons.airport_shuttle_rounded,
+    DeliveryStoryChapterKind.delivered => Icons.check_circle_rounded,
+    DeliveryStoryChapterKind.unknown => Icons.notifications_active_outlined,
+  };
+
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(DesignTokens.s16),
-    decoration: DesignTokens.cardDecoration(),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Tracking Timeline', style: DesignTokens.sectionInnerTitle),
-        const SizedBox(height: DesignTokens.s12),
-        for (final chapter in chapters) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.check_circle_rounded,
-                color: DesignTokens.primaryGreen,
-                size: 20,
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(chapter.title, style: DesignTokens.oneLinerSemibold),
-                    if (chapter.subtitle.isNotEmpty)
-                      Text(
-                        chapter.subtitle,
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                        ),
-                      ),
-                    Text(
-                      DateFormat(
-                        'MMM d, h:mm a',
-                      ).format(chapter.occurredUtc.toLocal()),
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textMuted,
-                      ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _TrackingTimeline(status: status),
+      const SizedBox(height: DesignTokens.s16),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: DesignTokens.cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Live Delivery Updates',
+              style: DesignTokens.sectionInnerTitle,
+            ),
+            const SizedBox(height: DesignTokens.s12),
+            for (final chapter in chapters) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    key: ValueKey(
+                      'delivery-update-icon-${chapter.sequence}',
                     ),
-                  ],
-                ),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF052E16),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      _iconFor(chapter.kind),
+                      color: DesignTokens.primaryGreen,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          chapter.title,
+                          style: DesignTokens.oneLinerSemibold,
+                        ),
+                        if (chapter.subtitle.isNotEmpty)
+                          Text(
+                            chapter.subtitle,
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textMuted,
+                            ),
+                          ),
+                        Text(
+                          DateFormat(
+                            'MMM d, h:mm a',
+                          ).format(chapter.occurredUtc.toLocal()),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              if (chapter != chapters.last)
+                const SizedBox(height: DesignTokens.s16),
             ],
-          ),
-          if (chapter != chapters.last)
-            const SizedBox(height: DesignTokens.s16),
-        ],
-      ],
-    ),
+          ],
+        ),
+      ),
+    ],
   );
 }
 
@@ -647,6 +690,7 @@ class _StageIndicator extends StatelessWidget {
       child: Column(
         children: [
           Container(
+            key: ValueKey('delivery-stage-icon-$index'),
             width: 48,
             height: 48,
             decoration: BoxDecoration(
@@ -1016,6 +1060,7 @@ class _CancelledStep3 extends StatelessWidget {
       child: Column(
         children: [
           Container(
+            key: ValueKey('delivery-stage-icon-$index'),
             width: 48,
             height: 48,
             decoration: BoxDecoration(
@@ -1520,7 +1565,8 @@ class _OtherDetails extends StatelessWidget {
   void _handleRequestReturn(BuildContext context) {
     showDialog<_ReturnRequestResult>(
       context: context,
-      builder: (ctx) => _ReturnRequestDialog(items: order.items, notifier: notifier),
+      builder: (ctx) =>
+          _ReturnRequestDialog(items: order.items, notifier: notifier),
     ).then((result) {
       if (result != null) {
         notifier.requestReturn(

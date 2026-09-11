@@ -47,6 +47,7 @@ void main() {
             (ref, trackingNumber) async => [
               DeliveryStoryChapter(
                 sequence: 1,
+                kind: DeliveryStoryChapterKind.pickedUp,
                 title: 'Package prepared for delivery',
                 subtitle: 'Your StyleMint order is ready for its journey.',
                 occurredUtc: DateTime.utc(2026, 9, 11),
@@ -61,6 +62,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('View Other Details'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('View Other Details'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
@@ -71,7 +77,14 @@ void main() {
 
     expect(find.text('Live StyleMint package updates'), findsOneWidget);
     expect(find.textContaining('FedEx'), findsNothing);
-
+    expect(find.text('Live Delivery Updates'), findsOneWidget);
+    for (var index = 0; index < 4; index++) {
+      expect(
+        find.byKey(ValueKey('delivery-stage-icon-$index')),
+        findsOneWidget,
+      );
+    }
+    expect(find.byIcon(Icons.back_hand_outlined), findsWidgets);
     await tester.tap(find.text('View Delivery Tracking'));
     await tester.pumpAndSettle();
 
