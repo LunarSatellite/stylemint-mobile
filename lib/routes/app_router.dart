@@ -320,7 +320,9 @@ GoRouter appRouter(Ref ref) {
       final session = ref.read(sessionControllerProvider);
       final path = state.matchedLocation;
       // ignore: avoid_print
-      print('[OAUTH-DEBUG] router.redirect: uri=${state.uri} matchedLocation=$path session=$session');
+      print(
+        '[OAUTH-DEBUG] router.redirect: uri=${state.uri} matchedLocation=$path session=$session',
+      );
       final isPublic = _publicPaths.any((p) => path.startsWith(p));
       final isAuthOnly = _authOnlyPaths.any((p) => path.startsWith(p));
       final atSplash = path == RouteNames.splash;
@@ -1211,14 +1213,16 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => const DropPartyListScreen(),
       ),
       GoRoute(
+        path: RouteNames.dropPartyScan,
+        builder: (ctx, state) => const ScanInviteScreen(),
+      ),
+      // Keep the static scanner path before /drop/:dropPartyId so incoming
+      // stylemint://drop/scan links cannot treat "scan" as a party id.
+      GoRoute(
         path: RouteNames.dropParty,
         builder: (ctx, state) => DropPartyDetailScreen(
           partyId: state.pathParameters['dropPartyId']!,
         ),
-      ),
-      GoRoute(
-        path: RouteNames.dropPartyScan,
-        builder: (ctx, state) => const ScanInviteScreen(),
       ),
       GoRoute(
         path: RouteNames.groupCartsList,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,31 +17,29 @@ class ScanInviteScreen extends ConsumerStatefulWidget {
 class _ScanInviteScreenState extends ConsumerState<ScanInviteScreen> {
   bool _isScanning = true;
 
-  void _onScan(String qrCode) {
+  Future<void> _onScan(String qrCode) async {
     if (!_isScanning) return;
     setState(() => _isScanning = false);
 
-    ref.read(dropPartiesNotifierProvider.notifier).scanQr(qrCode).then(
-      (either) {
-        either.fold(
-          (failure) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Invalid QR code: $qrCode')),
-              );
-              setState(() => _isScanning = true);
-            }
-          },
-          (party) {
-            if (mounted) {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => DropPartyDetailScreen(partyId: party.id),
-                ),
-              );
-            }
-          },
+    final either = await ref
+        .read(dropPartiesNotifierProvider.notifier)
+        .scanQr(qrCode);
+    if (!mounted) return;
+    either.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invalid QR code: $qrCode')),
+        );
+        setState(() => _isScanning = true);
+      },
+      (party) {
+        Navigator.of(context).pop();
+        unawaited(
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => DropPartyDetailScreen(partyId: party.id),
+            ),
+          ),
         );
       },
     );
@@ -84,18 +84,24 @@ class _ScanInviteScreenState extends ConsumerState<ScanInviteScreen> {
               ),
             ),
             const SizedBox(height: DesignTokens.s24),
-            TextField(
-              decoration: DesignTokens.inputDecoration(
-                hintText: 'Paste QR code or invite link',
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s16,
               ),
-              style: DesignTokens.oneLinerRegular,
-              onSubmitted: _onScan,
+              child: TextField(
+                key: const Key('drop-party-invite-field'),
+                decoration: DesignTokens.inputDecoration(
+                  hintText: 'Paste QR code or invite link',
+                ),
+                style: DesignTokens.oneLinerRegular,
+                onSubmitted: _onScan,
+              ),
             ),
             if (kDebugMode) ...[
               const SizedBox(height: DesignTokens.s16),
               ElevatedButton(
                 onPressed: () {
-                  _onScan('test-code');
+                  unawaited(_onScan('test-code'));
                 },
                 style: DesignTokens.primaryButtonStyle(),
                 child: const Text('Simulate Scan (Dev)'),
