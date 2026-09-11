@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
+    show pendingRoleProvider;
 import 'package:stylemint_mobile_frontend/features/auth/presentation/widgets/auth_code_field.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -154,11 +156,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           // No confirmed name → collect it on the dedicated screen (which then
           // continues into onboarding). Already named but new → onboarding.
           // Otherwise an existing user → home.
+          final pendingRole = ref.read(pendingRoleProvider);
           if (!auth.displayNameConfirmed) {
             context.go(
               RouteNames.completeName,
               extra: {'accountId': auth.accountId},
             );
+          } else if (pendingRole == 2 || pendingRole == 3) {
+            // User picked Creator/Vendor before signing in — resume straight
+            // into that application now that the account is authenticated.
+            context.go(RouteNames.userTypeSelection);
           } else if (auth.isNewAccount) {
             context.go(RouteNames.pickInterests);
           } else {

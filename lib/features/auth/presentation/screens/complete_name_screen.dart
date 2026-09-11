@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart'
+    show pendingRoleProvider;
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -80,9 +82,18 @@ class _CompleteNameScreenState extends ConsumerState<CompleteNameScreen> {
 
     ref.listen<DisplayNameUpdateState>(displayNameProvider, (_, next) {
       next.maybeWhen(
-        // A name was required to reach this screen → always continue into the
-        // onboarding journey (pick interests → follow creators → …).
-        loadSuccess: () => context.go(RouteNames.pickInterests),
+        // A name was required to reach this screen → continue into the
+        // onboarding journey (pick interests → follow creators → …), unless
+        // the user picked Creator/Vendor before signing in — then resume
+        // straight into that application.
+        loadSuccess: () {
+          final pendingRole = ref.read(pendingRoleProvider);
+          if (pendingRole == 2 || pendingRole == 3) {
+            context.go(RouteNames.userTypeSelection);
+          } else {
+            context.go(RouteNames.pickInterests);
+          }
+        },
         loadFailure: (failure) =>
             SmSnackbar.error(context, _errorMessage(failure)),
         orElse: () {},

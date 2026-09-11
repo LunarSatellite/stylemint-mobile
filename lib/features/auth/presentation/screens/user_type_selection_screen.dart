@@ -86,13 +86,17 @@ class _UserTypeSelectionScreenState
       // Pre-auth: remember the chosen role so it is auto-applied after login.
       ref.read(pendingRoleProvider.notifier).state = roleInt;
       // Customer (1) sees the onboarding carousel before sign-in.
-      // Creator (2) and Vendor (3) go straight to the application form (public route).
+      // Creator (2) and Vendor (3) must sign in first — the application
+      // endpoints require an authenticated account (`requiresToken: true`),
+      // so sending a guest straight into the multi-step form used to let
+      // them fill it out in full and only discover it can't be submitted
+      // when the final Submit silently 401'd. Sign in now, then the
+      // pendingRoleProvider listener below auto-resumes into the
+      // application once the account is authenticated.
       if (roleInt == 1) {
         context.go(RouteNames.onboarding);
-      } else if (roleInt == 2) {
-        context.go(RouteNames.creatorApply);
       } else {
-        context.go(RouteNames.vendorApply);
+        context.go(RouteNames.signInMethod);
       }
       return;
     }
