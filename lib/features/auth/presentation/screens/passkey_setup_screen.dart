@@ -57,6 +57,9 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
           'PASSKEY_NO_CREDENTIALS' => 'No passkey credentials found',
           'PASSKEY_OPTIONS_INVALID' =>
             'Server returned invalid passkey options',
+          'PASSKEY_TIMEOUT' =>
+            'Passkey setup timed out. Your device may not support this — '
+                'try another sign-in method',
           _ => 'Passkey setup failed. Please try again',
         },
         auth: () => 'Passkey setup was cancelled',

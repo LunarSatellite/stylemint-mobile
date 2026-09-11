@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:passkeys/authenticator.dart';
@@ -30,6 +32,16 @@ class PasskeyService {
   final BusyController busy;
 
   final PasskeyAuthenticator _authenticator;
+
+  /// Some Android OEM builds (observed on ColorOS/RealmeUI devices) fail to
+  /// render the system Credential Manager sheet at all — logcat shows
+  /// "CredentialSelector: UI wasn't able to render neither get nor create
+  /// flow" — and the platform channel call never completes on either side.
+  /// Without a timeout that leaves the ceremony (and the `_busy` flag gating
+  /// re-entry in the UI) hung forever with zero feedback and no way to
+  /// retry short of restarting the app. Bound every ceremony so it always
+  /// resolves to a mapped, user-facing error instead.
+  static const _ceremonyTimeout = Duration(seconds: 30);
 
   // ---------------------------------------------------------------------------
   // Registration (add a passkey for an already-logged-in user)
@@ -66,8 +78,9 @@ class PasskeyService {
     // Step 3 — platform authenticator
     final RegisterResponseType platformResponse;
     try {
-      platformResponse =
-          await busy.run(() => _authenticator.register(platformRequest));
+      platformResponse = await busy
+          .run(() => _authenticator.register(platformRequest))
+          .timeout(_ceremonyTimeout);
     } catch (e) {
       return Left<NetworkExceptions, PasskeyCredentialDto>(_mapPasskeyError(e));
     }
@@ -114,8 +127,9 @@ class PasskeyService {
     // Step 3 — platform authenticator
     final AuthenticateResponseType platformResponse;
     try {
-      platformResponse =
-          await busy.run(() => _authenticator.authenticate(platformRequest));
+      platformResponse = await busy
+          .run(() => _authenticator.authenticate(platformRequest))
+          .timeout(_ceremonyTimeout);
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -157,8 +171,9 @@ class PasskeyService {
 
     final AuthenticateResponseType platformResponse;
     try {
-      platformResponse =
-          await busy.run(() => _authenticator.authenticate(platformRequest));
+      platformResponse = await busy
+          .run(() => _authenticator.authenticate(platformRequest))
+          .timeout(_ceremonyTimeout);
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -202,8 +217,9 @@ class PasskeyService {
 
     final RegisterResponseType platformResponse;
     try {
-      platformResponse =
-          await busy.run(() => _authenticator.register(platformRequest));
+      platformResponse = await busy
+          .run(() => _authenticator.register(platformRequest))
+          .timeout(_ceremonyTimeout);
     } catch (e) {
       return Left<NetworkExceptions, AuthResponseDto>(_mapPasskeyError(e));
     }
@@ -223,6 +239,13 @@ class PasskeyService {
   /// (String matching on toString() doesn't work — e.g.
   /// NoCredentialsAvailableException stringifies to "Instance of '…'".)
   NetworkExceptions _mapPasskeyError(Object e) {
+    if (e is TimeoutException) {
+      // The platform sheet never rendered/resolved (e.g. a broken OEM
+      // Credential Manager implementation) — tell the user plainly rather
+      // than a generic failure, since retrying the same ceremony on this
+      // device will likely time out again.
+      return const NetworkExceptions.validation(code: 'PASSKEY_TIMEOUT');
+    }
     if (e is PasskeyAuthCancelledException) {
       return const NetworkExceptions.auth(); // user cancelled — treat as no-op
     }

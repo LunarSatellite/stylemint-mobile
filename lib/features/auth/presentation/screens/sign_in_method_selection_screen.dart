@@ -82,6 +82,14 @@ class _SignInMethodSelectionScreenState
           SmSnackbar.error(context, NetworkExceptions.getMessage(failure));
           return;
         }
+        if (failure.validationCode == 'PASSKEY_TIMEOUT') {
+          SmSnackbar.error(
+            context,
+            'Passkey sign-in timed out. Your device may not support this — '
+                'try Email or Phone instead.',
+          );
+          return;
+        }
         SmSnackbar.error(context, 'Could not sign in with passkey. Try again.');
       },
       orElse: () {},
