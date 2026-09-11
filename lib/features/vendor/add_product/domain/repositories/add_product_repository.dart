@@ -12,6 +12,15 @@ abstract interface class AddProductRepository {
     required String idempotencyKey,
   });
 
+  /// Persists the completed portion of a new-product wizard. Step 1 is
+  /// required to create the backend draft; later steps are patched only when
+  /// the vendor has completed them.
+  Future<Either<NetworkExceptions, String>> saveDraftProgress(
+    ProductFormState formState, {
+    required String idempotencyKey,
+    String? draftId,
+  });
+
   Future<Either<NetworkExceptions, String>> uploadImage(String filePath);
 
   Future<Either<NetworkExceptions, String>> publishProduct(String productId);

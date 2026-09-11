@@ -142,25 +142,34 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     status: 'draft',
   );
 
-  Future<void> saveDraft({String? draftId}) async {
-    if (!_formState.isValid) return;
+  /// Saves every wizard step completed so far. Returns null when Step 1 has
+  /// not been completed, false on a network/backend failure, and true when
+  /// the draft was persisted.
+  Future<bool?> saveDraft({String? draftId}) async {
+    if (_formState.step1 == null) return null;
     state = AddProductState.saveInProgress(_formState);
 
-    final draft = _draftFrom(id: draftId ?? _draftId ?? '');
-    final either = await _repository.submitDraft(
-      draft,
+    final either = await _repository.saveDraftProgress(
+      _formState,
+      draftId: draftId ?? _draftId,
       idempotencyKey: _draftIdempotencyKey,
     );
 
-    state = either.fold(
-      (failure) => AddProductState.saveFailure(_formState, failure),
+    return either.fold(
+      (failure) {
+        state = AddProductState.saveFailure(_formState, failure);
+        return false;
+      },
       (productId) {
         _draftId = productId;
         _isDirty = false;
-        return AddProductState.saveSuccess(
-          _formState,
-          draft.copyWith(id: productId),
-        );
+        state = _formState.isValid
+            ? AddProductState.saveSuccess(
+                _formState,
+                _draftFrom(id: productId),
+              )
+            : AddProductState.loadSuccess(_formState);
+        return true;
       },
     );
   }

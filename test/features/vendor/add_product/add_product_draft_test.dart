@@ -83,6 +83,7 @@ void _completeForm(AddProductNotifier notifier) {
 void main() {
   setUpAll(() {
     registerFallbackValue(_draft());
+    registerFallbackValue(const ProductFormState(currentStep: 1));
     registerFallbackValue(<String, dynamic>{});
   });
 
@@ -90,35 +91,36 @@ void main() {
     final repository = _MockAddProductRepository();
     final notifier = AddProductNotifier(repository);
     when(
-      () => repository.submitDraft(
+      () => repository.saveDraftProgress(
         any(),
+        draftId: any(named: 'draftId'),
         idempotencyKey: any(named: 'idempotencyKey'),
       ),
     ).thenAnswer((_) async => right('product-1'));
 
     _completeForm(notifier);
-    await notifier.saveDraft();
-    final first = verify(
-      () => repository.submitDraft(
-        captureAny(),
-        idempotencyKey: captureAny(named: 'idempotencyKey'),
-      ),
-    ).captured;
-    expect((first[0] as ProductDraft).id, isEmpty);
-    final firstKey = first[1] as String;
+    expect(await notifier.saveDraft(), isTrue);
+    final firstKey =
+        verify(
+              () => repository.saveDraftProgress(
+                any(),
+                draftId: null,
+                idempotencyKey: captureAny(named: 'idempotencyKey'),
+              ),
+            ).captured.single
+            as String;
     expect(firstKey, isNotEmpty);
     expect(notifier.isDirty, isFalse);
 
     notifier.updateBasicInfo(_basic(name: 'Updated QA product'));
-    await notifier.saveDraft();
-    final second = verify(
-      () => repository.submitDraft(
-        captureAny(),
-        idempotencyKey: captureAny(named: 'idempotencyKey'),
+    expect(await notifier.saveDraft(), isTrue);
+    verify(
+      () => repository.saveDraftProgress(
+        any(),
+        draftId: 'product-1',
+        idempotencyKey: firstKey,
       ),
-    ).captured;
-    expect((second[0] as ProductDraft).id, 'product-1');
-    expect(second[1], firstKey);
+    ).called(1);
     expect(notifier.isDirty, isFalse);
   });
 
@@ -127,8 +129,9 @@ void main() {
     final notifier = AddProductNotifier(repository);
     var attempt = 0;
     when(
-      () => repository.submitDraft(
+      () => repository.saveDraftProgress(
         any(),
+        draftId: any(named: 'draftId'),
         idempotencyKey: any(named: 'idempotencyKey'),
       ),
     ).thenAnswer((_) async {
@@ -139,25 +142,52 @@ void main() {
     });
 
     _completeForm(notifier);
-    await notifier.saveDraft();
-    final first = verify(
-      () => repository.submitDraft(
-        captureAny(),
-        idempotencyKey: captureAny(named: 'idempotencyKey'),
-      ),
-    ).captured;
-    expect((first[0] as ProductDraft).id, isEmpty);
+    expect(await notifier.saveDraft(), isFalse);
+    final firstKey =
+        verify(
+              () => repository.saveDraftProgress(
+                any(),
+                draftId: null,
+                idempotencyKey: captureAny(named: 'idempotencyKey'),
+              ),
+            ).captured.single
+            as String;
 
-    await notifier.saveDraft();
-    final second = verify(
-      () => repository.submitDraft(
-        captureAny(),
-        idempotencyKey: captureAny(named: 'idempotencyKey'),
+    expect(await notifier.saveDraft(), isTrue);
+    verify(
+      () => repository.saveDraftProgress(
+        any(),
+        draftId: null,
+        idempotencyKey: firstKey,
       ),
-    ).captured;
-    expect((second[0] as ProductDraft).id, isEmpty);
-    expect(second[1], first[1]);
+    ).called(1);
   });
+
+  test(
+    'partial draft persists only the wizard steps completed so far',
+    () async {
+      final remote = _MockRemoteDataSource();
+      final repository = AddProductRepositoryImpl(
+        remoteDataSource: remote,
+        networkInfo: _ConnectedNetwork(),
+      );
+      when(
+        () => remote.startDraft(any(), any()),
+      ).thenAnswer((_) async => 'partial-product');
+      when(() => remote.patchStep2(any(), any())).thenAnswer((_) async {});
+
+      final result = await repository.saveDraftProgress(
+        ProductFormState(currentStep: 2, step1: _basic(), step2: _images),
+        idempotencyKey: 'partial-key',
+      );
+
+      expect(result.getRight().toNullable(), 'partial-product');
+      verify(() => remote.startDraft(any(), 'partial-key')).called(1);
+      verify(() => remote.patchStep2('partial-product', any())).called(1);
+      verifyNever(() => remote.patchStep3(any(), any()));
+      verifyNever(() => remote.patchStep4(any(), any()));
+    },
+  );
 
   test(
     'repository converts imperial UI values and updates saved drafts',

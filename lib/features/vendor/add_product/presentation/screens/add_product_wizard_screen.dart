@@ -102,23 +102,30 @@ class _AddProductWizardScreenState
 
   Future<void> _saveDraft() async {
     setState(() => _saving = true);
-    await ref.read(addProductNotifierProvider.notifier).saveDraft();
+    final saved = await ref
+        .read(addProductNotifierProvider.notifier)
+        .saveDraft();
     if (!mounted) return;
     setState(() => _saving = false);
 
-    ref
-        .read(addProductNotifierProvider)
-        .maybeWhen(
-          saveSuccess: (_, _) => SmSnackbar.success(context, 'Draft saved.'),
-          saveFailure: (_, failure) => SmSnackbar.error(
-            context,
-            'Failed to save draft: ${NetworkExceptions.getMessage(failure)}',
-          ),
-          orElse: () => SmSnackbar.info(
-            context,
-            'Complete all steps to save as draft.',
-          ),
-        );
+    if (saved == null) {
+      SmSnackbar.info(context, 'Complete Basic Information first.');
+    } else if (saved) {
+      SmSnackbar.success(context, 'Draft saved.');
+    } else {
+      ref
+          .read(addProductNotifierProvider)
+          .maybeWhen(
+            saveFailure: (_, failure) => SmSnackbar.error(
+              context,
+              'Failed to save draft: ${NetworkExceptions.getMessage(failure)}',
+            ),
+            orElse: () => SmSnackbar.error(
+              context,
+              'Failed to save draft. Please try again.',
+            ),
+          );
+    }
   }
 
   Future<bool> _confirmDiscardChanges() async {

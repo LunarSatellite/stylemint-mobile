@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Vendor → Products → ⋮ → Edit Product Details — currently images-only
@@ -64,13 +66,25 @@ class _EditProductImagesScreenState
 
   Future<void> _pickImage(ImageSource source) async {
     if (_images.length >= ImagesInfo.maxImages) return;
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 80,
-    );
+    XFile? picked;
+    try {
+      picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 80,
+      );
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      final denied = error.code.contains('access_denied');
+      SmSnackbar.error(
+        context,
+        denied
+            ? 'Camera or photo access was not granted.'
+            : 'Could not open the image picker. Please try again.',
+      );
+      return;
+    }
     if (picked == null) return;
     setState(() => _uploading = true);
     await ref

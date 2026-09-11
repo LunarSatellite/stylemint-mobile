@@ -63,6 +63,42 @@ class AddProductRepositoryImpl implements AddProductRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, String>> saveDraftProgress(
+    ProductFormState formState, {
+    required String idempotencyKey,
+    String? draftId,
+  }) {
+    return _guard(() async {
+      final basicInfo = formState.step1;
+      if (basicInfo == null) {
+        throw StateError('Basic product information is required');
+      }
+
+      var productId = draftId;
+      productId ??= await remoteDataSource.startDraft(
+        _basicInfoBody(basicInfo),
+        idempotencyKey,
+      );
+      if (draftId != null) {
+        await remoteDataSource.patchStep1(
+          productId,
+          _basicInfoBody(basicInfo),
+        );
+      }
+      if (formState.step2 case final images?) {
+        await remoteDataSource.patchStep2(productId, _mediaBody(images));
+      }
+      if (formState.step3 case final pricing?) {
+        await remoteDataSource.patchStep3(productId, _pricingBody(pricing));
+      }
+      if (formState.step4 case final shipping?) {
+        await remoteDataSource.patchStep4(productId, _shippingBody(shipping));
+      }
+      return productId;
+    });
+  }
+
+  @override
   Future<Either<NetworkExceptions, String>> uploadImage(String filePath) {
     return _guard(() => remoteDataSource.uploadImage(filePath));
   }
@@ -91,11 +127,14 @@ class AddProductRepositoryImpl implements AddProductRepository {
 
   // --- payload builders (domain -> backend wizard contract) ---
 
-  Map<String, dynamic> _basicBody(ProductDraft d) => {
-    'categoryId': d.basicInfo.categoryId,
-    'name': d.basicInfo.productName,
-    'shortDescription': d.basicInfo.shortDescription,
-    'longDescriptionMarkdown': d.basicInfo.description,
+  Map<String, dynamic> _basicBody(ProductDraft d) =>
+      _basicInfoBody(d.basicInfo);
+
+  Map<String, dynamic> _basicInfoBody(BasicInfo info) => {
+    'categoryId': info.categoryId,
+    'name': info.productName,
+    'shortDescription': info.shortDescription,
+    'longDescriptionMarkdown': info.description,
   };
 
   Map<String, dynamic> _mediaBodyFromDraft(ProductDraft d) =>
