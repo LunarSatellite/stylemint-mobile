@@ -95,7 +95,10 @@ class _NotificationPrefsScreenState
       _newsletter = true;
       _emailNotifications = true;
       _smsNotifications = true;
-      _quietHoursEnabled = true;
+      // Quiet Hours is a suppression switch (pauses notifications 10PM-8AM
+      // when ON) — turning it ON here would silently mute the very
+      // notifications this button promises to enable. Disable it instead.
+      _quietHoursEnabled = false;
     });
     _saveAll();
   }
