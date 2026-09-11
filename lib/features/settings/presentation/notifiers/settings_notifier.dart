@@ -16,14 +16,19 @@ abstract class NotificationPrefsState with _$NotificationPrefsState {
 
   const factory NotificationPrefsState.initial() = _NpInitial;
   const factory NotificationPrefsState.loadInProgress() = _NpLoadInProgress;
-  const factory NotificationPrefsState.loadSuccess(NotificationPreferences prefs) = _NpLoadSuccess;
-  const factory NotificationPrefsState.loadFailure(NetworkExceptions failure) = _NpLoadFailure;
+  const factory NotificationPrefsState.loadSuccess(
+    NotificationPreferences prefs,
+  ) = _NpLoadSuccess;
+  const factory NotificationPrefsState.loadFailure(NetworkExceptions failure) =
+      _NpLoadFailure;
   const factory NotificationPrefsState.saveSuccess() = _NpSaveSuccess;
-  const factory NotificationPrefsState.saveFailure(NetworkExceptions failure) = _NpSaveFailure;
+  const factory NotificationPrefsState.saveFailure(NetworkExceptions failure) =
+      _NpSaveFailure;
 }
 
 class SettingsNotifier extends StateNotifier<NotificationPrefsState> {
-  SettingsNotifier(this._repository) : super(const NotificationPrefsState.initial()) {
+  SettingsNotifier(this._repository)
+    : super(const NotificationPrefsState.initial()) {
     unawaited(loadPrefs());
   }
 
@@ -57,11 +62,13 @@ abstract class LanguageChangeState with _$LanguageChangeState {
   const factory LanguageChangeState.initial() = _LangInitial;
   const factory LanguageChangeState.saving() = _LangSaving;
   const factory LanguageChangeState.success(String code) = _LangSuccess;
-  const factory LanguageChangeState.failure(NetworkExceptions failure) = _LangFailure;
+  const factory LanguageChangeState.failure(NetworkExceptions failure) =
+      _LangFailure;
 }
 
 class LanguageChangeNotifier extends StateNotifier<LanguageChangeState> {
-  LanguageChangeNotifier(this._repository) : super(const LanguageChangeState.initial());
+  LanguageChangeNotifier(this._repository)
+    : super(const LanguageChangeState.initial());
 
   final SettingsRepository _repository;
 
@@ -82,11 +89,13 @@ abstract class DeleteAccountState with _$DeleteAccountState {
   const factory DeleteAccountState.initial() = _DelInitial;
   const factory DeleteAccountState.inProgress() = _DelInProgress;
   const factory DeleteAccountState.success() = _DelSuccess;
-  const factory DeleteAccountState.failure(NetworkExceptions failure) = _DelFailure;
+  const factory DeleteAccountState.failure(NetworkExceptions failure) =
+      _DelFailure;
 }
 
 class DeleteAccountNotifier extends StateNotifier<DeleteAccountState> {
-  DeleteAccountNotifier(this._repository) : super(const DeleteAccountState.initial());
+  DeleteAccountNotifier(this._repository)
+    : super(const DeleteAccountState.initial());
 
   final SettingsRepository _repository;
 
@@ -137,20 +146,31 @@ abstract class PendingDeletionState with _$PendingDeletionState {
   const factory PendingDeletionState.notFound() = _PdNotFound;
   const factory PendingDeletionState.cancelling() = _PdCancelling;
   const factory PendingDeletionState.cancelled() = _PdCancelled;
-  const factory PendingDeletionState.failure(NetworkExceptions failure) = _PdFailure;
+  const factory PendingDeletionState.failure(NetworkExceptions failure) =
+      _PdFailure;
 }
 
 class PendingDeletionNotifier extends StateNotifier<PendingDeletionState> {
   PendingDeletionNotifier(this._repository)
-      : super(const PendingDeletionState.initial());
+    : super(const PendingDeletionState.initial());
 
   final SettingsRepository _repository;
 
+  /// Fires silently on every Edit Profile page load (see
+  /// edit_profile_screen.dart's initState) purely to decide whether to show
+  /// a "pending deletion" banner — the user never asked for this check.
+  /// Confirmed live: a transient/unexplained failure here surfaced a
+  /// "Something went wrong" snackbar on an otherwise normal profile edit,
+  /// with no pending deletion request in the DB and nothing actionable for
+  /// the user to do about it. Fail open instead: treat a failed check the
+  /// same as "no pending deletion" rather than alarming the user over a
+  /// background check they didn't trigger. [cancel] below is a real
+  /// user-initiated action and keeps surfacing its own failures.
   Future<void> load() async {
     state = const PendingDeletionState.loading();
     final either = await _repository.getPendingDeletion();
     state = either.fold(
-      PendingDeletionState.failure,
+      (_) => const PendingDeletionState.notFound(),
       (r) => r == null
           ? const PendingDeletionState.notFound()
           : PendingDeletionState.found(r),
@@ -166,4 +186,3 @@ class PendingDeletionNotifier extends StateNotifier<PendingDeletionState> {
     );
   }
 }
-
