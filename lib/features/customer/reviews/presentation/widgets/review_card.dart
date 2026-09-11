@@ -30,12 +30,40 @@ class ReviewCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review.userName,
-                      style: DesignTokens.mediumSemibold,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            review.userName,
+                            style: DesignTokens.mediumSemibold,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (review.isVerifiedPurchase) ...[
+                          const SizedBox(width: DesignTokens.s4),
+                          const Icon(
+                            Icons.verified,
+                            size: 14,
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
-                    _StarRating(rating: review.rating, size: 14),
+                    Row(
+                      children: [
+                        _StarRating(rating: review.rating, size: 14),
+                        if (review.isVerifiedPurchase) ...[
+                          const SizedBox(width: DesignTokens.s8),
+                          Text(
+                            'Verified Purchase',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),

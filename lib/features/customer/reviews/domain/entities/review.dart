@@ -15,6 +15,7 @@ class Review {
     this.kind = ReviewKind.written,
     this.reelPlatform,
     this.reelSourceUrl,
+    this.isVerifiedPurchase = false,
   });
 
   final String id;
@@ -30,6 +31,10 @@ class Review {
   final String? reelPlatform;
   final String? reelSourceUrl;
 
+  /// True when Reputation confirmed this review is linked to a
+  /// Delivered/Returned order for the reviewer.
+  final bool isVerifiedPurchase;
+
   Review copyWith({
     String? id,
     String? userId,
@@ -43,6 +48,7 @@ class Review {
     ReviewKind? kind,
     String? reelPlatform,
     String? reelSourceUrl,
+    bool? isVerifiedPurchase,
   }) {
     return Review(
       id: id ?? this.id,
@@ -57,6 +63,7 @@ class Review {
       kind: kind ?? this.kind,
       reelPlatform: reelPlatform ?? this.reelPlatform,
       reelSourceUrl: reelSourceUrl ?? this.reelSourceUrl,
+      isVerifiedPurchase: isVerifiedPurchase ?? this.isVerifiedPurchase,
     );
   }
 }

@@ -137,6 +137,7 @@ class ReviewsRepositoryImpl implements ReviewsRepository {
       kind: isReel ? ReviewKind.reel : ReviewKind.written,
       reelPlatform: json['reelPlatform']?.toString(),
       reelSourceUrl: json['reelSourceUrl'] as String?,
+      isVerifiedPurchase: json['isVerifiedPurchase'] as bool? ?? false,
     );
   }
 }
