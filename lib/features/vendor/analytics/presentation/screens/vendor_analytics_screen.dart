@@ -66,7 +66,12 @@ class VendorAnalyticsScreen extends ConsumerWidget {
           ),
           Container(
             color: DesignTokens.bgAppFoundation,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              12,
+              16,
+              28 + MediaQuery.paddingOf(context).bottom,
+            ),
             child: SizedBox(
               width: double.infinity,
               height: 52,
