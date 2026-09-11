@@ -120,6 +120,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   Widget build(BuildContext context) {
     final order = widget.order;
     final trackingNumber = order.trackingNumber;
+
     final story = trackingNumber?.startsWith('SM-D-') == true
         ? ref.watch(deliveryStoryProvider(trackingNumber!))
         : null;
@@ -141,8 +142,12 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                 data: (chapters) => chapters.isEmpty
                     ? _TrackingTimeline(status: order.status)
                     : _DeliveryStoryTimeline(chapters: chapters),
-                loading: () => _TrackingTimeline(status: order.status),
-                error: (_, __) => _TrackingTimeline(status: order.status),
+                loading: () => const _DeliveryStoryLoading(),
+                error: (_, __) => _DeliveryStoryError(
+                  onRetry: () => ref.invalidate(
+                    deliveryStoryProvider(trackingNumber!),
+                  ),
+                ),
               ) ??
               _TrackingTimeline(status: order.status),
           if (order.status == OrderTrackStatus.delivered) ...[
@@ -517,6 +522,84 @@ class _DeliveryStoryTimeline extends StatelessWidget {
             const SizedBox(height: DesignTokens.s16),
         ],
       ],
+    ),
+  );
+}
+
+class _DeliveryStoryLoading extends StatelessWidget {
+  const _DeliveryStoryLoading();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    label: 'Loading live delivery tracking',
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s24),
+      decoration: DesignTokens.cardDecoration(),
+      child: const Column(
+        children: [
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              color: DesignTokens.primaryGreen,
+              strokeWidth: 3,
+            ),
+          ),
+          SizedBox(height: DesignTokens.s12),
+          Text('Loading live delivery tracking…'),
+        ],
+      ),
+    ),
+  );
+}
+
+class _DeliveryStoryError extends StatelessWidget {
+  const _DeliveryStoryError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    label: 'Live tracking is temporarily unavailable',
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            color: DesignTokens.textMuted,
+            size: 32,
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'Live tracking is temporarily unavailable.',
+            textAlign: TextAlign.center,
+            style: DesignTokens.oneLinerSemibold,
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Your order details are safe. Try loading the delivery journey again.',
+            textAlign: TextAlign.center,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          SizedBox(
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry live tracking'),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
