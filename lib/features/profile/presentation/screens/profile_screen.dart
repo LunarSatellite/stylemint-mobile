@@ -165,7 +165,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const SizedBox(height: DesignTokens.s16),
         ProfileHeader(
           summary: widget.summary,
-          onEdit: () => context.push('${RouteNames.profile}/edit'),
+          onEdit: () => context.push('${RouteNames.profile}/edit').then((_) {
+            // Edit Profile pops itself immediately on save success, before
+            // this screen gets any signal to reload — confirmed live: after
+            // saving a new display name, this header still showed the old
+            // one until the next full app restart. profileNotifierProvider
+            // isn't told to refresh on its own on return navigation.
+            if (mounted) {
+              ref.read(profileNotifierProvider.notifier).fetchProfile();
+            }
+          }),
           onNotifications: () =>
               context.push(RouteNames.customerRecentActivity),
         ),
