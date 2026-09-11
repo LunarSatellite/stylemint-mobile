@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
@@ -276,6 +277,8 @@ class _ProductBody extends StatelessWidget {
                     _NamePriceRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
                     _UrgencyBanner(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
+                    GroupBuyBanner(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _ExpandableBlock(
                       description: product.description,
