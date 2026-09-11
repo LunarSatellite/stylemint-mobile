@@ -107,12 +107,19 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           ),
           if (!_professionalOnly)
             SizedBox(
+              // Each chip already applies its own vertical padding below;
+              // adding the ListView's own vertical padding on top of that
+              // squeezed the available height inside this fixed box below
+              // what the 12px/1.3-line-height text actually needs, clipping
+              // the tops of the chip labels ("All"/"Public"/"Closed" render
+              // with their ascenders cut off). Drop the ListView's vertical
+              // padding — the chip padding + this box's height already
+              // gives the row correct vertical spacing on its own.
               height: 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(
                   horizontal: DesignTokens.s16,
-                  vertical: DesignTokens.s8,
                 ),
                 itemCount: _privacyFilters.length,
                 separatorBuilder: (_, __) =>
