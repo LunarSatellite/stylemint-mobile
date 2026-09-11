@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  late final Future<PackageInfo> _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _packageInfo = PackageInfo.fromPlatform();
+  }
 
   Future<void> _launch(String url) async {
     final uri = Uri.parse(url);
@@ -77,12 +91,21 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: DesignTokens.s4),
-              Text(
-                'Version 1.2.0 (Build 456)',
-                textAlign: TextAlign.center,
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
+              FutureBuilder<PackageInfo>(
+                future: _packageInfo,
+                builder: (context, snapshot) {
+                  final text = snapshot.hasData
+                      ? 'Version ${snapshot.data!.version} '
+                            '(Build ${snapshot.data!.buildNumber})'
+                      : 'Version unavailable';
+                  return Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -92,127 +115,21 @@ class AboutScreen extends StatelessWidget {
           const _SectionHeading('Our Mission'),
           const SizedBox(height: DesignTokens.s8),
           const _Body(
-            'StyleMint is revolutionizing e-commerce by connecting customers with '
-            'products through engaging short-form video content, empowering creators '
-            'to earn while helping shoppers discover amazing products in an entertaining way.',
+            'StyleMint is revolutionizing e-commerce by connecting customers '
+            'with products through engaging short-form video content, '
+            'empowering '
+            'creators to earn while helping shoppers discover amazing products '
+            'in an entertaining way.',
           ),
           const SizedBox(height: DesignTokens.s32),
 
-          // Platform Stats
-          const _SectionHeading('Platform Stats'),
-          const SizedBox(height: DesignTokens.s12),
-          Row(
-            children: const [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.inventory_2_outlined,
-                  value: '250k',
-                  label: 'Products',
-                ),
-              ),
-              SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.videocam_outlined,
-                  value: '5k',
-                  label: 'Creators',
-                ),
-              ),
-              SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.store_outlined,
-                  value: '1000+',
-                  label: 'Brands',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          Row(
-            children: const [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.play_circle_outline,
-                  value: '15m',
-                  label: 'Reels',
-                ),
-              ),
-              SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.access_time_outlined,
-                  value: '98%',
-                  label: 'On-Time',
-                ),
-              ),
-              SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.star_outline_rounded,
-                  value: '4.8',
-                  label: 'Rating',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: DesignTokens.s32),
-
-          // Company Information
-          const _SectionHeading('Company Information'),
+          // Support
+          const _SectionHeading('Support'),
           const SizedBox(height: DesignTokens.s8),
           _LabelLink(
             label: 'Email: ',
-            linkText: 'hello@stylemint.com',
-            onTap: () => _launch('mailto:hello@stylemint.com'),
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          _LabelLink(
-            label: 'Headquarters: ',
-            linkText:
-                'StyleMint Inc., 123 Privacy Lane San Francisco, CA 94102',
-            onTap: () => _launch(
-              'https://maps.google.com/?q=123+Privacy+Lane,+San+Francisco,+CA+94102',
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          _LabelLink(
-            label: 'Website: ',
-            linkText: 'www.stylemint.com',
-            onTap: () => _launch('https://www.stylemint.com'),
-          ),
-          const SizedBox(height: DesignTokens.s32),
-
-          // Follow us on
-          const _SectionHeading('Follow us on:'),
-          const SizedBox(height: DesignTokens.s16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              _SocialCircle(
-                icon: Icons.play_arrow_rounded,
-                color: const Color(0xFFFF0000),
-                onTap: () => _launch('https://youtube.com'),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              _SocialCircle(
-                icon: Icons.camera_alt_outlined,
-                color: const Color(0xFFE1306C),
-                onTap: () => _launch('https://instagram.com'),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              _SocialCircle(
-                icon: Icons.facebook,
-                color: const Color(0xFF1877F2),
-                onTap: () => _launch('https://facebook.com'),
-              ),
-              const SizedBox(width: DesignTokens.s16),
-              _SocialCircle(
-                icon: Icons.music_note_rounded,
-                color: const Color(0xFF010101),
-                onTap: () => _launch('https://tiktok.com'),
-              ),
-            ],
+            linkText: 'help@stylemint.app',
+            onTap: () => _launch('mailto:help@stylemint.app'),
           ),
           const SizedBox(height: DesignTokens.s32),
 
@@ -264,23 +181,6 @@ class AboutScreen extends StatelessWidget {
           _BulletLink('Blog', onTap: () => _comingSoon(context, 'Blog')),
           const SizedBox(height: DesignTokens.s32),
 
-          // App Information
-          const _SectionHeading('App Information'),
-          const SizedBox(height: DesignTokens.s8),
-          const _InfoRow(label: 'Version:', value: '1.2.0'),
-          const _InfoRow(label: 'Build:', value: '456'),
-          const _InfoRow(label: 'Released:', value: 'December 15, 2024'),
-          const SizedBox(height: DesignTokens.s4),
-          _BulletLink(
-            'Check for Updates',
-            onTap: () => _comingSoon(context, 'Update checking'),
-          ),
-          _BulletLink(
-            'View Release Notes',
-            onTap: () => _comingSoon(context, 'Release notes'),
-          ),
-          const SizedBox(height: DesignTokens.s32),
-
           // Licenses
           const _SectionHeading('Licenses'),
           const SizedBox(height: DesignTokens.s8),
@@ -295,11 +195,11 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: DesignTokens.s32),
 
           // Footer
-          const Center(
+          Center(
             child: Text(
-              '© 2024 StyleMint Inc. All rights reserved.',
+              '© ${DateTime.now().year} StyleMint. All rights reserved.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: DesignTokens.fontFamily,
                 fontSize: 12,
                 color: DesignTokens.textMuted,
@@ -343,74 +243,6 @@ class _Body extends StatelessWidget {
         fontSize: 14,
         height: 1.6,
         color: DesignTokens.textLight,
-      ),
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-  final IconData icon;
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s12),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBodyLight,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 22, color: DesignTokens.textLight),
-          const SizedBox(height: DesignTokens.s8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            label,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SocialCircle extends StatelessWidget {
-  const _SocialCircle({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: Icon(icon, color: Colors.white, size: 26),
       ),
     );
   }
@@ -506,49 +338,6 @@ class _LabelLink extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 6, right: 8),
-            child: CircleAvatar(
-              radius: 3,
-              backgroundColor: DesignTokens.textLight,
-            ),
-          ),
-          Text(
-            '$label  ',
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              height: 1.6,
-              color: DesignTokens.textLight,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              height: 1.6,
-              color: DesignTokens.textWhite,
             ),
           ),
         ],

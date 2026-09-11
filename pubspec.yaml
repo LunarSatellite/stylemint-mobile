@@ -80,6 +80,7 @@ dependencies:
   mobile_scanner: ^7.2.0
   url_launcher: ^6.3.1
   flutter_web_browser: ^0.17.1
+  package_info_plus: ^9.0.1
 
   # ── Maps (Pillar B) ───────────────────────────────────────────────────────
   google_maps_flutter: ^2.9.0
