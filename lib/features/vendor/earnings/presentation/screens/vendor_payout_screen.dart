@@ -86,7 +86,13 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        key: const Key('vendor-payout-body-inset'),
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16,
+          DesignTokens.s16 + MediaQuery.viewPaddingOf(context).bottom,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -143,7 +149,9 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
                 filled: true,
                 fillColor: DesignTokens.bgAppBody,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+                  borderRadius: BorderRadius.circular(
+                    DesignTokens.inputRadius,
+                  ),
                   borderSide: BorderSide.none,
                 ),
               ),
