@@ -7,7 +7,16 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/re
 
 /// SubOrderState enum values (Orders module) needed for the dashboard's
 /// "Pending Actions" tile counts.
-const _readyToShipState = 4;
+///
+/// _readyToShipState intentionally queries AwaitingFulfillment (3), not the
+/// enum's own ReadyToShip (4): a vendor takes the "ship" action FROM
+/// AwaitingFulfillment (see the isToShip comment in vendor_order.dart — the
+/// backend only allows the ReadyToShip transition starting from
+/// AwaitingFulfillment). Querying state 4 here missed every order still
+/// waiting on that action — confirmed live: a freshly-placed CoD order sat
+/// in AwaitingFulfillment and this tile said "No orders ready to ship" while
+/// the Your Orders "To Ship" tab correctly showed it.
+const _readyToShipState = 3;
 const _awaitingTrackingState = 5;
 
 /// Live counts for the vendor dashboard's "Pending Actions" tiles. Each
