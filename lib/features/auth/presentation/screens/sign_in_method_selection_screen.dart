@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
@@ -129,33 +127,8 @@ class _SignInMethodSelectionScreenState
         );
   }
 
-  /// Social sign-in (Google / Facebook). Step 1: fetch the authorization URL
-  /// and stash the CSRF state, then open it in an in-app browser. The provider
-  /// redirects back via `stylemint://auth/oauth/callback?code=&state=`, which
-  /// the deep-link handler routes to [OAuthCallbackScreen] to finish the
-  /// exchange. The custom tab closes itself when the deep link fires.
-  Future<void> _startSocial(String provider) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    final url =
-        await ref.read(oauthSignInProvider.notifier).authorize(provider);
-    if (!mounted) return;
-    setState(() => _busy = false);
-
-    if (url == null || url.isEmpty) {
-      SmSnackbar.error(
-        context,
-        'Could not start $provider sign-in. Please try again.',
-      );
-      return;
-    }
-    await FlutterWebBrowser.openWebPage(url: url);
-  }
-
-  /// Apple is a server-side stub (not yet live) — keep it as a no-op CTA.
-  static void _comingSoon(BuildContext context, String provider) {
-    SmSnackbar.info(context, '$provider sign-in is coming soon');
-  }
+  // Social sign-in (Apple/Facebook/Google) is disabled — see the note above
+  // _PlanB's social section for why.
 
   @override
   Widget build(BuildContext context) {
@@ -240,8 +213,6 @@ class _SignInMethodSelectionScreenState
                       ),
                       const SizedBox(height: DesignTokens.s24),
                       _PlanB(
-                        onSocial: _startSocial,
-                        onComingSoon: (p) => _comingSoon(context, p),
                         // Same usernameless sign-in as the top button (with
                         // bootstrap-signup fallback) — NOT the login-required
                         // /passkey Setup screen.
@@ -263,16 +234,8 @@ class _SignInMethodSelectionScreenState
 /// Plan B — all sign-in options including passkey as a row.
 class _PlanB extends StatelessWidget {
   const _PlanB({
-    required this.onSocial,
-    required this.onComingSoon,
     required this.onPasskey,
   });
-
-  /// Live providers (Google / Facebook) — starts the OAuth browser flow.
-  final Future<void> Function(String provider) onSocial;
-
-  /// Not-yet-live providers (Apple) — shows a "coming soon" notice.
-  final void Function(String provider) onComingSoon;
 
   /// Triggers usernameless passkey authentication. Null while busy.
   final VoidCallback? onPasskey;
@@ -336,46 +299,12 @@ class _PlanB extends StatelessWidget {
         // ),
         // const SizedBox(height: DesignTokens.s24),
 
-        // Divider
-        Row(
-          children: [
-            const Expanded(
-              child: Divider(color: DesignTokens.borderDefault, height: 1),
-            ),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
-              child: Text(
-                'Or Continue With',
-                style: DesignTokens.smallRegular
-                    .copyWith(color: DesignTokens.textLight),
-              ),
-            ),
-            const Expanded(
-              child: Divider(color: DesignTokens.borderDefault, height: 1),
-            ),
-          ],
-        ),
-        const SizedBox(height: DesignTokens.s24),
-
-        // Social — Google + Facebook are live; Apple is a stub.
-        _SocialButton(
-          assetPath: 'assets/icons/apple.svg',
-          label: 'Apple ID',
-          onTap: () => onComingSoon('Apple'),
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _SocialButton(
-          assetPath: 'assets/icons/facebook.svg',
-          label: 'Facebook ID',
-          onTap: () => onSocial('Facebook'),
-        ),
-        const SizedBox(height: DesignTokens.s16),
-        _SocialButton(
-          assetPath: 'assets/icons/google.svg',
-          label: 'Google ID',
-          onTap: () => onSocial('Google'),
-        ),
+        // Social sign-in (Apple/Facebook/Google) is hidden: the backend has
+        // no real OAuth adapters wired yet (NoOpOAuthProviderClient stubs
+        // out to a non-existent domain — confirmed live, DNS_PROBE_FINISHED
+        // _NXDOMAIN), so every one of these buttons was a guaranteed dead
+        // end. Re-add once real Google/Facebook/Apple OAuth credentials are
+        // wired into IOAuthProviderClient.
       ],
     );
   }
@@ -470,43 +399,6 @@ class _MethodRow extends StatelessWidget {
               size: DesignTokens.iconSmall,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Full-width gray pill social button: [logo] [label].
-class _SocialButton extends StatelessWidget {
-  final String assetPath;
-  final String label;
-  final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.assetPath,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: DesignTokens.buttonHeight,
-      child: Material(
-        color: DesignTokens.buttonGrayFill,
-        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(assetPath, width: 20, height: 20),
-              const SizedBox(width: DesignTokens.s8),
-              Text(label, style: DesignTokens.oneLinerSemibold),
-            ],
-          ),
         ),
       ),
     );
