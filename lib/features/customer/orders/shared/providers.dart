@@ -81,3 +81,8 @@ final cancelOrderControllerProvider =
     >(
       (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
     );
+
+final reorderSuggestionsNotifierProvider = StateNotifierProvider.autoDispose<
+    ReorderSuggestionsNotifier, ReorderSuggestionsState>(
+  (ref) => ReorderSuggestionsNotifier(ref.watch(ordersRepositoryProvider)),
+);

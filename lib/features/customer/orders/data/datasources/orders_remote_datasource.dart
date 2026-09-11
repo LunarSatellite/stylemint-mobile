@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
 
 /// Remote datasource for customer orders. Throws on failure; the repository
@@ -40,6 +41,22 @@ class OrdersRemoteDataSource {
   Future<OrderInvoiceDto> getOrderInvoice(String orderNumber) async {
     final response = await apiClient.get('/v1/orders/$orderNumber/invoice');
     return OrderInvoiceDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/customer/reorder-suggestions` — "Buy It Again" predictions.
+  /// Returns a raw JSON array (the controller returns
+  /// `OkObjectResult(result.Value)` for the list, not an `{items:}` wrapper).
+  Future<List<ReorderSuggestionDto>> getReorderSuggestions() async {
+    final response = await apiClient.get('/v1/customer/reorder-suggestions');
+    return (response as List<dynamic>)
+        .map((e) => ReorderSuggestionDto.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
+  }
+
+  /// DELETE `/v1/customer/reorder-suggestions/{productId}` — dismiss one
+  /// suggestion so it stops resurfacing until the next purchase cycle.
+  Future<void> dismissReorderSuggestion(String productId) async {
+    await apiClient.authDelete('/v1/customer/reorder-suggestions/$productId');
   }
 
   /// POST `/v1/orders/{orderNumber}/cancel` — cancel an order.

@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
@@ -33,5 +34,12 @@ abstract interface class OrdersRepository {
 
   Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
     String filePath,
+  );
+
+  Future<Either<NetworkExceptions, List<ReorderSuggestionDto>>>
+      getReorderSuggestions();
+
+  Future<Either<NetworkExceptions, Unit>> dismissReorderSuggestion(
+    String productId,
   );
 }

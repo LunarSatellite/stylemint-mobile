@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
@@ -161,6 +162,47 @@ class OrdersRepositoryImpl implements OrdersRepository {
     try {
       final url = await remoteDataSource.uploadReturnPhoto(filePath);
       return right(url);
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } else if (e is NetworkExceptions) {
+        return left(e);
+      } else {
+        return left(NetworkExceptions.unexpectedError());
+      }
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<ReorderSuggestionDto>>>
+      getReorderSuggestions() async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final suggestions = await remoteDataSource.getReorderSuggestions();
+      return right(suggestions);
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } else if (e is NetworkExceptions) {
+        return left(e);
+      } else {
+        return left(NetworkExceptions.unexpectedError());
+      }
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> dismissReorderSuggestion(
+    String productId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.dismissReorderSuggestion(productId);
+      return right(unit);
     } catch (e) {
       if (e is DioException) {
         return left(NetworkExceptions.server(e.message.toString()));

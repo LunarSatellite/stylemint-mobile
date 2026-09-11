@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
@@ -39,6 +40,59 @@ class TrackOrdersNotifier extends StateNotifier<TrackOrdersState> {
     state = either.fold(
       TrackOrdersState.loadFailure,
       TrackOrdersState.loadSuccess,
+    );
+  }
+}
+
+@freezed
+abstract class ReorderSuggestionsState with _$ReorderSuggestionsState {
+  const ReorderSuggestionsState._();
+
+  const factory ReorderSuggestionsState.initial() = _ReorderInitial;
+  const factory ReorderSuggestionsState.loadInProgress() =
+      _ReorderLoadInProgress;
+  const factory ReorderSuggestionsState.loadSuccess(
+    List<ReorderSuggestionDto> suggestions,
+  ) = _ReorderLoadSuccess;
+  const factory ReorderSuggestionsState.loadFailure(
+    NetworkExceptions failure,
+  ) = _ReorderLoadFailure;
+}
+
+/// "Buy It Again" — surfaces the backend's nightly purchase-cadence
+/// predictions (Orders module `PredictiveReorder` / skill's reorder-
+/// prediction job) on the customer's Orders screen.
+class ReorderSuggestionsNotifier
+    extends StateNotifier<ReorderSuggestionsState> {
+  ReorderSuggestionsNotifier(this._repository)
+    : super(const ReorderSuggestionsState.initial()) {
+    unawaited(load());
+  }
+
+  final OrdersRepository _repository;
+
+  Future<void> load() async {
+    state = const ReorderSuggestionsState.loadInProgress();
+    final either = await _repository.getReorderSuggestions();
+    state = either.fold(
+      ReorderSuggestionsState.loadFailure,
+      ReorderSuggestionsState.loadSuccess,
+    );
+  }
+
+  /// Optimistically removes the card, then confirms with the backend so a
+  /// dismissed suggestion doesn't immediately resurface if the user
+  /// navigates away and back before the next nightly recompute.
+  Future<void> dismiss(String productId) async {
+    final current = state;
+    if (current is! _ReorderLoadSuccess) return;
+    state = ReorderSuggestionsState.loadSuccess(
+      current.suggestions.where((s) => s.productId != productId).toList(),
+    );
+    final either = await _repository.dismissReorderSuggestion(productId);
+    either.match(
+      (_) {}, // best-effort — the optimistic removal already stands.
+      (_) {},
     );
   }
 }
