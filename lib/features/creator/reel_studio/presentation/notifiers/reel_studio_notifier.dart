@@ -71,12 +71,9 @@ class ReelStudioNotifier extends StateNotifier<ReelStudioState> {
     unawaited(load());
   }
 
-  Future<ReelDraft?> requestCoaching(String draftId) async {
+  Future<CoachingFeedback?> requestCoaching(String draftId) async {
     final either = await _repository.requestCoaching(draftId);
-    return either.fold((_) => null, (draft) {
-      unawaited(load());
-      return draft;
-    });
+    return either.fold((_) => null, (feedback) => feedback);
   }
 }
 
@@ -90,6 +87,8 @@ class CreateDraftNotifier extends StateNotifier<CreateDraftState> {
   /// rather than starting a new one — routes save() to updateDraft instead
   /// of createDraft. Reset by [reset] whenever a fresh draft is started.
   String? _editingDraftId;
+
+  bool get isEditingExisting => _editingDraftId != null;
 
   /// Seeds the editor with an existing draft's values ahead of navigating
   /// to Create Draft, so tapping a saved draft actually opens it instead of

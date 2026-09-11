@@ -74,9 +74,11 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s24,
+        padding: EdgeInsets.fromLTRB(
+          DesignTokens.s16,
+          DesignTokens.s24,
+          DesignTokens.s16,
+          DesignTokens.s24 + MediaQuery.paddingOf(context).bottom,
         ),
         child: Column(
           children: [

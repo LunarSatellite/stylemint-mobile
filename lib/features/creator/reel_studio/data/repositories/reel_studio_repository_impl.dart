@@ -174,7 +174,9 @@ class ReelStudioRepositoryImpl implements ReelStudioRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, ReelDraft>> requestCoaching(String draftId) async {
+  Future<Either<NetworkExceptions, CoachingFeedback>> requestCoaching(
+    String draftId,
+  ) async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.requestCoaching(

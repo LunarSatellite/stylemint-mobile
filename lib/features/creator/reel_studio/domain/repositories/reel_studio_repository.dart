@@ -35,7 +35,9 @@ abstract interface class ReelStudioRepository {
 
   Future<Either<NetworkExceptions, Unit>> deleteDraft(String draftId);
 
-  Future<Either<NetworkExceptions, ReelDraft>> requestCoaching(String draftId);
+  Future<Either<NetworkExceptions, CoachingFeedback>> requestCoaching(
+    String draftId,
+  );
 
   // ── Studio insight reads ────────────────────────────────────────────────
   // Read-only AI-derived surfaces. They go through the repository like every

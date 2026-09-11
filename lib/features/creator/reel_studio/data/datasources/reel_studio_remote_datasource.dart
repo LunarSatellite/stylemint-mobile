@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_studio/data/models/reel_studio_briefing_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/data/models/reel_studio_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/data/models/reel_studio_extras_dto.dart';
 
@@ -139,7 +140,7 @@ class ReelStudioRemoteDataSource {
     );
   }
 
-  Future<ReelDraftDto> requestCoaching(
+  Future<ReelStudioBriefingDto> requestCoaching(
     String draftId,
     String idempotencyKey,
   ) async {
@@ -151,6 +152,6 @@ class ReelStudioRemoteDataSource {
         'Idempotency-Key': idempotencyKey,
       }),
     );
-    return ReelDraftDto.fromJson(response as Map<String, dynamic>);
+    return ReelStudioBriefingDto.fromJson(response as Map<String, dynamic>);
   }
 }

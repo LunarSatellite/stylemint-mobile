@@ -39,20 +39,23 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
       _isAnalyzing = true;
       _analysisFailed = false;
     });
-    final analyzed = await ref
+    final coaching = await ref
         .read(reelStudioNotifierProvider.notifier)
         .requestCoaching(draftId);
     if (!mounted) return;
     setState(() {
       _isAnalyzing = false;
-      _coaching = analyzed?.coaching;
-      _analysisFailed = analyzed?.coaching == null;
+      _coaching = coaching;
+      _analysisFailed = coaching == null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(createDraftNotifierProvider);
+    final isEditing = ref
+        .read(createDraftNotifierProvider.notifier)
+        .isEditingExisting;
 
     ref.listen<CreateDraftState>(createDraftNotifierProvider, (_, next) {
       next.maybeWhen(
@@ -79,7 +82,10 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
-        title: const Text('Create Draft', style: DesignTokens.titleMedium),
+        title: Text(
+          isEditing ? 'Edit Draft' : 'Create Draft',
+          style: DesignTokens.titleMedium,
+        ),
         actions: [
           if (_coaching != null || _analysisFailed)
             TextButton(
@@ -100,7 +106,12 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(DesignTokens.s16),
+            padding: EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16 + MediaQuery.paddingOf(context).bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
