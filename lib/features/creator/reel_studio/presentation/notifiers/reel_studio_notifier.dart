@@ -89,6 +89,7 @@ class CreateDraftNotifier extends StateNotifier<CreateDraftState> {
   String? _editingDraftId;
 
   bool get isEditingExisting => _editingDraftId != null;
+  String? get editingDraftId => _editingDraftId;
 
   /// Seeds the editor with an existing draft's values ahead of navigating
   /// to Create Draft, so tapping a saved draft actually opens it instead of

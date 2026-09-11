@@ -60,7 +60,7 @@ final collabSuggestionsProvider =
     );
 
 // ignore: specify_nonobvious_property_types
-final dropPartyPromptProvider = FutureProvider.autoDispose<DropPartyPrompt>(
+final dropPartyPromptProvider = FutureProvider.autoDispose<DropPartyPrompt?>(
   (ref) async => _orThrow(
     await ref.watch(reelStudioRepositoryProvider).getDropPartyPrompt(),
   ),

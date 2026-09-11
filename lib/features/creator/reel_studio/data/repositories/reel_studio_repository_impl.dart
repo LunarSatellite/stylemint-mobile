@@ -32,7 +32,31 @@ class ReelStudioRepositoryImpl implements ReelStudioRepository {
           limit: limit,
           cursor: cursor,
         );
-        return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+        return right(
+          dtos
+              .map(
+                (dto) => ReelRecipe(
+                  id: dto.recipeId,
+                  title: dto.title,
+                  description: dto.fromBrand
+                      ? 'Recipe attached by a brand partner'
+                      : 'Creator recipe',
+                  hashtags: const <String>[],
+                  suggestedMusic: [
+                    dto.songTitle,
+                    dto.songArtist,
+                  ].where((part) => part.trim().isNotEmpty).join(' · '),
+                  platform: SocialPlatform.instagram,
+                  recipeVersion: dto.recipeVersion,
+                  songTitle: dto.songTitle,
+                  songArtist: dto.songArtist,
+                  intendedDurationSeconds: dto.intendedDurationSeconds,
+                  thumbnailUrl: dto.thumbnailUrl,
+                  fromBrand: dto.fromBrand,
+                ),
+              )
+              .toList(growable: false),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -201,24 +225,23 @@ class ReelStudioRepositoryImpl implements ReelStudioRepository {
   @override
   Future<Either<NetworkExceptions, List<CoachingTip>>> getCoachingTips(
     String draftId,
-  ) =>
-      _guard(() async {
-        final dtos = await remoteDataSource.getCoachingTips(draftId);
-        return dtos.map((d) => d.toDomain()).toList(growable: false);
-      });
+  ) => _guard(() async {
+    final dtos = await remoteDataSource.getCoachingTips(draftId);
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
   Future<Either<NetworkExceptions, List<CollabSuggestion>>>
-      getCollabSuggestions() => _guard(() async {
-            final dtos = await remoteDataSource.getCollabSuggestions();
-            return dtos.map((d) => d.toDomain()).toList(growable: false);
-          });
+  getCollabSuggestions() => _guard(() async {
+    final dtos = await remoteDataSource.getCollabSuggestions();
+    return dtos.map((d) => d.toDomain()).toList(growable: false);
+  });
 
   @override
-  Future<Either<NetworkExceptions, DropPartyPrompt>> getDropPartyPrompt() =>
+  Future<Either<NetworkExceptions, DropPartyPrompt?>> getDropPartyPrompt() =>
       _guard(() async {
         final dto = await remoteDataSource.getDropPartyPrompt();
-        return dto.toDomain();
+        return dto?.toDomain();
       });
 
   @override

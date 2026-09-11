@@ -134,77 +134,192 @@ extension TagNudgeDtoMapper on TagNudgeDto {
   );
 }
 
+class ReelRecipeCardDto {
+  const ReelRecipeCardDto({
+    required this.recipeId,
+    required this.recipeVersion,
+    required this.title,
+    required this.songTitle,
+    required this.songArtist,
+    required this.intendedDurationSeconds,
+    required this.fromBrand,
+    this.thumbnailUrl,
+  });
+
+  final String recipeId;
+  final int recipeVersion;
+  final String title;
+  final String songTitle;
+  final String songArtist;
+  final int intendedDurationSeconds;
+  final String? thumbnailUrl;
+  final bool fromBrand;
+
+  factory ReelRecipeCardDto.fromJson(
+    Map<String, dynamic> json, {
+    required bool fromBrand,
+  }) => ReelRecipeCardDto(
+    recipeId: json['recipeId']?.toString() ?? '',
+    recipeVersion: (json['recipeVersion'] as num?)?.toInt() ?? 1,
+    title: json['title']?.toString() ?? '',
+    songTitle: json['songTitle']?.toString() ?? '',
+    songArtist: json['songArtist']?.toString() ?? '',
+    intendedDurationSeconds:
+        (json['intendedDurationSeconds'] as num?)?.toInt() ?? 0,
+    thumbnailUrl: switch (json['thumbnailUrl']?.toString().trim()) {
+      final String value when value.isNotEmpty => value,
+      _ => null,
+    },
+    fromBrand: json['fromBrand'] as bool? ?? fromBrand,
+  );
+}
+
+class LaunchpadJourneyDto {
+  const LaunchpadJourneyDto({
+    required this.currentPhase,
+    required this.totalReelsPublished,
+    required this.totalRevenue,
+    required this.totalFollowers,
+    required this.totalPartnerships,
+    required this.nextMilestoneProgress,
+  });
+
+  final String currentPhase;
+  final int totalReelsPublished;
+  final double totalRevenue;
+  final int totalFollowers;
+  final int totalPartnerships;
+  final Map<String, double> nextMilestoneProgress;
+
+  factory LaunchpadJourneyDto.fromJson(
+    Map<String, dynamic> json,
+  ) => LaunchpadJourneyDto(
+    currentPhase: json['currentPhase']?.toString() ?? '',
+    totalReelsPublished: (json['totalReelsPublished'] as num?)?.toInt() ?? 0,
+    totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0,
+    totalFollowers: (json['totalFollowers'] as num?)?.toInt() ?? 0,
+    totalPartnerships: (json['totalPartnerships'] as num?)?.toInt() ?? 0,
+    nextMilestoneProgress: ((json['nextMilestoneProgress'] as Map?) ?? const {})
+        .map<String, double>(
+          (key, value) => MapEntry(
+            key.toString(),
+            (value as num?)?.toDouble() ?? 0,
+          ),
+        ),
+  );
+}
+
 class LaunchpadMilestoneDto {
   const LaunchpadMilestoneDto({
     required this.key,
-    required this.title,
-    this.description,
+    required this.name,
+    required this.description,
+    required this.completionPercent,
     required this.isCompleted,
-    this.progressCurrent,
-    this.progressTarget,
   });
 
   final String key;
-  final String title;
-  final String? description;
+  final String name;
+  final String description;
+  final double completionPercent;
   final bool isCompleted;
-  final int? progressCurrent;
-  final int? progressTarget;
 
   factory LaunchpadMilestoneDto.fromJson(Map<String, dynamic> json) =>
       LaunchpadMilestoneDto(
         key: json['key'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        description: json['description'] as String?,
+        name: json['name'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        completionPercent: (json['completionPercent'] as num?)?.toDouble() ?? 0,
         isCompleted: json['isCompleted'] as bool? ?? false,
-        progressCurrent: (json['progressCurrent'] as num?)?.toInt(),
-        progressTarget: (json['progressTarget'] as num?)?.toInt(),
       );
 }
 
-class LaunchpadNextStepDto {
-  const LaunchpadNextStepDto({
-    required this.key,
-    required this.headline,
-    this.body,
-    this.actionRoute,
+class LaunchpadLessonDto {
+  const LaunchpadLessonDto({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.content,
+    required this.readingTimeMinutes,
+    required this.difficultyLevel,
+    required this.unlockPhase,
   });
 
-  final String key;
-  final String headline;
-  final String? body;
-  final String? actionRoute;
+  final String id;
+  final String title;
+  final String category;
+  final String content;
+  final int readingTimeMinutes;
+  final int difficultyLevel;
+  final String unlockPhase;
 
-  factory LaunchpadNextStepDto.fromJson(Map<String, dynamic> json) =>
-      LaunchpadNextStepDto(
-        key: json['key'] as String? ?? '',
-        headline: json['headline'] as String? ?? '',
-        body: json['body'] as String?,
-        actionRoute: json['actionRoute'] as String?,
+  factory LaunchpadLessonDto.fromJson(Map<String, dynamic> json) =>
+      LaunchpadLessonDto(
+        id: json['id']?.toString() ?? '',
+        title: json['title'] as String? ?? '',
+        category: json['category'] as String? ?? '',
+        content: json['content'] as String? ?? '',
+        readingTimeMinutes: (json['readingTimeMinutes'] as num?)?.toInt() ?? 0,
+        difficultyLevel: (json['difficultyLevel'] as num?)?.toInt() ?? 1,
+        unlockPhase: json['unlockPhase'] as String? ?? '',
+      );
+}
+
+class LaunchpadForecastDto {
+  const LaunchpadForecastDto({
+    required this.projectedMonthlyEarnings,
+    required this.projectedMonthLabel,
+    required this.growthRatePercent,
+    required this.projectedReels,
+    required this.projectedFollowers,
+    required this.recommendation,
+  });
+
+  final double projectedMonthlyEarnings;
+  final String projectedMonthLabel;
+  final double growthRatePercent;
+  final int projectedReels;
+  final int projectedFollowers;
+  final String recommendation;
+
+  factory LaunchpadForecastDto.fromJson(Map<String, dynamic> json) =>
+      LaunchpadForecastDto(
+        projectedMonthlyEarnings:
+            (json['projectedMonthlyEarnings'] as num?)?.toDouble() ?? 0,
+        projectedMonthLabel: json['projectedMonthLabel'] as String? ?? '',
+        growthRatePercent: (json['growthRatePercent'] as num?)?.toDouble() ?? 0,
+        projectedReels: (json['projectedReels'] as num?)?.toInt() ?? 0,
+        projectedFollowers: (json['projectedFollowers'] as num?)?.toInt() ?? 0,
+        recommendation: json['recommendation'] as String? ?? '',
       );
 }
 
 class LaunchpadDto {
   const LaunchpadDto({
-    required this.level,
-    required this.totalPoints,
+    required this.journey,
     required this.milestones,
-    required this.nextSteps,
+    required this.lessons,
+    this.forecast,
   });
 
-  final String level;
-  final int totalPoints;
+  final LaunchpadJourneyDto journey;
   final List<LaunchpadMilestoneDto> milestones;
-  final List<LaunchpadNextStepDto> nextSteps;
+  final List<LaunchpadLessonDto> lessons;
+  final LaunchpadForecastDto? forecast;
 
   factory LaunchpadDto.fromJson(Map<String, dynamic> json) => LaunchpadDto(
-    level: json['level'] as String? ?? '',
-    totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
+    journey: LaunchpadJourneyDto.fromJson(
+      (json['journey'] as Map?)?.cast<String, dynamic>() ?? const {},
+    ),
     milestones: (json['milestones'] as List<dynamic>? ?? const [])
         .map((e) => LaunchpadMilestoneDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false),
-    nextSteps: (json['nextSteps'] as List<dynamic>? ?? const [])
-        .map((e) => LaunchpadNextStepDto.fromJson(e as Map<String, dynamic>))
+    lessons: (json['lessons'] as List<dynamic>? ?? const [])
+        .map((e) => LaunchpadLessonDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false),
+    forecast: switch ((json['forecast'] as Map?)?.cast<String, dynamic>()) {
+      final Map<String, dynamic> value => LaunchpadForecastDto.fromJson(value),
+      _ => null,
+    },
   );
 }

@@ -9,23 +9,31 @@ class ReelStudioRemoteDataSource {
 
   final ApiClient apiClient;
 
-  Future<List<ReelRecipeDto>> getRecipes({
+  Future<List<ReelRecipeCardDto>> getRecipes({
     String? platform,
     int limit = 20,
     String? cursor,
   }) async {
     final response = await apiClient.get(
       '/v1/creator/studio/recipes',
-      queryParameters: {
-        if (platform != null) 'platform': platform,
-        'limit': limit,
-        if (cursor != null) 'cursor': cursor,
-      },
+      queryParameters: {'max': limit},
     );
-    final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => ReelRecipeDto.fromJson(e as Map<String, dynamic>))
+    final payload = (response as Map<Object?, Object?>).cast<String, dynamic>();
+    List<ReelRecipeCardDto> parse(
+      String key, {
+      required bool fromBrand,
+    }) => (payload[key] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (item) => ReelRecipeCardDto.fromJson(
+            (item as Map<Object?, Object?>).cast<String, dynamic>(),
+            fromBrand: fromBrand,
+          ),
+        )
         .toList(growable: false);
-    return items;
+    return <ReelRecipeCardDto>[
+      ...parse('fromTheBrand', fromBrand: true),
+      ...parse('generic', fromBrand: false),
+    ];
   }
 
   Future<CoachingFeedbackDto> getCoachingFeedback(String draftId) async {
@@ -54,10 +62,11 @@ class ReelStudioRemoteDataSource {
         .toList(growable: false);
   }
 
-  Future<DropPartyPromptDto> getDropPartyPrompt() async {
+  Future<DropPartyPromptDto?> getDropPartyPrompt() async {
     final response = await apiClient.get(
       '/v1/creator/studio/drop-party-prompt',
     );
+    if (response == null) return null;
     return DropPartyPromptDto.fromJson(response as Map<String, dynamic>);
   }
 
@@ -90,10 +99,12 @@ class ReelStudioRemoteDataSource {
         'taggedProductIds': taggedProductIds,
         'platform': platform,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return ReelDraftDto.fromJson(response as Map<String, dynamic>);
   }
@@ -114,17 +125,20 @@ class ReelStudioRemoteDataSource {
         if (taggedProductIds != null) 'taggedProductIds': taggedProductIds,
         if (platform != null) 'platform': platform,
       },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return ReelDraftDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<List<ReelDraftDto>> getDrafts() async {
     final response = await apiClient.get('/v1/creator/studio/drafts');
-    final items = (response['items'] as List<dynamic>? ?? const <dynamic>[])
+    final payload = (response as Map<Object?, Object?>).cast<String, dynamic>();
+    final items = (payload['items'] as List<dynamic>? ?? const <dynamic>[])
         .map((e) => ReelDraftDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
     return items;
@@ -133,10 +147,12 @@ class ReelStudioRemoteDataSource {
   Future<void> deleteDraft(String draftId, String idempotencyKey) async {
     await apiClient.authDelete(
       '/v1/creator/studio/drafts/$draftId',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
   }
 
@@ -147,10 +163,12 @@ class ReelStudioRemoteDataSource {
     final response = await apiClient.post(
       '/v1/creator/studio/analyze',
       data: {'reelDraftId': draftId},
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
     return ReelStudioBriefingDto.fromJson(response as Map<String, dynamic>);
   }

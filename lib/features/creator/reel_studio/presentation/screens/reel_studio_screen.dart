@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/domain/entities/reel_studio.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/notifiers/reel_studio_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/widgets/studio_insights_section.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -49,19 +49,28 @@ class ReelStudioScreen extends ConsumerWidget {
           initial: _loader,
           loadInProgress: _loader,
           loadSuccess: (recipes, drafts) {
-            if (recipes.isEmpty && drafts.isEmpty) {
-              return const SmEmptyState(
-                message: 'No recipes or drafts yet.\nTap + to create one.',
-                icon: Icons.video_library_outlined,
-              );
-            }
             return RefreshIndicator(
               color: DesignTokens.primaryGreen,
-              onRefresh: () =>
-                  ref.read(reelStudioNotifierProvider.notifier).load(),
+              onRefresh: () async {
+                ref
+                  ..invalidate(launchpadProvider)
+                  ..invalidate(collabSuggestionsProvider)
+                  ..invalidate(dropPartyPromptProvider)
+                  ..invalidate(tagNudgesProvider);
+                await ref.read(reelStudioNotifierProvider.notifier).load();
+              },
               child: ListView(
-                padding: const EdgeInsets.all(DesignTokens.s16),
+                padding: EdgeInsets.fromLTRB(
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                  DesignTokens.s16,
+                  120 + MediaQuery.viewPaddingOf(context).bottom,
+                ),
                 children: [
+                  const StudioLaunchpadSection(),
+                  const SizedBox(height: DesignTokens.s24),
+                  const StudioIdeasSection(),
+                  const SizedBox(height: DesignTokens.s24),
                   if (drafts.isNotEmpty) ...[
                     _SectionHeader(
                       title: 'Your Drafts',
@@ -89,6 +98,13 @@ class ReelStudioScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: DesignTokens.s24),
+                  ] else ...[
+                    const _SectionHeader(title: 'Your Drafts', count: 0),
+                    const _EmptyCollectionCard(
+                      icon: Icons.video_library_outlined,
+                      message: 'No drafts yet. Tap New Draft to create one.',
+                    ),
+                    const SizedBox(height: DesignTokens.s24),
                   ],
                   if (recipes.isNotEmpty) ...[
                     _SectionHeader(
@@ -96,6 +112,13 @@ class ReelStudioScreen extends ConsumerWidget {
                       count: recipes.length,
                     ),
                     ...recipes.map((recipe) => _RecipeTile(recipe: recipe)),
+                  ] else ...[
+                    const _SectionHeader(title: 'Reel Recipes', count: 0),
+                    const _EmptyCollectionCard(
+                      icon: Icons.auto_awesome_outlined,
+                      message:
+                          'No brand or generic recipes match your creator profile yet.',
+                    ),
                   ],
                 ],
               ),
@@ -112,6 +135,37 @@ class ReelStudioScreen extends ConsumerWidget {
 
   Widget _loader() => const Center(
     child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
+  );
+}
+
+class _EmptyCollectionCard extends StatelessWidget {
+  const _EmptyCollectionCard({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    decoration: BoxDecoration(
+      color: DesignTokens.bgAppBody,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: DesignTokens.textMuted, size: 22),
+        const SizedBox(width: DesignTokens.s12),
+        Expanded(
+          child: Text(
+            message,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -280,8 +334,8 @@ class _RecipeTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.auto_awesome,
+              Icon(
+                recipe.fromBrand ? Icons.lock_outline : Icons.auto_awesome,
                 color: DesignTokens.primaryGreen,
                 size: 18,
               ),
@@ -294,46 +348,64 @@ class _RecipeTile extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(
-                recipe.platform.icon,
-                color: recipe.platform.color,
-                size: 18,
-              ),
+              if (recipe.intendedDurationSeconds > 0)
+                Text(
+                  _durationLabel(recipe.intendedDurationSeconds),
+                  style: DesignTokens.tiny,
+                ),
             ],
           ),
-          const SizedBox(height: DesignTokens.s8),
-          Text(recipe.description, style: DesignTokens.mediumRegular),
-          if (recipe.hashtags.isNotEmpty) ...[
+          if (recipe.suggestedMusic.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s8),
-            Wrap(
-              spacing: DesignTokens.s4,
-              runSpacing: DesignTokens.s4,
-              children: recipe.hashtags
-                  .map(
-                    (h) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: DesignTokens.s8,
-                        vertical: DesignTokens.s4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: DesignTokens.chipsSelectedFill,
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.chipRadius,
-                        ),
-                      ),
-                      child: Text(
-                        '#$h',
-                        style: DesignTokens.tiny.copyWith(
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
+            Row(
+              children: [
+                const Icon(
+                  Icons.music_note_outlined,
+                  color: DesignTokens.textMuted,
+                  size: 16,
+                ),
+                const SizedBox(width: DesignTokens.s4),
+                Expanded(
+                  child: Text(
+                    recipe.suggestedMusic,
+                    style: DesignTokens.smallRegular,
+                  ),
+                ),
+              ],
             ),
           ],
+          const SizedBox(height: DesignTokens.s8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s8,
+                vertical: DesignTokens.s4,
+              ),
+              decoration: BoxDecoration(
+                color: recipe.fromBrand
+                    ? DesignTokens.statusOngoingBg
+                    : DesignTokens.chipsSelectedFill,
+                borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+              ),
+              child: Text(
+                recipe.fromBrand ? 'From the brand' : 'Generic recipe',
+                style: DesignTokens.tiny.copyWith(
+                  color: recipe.fromBrand
+                      ? DesignTokens.statusOngoingIcon
+                      : DesignTokens.primaryGreen,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _durationLabel(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainder = (seconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$remainder';
   }
 }

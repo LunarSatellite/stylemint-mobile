@@ -27,6 +27,7 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
   bool _isAnalyzing = false;
   bool _analysisFailed = false;
   CoachingFeedback? _coaching;
+  String? _activeDraftId;
 
   @override
   void dispose() {
@@ -53,13 +54,16 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(createDraftNotifierProvider);
-    final isEditing = ref
-        .read(createDraftNotifierProvider.notifier)
-        .isEditingExisting;
+    final draftNotifier = ref.read(createDraftNotifierProvider.notifier);
+    final isEditing = draftNotifier.isEditingExisting;
+    _activeDraftId ??= draftNotifier.editingDraftId;
 
     ref.listen<CreateDraftState>(createDraftNotifierProvider, (_, next) {
       next.maybeWhen(
-        saved: (draft) => unawaited(_analyzeDraft(draft.id)),
+        saved: (draft) {
+          _activeDraftId = draft.id;
+          unawaited(_analyzeDraft(draft.id));
+        },
         saveFailure: (_) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to save draft')),
         ),
@@ -90,16 +94,19 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
           if (_coaching != null || _analysisFailed)
             TextButton(
               onPressed: () => context.pop(),
-              child: const Text('Done',
-                  style: TextStyle(color: DesignTokens.textLight)),
+              child: const Text(
+                'Done',
+                style: TextStyle(color: DesignTokens.textLight),
+              ),
             ),
           TextButton(
             onPressed: _isSaving
                 ? null
-                : () =>
-                    ref.read(createDraftNotifierProvider.notifier).save(),
-            child: const Text('Save',
-                style: TextStyle(color: DesignTokens.primaryGreen)),
+                : () => ref.read(createDraftNotifierProvider.notifier).save(),
+            child: const Text(
+              'Save',
+              style: TextStyle(color: DesignTokens.primaryGreen),
+            ),
           ),
         ],
       ),
@@ -127,8 +134,9 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
                     filled: true,
                     fillColor: DesignTokens.bgAppBody,
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.inputRadius,
+                      ),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -151,28 +159,30 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
                 const SizedBox(height: DesignTokens.s8),
                 Wrap(
                   spacing: DesignTokens.s8,
-                  children: SocialPlatform.values.map((platform) {
-                    final isSelected = platform == _platform;
-                    return ChoiceChip(
-                      label: Text(platform.displayName),
-                      selected: isSelected,
-                      onSelected: (val) {
-                        if (val) {
-                          _platform = platform;
-                          ref
-                              .read(createDraftNotifierProvider.notifier)
-                              .setPlatform(platform);
-                        }
-                      },
-                      selectedColor: DesignTokens.primaryGreen,
-                      backgroundColor: DesignTokens.bgAppBody,
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? DesignTokens.textDark
-                            : DesignTokens.textLight,
-                      ),
-                    );
-                  }).toList(growable: false),
+                  children: SocialPlatform.values
+                      .map((platform) {
+                        final isSelected = platform == _platform;
+                        return ChoiceChip(
+                          label: Text(platform.displayName),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            if (val) {
+                              _platform = platform;
+                              ref
+                                  .read(createDraftNotifierProvider.notifier)
+                                  .setPlatform(platform);
+                            }
+                          },
+                          selectedColor: DesignTokens.primaryGreen,
+                          backgroundColor: DesignTokens.bgAppBody,
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? DesignTokens.textDark
+                                : DesignTokens.textLight,
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
                 ),
                 const SizedBox(height: DesignTokens.s24),
                 _buildCoachingSection(),
@@ -210,10 +220,27 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
     }
     if (_coaching != null) {
       final coaching = _coaching!;
-      return CoachingScoreCard(
-        overallScore: coaching.overallScore,
-        areas: coaching.areas,
-        suggestions: coaching.suggestions,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoachingScoreCard(
+            overallScore: coaching.overallScore,
+            areas: coaching.areas,
+            suggestions: coaching.suggestions,
+            audioSuggestions: coaching.audioSuggestions,
+            captionVariants: coaching.captionVariants,
+            hashtagsReach: coaching.hashtagsReach,
+            hashtagsNiche: coaching.hashtagsNiche,
+            postTimeRecommendations: coaching.postTimeRecommendations,
+            predictedAudience: coaching.predictedAudience,
+            shelfLifePeakHours: coaching.shelfLifePeakHours,
+            shelfLifeTailHours: coaching.shelfLifeTailHours,
+          ),
+          if (_activeDraftId != null) ...[
+            const SizedBox(height: DesignTokens.s16),
+            _ProductionTips(draftId: _activeDraftId!),
+          ],
+        ],
       );
     }
     if (_analysisFailed) {
@@ -222,7 +249,9 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
         decoration: BoxDecoration(
           color: DesignTokens.bgAppBody,
           borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          border: Border.all(color: DesignTokens.colorError.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: DesignTokens.colorError.withValues(alpha: 0.3),
+          ),
         ),
         child: Text(
           'Could not analyze this draft. Save again to retry.',
@@ -231,5 +260,82 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+class _ProductionTips extends ConsumerWidget {
+  const _ProductionTips({required this.draftId});
+
+  final String draftId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tips = ref.watch(coachingTipsProvider(draftId));
+    return tips.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(DesignTokens.s8),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: DesignTokens.primaryGreen,
+          ),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Container(
+          key: const ValueKey('creator-production-tips'),
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          decoration: BoxDecoration(
+            color: DesignTokens.bgAppBody,
+            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.tips_and_updates_outlined,
+                    color: DesignTokens.primaryGreen,
+                    size: 20,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  Text('Production tips', style: DesignTokens.h3),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              ...items.map(
+                (tip) => Padding(
+                  padding: const EdgeInsets.only(bottom: DesignTokens.s8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (tip.category?.isNotEmpty ?? false)
+                        Text(
+                          tip.category!,
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.primaryGreen,
+                          ),
+                        ),
+                      if (tip.tip?.isNotEmpty ?? false)
+                        Text(tip.tip!, style: DesignTokens.smallRegular),
+                      if (tip.evidenceSummary?.isNotEmpty ?? false)
+                        Text(
+                          tip.evidenceSummary!,
+                          style: DesignTokens.tiny.copyWith(
+                            color: DesignTokens.textMuted,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
