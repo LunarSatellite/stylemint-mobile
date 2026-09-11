@@ -269,11 +269,15 @@ class _AddProductWizardScreenState
                     child: IndexedStack(
                       index: currentStep - 1,
                       children: _isEditMode
-                          ? const [
-                              Step1BasicInfoScreen(),
-                              Step2ImagesScreen(),
-                              Step3PricingScreen(),
-                              Step4ShippingScreen(),
+                          ? [
+                              const Step1BasicInfoScreen(),
+                              const Step2ImagesScreen(),
+                              const Step3PricingScreen(),
+                              Step4ShippingScreen(
+                                isFinalStep: true,
+                                saving: _saving,
+                                onSave: _saveChanges,
+                              ),
                             ]
                           : const [
                               Step1BasicInfoScreen(),

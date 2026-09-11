@@ -295,6 +295,40 @@ class PricingInfo {
   );
 }
 
+class ProductShippingOption {
+  const ProductShippingOption({
+    required this.kind,
+    required this.label,
+    required this.fee,
+    required this.estimatedDaysMin,
+    required this.estimatedDaysMax,
+  });
+
+  final int kind;
+  final String label;
+  final Money fee;
+  final int estimatedDaysMin;
+  final int estimatedDaysMax;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProductShippingOption &&
+      other.kind == kind &&
+      other.label == label &&
+      other.fee == fee &&
+      other.estimatedDaysMin == estimatedDaysMin &&
+      other.estimatedDaysMax == estimatedDaysMax;
+
+  @override
+  int get hashCode => Object.hash(
+    kind,
+    label,
+    fee,
+    estimatedDaysMin,
+    estimatedDaysMax,
+  );
+}
+
 class ShippingInfo {
   const ShippingInfo({
     required this.weight,
@@ -307,6 +341,10 @@ class ShippingInfo {
     this.freeShippingOver,
     required this.deliveryEstimateMin,
     required this.deliveryEstimateMax,
+    this.shipsFromAddressId,
+    this.shipsFromLabel,
+    this.processingTimeDays = 1,
+    this.shippingOptions = const [],
   });
 
   final double weight;
@@ -319,6 +357,10 @@ class ShippingInfo {
   final Money? freeShippingOver;
   final int deliveryEstimateMin;
   final int deliveryEstimateMax;
+  final String? shipsFromAddressId;
+  final String? shipsFromLabel;
+  final int processingTimeDays;
+  final List<ProductShippingOption> shippingOptions;
 
   ShippingInfo copyWith({
     double? weight,
@@ -331,6 +373,10 @@ class ShippingInfo {
     Money? freeShippingOver,
     int? deliveryEstimateMin,
     int? deliveryEstimateMax,
+    String? shipsFromAddressId,
+    String? shipsFromLabel,
+    int? processingTimeDays,
+    List<ProductShippingOption>? shippingOptions,
   }) {
     return ShippingInfo(
       weight: weight ?? this.weight,
@@ -343,6 +389,10 @@ class ShippingInfo {
       freeShippingOver: freeShippingOver ?? this.freeShippingOver,
       deliveryEstimateMin: deliveryEstimateMin ?? this.deliveryEstimateMin,
       deliveryEstimateMax: deliveryEstimateMax ?? this.deliveryEstimateMax,
+      shipsFromAddressId: shipsFromAddressId ?? this.shipsFromAddressId,
+      shipsFromLabel: shipsFromLabel ?? this.shipsFromLabel,
+      processingTimeDays: processingTimeDays ?? this.processingTimeDays,
+      shippingOptions: shippingOptions ?? this.shippingOptions,
     );
   }
 
@@ -358,7 +408,11 @@ class ShippingInfo {
       other.shippingFee == shippingFee &&
       other.freeShippingOver == freeShippingOver &&
       other.deliveryEstimateMin == deliveryEstimateMin &&
-      other.deliveryEstimateMax == deliveryEstimateMax;
+      other.deliveryEstimateMax == deliveryEstimateMax &&
+      other.shipsFromAddressId == shipsFromAddressId &&
+      other.shipsFromLabel == shipsFromLabel &&
+      other.processingTimeDays == processingTimeDays &&
+      _listEquals(other.shippingOptions, shippingOptions);
 
   @override
   int get hashCode => Object.hash(
@@ -372,7 +426,20 @@ class ShippingInfo {
     freeShippingOver,
     deliveryEstimateMin,
     deliveryEstimateMax,
+    shipsFromAddressId,
+    shipsFromLabel,
+    processingTimeDays,
+    Object.hashAll(shippingOptions),
   );
+
+  static bool _listEquals<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var index = 0; index < a.length; index++) {
+      if (a[index] != b[index]) return false;
+    }
+    return true;
+  }
 }
 
 class ReviewInfo {
@@ -525,7 +592,15 @@ class ProductFormState {
 
   bool get isStep3Valid => step3 != null;
 
-  bool get isStep4Valid => step4 != null;
+  bool get isStep4Valid =>
+      step4 != null &&
+      step4!.shipsFromAddressId?.isNotEmpty == true &&
+      step4!.weight > 0 &&
+      step4!.dimensionsLength > 0 &&
+      step4!.dimensionsWidth > 0 &&
+      step4!.dimensionsHeight > 0 &&
+      step4!.processingTimeDays > 0 &&
+      step4!.shippingOptions.isNotEmpty;
 
   bool get isValid =>
       isStep1Valid && isStep2Valid && isStep3Valid && isStep4Valid;

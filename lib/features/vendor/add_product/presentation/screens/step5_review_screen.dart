@@ -85,24 +85,12 @@ class Step5ReviewScreen extends ConsumerWidget {
         ? effectivePrice * commissionRate / 100
         : null;
 
-    // Shipping options text
-    final shippingOptions = <String>[];
-    if (shipping.deliveryEstimateMin >= 5) {
-      shippingOptions.add('Standard (5-7 days) - FREE');
-    }
-    if (shipping.deliveryEstimateMin <= 3 &&
-        shipping.deliveryEstimateMax <= 3) {
-      shippingOptions.add('Express (2-3 days) - Rs 500');
-    }
-    if (shipping.deliveryEstimateMin == 1) {
-      shippingOptions.add('Overnight (1 day) - Rs 800');
-    }
-    if (shippingOptions.isEmpty) {
-      shippingOptions.add(
-        '${shipping.deliveryEstimateMin}'
-        '-${shipping.deliveryEstimateMax} days',
-      );
-    }
+    final shippingOptions = shipping.shippingOptions.isNotEmpty
+        ? shipping.shippingOptions.map((option) => option.label).toList()
+        : [
+            '${shipping.deliveryEstimateMin}'
+                '-${shipping.deliveryEstimateMax} days',
+          ];
 
     return Column(
       children: [
@@ -263,8 +251,15 @@ class Step5ReviewScreen extends ConsumerWidget {
                       label: 'Shipping Options',
                       value: shippingOptions.join(', '),
                     ),
-                    const _DataRow(label: 'Ships From', value: '-'),
-                    const _DataRow(label: 'Processing Time', value: '-'),
+                    _DataRow(
+                      label: 'Ships From',
+                      value: shipping.shipsFromLabel ?? '-',
+                    ),
+                    _DataRow(
+                      label: 'Processing Time',
+                      value: '${shipping.processingTimeDays} business '
+                          'day${shipping.processingTimeDays == 1 ? '' : 's'}',
+                    ),
                   ],
                 ),
                 const SizedBox(height: DesignTokens.s16),

@@ -58,9 +58,28 @@ const _shipping = ShippingInfo(
   dimensionsWidth: 8,
   dimensionsHeight: 4,
   requiresShipping: true,
-  shippingFee: Money(amount: 0, currency: 'NPR'),
-  deliveryEstimateMin: 5,
+  shippingFee: Money(amount: 500, currency: 'NPR'),
+  deliveryEstimateMin: 2,
   deliveryEstimateMax: 7,
+  shipsFromAddressId: 'dispatch-address-id',
+  shipsFromLabel: 'Warehouse — Kathmandu',
+  processingTimeDays: 2,
+  shippingOptions: [
+    ProductShippingOption(
+      kind: 1,
+      label: 'Standard (5-7 days) - FREE',
+      fee: Money(amount: 0, currency: 'NPR'),
+      estimatedDaysMin: 5,
+      estimatedDaysMax: 7,
+    ),
+    ProductShippingOption(
+      kind: 2,
+      label: 'Express (2-3 days) - Rs 500',
+      fee: Money(amount: 500, currency: 'NPR'),
+      estimatedDaysMin: 2,
+      estimatedDaysMax: 3,
+    ),
+  ],
 );
 
 ProductDraft _draft({String id = ''}) => ProductDraft(
@@ -220,6 +239,11 @@ void main() {
       expect(shipping['lengthCm'], 30);
       expect(shipping['widthCm'], 20);
       expect(shipping['heightCm'], 10);
+      expect(shipping['shipsFromAddressId'], 'dispatch-address-id');
+      expect(shipping['processingTimeDays'], 2);
+      final options = shipping['shippingOptions'] as List<dynamic>;
+      expect(options, hasLength(2));
+      expect(options.map((option) => option['kind']), [1, 2]);
 
       clearInteractions(remote);
       await repository.submitDraft(

@@ -189,21 +189,32 @@ class AddProductRepositoryImpl implements AddProductRepository {
       'lbs' || 'lb' => (s.weight * poundsToGrams).round(),
       _ => s.weight.round(),
     };
+    final options = s.shippingOptions.isNotEmpty
+        ? s.shippingOptions
+        : [
+            ProductShippingOption(
+              kind: 1,
+              label: 'Standard',
+              fee: s.shippingFee ?? const Money(amount: 0, currency: 'NPR'),
+              estimatedDaysMin: s.deliveryEstimateMin,
+              estimatedDaysMax: s.deliveryEstimateMax,
+            ),
+          ];
     return {
-      'processingTimeDays': s.deliveryEstimateMin,
-      'shipsFromAddressId': null,
+      'processingTimeDays': s.processingTimeDays,
+      'shipsFromAddressId': s.shipsFromAddressId,
       'weightGrams': grams,
       'lengthCm': (s.dimensionsLength * inchesToCentimeters).round(),
       'widthCm': (s.dimensionsWidth * inchesToCentimeters).round(),
       'heightCm': (s.dimensionsHeight * inchesToCentimeters).round(),
       'shippingOptions': [
-        if (s.requiresShipping)
+        for (final option in options)
           {
-            'kind': 1, // ShippingOptionKind.Standard
-            'feeAmount': s.shippingFee?.amount ?? 0,
-            'feeCurrency': s.shippingFee?.currency ?? 'NPR',
-            'estimatedDaysMin': s.deliveryEstimateMin,
-            'estimatedDaysMax': s.deliveryEstimateMax,
+            'kind': option.kind,
+            'feeAmount': option.fee.amount,
+            'feeCurrency': option.fee.currency,
+            'estimatedDaysMin': option.estimatedDaysMin,
+            'estimatedDaysMax': option.estimatedDaysMax,
           },
       ],
     };
@@ -243,6 +254,26 @@ class AddProductRepositoryImpl implements AddProductRepository {
       final firstShipping = shippingOptions.isEmpty
           ? null
           : shippingOptions.first;
+      final parsedShippingOptions = shippingOptions
+          .map(
+            (option) => ProductShippingOption(
+              kind: option['kind'] as int? ?? 1,
+              label: switch (option['kind'] as int? ?? 1) {
+                2 => 'Express',
+                3 => 'Pickup',
+                _ => 'Standard',
+              },
+              fee: Money(
+                amount: (option['feeAmount'] as num? ?? 0).toDouble(),
+                currency: option['feeCurrency'] as String? ?? 'NPR',
+              ),
+              estimatedDaysMin:
+                  option['estimatedDaysMin'] as int? ?? 1,
+              estimatedDaysMax:
+                  option['estimatedDaysMax'] as int? ?? 3,
+            ),
+          )
+          .toList(growable: false);
       final video = data['video'] as Map<String, dynamic>?;
 
       final priceCurrency = variant['priceCurrency'] as String? ?? 'NPR';
@@ -326,6 +357,9 @@ class AddProductRepositoryImpl implements AddProductRepository {
                 ),
           deliveryEstimateMin: firstShipping?['estimatedDaysMin'] as int? ?? 1,
           deliveryEstimateMax: firstShipping?['estimatedDaysMax'] as int? ?? 3,
+          shipsFromAddressId: data['shipsFromAddressId'] as String?,
+          processingTimeDays: data['processingTimeDays'] as int? ?? 1,
+          shippingOptions: parsedShippingOptions,
         ),
       );
     });

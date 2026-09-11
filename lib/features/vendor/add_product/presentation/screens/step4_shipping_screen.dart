@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/notifiers/shipping_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class Step4ShippingScreen extends ConsumerStatefulWidget {
-  const Step4ShippingScreen({super.key});
+  const Step4ShippingScreen({
+    this.isFinalStep = false,
+    this.saving = false,
+    this.onSave,
+    super.key,
+  });
+
+  final bool isFinalStep;
+  final bool saving;
+  final Future<void> Function()? onSave;
 
   @override
   ConsumerState<Step4ShippingScreen> createState() =>
@@ -20,20 +35,15 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
   late TextEditingController _widthController;
   late TextEditingController _heightController;
 
-  // Shipping options â€” multi-select
   bool _standard = true;
   bool _express = false;
-  bool _overnight = false;
+  String? _shipsFromAddressId;
+  String? _processingTime = '1 business day';
 
-  // Cosmetic dropdowns (not in ShippingInfo entity)
-  String? _shipsFrom;
-  String? _processingTime;
-
-  static const _shipsFromOptions = [
-    'Kathmandu', 'Pokhara', 'Lalitpur', 'Bhaktapur', 'Biratnagar',
-  ];
   static const _processingTimeOptions = [
-    '1 business day', '2-3 business days', '3-5 business days',
+    '1 business day',
+    '2-3 business days',
+    '3-5 business days',
     '5-7 business days',
   ];
 
@@ -44,11 +54,6 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     _lengthController = TextEditingController();
     _widthController = TextEditingController();
     _heightController = TextEditingController();
-    // Edit-mode pre-population: when the wizard mounts in Edit mode the
-    // notifier already has step4 populated from the backend. Pull the
-    // data here so the controllers don't start blank. Safe to call in
-    // Create mode too -- step4 is null on a fresh wizard, so nothing
-    // is copied.
     WidgetsBinding.instance.addPostFrameCallback((_) => _hydrateFromState());
   }
 
@@ -58,21 +63,29 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
           loadSuccess: (s) => s,
           orElse: () => null,
         );
-    final s = fs?.step4;
-    if (s == null) return;
+    final shipping = fs?.step4;
+    if (shipping == null) return;
+    final options = shipping.shippingOptions;
     setState(() {
-      _weightController.text = s.weight > 0 ? s.weight.toString() : '';
-      _lengthController.text =
-          s.dimensionsLength > 0 ? s.dimensionsLength.toString() : '';
-      _widthController.text =
-          s.dimensionsWidth > 0 ? s.dimensionsWidth.toString() : '';
-      _heightController.text =
-          s.dimensionsHeight > 0 ? s.dimensionsHeight.toString() : '';
-      // Derive the option checkboxes from the estimate range the
-      // backend gave us -- Standard 5-7d / Express 2-3d / Overnight 1d.
-      _standard = s.deliveryEstimateMin >= 5;
-      _express = s.deliveryEstimateMin <= 3 && s.deliveryEstimateMax <= 3;
-      _overnight = s.deliveryEstimateMin == 1;
+      _weightController.text =
+          shipping.weight > 0 ? shipping.weight.toString() : '';
+      _lengthController.text = shipping.dimensionsLength > 0
+          ? shipping.dimensionsLength.toString()
+          : '';
+      _widthController.text = shipping.dimensionsWidth > 0
+          ? shipping.dimensionsWidth.toString()
+          : '';
+      _heightController.text = shipping.dimensionsHeight > 0
+          ? shipping.dimensionsHeight.toString()
+          : '';
+      _standard = options.isEmpty
+          ? shipping.deliveryEstimateMin >= 5
+          : options.any((option) => option.kind == 1);
+      _express = options.isEmpty
+          ? shipping.deliveryEstimateMax <= 3
+          : options.any((option) => option.kind == 2);
+      _shipsFromAddressId = shipping.shipsFromAddressId;
+      _processingTime = _processingLabelFor(shipping.processingTimeDays);
     });
   }
 
@@ -85,64 +98,138 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
     super.dispose();
   }
 
-  ShippingInfo _buildInfo() {
-    // Derive estimate range + fee from selected options.
-    final selectedMins = <int>[];
-    final selectedMaxes = <int>[];
-    Money? highestFee;
+  int get _processingTimeDays => switch (_processingTime) {
+        '2-3 business days' => 2,
+        '3-5 business days' => 3,
+        '5-7 business days' => 5,
+        _ => 1,
+      };
 
-    if (_standard) {
-      selectedMins.add(5);
-      selectedMaxes.add(7);
-      // Standard is FREE â€” no fee
-    }
-    if (_express) {
-      selectedMins.add(2);
-      selectedMaxes.add(3);
-      highestFee = const Money(amount: 500, currency: 'NPR');
-    }
-    if (_overnight) {
-      selectedMins.add(1);
-      selectedMaxes.add(1);
-      if (highestFee == null ||
-          highestFee.amount < 800) {
-        highestFee = const Money(amount: 800, currency: 'NPR');
-      }
-    }
+  static String _processingLabelFor(int days) => switch (days) {
+        >= 5 => '5-7 business days',
+        >= 3 => '3-5 business days',
+        >= 2 => '2-3 business days',
+        _ => '1 business day',
+      };
 
-    final minDays = selectedMins.isNotEmpty
-        ? selectedMins.reduce((a, b) => a < b ? a : b)
-        : 5;
-    final maxDays = selectedMaxes.isNotEmpty
-        ? selectedMaxes.reduce((a, b) => a > b ? a : b)
-        : 7;
+  ShippingAddress? _selectedAddress(List<ShippingAddress> addresses) {
+    if (addresses.isEmpty) return null;
+    for (final address in addresses) {
+      if (address.id == _shipsFromAddressId) return address;
+    }
+    for (final address in addresses) {
+      if (address.isDefault) return address;
+    }
+    return addresses.first;
+  }
+
+  ShippingInfo _buildInfo(List<ShippingAddress> addresses) {
+    final selectedAddress = _selectedAddress(addresses);
+    final options = <ProductShippingOption>[
+      if (_standard)
+        const ProductShippingOption(
+          kind: 1,
+          label: 'Standard (5-7 days) - FREE',
+          fee: Money(amount: 0, currency: 'NPR'),
+          estimatedDaysMin: 5,
+          estimatedDaysMax: 7,
+        ),
+      if (_express)
+        const ProductShippingOption(
+          kind: 2,
+          label: 'Express (2-3 days) - Rs 500',
+          fee: Money(amount: 500, currency: 'NPR'),
+          estimatedDaysMin: 2,
+          estimatedDaysMax: 3,
+        ),
+    ];
+    final minDays = options.isEmpty
+        ? 0
+        : options
+            .map((option) => option.estimatedDaysMin)
+            .reduce((a, b) => a < b ? a : b);
+    final maxDays = options.isEmpty
+        ? 0
+        : options
+            .map((option) => option.estimatedDaysMax)
+            .reduce((a, b) => a > b ? a : b);
+    final highestFee = options.isEmpty
+        ? null
+        : options
+            .map((option) => option.fee)
+            .reduce((a, b) => a.amount >= b.amount ? a : b);
 
     return ShippingInfo(
       weight: double.tryParse(_weightController.text) ?? 0,
       weightUnit: 'lbs',
-      dimensionsLength:
-          double.tryParse(_lengthController.text) ?? 0,
-      dimensionsWidth:
-          double.tryParse(_widthController.text) ?? 0,
-      dimensionsHeight:
-          double.tryParse(_heightController.text) ?? 0,
-      requiresShipping: true,
+      dimensionsLength: double.tryParse(_lengthController.text) ?? 0,
+      dimensionsWidth: double.tryParse(_widthController.text) ?? 0,
+      dimensionsHeight: double.tryParse(_heightController.text) ?? 0,
+      requiresShipping: options.isNotEmpty,
       shippingFee: highestFee,
       deliveryEstimateMin: minDays,
       deliveryEstimateMax: maxDays,
+      shipsFromAddressId: selectedAddress?.id,
+      shipsFromLabel: selectedAddress == null
+          ? null
+          : '${selectedAddress.label} — '
+              '${selectedAddress.addressLine1}, ${selectedAddress.city}',
+      processingTimeDays: _processingTimeDays,
+      shippingOptions: options,
     );
   }
 
-  void _onProceed() {
-    ref
-        .read(addProductNotifierProvider.notifier)
-        .updateShipping(_buildInfo());
-    ref.read(addProductNotifierProvider.notifier).nextStep();
+  Future<void> _onProceed(List<ShippingAddress> addresses) async {
+    final info = _buildInfo(addresses);
+    if (info.shipsFromAddressId == null) {
+      SmSnackbar.error(context, 'Add and select a real dispatch address.');
+      return;
+    }
+    if (info.shippingOptions.isEmpty) {
+      SmSnackbar.error(context, 'Select at least one shipping option.');
+      return;
+    }
+    if (info.weight <= 0 ||
+        info.dimensionsLength <= 0 ||
+        info.dimensionsWidth <= 0 ||
+        info.dimensionsHeight <= 0) {
+      SmSnackbar.error(context, 'Enter a positive weight and all dimensions.');
+      return;
+    }
+
+    final notifier = ref.read(addProductNotifierProvider.notifier);
+    notifier.updateShipping(info);
+    if (widget.isFinalStep) {
+      await widget.onSave?.call();
+    } else {
+      notifier.nextStep();
+    }
+  }
+
+  Future<void> _openAddressManager() async {
+    await context.push(RouteNames.shippingAddresses);
+    if (!mounted) return;
+    await ref.read(addressNotifierProvider.notifier).load();
   }
 
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(addProductNotifierProvider.notifier);
+    final addressState = ref.watch(addressNotifierProvider);
+    final addresses = addressState.maybeWhen(
+      loadSuccess: (items) => items,
+      orElse: () => const <ShippingAddress>[],
+    );
+    final addressesLoading = addressState.maybeWhen(
+      initial: () => true,
+      loadInProgress: () => true,
+      orElse: () => false,
+    );
+    final addressesFailed = addressState.maybeWhen(
+      loadFailure: (_) => true,
+      orElse: () => false,
+    );
+    final selectedAddress = _selectedAddress(addresses);
 
     return Column(
       children: [
@@ -232,23 +319,35 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
                     onChanged: (v) =>
                         setState(() => _express = v ?? false),
                   ),
-                  const SizedBox(height: DesignTokens.s16),
-
-                  _ShippingOptionRow(
-                    label: 'Overnight (1 day) - Rs 800',
-                    value: _overnight,
-                    onChanged: (v) =>
-                        setState(() => _overnight = v ?? false),
-                  ),
                   const SizedBox(height: DesignTokens.s20),
 
                   // 3.7 Ships From
-                  _DropdownField(
-                    label: 'Ships From',
-                    value: _shipsFrom,
-                    options: _shipsFromOptions,
-                    onChanged: (v) => setState(() => _shipsFrom = v),
-                  ),
+                  if (addressesLoading)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    )
+                  else if (addresses.isEmpty)
+                    _MissingDispatchAddress(
+                      loadFailed: addressesFailed,
+                      onManage: _openAddressManager,
+                    )
+                  else ...[
+                    _AddressDropdownField(
+                      value: selectedAddress?.id,
+                      addresses: addresses,
+                      onChanged: (value) =>
+                          setState(() => _shipsFromAddressId = value),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _openAddressManager,
+                        child: const Text('Manage dispatch addresses'),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: DesignTokens.s20),
 
                   // 3.8 Processing Time
@@ -320,23 +419,31 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
                 child: SizedBox(
                   height: DesignTokens.buttonHeight,
                   child: ElevatedButton(
-                    onPressed: _onProceed,
+                    onPressed: widget.saving
+                        ? null
+                        : () => _onProceed(addresses),
                     style: DesignTokens.primaryButtonStyle(),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Proceed',
-                          style: TextStyle(
+                          widget.saving
+                              ? 'Saving...'
+                              : widget.isFinalStep
+                              ? 'Save Changes'
+                              : 'Proceed',
+                          style: const TextStyle(
                             fontFamily: DesignTokens.fontFamily,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: DesignTokens.buttonPrimaryText,
                           ),
                         ),
-                        SizedBox(width: DesignTokens.s8),
+                        const SizedBox(width: DesignTokens.s8),
                         Icon(
-                          Icons.arrow_forward,
+                          widget.isFinalStep
+                              ? Icons.save_outlined
+                              : Icons.arrow_forward,
                           size: 16,
                           color: DesignTokens.buttonPrimaryText,
                         ),
@@ -424,6 +531,91 @@ class _ShippingOptionRow extends StatelessWidget {
 
 // â”€â”€ Dropdown field (Ships From / Processing Time) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+class _MissingDispatchAddress extends StatelessWidget {
+  const _MissingDispatchAddress({
+    required this.loadFailed,
+    required this.onManage,
+  });
+
+  final bool loadFailed;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: BoxDecoration(
+          color: DesignTokens.inputFieldFill,
+          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          border: Border.all(color: DesignTokens.inputFieldBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              loadFailed
+                  ? 'Dispatch addresses could not be loaded.'
+                  : 'No dispatch address is saved yet.',
+              style: DesignTokens.bodyText,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            TextButton.icon(
+              onPressed: onManage,
+              icon: const Icon(Icons.add_location_alt_outlined),
+              label: Text(loadFailed ? 'Retry or manage addresses' : 'Add address'),
+            ),
+          ],
+        ),
+      );
+}
+
+class _AddressDropdownField extends StatelessWidget {
+  const _AddressDropdownField({
+    required this.value,
+    required this.addresses,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final List<ShippingAddress> addresses;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          color: DesignTokens.inputFieldFill,
+          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          border: Border.all(color: DesignTokens.inputFieldBorder),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s16),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            hint: const Text('Ships From'),
+            isExpanded: true,
+            dropdownColor: DesignTokens.bgAppBodyLight,
+            icon: const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF71717B),
+            ),
+            style: DesignTokens.bodyText,
+            items: addresses
+                .map(
+                  (address) => DropdownMenuItem(
+                    value: address.id,
+                    child: Text(
+                      '${address.label} — ${address.addressLine1}, ${address.city}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: onChanged,
+          ),
+        ),
+      );
+}
 class _DropdownField extends StatelessWidget {
   const _DropdownField({
     required this.label,
