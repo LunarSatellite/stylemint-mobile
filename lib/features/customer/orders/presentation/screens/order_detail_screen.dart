@@ -115,6 +115,19 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
 
 class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
   bool _expanded = false;
+  final GlobalKey _trackingSectionKey = GlobalKey();
+
+  Future<void> _scrollToTracking() async {
+    final trackingContext = _trackingSectionKey.currentContext;
+    if (trackingContext == null) return;
+
+    await Scrollable.ensureVisible(
+      trackingContext,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.05,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,18 +151,22 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             onToggle: () => setState(() => _expanded = !_expanded),
           ),
           const SizedBox(height: DesignTokens.s24),
-          story?.when(
-                data: (chapters) => chapters.isEmpty
-                    ? _TrackingTimeline(status: order.status)
-                    : _DeliveryStoryTimeline(chapters: chapters),
-                loading: () => const _DeliveryStoryLoading(),
-                error: (_, __) => _DeliveryStoryError(
-                  onRetry: () => ref.invalidate(
-                    deliveryStoryProvider(trackingNumber!),
+          KeyedSubtree(
+            key: _trackingSectionKey,
+            child:
+                story?.when(
+                  data: (chapters) => chapters.isEmpty
+                      ? _TrackingTimeline(status: order.status)
+                      : _DeliveryStoryTimeline(chapters: chapters),
+                  loading: () => const _DeliveryStoryLoading(),
+                  error: (_, __) => _DeliveryStoryError(
+                    onRetry: () => ref.invalidate(
+                      deliveryStoryProvider(trackingNumber!),
+                    ),
                   ),
-                ),
-              ) ??
-              _TrackingTimeline(status: order.status),
+                ) ??
+                _TrackingTimeline(status: order.status),
+          ),
           if (order.status == OrderTrackStatus.delivered) ...[
             const SizedBox(height: DesignTokens.s24),
             _ReviewableItemsSection(order: order),
@@ -163,6 +180,9 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               order: order,
               actionPending: widget.actionPending,
               notifier: widget.notifier,
+              onViewTracking: trackingNumber?.trim().isNotEmpty == true
+                  ? _scrollToTracking
+                  : null,
             ),
           const SizedBox(height: DesignTokens.s32),
         ],
@@ -1384,11 +1404,13 @@ class _OtherDetails extends StatelessWidget {
     required this.order,
     required this.actionPending,
     required this.notifier,
+    this.onViewTracking,
   });
 
   final OrderDetail order;
   final bool actionPending;
   final OrderDetailNotifier notifier;
+  final VoidCallback? onViewTracking;
 
   @override
   Widget build(BuildContext context) {
@@ -1436,6 +1458,19 @@ class _OtherDetails extends StatelessWidget {
         // Group 2
         _ActionRowCard(
           children: [
+            if (onViewTracking != null) ...[
+              _ActionRow(
+                iconData: Icons.local_shipping_outlined,
+                iconColor: DesignTokens.iconLight,
+                iconBg: DesignTokens.bgAppBodyLight,
+                title: 'View Delivery Tracking',
+                subtitle: order.trackingNumber?.startsWith('SM-D-') == true
+                    ? 'Live StyleMint package updates'
+                    : 'View the latest package status',
+                onTap: onViewTracking!,
+              ),
+              _rowDivider(),
+            ],
             _ActionRow(
               iconData: Icons.headset_mic_outlined,
               iconColor: DesignTokens.iconLight,
