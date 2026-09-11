@@ -35,6 +35,14 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
   final _commentCtrl = TextEditingController();
   final List<String> _imagePaths = [];
 
+  /// Shown inline rather than via SmSnackbar: a SnackBar raised from inside
+  /// this sheet's own context renders behind the modal bottom sheet's
+  /// overlay (the sheet sits in its own OverlayEntry above the page's
+  /// Scaffold), so it's never actually visible to the user while the sheet
+  /// is open — confirmed live, the "Please write a review comment." warning
+  /// never appeared on screen even immediately after tapping Submit.
+  String? _inlineError;
+
   static const _platforms = <(String, Color)>[
     ('Instagram', Color(0xFFE1306C)),
     ('Youtube', Color(0xFFFF0000)),
@@ -60,7 +68,10 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
           ref.read(submitReviewNotifierProvider.notifier).reset();
           Navigator.of(context).pop();
         },
-        failure: (_) => SmSnackbar.error(context, 'Failed to submit review.'),
+        // Sheet stays open on failure, so (unlike the success path above,
+        // which pops first) a SnackBar here would be invisible — see the
+        // note on _inlineError.
+        failure: (_) => setState(() => _inlineError = 'Failed to submit review. Please try again.'),
         orElse: () {},
       );
     });
@@ -233,6 +244,13 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
               ),
             ),
           ],
+          if (_inlineError != null) ...[
+            const SizedBox(height: DesignTokens.s12),
+            Text(
+              _inlineError!,
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.colorError),
+            ),
+          ],
           const SizedBox(height: DesignTokens.s20),
           SizedBox(
             width: double.infinity,
@@ -264,9 +282,10 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
   }
 
   void _submit() {
+    setState(() => _inlineError = null);
     if (_type == _ReviewType.reel) {
       if (_platform == null) {
-        SmSnackbar.warning(context, 'Please select a platform.');
+        setState(() => _inlineError = 'Please select a platform.');
         return;
       }
       // ponytail: reel-review ticket endpoint not yet defined — show success for now
@@ -276,15 +295,13 @@ class _RateReviewSheetState extends ConsumerState<RateReviewSheet> {
     }
     final comment = _commentCtrl.text.trim();
     if (comment.isEmpty) {
-      SmSnackbar.warning(context, 'Please write a review comment.');
+      setState(() => _inlineError = 'Please write a review comment.');
       return;
     }
     final orderId = widget.orderId;
     if (orderId == null) {
-      SmSnackbar.warning(
-        context,
-        'Open "Write a Review" from a delivered order to review this product.',
-      );
+      setState(() => _inlineError =
+          'Open "Write a Review" from a delivered order to review this product.');
       return;
     }
     ref.read(submitReviewNotifierProvider.notifier).submitReview(
