@@ -67,7 +67,12 @@ class _AuthoritativeInvoice extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          24 + MediaQuery.of(context).padding.bottom,
+        ),
         children: [
           // ── Header ──────────────────────────────────────────────────────
           Container(

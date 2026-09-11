@@ -165,7 +165,17 @@ class _VendorOrderDetailScreenState
         // Fixed bottom buttons
         Container(
           color: DesignTokens.bgAppFoundation,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          // Hardcoded 28 bottom padding sat under the Android 3-button nav
+          // bar instead of clearing it — confirmed live: "Print Packing
+          // Slip" was partially hidden behind the system nav bar. Add the
+          // real inset on top of the design padding instead of guessing a
+          // fixed value.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            28 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
