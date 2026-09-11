@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:stylemint_mobile_frontend/features/social/friends/domain/entities/friend.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/presentation/notifiers/friends_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/presentation/widgets/friend_request_tile.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/presentation/widgets/friend_tile.dart';
@@ -73,9 +72,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     ),
                   ),
                   onSubmitted: (value) {
-                    ref.read(friendsNotifierProvider.notifier).loadFriends(
-                      search: value.isEmpty ? null : value,
-                    );
+                    ref
+                        .read(friendsNotifierProvider.notifier)
+                        .loadFriends(
+                          search: value.isEmpty ? null : value,
+                        );
                   },
                 ),
                 const SizedBox(height: DesignTokens.s8),
@@ -109,29 +110,6 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
   Widget _buildFriendsTab(FriendsViewState viewState) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16,
-            vertical: DesignTokens.s8,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // TODO: integrate with device contacts
-                ref
-                    .read(friendsNotifierProvider.notifier)
-                    .importContacts(const []);
-              },
-              style: DesignTokens.outlinedButtonStyle(),
-              icon: const Icon(
-                Icons.contacts_outlined,
-                color: DesignTokens.textWhite,
-              ),
-              label: const Text('Import Contacts'),
-            ),
-          ),
-        ),
         Expanded(
           child: viewState.friendsState.when(
             initial: _loader,
@@ -139,7 +117,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             loadSuccess: (friends, _, __) {
               if (friends.isEmpty) {
                 return const SmEmptyState(
-                  message: 'No friends yet. Invite your contacts!',
+                  message: 'No friends yet.',
                   icon: Icons.people_outline,
                 );
               }
@@ -163,14 +141,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 },
               );
             },
-            loadFailure:
-                (failure) => SmErrorView(
-                  message: 'Failed to load friends.',
-                  onRetry: () =>
-                      ref
-                          .read(friendsNotifierProvider.notifier)
-                          .loadFriends(),
-                ),
+            loadFailure: (failure) => SmErrorView(
+              message: 'Failed to load friends.',
+              onRetry: () =>
+                  ref.read(friendsNotifierProvider.notifier).loadFriends(),
+            ),
           ),
         ),
       ],
@@ -203,26 +178,20 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             final request = pending[index];
             return FriendRequestTile(
               request: request,
-              onAccept:
-                  () =>
-                      ref
-                          .read(friendsNotifierProvider.notifier)
-                          .accept(request.id),
-              onDecline:
-                  () =>
-                      ref
-                          .read(friendsNotifierProvider.notifier)
-                          .decline(request.id),
+              onAccept: () =>
+                  ref.read(friendsNotifierProvider.notifier).accept(request.id),
+              onDecline: () => ref
+                  .read(friendsNotifierProvider.notifier)
+                  .decline(request.id),
             );
           },
         );
       },
-      loadFailure:
-          (failure) => SmErrorView(
-            message: 'Failed to load requests.',
-            onRetry: () =>
-                ref.read(friendsNotifierProvider.notifier).loadRequests(),
-          ),
+      loadFailure: (failure) => SmErrorView(
+        message: 'Failed to load requests.',
+        onRetry: () =>
+            ref.read(friendsNotifierProvider.notifier).loadRequests(),
+      ),
     );
   }
 

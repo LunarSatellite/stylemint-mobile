@@ -120,6 +120,21 @@ abstract class FeedCommentDto with _$FeedCommentDto {
   factory FeedCommentDto.fromJson(Map<String, dynamic> json) =>
       _$FeedCommentDtoFromJson(json);
 
+  factory FeedCommentDto.fromCommentJson(Map<String, dynamic> json) =>
+      FeedCommentDto(
+        id: json['id'].toString(),
+        userId: (json['userId'] ?? json['authorAccountId']).toString(),
+        userName:
+            (json['userName'] ?? json['authorDisplayName'] ?? 'StyleMint user')
+                .toString(),
+        userAvatarUrl: (json['userAvatarUrl'] ?? json['authorAvatarUrl'] ?? '')
+            .toString(),
+        content: (json['content'] ?? json['body'] ?? '').toString(),
+        createdAt: DateTime.parse(
+          (json['createdAt'] ?? json['createdUtc']).toString(),
+        ),
+      );
+
   FeedComment toDomain() => FeedComment(
     id: id,
     userId: userId,

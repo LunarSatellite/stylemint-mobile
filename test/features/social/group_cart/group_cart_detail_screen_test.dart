@@ -44,6 +44,11 @@ class _FakeGroupCartRepository implements GroupCartRepository {
   ) => throw UnimplementedError();
 
   @override
+  Future<Either<NetworkExceptions, String>> inviteToGroupCart(
+    String cartId,
+    String invitedAccountId,
+  ) => throw UnimplementedError();
+  @override
   Future<Either<NetworkExceptions, Unit>> removeFromGroupCart(
     String cartId,
     String itemId,
@@ -83,7 +88,12 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('No items yet. Add something!'), findsOneWidget);
-      expect(find.text('Checkout Together'), findsOneWidget);
+      expect(find.text('Close Group Cart'), findsOneWidget);
+      final bottomSafeArea = tester.widget<SafeArea>(
+        find.byKey(const Key('group-cart-bottom-safe-area')),
+      );
+      expect(bottomSafeArea.top, isFalse);
+      expect(bottomSafeArea.bottom, isTrue);
     },
   );
 }

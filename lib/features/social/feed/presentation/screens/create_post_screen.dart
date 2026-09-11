@@ -33,11 +33,15 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       _errorText = null;
     });
 
-    final result = await ref.read(feedNotifierProvider.notifier).createPost(
-      content: _contentController.text.trim(),
-      imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
-      taggedProductIds: _taggedProductIds.isEmpty ? null : _taggedProductIds,
-    );
+    final result = await ref
+        .read(feedNotifierProvider.notifier)
+        .createPost(
+          content: _contentController.text.trim(),
+          imagePaths: _imagePaths.isEmpty ? null : _imagePaths,
+          taggedProductIds: _taggedProductIds.isEmpty
+              ? null
+              : _taggedProductIds,
+        );
 
     setState(() => _isPosting = false);
 
@@ -68,6 +72,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             children: [
               TextFormField(
                 controller: _contentController,
+                onChanged: (_) => setState(() {}),
                 maxLines: 5,
                 style: DesignTokens.bodyText,
                 decoration: DesignTokens.inputDecoration(
@@ -81,7 +86,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _imagePaths.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: DesignTokens.s8),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: DesignTokens.s8),
                     itemBuilder: (_, i) => Container(
                       width: 80,
                       height: 80,
@@ -89,7 +95,10 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                         color: DesignTokens.bgAppBodyLight,
                         borderRadius: BorderRadius.circular(DesignTokens.s8),
                       ),
-                      child: const Icon(Icons.image, color: DesignTokens.iconLight),
+                      child: const Icon(
+                        Icons.image,
+                        color: DesignTokens.iconLight,
+                      ),
                     ),
                   ),
                 ),

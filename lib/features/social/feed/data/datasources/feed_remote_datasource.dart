@@ -22,7 +22,7 @@ class FeedRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
-  /// POST `/v1/posts` — create a new post.
+  /// POST `/v1/posts` — create a new status post.
   Future<FeedPostDto> createPost({
     required String content,
     List<String>? imagePaths,
@@ -32,15 +32,22 @@ class FeedRemoteDataSource {
     final response = await apiClient.post(
       '/v1/posts',
       data: {
-        'content': content,
-        if (imagePaths != null && imagePaths.isNotEmpty)
-          'imagePaths': imagePaths,
+        'type': 1,
+        'visibility': 1,
+        'body': content,
         if (taggedProductIds != null && taggedProductIds.isNotEmpty)
-          'taggedProductIds': taggedProductIds,
+          'attachments': [
+            for (var i = 0; i < taggedProductIds.length; i++)
+              {
+                'kind': 1,
+                'referenceId': taggedProductIds[i],
+                'displayOrder': i,
+              },
+          ],
       },
       options: _idempotent(idempotencyKey),
     );
-    return FeedPostDto.fromJson(response as Map<String, dynamic>);
+    return FeedPostDto.fromPostJson(response as Map<String, dynamic>);
   }
 
   /// POST `/v1/reactions/posts/{postId}`
@@ -67,10 +74,10 @@ class FeedRemoteDataSource {
   ) async {
     final response = await apiClient.post(
       '/v1/posts/$postId/comments',
-      data: {'content': content},
+      data: {'body': content},
       options: _idempotent(idempotencyKey),
     );
-    return FeedCommentDto.fromJson(response as Map<String, dynamic>);
+    return FeedCommentDto.fromCommentJson(response as Map<String, dynamic>);
   }
 
   /// GET `/v1/posts/{postId}/comments` — cursor-paginated.
@@ -81,11 +88,16 @@ class FeedRemoteDataSource {
   }) async {
     final response = await apiClient.get(
       '/v1/posts/$postId/comments',
-      queryParameters: {
-        'limit': limit,
-        if (cursor != null) 'cursor': cursor,
-      },
+      queryParameters: {'take': limit},
     );
+    if (response is List<dynamic>) {
+      return <String, dynamic>{
+        'items': response,
+        'totalCount': response.length,
+        'pageSize': limit,
+        'hasMore': false,
+      };
+    }
     return response as Map<String, dynamic>;
   }
 

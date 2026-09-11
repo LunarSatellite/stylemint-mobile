@@ -143,9 +143,11 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   itemCount: groups.length,
                   itemBuilder: (_, index) => GroupCard(
                     group: groups[index],
-                    onTap: () => context.pushNamed(
-                      RouteNames.groups,
-                      pathParameters: {'groupId': groups[index].id},
+                    onTap: () => context.push(
+                      RouteNames.groupsDetail.replaceFirst(
+                        ':groupId',
+                        groups[index].id,
+                      ),
                     ),
                     onJoin: () =>
                         ref

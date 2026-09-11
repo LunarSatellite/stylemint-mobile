@@ -105,6 +105,30 @@ class GroupCartRepositoryImpl implements GroupCartRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, String>> inviteToGroupCart(
+    String cartId,
+    String invitedAccountId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final token = await remoteDataSource.inviteToGroupCart(
+        cartId,
+        invitedAccountId,
+        _uuid.v4(),
+      );
+      return right(token);
+    } catch (e) {
+      if (e is DioException) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      }
+      if (e is NetworkExceptions) return left(e);
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, GroupCartItem>> addToGroupCart(
     String cartId,
     String productId,

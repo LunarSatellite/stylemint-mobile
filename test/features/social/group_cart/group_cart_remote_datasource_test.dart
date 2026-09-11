@@ -82,4 +82,24 @@ void main() {
     expect(api.postData, isEmpty);
     expect(cart.id, '4d8997a9-6069-4fc8-84b8-da3ac19b8bc5');
   });
+
+  test('invites a friend and returns the one-time token', () async {
+    final api = _FakeApiClient(
+      postResponse: <String, dynamic>{'token': 'invite-token'},
+    );
+    final datasource = GroupCartRemoteDataSource(apiClient: api);
+
+    final token = await datasource.inviteToGroupCart(
+      'cart-share-id',
+      'friend-account-id',
+      'idempotency-key',
+    );
+
+    expect(api.postUri, '/v1/cart-shares/cart-share-id/invite');
+    expect(api.postData, <String, dynamic>{
+      'invitedAccountId': 'friend-account-id',
+      'proposedRole': 2,
+    });
+    expect(token, 'invite-token');
+  });
 }

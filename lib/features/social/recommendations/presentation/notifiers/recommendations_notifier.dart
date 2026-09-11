@@ -23,8 +23,9 @@ abstract class RecommendationsState with _$RecommendationsState {
     String? nextCursor,
   }) = _RequestsLoadSuccess;
 
-  const factory RecommendationsState.requestsLoadFailure(NetworkExceptions failure) =
-      _RequestsLoadFailure;
+  const factory RecommendationsState.requestsLoadFailure(
+    NetworkExceptions failure,
+  ) = _RequestsLoadFailure;
 
   const factory RecommendationsState.threadLoadInProgress({
     required List<RecommendationRequest> requests,
@@ -71,26 +72,23 @@ class RecommendationsNotifier extends StateNotifier<RecommendationsState> {
 
   Future<void> loadThread(String requestId) async {
     final currentState = state;
-    final requests =
-        currentState.maybeWhen(
-          requestsLoadSuccess: (r, _, __) => r,
-          threadLoadSuccess: (r, _, __, ___, ____) => r,
-          threadLoadInProgress: (r, _, __) => r,
-          threadLoadFailure: (r, _, __, _) => r,
-          orElse: () => <RecommendationRequest>[],
-        );
-    final hasMore =
-        currentState.maybeWhen(
-          requestsLoadSuccess: (_, h, __) => h,
-          threadLoadSuccess: (_, h, __, ___, ____) => h,
-          orElse: () => false,
-        );
-    final nextCursor =
-        currentState.maybeWhen(
-          requestsLoadSuccess: (_, __, n) => n,
-          threadLoadSuccess: (_, __, n, ___, ____) => n,
-          orElse: () => null,
-        );
+    final requests = currentState.maybeWhen(
+      requestsLoadSuccess: (r, _, __) => r,
+      threadLoadSuccess: (r, _, __, ___, ____) => r,
+      threadLoadInProgress: (r, _, __) => r,
+      threadLoadFailure: (r, _, __, _) => r,
+      orElse: () => <RecommendationRequest>[],
+    );
+    final hasMore = currentState.maybeWhen(
+      requestsLoadSuccess: (_, h, __) => h,
+      threadLoadSuccess: (_, h, __, ___, ____) => h,
+      orElse: () => false,
+    );
+    final nextCursor = currentState.maybeWhen(
+      requestsLoadSuccess: (_, __, n) => n,
+      threadLoadSuccess: (_, __, n, ___, ____) => n,
+      orElse: () => null,
+    );
 
     state = RecommendationsState.threadLoadInProgress(
       requests: requests,
@@ -133,7 +131,7 @@ class RecommendationsNotifier extends StateNotifier<RecommendationsState> {
     );
   }
 
-  Future<void> createRequest({
+  Future<String?> createRequest({
     required String question,
     String? context,
     List<String>? taggedProducts,
@@ -145,13 +143,28 @@ class RecommendationsNotifier extends StateNotifier<RecommendationsState> {
       taggedProducts: taggedProducts,
       categories: categories,
     );
-    either.fold(
-      (_) {},
-      (_) => loadRequests(),
+    return either.fold(
+      NetworkExceptions.getMessage,
+      (created) {
+        final currentRequests = state.maybeWhen(
+          requestsLoadSuccess: (requests, _, __) => requests,
+          threadLoadSuccess: (requests, _, __, ___, ____) => requests,
+          threadLoadInProgress: (requests, _, __) => requests,
+          threadLoadFailure: (requests, _, __, ___) => requests,
+          orElse: () => const <RecommendationRequest>[],
+        );
+        state = RecommendationsState.requestsLoadSuccess(
+          requests: [
+            created,
+            ...currentRequests.where((request) => request.id != created.id),
+          ],
+        );
+        return null;
+      },
     );
   }
 
-  Future<void> reply({
+  Future<String?> reply({
     required String requestId,
     required String content,
     String? suggestedProduct,
@@ -161,31 +174,68 @@ class RecommendationsNotifier extends StateNotifier<RecommendationsState> {
       content: content,
       suggestedProduct: suggestedProduct,
     );
-    either.fold(
-      (_) {},
-      (_) => loadThread(requestId),
+    return either.fold(
+      NetworkExceptions.getMessage,
+      (created) {
+        state.maybeWhen(
+          threadLoadSuccess:
+              (
+                requests,
+                hasMore,
+                nextCursor,
+                request,
+                replies,
+              ) {
+                final updatedRequest = request.copyWith(
+                  replyCount: request.replyCount + 1,
+                );
+                state = RecommendationsState.threadLoadSuccess(
+                  requests: requests
+                      .map(
+                        (item) => item.id == updatedRequest.id
+                            ? updatedRequest
+                            : item,
+                      )
+                      .toList(growable: false),
+                  hasMore: hasMore,
+                  nextCursor: nextCursor,
+                  currentRequest: updatedRequest,
+                  replies: [...replies, created],
+                );
+              },
+          orElse: () {},
+        );
+        return null;
+      },
     );
   }
 
-  Future<void> likeReply(String replyId) async {
-    await _repository.likeReply(replyId);
-    state.maybeWhen(
-      threadLoadSuccess: (requests, hasMore, nextCursor, request, replies) {
-        final updatedReplies = replies.map((r) {
-          if (r.id == replyId) {
-            return r.copyWith(likeCount: r.likeCount + 1);
-          }
-          return r;
-        }).toList();
-        state = RecommendationsState.threadLoadSuccess(
-          requests: requests,
-          hasMore: hasMore,
-          nextCursor: nextCursor,
-          currentRequest: request,
-          replies: updatedReplies,
+  Future<String?> likeReply(String replyId) async {
+    final either = await _repository.likeReply(replyId);
+    return either.fold(
+      NetworkExceptions.getMessage,
+      (_) {
+        state.maybeWhen(
+          threadLoadSuccess: (requests, hasMore, nextCursor, request, replies) {
+            final updatedReplies = replies
+                .map((reply) {
+                  return reply.id == replyId
+                      ? reply.copyWith(likeCount: reply.likeCount + 1)
+                      : reply;
+                })
+                .toList(growable: false);
+            state = RecommendationsState.threadLoadSuccess(
+              requests: requests,
+              hasMore: hasMore,
+              nextCursor: nextCursor,
+              currentRequest: request,
+              replies: updatedReplies,
+            );
+          },
+          orElse: () {},
         );
+        return null;
       },
-      orElse: () {},
     );
   }
 }

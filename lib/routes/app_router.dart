@@ -107,6 +107,7 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/screens
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/terms_conditions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/community/presentation/screens/community_hub_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/change_password_screen.dart';
@@ -1158,6 +1159,10 @@ GoRouter appRouter(Ref ref) {
       ),
 
       // Social
+      GoRoute(
+        path: RouteNames.community,
+        builder: (ctx, state) => const CommunityHubScreen(),
+      ),
       GoRoute(
         path: RouteNames.feed,
         builder: (ctx, state) => const FriendFeedScreen(),

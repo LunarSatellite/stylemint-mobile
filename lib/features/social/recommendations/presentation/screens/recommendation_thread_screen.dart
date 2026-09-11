@@ -25,6 +25,7 @@ class _RecommendationThreadScreenState
     extends ConsumerState<RecommendationThreadScreen> {
   final _replyController = TextEditingController();
   bool _showProductField = false;
+  bool _isSendingReply = false;
   final _productController = TextEditingController();
 
   @override
@@ -87,7 +88,7 @@ class _RecommendationThreadScreenState
                   ],
                 ),
               ),
-              _buildReplyInput(),
+              SafeArea(top: false, child: _buildReplyInput()),
             ],
           );
         },
@@ -112,7 +113,12 @@ class _RecommendationThreadScreenState
             children: [
               CircleAvatar(
                 radius: DesignTokens.avatarMedium / 2,
-                backgroundImage: NetworkImage(request.userAvatarUrl),
+                backgroundImage: request.userAvatarUrl.isEmpty
+                    ? null
+                    : NetworkImage(request.userAvatarUrl),
+                child: request.userAvatarUrl.isEmpty
+                    ? const Icon(Icons.person_outline)
+                    : null,
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
@@ -235,7 +241,12 @@ class _RecommendationThreadScreenState
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundImage: NetworkImage(reply.userAvatarUrl),
+                  backgroundImage: reply.userAvatarUrl.isEmpty
+                      ? null
+                      : NetworkImage(reply.userAvatarUrl),
+                  child: reply.userAvatarUrl.isEmpty
+                      ? const Icon(Icons.person_outline, size: 18)
+                      : null,
                 ),
                 const SizedBox(width: DesignTokens.s8),
                 Expanded(
@@ -244,11 +255,15 @@ class _RecommendationThreadScreenState
                     style: DesignTokens.mediumSemibold,
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => ref
-                      .read(recommendationsNotifierProvider.notifier)
-                      .likeReply(reply.id),
-                  child: Row(
+                IconButton(
+                  tooltip: 'Like reply',
+                  onPressed: () async {
+                    final error = await ref
+                        .read(recommendationsNotifierProvider.notifier)
+                        .likeReply(reply.id);
+                    if (mounted && error != null) _showMessage(error);
+                  },
+                  icon: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
@@ -325,7 +340,7 @@ class _RecommendationThreadScreenState
         DesignTokens.s16,
         DesignTokens.s8,
         DesignTokens.s16,
-        DesignTokens.s16,
+        DesignTokens.s8,
       ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
@@ -343,6 +358,7 @@ class _RecommendationThreadScreenState
               padding: const EdgeInsets.only(bottom: DesignTokens.s8),
               child: TextField(
                 controller: _productController,
+                enabled: !_isSendingReply,
                 style: DesignTokens.bodyText,
                 decoration: DesignTokens.inputDecoration(
                   hintText: 'Suggest a product name or link...',
@@ -351,42 +367,30 @@ class _RecommendationThreadScreenState
             ),
           Row(
             children: [
-              GestureDetector(
-                onTap: () =>
-                    setState(() => _showProductField = !_showProductField),
-                child: Container(
-                  padding: const EdgeInsets.all(DesignTokens.s8),
-                  decoration: BoxDecoration(
-                    color: _showProductField
-                        ? DesignTokens.primaryGreenLight
-                        : DesignTokens.bgAppBodyLight,
-                    borderRadius: BorderRadius.circular(
-                      DesignTokens.chipRadius,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.shopping_bag_outlined,
-                        size: DesignTokens.iconSmall,
-                        color: DesignTokens.textWhite,
+              TextButton.icon(
+                onPressed: _isSendingReply
+                    ? null
+                    : () => setState(
+                        () => _showProductField = !_showProductField,
                       ),
-                      const SizedBox(width: DesignTokens.s4),
-                      Text(
-                        'Suggest',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                    ],
-                  ),
+                icon: const Icon(
+                  Icons.shopping_bag_outlined,
+                  size: DesignTokens.iconSmall,
+                ),
+                label: const Text('Suggest'),
+                style: TextButton.styleFrom(
+                  foregroundColor: DesignTokens.textWhite,
+                  backgroundColor: _showProductField
+                      ? DesignTokens.primaryGreenLight
+                      : DesignTokens.bgAppBodyLight,
+                  minimumSize: const Size(48, 48),
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: TextField(
                   controller: _replyController,
+                  enabled: !_isSendingReply,
                   style: DesignTokens.bodyText,
                   decoration: DesignTokens.inputDecoration(
                     hintText: 'Write a reply...',
@@ -394,43 +398,63 @@ class _RecommendationThreadScreenState
                 ),
               ),
               const SizedBox(width: DesignTokens.s8),
-              GestureDetector(
-                onTap: () {
-                  final content = _replyController.text.trim();
-                  if (content.isEmpty) return;
-                  ref
-                      .read(recommendationsNotifierProvider.notifier)
-                      .reply(
-                        requestId: widget.requestId,
-                        content: content,
-                        suggestedProduct: _showProductField
-                            ? _productController.text.trim()
-                            : null,
-                      );
-                  _replyController.clear();
-                  _productController.clear();
-                  setState(() => _showProductField = false);
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(DesignTokens.s12),
-                  decoration: BoxDecoration(
-                    color: DesignTokens.primaryGreen,
-                    borderRadius: BorderRadius.circular(
-                      DesignTokens.buttonRadius,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.send_rounded,
-                    color: DesignTokens.textWhite,
-                    size: DesignTokens.iconMedium,
-                  ),
+              IconButton(
+                key: const Key('recommendation-send-reply'),
+                tooltip: 'Send reply',
+                onPressed: _isSendingReply ? null : _sendReply,
+                style: IconButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: DesignTokens.textWhite,
+                  minimumSize: const Size(48, 48),
                 ),
+                icon: _isSendingReply
+                    ? const SizedBox.square(
+                        dimension: DesignTokens.iconMedium,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.send_rounded,
+                        size: DesignTokens.iconMedium,
+                      ),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _sendReply() async {
+    final content = _replyController.text.trim();
+    if (content.isEmpty || _isSendingReply) return;
+    setState(() => _isSendingReply = true);
+    final error = await ref
+        .read(recommendationsNotifierProvider.notifier)
+        .reply(
+          requestId: widget.requestId,
+          content: content,
+          suggestedProduct: _showProductField
+              ? _productController.text.trim()
+              : null,
+        );
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _isSendingReply = false);
+      _showMessage(error);
+      return;
+    }
+    _replyController.clear();
+    _productController.clear();
+    setState(() {
+      _isSendingReply = false;
+      _showProductField = false;
+    });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _loader() => const Center(

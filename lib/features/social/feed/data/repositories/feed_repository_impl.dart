@@ -176,7 +176,7 @@ class FeedRepositoryImpl implements FeedRepository {
         final items =
             (data['items'] as List<dynamic>?)
                 ?.map(
-                  (e) => FeedCommentDto.fromJson(
+                  (e) => FeedCommentDto.fromCommentJson(
                     e as Map<String, dynamic>,
                   ).toDomain(),
                 )

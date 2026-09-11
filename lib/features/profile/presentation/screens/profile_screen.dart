@@ -250,6 +250,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ),
         const SizedBox(height: DesignTokens.s16),
 
+        // Community & social commerce
+        ProfileMenuSection(
+          items: [
+            ProfileMenuItem(
+              icon: Icons.groups_outlined,
+              label: 'Community & Social',
+              onTap: () => context.push(RouteNames.community),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.s16),
         // Support
         ProfileMenuSection(
           items: [

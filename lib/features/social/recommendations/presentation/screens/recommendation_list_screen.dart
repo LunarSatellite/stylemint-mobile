@@ -58,19 +58,20 @@ class RecommendationListScreen extends ConsumerWidget {
               itemCount: requests.length,
               itemBuilder: (_, index) => RecommendationCard(
                 request: requests[index],
-                onTap: () => context.pushNamed(
-                  RouteNames.recommendations,
-                  pathParameters: {'requestId': requests[index].id},
+                onTap: () => context.push(
+                  RouteNames.recommendationsThread.replaceFirst(
+                    ':requestId',
+                    requests[index].id,
+                  ),
                 ),
               ),
             );
           },
           requestsLoadFailure: (failure) => SmErrorView(
             message: 'Failed to load recommendations.',
-            onRetry: () =>
-                ref
-                    .read(recommendationsNotifierProvider.notifier)
-                    .loadRequests(),
+            onRetry: () => ref
+                .read(recommendationsNotifierProvider.notifier)
+                .loadRequests(),
           ),
           threadLoadInProgress: (requests, _, __) {
             if (requests.isEmpty) {
@@ -87,9 +88,11 @@ class RecommendationListScreen extends ConsumerWidget {
               itemCount: requests.length,
               itemBuilder: (_, index) => RecommendationCard(
                 request: requests[index],
-                onTap: () => context.pushNamed(
-                  RouteNames.recommendations,
-                  pathParameters: {'requestId': requests[index].id},
+                onTap: () => context.push(
+                  RouteNames.recommendationsThread.replaceFirst(
+                    ':requestId',
+                    requests[index].id,
+                  ),
                 ),
               ),
             );
@@ -103,9 +106,11 @@ class RecommendationListScreen extends ConsumerWidget {
               itemCount: requests.length,
               itemBuilder: (_, index) => RecommendationCard(
                 request: requests[index],
-                onTap: () => context.pushNamed(
-                  RouteNames.recommendations,
-                  pathParameters: {'requestId': requests[index].id},
+                onTap: () => context.push(
+                  RouteNames.recommendationsThread.replaceFirst(
+                    ':requestId',
+                    requests[index].id,
+                  ),
                 ),
               ),
             );
@@ -119,9 +124,11 @@ class RecommendationListScreen extends ConsumerWidget {
               itemCount: requests.length,
               itemBuilder: (_, index) => RecommendationCard(
                 request: requests[index],
-                onTap: () => context.pushNamed(
-                  RouteNames.recommendations,
-                  pathParameters: {'requestId': requests[index].id},
+                onTap: () => context.push(
+                  RouteNames.recommendationsThread.replaceFirst(
+                    ':requestId',
+                    requests[index].id,
+                  ),
                 ),
               ),
             );
@@ -129,6 +136,7 @@ class RecommendationListScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Ask a Question',
         backgroundColor: DesignTokens.primaryGreen,
         onPressed: () => _showCreateRequestSheet(context, ref),
         child: const Icon(Icons.add, color: DesignTokens.textWhite),
@@ -142,18 +150,18 @@ class RecommendationListScreen extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(DesignTokens.cardRadius)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.cardRadius),
+        ),
       ),
       builder: (_) => RequestCreateSheet(
-        onSubmit: (question, context_, categories) {
-          ref
-              .read(recommendationsNotifierProvider.notifier)
-              .createRequest(
-                question: question,
-                context: context_,
-                categories: categories,
-              );
-        },
+        onSubmit: (question, context_, categories) => ref
+            .read(recommendationsNotifierProvider.notifier)
+            .createRequest(
+              question: question,
+              context: context_,
+              categories: categories,
+            ),
       ),
     );
   }

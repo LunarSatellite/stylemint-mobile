@@ -1,5 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/data/datasources/recommendations_remote_datasource.dart';
@@ -20,13 +20,17 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
   static const _uuid = Uuid();
 
   @override
-  Future<Either<NetworkExceptions, PagedResult<RecommendationRequest>>> getRequests({
+  Future<Either<NetworkExceptions, PagedResult<RecommendationRequest>>>
+  getRequests({
     int limit = 20,
     String? cursor,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getRequests(limit: limit, cursor: cursor);
+        final dto = await remoteDataSource.getRequests(
+          limit: limit,
+          cursor: cursor,
+        );
         return right(
           PagedResult(
             items: dto.items.map((d) => d.toDomain()).toList(growable: false),
@@ -38,13 +42,8 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
           ),
         );
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        if (e is NetworkExceptions) return left(e);
+        return left(mapDioExceptionToNetworkException(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
@@ -60,13 +59,8 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
         final dtos = await remoteDataSource.getThread(requestId);
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        if (e is NetworkExceptions) return left(e);
+        return left(mapDioExceptionToNetworkException(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
@@ -91,13 +85,8 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
         );
         return right(dto.toDomain());
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        if (e is NetworkExceptions) return left(e);
+        return left(mapDioExceptionToNetworkException(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
@@ -120,13 +109,8 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
         );
         return right(dto.toDomain());
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        if (e is NetworkExceptions) return left(e);
+        return left(mapDioExceptionToNetworkException(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
@@ -140,13 +124,8 @@ class RecommendationsRepositoryImpl implements RecommendationsRepository {
         await remoteDataSource.likeReply(replyId, _uuid.v4());
         return right(unit);
       } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
+        if (e is NetworkExceptions) return left(e);
+        return left(mapDioExceptionToNetworkException(e));
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());

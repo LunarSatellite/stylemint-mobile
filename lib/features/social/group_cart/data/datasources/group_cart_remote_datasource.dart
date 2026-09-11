@@ -50,6 +50,23 @@ class GroupCartRemoteDataSource {
     return GroupCartDto.fromCartShareJson(response as Map<String, dynamic>);
   }
 
+  Future<String> inviteToGroupCart(
+    String cartId,
+    String invitedAccountId,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/cart-shares/$cartId/invite',
+      data: {'invitedAccountId': invitedAccountId, 'proposedRole': 2},
+      options: _idempotent(idempotencyKey),
+    );
+    final token = (response as Map<String, dynamic>)['token'] as String? ?? '';
+    if (token.isEmpty) {
+      throw const FormatException('Cart-share invitation token is missing.');
+    }
+    return token;
+  }
+
   /// TODO(swagger): No cart-share items endpoint — cart lines managed via /v1/cart/lines.
   Future<GroupCartItemDto> addToGroupCart(
     String cartId,

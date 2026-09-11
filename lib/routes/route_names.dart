@@ -161,6 +161,7 @@ abstract class RouteNames {
   static const vendorSupportContact = '/vendor/support/contact';
 
   // Social
+  static const community = '/community';
   static const creatorProfile = '/creator-profile/:accountId';
   static const creatorProfileSettings = '/creator/profile-settings';
   static const creatorEditProfile = '/creator/edit-profile';

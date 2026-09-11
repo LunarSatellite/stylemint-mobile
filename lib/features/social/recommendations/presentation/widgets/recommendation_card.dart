@@ -4,7 +4,11 @@ import 'package:stylemint_mobile_frontend/features/social/recommendations/domain
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class RecommendationCard extends StatelessWidget {
-  const RecommendationCard({required this.request, required this.onTap, super.key});
+  const RecommendationCard({
+    required this.request,
+    required this.onTap,
+    super.key,
+  });
 
   final RecommendationRequest request;
   final VoidCallback onTap;
@@ -25,7 +29,12 @@ class RecommendationCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: DesignTokens.avatarMedium / 2,
-                    backgroundImage: NetworkImage(request.userAvatarUrl),
+                    backgroundImage: request.userAvatarUrl.isEmpty
+                        ? null
+                        : NetworkImage(request.userAvatarUrl),
+                    child: request.userAvatarUrl.isEmpty
+                        ? const Icon(Icons.person_outline)
+                        : null,
                   ),
                   const SizedBox(width: DesignTokens.s8),
                   Expanded(
@@ -95,24 +104,23 @@ class RecommendationCard extends StatelessWidget {
                 Wrap(
                   spacing: DesignTokens.s6,
                   runSpacing: DesignTokens.s4,
-                  children:
-                      request.taggedCategories.take(3).map((cat) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: DesignTokens.s8,
-                            vertical: DesignTokens.s4,
-                          ),
-                          decoration: DesignTokens.tagDecoration(
-                            backgroundColor: DesignTokens.primaryGreenLight,
-                          ),
-                          child: Text(
-                            cat,
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.primaryGreen,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                  children: request.taggedCategories.take(3).map((cat) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.s8,
+                        vertical: DesignTokens.s4,
+                      ),
+                      decoration: DesignTokens.tagDecoration(
+                        backgroundColor: DesignTokens.primaryGreenLight,
+                      ),
+                      child: Text(
+                        cat,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
               if (request.taggedProducts.isNotEmpty) ...[

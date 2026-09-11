@@ -13,25 +13,28 @@ class RecommendationsRemoteDataSource {
     required int limit,
     String? cursor,
   }) async {
+    final skip = int.tryParse(cursor ?? '') ?? 0;
     final response = await apiClient.get(
       '/v1/recommendation-requests/community',
-      queryParameters: {
-        'limit': limit,
-        if (cursor != null) 'cursor': cursor,
-      },
+      queryParameters: {'take': limit, 'skip': skip},
     );
 
     final data = response as Map<String, dynamic>;
     final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => RecommendationRequestDto.fromJson(e as Map<String, dynamic>))
+        .map(
+          (e) => RecommendationRequestDto.fromBackendJson(
+            e as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
+    final hasMore = data['hasNext'] as bool? ?? false;
     return PagedResult(
       items: items,
       totalCount: data['totalCount'] as int? ?? items.length,
       pageSize: data['pageSize'] as int? ?? limit,
-      nextCursor: data['nextCursor'] as String?,
-      previousCursor: data['previousCursor'] as String?,
-      hasMore: data['hasMore'] as bool? ?? false,
+      nextCursor: hasMore ? '${skip + items.length}' : null,
+      previousCursor: null,
+      hasMore: hasMore,
     );
   }
 
@@ -39,13 +42,17 @@ class RecommendationsRemoteDataSource {
   Future<List<RecommendationReplyDto>> getThread(String requestId) async {
     final response = await apiClient.get(
       '/v1/recommendation-requests/$requestId/replies',
+      queryParameters: const {'take': 100},
     );
 
     final data = response as Map<String, dynamic>;
-    final replies = (data['replies'] as List<dynamic>? ?? const <dynamic>[])
-        .map((e) => RecommendationReplyDto.fromJson(e as Map<String, dynamic>))
+    return (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (e) => RecommendationReplyDto.fromBackendJson(
+            e as Map<String, dynamic>,
+          ),
+        )
         .toList(growable: false);
-    return replies;
   }
 
   /// POST /v1/recommendation-requests
@@ -56,17 +63,21 @@ class RecommendationsRemoteDataSource {
     List<String>? categories,
     required String idempotencyKey,
   }) async {
+    final bodyParts = <String>[
+      if (context?.trim().isNotEmpty == true) context!.trim(),
+      if (categories?.isNotEmpty == true) 'Topic: ${categories!.join(', ')}',
+    ];
     final response = await apiClient.post(
       '/v1/recommendation-requests',
       data: {
-        'question': question,
-        if (context != null) 'context': context,
-        if (taggedProducts != null) 'taggedProducts': taggedProducts,
-        if (categories != null) 'categories': categories,
+        'title': question,
+        'body': bodyParts.join('\n\n'),
+        'visibility': 3,
+        'urgency': 1,
       },
       options: _idempotent(idempotencyKey),
     );
-    return RecommendationRequestDto.fromJson(
+    return RecommendationRequestDto.fromBackendJson(
       response as Map<String, dynamic>,
     );
   }
@@ -78,16 +89,28 @@ class RecommendationsRemoteDataSource {
     String? suggestedProduct,
     required String idempotencyKey,
   }) async {
+    final suggestion = suggestedProduct?.trim();
+    final suggestionUri = suggestion == null ? null : Uri.tryParse(suggestion);
+    final isExternalLink =
+        suggestionUri != null &&
+        (suggestionUri.scheme == 'http' || suggestionUri.scheme == 'https');
     final response = await apiClient.post(
       '/v1/recommendation-replies',
       data: {
         'requestId': requestId,
-        'content': content,
-        if (suggestedProduct != null) 'suggestedProduct': suggestedProduct,
+        'body': [
+          content,
+          if (suggestion?.isNotEmpty == true && !isExternalLink)
+            'Suggested product: $suggestion',
+        ].join('\n\n'),
+        if (isExternalLink)
+          'externalLinks': [
+            {'url': suggestion, 'title': suggestion},
+          ],
       },
       options: _idempotent(idempotencyKey),
     );
-    return RecommendationReplyDto.fromJson(
+    return RecommendationReplyDto.fromBackendJson(
       response as Map<String, dynamic>,
     );
   }
@@ -96,7 +119,7 @@ class RecommendationsRemoteDataSource {
   Future<void> likeReply(String replyId, String idempotencyKey) async {
     await apiClient.post(
       '/v1/recommendation-votes',
-      data: {'replyId': replyId},
+      data: {'replyId': replyId, 'type': 1},
       options: _idempotent(idempotencyKey),
     );
   }

@@ -48,6 +48,7 @@ class GroupCartListScreen extends ConsumerWidget {
         children: [
           FloatingActionButton.small(
             heroTag: 'join',
+            tooltip: 'Join Group Cart',
             backgroundColor: DesignTokens.bgAppBodyLight,
             onPressed: () => _showJoinDialog(context, ref),
             child: const Icon(Icons.group_add, color: DesignTokens.textWhite),
@@ -214,9 +215,22 @@ class GroupCartListScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              ref.read(groupCartsNotifierProvider.notifier).create();
+            onPressed: () async {
               Navigator.of(ctx).pop();
+              final result = await ref
+                  .read(groupCartsNotifierProvider.notifier)
+                  .create();
+              if (!context.mounted) return;
+              result.fold(
+                (_) => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not create group cart.'),
+                  ),
+                ),
+                (_) => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Group cart ready.')),
+                ),
+              );
             },
             style: DesignTokens.primaryButtonStyle(),
             child: const Text('Create'),
@@ -246,11 +260,26 @@ class GroupCartListScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final code = controller.text.trim();
               if (code.isNotEmpty) {
-                ref.read(groupCartsNotifierProvider.notifier).join(code);
                 Navigator.of(ctx).pop();
+                final result = await ref
+                    .read(groupCartsNotifierProvider.notifier)
+                    .join(code);
+                if (!context.mounted) return;
+                result.fold(
+                  (_) => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Could not join group cart. Check the invite code.',
+                      ),
+                    ),
+                  ),
+                  (_) => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Joined group cart.')),
+                  ),
+                );
               }
             },
             style: DesignTokens.primaryButtonStyle(),

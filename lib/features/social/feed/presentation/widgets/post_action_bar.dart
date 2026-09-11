@@ -28,6 +28,7 @@ class PostActionBar extends StatelessWidget {
       child: Row(
         children: [
           _ActionButton(
+            semanticLabel: isLiked ? 'Unlike post' : 'Like post',
             icon: isLiked ? Icons.favorite : Icons.favorite_outline,
             label: _formatCount(likeCount),
             color: isLiked ? DesignTokens.colorError : DesignTokens.iconLight,
@@ -35,12 +36,14 @@ class PostActionBar extends StatelessWidget {
           ),
           const SizedBox(width: DesignTokens.s16),
           _ActionButton(
+            semanticLabel: 'Comment on post',
             icon: Icons.chat_bubble_outline,
             label: _formatCount(commentCount),
             onTap: onComment,
           ),
           const Spacer(),
           _ActionButton(
+            semanticLabel: 'Share post',
             icon: Icons.share_outlined,
             label: _formatCount(shareCount),
             onTap: onShare,
@@ -59,12 +62,14 @@ class PostActionBar extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
+    required this.semanticLabel,
     required this.icon,
     required this.onTap,
     this.label,
     this.color = DesignTokens.iconLight,
   });
 
+  final String semanticLabel;
   final IconData icon;
   final VoidCallback onTap;
   final String? label;
@@ -72,21 +77,27 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: DesignTokens.iconMedium, color: color),
-          if (label != null && label!.isNotEmpty) ...[
-            const SizedBox(width: DesignTokens.s4),
-            Text(
-              label!,
-              style: DesignTokens.smallRegular.copyWith(color: color),
-            ),
-          ],
-        ],
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: DesignTokens.iconMedium, color: color),
+              if (label != null && label!.isNotEmpty) ...[
+                const SizedBox(width: DesignTokens.s4),
+                Text(
+                  label!,
+                  style: DesignTokens.smallRegular.copyWith(color: color),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
@@ -90,14 +91,16 @@ class _ScanInviteScreenState extends ConsumerState<ScanInviteScreen> {
               style: DesignTokens.oneLinerRegular,
               onSubmitted: _onScan,
             ),
-            const SizedBox(height: DesignTokens.s16),
-            ElevatedButton(
-              onPressed: () {
-                _onScan('test-code');
-              },
-              style: DesignTokens.primaryButtonStyle(),
-              child: const Text('Simulate Scan (Dev)'),
-            ),
+            if (kDebugMode) ...[
+              const SizedBox(height: DesignTokens.s16),
+              ElevatedButton(
+                onPressed: () {
+                  _onScan('test-code');
+                },
+                style: DesignTokens.primaryButtonStyle(),
+                child: const Text('Simulate Scan (Dev)'),
+              ),
+            ],
           ],
         ),
       ),

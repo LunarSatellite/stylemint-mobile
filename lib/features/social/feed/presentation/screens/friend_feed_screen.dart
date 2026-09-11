@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/notifiers/feed_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/create_post_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_post_card.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -84,17 +86,30 @@ class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
                     }
                   },
                   onComment: () {
-                    // navigate to comments
-                  },
-                  onShare: () {
-                    ref.read(feedNotifierProvider.notifier).sharePost(
-                      posts[index].id,
-                      index,
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: DesignTokens.bgAppBody,
+                      builder: (_) => FeedCommentsSheet(
+                        postId: posts[index].id,
+                        postIndex: index,
+                      ),
                     );
                   },
+                  onShare: () {
+                    ref
+                        .read(feedNotifierProvider.notifier)
+                        .sharePost(
+                          posts[index].id,
+                          index,
+                        );
+                  },
                   onTaggedProductTap: (productId) {
-                    Navigator.of(context).pushNamed(
-                      RouteNames.productDetail.replaceFirst(':productId', productId),
+                    context.push(
+                      RouteNames.productDetail.replaceFirst(
+                        ':productId',
+                        productId,
+                      ),
                     );
                   },
                 );
@@ -108,6 +123,7 @@ class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Create Post',
         backgroundColor: DesignTokens.primaryGreen,
         onPressed: () {
           Navigator.of(context).push<void>(

@@ -95,6 +95,13 @@ class GroupCartDetailNotifier extends StateNotifier<GroupCartDetailState> {
     );
   }
 
+  Future<Either<NetworkExceptions, String>> invite(
+    String cartId,
+    String invitedAccountId,
+  ) {
+    return _repository.inviteToGroupCart(cartId, invitedAccountId);
+  }
+
   Future<Either<NetworkExceptions, GroupCartItem>> addItem(
     String cartId,
     String productId,
