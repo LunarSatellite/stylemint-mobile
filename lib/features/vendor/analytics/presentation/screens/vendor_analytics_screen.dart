@@ -81,12 +81,12 @@ class VendorAnalyticsScreen extends ConsumerWidget {
                   ),
                 ),
                 icon: const Icon(
-                  Icons.download_outlined,
+                  Icons.share_outlined,
                   color: Colors.black,
                   size: 20,
                 ),
                 label: const Text(
-                  'Download Full Report',
+                  'Share Full Report',
                   style: TextStyle(
                     fontFamily: DesignTokens.fontFamily,
                     fontSize: 15,
@@ -113,21 +113,36 @@ class VendorAnalyticsScreen extends ConsumerWidget {
     final lines = <String>[
       'Style Mint — Vendor Analytics (last 30 days)',
       '',
-      'Gross sales: ${_withBadge('${overview.currency} ${overview.grossSales.toStringAsFixed(2)}', overview.grossSalesBadge)}',
-      'Net revenue: ${_withBadge('${overview.currency} ${overview.netRevenue.toStringAsFixed(2)}', overview.netRevenueBadge)}',
-      'Conversion rate: ${_withBadge('${overview.conversionRate.toStringAsFixed(2)}%', overview.conversionRateBadge)}',
-      'Total orders: ${_withBadge('${overview.totalOrders}', overview.totalOrdersBadge)}',
+      'Gross sales: ${_withBadge(
+        '${overview.currency} ${overview.grossSales.toStringAsFixed(2)}',
+        overview.grossSalesBadge,
+      )}',
+      'Net revenue: ${_withBadge(
+        '${overview.currency} ${overview.netRevenue.toStringAsFixed(2)}',
+        overview.netRevenueBadge,
+      )}',
+      'Conversion rate: ${_withBadge(
+        '${overview.conversionRate.toStringAsFixed(2)}%',
+        overview.conversionRateBadge,
+      )}',
+      'Total orders: ${_withBadge(
+        '${overview.totalOrders}',
+        overview.totalOrdersBadge,
+      )}',
       '',
       'Top products',
       ...summary.topProducts.map(
         (product) =>
-            '${product.rank}. ${product.name} — ${product.unitsSold} sold, ${product.currency} ${product.price.toStringAsFixed(2)}',
+            '${product.rank}. ${product.name} — ${product.unitsSold} sold, '
+            '${product.currency} ${product.price.toStringAsFixed(2)}',
       ),
       '',
       'Top creators',
       ...summary.topCreators.map(
         (creator) =>
-            '${creator.rank}. ${creator.formattedHandle} — ${creator.currency} ${creator.attributedRevenue.toStringAsFixed(2)} from ${creator.distinctReelCount} reels',
+            '${creator.rank}. ${creator.formattedHandle} — ${creator.currency} '
+            '${creator.attributedRevenue.toStringAsFixed(2)} from '
+            '${creator.distinctReelCount} reels',
       ),
       '',
       'Traffic sources',
