@@ -397,8 +397,14 @@ class _TrackingTimeline extends StatelessWidget {
     'Delivered',
   ];
 
+  // -1 means "before any of these 4 stages" — nothing here should render as
+  // the active/ongoing step. preparingForShipping used to map to 0, which is
+  // the *index* of the 'Shipped' stage, so a brand-new order that hadn't
+  // shipped yet showed "Shipped" as its current status (confirmed live: a
+  // just-placed Cash on Delivery order rendered with "Shipped" highlighted
+  // green before the vendor had even confirmed it).
   int get _current => switch (status) {
-    OrderTrackStatus.preparingForShipping => 0,
+    OrderTrackStatus.preparingForShipping => -1,
     OrderTrackStatus.inTransit => 1,
     OrderTrackStatus.outForDelivery => 2,
     OrderTrackStatus.delivered => 4,
