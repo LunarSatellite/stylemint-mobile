@@ -79,8 +79,15 @@ void main() {
               _FakeGroupCartRepository(cart),
             ),
           ],
-          child: const MaterialApp(
-            home: GroupCartDetailScreen(cartId: 'cart-share-id'),
+          child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                padding: const EdgeInsets.only(bottom: 48),
+                viewPadding: const EdgeInsets.only(bottom: 48),
+              ),
+              child: child!,
+            ),
+            home: const GroupCartDetailScreen(cartId: 'cart-share-id'),
           ),
         ),
       );
@@ -94,6 +101,16 @@ void main() {
       );
       expect(bottomSafeArea.top, isFalse);
       expect(bottomSafeArea.bottom, isTrue);
+      final closeButton = find.ancestor(
+        of: find.text('Close Group Cart'),
+        matching: find.byType(ElevatedButton),
+      );
+      final logicalHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+      expect(
+        tester.getBottomRight(closeButton).dy,
+        lessThan(logicalHeight - 48),
+      );
     },
   );
 }
