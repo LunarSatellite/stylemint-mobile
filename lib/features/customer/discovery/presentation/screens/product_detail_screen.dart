@@ -275,6 +275,8 @@ class _ProductBody extends StatelessWidget {
                     const SizedBox(height: DesignTokens.s12),
                     _NamePriceRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
+                    _UrgencyBanner(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
                     _ExpandableBlock(
                       description: product.description,
                       specs: product.specifications,
@@ -348,6 +350,64 @@ void _shareProduct(ProductDetail product) {
       ),
     ),
   );
+}
+
+// ── Urgency banner ──────────────────────────────────────────────────────────
+
+/// Shows a low-stock / high-activity nudge from the PDP urgency-signals
+/// endpoint. Renders nothing while loading, on error, or when neither
+/// signal is meaningfully urgent — this is a passive upsell, never a
+/// blocking or error-surfacing element.
+class _UrgencyBanner extends ConsumerWidget {
+  const _UrgencyBanner({required this.productId});
+
+  final String productId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final urgency = ref.watch(productUrgencyProvider(productId)).asData?.value;
+    if (urgency == null) return const SizedBox.shrink();
+
+    final parts = <String>[];
+    if (urgency.stockRemaining > 0 && urgency.stockRemaining <= 10) {
+      parts.add('Only ${urgency.stockRemaining} left');
+    }
+    if (urgency.cartAddsLast10Min >= 3) {
+      parts.add('${urgency.cartAddsLast10Min} people added to cart recently');
+    }
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s12,
+        vertical: DesignTokens.s8,
+      ),
+      decoration: BoxDecoration(
+        color: DesignTokens.colorError.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.local_fire_department,
+            size: 16,
+            color: DesignTokens.colorError,
+          ),
+          const SizedBox(width: DesignTokens.s8),
+          Flexible(
+            child: Text(
+              parts.join(' · '),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.colorError,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Badges ────────────────────────────────────────────────────────────────────

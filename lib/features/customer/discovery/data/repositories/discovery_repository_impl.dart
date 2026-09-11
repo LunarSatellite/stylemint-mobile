@@ -84,6 +84,32 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, ProductUrgency>> getProductUrgency(
+    String productId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getProductUrgency(productId);
+        return right(ProductUrgency(
+          stockRemaining: json['stockRemaining'] as int? ?? 0,
+          viewersRightNow: json['viewersRightNow'] as int? ?? 0,
+          cartAddsLast10Min: json['cartAddsLast10Min'] as int? ?? 0,
+        ));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
   getProductReviews(
     String productId, {

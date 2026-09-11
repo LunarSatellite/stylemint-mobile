@@ -107,6 +107,16 @@ class DiscoveryRemoteDataSource {
     return ProductDetailDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// PDP urgency signals: stock remaining, live viewer count, cart-adds in
+  /// the last 10 minutes. Best-effort — callers should treat failures as
+  /// "no urgency banner" rather than a hard error.
+  Future<Map<String, dynamic>> getProductUrgency(String productId) async {
+    final response = await apiClient.get(
+      '/api/v1/customer/discover/products/$productId/urgency',
+    );
+    return response as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getProductReviews(
     String productId, {
     int limit = 10,

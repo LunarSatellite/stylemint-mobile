@@ -156,6 +156,19 @@ class ProductReviewPreview {
   final DateTime createdAt;
 }
 
+/// PDP urgency signals — "X left", "Y people viewing", cart-adds recently.
+class ProductUrgency {
+  const ProductUrgency({
+    required this.stockRemaining,
+    required this.viewersRightNow,
+    required this.cartAddsLast10Min,
+  });
+
+  final int stockRemaining;
+  final int viewersRightNow;
+  final int cartAddsLast10Min;
+}
+
 /// A related / "You may also like" product card.
 class RelatedProduct {
   const RelatedProduct({

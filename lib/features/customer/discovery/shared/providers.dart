@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datas
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_notifier.dart';
@@ -50,6 +51,17 @@ final productDetailNotifierProvider =
       (ref, productId) =>
           ProductDetailNotifier(ref.watch(discoveryRepositoryProvider)),
     );
+
+/// Best-effort PDP urgency banner data ("X left", "Y viewing now"). A
+/// failure here should never block the product screen — callers read this
+/// via `.asData?.value`, not by surfacing the error state.
+final productUrgencyProvider = FutureProvider.autoDispose
+    .family<ProductUrgency?, String>((ref, productId) async {
+      final result = await ref
+          .watch(discoveryRepositoryProvider)
+          .getProductUrgency(productId);
+      return result.fold((_) => null, (urgency) => urgency);
+    });
 
 final relatedProductsProvider =
     StateNotifierProvider.family<
