@@ -1444,18 +1444,6 @@ class _OtherDetails extends StatelessWidget {
               subtitle: 'Have any queries? We are here to help',
               onTap: () => context.push(RouteNames.supportContact),
             ),
-            _rowDivider(),
-            _ActionRow(
-              iconData: Icons.local_shipping_outlined,
-              iconColor: DesignTokens.iconLight,
-              iconBg: DesignTokens.bgAppBodyLight,
-              title: 'Track with FedEx',
-              subtitle: 'Track your order on FedEx',
-              onTap: () => context.push(
-                '/orders/${order.orderNumber}/fedex',
-                extra: order,
-              ),
-            ),
             if (order.canCancel) ...[
               _rowDivider(),
               _ActionRow(
