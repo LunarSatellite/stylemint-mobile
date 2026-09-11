@@ -62,9 +62,11 @@ class VendorEarningsScreen extends ConsumerWidget {
           await ref.read(payoutHistoryNotifierProvider.notifier).load();
         },
         child: ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: DesignTokens.s16,
-            vertical: DesignTokens.s12,
+          padding: EdgeInsets.fromLTRB(
+            DesignTokens.s16,
+            DesignTokens.s12,
+            DesignTokens.s16,
+            DesignTokens.s12 + MediaQuery.paddingOf(context).bottom,
           ),
           children: [
             Row(
@@ -72,7 +74,8 @@ class VendorEarningsScreen extends ConsumerWidget {
               children: [
                 Text('Total Balance', style: DesignTokens.mediumSemibold),
                 TextButton.icon(
-                  onPressed: () => context.push(RouteNames.vendorEarningsPayout),
+                  onPressed: () =>
+                      context.push(RouteNames.vendorEarningsPayout),
                   icon: const Icon(
                     Icons.request_quote_outlined,
                     size: 16,
