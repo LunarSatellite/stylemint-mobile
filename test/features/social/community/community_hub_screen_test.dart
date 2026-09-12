@@ -12,8 +12,14 @@ void main() {
     expect(find.text('Style & Professional Circles'), findsOneWidget);
     expect(find.text('Recommendations'), findsOneWidget);
     expect(find.text('Live Drop Parties'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Live Shopping'), 200);
+    expect(find.text('Live Shopping'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Group Carts'), 200);
     expect(find.text('Group Carts'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Tips'), 200);
     expect(find.text('Tips'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Invite Friends'), 200);
+    expect(find.text('Invite Friends'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Friends'), 200);
     expect(find.text('Friends'), findsOneWidget);
     final safeArea = tester.widget<SafeArea>(
