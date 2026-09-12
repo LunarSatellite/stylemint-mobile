@@ -156,6 +156,14 @@ class ProductReviewPreview {
   final DateTime createdAt;
 }
 
+/// A product-page FAQ entry — backend `ProductSeoContent.Faq`.
+class ProductFaqEntry {
+  const ProductFaqEntry({required this.question, required this.answer});
+
+  final String question;
+  final String answer;
+}
+
 /// PDP urgency signals — "X left", "Y people viewing", cart-adds recently.
 class ProductUrgency {
   const ProductUrgency({

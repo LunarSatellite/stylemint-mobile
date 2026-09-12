@@ -110,6 +110,36 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, List<ProductFaqEntry>>> getProductFaq(
+    String productId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getProductSeoContent(productId);
+        final faq = (json['faq'] as List<dynamic>? ?? const <dynamic>[])
+            .cast<Map<String, dynamic>>()
+            .map((e) => ProductFaqEntry(
+                  question: e['question'] as String? ?? '',
+                  answer: e['answer'] as String? ?? '',
+                ))
+            .where((f) => f.question.isNotEmpty && f.answer.isNotEmpty)
+            .toList(growable: false);
+        return right(faq);
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
   getProductReviews(
     String productId, {

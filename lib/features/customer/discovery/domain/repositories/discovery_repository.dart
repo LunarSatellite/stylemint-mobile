@@ -31,6 +31,10 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
+  Future<Either<NetworkExceptions, List<ProductFaqEntry>>> getProductFaq(
+    String productId,
+  );
+
   Future<Either<NetworkExceptions, Unit>> addToCart({
     required String productId,
     required int qty,

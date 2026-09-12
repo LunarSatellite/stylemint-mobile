@@ -63,6 +63,16 @@ final productUrgencyProvider = FutureProvider.autoDispose
       return result.fold((_) => null, (urgency) => urgency);
     });
 
+/// Best-effort product FAQ ("Frequently Asked Questions" section). A
+/// failure here should never block the product screen.
+final productFaqProvider = FutureProvider.autoDispose
+    .family<List<ProductFaqEntry>, String>((ref, productId) async {
+      final result = await ref
+          .watch(discoveryRepositoryProvider)
+          .getProductFaq(productId);
+      return result.fold((_) => const <ProductFaqEntry>[], (faq) => faq);
+    });
+
 final relatedProductsProvider =
     StateNotifierProvider.family<
       RelatedProductsNotifier,

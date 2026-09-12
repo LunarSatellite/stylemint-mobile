@@ -302,6 +302,8 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                     ),
                     const SizedBox(height: DesignTokens.s12),
+                    _FaqSection(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
                     _ReviewsSection(
                       productId: product.id,
                       reviewCount: product.reviewCount,
@@ -774,6 +776,53 @@ class _VariantChips extends StatelessWidget {
             );
           })
           .toList(growable: false),
+    );
+  }
+}
+
+// ── FAQ ───────────────────────────────────────────────────────────────────────
+
+/// "Frequently Asked Questions" — Voyager "Autonomous SEO and Answer-Engine
+/// Authority" surfaced in-app. Renders nothing while loading, on error, or
+/// when the backend has no FAQ content, since this is a supplementary
+/// section, never a blocking one.
+class _FaqSection extends ConsumerWidget {
+  const _FaqSection({required this.productId});
+
+  final String productId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final faq = ref.watch(productFaqProvider(productId)).asData?.value;
+    if (faq == null || faq.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Frequently Asked Questions', style: DesignTokens.sectionInnerTitle),
+        const SizedBox(height: DesignTokens.s8),
+        ...faq.map(
+          (entry) => Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: DesignTokens.s8),
+              title: Text(entry.question, style: DesignTokens.mediumSemibold),
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    entry.answer,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

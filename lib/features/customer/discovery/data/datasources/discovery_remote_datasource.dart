@@ -132,6 +132,15 @@ class DiscoveryRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// GET `/v1/public/products/{id}/seo` — AI-generated (with a
+  /// deterministic fallback) FAQ + meta content for the product. Best-
+  /// effort: callers should treat a failure as "no FAQ section" rather
+  /// than an error, since this is a supplementary content block.
+  Future<Map<String, dynamic>> getProductSeoContent(String productId) async {
+    final response = await apiClient.get('/v1/public/products/$productId/seo');
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<RelatedProductDto>> getRelatedProducts(String productId) async {
     final response = await apiClient.get(
       '/v1/public/products/$productId/related',
