@@ -185,6 +185,7 @@ abstract class RouteNames {
   static const groupCartsList = '/group-carts';
   static const liveSessions = '/live';
   static const liveRoom = '/live/:sessionId';
+  static const referrals = '/referrals';
   static const coWatch = '/co-watch';
   static const coWatchSession = '/co-watch/:sessionId';
   static const tips = '/tips';

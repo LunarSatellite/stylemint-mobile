@@ -50,6 +50,12 @@ class CommunityHubScreen extends StatelessWidget {
       route: RouteNames.tips,
     ),
     _CommunityDestination(
+      title: 'Invite Friends',
+      subtitle: 'Share your invite link and earn credit when friends join',
+      icon: Icons.group_add_outlined,
+      route: RouteNames.referrals,
+    ),
+    _CommunityDestination(
       title: 'Friends',
       subtitle: 'Manage friends and connection requests',
       icon: Icons.people_outline,

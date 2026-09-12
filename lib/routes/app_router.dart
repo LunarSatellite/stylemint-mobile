@@ -123,6 +123,7 @@ import 'package:stylemint_mobile_frontend/features/social/drop_party/presentatio
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_room_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_sessions_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/referrals/presentation/screens/referrals_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/create_post_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/friend_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/presentation/screens/friends_screen.dart';
@@ -1244,6 +1245,10 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => LiveRoomScreen(
           sessionId: state.pathParameters['sessionId']!,
         ),
+      ),
+      GoRoute(
+        path: RouteNames.referrals,
+        builder: (ctx, state) => const ReferralsScreen(),
       ),
       GoRoute(
         path: RouteNames.groupCartsList,
