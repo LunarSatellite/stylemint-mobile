@@ -183,6 +183,8 @@ abstract class RouteNames {
   static const dropPartyScan = '/drop/scan';
   static const groupCart = '/group-cart/:groupCartId';
   static const groupCartsList = '/group-carts';
+  static const liveSessions = '/live';
+  static const liveRoom = '/live/:sessionId';
   static const coWatch = '/co-watch';
   static const coWatchSession = '/co-watch/:sessionId';
   static const tips = '/tips';

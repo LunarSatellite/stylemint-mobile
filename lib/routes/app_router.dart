@@ -121,6 +121,8 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_room_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_sessions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/create_post_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/friend_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/friends/presentation/screens/friends_screen.dart';
@@ -1231,6 +1233,16 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.dropParty,
         builder: (ctx, state) => DropPartyDetailScreen(
           partyId: state.pathParameters['dropPartyId']!,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.liveSessions,
+        builder: (ctx, state) => const LiveSessionsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.liveRoom,
+        builder: (ctx, state) => LiveRoomScreen(
+          sessionId: state.pathParameters['sessionId']!,
         ),
       ),
       GoRoute(

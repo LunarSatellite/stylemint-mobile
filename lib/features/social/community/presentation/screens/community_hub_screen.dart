@@ -32,6 +32,12 @@ class CommunityHubScreen extends StatelessWidget {
       route: RouteNames.dropPartiesList,
     ),
     _CommunityDestination(
+      title: 'Live Shopping',
+      subtitle: 'Watch live sessions and shop featured products in real time',
+      icon: Icons.live_tv_outlined,
+      route: RouteNames.liveSessions,
+    ),
+    _CommunityDestination(
       title: 'Group Carts',
       subtitle: 'Shop, compare, and vote together',
       icon: Icons.shopping_cart_outlined,
