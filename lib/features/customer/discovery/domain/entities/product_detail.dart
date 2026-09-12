@@ -156,6 +156,32 @@ class ProductReviewPreview {
   final DateTime createdAt;
 }
 
+/// Structured "which one should I buy" guidance — backend
+/// `ProductComparisonSummary`.
+class ProductComparison {
+  const ProductComparison({
+    required this.bestForTag,
+    required this.alternatives,
+    required this.recommendation,
+  });
+
+  final String bestForTag;
+  final List<ProductComparisonPoint> alternatives;
+  final String recommendation;
+}
+
+class ProductComparisonPoint {
+  const ProductComparisonPoint({
+    required this.productId,
+    required this.productName,
+    required this.howItDiffers,
+  });
+
+  final String productId;
+  final String productName;
+  final String howItDiffers;
+}
+
 /// A product-page FAQ entry — backend `ProductSeoContent.Faq`.
 class ProductFaqEntry {
   const ProductFaqEntry({required this.question, required this.answer});

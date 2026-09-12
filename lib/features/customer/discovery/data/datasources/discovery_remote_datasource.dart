@@ -141,6 +141,19 @@ class DiscoveryRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// GET `/v1/public/products/{id}/compare` — structured "which one should
+  /// I buy" guidance against same-category alternatives.
+  Future<Map<String, dynamic>> getProductComparison(
+    String productId, {
+    int maxAlternatives = 3,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/public/products/$productId/compare',
+      queryParameters: {'maxAlternatives': maxAlternatives},
+    );
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<RelatedProductDto>> getRelatedProducts(String productId) async {
     final response = await apiClient.get(
       '/v1/public/products/$productId/related',

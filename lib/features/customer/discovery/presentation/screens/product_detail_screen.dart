@@ -302,6 +302,8 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                     ),
                     const SizedBox(height: DesignTokens.s12),
+                    _ComparisonSection(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _ReviewsSection(
@@ -776,6 +778,84 @@ class _VariantChips extends StatelessWidget {
             );
           })
           .toList(growable: false),
+    );
+  }
+}
+
+// ── Product comparison ──────────────────────────────────────────────────────
+
+/// "Which one should I buy?" — Voyager "Intelligent Product Decision
+/// Engine" surfaced in-app. Renders nothing while loading, on error, or
+/// when there are no alternatives to compare against.
+class _ComparisonSection extends ConsumerWidget {
+  const _ComparisonSection({required this.productId});
+
+  final String productId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final comparison = ref.watch(productComparisonProvider(productId)).asData?.value;
+    if (comparison == null || comparison.alternatives.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.compare_arrows, size: 18, color: DesignTokens.primaryGreen),
+              const SizedBox(width: DesignTokens.s8),
+              Expanded(
+                child: Text(
+                  'Best for: ${comparison.bestForTag}',
+                  style: DesignTokens.mediumSemibold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            comparison.recommendation,
+            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          ...comparison.alternatives.map(
+            (point) => InkWell(
+              onTap: () => context.push(
+                RouteNames.productDetail.replaceFirst(':productId', point.productId),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: DesignTokens.s4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.chevron_right, size: 18, color: DesignTokens.textMuted),
+                    const SizedBox(width: DesignTokens.s4),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+                          children: [
+                            TextSpan(
+                              text: '${point.productName}: ',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            TextSpan(text: point.howItDiffers),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

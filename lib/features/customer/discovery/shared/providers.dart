@@ -73,6 +73,16 @@ final productFaqProvider = FutureProvider.autoDispose
       return result.fold((_) => const <ProductFaqEntry>[], (faq) => faq);
     });
 
+/// Best-effort "which one should I buy" comparison card. A failure here
+/// should never block the product screen.
+final productComparisonProvider = FutureProvider.autoDispose
+    .family<ProductComparison?, String>((ref, productId) async {
+      final result = await ref
+          .watch(discoveryRepositoryProvider)
+          .getProductComparison(productId);
+      return result.fold((_) => null, (comparison) => comparison);
+    });
+
 final relatedProductsProvider =
     StateNotifierProvider.family<
       RelatedProductsNotifier,
