@@ -11,6 +11,21 @@ class DeliveryRiskAssessment {
   final String? recommendedAction;
 }
 
+/// Voyager "Tamper/Seal Proof" — the vendor's pack-time tamper-evident
+/// seal for this package (photo of the sealed box + a unique seal id),
+/// backend `Package.SealPhotoUrl`/`SealId`/`SealedUtc`.
+class PackageSeal {
+  const PackageSeal({
+    required this.sealPhotoUrl,
+    required this.sealId,
+    this.sealedUtc,
+  });
+
+  final String sealPhotoUrl;
+  final String sealId;
+  final DateTime? sealedUtc;
+}
+
 class DeliveryStoryChapter {
   const DeliveryStoryChapter({
     required this.sequence,

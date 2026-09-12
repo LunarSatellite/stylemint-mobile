@@ -46,6 +46,32 @@ final deliveryRiskProvider = FutureProvider.autoDispose
       }
     });
 
+/// Voyager "Tamper/Seal Proof": best-effort read of the package's tamper-
+/// evident seal (photo + seal id + sealed timestamp), when the vendor
+/// applied one at pack time. Null (no seal section shown) on any failure
+/// or when the package was never sealed — this is a trust-building
+/// supplementary card, never a blocking read.
+final packageSealProvider = FutureProvider.autoDispose
+    .family<PackageSeal?, String>((ref, trackingNumber) async {
+      try {
+        final api = ref.watch(apiClientProvider);
+        final response =
+            await api.get('/v1/deliveries/$trackingNumber') as Map<String, dynamic>;
+        final sealPhotoUrl = response['sealPhotoUrl'] as String?;
+        final sealId = response['sealId'] as String?;
+        if (sealPhotoUrl == null || sealId == null) return null;
+
+        final sealedUtcRaw = response['sealedUtc'] as String?;
+        return PackageSeal(
+          sealPhotoUrl: sealPhotoUrl,
+          sealId: sealId,
+          sealedUtc: sealedUtcRaw != null ? DateTime.tryParse(sealedUtcRaw) : null,
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+
 final ordersRepositoryProvider = Provider<OrdersRepository>(
   (ref) => OrdersRepositoryImpl(
     remoteDataSource: ref.watch(ordersRemoteDataSourceProvider),

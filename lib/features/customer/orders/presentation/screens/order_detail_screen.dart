@@ -153,6 +153,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
             const SizedBox(height: DesignTokens.s12),
             _DeliveryRiskBanner(trackingNumber: trackingNumber!),
+            _PackageSealCard(trackingNumber: trackingNumber),
           ],
           const SizedBox(height: DesignTokens.s24),
           KeyedSubtree(
@@ -543,6 +544,104 @@ class _DeliveryRiskBanner extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Voyager "Tamper/Seal Proof" — the vendor's own pack-time tamper-evident
+/// seal (photo of the sealed box + a unique seal id), distinct from
+/// [_SealBadge] below (which shows a courier's in-transit handoff photo
+/// for one story chapter). Renders nothing if the vendor never applied a
+/// seal, or the read fails — supplementary trust signal, never blocking.
+class _PackageSealCard extends ConsumerWidget {
+  const _PackageSealCard({required this.trackingNumber});
+
+  final String trackingNumber;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seal = ref.watch(packageSealProvider(trackingNumber)).asData?.value;
+    if (seal == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.s12),
+      child: InkWell(
+        onTap: () => _showFullPhoto(context, seal.sealPhotoUrl),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        child: Container(
+          padding: const EdgeInsets.all(DesignTokens.s12),
+          decoration: BoxDecoration(
+            color: DesignTokens.primaryGreen.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(DesignTokens.s8),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(DesignTokens.s4),
+                child: Image.network(
+                  seal.sealPhotoUrl,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 40,
+                    height: 40,
+                    color: DesignTokens.bgAppBodyLight,
+                    child: const Icon(
+                      Icons.verified_user_outlined,
+                      size: 18,
+                      color: DesignTokens.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Packed sealed by the seller',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.primaryGreen,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      'Seal #${seal.sealId} · tap to view photo',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFullPhoto(BuildContext context, String url) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s12),
+              child: Image.network(url, fit: BoxFit.contain),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: DesignTokens.iconWhite),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
       ),
     );
   }
