@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class SavedItemCard extends StatelessWidget {
@@ -77,13 +78,7 @@ class SavedItemCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    formatMoney(item.price),
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  _priceRow(item.price, item.originalPrice, item.priceDrop),
                   if (item.rating > 0) ...[
                     const SizedBox(height: DesignTokens.s4),
                     Row(
@@ -106,6 +101,57 @@ class SavedItemCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Voyager "Wishlist Price-Drop Alerts": shows the original (struck-
+  /// through) price + a "-X" pill when this saved item's price has
+  /// dropped since it was saved; otherwise renders the price unchanged.
+  static Widget _priceRow(Money price, Money? originalPrice, Money? priceDrop) {
+    if (priceDrop == null || originalPrice == null) {
+      return Text(
+        formatMoney(price),
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textWhite,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          formatMoney(originalPrice),
+          style: DesignTokens.tiny.copyWith(
+            color: DesignTokens.textMuted,
+            decoration: TextDecoration.lineThrough,
+          ),
+        ),
+        const SizedBox(width: DesignTokens.s4),
+        Text(
+          formatMoney(price),
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.colorSuccess,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: DesignTokens.s4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: DesignTokens.colorSuccess.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '-${formatMoney(priceDrop)}',
+            style: DesignTokens.tiny.copyWith(
+              color: DesignTokens.colorSuccess,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
