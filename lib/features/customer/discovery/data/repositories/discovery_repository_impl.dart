@@ -175,6 +175,35 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, ProductPassport>> getProductPassport(
+    String productId,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getProductPassport(productId);
+        return right(ProductPassport(
+          vendorBusinessName: json['vendorBusinessName'] as String? ?? '',
+          vendorIdentityVerified: json['vendorIdentityVerified'] as bool? ?? false,
+          vendorOnPlatformSince: json['vendorOnPlatformSinceUtc'] != null
+              ? DateTime.tryParse(json['vendorOnPlatformSinceUtc'] as String)
+              : null,
+          authenticityStatement: json['authenticityStatement'] as String? ?? '',
+        ));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
   getProductReviews(
     String productId, {

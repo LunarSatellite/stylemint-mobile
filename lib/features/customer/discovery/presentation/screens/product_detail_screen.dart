@@ -302,6 +302,8 @@ class _ProductBody extends StatelessWidget {
                       productId: product.id,
                     ),
                     const SizedBox(height: DesignTokens.s12),
+                    _PassportSection(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
                     _ComparisonSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
@@ -778,6 +780,54 @@ class _VariantChips extends StatelessWidget {
             );
           })
           .toList(growable: false),
+    );
+  }
+}
+
+// ── Product passport ─────────────────────────────────────────────────────────
+
+/// "Digital Product Passport and Authenticity Proof" — listing-level
+/// provenance surfaced in-app. Renders nothing while loading or on error,
+/// since this is a supplementary trust signal, never a blocking one.
+class _PassportSection extends ConsumerWidget {
+  const _PassportSection({required this.productId});
+
+  final String productId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final passport = ref.watch(productPassportProvider(productId)).asData?.value;
+    if (passport == null || passport.authenticityStatement.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            passport.vendorIdentityVerified
+                ? Icons.verified_user
+                : Icons.info_outline,
+            size: 18,
+            color: passport.vendorIdentityVerified
+                ? DesignTokens.primaryGreen
+                : DesignTokens.textMuted,
+          ),
+          const SizedBox(width: DesignTokens.s8),
+          Expanded(
+            child: Text(
+              passport.authenticityStatement,
+              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

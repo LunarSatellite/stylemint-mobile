@@ -136,6 +136,13 @@ class DiscoveryRemoteDataSource {
   /// deterministic fallback) FAQ + meta content for the product. Best-
   /// effort: callers should treat a failure as "no FAQ section" rather
   /// than an error, since this is a supplementary content block.
+  /// GET `/v1/public/products/{id}/passport` — listing-level provenance
+  /// (seller verification status, tenure, authenticity statement).
+  Future<Map<String, dynamic>> getProductPassport(String productId) async {
+    final response = await apiClient.get('/v1/public/products/$productId/passport');
+    return response as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> getProductSeoContent(String productId) async {
     final response = await apiClient.get('/v1/public/products/$productId/seo');
     return response as Map<String, dynamic>;

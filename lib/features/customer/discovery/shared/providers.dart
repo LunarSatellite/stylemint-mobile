@@ -75,6 +75,16 @@ final productFaqProvider = FutureProvider.autoDispose
 
 /// Best-effort "which one should I buy" comparison card. A failure here
 /// should never block the product screen.
+/// Best-effort listing-provenance/authenticity card. A failure here should
+/// never block the product screen.
+final productPassportProvider = FutureProvider.autoDispose
+    .family<ProductPassport?, String>((ref, productId) async {
+      final result = await ref
+          .watch(discoveryRepositoryProvider)
+          .getProductPassport(productId);
+      return result.fold((_) => null, (passport) => passport);
+    });
+
 final productComparisonProvider = FutureProvider.autoDispose
     .family<ProductComparison?, String>((ref, productId) async {
       final result = await ref

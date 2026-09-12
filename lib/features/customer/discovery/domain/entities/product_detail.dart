@@ -156,6 +156,21 @@ class ProductReviewPreview {
   final DateTime createdAt;
 }
 
+/// Listing-level provenance record — backend `ProductPassport`.
+class ProductPassport {
+  const ProductPassport({
+    required this.vendorBusinessName,
+    required this.vendorIdentityVerified,
+    required this.vendorOnPlatformSince,
+    required this.authenticityStatement,
+  });
+
+  final String vendorBusinessName;
+  final bool vendorIdentityVerified;
+  final DateTime? vendorOnPlatformSince;
+  final String authenticityStatement;
+}
+
 /// Structured "which one should I buy" guidance — backend
 /// `ProductComparisonSummary`.
 class ProductComparison {
