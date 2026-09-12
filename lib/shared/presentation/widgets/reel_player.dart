@@ -121,6 +121,18 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _initialized = false;
 
+  /// An already-`initialize()`d (paused, muted) controller built ahead of
+  /// time while this reel was still a neighbour — see
+  /// [_prefetchInstagramVideo]. Adopted by [_initInstagramVideo] when the
+  /// reel becomes active instead of building fresh.
+  VideoPlayerController? _preloadController;
+
+  /// Resolves when [_preloadController]'s `initialize()` completes — may
+  /// already be a swipe ahead of the preload finishing, so
+  /// [_initInstagramVideo] awaits this rather than assuming the controller
+  /// is ready the instant it exists.
+  Future<void>? _preloadInitFuture;
+
   /// True when [_controller] was built from a cached file rather than the
   /// network, so a decode failure can be treated as a bad cache entry.
   bool _playingFromCache = false;
@@ -265,15 +277,94 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     return permalink.isNotEmpty ? permalink : (widget.reel.videoUrl ?? '');
   }
 
+  /// Downloads the neighbour's video bytes, then — the part that actually
+  /// removes the swipe-to-play delay — builds and `initialize()`s a real
+  /// (paused, muted) controller from the now-local file. `initialize()`
+  /// (codec/decoder setup + first-frame decode) is usually slower than the
+  /// download itself, so doing it only when the reel becomes active meant
+  /// every swipe still showed a spinner even on a full cache hit.
+  ///
+  /// This does NOT reintroduce the network-contention problem the
+  /// single-active-controller design exists to avoid: by the time
+  /// `initialize()` runs here the bytes are already on disk
+  /// (`VideoPlayerController.file`), so it costs CPU/decoder time, not a
+  /// second connection racing the active reel's stream.
+  bool _shouldStartPreloadInit() =>
+      mounted && !widget.isActive && _controller == null && _preloadController == null;
+
   Future<void> _prefetchInstagramVideo() async {
     final url = widget.reel.videoUrl;
     if (url == null || url.isEmpty) return;
     await ReelVideoCache.instance.prefetch(cacheKey: _videoCacheKey, url: url);
+    if (!_shouldStartPreloadInit()) return;
+
+    final cached = await ReelVideoCache.instance.peek(_videoCacheKey);
+    if (cached == null) return;
+    if (!_shouldStartPreloadInit()) return;
+
+    try {
+      final controller = VideoPlayerController.file(cached);
+      _preloadController = controller;
+      final initFuture = controller.initialize();
+      _preloadInitFuture = initFuture;
+      await initFuture;
+      if (_preloadController != controller) {
+        // Superseded (reel changed, or already adopted while we were
+        // awaiting) — dispose the orphan rather than leaking a decoder.
+        unawaited(controller.dispose());
+        return;
+      }
+      if (!mounted) return;
+      await controller.setLooping(true);
+      await controller.setVolume(0);
+    } on Exception {
+      // A preload failure just means this neighbour falls back to the
+      // normal on-activate path — never worth surfacing.
+      if (_preloadController != null) {
+        final stale = _preloadController;
+        _preloadController = null;
+        _preloadInitFuture = null;
+        unawaited(stale?.dispose() ?? Future<void>.value());
+      }
+    }
   }
 
   Future<void> _initInstagramVideo() async {
     final url = widget.reel.videoUrl;
     if (url == null || url.isEmpty) return;
+
+    // Adopt an already-initialised (or still-initialising) preload instead
+    // of building fresh — this is the swipe-feels-instant path. If the
+    // preload hasn't finished yet (user swiped faster than it could
+    // complete), await the same in-flight initialize() rather than
+    // starting a second, redundant one.
+    final preloaded = _preloadController;
+    if (preloaded != null) {
+      try {
+        await (_preloadInitFuture ?? Future<void>.value());
+      } on Exception {
+        // Preload failed — fall through to the normal path below.
+      }
+      if (mounted && _preloadController == preloaded && preloaded.value.isInitialized) {
+        _preloadController = null;
+        _preloadInitFuture = null;
+        _controller = preloaded;
+        _playingFromCache = true;
+        await preloaded.setVolume(1);
+        setState(() => _initialized = true);
+        _reconcilePlayback();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _reconcilePlayback();
+        });
+        return;
+      }
+      // Preload didn't pan out (failed / disposed) — clear it and fall
+      // through to build a fresh controller below.
+      if (_preloadController == preloaded) {
+        _preloadController = null;
+        _preloadInitFuture = null;
+      }
+    }
 
     // Cache hit plays from disk: no network, no rebuffering, and it works
     // offline. A miss streams straight from the network rather than waiting
@@ -719,6 +810,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     _playingFromCache = false;
     _hasError = false;
     unawaited(c?.dispose() ?? Future<void>.value());
+
+    final preload = _preloadController;
+    _preloadController = null;
+    unawaited(preload?.dispose() ?? Future<void>.value());
 
     final yt = _ytController;
     // Flip the disposed guard BEFORE we null the controller or call
