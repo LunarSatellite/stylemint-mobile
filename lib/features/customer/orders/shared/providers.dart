@@ -28,6 +28,24 @@ final deliveryStoryProvider = FutureProvider.autoDispose
         ..sort((a, b) => a.sequence.compareTo(b.sequence));
     });
 
+/// "AI Delivery Guardian" — best-effort risk assessment for one delivery.
+/// A failure here should never block the order detail screen.
+final deliveryRiskProvider = FutureProvider.autoDispose
+    .family<DeliveryRiskAssessment?, String>((ref, trackingNumber) async {
+      try {
+        final api = ref.watch(apiClientProvider);
+        final response =
+            await api.get('/v1/deliveries/$trackingNumber/risk') as Map<String, dynamic>;
+        return DeliveryRiskAssessment(
+          atRisk: response['atRisk'] as bool? ?? false,
+          customerMessage: response['customerMessage'] as String? ?? '',
+          recommendedAction: response['recommendedAction'] as String?,
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+
 final ordersRepositoryProvider = Provider<OrdersRepository>(
   (ref) => OrdersRepositoryImpl(
     remoteDataSource: ref.watch(ordersRemoteDataSourceProvider),

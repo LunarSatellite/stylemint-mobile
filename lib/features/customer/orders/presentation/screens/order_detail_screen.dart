@@ -150,6 +150,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             expanded: _expanded,
             onToggle: () => setState(() => _expanded = !_expanded),
           ),
+          if (trackingNumber?.startsWith('SM-D-') == true) ...[
+            const SizedBox(height: DesignTokens.s12),
+            _DeliveryRiskBanner(trackingNumber: trackingNumber!),
+          ],
           const SizedBox(height: DesignTokens.s24),
           KeyedSubtree(
             key: _trackingSectionKey,
@@ -497,6 +501,53 @@ class _TrackingTimeline extends StatelessWidget {
 
 /// Uses Delivery's append-only Story Mode projection when a package has a
 /// Style Mint tracking number, rather than guessing events from order state.
+/// "AI Delivery Guardian" — shows nothing when the delivery is on track,
+/// loading, or the check failed (best-effort, never blocking).
+class _DeliveryRiskBanner extends ConsumerWidget {
+  const _DeliveryRiskBanner({required this.trackingNumber});
+
+  final String trackingNumber;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final risk = ref.watch(deliveryRiskProvider(trackingNumber)).asData?.value;
+    if (risk == null || !risk.atRisk) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        color: DesignTokens.warning500.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 18, color: DesignTokens.warning500),
+          const SizedBox(width: DesignTokens.s8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  risk.customerMessage,
+                  style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+                ),
+                if (risk.recommendedAction != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    risk.recommendedAction!,
+                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// "Tamper and Condition Assurance" — the seal photo taken at pickup,
 /// shown as proof the package left the vendor sealed. Renders nothing if
 /// the backend hasn't attached a photo (older packages, or a courier tier

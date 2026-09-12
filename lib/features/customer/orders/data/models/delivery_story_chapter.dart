@@ -1,3 +1,16 @@
+/// "AI Delivery Guardian" risk assessment — backend `DeliveryRiskAssessment`.
+class DeliveryRiskAssessment {
+  const DeliveryRiskAssessment({
+    required this.atRisk,
+    required this.customerMessage,
+    this.recommendedAction,
+  });
+
+  final bool atRisk;
+  final String customerMessage;
+  final String? recommendedAction;
+}
+
 class DeliveryStoryChapter {
   const DeliveryStoryChapter({
     required this.sequence,
