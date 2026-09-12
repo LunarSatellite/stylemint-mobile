@@ -65,6 +65,7 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/mission_shopping_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
@@ -582,6 +583,12 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.searchTrending,
         builder: (ctx, state) =>
             const ProductListScreen(title: 'Trending Products'),
+      ),
+
+      // Mission-Based Shopping
+      GoRoute(
+        path: RouteNames.missionShopping,
+        builder: (ctx, state) => const MissionShoppingScreen(),
       ),
 
       // Category products

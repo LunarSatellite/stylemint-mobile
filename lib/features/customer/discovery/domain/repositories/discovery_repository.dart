@@ -43,6 +43,12 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
+  Future<Either<NetworkExceptions, MissionShoppingPlan>> getMissionShoppingPlan({
+    required String missionText,
+    double? budgetAmount,
+    int maxItems,
+  });
+
   Future<Either<NetworkExceptions, Unit>> addToCart({
     required String productId,
     required int qty,

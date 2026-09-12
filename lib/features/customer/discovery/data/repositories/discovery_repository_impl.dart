@@ -204,6 +204,52 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, MissionShoppingPlan>> getMissionShoppingPlan({
+    required String missionText,
+    double? budgetAmount,
+    int maxItems = 5,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getMissionShoppingPlan(
+          missionText: missionText,
+          budgetAmount: budgetAmount,
+          maxItems: maxItems,
+        );
+        final items = (json['items'] as List<dynamic>? ?? const <dynamic>[])
+            .cast<Map<String, dynamic>>()
+            .map((e) => MissionShoppingItem(
+                  productId: e['productId'] as String? ?? '',
+                  name: e['name'] as String? ?? '',
+                  thumbnailUrl: e['thumbnailUrl'] as String?,
+                  priceAmount: (e['priceAmount'] as num?)?.toDouble() ?? 0,
+                  reason: e['reason'] as String? ?? '',
+                ))
+            .where((i) => i.productId.isNotEmpty)
+            .toList(growable: false);
+        return right(MissionShoppingPlan(
+          missionSummary: json['missionSummary'] as String? ?? '',
+          items: items,
+          totalEstimatedCost: (json['totalEstimatedCost'] as num?)?.toDouble() ?? 0,
+          currency: json['currency'] as String? ?? 'NPR',
+          budgetAmount: (json['budgetAmount'] as num?)?.toDouble(),
+          withinBudget: json['withinBudget'] as bool? ?? true,
+        ));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, PagedResult<ProductReviewPreview>>>
   getProductReviews(
     String productId, {

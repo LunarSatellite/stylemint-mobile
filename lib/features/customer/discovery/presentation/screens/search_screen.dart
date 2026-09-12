@@ -39,6 +39,18 @@ class SearchScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(DesignTokens.s16),
               child: _SearchBar(),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                0,
+                DesignTokens.s16,
+                DesignTokens.s12,
+              ),
+              child: _HashtagPill(
+                label: '✨ Shop by Mission',
+                onTap: () => context.push(RouteNames.missionShopping),
+              ),
+            ),
             Expanded(
               child: state.when(
                 initial: _loader,

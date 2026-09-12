@@ -37,6 +37,7 @@ abstract class RouteNames {
   static const searchResults = '/search-results';
   static const searchTrending = '/trending-products';
   static const searchCategory = '/browse-category/:categoryId';
+  static const missionShopping = '/mission-shopping';
   static const reelsFeed = '/reels';
   static const reelDetail = '/reels/:reelId';
   static const reelComments = '/reels/:reelId/comments';

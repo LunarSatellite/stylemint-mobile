@@ -205,6 +205,42 @@ class ProductFaqEntry {
   final String answer;
 }
 
+/// A curated in-stock shopping list generated from a free-text goal —
+/// backend `MissionShoppingPlan`.
+class MissionShoppingPlan {
+  const MissionShoppingPlan({
+    required this.missionSummary,
+    required this.items,
+    required this.totalEstimatedCost,
+    required this.currency,
+    required this.budgetAmount,
+    required this.withinBudget,
+  });
+
+  final String missionSummary;
+  final List<MissionShoppingItem> items;
+  final double totalEstimatedCost;
+  final String currency;
+  final double? budgetAmount;
+  final bool withinBudget;
+}
+
+class MissionShoppingItem {
+  const MissionShoppingItem({
+    required this.productId,
+    required this.name,
+    required this.thumbnailUrl,
+    required this.priceAmount,
+    required this.reason,
+  });
+
+  final String productId;
+  final String name;
+  final String? thumbnailUrl;
+  final double priceAmount;
+  final String reason;
+}
+
 /// PDP urgency signals — "X left", "Y people viewing", cart-adds recently.
 class ProductUrgency {
   const ProductUrgency({

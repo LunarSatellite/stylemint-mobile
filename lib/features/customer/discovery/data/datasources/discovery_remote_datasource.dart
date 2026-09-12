@@ -161,6 +161,25 @@ class DiscoveryRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// POST `/v1/public/mission-shopping/plan` — Voyager "Mission-Based
+  /// Shopping": free-text goal (+ optional budget) in, a curated in-stock
+  /// shopping list with a per-item reason and a real total out.
+  Future<Map<String, dynamic>> getMissionShoppingPlan({
+    required String missionText,
+    double? budgetAmount,
+    int maxItems = 5,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/public/mission-shopping/plan',
+      data: {
+        'missionText': missionText,
+        if (budgetAmount != null) 'budgetAmount': budgetAmount,
+        'maxItems': maxItems,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
+
   Future<List<RelatedProductDto>> getRelatedProducts(String productId) async {
     final response = await apiClient.get(
       '/v1/public/products/$productId/related',
