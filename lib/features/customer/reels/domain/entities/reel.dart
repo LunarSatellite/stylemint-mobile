@@ -2,6 +2,16 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 
+/// One page of the cursor-paginated reels feed.
+class ReelsFeedPage {
+  const ReelsFeedPage({required this.reels, required this.nextCursor});
+
+  final List<Reel> reels;
+
+  /// Null when this was the last page.
+  final String? nextCursor;
+}
+
 /// A reel in the feed. Pure-Dart domain entity — no JSON, no Dio.
 /// Reels are pointer records: [sourceUrl] deep-links to the external platform.
 class Reel implements ReelMedia {

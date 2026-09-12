@@ -78,7 +78,17 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
             // it then plays immediately instead of showing a loading spinner.
             // (Inactive reels stay paused; only the active one plays.)
             allowImplicitScrolling: true,
-            onPageChanged: (index) => setState(() => _currentIndex = index),
+            onPageChanged: (index) {
+              setState(() => _currentIndex = index);
+              // Page in more reels before the user actually hits the end —
+              // otherwise the feed dead-ends and further swipes have
+              // nothing new to show (reads as the feed being stuck/laggy).
+              if (index >= reels.length - 3) {
+                unawaited(
+                  ref.read(reelsFeedNotifierProvider.notifier).fetchNextPage(),
+                );
+              }
+            },
             itemBuilder:
                 (_, index) => ReelCard(
                   reel: reels[index],

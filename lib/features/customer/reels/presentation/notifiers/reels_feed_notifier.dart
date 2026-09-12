@@ -25,14 +25,46 @@ class ReelsFeedNotifier extends StateNotifier<ReelsFeedState> {
 
   final ReelsRepository _repository;
 
+  static const int _pageSize = 20;
+
+  String? _nextCursor;
+  bool _loadingMore = false;
+
   void reset() => state = const ReelsFeedState.initial();
 
-  Future<void> fetchFeed({int limit = 20, String? cursor}) async {
+  Future<void> fetchFeed({int limit = _pageSize}) async {
     state = const ReelsFeedState.loadInProgress();
-    final either = await _repository.getReelsFeed(limit: limit, cursor: cursor);
-    state = either.fold(
-      ReelsFeedState.loadFailure,
-      ReelsFeedState.loadSuccess,
-    );
+    _nextCursor = null;
+    final either = await _repository.getReelsFeed(limit: limit);
+    state = either.fold(ReelsFeedState.loadFailure, (page) {
+      _nextCursor = page.nextCursor;
+      return ReelsFeedState.loadSuccess(page.reels);
+    });
+  }
+
+  /// Fetches the next page and appends it to the current feed. Called when
+  /// the user swipes near the end of the loaded reels — without this the
+  /// feed dead-ends at [_pageSize] reels and further swipes have nothing to
+  /// show (looks identical to a stuck/laggy feed).
+  Future<void> fetchNextPage() async {
+    final current = state;
+    if (current is! _LoadSuccess || _loadingMore || _nextCursor == null) return;
+
+    _loadingMore = true;
+    try {
+      final either = await _repository.getReelsFeed(
+        limit: _pageSize,
+        cursor: _nextCursor,
+      );
+      either.fold(
+        (_) {}, // best-effort — keep showing what's already loaded
+        (page) {
+          _nextCursor = page.nextCursor;
+          state = ReelsFeedState.loadSuccess([...current.reels, ...page.reels]);
+        },
+      );
+    } finally {
+      _loadingMore = false;
+    }
   }
 }

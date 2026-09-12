@@ -280,6 +280,12 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     // for a full download, so first view is never slower than before.
     final cached = await ReelVideoCache.instance.peek(_videoCacheKey);
     if (!mounted) return;
+    // The user may have already swiped past this reel while the cache
+    // lookup was in flight (common on a fast rapid-swipe burst) — starting
+    // a full decoder initialise() for a reel that's no longer active just
+    // burns CPU/network that the reel actually on screen needs, which is
+    // exactly what makes a rapid-swipe burst feel sluggish afterwards.
+    if (!widget.isActive) return;
 
     try {
       final controller = cached != null

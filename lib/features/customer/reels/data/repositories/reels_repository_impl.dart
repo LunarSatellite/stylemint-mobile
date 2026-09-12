@@ -19,17 +19,17 @@ class ReelsRepositoryImpl implements ReelsRepository {
   static const _uuid = Uuid();
 
   @override
-  Future<Either<NetworkExceptions, List<Reel>>> getReelsFeed({
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getReelsFeed({
     int limit = 20,
     String? cursor,
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        final reels = await remoteDataSource.getReelsFeed(
+        final page = await remoteDataSource.getReelsFeed(
           limit: limit,
           cursor: cursor,
         );
-        return right(reels);
+        return right(page);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

@@ -13,12 +13,12 @@ class MockReelsRepository implements ReelsRepository {
   final List<Reel> _reels = List.of(kMockReels);
 
   @override
-  Future<Either<NetworkExceptions, List<Reel>>> getReelsFeed({
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getReelsFeed({
     int limit = 20,
     String? cursor,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 600));
-    return right(_reels);
+    return right(ReelsFeedPage(reels: _reels, nextCursor: null));
   }
 
   @override

@@ -3,7 +3,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 
 abstract interface class ReelsRepository {
-  Future<Either<NetworkExceptions, List<Reel>>> getReelsFeed({
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getReelsFeed({
     int limit,
     String? cursor,
   });

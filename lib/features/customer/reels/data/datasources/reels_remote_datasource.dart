@@ -19,8 +19,9 @@ class ReelsRemoteDataSource {
   /// (Discovery). Returns `{ items: [{ kind, reel: {...}, ... }], nextCursor }`;
   /// we keep the reel-bearing items and map each card to [ReelDto]. Caption +
   /// tagged products aren't on the card — they're hydrated lazily via
-  /// [getReelDetail].
-  Future<List<Reel>> getReelsFeed({
+  /// [getReelDetail]. `nextCursor` is surfaced so the feed screen can page in
+  /// more reels as the user nears the end instead of dead-ending at [limit].
+  Future<ReelsFeedPage> getReelsFeed({
     required int limit,
     String? cursor,
   }) async {
@@ -34,12 +35,13 @@ class ReelsRemoteDataSource {
 
     final data = response as Map<String, dynamic>;
     final items = (data['items'] as List<dynamic>? ?? const <dynamic>[]);
-    return items
+    final reels = items
         .whereType<Map<String, dynamic>>()
         .map((e) => e['reel'])
         .whereType<Map<String, dynamic>>()
         .map(_cardJsonToReel)
         .toList(growable: false);
+    return ReelsFeedPage(reels: reels, nextCursor: data['nextCursor'] as String?);
   }
 
   /// Builds a [Reel] domain entity directly from a Discovery feed card.
