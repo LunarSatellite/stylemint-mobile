@@ -579,7 +579,12 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
 
   String _fmtCount(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';
+    if (n >= 1000) {
+      final thousands = n / 1000;
+      return thousands == thousands.roundToDouble()
+          ? '${thousands.toStringAsFixed(0)}k'
+          : '${thousands.toStringAsFixed(1)}k';
+    }
     return n.toString();
   }
 
@@ -1260,7 +1265,12 @@ class _ReelCard extends ConsumerWidget {
 
   String _fmtCount(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';
+    if (n >= 1000) {
+      final thousands = n / 1000;
+      return thousands == thousands.roundToDouble()
+          ? '${thousands.toStringAsFixed(0)}k'
+          : '${thousands.toStringAsFixed(1)}k';
+    }
     return n.toString();
   }
 }
