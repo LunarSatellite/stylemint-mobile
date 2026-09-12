@@ -497,6 +497,82 @@ class _TrackingTimeline extends StatelessWidget {
 
 /// Uses Delivery's append-only Story Mode projection when a package has a
 /// Style Mint tracking number, rather than guessing events from order state.
+/// "Tamper and Condition Assurance" — the seal photo taken at pickup,
+/// shown as proof the package left the vendor sealed. Renders nothing if
+/// the backend hasn't attached a photo (older packages, or a courier tier
+/// that doesn't capture one).
+class _SealBadge extends StatelessWidget {
+  const _SealBadge({required this.photoUrl});
+
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (photoUrl == null || photoUrl!.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.s8),
+      child: InkWell(
+        onTap: () => _showSealPhoto(context, photoUrl!),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s4),
+              child: Image.network(
+                photoUrl!,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 40,
+                  height: 40,
+                  color: DesignTokens.bgAppBodyLight,
+                  child: const Icon(
+                    Icons.verified_user_outlined,
+                    size: 18,
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s8),
+            Text(
+              'Sealed for your protection · tap to view',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.primaryGreen,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSealPhoto(BuildContext context, String url) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(DesignTokens.s12),
+              child: Image.network(url, fit: BoxFit.contain),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: DesignTokens.iconWhite),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DeliveryStoryTimeline extends StatelessWidget {
   const _DeliveryStoryTimeline({
     required this.status,
@@ -580,6 +656,8 @@ class _DeliveryStoryTimeline extends StatelessWidget {
                             color: DesignTokens.textMuted,
                           ),
                         ),
+                        if (chapter.kind == DeliveryStoryChapterKind.sealed)
+                          _SealBadge(photoUrl: chapter.heroImageUrl),
                       ],
                     ),
                   ),

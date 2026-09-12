@@ -5,6 +5,7 @@ class DeliveryStoryChapter {
     required this.subtitle,
     required this.occurredUtc,
     this.kind = DeliveryStoryChapterKind.unknown,
+    this.heroImageUrl,
   });
 
   final int sequence;
@@ -12,6 +13,13 @@ class DeliveryStoryChapter {
   final String subtitle;
   final DateTime occurredUtc;
   final DeliveryStoryChapterKind kind;
+
+  /// For the [DeliveryStoryChapterKind.sealed] chapter this is the tamper-
+  /// evident seal photo taken at pickup (Voyager "Tamper and Condition
+  /// Assurance") — backend `StoryModeChapterDto.HeroImageUrl`. Other
+  /// chapter kinds may also carry a hero image; only `sealed` gets special
+  /// treatment in the UI for now.
+  final String? heroImageUrl;
 
   factory DeliveryStoryChapter.fromJson(Map<String, dynamic> json) =>
       DeliveryStoryChapter(
@@ -21,6 +29,7 @@ class DeliveryStoryChapter {
         kind: DeliveryStoryChapterKind.fromCode(
           (json['kind'] as num?)?.toInt(),
         ),
+        heroImageUrl: json['heroImageUrl'] as String?,
         occurredUtc:
             DateTime.tryParse(json['occurredUtc'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
