@@ -5,6 +5,8 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities
 abstract interface class CartRepository {
   Future<Either<NetworkExceptions, Cart>> getCart();
 
+  Future<Either<NetworkExceptions, BasketOptimization>> getBasketOptimization();
+
   Future<Either<NetworkExceptions, Cart>> addToCart({
     required String productId,
     required int quantity,

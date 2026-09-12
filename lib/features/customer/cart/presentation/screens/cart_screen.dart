@@ -96,6 +96,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   child: ListView(
                     padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                     children: [
+                      const _BasketInsightsCard(),
                       ...List.generate(cart.items.length, (i) {
                         return CartItemTile(
                           item: cart.items[i],
@@ -773,6 +774,64 @@ class _CheckoutBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// "Intelligent Basket Optimizer" — AI observations grounded only in the
+/// cart's actual contents. Renders nothing while loading, on error, or
+/// when there's no meaningful content, since this is a passive, never-
+/// blocking supplementary card.
+class _BasketInsightsCard extends ConsumerWidget {
+  const _BasketInsightsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final optimization = ref.watch(basketOptimizationProvider).asData?.value;
+    if (optimization == null || !optimization.hasContent) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, 0,
+      ),
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        color: DesignTokens.primaryGreen.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, size: 16, color: DesignTokens.primaryGreen),
+              const SizedBox(width: DesignTokens.s8),
+              Text(
+                'Basket Insights',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          for (final insight in optimization.insights)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(insight, style: DesignTokens.smallRegular),
+            ),
+          if (optimization.savingsTip != null) ...[
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              optimization.savingsTip!,
+              style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ],
       ),
     );
   }

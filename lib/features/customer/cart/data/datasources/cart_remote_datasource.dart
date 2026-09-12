@@ -12,6 +12,13 @@ class CartRemoteDataSource {
     return CartDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// GET `/v1/cart/optimize` — AI-generated observations grounded only in
+  /// the caller's actual cart contents, plus an optional savings tip.
+  Future<Map<String, dynamic>> getBasketOptimization() async {
+    final response = await apiClient.get('/v1/cart/optimize');
+    return response as Map<String, dynamic>;
+  }
+
   Future<CartDto> addToCart({
     required String productId,
     required int quantity,

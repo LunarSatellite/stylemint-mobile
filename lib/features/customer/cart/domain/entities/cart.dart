@@ -1,5 +1,16 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
+/// AI-generated, cart-grounded observations — backend
+/// `BasketOptimizationSummary`.
+class BasketOptimization {
+  const BasketOptimization({required this.insights, this.savingsTip});
+
+  final List<String> insights;
+  final String? savingsTip;
+
+  bool get hasContent => insights.isNotEmpty || (savingsTip?.isNotEmpty ?? false);
+}
+
 class CartItem {
   const CartItem({
     required this.id,

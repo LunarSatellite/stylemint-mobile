@@ -40,6 +40,22 @@ class CartRepositoryImpl implements CartRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, BasketOptimization>> getBasketOptimization() async {
+    try {
+      final json = await remoteDataSource.getBasketOptimization();
+      final insights = (json['insights'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<String>()
+          .toList(growable: false);
+      return right(BasketOptimization(
+        insights: insights,
+        savingsTip: json['savingsTip'] as String?,
+      ));
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, Cart>> addToCart({
     required String productId,
     required int quantity,
