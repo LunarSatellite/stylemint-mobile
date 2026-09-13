@@ -54,12 +54,17 @@ class _PreviewReelScreenState extends State<PreviewReelScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Small player at the top, matches the image proportion.
+                  // YouTube's embedded-player terms require a viewport of at
+                  // least 200x200, so the width never drops below 200.
                   Center(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
                       child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.42,
-                        height: MediaQuery.of(context).size.width * 0.62,
+                        width: (MediaQuery.of(context).size.width * 0.42)
+                            .clamp(200.0, double.infinity),
+                        height: (MediaQuery.of(context).size.width * 0.42)
+                                .clamp(200.0, double.infinity) *
+                            (0.62 / 0.42),
                         child: ReelPlayer(
                           reel: reel,
                           isActive: true,
