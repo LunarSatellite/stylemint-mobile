@@ -21,10 +21,7 @@ Rect reelPlayerRect(Reel reel, Size page, EdgeInsets padding) {
     platform: source is EmbedSource ? source.platform : null,
     page: page,
     topInset: padding.top,
-    panelHeight: EmbedLayoutPolicy.panelHeight(
-      hasProducts: reel.taggedProducts.isNotEmpty,
-      bottomInset: padding.bottom,
-    ),
+    panelHeight: EmbedLayoutPolicy.panelHeight(bottomInset: padding.bottom),
   );
 }
 
@@ -32,8 +29,8 @@ Rect reelPlayerRect(Reel reel, Size page, EdgeInsets padding) {
 ///
 /// Most reels play full-bleed with a gradient scrim, creator info, caption,
 /// right-rail actions and tagged products drawn over the video. Nothing may
-/// be drawn over a YouTube player, so a YouTube reel plays in its own
-/// rectangle with the actions beside it and the rest below.
+/// be drawn over a YouTube player, so a YouTube reel plays full-width with a
+/// slim creator-and-actions bar below it; its products open in a sheet.
 ///
 /// [isActive] must be true for the reel currently visible in the viewport
 /// so that [ReelPlayer] plays it and pauses all others.
@@ -167,51 +164,24 @@ class _ReelCardState extends State<ReelCard> {
             ),
 
             Positioned(
-              left: player.right,
-              top: player.top,
-              right: 0,
-              height: player.height,
-              child: Column(
-                children: [
-                  const SizedBox(height: DesignTokens.s8),
-                  _PausedMark(embed: embed),
-                  _SoundOffButton(embed: embed),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: ReelActions(reel: widget.reel),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.s8),
-                ],
-              ),
-            ),
-
-            Positioned(
               left: 0,
               right: 0,
               top: player.bottom,
               bottom: 0,
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
+              child: Padding(
                 padding: EdgeInsets.only(
-                  top: DesignTokens.s12,
+                  left: DesignTokens.s12,
+                  right: DesignTokens.s4,
                   bottom: padding.bottom,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    CreatorInfo(reel: widget.reel),
-                    if (widget.reel.taggedProducts.isNotEmpty) ...[
-                      const SizedBox(height: DesignTokens.s12),
-                      TaggedProductsSection(
-                        products: widget.reel.taggedProducts,
-                      ),
-                    ],
+                    Expanded(
+                      child: CreatorInfo(reel: widget.reel, compact: true),
+                    ),
+                    _PausedMark(embed: embed),
+                    _SoundOffButton(embed: embed),
+                    ReelActions(reel: widget.reel, compact: true),
                   ],
                 ),
               ),
@@ -223,7 +193,7 @@ class _ReelCardState extends State<ReelCard> {
   }
 }
 
-/// Shown beside a YouTube player while the viewer has it paused.
+/// Shown in the bar below a YouTube player while the viewer has it paused.
 class _PausedMark extends StatelessWidget {
   const _PausedMark({required this.embed});
 
@@ -240,8 +210,8 @@ class _PausedMark extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return const Padding(
-          padding: EdgeInsets.only(bottom: DesignTokens.s8),
-          child: ReelPlayIndicator(size: 40),
+          padding: EdgeInsets.only(right: DesignTokens.s4),
+          child: ReelPlayIndicator(size: 36),
         );
       },
     );

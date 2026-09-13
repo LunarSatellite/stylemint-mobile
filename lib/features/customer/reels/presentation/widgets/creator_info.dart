@@ -13,9 +13,13 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// /v1/follows/{creatorId}). Initial state is seeded from the reel's
 /// isCreatorFollowed flag.
 class CreatorInfo extends ConsumerStatefulWidget {
-  const CreatorInfo({required this.reel, super.key});
+  const CreatorInfo({required this.reel, this.compact = false, super.key});
 
   final Reel reel;
+
+  /// One line of name and one of caption, with Follow as a badge on the
+  /// avatar. Used in the slim bar below a YouTube reel.
+  final bool compact;
 
   @override
   ConsumerState<CreatorInfo> createState() => _CreatorInfoState();
@@ -69,6 +73,14 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
     final reel = widget.reel;
     final isFollowing =
         ref.watch(followNotifierProvider).contains(reel.creatorId);
+    if (widget.compact) {
+      return _CompactCreatorInfo(
+        reel: reel,
+        showFollow: !isFollowing && reel.creatorId.isNotEmpty,
+        busy: _busy,
+        onFollow: _toggleFollow,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
       child: Column(
@@ -137,6 +149,106 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _CompactCreatorInfo extends StatelessWidget {
+  const _CompactCreatorInfo({
+    required this.reel,
+    required this.showFollow,
+    required this.busy,
+    required this.onFollow,
+  });
+
+  final Reel reel;
+  final bool showFollow;
+  final bool busy;
+  final VoidCallback onFollow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: DesignTokens.bgAppBodyLight,
+              backgroundImage: reel.creatorAvatarUrl.isNotEmpty
+                  ? CachedNetworkImageProvider(reel.creatorAvatarUrl)
+                  : null,
+              child: reel.creatorAvatarUrl.isEmpty
+                  ? const Icon(Icons.person, color: DesignTokens.iconLight)
+                  : null,
+            ),
+            if (showFollow)
+              Positioned(
+                right: -4,
+                bottom: -4,
+                child: Semantics(
+                  button: true,
+                  label: 'Follow ${reel.creatorName}',
+                  child: GestureDetector(
+                    onTap: busy ? null : onFollow,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: DesignTokens.primaryGreen,
+                        border: Border.all(
+                          color: DesignTokens.bgAppFoundation,
+                          width: 2,
+                        ),
+                      ),
+                      child: busy
+                          ? const Padding(
+                              padding: EdgeInsets.all(3),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: DesignTokens.buttonPrimaryText,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.add,
+                              size: 13,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: DesignTokens.s12),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                reel.creatorName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                ),
+              ),
+              if (reel.caption.isNotEmpty)
+                Text(
+                  reel.caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -90,6 +90,7 @@ class _BodyState extends State<_Body> {
                 page: constraints.biggest,
                 topInset: padding.top + _topBarHeight,
                 panelHeight: _panelHeight(reel) + padding.bottom,
+                rightInset: EmbedLayoutPolicy.railWidth,
               )
             : Offset.zero & constraints.biggest;
         return Stack(
