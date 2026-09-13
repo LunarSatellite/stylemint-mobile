@@ -439,24 +439,17 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     // previous lifecycle) cannot touch it.
     _ytDisposed = false;
 
-    // When the caller asked for autoplay we hand a non-const flags block
-    // to the controller so the IFrame Player comes up already muted +
-    // playing. Mobile WebView autoplay policies (both Android Chromium
-    // and WKWebView) silently reject programmatic playVideo() on an
-    // unmuted iframe without a user gesture; starting muted is the
-    // supported way to satisfy the policy. For the multi-reel customer
-    // feed we keep autoPlay=false (default) so adjacent offscreen reels
-    // don't all start streaming simultaneously and choke bandwidth.
-    final ytAutoplay = widget.autoplay;
+    // YoutubePlayer's own initial-ready listener runs after ours and calls
+    // play() when flags.autoPlay is set, then mute() when flags.mute is set.
+    // So autoplay only the reel actually on screen (the feed passes
+    // autoplay: true to every card, which left offscreen neighbours decoding
+    // in the background), and never start muted (it re-muted every reel).
+    // The package's WebView sets mediaPlaybackRequiresUserGesture: false, so
+    // unmuted autoplay is permitted.
     _ytController = YoutubePlayerController(
       initialVideoId: videoId,
       flags: YoutubePlayerFlags(
-        autoPlay: ytAutoplay,
-        // Start muted when autoplaying so the IFrame autoplay policy is
-        // satisfied. Once the controller reports ready, _onYouTubeValueChanged
-        // unmutes (best-effort — WebView may still keep it muted until
-        // the first user gesture).
-        mute: ytAutoplay,
+        autoPlay: widget.autoplay && widget.isActive,
         // Disable IFrame loop:1 — it forces a network re-fetch at the end
         // of every loop (loop:1 seeks back to 0 and re-buffers), which is
         // the visible load-then-load-again on YouTube reels. We replay via
@@ -770,18 +763,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     if (ready == _ytReady) return;
     _ytReady = ready;
     if (ready) {
-      // Reconcile first so an offscreen feed neighbour (also autoplaying
-      // muted) is paused before it gets unmuted — otherwise its audio can
-      // leak for a moment ahead of the pause.
-      _reconcilePlayback();
-      // If the caller opted into autoplay we started the IFrame muted
-      // so the autoplay policy would accept it. Try to bring audio back
-      // once the player reports ready. The WebView may still ignore
-      // this until the first user gesture — that is expected and the
-      // tap-to-toggle behaviour already covers it.
-      if (widget.autoplay) {
-        _ytController?.unMute();
-      }
+      // Deferred so it runs after YoutubePlayer's own initial-ready listener,
+      // which calls play() for autoplay reels: a reel swiped offscreen before
+      // it finished loading would otherwise keep playing in the background.
+      scheduleMicrotask(_reconcilePlayback);
     }
   }
 
