@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/provi
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Creator Earnings & Payments — rebuilt to the design spec:
 /// a two-tone balances + payout-request card, an "Earnings Breakdown This
@@ -71,9 +72,7 @@ class EarningsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 // ── Balances + payout request (two-tone card) ─────────────────────────────────

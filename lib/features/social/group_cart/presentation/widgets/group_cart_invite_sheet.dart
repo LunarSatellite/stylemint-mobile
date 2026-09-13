@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/social/friends/presentation/n
 import 'package:stylemint_mobile_frontend/features/social/friends/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 typedef GroupCartInviteResult = ({String friendName, String token});
 
@@ -152,5 +153,5 @@ class _GroupCartInviteSheetState extends ConsumerState<GroupCartInviteSheet> {
     );
   }
 
-  Widget _loader() => const Center(child: CircularProgressIndicator());
+  Widget _loader() => const SmPageLoader();
 }

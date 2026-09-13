@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/badges_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class EditProfileBadgesScreen extends ConsumerStatefulWidget {
   const EditProfileBadgesScreen({super.key});
@@ -107,7 +108,7 @@ class _EditProfileBadgesScreenState
       ),
       body: badgesState.when(
         initial: () => const SizedBox.shrink(),
-        loadInProgress: () => const Center(child: CircularProgressIndicator()),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (_) => const Center(
           child: Text(
             'Failed to load badges',

@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/support/shared/help_center_da
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class HelpArticleScreen extends ConsumerWidget {
   const HelpArticleScreen({required this.article, super.key});
@@ -30,9 +31,7 @@ class HelpArticleScreen extends ConsumerWidget {
         ),
       ),
       body: content.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (_, _) => _ArticleError(
           onRetry: () => ref.invalidate(
             helpArticleProvider((

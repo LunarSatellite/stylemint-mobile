@@ -19,6 +19,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poste
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Home Page Reel — vertical, full-screen reels feed (Figma node 9386-5224).
 ///
@@ -253,7 +254,5 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/domain/entities/activity_item.dart';
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── Filter categories ─────────────────────────────────────────────────────────
 
@@ -198,11 +199,7 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
           // ── Activity list ───────────────────────────────────────────────
           Expanded(
             child: activity.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loading: () => const SmPageLoader(),
               error: (_, _e) => Center(
                 child: Text(
                   'Failed to load activity.',

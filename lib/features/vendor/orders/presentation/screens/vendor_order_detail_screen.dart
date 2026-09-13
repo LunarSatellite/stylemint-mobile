@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class VendorOrderDetailScreen extends ConsumerStatefulWidget {
   const VendorOrderDetailScreen({required this.orderId, super.key});
@@ -124,9 +125,7 @@ class _VendorOrderDetailScreenState
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   Widget _buildBody(VendorOrder order, {required bool actionInProgress}) {
     return Column(

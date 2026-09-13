@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/wallet/domain/entities/wallet
 import 'package:stylemint_mobile_frontend/features/wallet/presentation/notifiers/wallet_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 final _nprFmt = NumberFormat('#,##0.00', 'en_US');
 String _npr(double amount) => 'Rs ${_nprFmt.format(amount)}';
@@ -977,9 +978,7 @@ class _Loader extends StatelessWidget {
   const _Loader();
 
   @override
-  Widget build(BuildContext context) => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+  Widget build(BuildContext context) => const SmPageLoader();
 }
 
 class _ErrorBody extends StatelessWidget {

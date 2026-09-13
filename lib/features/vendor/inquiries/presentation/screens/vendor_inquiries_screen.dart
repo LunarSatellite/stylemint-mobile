@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Pending Customer Inquiries + Reply (vendor).
 /// Pixel-matched to Brand 'Pending Customer Inquiries - Reply to Enquiry.pdf'.
@@ -36,8 +37,7 @@ class VendorInquiriesScreen extends ConsumerWidget {
             style: DesignTokens.sectionInnerTitle),
       ),
       body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: DesignTokens.primaryGreen))
+          ? const SmPageLoader()
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
               onRefresh: () => ref.read(inquiriesNotifierProvider.notifier).load(),

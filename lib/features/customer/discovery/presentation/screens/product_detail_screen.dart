@@ -25,6 +25,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_v
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({required this.productId, super.key});
@@ -189,9 +190,7 @@ class _Loader extends StatelessWidget {
   const _Loader();
 
   @override
-  Widget build(BuildContext context) => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget build(BuildContext context) => const SmPageLoader();
 }
 
 // ── Body ──────────────────────────────────────────────────────────────────────

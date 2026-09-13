@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class PauseAccountScreen extends ConsumerStatefulWidget {
   const PauseAccountScreen({super.key});
@@ -241,5 +242,5 @@ class _PauseAccountScreenState extends ConsumerState<PauseAccountScreen> {
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }

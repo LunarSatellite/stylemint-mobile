@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/notifie
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -381,9 +382,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _loadingBody() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loadingBody() => const SmPageLoader();
 
   // ── FORM ──────────────────────────────────────────────────────────────────────
   Widget _buildForm({required bool saving, DeletionRequest? pendingRequest}) {

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/domain/en
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/notifiers/vendor_partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Vendor â†’ Partnerships â†’ "Send Partnership Requests". Backed by the real
 /// `POST /v1/vendor/partnerships/invite`. Creator selection and commission
@@ -561,9 +562,7 @@ class _CreatorPickerSheetState extends ConsumerState<_CreatorPickerSheet> {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 class _CreatorPickerRow extends StatelessWidget {

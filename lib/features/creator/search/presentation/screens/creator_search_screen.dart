@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/search/presentation/n
 import 'package:stylemint_mobile_frontend/features/creator/search/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Creator-facing search — distinct from the customer shopping [SearchScreen]
 /// (trending hashtags/categories for browsing to buy). A creator searches
@@ -128,8 +129,7 @@ class _Results extends StatelessWidget {
     return switch (state) {
       CreatorSearchIdle() => const _HintMessage(
           'Search for brands to partner with, products to feature, or other creators.'),
-      CreatorSearchLoading() => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen)),
+      CreatorSearchLoading() => const SmPageLoader(),
       CreatorSearchFailed(message: final m) => _HintMessage(m),
       CreatorSearchBrandsLoaded(results: final results) => results.isEmpty
           ? const _HintMessage('No brands found.')

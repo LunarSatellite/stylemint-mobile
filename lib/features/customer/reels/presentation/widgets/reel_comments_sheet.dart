@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_comment_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_comments_controller.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 void showReelCommentsSheet(
   BuildContext context,
@@ -89,11 +90,7 @@ class _ReelCommentsSheetState extends ConsumerState<ReelCommentsSheet> {
             // Comments list
             Expanded(
               child: state.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen,
-                      ),
-                    )
+                  ? const SmPageLoader()
                   : state.comments.isEmpty
                   ? Center(
                       child: Text(

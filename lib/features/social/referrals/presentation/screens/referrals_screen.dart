@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_s
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Referrals — Voyager doc's "Creator, Referral and Community Growth
 /// Graph" capability. Shows the customer's own invite link (created on
@@ -29,9 +30,7 @@ class ReferralsScreen extends ConsumerWidget {
       ),
       body: state.when(
         initial: () => const SizedBox.shrink(),
-        loadInProgress: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (failure) => SmErrorView(
           message: failure.isNoInternet
               ? 'No internet connection.'

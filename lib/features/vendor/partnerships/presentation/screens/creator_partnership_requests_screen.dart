@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_s
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 /// Standalone view of pending creator-initiated partnership requests (awaiting
 /// the vendor's accept/decline). Reached from two entry points: the vendor
 /// dashboard notification badge and the Creator Partnerships item on the
@@ -67,9 +68,7 @@ class CreatorPartnershipRequestsScreen extends ConsumerWidget {
         ),
       ),
       body: state.maybeWhen(
-        loadInProgress: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (_) => SmErrorView(
           message: 'Failed to load requests.',
           onRetry: () =>

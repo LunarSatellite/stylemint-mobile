@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../theme/colors.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Style Mint loading overlay — adapted from vpt-mydawa LoadingOverlay.
+/// Dims the page and shows the StyleMint loader while [isLoading].
 class SmLoadingOverlay extends StatelessWidget {
   const SmLoadingOverlay({super.key, required this.isLoading, this.child});
 
@@ -16,12 +17,8 @@ class SmLoadingOverlay extends StatelessWidget {
       children: [
         if (child != null) child!,
         ColoredBox(
-          color: Colors.black.withOpacity(0.35),
-          child: const Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(kPrimaryColor),
-            ),
-          ),
+          color: Colors.black.withValues(alpha: 0.45),
+          child: const SmPageLoader(size: 80),
         ),
       ],
     );
@@ -35,11 +32,8 @@ class SmLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(kPrimaryColor),
-        ),
-      ),
+      backgroundColor: DesignTokens.bgAppFoundation,
+      body: SmPageLoader(size: 88),
     );
   }
 }

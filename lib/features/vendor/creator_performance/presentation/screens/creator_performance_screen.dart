@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/domain/entities/creator_performance.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class CreatorPerformanceScreen extends ConsumerStatefulWidget {
   const CreatorPerformanceScreen({super.key});
@@ -121,7 +122,7 @@ class _CreatorPerformanceScreenState
     );
   }
 
-  Widget _loader() => const Center(child: CircularProgressIndicator());
+  Widget _loader() => const SmPageLoader();
 
   Widget _buildFilterChips() {
     return SingleChildScrollView(

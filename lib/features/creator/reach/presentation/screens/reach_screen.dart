@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ReachScreen extends ConsumerWidget {
   const ReachScreen({super.key});
@@ -106,9 +107,7 @@ class ReachScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   String _formatDateTime(DateTime dt) {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '

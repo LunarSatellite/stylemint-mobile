@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticke
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ContactSupportScreen extends ConsumerStatefulWidget {
   const ContactSupportScreen({super.key});
@@ -1481,6 +1482,6 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   Widget _categoryPickerLoader() => const Padding(
     padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-    child: Center(child: CircularProgressIndicator()),
+    child: const SmPageLoader(),
   );
 }

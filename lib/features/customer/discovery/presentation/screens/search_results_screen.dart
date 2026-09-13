@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ─── SEARCH RESULTS SCREEN ────────────────────────────────────────────────────
 class SearchResultsScreen extends ConsumerStatefulWidget {
@@ -52,9 +53,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
         centerTitle: false,
       ),
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (_, _) => Center(
           child: Text(
             'Could not load search results.',

@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/profile/presentation/notifier
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class FollowingScreen extends ConsumerStatefulWidget {
   const FollowingScreen({super.key});
@@ -106,9 +107,7 @@ class _FollowingScreenState extends ConsumerState<FollowingScreen> {
     );
   }
 
-  Widget _loadingBody() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loadingBody() => const SmPageLoader();
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Single-reel detail (creator) — same full-screen layout as the Home feed's
 /// [ReelCard]/[CreatorInfo]/[TaggedProductsSection] (Figma-designed), reused
@@ -37,9 +38,7 @@ class ReelDetailsScreen extends ConsumerWidget {
       backgroundColor: DesignTokens.baseBlack,
       extendBodyBehindAppBar: true,
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (err, _) {
           if (err is NetworkExceptions && err.isNotFound) {
             return const _ReelUnavailableView();
@@ -653,11 +652,7 @@ class _TaggedProductsSheet extends ConsumerWidget {
         child: async.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(DesignTokens.s24),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            ),
+            child: const SmPageLoader(),
           ),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(DesignTokens.s24),

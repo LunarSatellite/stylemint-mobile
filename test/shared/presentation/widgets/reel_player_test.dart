@@ -5,11 +5,13 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// A TikTok reel with no embeddable video id, so it can only be handed off to
+/// TikTok. (With an id it plays in TikTok's embedded player.)
 class _ExternalReel implements ReelMedia {
   const _ExternalReel();
 
   @override
-  String? get platformVideoId => '123';
+  String? get platformVideoId => null;
 
   @override
   SocialPlatform? get platform => SocialPlatform.tiktok;
@@ -26,7 +28,7 @@ class _ExternalReel implements ReelMedia {
 
 void main() {
   testWidgets(
-    'renders an external-provider action instead of an embedded player',
+    'renders an external-provider action when the reel cannot be embedded',
     (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

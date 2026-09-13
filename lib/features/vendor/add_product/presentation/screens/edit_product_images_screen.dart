@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Vendor → Products → ⋮ → Edit Product Details — currently images-only
 /// (see `AddProductNotifier.loadExistingImages`/`saveImagesOnly`): the
@@ -175,9 +176,7 @@ class _EditProductImagesScreenState
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-            )
+          ? const SmPageLoader()
           : _loadFailed
               ? Center(
                   child: Column(
@@ -258,12 +257,7 @@ class _EditProductImagesScreenState
                               ],
                               if (_uploading) ...[
                                 const SizedBox(height: DesignTokens.s12),
-                                const Center(
-                                  child: CircularProgressIndicator(
-                                    color: DesignTokens.primaryGreen,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                                const SmPageLoader(),
                               ],
                             ],
                           ),

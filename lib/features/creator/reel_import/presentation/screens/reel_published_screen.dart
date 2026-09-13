@@ -432,7 +432,7 @@ class ReelPublishedScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Share your reel on ReelCommerce to your followers on other platforms to drive more traffic and sales!',
+                                'Share your reel on StyleMint to your followers on other platforms to drive more traffic and sales!',
                                 style: TextStyle(
                                   fontFamily: DesignTokens.fontFamily,
                                   fontSize: 12,

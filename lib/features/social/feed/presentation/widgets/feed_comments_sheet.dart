@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/feed_post.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class FeedCommentsSheet extends ConsumerStatefulWidget {
   const FeedCommentsSheet({
@@ -153,7 +154,7 @@ class _FeedCommentsSheetState extends ConsumerState<FeedCommentsSheet> {
   }
 
   Widget _buildComments() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const SmPageLoader();
     if (_comments.isEmpty) {
       return const Center(
         child: Text('No comments yet.', style: DesignTokens.mediumRegular),

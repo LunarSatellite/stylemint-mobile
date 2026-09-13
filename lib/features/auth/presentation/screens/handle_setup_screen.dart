@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/h
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class HandleSetupScreen extends ConsumerStatefulWidget {
   const HandleSetupScreen({super.key});
@@ -268,5 +269,5 @@ class _HandleSetupScreenState extends ConsumerState<HandleSetupScreen> {
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }

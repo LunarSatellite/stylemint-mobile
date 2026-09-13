@@ -18,6 +18,7 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/enti
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_reel_analytics_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── Color palette for charts ──────────────────────────────────────────────────
 
@@ -102,9 +103,7 @@ class _ReelDetailAnalyticsScreenState
       ),
       body: state.when(
         initial: () => const SizedBox.shrink(),
-        loadInProgress: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (failure) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

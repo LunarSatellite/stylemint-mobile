@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class TagProductsScreen extends ConsumerStatefulWidget {
   const TagProductsScreen({super.key});
@@ -594,11 +595,7 @@ class _SuggestedProductsBody extends StatelessWidget {
         if (isLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            ),
+            child: const SmPageLoader(),
           )
         else if (hasFailure)
           const _EmptyProductsState(

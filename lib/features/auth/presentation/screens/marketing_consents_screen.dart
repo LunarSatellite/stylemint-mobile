@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/m
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class MarketingConsentsScreen extends ConsumerStatefulWidget {
   const MarketingConsentsScreen({super.key});
@@ -192,5 +193,5 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }

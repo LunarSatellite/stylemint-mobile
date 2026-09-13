@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/provi
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class VendorAnalyticsScreen extends ConsumerWidget {
   const VendorAnalyticsScreen({super.key});
@@ -51,11 +52,7 @@ class VendorAnalyticsScreen extends ConsumerWidget {
           Expanded(
             child: state.when(
               initial: () => const SizedBox.shrink(),
-              loadInProgress: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loadInProgress: () => const SmPageLoader(),
               loadSuccess: (summary) => _AnalyticsBody(summary: summary),
               loadFailure: (_) => SmErrorView(
                 message: 'Failed to load analytics.',

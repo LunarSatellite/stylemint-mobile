@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -167,11 +168,7 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
-      ),
-    );
+    return const SmPageLoader();
   }
 }
 
@@ -804,12 +801,7 @@ class _ChartLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(DesignTokens.primaryGreen),
-        strokeWidth: 2,
-      ),
-    );
+    return const SmPageLoader();
   }
 }
 

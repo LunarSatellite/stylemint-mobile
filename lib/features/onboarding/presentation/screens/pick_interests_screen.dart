@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/interests_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class PickInterestsScreen extends ConsumerStatefulWidget {
   const PickInterestsScreen({super.key});
@@ -221,8 +222,7 @@ class _PickInterestsScreenState extends ConsumerState<PickInterestsScreen> {
     );
   }
 
-  Widget _loader() => const Center(
-      child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+  Widget _loader() => const SmPageLoader();
 }
 
 // ---------------------------------------------------------------------------

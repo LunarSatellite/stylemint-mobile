@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class VendorContactSupportScreen extends ConsumerStatefulWidget {
   const VendorContactSupportScreen({super.key});
@@ -475,9 +476,7 @@ class _VendorContactSupportScreenState
         ),
         const SizedBox(height: DesignTokens.s12),
         if (state.maybeWhen(loadInProgress: () => true, orElse: () => false))
-          const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-          )
+          const SmPageLoader()
         else if (currentTickets.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
@@ -1232,7 +1231,7 @@ class _CreateTicketSheetState extends ConsumerState<_CreateTicketSheet> {
 
   Widget _categoryPickerLoader() => const Padding(
     padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-    child: Center(child: CircularProgressIndicator()),
+    child: const SmPageLoader(),
   );
 }
 

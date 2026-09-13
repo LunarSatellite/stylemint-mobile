@@ -22,6 +22,7 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/presentatio
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class FullAnalyticsReportScreen extends ConsumerWidget {
   const FullAnalyticsReportScreen({super.key});
@@ -76,7 +77,7 @@ class FullAnalyticsReportScreen extends ConsumerWidget {
       ),
       body: state.when(
         initial: () => const SizedBox.shrink(),
-        loadInProgress: () => const Center(child: CircularProgressIndicator()),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (failure) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

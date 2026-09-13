@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/support/presentation/notifier
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class CreatorContactSupportScreen extends ConsumerStatefulWidget {
   const CreatorContactSupportScreen({super.key});
@@ -248,7 +249,7 @@ class _CreatorContactSupportScreenState
                   if (isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s24),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: const SmPageLoader(),
                     )
                   else if (visible.isEmpty)
                     Padding(

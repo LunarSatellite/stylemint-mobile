@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/earnings/shared/provid
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 const _vendorRole = PayeeKind.vendor;
 
@@ -164,11 +165,7 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
             const SizedBox(height: DesignTokens.s8),
             Expanded(
               child: destinationsState.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen,
-                      ),
-                    )
+                  ? const SmPageLoader()
                   : destinationsState.errorMessage != null
                   ? SmErrorView(
                       message: destinationsState.errorMessage!,

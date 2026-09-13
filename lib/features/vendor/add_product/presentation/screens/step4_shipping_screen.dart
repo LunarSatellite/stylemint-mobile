@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class Step4ShippingScreen extends ConsumerStatefulWidget {
   const Step4ShippingScreen({
@@ -323,11 +324,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
 
                   // 3.7 Ships From
                   if (addressesLoading)
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen,
-                      ),
-                    )
+                    const SmPageLoader()
                   else if (addresses.isEmpty)
                     _MissingDispatchAddress(
                       loadFailed: addressesFailed,

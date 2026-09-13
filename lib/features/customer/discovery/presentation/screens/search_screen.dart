@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/pro
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // Number of categories shown inline before showing "+N more" pill.
 const int _kCategoryPreviewCount = 7;
@@ -70,9 +71,7 @@ class SearchScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 // ─── SEARCH BAR ───────────────────────────────────────────────────────────────

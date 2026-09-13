@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/social/tips/presentation/widg
 import 'package:stylemint_mobile_frontend/features/social/tips/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -212,8 +213,8 @@ class _TipsScreenState extends ConsumerState<TipsScreen>
 
   Widget _balanceLoader() => const SizedBox(
     height: 80,
-    child: Center(child: CircularProgressIndicator()),
+    child: const SmPageLoader(),
   );
 
-  Widget _loader() => const Center(child: CircularProgressIndicator());
+  Widget _loader() => const SmPageLoader();
 }

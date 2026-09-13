@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── PayoutRecord → PayoutHistoryEntry ─────────────────────────────────────────
 
@@ -162,9 +163,7 @@ class _AllPayoutHistoryScreenState
         ],
       ),
       body: historyAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (e, _) => _ErrorView(
           message: e is NetworkExceptions
               ? NetworkExceptions.getMessage(e)

@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/m
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class MfaSetupScreen extends ConsumerStatefulWidget {
   const MfaSetupScreen({super.key});
@@ -236,7 +237,7 @@ class _MfaSetupScreenState extends ConsumerState<MfaSetupScreen> {
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }
 
 class _MfaMethodTile extends StatelessWidget {

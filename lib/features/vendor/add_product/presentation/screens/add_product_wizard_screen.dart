@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Unified Product Form screen — Create and Edit share the same UI.
 ///
@@ -246,11 +247,7 @@ class _AddProductWizardScreenState
           ],
         ),
         body: _loading
-            ? const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              )
+            ? const SmPageLoader()
             : _loadFailed
             ? _LoadFailedView(onRetry: _loadForEdit)
             : Column(

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/support/shared/help_center_da
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Help Center categories come exclusively from `/v1/help/categories`.
 /// The local Figma examples are not used as an offline substitute for staff
@@ -231,9 +232,7 @@ class _LoadingCard extends StatelessWidget {
     children: [
       Padding(
         padding: EdgeInsets.all(DesignTokens.s24),
-        child: Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        child: const SmPageLoader(),
       ),
     ],
   );

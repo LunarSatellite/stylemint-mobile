@@ -43,7 +43,7 @@ class VendorApplySubmittedScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: DesignTokens.s8),
                     Text(
-                      "Thank you for applying to sell on ReelCommerce. We're reviewing your application",
+                      "Thank you for applying to sell on StyleMint. We're reviewing your application",
                       style: DesignTokens.bodyText.copyWith(
                         color: DesignTokens.textLight,
                       ),

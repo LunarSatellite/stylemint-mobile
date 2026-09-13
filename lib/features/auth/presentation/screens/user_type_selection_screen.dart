@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Stores the role the user tapped before signing in so it can be
 /// automatically applied once authentication completes.
@@ -20,7 +21,7 @@ final pendingRoleProvider = StateProvider<int?>((ref) => null);
 
 /// Select User Type — pixel-matched to Figma frame `9365:7986`.
 ///
-/// Brand logo → "Welcome to ReelCommerce!" (24px) + subtitle → three tappable
+/// Brand logo → "Welcome to StyleMint!" (24px) + subtitle → three tappable
 /// rows (green numbered badge + title/description + chevron, divided by thin
 /// lines) → "Already have an account? Sign In" footer.
 class UserTypeSelectionScreen extends ConsumerStatefulWidget {
@@ -273,7 +274,7 @@ class _UserTypeSelectionScreenState
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
         child: (_deciding || _loadingRole)
-            ? const Center(child: CircularProgressIndicator())
+            ? const SmPageLoader()
             : Column(
                 children: [
                   Expanded(
@@ -295,9 +296,9 @@ class _UserTypeSelectionScreenState
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Image.asset(
-                                      'assets/images/stylemint-logo.png',
-                                      width: 100,
-                                      height: 75,
+                                      'assets/branding/stylemint-mark.png',
+                                      width: 92,
+                                      height: 92,
                                       fit: BoxFit.contain,
                                     ),
                                     const SizedBox(height: DesignTokens.s4),
@@ -316,7 +317,7 @@ class _UserTypeSelectionScreenState
                               Column(
                                 children: [
                                   Text(
-                                    'Welcome to ReelCommerce!',
+                                    'Welcome to StyleMint!',
                                     textAlign: TextAlign.center,
                                     style: DesignTokens.titleLarge,
                                   ),

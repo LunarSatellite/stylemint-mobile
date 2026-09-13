@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/pro
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/trending_product_card.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Generic product list screen — used for "Trending Products" and
 /// "[Category] Products" views.
@@ -109,9 +110,7 @@ class _LoadingProducts extends StatelessWidget {
   const _LoadingProducts();
 
   @override
-  Widget build(BuildContext context) => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget build(BuildContext context) => const SmPageLoader();
 }
 
 class _FailureProducts extends StatelessWidget {

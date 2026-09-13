@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 //
@@ -259,11 +260,7 @@ class _PartnershipRequestsScreenState
           // List
           Expanded(
             child: isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: DesignTokens.primaryGreen,
-                    ),
-                  )
+                ? const SmPageLoader()
                 : currentList.isEmpty
                 ? Center(
                     child: Text(

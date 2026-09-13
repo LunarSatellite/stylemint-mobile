@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/mod
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 final _partnershipProvider = FutureProvider.autoDispose
     .family<PartnershipDetailDto, String>((ref, id) async {
@@ -67,11 +68,7 @@ class BrandDetailScreen extends ConsumerWidget {
               child: partnershipAsync.when(
                 loading: () => const SizedBox(
                   height: 160,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: DesignTokens.primaryGreen,
-                    ),
-                  ),
+                  child: const SmPageLoader(),
                 ),
                 error: (_, __) => const SizedBox(),
                 data: (p) => _BrandHeader(partnership: p),
@@ -479,9 +476,7 @@ class _SampleCampaignsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return campaignsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      loading: () => const SmPageLoader(),
       error: (_, __) => Center(
         child: Text("Couldn't load campaigns.", style: DesignTokens.bodyText),
       ),
@@ -615,9 +610,7 @@ class _PartnershipTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return termsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      loading: () => const SmPageLoader(),
       error: (_, __) => Center(
         child: Text('Terms unavailable.', style: DesignTokens.bodyText),
       ),

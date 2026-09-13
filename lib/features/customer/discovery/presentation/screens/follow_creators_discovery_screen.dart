@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Follow Creators (customer discovery). Pixel-matched to the Customer
 /// follow-creator screen. Lists suggested creators from
@@ -122,9 +123,7 @@ class _FollowCreatorsDiscoveryScreenState
     Set<String> followed,
   ) {
     return async.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      loading: () => const SmPageLoader(),
       error: (_, __) => Center(
         child: Text("Couldn't load creators.", style: DesignTokens.bodyText),
       ),

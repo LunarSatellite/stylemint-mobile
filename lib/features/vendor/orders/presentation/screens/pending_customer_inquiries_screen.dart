@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/domain/entities/product_inquiry.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class PendingCustomerInquiriesScreen extends ConsumerWidget {
   const PendingCustomerInquiriesScreen({super.key});
@@ -62,11 +63,7 @@ class PendingCustomerInquiriesScreen extends ConsumerWidget {
         ),
       ),
       body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            )
+          ? const SmPageLoader()
           : Column(
               children: [
                 if (isSample)

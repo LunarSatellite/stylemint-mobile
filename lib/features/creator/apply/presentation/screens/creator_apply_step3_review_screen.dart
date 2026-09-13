@@ -163,7 +163,7 @@ class CreatorApplyStep3ReviewScreenState
     if (data.categories.isNotEmpty)
       _Row('Content Categories', data.categories.join(', '), chips: true),
     if (data.whyJoin.isNotEmpty)
-      _Row('Why do you want to join ReelCommerce?', data.whyJoin, wrap: true),
+      _Row('Why do you want to join StyleMint?', data.whyJoin, wrap: true),
   ];
 
   List<_Row> _socialRows(CreatorFormData data) {

@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poste
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 typedef ExternalUrlLauncher =
     Future<bool> Function(
@@ -546,12 +547,7 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
           else
             ReelPoster(reel: widget.reel),
           if (!_initialized)
-            const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-                strokeWidth: 2,
-              ),
-            ),
+            const SmPageLoader(),
           if (_manuallyPaused && _initialized)
             const Center(child: ReelPlayIndicator()),
         ],

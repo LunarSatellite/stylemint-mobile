@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class HelpTopicScreen extends ConsumerStatefulWidget {
   const HelpTopicScreen({required this.category, super.key});
@@ -55,11 +56,7 @@ class _HelpTopicScreenState extends ConsumerState<HelpTopicScreen> {
           ),
           Expanded(
             child: articles.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loading: () => const SmPageLoader(),
               error: (_, _) => _ErrorState(
                 onRetry: () => ref.invalidate(
                   helpArticlesProvider(widget.category.code),

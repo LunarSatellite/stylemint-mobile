@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/provider
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class OrderWaitingTrackingScreen extends ConsumerStatefulWidget {
   const OrderWaitingTrackingScreen({super.key});
@@ -125,11 +126,7 @@ class _OrderWaitingTrackingScreenState
       body: Stack(
         children: [
           state.maybeWhen(
-            loadInProgress: () => const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            ),
+            loadInProgress: () => const SmPageLoader(),
             orElse: () => Column(
               children: [
                 if (isSample)
@@ -188,11 +185,7 @@ class _OrderWaitingTrackingScreenState
           if (_busy)
             Container(
               color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              child: const SmPageLoader(),
             ),
         ],
       ),

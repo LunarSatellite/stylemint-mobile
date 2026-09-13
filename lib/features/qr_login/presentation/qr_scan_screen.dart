@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/qr_login/shared/providers.dar
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Scans a Style Mint web QR, then asks the signed-in user to approve or reject
 /// the cross-device login. Backend: /v1/auth/qr/{token}/{scan|approve|reject}.
@@ -133,10 +134,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
           if (_handling)
             const ColoredBox(
               color: Colors.black54,
-              child: Center(
-                child: CircularProgressIndicator(
-                    color: DesignTokens.primaryGreen),
-              ),
+              child: const SmPageLoader(),
             ),
         ],
       ),

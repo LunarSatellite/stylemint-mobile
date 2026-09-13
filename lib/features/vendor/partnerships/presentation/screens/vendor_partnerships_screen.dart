@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Vendor -> Creator Partnerships hub.
 ///
@@ -360,11 +361,7 @@ class _VendorPartnershipsScreenState
             _buildSearchIndicator(),
           Expanded(
             child: state.maybeWhen(
-              loadInProgress: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loadInProgress: () => const SmPageLoader(),
               loadFailure: (_) => SmErrorView(
                 message: 'Failed to load partnerships.',
                 onRetry: () => ref

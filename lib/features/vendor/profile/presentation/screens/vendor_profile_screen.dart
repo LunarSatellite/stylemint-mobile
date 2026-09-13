@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/profile/shared/provide
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class VendorProfileScreen extends ConsumerWidget {
   const VendorProfileScreen({super.key});
@@ -41,9 +42,7 @@ class VendorProfileScreen extends ConsumerWidget {
         ],
       ),
       body: profile.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (_, __) => const _ProfileUnavailable(),
         data: (value) => value == null
             ? const _ProfileUnavailable()

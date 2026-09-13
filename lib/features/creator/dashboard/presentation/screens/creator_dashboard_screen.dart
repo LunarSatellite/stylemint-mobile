@@ -24,6 +24,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class CreatorDashboardScreen extends ConsumerWidget {
   const CreatorDashboardScreen({super.key});
@@ -48,7 +49,7 @@ class CreatorDashboardScreen extends ConsumerWidget {
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }
 
 class _CreatorDashboardView extends ConsumerWidget {
@@ -81,7 +82,7 @@ class _CreatorDashboardView extends ConsumerWidget {
   }
 
   Widget _loader() =>
-      const Center(child: CircularProgressIndicator(color: DesignTokens.primaryGreen));
+      const SmPageLoader();
 }
 
 class _BecomeCreatorCta extends StatelessWidget {
@@ -1463,11 +1464,7 @@ class _MyRecentReels extends ConsumerWidget {
         async.when(
           loading: () => const Padding(
             padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            ),
+            child: const SmPageLoader(),
           ),
           error: (e, _s) => Padding(
             padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),

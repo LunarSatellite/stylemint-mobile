@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/messaging/domain/entities/direct_message.dart';
 import 'package:stylemint_mobile_frontend/features/messaging/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Args for the reusable chat view. Callers pass a `threadId` of an
 /// existing thread, an `otherParticipantId` to open one fresh, or a
@@ -152,9 +153,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
         if (_openError != null) _ErrorBanner(message: _openError!),
         if (id == null)
           const Expanded(
-            child: Center(
-              child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-            ),
+            child: const SmPageLoader(),
           )
         else
           Expanded(
@@ -201,9 +200,7 @@ class _MessageList extends ConsumerWidget {
     final me = ref.watch(currentAccountIdProvider);
 
     if (state.loading && state.messages.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      );
+      return const SmPageLoader();
     }
     if (state.error != null && state.messages.isEmpty) {
       return Center(

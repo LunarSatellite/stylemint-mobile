@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/social/drop_party/presentatio
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/widgets/drop_party_card.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// The backend's list endpoint deliberately returns live parties only.
 class DropPartyListScreen extends ConsumerWidget {
@@ -62,9 +63,7 @@ class DropPartyListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 class _Failure extends StatelessWidget {

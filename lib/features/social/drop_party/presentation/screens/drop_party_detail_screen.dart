@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/social/drop_party/domain/enti
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/notifiers/drop_party_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class DropPartyDetailScreen extends ConsumerWidget {
   const DropPartyDetailScreen({super.key, required this.partyId});
@@ -37,9 +38,7 @@ class DropPartyDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 class _Content extends ConsumerWidget {

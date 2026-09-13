@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/no
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class OrdersReadyToShipScreen extends ConsumerStatefulWidget {
   const OrdersReadyToShipScreen({super.key});
@@ -216,11 +217,7 @@ class _OrdersReadyToShipScreenState
       body: Stack(
         children: [
           state.maybeWhen(
-            loadInProgress: () => const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            ),
+            loadInProgress: () => const SmPageLoader(),
             orElse: () => toShip.isEmpty
                 ? Center(
                     child: Text(
@@ -260,11 +257,7 @@ class _OrdersReadyToShipScreenState
           if (_busy)
             Container(
               color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              child: const SmPageLoader(),
             ),
         ],
       ),

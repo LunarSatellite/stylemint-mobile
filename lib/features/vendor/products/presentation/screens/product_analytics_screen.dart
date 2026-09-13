@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/product_analytics/shar
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ProductAnalyticsScreen extends ConsumerStatefulWidget {
   const ProductAnalyticsScreen({required this.product, super.key});
@@ -163,9 +164,7 @@ class _ProductAnalyticsScreenState
 
   Widget _loader() => const Padding(
     padding: EdgeInsets.symmetric(vertical: DesignTokens.s32),
-    child: Center(
-      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-    ),
+    child: const SmPageLoader(),
   );
 }
 

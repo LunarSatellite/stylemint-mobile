@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Maps a real [BrandListItemDto] into the seed shape [BrandInfoScreen]
 /// expects. Only carries fields the catalog list endpoint actually
@@ -136,11 +137,7 @@ class _BrandsScreenState extends State<BrandsScreen> {
                   return async.when(
                     loading: () => const Padding(
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ),
+                      child: const SmPageLoader(),
                     ),
                     error: (_, _) => const _EmptyBrandsMessage(
                       'Could not load recommended brands.',
@@ -182,11 +179,7 @@ class _BrandsScreenState extends State<BrandsScreen> {
                   return async.when(
                     loading: () => const Padding(
                       padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ),
+                      child: const SmPageLoader(),
                     ),
                     error: (_, _) => const _EmptyBrandsMessage(
                       'Could not load brands.',

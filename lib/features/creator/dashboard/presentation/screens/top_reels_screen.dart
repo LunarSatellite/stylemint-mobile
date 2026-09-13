@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/domain/enti
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/notifiers/creator_top_reels_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── Time filter enum (local UX only — maps to fromUtc/toUtc for API) ──────────
 
@@ -103,11 +104,7 @@ class _TopReelsScreenState extends ConsumerState<TopReelsScreen> {
           // ── List ────────────────────────────────────────────────────────
           Expanded(
             child: state.maybeWhen(
-              loadInProgress: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loadInProgress: () => const SmPageLoader(),
               orElse: () => reels.isEmpty
                   ? Center(
                       child: Text(

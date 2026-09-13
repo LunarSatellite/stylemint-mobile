@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class RecentActivityScreen extends ConsumerStatefulWidget {
   const RecentActivityScreen({super.key});
@@ -165,9 +166,7 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
     List<_ActivityGroup> groups,
   ) {
     return activityState.maybeWhen(
-      loadInProgress: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      loadInProgress: () => const SmPageLoader(),
       loadFailure: (_) => SmErrorView(
         message: 'Failed to load recent activity.',
         onRetry: () => ref.read(vendorActivityNotifierProvider.notifier).load(),

@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/onboarding_step_progress.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class SocialConnectScreen extends ConsumerWidget {
   const SocialConnectScreen({super.key, this.isOnboarding = false});
@@ -183,11 +184,7 @@ class SocialConnectScreen extends ConsumerWidget {
                   onRetry: () =>
                       ref.read(socialConnectNotifierProvider.notifier).load(),
                 ),
-                orElse: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: DesignTokens.primaryGreen,
-                  ),
-                ),
+                orElse: () => const SmPageLoader(),
               ),
             ),
           ],

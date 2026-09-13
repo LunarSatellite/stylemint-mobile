@@ -514,7 +514,7 @@ class _VendorApplyStep6ScreenState
           _buildTermsCheckbox(
             value: _agreeTerms,
             onChanged: (v) => setState(() => _agreeTerms = v ?? false),
-            text: 'I agree to ReelCommerce ',
+            text: 'I agree to StyleMint ',
             linkText: 'Vendor Terms of Service',
           ),
           const SizedBox(height: DesignTokens.s12),

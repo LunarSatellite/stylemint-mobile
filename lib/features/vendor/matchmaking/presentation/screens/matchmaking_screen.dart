@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentat
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class MatchmakingScreen extends ConsumerStatefulWidget {
   const MatchmakingScreen({super.key});
@@ -87,9 +88,7 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
     if (loadMoreInProgress) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-        child: Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        child: const SmPageLoader(),
       );
     }
     return Padding(
@@ -262,7 +261,5 @@ class _MatchmakingScreenState extends ConsumerState<MatchmakingScreen> {
     }
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }

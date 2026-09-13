@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentati
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class Step2ImagesScreen extends ConsumerStatefulWidget {
   const Step2ImagesScreen({super.key});
@@ -304,12 +305,7 @@ class _Step2ImagesScreenState extends ConsumerState<Step2ImagesScreen> {
                   ],
                   if (_uploading) ...[
                     const SizedBox(height: DesignTokens.s12),
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen,
-                        strokeWidth: 2,
-                      ),
-                    ),
+                    const SmPageLoader(),
                   ],
 
                   const SizedBox(height: DesignTokens.s20),

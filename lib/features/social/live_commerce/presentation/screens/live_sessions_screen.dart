@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// "Live Now" — Voyager doc's Social and Community Commerce capability.
 /// Lists currently-live and upcoming Live Commerce sessions
@@ -27,9 +28,7 @@ class LiveSessionsScreen extends ConsumerWidget {
       ),
       body: state.when(
         initial: () => const SizedBox.shrink(),
-        loadInProgress: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loadInProgress: () => const SmPageLoader(),
         loadFailure: (failure) => SmErrorView(
           message: failure.isNoInternet
               ? 'No internet connection.'

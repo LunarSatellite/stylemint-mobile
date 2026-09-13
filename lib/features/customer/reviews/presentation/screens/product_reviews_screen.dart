@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_v
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ProductReviewsScreen extends ConsumerWidget {
   const ProductReviewsScreen({required this.productId, super.key});
@@ -101,9 +102,7 @@ class _ReelReviewsTab extends ConsumerWidget {
         message: 'Failed to load reviews.',
         onRetry: () => ref.read(reviewsNotifierProvider(productId).notifier).refresh(),
       ),
-      orElse: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      orElse: () => const SmPageLoader(),
     );
   }
 }
@@ -240,9 +239,7 @@ class _WrittenReviewsTab extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 // ── Add Review Bottom Bar ─────────────────────────────────────────────────────

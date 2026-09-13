@@ -72,7 +72,7 @@ class _CreatorSubmittedScreenState
 
                     // Subtitle
                     Text(
-                      'Thank you for applying to become a creator on ReelCommerce. We\'re reviewing your application',
+                      'Thank you for applying to become a creator on StyleMint. We\'re reviewing your application',
                       textAlign: TextAlign.center,
                       style: DesignTokens.mediumRegular
                           .copyWith(color: DesignTokens.textLight),

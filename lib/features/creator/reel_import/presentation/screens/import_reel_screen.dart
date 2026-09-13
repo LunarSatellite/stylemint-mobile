@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/pr
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ImportReelScreen extends ConsumerStatefulWidget {
   const ImportReelScreen({super.key});
@@ -184,11 +185,7 @@ class _ImportReelScreenState extends ConsumerState<ImportReelScreen> {
           Expanded(
             child: state.when(
               initial: () => const SizedBox.shrink(),
-              loadInProgress: () => const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              loadInProgress: () => const SmPageLoader(),
               loadSuccess: (reels, hasMore, isLoadingMore) {
                 if (reels.isEmpty && !hasMore) {
                   return _EmptyState(
@@ -777,11 +774,7 @@ class _ImportHistorySheet extends ConsumerWidget {
                   initial: () => const _HistoryMessage('Loading…'),
                   loadInProgress: () => const Padding(
                     padding: EdgeInsets.all(DesignTokens.s24),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen,
-                      ),
-                    ),
+                    child: const SmPageLoader(),
                   ),
                   loadFailure: (failure) =>
                       _HistoryMessage(NetworkExceptions.getMessage(failure)),

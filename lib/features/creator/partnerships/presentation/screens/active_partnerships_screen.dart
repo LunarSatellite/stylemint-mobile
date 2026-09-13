@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ActivePartnershipsScreen extends ConsumerStatefulWidget {
   const ActivePartnershipsScreen({super.key});
@@ -160,9 +161,7 @@ class _ActiveTab extends StatelessWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 class _EmptyPartnerships extends StatelessWidget {
@@ -301,9 +300,7 @@ class _EndedTab extends StatelessWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   Widget _empty() => const Center(
     child: Column(
@@ -1130,11 +1127,7 @@ class _TermsBottomSheet extends ConsumerWidget {
           termsAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              child: const SmPageLoader(),
             ),
             error: (_, __) => const Padding(
               padding: EdgeInsets.fromLTRB(20, 0, 20, 0),

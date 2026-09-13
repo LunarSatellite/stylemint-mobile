@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/domain/entities/product_form.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class EditCategoryNicheScreen extends ConsumerStatefulWidget {
   const EditCategoryNicheScreen({super.key});
@@ -148,9 +149,7 @@ class _EditCategoryNicheScreenState
         ),
       ),
       body: categoriesAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (e, _) => const Center(
           child: Text(
             'Failed to load categories.',
@@ -196,10 +195,7 @@ class _EditCategoryNicheScreenState
                 ),
               Expanded(
                 child: specializationsAsync.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                            color: DesignTokens.primaryGreen),
-                      )
+                    ? const SmPageLoader()
                     : SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
                             horizontal: DesignTokens.s16),

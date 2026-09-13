@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_studio/shared/pr
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ReelStudioScreen extends ConsumerWidget {
   const ReelStudioScreen({super.key});
@@ -133,9 +134,7 @@ class ReelStudioScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 class _EmptyCollectionCard extends StatelessWidget {

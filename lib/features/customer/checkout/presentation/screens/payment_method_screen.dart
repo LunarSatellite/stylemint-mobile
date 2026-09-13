@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/checkout/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Standalone screen for selecting a payment method.
 /// Navigated to via GoRouter at `${RouteNames.checkout}/payment-method`.
@@ -46,10 +47,7 @@ class PaymentMethodScreen extends ConsumerWidget {
             onRetry: () =>
                 ref.read(checkoutNotifierProvider.notifier).load(),
           ),
-          orElse: () => const Center(
-            child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen),
-          ),
+          orElse: () => const SmPageLoader(),
         ),
       ),
     );

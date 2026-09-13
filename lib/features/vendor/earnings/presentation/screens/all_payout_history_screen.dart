@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class AllPayoutHistoryScreen extends ConsumerWidget {
   const AllPayoutHistoryScreen({super.key});
@@ -106,9 +107,7 @@ class AllPayoutHistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   Map<String, List<VendorPayout>> _groupByMonth(List<VendorPayout> payouts) {
     final byMonth = <String, List<VendorPayout>>{};

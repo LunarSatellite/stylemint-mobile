@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/payouts/presentation/notifier
 import 'package:stylemint_mobile_frontend/features/payouts/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Payment Methods — manage saved payout destinations.
 /// Pixel-matched to Creator/Brand 'Payment Methods' / 'Add Payment Method' /
@@ -51,11 +52,7 @@ class PayoutMethodsScreen extends ConsumerWidget {
         ),
       ),
       body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: DesignTokens.primaryGreen,
-              ),
-            )
+          ? const SmPageLoader()
           : RefreshIndicator(
               color: DesignTokens.primaryGreen,
               onRefresh: () => ref.read(provider.notifier).load(),

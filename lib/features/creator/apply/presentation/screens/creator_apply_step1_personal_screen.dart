@@ -276,7 +276,7 @@ class CreatorApplyStep1PersonalScreenState
                 ),
                 cursorColor: DesignTokens.primaryGreen,
                 decoration: DesignTokens.inputDecoration(
-                  hintText: 'Why do you want to join ReelCommerce',
+                  hintText: 'Why do you want to join StyleMint',
                 ),
               ),
             ],

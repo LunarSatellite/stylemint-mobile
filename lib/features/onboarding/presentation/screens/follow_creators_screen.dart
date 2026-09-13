@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_sticky_bottom_bar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Follow Creators (onboarding step). Real suggestions from
 /// `GET /api/v1/customer/feed/creators-you-may-like`, Follow toggle calls the
@@ -69,9 +70,7 @@ class _FollowCreatorsScreenState extends ConsumerState<FollowCreatorsScreen> {
             const SizedBox(height: DesignTokens.s24),
             Expanded(
               child: async.when(
-                loading: () => const Center(
-                    child: CircularProgressIndicator(
-                        color: DesignTokens.primaryGreen)),
+                loading: () => const SmPageLoader(),
                 error: (_, _e) => Center(
                   child: Text("Couldn't load creators.",
                       style: DesignTokens.bodyText),

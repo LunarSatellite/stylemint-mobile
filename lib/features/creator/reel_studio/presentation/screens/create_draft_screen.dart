@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class CreateDraftScreen extends ConsumerStatefulWidget {
   const CreateDraftScreen({super.key});
@@ -192,11 +193,7 @@ class _CreateDraftScreenState extends ConsumerState<CreateDraftScreen> {
           if (_isSaving)
             Container(
               color: DesignTokens.baseBlack.withValues(alpha: 0.5),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: DesignTokens.primaryGreen,
-                ),
-              ),
+              child: const SmPageLoader(),
             ),
         ],
       ),

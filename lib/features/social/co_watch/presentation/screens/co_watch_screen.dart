@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/
 import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/screens/co_watch_session_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/co_watch/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class CoWatchScreen extends ConsumerWidget {
   const CoWatchScreen({super.key});
@@ -254,5 +255,5 @@ class CoWatchScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(child: CircularProgressIndicator());
+  Widget _loader() => const SmPageLoader();
 }

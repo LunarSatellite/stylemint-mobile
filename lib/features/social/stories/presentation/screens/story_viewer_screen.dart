@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/domain/entities/story.dart';
 import 'package:stylemint_mobile_frontend/features/social/stories/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class StoryViewerScreen extends ConsumerStatefulWidget {
   const StoryViewerScreen({
@@ -199,9 +200,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
         child: CachedNetworkImage(
           imageUrl: story.mediaUrl,
           fit: BoxFit.contain,
-          placeholder: (_, __) => const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-          ),
+          placeholder: (_, __) => const SmPageLoader(),
           errorWidget: (_, __, ___) => const Icon(
             Icons.broken_image,
             color: DesignTokens.iconLight,
@@ -213,9 +212,7 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     return CachedNetworkImage(
       imageUrl: story.mediaUrl,
       fit: BoxFit.contain,
-      placeholder: (_, __) => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      placeholder: (_, __) => const SmPageLoader(),
       errorWidget: (_, __, ___) => const Icon(
         Icons.broken_image,
         color: DesignTokens.iconLight,

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/upgrade_confirmation_sheet.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class UpgradeSubscriptionScreen extends ConsumerStatefulWidget {
   const UpgradeSubscriptionScreen({super.key});
@@ -124,9 +125,7 @@ class _UpgradeSubscriptionScreenState
         ),
       ),
       body: plansAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-        ),
+        loading: () => const SmPageLoader(),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(DesignTokens.s24),

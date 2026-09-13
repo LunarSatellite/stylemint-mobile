@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class VendorApplyScreen extends ConsumerStatefulWidget {
   const VendorApplyScreen({super.key});
@@ -389,9 +390,7 @@ class _VendorApplyScreenState extends ConsumerState<VendorApplyScreen> {
     }
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   Widget _buildFormBody() {
     return Column(

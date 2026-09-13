@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/social/group_cart/presentatio
 import 'package:stylemint_mobile_frontend/features/social/group_cart/presentation/widgets/group_cart_invite_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/social/group_cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class GroupCartDetailScreen extends ConsumerWidget {
   const GroupCartDetailScreen({super.key, required this.cartId});
@@ -300,5 +301,5 @@ class GroupCartDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(child: CircularProgressIndicator());
+  Widget _loader() => const SmPageLoader();
 }

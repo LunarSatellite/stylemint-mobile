@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_v
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Saved Items — rebuilt to the design-PDF spec: filter chips, a vertical list
 /// of saved-item rows (64x64 thumbnail, name, variant info, price + old price,
@@ -161,9 +162,7 @@ class SavedItemsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 }
 
 // ── Filter chips ──────────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_comment_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_comments_controller.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 /// Reel Comments — list + post. Pixel-matched to `Reel Comments.pdf`.
 /// Backend: GET/POST `/v1/customer/reels/{reelId}/comments`.
@@ -69,11 +70,7 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
         children: [
           Expanded(
             child: state.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: DesignTokens.primaryGreen,
-                    ),
-                  )
+                ? const SmPageLoader()
                 : state.comments.isEmpty
                 ? Center(
                     child: Text(

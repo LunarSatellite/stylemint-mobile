@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class OrderInvoiceScreen extends ConsumerWidget {
   const OrderInvoiceScreen({required this.order, super.key});
@@ -360,9 +361,7 @@ class _InvoiceLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Scaffold(
     backgroundColor: DesignTokens.bgAppFoundation,
-    body: Center(
-      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-    ),
+    body: const SmPageLoader(),
   );
 }
 

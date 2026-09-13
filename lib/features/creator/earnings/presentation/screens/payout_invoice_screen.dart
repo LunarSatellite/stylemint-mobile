@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entit
 import 'package:stylemint_mobile_frontend/features/creator/earnings/presentation/notifiers/earnings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ── Shared display types ───────────────────────────────────────────────────────
 
@@ -388,9 +389,7 @@ class _Loader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-    );
+    return const SmPageLoader();
   }
 }
 

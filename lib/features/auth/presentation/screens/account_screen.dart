@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
@@ -195,7 +196,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         title: Text('Account', style: DesignTokens.sectionInnerTitle),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SmPageLoader()
           : _error != null
               ? Center(child: Text(_error!, style: DesignTokens.bodyText))
               : _buildContent(),

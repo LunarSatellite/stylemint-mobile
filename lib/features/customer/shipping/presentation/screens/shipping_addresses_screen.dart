@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/shipping/shared/prov
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ShippingAddressesScreen extends ConsumerWidget {
   const ShippingAddressesScreen({super.key});
@@ -310,9 +311,7 @@ class ShippingAddressesScreen extends ConsumerWidget {
 class _Loader extends StatelessWidget {
   const _Loader();
   @override
-  Widget build(BuildContext context) => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget build(BuildContext context) => const SmPageLoader();
 }
 
 class _AddressTile extends StatelessWidget {

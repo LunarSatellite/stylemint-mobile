@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 const _vendorRole = PayeeKind.vendor;
 
@@ -249,9 +250,7 @@ class VendorEarningsScreen extends ConsumerWidget {
           color: DesignTokens.colorError,
         ),
       ),
-      orElse: () => const Center(
-        child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-      ),
+      orElse: () => const SmPageLoader(),
     );
   }
 
@@ -328,9 +327,7 @@ class VendorEarningsScreen extends ConsumerWidget {
               color: DesignTokens.colorError,
             ),
           ),
-          orElse: () => const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-          ),
+          orElse: () => const SmPageLoader(),
         ),
       ],
     );
@@ -346,9 +343,7 @@ class VendorEarningsScreen extends ConsumerWidget {
         Text('Payment Methods', style: DesignTokens.mediumSemibold),
         const SizedBox(height: DesignTokens.s12),
         if (state.isLoading)
-          const Center(
-            child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-          )
+          const SmPageLoader()
         else if (state.items.isEmpty)
           TextButton(
             onPressed: () => context.push(RouteNames.vendorPaymentMethods),

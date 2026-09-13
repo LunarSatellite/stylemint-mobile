@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/top_products/domain/entities/vendor_top_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/top_products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 enum _Period { thisMonth, last30Days, last90Days, custom }
 
@@ -187,9 +188,7 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
     );
   }
 
-  Widget _loader() => const Center(
-    child: CircularProgressIndicator(color: DesignTokens.primaryGreen),
-  );
+  Widget _loader() => const SmPageLoader();
 
   Widget _buildFilterChips() {
     return SingleChildScrollView(
