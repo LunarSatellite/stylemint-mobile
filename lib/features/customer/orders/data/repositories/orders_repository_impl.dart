@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
@@ -259,6 +261,66 @@ class OrdersRepositoryImpl implements OrdersRepository {
       } else {
         return left(const NetworkExceptions.unexpectedError());
       }
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryPackageStatus>>
+  getDeliveryPackageStatus(String trackingNumber) => _deliveryCall(
+    () async =>
+        (await remoteDataSource.getDeliveryPackageStatus(
+          trackingNumber,
+        )).toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryAcceptance>> getDeliveryAcceptance(
+    String trackingNumber,
+  ) => _deliveryCall(
+    () async =>
+        (await remoteDataSource.getDeliveryAcceptance(trackingNumber))
+            .toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryAcceptance>>
+  recordDeliveryAcceptance(
+    String trackingNumber, {
+    required DeliveryAcceptanceOutcome outcome,
+    bool? sealIntact,
+    String? issueNote,
+  }) => _deliveryCall(
+    () async => (await remoteDataSource.recordDeliveryAcceptance(
+      trackingNumber,
+      // A fresh key per send; the backend treats the same outcome sent
+      // again as a harmless repeat and a different one as a 409.
+      _uuid.v4(),
+      outcome: outcome,
+      sealIntact: sealIntact,
+      issueNote: issueNote,
+    )).toDomain(),
+  );
+
+  /// Delivery acceptance calls keep 404 and 409 apart (the acceptance card
+  /// acts on both) and keep the backend's validation sentence for 400s.
+  Future<Either<NetworkExceptions, T>> _deliveryCall<T>(
+    Future<T> Function() call,
+  ) async {
+    try {
+      if (!await networkInfo.isConnected) {
+        return left(const NetworkExceptions.noInternetConnection());
+      }
+      return right(await call());
+    } on DioException catch (e) {
+      return left(switch (e.response?.statusCode) {
+        404 => const NetworkExceptions.notFound(),
+        409 => const NetworkExceptions.conflict(),
+        _ => mapDioExceptionToNetworkException(e),
+      });
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
     }
   }
 }

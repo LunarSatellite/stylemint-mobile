@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
@@ -193,6 +194,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             const SizedBox(height: DesignTokens.s12),
             _DeliveryRiskBanner(trackingNumber: trackingNumber!),
             _PackageSealCard(trackingNumber: trackingNumber),
+            // Only once the parcel may have reached the buyer; the card
+            // itself checks the package is out for delivery or delivered.
+            if (_parcelMayHaveArrived(order.status))
+              DeliveryAcceptanceCard(trackingNumber: trackingNumber),
             const CarbonImpactCard(),
           ],
           OrderCareCard(
@@ -1844,6 +1849,16 @@ class _OtherDetails extends StatelessWidget {
   void _handleRequestReturn(BuildContext context) =>
       _startReturnRequest(context, order: order, notifier: notifier);
 }
+
+/// Whether a StyleMint parcel may have reached the buyer, so the "Got your
+/// parcel?" card should check its package. The overall order status never
+/// reads "out for delivery" (Fulfilling maps to in transit), so in-transit
+/// orders are checked too; the card itself requires the package to be out
+/// for delivery or delivered.
+bool _parcelMayHaveArrived(OrderTrackStatus status) =>
+    status == OrderTrackStatus.inTransit ||
+    status == OrderTrackStatus.outForDelivery ||
+    status == OrderTrackStatus.delivered;
 
 /// The order line a Post-Purchase Care item refers to (care
 /// `subOrderLineId` is the order detail line id), or null if absent.

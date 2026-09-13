@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
@@ -52,4 +53,24 @@ abstract interface class OrdersRepository {
   Future<Either<NetworkExceptions, OrderCarePlan>> getOrderCarePlan(
     String orderNumber,
   );
+
+  /// State and seal of a StyleMint package (404 -> notFound).
+  Future<Either<NetworkExceptions, DeliveryPackageStatus>>
+  getDeliveryPackageStatus(String trackingNumber);
+
+  /// What the buyer recorded when the parcel arrived (404 -> notFound until
+  /// they answer).
+  Future<Either<NetworkExceptions, DeliveryAcceptance>> getDeliveryAcceptance(
+    String trackingNumber,
+  );
+
+  /// Records what arrived, once (409 -> conflict when a different answer is
+  /// already saved; 400 -> validation with the backend's sentence).
+  Future<Either<NetworkExceptions, DeliveryAcceptance>>
+  recordDeliveryAcceptance(
+    String trackingNumber, {
+    required DeliveryAcceptanceOutcome outcome,
+    bool? sealIntact,
+    String? issueNote,
+  });
 }

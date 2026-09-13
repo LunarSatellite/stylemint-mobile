@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/carbon_impact_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_acceptance_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_care_plan_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
@@ -69,6 +71,49 @@ class OrdersRemoteDataSource {
   Future<CarbonImpactDto> getCarbonImpact() async {
     final response = await apiClient.get('/v1/customer/delivery/carbon-impact');
     return CarbonImpactDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/deliveries/{trackingNumber}` — the StyleMint package (Delivery
+  /// module `BuyerDeliveriesController.GetByTracking`), read for its state and
+  /// whether the seller sealed it.
+  Future<DeliveryPackageStatusDto> getDeliveryPackageStatus(
+    String trackingNumber,
+  ) async {
+    final response = await apiClient.get('/v1/deliveries/$trackingNumber');
+    return DeliveryPackageStatusDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/deliveries/{trackingNumber}/acceptance` — what the buyer
+  /// recorded when the parcel arrived; 404 until they answer.
+  Future<DeliveryAcceptanceDto> getDeliveryAcceptance(
+    String trackingNumber,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/deliveries/$trackingNumber/acceptance',
+    );
+    return DeliveryAcceptanceDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// POST `/v1/deliveries/{trackingNumber}/acceptance` — records what arrived,
+  /// once. The same outcome again returns the saved record; a different one
+  /// is a 409.
+  Future<DeliveryAcceptanceDto> recordDeliveryAcceptance(
+    String trackingNumber,
+    String idempotencyKey, {
+    required DeliveryAcceptanceOutcome outcome,
+    bool? sealIntact,
+    String? issueNote,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/deliveries/$trackingNumber/acceptance',
+      data: recordDeliveryAcceptanceBody(
+        outcome: outcome,
+        sealIntact: sealIntact,
+        issueNote: issueNote,
+      ),
+      options: _idempotent(idempotencyKey),
+    );
+    return DeliveryAcceptanceDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// DELETE `/v1/customer/reorder-suggestions/{productId}` — dismiss one

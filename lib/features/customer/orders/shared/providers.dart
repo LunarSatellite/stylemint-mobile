@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -119,6 +120,18 @@ final orderCarePlanProvider = FutureProvider.autoDispose
         return null;
       }
     });
+
+/// Voyager "Verified Scan-to-Receive Handover" — asks the buyer what arrived
+/// once a StyleMint parcel is out for delivery or delivered, then shows the
+/// saved answer. Keyed by tracking number; autoDispose so reopening the
+/// order checks again.
+final deliveryAcceptanceNotifierProvider = StateNotifierProvider.family
+    .autoDispose<DeliveryAcceptanceNotifier, DeliveryAcceptanceState, String>(
+      (ref, trackingNumber) => DeliveryAcceptanceNotifier(
+        ref.watch(ordersRepositoryProvider),
+        trackingNumber,
+      ),
+    );
 
 final orderInvoiceProvider = FutureProvider.autoDispose
     .family<OrderInvoice, String>((ref, orderNumber) async {
