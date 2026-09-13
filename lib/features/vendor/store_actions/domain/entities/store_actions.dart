@@ -28,6 +28,10 @@ enum StoreActionKind {
   /// A live product with no photos.
   addProductImages,
 
+  /// Far more of a product is coming back than usual. The recommendation
+  /// and evidence explain it; there is no variant and no money figure.
+  returnsRising,
+
   /// A kind this app version doesn't know yet.
   unknown,
 }

@@ -175,6 +175,38 @@ void main() {
     verify(() => repository.getStoreActions()).called(2);
   });
 
+  testWidgets('Returns rising shows its label and opens the product editor', (
+    tester,
+  ) async {
+    const returns = StoreAction(
+      kind: StoreActionKind.returnsRising,
+      severity: StoreActionSeverity.medium,
+      productId: 'product-4',
+      productName: 'Wool coat',
+      recommendation:
+          'Look into returns for Wool coat: read the return reasons and '
+          'check the photos and description.',
+      evidence: ['6 of 20 sold in the last 30 days came back (30%)'],
+    );
+    stub(right(const StoreActionQueue(actions: [returns])));
+
+    await pumpScreen(tester);
+
+    expect(find.text('Returns rising'), findsOneWidget);
+    expect(find.text('Soon'), findsOneWidget);
+    expect(find.text(returns.recommendation), findsOneWidget);
+    expect(
+      find.text('6 of 20 sold in the last 30 days came back (30%)'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('At stake'), findsNothing);
+
+    await tester.tap(find.text('Edit product'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('editing product-4'), findsOneWidget);
+  });
+
   testWidgets('Add photos opens the image editor for that product', (
     tester,
   ) async {

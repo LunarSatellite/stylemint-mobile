@@ -159,7 +159,24 @@ class _StoreActionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SeverityChip(severity: action.severity),
+                      Row(
+                        children: [
+                          _SeverityChip(severity: action.severity),
+                          if (storeActionKindLabel(action.kind)
+                              case final kindLabel?) ...[
+                            const SizedBox(width: DesignTokens.s8),
+                            Flexible(
+                              child: Text(
+                                kindLabel,
+                                overflow: TextOverflow.ellipsis,
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textMuted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       const SizedBox(height: DesignTokens.s8),
                       if (action.productName.isNotEmpty)
                         Text(
@@ -285,7 +302,7 @@ class _AllClearView extends StatelessWidget {
             const SizedBox(height: DesignTokens.s6),
             Text(
               "We'll list things here when stock runs low, something sells "
-              'out, or a product needs photos.',
+              'out, a product needs photos, or returns go up.',
               textAlign: TextAlign.center,
               style: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.textMuted,
@@ -313,11 +330,23 @@ String storeActionSeverityLabel(StoreActionSeverity severity) =>
       StoreActionSeverity.low => 'When you can',
     };
 
+/// What kind of to-do it is, shown next to the severity chip. Null for kinds
+/// this app version doesn't know.
+String? storeActionKindLabel(StoreActionKind kind) => switch (kind) {
+  StoreActionKind.restockSoon => 'Running low',
+  StoreActionKind.soldOutWhileSelling => 'Sold out',
+  StoreActionKind.slowMovingStock => 'Not selling',
+  StoreActionKind.addProductImages => 'No photos',
+  StoreActionKind.returnsRising => 'Returns rising',
+  StoreActionKind.unknown => null,
+};
+
 String storeActionButtonLabel(StoreActionKind kind) => switch (kind) {
   StoreActionKind.restockSoon ||
   StoreActionKind.soldOutWhileSelling => 'Update stock',
   StoreActionKind.addProductImages => 'Add photos',
-  StoreActionKind.slowMovingStock => 'Edit product',
+  StoreActionKind.slowMovingStock ||
+  StoreActionKind.returnsRising => 'Edit product',
   StoreActionKind.unknown => 'Open product',
 };
 
@@ -325,5 +354,7 @@ String valueAtStakeLabel(StoreActionKind kind) => switch (kind) {
   StoreActionKind.restockSoon ||
   StoreActionKind.soldOutWhileSelling => 'Sales at risk',
   StoreActionKind.slowMovingStock => 'Stock sitting unsold',
-  StoreActionKind.addProductImages || StoreActionKind.unknown => 'At stake',
+  StoreActionKind.addProductImages ||
+  StoreActionKind.returnsRising ||
+  StoreActionKind.unknown => 'At stake',
 };

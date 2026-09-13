@@ -85,8 +85,8 @@ class StoreActionDto {
 }
 
 /// Backend `StoreActionKind`: RestockSoon=1, SoldOutWhileSelling=2,
-/// SlowMovingStock=3, AddProductImages=4. Accepts the int, a numeric string,
-/// or the name in any casing / snake_case; anything else is
+/// SlowMovingStock=3, AddProductImages=4, ReturnsRising=5. Accepts the int, a
+/// numeric string, or the name in any casing / snake_case; anything else is
 /// [StoreActionKind.unknown].
 StoreActionKind parseStoreActionKind(Object? raw) =>
     switch (_normalizeEnum(raw)) {
@@ -94,6 +94,7 @@ StoreActionKind parseStoreActionKind(Object? raw) =>
       2 || 'soldoutwhileselling' => StoreActionKind.soldOutWhileSelling,
       3 || 'slowmovingstock' => StoreActionKind.slowMovingStock,
       4 || 'addproductimages' => StoreActionKind.addProductImages,
+      5 || 'returnsrising' => StoreActionKind.returnsRising,
       _ => StoreActionKind.unknown,
     };
 

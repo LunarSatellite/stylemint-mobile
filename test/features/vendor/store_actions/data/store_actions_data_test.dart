@@ -169,6 +169,52 @@ void main() {
       expect(parseStoreActionKind(2), StoreActionKind.soldOutWhileSelling);
       expect(parseStoreActionKind(3), StoreActionKind.slowMovingStock);
       expect(parseStoreActionKind(4), StoreActionKind.addProductImages);
+      expect(parseStoreActionKind(5), StoreActionKind.returnsRising);
+    });
+
+    test('maps ReturnsRising (5) by int, name and snake_case', () {
+      expect(parseStoreActionKind('5'), StoreActionKind.returnsRising);
+      expect(
+        parseStoreActionKind('ReturnsRising'),
+        StoreActionKind.returnsRising,
+      );
+      expect(
+        parseStoreActionKind('returns_rising'),
+        StoreActionKind.returnsRising,
+      );
+    });
+
+    test('keeps a ReturnsRising action with no variant and no money', () {
+      final queue = StoreActionQueueDto.fromJson(<String, dynamic>{
+        'actions': [
+          <String, dynamic>{
+            'kind': 5,
+            'severity': 1,
+            'productId': '44444444-4444-4444-4444-444444444444',
+            'productVariantId': null,
+            'productName': 'Wool coat',
+            'sku': null,
+            'recommendation':
+                'Look into returns for Wool coat: read the return reasons '
+                'and check the photos and description.',
+            'evidence': [
+              '6 of 20 sold in the last 30 days came back (30%)',
+              'Before that, 2 of 40 came back (5%)',
+            ],
+            'valueAtStake': null,
+          },
+        ],
+      }).toDomain();
+
+      final action = queue.actions.single;
+      expect(action.kind, StoreActionKind.returnsRising);
+      expect(action.severity, StoreActionSeverity.high);
+      expect(action.productId, '44444444-4444-4444-4444-444444444444');
+      expect(action.productVariantId, isNull);
+      expect(action.sku, isNull);
+      expect(action.valueAtStake, isNull);
+      expect(action.recommendation, startsWith('Look into returns'));
+      expect(action.evidence, hasLength(2));
     });
 
     test('accepts names in any casing, snake_case and numeric strings', () {
