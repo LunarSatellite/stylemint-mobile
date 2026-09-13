@@ -72,6 +72,10 @@ class _MockCartRepository implements CartRepository {
   Future<Either<NetworkExceptions, Cart>> getCart() async => right(_cart);
 
   @override
+  Future<Either<NetworkExceptions, BasketOptimization>>
+  getBasketOptimization() async => right(const BasketOptimization(insights: []));
+
+  @override
   Future<Either<NetworkExceptions, Cart>> addToCart({
     required String productId,
     required int quantity,

@@ -503,7 +503,11 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       _ytChromeCssInjected = true;
       unawaited(_injectYouTubeOverlayHidingCss(wc));
     };
-    _ytController!.addListener(_ytEndListener!);
+    // _onYouTubeValueChanged is the only thing that flips _ytReady; without it
+    // every play()/pause()/unMute() below is silently skipped forever.
+    _ytController!
+      ..addListener(_ytEndListener!)
+      ..addListener(_onYouTubeValueChanged);
     // Reconcile after init so autoplay flags and mute state are applied.
     _reconcilePlayback();
   }
@@ -766,6 +770,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     if (ready == _ytReady) return;
     _ytReady = ready;
     if (ready) {
+      // Reconcile first so an offscreen feed neighbour (also autoplaying
+      // muted) is paused before it gets unmuted — otherwise its audio can
+      // leak for a moment ahead of the pause.
+      _reconcilePlayback();
       // If the caller opted into autoplay we started the IFrame muted
       // so the autoplay policy would accept it. Try to bring audio back
       // once the player reports ready. The WebView may still ignore
@@ -774,7 +782,6 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       if (widget.autoplay) {
         _ytController?.unMute();
       }
-      _reconcilePlayback();
     }
   }
 
