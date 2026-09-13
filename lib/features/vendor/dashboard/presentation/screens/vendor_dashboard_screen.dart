@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entit
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/store_actions/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -83,9 +84,14 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
               dashboard: dashboard,
               activityState: activityState,
               pendingActionCounts: pendingActionCounts,
+              storeActionCount: ref
+                  .watch(storeActionCountProvider)
+                  .asData
+                  ?.value,
               onRefresh: () {
                 ref.read(vendorDashboardNotifierProvider.notifier).load();
                 ref.read(vendorPendingActionsNotifierProvider.notifier).load();
+                ref.invalidate(storeActionCountProvider);
               },
             ),
             loadFailure: (_) => SmErrorView(
@@ -118,12 +124,17 @@ class _DashboardContent extends StatelessWidget {
     required this.activityState,
     required this.pendingActionCounts,
     required this.onRefresh,
+    this.storeActionCount,
   });
 
   final VendorDashboard dashboard;
   final VendorActivityState activityState;
   final VendorPendingActionCounts pendingActionCounts;
   final VoidCallback onRefresh;
+
+  /// Store to-do count (GET /v1/vendor/store/actions); null while loading or
+  /// if the call failed.
+  final int? storeActionCount;
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +360,17 @@ class _DashboardContent extends StatelessWidget {
           fallback: 'Review requests from creators',
         ),
         route: RouteNames.vendorCreatorPartnershipRequests,
+      ),
+      _Alert(
+        title: 'Store to-do',
+        subtitle: _countSubtitle(
+          storeActionCount,
+          singular: 'thing to do in your store',
+          plural: 'things to do in your store',
+          zero: 'Nothing needs your attention right now',
+          fallback: 'Restock, photo and slow-stock suggestions',
+        ),
+        route: RouteNames.vendorStoreActions,
       ),
     ];
 

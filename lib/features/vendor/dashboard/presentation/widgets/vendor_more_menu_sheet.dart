@@ -107,6 +107,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorDemandSignals),
               ),
               const _MoreDivider(),
+              // Voyager autonomous retail operations: a ranked to-do list of
+              // restock / photo / slow-stock suggestions (GET
+              // /v1/vendor/store/actions).
+              _MoreItem(
+                icon: Icons.checklist_rounded,
+                title: 'Store to-do',
+                onTap: () => _go(context, RouteNames.vendorStoreActions),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.question_answer_outlined,
                 title: 'Customer Inquiries',
