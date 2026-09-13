@@ -15,7 +15,7 @@ typedef ShapeReader = Future<double?> Function(Uint8List imageBytes);
 ///
 /// A YouTube reel is laid out as a Short until its shape is known. The shape
 /// is read once from YouTube's public `hqdefault` thumbnail (see
-/// [VideoShape]). Only videos wider than a Short are recorded, so a Short, or
+/// [VideoShape]). Only videos that aren't Shorts get a shape, so a Short, or
 /// a thumbnail that can't be read, keeps the Short layout.
 class ReelShapes extends ChangeNotifier {
   ReelShapes({ThumbnailLoader? loadThumbnail, ShapeReader? readShape})
@@ -29,7 +29,7 @@ class ReelShapes extends ChangeNotifier {
   final Map<String, double?> _known = {};
   final Set<String> _learning = {};
 
-  /// Width / height of [reel]'s video when it is a YouTube video wider than a
+  /// Width / height of [reel]'s video when it is a YouTube video that isn't a
   /// Short; null otherwise, or until it has been learned.
   double? aspectOf(ReelMedia reel) {
     final id = _youTubeId(reel);
@@ -90,7 +90,7 @@ class ReelShapes extends ChangeNotifier {
         );
         return pixels == null
             ? null
-            : VideoShape.letterboxedAspect(
+            : VideoShape.aspectFromBlackBars(
                 pixels.buffer.asUint8List(),
                 image.width,
                 image.height,

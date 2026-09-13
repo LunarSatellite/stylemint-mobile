@@ -25,6 +25,13 @@ void main() {
     },
   );
 
+  test('vertical reels fill the screen; square and landscape show whole', () {
+    expect(EmbedLayoutPolicy.fillsScreen(9 / 16), isTrue);
+    expect(EmbedLayoutPolicy.fillsScreen(3 / 4), isTrue);
+    expect(EmbedLayoutPolicy.fillsScreen(1), isFalse);
+    expect(EmbedLayoutPolicy.fillsScreen(16 / 9), isFalse);
+  });
+
   group('coverRect fills the page with no bars', () {
     const page = Size(360, 688);
 

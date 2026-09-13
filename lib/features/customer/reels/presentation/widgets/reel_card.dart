@@ -14,20 +14,21 @@ import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.d
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Where the player sits on a feed page of size [page]. Every embedded reel
-/// fills the whole page with no bars: its player takes the video's shape (a
-/// vertical reel's 9:16 unless [ReelShapes] learns a YouTube video is wider)
-/// and covers the page, which clips the overflow. A native video fills the
-/// page and covers it itself. The feed places its shared players with the
-/// same rectangle.
+/// Where the player sits on a feed page of size [page]. A vertical reel fills
+/// the whole page with no bars: its player takes the reel's shape and covers
+/// the page, which clips the overflow. A square or landscape video shows
+/// whole, the way it was made: its player fills the page and the platform fits
+/// the picture inside. Reels are vertical (9:16) unless [ReelShapes] learns a
+/// YouTube video's real shape. A native video fills the page and follows the
+/// same rule itself. The feed places its shared players with the same
+/// rectangle.
 Rect reelPlayerRect(Reel reel, Size page) {
   if (resolveReelPlayback(reel) is! EmbedSource) return Offset.zero & page;
-  return EmbedLayoutPolicy.coverRect(
-    page: page,
-    aspectRatio:
-        ReelShapes.instance.aspectOf(reel) ??
-        EmbedLayoutPolicy.shortsAspectRatio,
-  );
+  final aspect =
+      ReelShapes.instance.aspectOf(reel) ?? EmbedLayoutPolicy.shortsAspectRatio;
+  return EmbedLayoutPolicy.fillsScreen(aspect)
+      ? EmbedLayoutPolicy.coverRect(page: page, aspectRatio: aspect)
+      : Offset.zero & page;
 }
 
 /// A single full-screen reel: inline video background with a gradient

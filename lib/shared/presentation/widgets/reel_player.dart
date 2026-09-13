@@ -533,10 +533,14 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
         fit: StackFit.expand,
         children: [
           if (_initialized && controller != null)
-            // Every reel fills the whole page with no bars (owner decision,
-            // 2026-09-13); a video of another shape is trimmed at the edges.
+            // A vertical reel (up to 3:4) fills the whole page with no bars;
+            // a square or landscape video shows whole, the way it was made
+            // (owner decision, 2026-09-13; same rule as
+            // EmbedLayoutPolicy.fillsScreen).
             FittedBox(
-              fit: BoxFit.cover,
+              fit: controller.value.aspectRatio <= 3 / 4
+                  ? BoxFit.cover
+                  : BoxFit.contain,
               clipBehavior: Clip.hardEdge,
               child: SizedBox(
                 width: controller.value.size.width,

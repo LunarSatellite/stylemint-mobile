@@ -5,12 +5,13 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 
 /// Where an embedded reel's player sits on a reel page.
 ///
-/// The feed fills the whole screen with every YouTube reel (see [coverRect]),
-/// with the page's overlay UI on top as for every other reel. (Owner
-/// decisions, 2026-09-13: full-screen overlays on YouTube reels, and reels
-/// fill the whole screen with no bars — accepting that YouTube's Required
-/// Minimum Functionality forbids drawing over or cropping its player.)
-/// TikTok and Facebook players fill the page and letterbox themselves.
+/// A vertical reel fills the whole screen with no bars (see [coverRect]); a
+/// square or landscape video shows whole, the way it was made, with the
+/// platform fitting it inside a page-sized player. The page's overlay UI sits
+/// on top as for every reel. (Owner decisions, 2026-09-13: full-screen
+/// overlays, vertical reels fill the screen, other shapes stay as made —
+/// accepting that YouTube's Required Minimum Functionality forbids drawing
+/// over or cropping its player.)
 abstract final class EmbedLayoutPolicy {
   static const double minPlayerSide = 200;
 
@@ -19,6 +20,15 @@ abstract final class EmbedLayoutPolicy {
 
   /// Shape of a Short.
   static const double shortsAspectRatio = 9 / 16;
+
+  /// Widest shape (width / height) that fills the screen: vertical reels, up
+  /// to 3:4. Square and landscape videos show whole instead.
+  static const double fillScreenMaxAspect = 3 / 4;
+
+  /// Whether a video of [aspectRatio] fills the screen rather than showing
+  /// whole.
+  static bool fillsScreen(double aspectRatio) =>
+      aspectRatio <= fillScreenMaxAspect;
 
   static bool reservesPlayerRect(SocialPlatform? platform) =>
       platform == SocialPlatform.youtube;
