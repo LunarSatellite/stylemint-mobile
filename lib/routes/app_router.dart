@@ -104,6 +104,7 @@ import 'package:stylemint_mobile_frontend/features/profile/presentation/screens/
 import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/about_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/language_screen.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/memory_vault_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/notification_prefs_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/privacy_policy_screen.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/screens/settings_screen.dart';
@@ -1331,6 +1332,10 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.settings, RouteNames.settingsAbout),
             builder: (ctx, state) => const AboutScreen(),
+          ),
+          GoRoute(
+            path: _subPath(RouteNames.settings, RouteNames.settingsMemory),
+            builder: (ctx, state) => const MemoryVaultScreen(),
           ),
         ],
       ),

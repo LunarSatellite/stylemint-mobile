@@ -78,6 +78,11 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Language',
             onTap: () => context.push('${RouteNames.settings}/language'),
           ),
+          _MenuTile(
+            icon: Icons.psychology_outlined,
+            label: 'Your StyleMint Memory',
+            onTap: () => context.push(RouteNames.settingsMemory),
+          ),
 
           const SizedBox(height: DesignTokens.s16),
           _SectionHeader(label: 'About'),

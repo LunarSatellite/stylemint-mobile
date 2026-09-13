@@ -200,6 +200,7 @@ abstract class RouteNames {
   static const settingsPrivacy = '/settings/privacy';
   static const settingsTerms = '/settings/terms';
   static const settingsAbout = '/settings/about';
+  static const settingsMemory = '/settings/memory';
   static const settingsChangePassword = '/settings/change-password';
   static const accountSettings = '/account';
   static const sessions = '/account/sessions';
