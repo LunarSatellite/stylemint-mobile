@@ -64,6 +64,7 @@ class EmbedSlot extends ChangeNotifier {
   EmbedPlayerState _state = EmbedPlayerState.idle;
   bool _wantsPlay = false;
   bool _muted = false;
+  bool _preroll = false;
   bool _hasStarted = false;
   int? _durationSeconds;
   String? _errorCode;
@@ -80,6 +81,10 @@ class EmbedSlot extends ChangeNotifier {
   /// True while the player is muted, e.g. after a platform blocked playback
   /// with sound.
   bool get muted => _muted;
+
+  /// True while the reel waits off screen pre-rolling: loaded muted and held
+  /// on its first moving frames, so it shows video the moment it is on screen.
+  bool get prerolls => _preroll;
 
   /// True once the current reel has shown moving frames.
   bool get hasStarted => _hasStarted;
@@ -112,17 +117,20 @@ class EmbedSlot extends ChangeNotifier {
     _hostReady = false;
   }
 
-  /// Loads [request] into this slot, replacing whatever it held.
+  /// Loads [request] into this slot, replacing whatever it held. A reel that
+  /// won't [play] yet can [preroll] (see [prerolls]).
   void assign(
     EmbedRequest request, {
     required String origin,
     required bool play,
     required bool muted,
+    bool preroll = false,
   }) {
     _request = request;
     _token++;
     _wantsPlay = play;
     _muted = muted;
+    _preroll = preroll && !play;
     _hasStarted = false;
     _durationSeconds = null;
     _errorCode = null;
@@ -144,6 +152,7 @@ class EmbedSlot extends ChangeNotifier {
   void play() {
     if (_request == null || _wantsPlay) return;
     _wantsPlay = true;
+    _preroll = false;
     _run('smPlayer.play()');
   }
 
@@ -166,6 +175,7 @@ class EmbedSlot extends ChangeNotifier {
     _request = null;
     _token++;
     _wantsPlay = false;
+    _preroll = false;
     _hasStarted = false;
     _errorCode = null;
     _readyTimer?.cancel();
@@ -270,7 +280,7 @@ class EmbedSlot extends ChangeNotifier {
         '${jsonEncode(source.platform.name)},'
         '${jsonEncode(source.externalId)},'
         '${jsonEncode(source.permalink)},'
-        '$_wantsPlay,$_muted)';
+        '$_wantsPlay,$_muted,$_preroll)';
   }
 
   void _run(String script) {

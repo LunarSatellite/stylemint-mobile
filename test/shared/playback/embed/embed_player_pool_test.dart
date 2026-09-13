@@ -85,9 +85,10 @@ void main() {
     d[0].finishLoad();
     d[1].finishLoad();
     expect(d[0].assigns.single, contains('"youtube","aaaaaaaaaaa"'));
-    expect(d[0].assigns.single, endsWith(',true,false)'));
+    // wantPlay, muted, preroll: the next reel pre-rolls.
+    expect(d[0].assigns.single, endsWith(',true,false,false)'));
     expect(d[1].assigns.single, contains('"bbbbbbbbbbb"'));
-    expect(d[1].assigns.single, endsWith(',false,false)'));
+    expect(d[1].assigns.single, endsWith(',false,false,true)'));
   });
 
   test('a swipe plays the cued reel in place and recycles the old slot', () async {

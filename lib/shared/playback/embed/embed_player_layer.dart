@@ -49,10 +49,11 @@ class EmbedPlayerLayer extends StatelessWidget {
                 controller.hasClients && controller.position.haveDimensions
                 ? controller.page ?? settledIndex.toDouble()
                 : settledIndex.toDouble();
+            // The reel on stage is drawn last, on top of a waiting one.
+            final slots = [...pool.slots]
+              ..sort((a, b) => (_onStage(a) ? 1 : 0) - (_onStage(b) ? 1 : 0));
             return Stack(
-              children: [
-                for (final slot in pool.slots) _place(slot, page, scroll),
-              ],
+              children: [for (final slot in slots) _place(slot, page, scroll)],
             );
           },
         );
@@ -60,11 +61,21 @@ class EmbedPlayerLayer extends StatelessWidget {
     );
   }
 
+  bool _onStage(EmbedSlot slot) {
+    final key = slot.key;
+    return key != null &&
+        key == pool.activeKey &&
+        indexOfKey(key) == settledIndex;
+  }
+
   Widget _place(EmbedSlot slot, Size page, double scroll) {
     final key = slot.key;
     final index = key == null ? null : indexOfKey(key);
-    final onStage =
-        key != null && key == pool.activeKey && index == settledIndex;
+    final onStage = _onStage(slot);
+    // A pre-rolling reel stays attached but still, hidden behind the reel on
+    // stage: an off-screen WebView stops its media, which the pre-roll needs.
+    // It never moves, so a swipe still moves only one WebView.
+    final waiting = !onStage && index != null && slot.prerolls;
     final rect = playerRectAt(index ?? settledIndex, page);
     return Positioned.fromRect(
       key: ValueKey('embed-slot-${slot.index}-${slot.generation}'),
@@ -72,7 +83,7 @@ class EmbedPlayerLayer extends StatelessWidget {
           ? rect.shift(Offset(0, (settledIndex - scroll) * page.height))
           : rect,
       child: Offstage(
-        offstage: !onStage,
+        offstage: !onStage && !waiting,
         child: EmbedSlotView(slot: slot),
       ),
     );

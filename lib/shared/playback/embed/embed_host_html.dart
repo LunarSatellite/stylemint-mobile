@@ -38,7 +38,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
 
   function blank(token) {
     return {token: token, platform: null, id: null, href: null, wantPlay: false,
-            muted: false, durationSent: false, fbStarted: false};
+            muted: false, durationSent: false, fbStarted: false,
+            preroll: false, prerolled: false};
   }
 
   window.addEventListener('flutterInAppWebViewPlatformReady', function () {
@@ -87,11 +88,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   };
 
   function ytApply() {
-    if (cur.muted) yt.mute(); else yt.unMute();
+    // Sound only while the reel is on screen; a pre-rolling reel stays muted.
+    if (cur.muted || !cur.wantPlay) yt.mute(); else yt.unMute();
     if (ytVideoId !== cur.id) {
       ytVideoId = cur.id;
-      if (cur.wantPlay) yt.loadVideoById(cur.id); else yt.cueVideoById(cur.id);
-    } else if (cur.wantPlay) {
+      if (cur.wantPlay || cur.preroll) yt.loadVideoById(cur.id); else yt.cueVideoById(cur.id);
+    } else if (cur.wantPlay || (cur.preroll && !cur.prerolled)) {
       yt.playVideo();
     } else {
       emit('cued');
@@ -125,6 +127,9 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
             // Reels loop. Replay on end rather than the loop playerVar, which
             // needs a playlist and re-buffers from the network each pass.
             if (event.data === 0 && cur.wantPlay) { yt.seekTo(0, true); yt.playVideo(); }
+            // A pre-rolling reel holds its first moving frames until it is on
+            // screen, so a swipe to it shows video at once.
+            if (event.data === 1 && !cur.wantPlay) { cur.prerolled = true; yt.pauseVideo(); }
           },
           onError: function (event) { emit('error', {code: 'yt_' + event.data}); },
           onAutoplayBlocked: function () {
@@ -305,7 +310,9 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
 
   function applyPlayback() {
     if (cur.platform === 'youtube') {
-      if (yt && ytReady) { if (cur.wantPlay) yt.playVideo(); else yt.pauseVideo(); }
+      if (yt && ytReady) {
+        if (cur.wantPlay) { if (!cur.muted) yt.unMute(); yt.playVideo(); } else yt.pauseVideo();
+      }
     } else if (cur.platform === 'tiktok') {
       ttApply();
     } else if (cur.platform === 'facebook') {
@@ -315,7 +322,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
 
   function applyMute() {
     if (cur.platform === 'youtube') {
-      if (yt && ytReady) { if (cur.muted) yt.mute(); else yt.unMute(); }
+      if (yt && ytReady) { if (cur.muted || !cur.wantPlay) yt.mute(); else yt.unMute(); }
     } else if (cur.platform === 'tiktok') {
       ttSend(cur.muted ? 'mute' : 'unMute');
     } else if (cur.platform === 'facebook' && fbPlayer) {
@@ -324,7 +331,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   }
 
   window.smPlayer = {
-    assign: function (token, platform, id, href, wantPlay, muted) {
+    assign: function (token, platform, id, href, wantPlay, muted, preroll) {
       var previous = cur.platform;
       cur = blank(token);
       cur.platform = platform;
@@ -332,6 +339,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
       cur.href = href;
       cur.wantPlay = !!wantPlay;
       cur.muted = !!muted;
+      cur.preroll = !!preroll && !cur.wantPlay;
       if (previous !== platform || platform !== 'youtube') clearStage();
       if (platform === 'youtube') ytAssign();
       else if (platform === 'tiktok') ttAssign();

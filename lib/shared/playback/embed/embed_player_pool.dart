@@ -192,7 +192,15 @@ class EmbedPlayerPool extends ChangeNotifier {
       final slot = _takeSlot(keep);
       if (slot == null) break;
       slot.lastUsed = ++_clock;
-      _assign(slot, neighbour, origins, play: false);
+      // Only the most likely next reel pre-rolls, and never in the
+      // background: one extra muted decode, not one per neighbour.
+      _assign(
+        slot,
+        neighbour,
+        origins,
+        play: false,
+        preroll: _hostActive && identical(neighbour, wanted.first),
+      );
     }
   }
 
@@ -222,12 +230,14 @@ class EmbedPlayerPool extends ChangeNotifier {
     EmbedRequest request,
     EmbedOrigins origins, {
     required bool play,
+    bool preroll = false,
   }) {
     slot.assign(
       request,
       origin: origins.forPlatform(request.source.platform),
       play: play,
       muted: _sessionMuted,
+      preroll: preroll,
     );
   }
 
