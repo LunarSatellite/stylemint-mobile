@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
@@ -200,6 +202,24 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, RegretCheck>> getRegretCheck(
+    String productId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dto = await remoteDataSource.getRegretCheck(productId);
+      return right(dto.toDomain());
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (e) {
+      // 404 -> notFound, 5xx -> serverUnavailable, bad payload -> unexpected.
+      return left(mapDioExceptionToNetworkException(e));
     }
   }
 

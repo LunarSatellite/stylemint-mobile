@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 abstract interface class DiscoveryRepository {
@@ -40,6 +41,12 @@ abstract interface class DiscoveryRepository {
   );
 
   Future<Either<NetworkExceptions, ProductPassport>> getProductPassport(
+    String productId,
+  );
+
+  /// "Check before you buy": the product and up to four alternatives ranked
+  /// by how rarely buyers regret them.
+  Future<Either<NetworkExceptions, RegretCheck>> getRegretCheck(
     String productId,
   );
 

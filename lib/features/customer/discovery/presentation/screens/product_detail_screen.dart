@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/shared/provider
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/regret_check_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
@@ -304,6 +305,8 @@ class _ProductBody extends StatelessWidget {
                     _PassportSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _ComparisonSection(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
+                    RegretCheckCard(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),

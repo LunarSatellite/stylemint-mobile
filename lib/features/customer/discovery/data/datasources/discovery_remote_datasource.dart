@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/discover_data_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/regret_check_dto.dart';
 
 class DiscoveryRemoteDataSource {
   DiscoveryRemoteDataSource({required this.apiClient});
@@ -159,6 +160,20 @@ class DiscoveryRemoteDataSource {
       queryParameters: {'maxAlternatives': maxAlternatives},
     );
     return response as Map<String, dynamic>;
+  }
+
+  /// GET `/v1/public/products/{id}/regret-check` — Voyager "Regret-Aware
+  /// Product Reranker": this product and same-category alternatives, best
+  /// first, with the facts behind each position. Anonymous.
+  Future<RegretCheckDto> getRegretCheck(
+    String productId, {
+    int maxAlternatives = 4,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/public/products/$productId/regret-check',
+      queryParameters: {'maxAlternatives': maxAlternatives},
+    );
+    return RegretCheckDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST `/v1/public/mission-shopping/plan` — Voyager "Mission-Based

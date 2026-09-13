@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datas
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_notifier.dart';
@@ -91,6 +92,23 @@ final productComparisonProvider = FutureProvider.autoDispose
           .watch(discoveryRepositoryProvider)
           .getProductComparison(productId);
       return result.fold((_) => null, (comparison) => comparison);
+    });
+
+/// Best-effort "Check before you buy" card. Null (card hidden) on any
+/// failure, or when the viewed product has no alternatives to weigh against.
+final regretCheckProvider = FutureProvider.autoDispose
+    .family<RegretCheck?, String>((ref, productId) async {
+      try {
+        final result = await ref
+            .watch(discoveryRepositoryProvider)
+            .getRegretCheck(productId);
+        return result.fold(
+          (_) => null,
+          (check) => check.hasAlternatives ? check : null,
+        );
+      } on Object catch (_) {
+        return null;
+      }
     });
 
 final relatedProductsProvider =
