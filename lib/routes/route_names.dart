@@ -158,6 +158,7 @@ abstract class RouteNames {
   static const vendorAnalytics = '/vendor/analytics';
   static const vendorDemandSignals = '/vendor/demand-signals';
   static const vendorStoreActions = '/vendor/store-actions';
+  static const vendorSponsoredProducts = '/vendor/sponsored';
   static const vendorMessageCreator = '/vendor/message-creator';
 
   static const vendorAdjustCommission = '/vendor/adjust-commission';

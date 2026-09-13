@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/notifiers/vendor_products_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/domain/entities/sponsored_listing.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/presentation/widgets/sponsor_product_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -73,6 +76,35 @@ Future<void> showVendorProductActions(
             },
           ),
           const _ActionDivider(),
+
+          // Sponsor this product (Active only; the backend only sponsors
+          // live products). Opens the sponsor form for this product.
+          if (isActive) ...[
+            _ActionRow(
+              icon: Icons.campaign_outlined,
+              title: 'Sponsor this product',
+              onTap: () async {
+                Navigator.pop(sheetCtx);
+                final result = await showSponsorProductSheet(
+                  context,
+                  onSubmit: ref
+                      .read(sponsoredProductsRepositoryProvider)
+                      .sponsor,
+                  product: SponsorProductTarget(
+                    productId: product.id,
+                    productName: product.name,
+                  ),
+                );
+                if (result == null || !context.mounted) return;
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(content: Text(sponsorFormResultMessage(result))),
+                  );
+              },
+            ),
+            const _ActionDivider(),
+          ],
 
           // 3 â€” Deactivate (Active only)
           if (isActive) ...[

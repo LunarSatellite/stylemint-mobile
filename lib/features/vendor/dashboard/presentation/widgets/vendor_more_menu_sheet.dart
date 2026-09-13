@@ -116,6 +116,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorStoreActions),
               ),
               const _MoreDivider(),
+              // Voyager transparent sponsored product boosting: sponsor live
+              // products and see how often search showed them (GET/PUT
+              // /v1/vendor/store/sponsored).
+              _MoreItem(
+                icon: Icons.campaign_outlined,
+                title: 'Sponsored products',
+                onTap: () => _go(context, RouteNames.vendorSponsoredProducts),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.question_answer_outlined,
                 title: 'Customer Inquiries',
