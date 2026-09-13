@@ -31,6 +31,7 @@ class Reel implements ReelMedia {
     required this.shareCount,
     required this.createdAt,
     this.platform,
+    this.externalId,
     this.videoUrl,
     this.isLikedByUser,
     this.isWishlistedByUser,
@@ -38,6 +39,10 @@ class Reel implements ReelMedia {
   });
 
   final String id;
+
+  /// The platform's own post/video id (YouTube videoId, TikTok item id,
+  /// Instagram media id, Facebook video id) as stored by the backend.
+  final String? externalId;
   final String sourceUrl; // Deep link to IG / TikTok / YouTube / FB
   final String thumbnailUrl; // Preview image
   final String? videoUrl; // Direct MP4 for inline playback (optional)
@@ -64,6 +69,7 @@ class Reel implements ReelMedia {
 
   Reel copyWith({
     String? id,
+    String? externalId,
     String? sourceUrl,
     String? thumbnailUrl,
     String? videoUrl,
@@ -103,12 +109,15 @@ class Reel implements ReelMedia {
       isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       isWishlistedByUser: isWishlistedByUser ?? this.isWishlistedByUser,
       isCreatorFollowed: isCreatorFollowed ?? this.isCreatorFollowed,
+      externalId: externalId ?? this.externalId,
     );
   }
 
-  /// Platform-specific video ID derived from [sourceUrl]. Used by YouTube playback
-  /// to identify the video. Null when not parseable.
+  /// The platform's video id: the backend-stored [externalId] when present,
+  /// otherwise parsed from a YouTube [sourceUrl]. Null when neither yields one.
   String? get platformVideoId {
+    final stored = externalId;
+    if (stored != null && stored.isNotEmpty) return stored;
     if (platform != SocialPlatform.youtube) return null;
     final uri = Uri.tryParse(sourceUrl);
     if (uri == null) return null;
