@@ -8,32 +8,27 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_sco
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_play_indicator.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Where the player sits on a feed page of size [page]: a rectangle of its
-/// own for a YouTube reel (see [EmbedLayoutPolicy]), otherwise the whole
-/// page. The feed places its shared players with the same rectangle.
-Rect reelPlayerRect(Reel reel, Size page, EdgeInsets padding) {
+/// Where the player sits on a feed page of size [page]: a YouTube player is
+/// sized to a Short at the page's width, so the video shows whole without
+/// zooming; other players fill the page. The feed places its shared players
+/// with the same rectangle.
+Rect reelPlayerRect(Reel reel, Size page) {
   final source = resolveReelPlayback(reel);
   return EmbedLayoutPolicy.playerRect(
     platform: source is EmbedSource ? source.platform : null,
     page: page,
-    topInset: padding.top,
-    panelHeight: EmbedLayoutPolicy.panelHeight(bottomInset: padding.bottom),
+    aspectRatio: EmbedLayoutPolicy.shortsAspectRatio,
   );
 }
 
-/// A single full-screen reel page.
-///
-/// Most reels play full-bleed with a gradient scrim, creator info, caption,
-/// right-rail actions and tagged products drawn over the video. Nothing may
-/// be drawn over a YouTube player, so a YouTube reel plays full-width with a
-/// slim creator-and-actions bar below it; its products open in a sheet.
+/// A single full-screen reel: inline video background with a gradient
+/// scrim, creator info + caption, right-rail actions and tagged products.
 ///
 /// [isActive] must be true for the reel currently visible in the viewport
-/// so that [ReelPlayer] plays it and pauses all others.
+/// so that [ReelPlayer] auto-plays it and pauses all others.
 class ReelCard extends StatefulWidget {
   const ReelCard({required this.reel, required this.isActive, super.key});
 
@@ -50,99 +45,12 @@ class _ReelCardState extends State<ReelCard> {
   @override
   Widget build(BuildContext context) {
     final source = resolveReelPlayback(widget.reel);
-    if (source is! EmbedSource) return _buildOverPlayer(null);
-    final embed = EmbedRequest(source);
-    return EmbedLayoutPolicy.reservesPlayerRect(source.platform)
-        ? _buildBesidePlayer(embed)
-        : _buildOverPlayer(embed);
-  }
-
-  Widget _buildOverPlayer(EmbedRequest? embed) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ReelPlayer(
-          reel: widget.reel,
-          isActive: widget.isActive,
-          playbackController: _playback,
-        ),
-
-        // Full-screen tap target for play/pause. Sits above the video but
-        // below the interactive controls, so a tap anywhere toggles
-        // playback while the buttons below still receive their own taps.
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _playback.toggle,
-          ),
-        ),
-
-        // Bottom scrim so overlaid text stays legible over any video.
-        const IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black87],
-                stops: [0.45, 1.0],
-              ),
-            ),
-          ),
-        ),
-
-        if (embed != null)
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(DesignTokens.s12),
-                child: _SoundOffButton(embed: embed),
-              ),
-            ),
-          ),
-
-        // Right-rail actions (like / comment / share / wishlist / cart) —
-        // pulled down so the rail sits near the creator/follow row instead
-        // of floating high above it.
-        Positioned(
-          right: DesignTokens.s12,
-          bottom: 180,
-          child: ReelActions(reel: widget.reel),
-        ),
-
-        // Creator info, caption and tagged products pinned to the bottom.
-        SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 72),
-                child: CreatorInfo(reel: widget.reel),
-              ),
-              if (widget.reel.taggedProducts.isNotEmpty) ...[
-                const SizedBox(height: DesignTokens.s12),
-                TaggedProductsSection(products: widget.reel.taggedProducts),
-              ],
-              const SizedBox(height: DesignTokens.s16),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBesidePlayer(EmbedRequest embed) {
+    final embed = source is EmbedSource ? EmbedRequest(source) : null;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final padding = MediaQuery.paddingOf(context);
-        final player = reelPlayerRect(
-          widget.reel,
-          constraints.biggest,
-          padding,
-        );
+        final player = reelPlayerRect(widget.reel, constraints.biggest);
         return Stack(
+          fit: StackFit.expand,
           children: [
             Positioned.fromRect(
               rect: player,
@@ -153,65 +61,71 @@ class _ReelCardState extends State<ReelCard> {
               ),
             ),
 
-            // Tap target for play/pause. It draws nothing, so the player
-            // stays unobstructed.
-            Positioned.fromRect(
-              rect: player,
+            // Full-screen tap target for play/pause. Sits above the video but
+            // below the interactive controls, so a tap anywhere toggles
+            // playback while the buttons below still receive their own taps.
+            Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _playback.toggle,
               ),
             ),
 
-            Positioned(
-              left: 0,
-              right: 0,
-              top: player.bottom,
-              bottom: 0,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: DesignTokens.s12,
-                  right: DesignTokens.s4,
-                  bottom: padding.bottom,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CreatorInfo(reel: widget.reel, compact: true),
-                    ),
-                    _PausedMark(embed: embed),
-                    _SoundOffButton(embed: embed),
-                    ReelActions(reel: widget.reel, compact: true),
-                  ],
+            // Bottom scrim so overlaid text stays legible over any video.
+            const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black87],
+                    stops: [0.45, 1.0],
+                  ),
                 ),
               ),
             ),
+
+            if (embed != null)
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(DesignTokens.s12),
+                    child: _SoundOffButton(embed: embed),
+                  ),
+                ),
+              ),
+
+            // Right-rail actions (like / comment / share / wishlist / cart) —
+            // pulled down so the rail sits near the creator/follow row instead
+            // of floating high above it.
+            Positioned(
+              right: DesignTokens.s12,
+              bottom: 180,
+              child: ReelActions(reel: widget.reel),
+            ),
+
+            // Creator info, caption and tagged products pinned to the bottom.
+            SafeArea(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 72),
+                    child: CreatorInfo(reel: widget.reel),
+                  ),
+                  if (widget.reel.taggedProducts.isNotEmpty) ...[
+                    const SizedBox(height: DesignTokens.s12),
+                    TaggedProductsSection(
+                      products: widget.reel.taggedProducts,
+                    ),
+                  ],
+                  const SizedBox(height: DesignTokens.s16),
+                ],
+              ),
+            ),
           ],
-        );
-      },
-    );
-  }
-}
-
-/// Shown in the bar below a YouTube player while the viewer has it paused.
-class _PausedMark extends StatelessWidget {
-  const _PausedMark({required this.embed});
-
-  final EmbedRequest embed;
-
-  @override
-  Widget build(BuildContext context) {
-    final pool = EmbedPlayerScope.maybeOf(context);
-    if (pool == null) return const SizedBox.shrink();
-    return ListenableBuilder(
-      listenable: pool,
-      builder: (context, _) {
-        if (pool.activeKey != embed.key || !pool.userPaused) {
-          return const SizedBox.shrink();
-        }
-        return const Padding(
-          padding: EdgeInsets.only(right: DesignTokens.s4),
-          child: ReelPlayIndicator(size: 36),
         );
       },
     );

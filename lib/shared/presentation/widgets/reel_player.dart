@@ -562,7 +562,6 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       pool: pool,
       request: EmbedRequest(source),
       ownsPlayer: _scopePool == null,
-      showPauseIndicator: source.platform != SocialPlatform.youtube,
       poster: ReelPoster(reel: widget.reel),
       fallback: _buildExternalLayer(),
     );

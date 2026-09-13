@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_pool.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot_view.dart';
@@ -30,17 +29,8 @@ class EmbedReelSurface extends StatelessWidget {
   /// has a single player of its own rather than a shared layer beneath it.
   final bool ownsPlayer;
 
-  /// Nothing may be drawn over a YouTube player, so YouTube reels show the
-  /// paused state beside the player instead.
+  /// Show the play mark while the viewer has the reel paused.
   final bool showPauseIndicator;
-
-  static const _youTubeFrameStates = {
-    EmbedPlayerState.cued,
-    EmbedPlayerState.buffering,
-    EmbedPlayerState.playing,
-    EmbedPlayerState.paused,
-    EmbedPlayerState.ended,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +40,9 @@ class EmbedReelSurface extends StatelessWidget {
         final slot = pool.slotFor(request.key);
         final onStage = slot != null && pool.activeKey == request.key;
         if (onStage && pool.hasGivenUp(request.key)) return fallback;
-        final showsFrames = onStage && _showsFrames(slot);
+        // The poster stays up until the video is actually moving, so the
+        // platform's loading and cued screens are never seen.
+        final showsFrames = onStage && slot.hasStarted;
         final own = pool.slots.isEmpty ? null : pool.slots.first;
         return Stack(
           fit: StackFit.expand,
@@ -67,14 +59,5 @@ class EmbedReelSurface extends StatelessWidget {
         );
       },
     );
-  }
-
-  /// YouTube draws its own still for a cued video; TikTok and Facebook show
-  /// their own chrome until playback starts, so their posters stay up longer.
-  bool _showsFrames(EmbedSlot slot) {
-    if (request.source.platform == SocialPlatform.youtube) {
-      return _youTubeFrameStates.contains(slot.state);
-    }
-    return slot.hasStarted;
   }
 }

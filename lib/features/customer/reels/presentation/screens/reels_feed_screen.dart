@@ -177,7 +177,6 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
               icon: Icons.video_library_outlined,
             );
           }
-          final padding = MediaQuery.paddingOf(context);
           return EmbedPlayerScope(
             pool: _embedPool,
             child: NotificationListener<ScrollEndNotification>(
@@ -191,7 +190,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
                       settledIndex: _settledIndex,
                       indexOfKey: (key) => _embedIndex[key],
                       playerRectAt: (index, page) =>
-                          reelPlayerRect(reels[index], page, padding),
+                          reelPlayerRect(reels[index], page),
                     ),
                   ),
                   PageView.builder(

@@ -10,7 +10,6 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/no
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/tagged_products_section.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -21,14 +20,9 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// its source platform, so the heart hands off to that provider instead of
 /// showing a misleading local-only toggle. Share and cart are authenticated.
 class ReelActions extends ConsumerStatefulWidget {
-  const ReelActions({required this.reel, this.compact = false, super.key});
+  const ReelActions({required this.reel, super.key});
 
   final Reel reel;
-
-  /// A single row of plain icons for the bar below a YouTube reel. The reel's
-  /// tagged products, which cannot sit over a YouTube player, open from a
-  /// Shop button in place of the cart.
-  final bool compact;
 
   @override
   ConsumerState<ReelActions> createState() => _ReelActionsState();
@@ -65,26 +59,9 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     );
   }
 
-  void _openProducts() {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: DesignTokens.bgAppFoundation,
-        showDragHandle: true,
-        builder: (_) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-            child: TaggedProductsSection(products: widget.reel.taggedProducts),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    final compact = widget.compact;
     // Cart badge — so "did my add-to-cart tap do anything?" has a visible
     // answer right on the rail, not just inside the cart screen itself.
     final cartItemCount = ref
@@ -94,46 +71,39 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
               cart.items.fold<int>(0, (sum, i) => sum + i.quantity),
           orElse: () => 0,
         );
-    final actions = <Widget>[
-      _ActionButton(
-        icon: Icons.favorite_outline,
-        label: _formatCount(reel.likeCount),
-        onTap: () => _likeOnProvider(),
-        compact: compact,
-      ),
-      _ActionButton(
-        icon: Icons.chat_bubble_outline,
-        label: _formatCount(_commentCount),
-        onTap: _openComments,
-        compact: compact,
-      ),
-      _ActionButton(
-        icon: Icons.share_outlined,
-        label: _formatCount(reel.shareCount),
-        onTap: () async {
-          if (await ensureAuth(context, ref, reason: AuthReason.share)) {
-            unawaited(
-              SharePlus.instance.share(
-                ShareParams(
-                  text:
-                      "${reel.caption}\n\nWatch ${reel.creatorName}'s reel "
-                      'on Style Mint: ${reel.sourceUrl}',
-                ),
-              ),
-            );
-          }
-        },
-        compact: compact,
-      ),
-      if (compact && reel.taggedProducts.isNotEmpty)
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         _ActionButton(
-          icon: Icons.shopping_bag_outlined,
-          label: '${reel.taggedProducts.length}',
-          onTap: _openProducts,
-          compact: true,
-          color: DesignTokens.primaryGreen,
-        )
-      else
+          icon: Icons.favorite_outline,
+          label: _formatCount(reel.likeCount),
+          onTap: () => _likeOnProvider(),
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        _ActionButton(
+          icon: Icons.chat_bubble_outline,
+          label: _formatCount(_commentCount),
+          onTap: _openComments,
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        _ActionButton(
+          icon: Icons.share_outlined,
+          label: _formatCount(reel.shareCount),
+          onTap: () async {
+            if (await ensureAuth(context, ref, reason: AuthReason.share)) {
+              unawaited(
+                SharePlus.instance.share(
+                  ShareParams(
+                    text:
+                        "${reel.caption}\n\nWatch ${reel.creatorName}'s reel "
+                        'on Style Mint: ${reel.sourceUrl}',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        const SizedBox(height: DesignTokens.s12),
         _ActionButton(
           icon: Icons.shopping_cart_outlined,
           label: cartItemCount > 0 ? _formatCount(cartItemCount) : null,
@@ -142,19 +112,7 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
               if (context.mounted) await context.push('/cart');
             }
           },
-          compact: compact,
         ),
-    ];
-    if (compact) {
-      return Row(mainAxisSize: MainAxisSize.min, children: actions);
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < actions.length; i++) ...[
-          if (i > 0) const SizedBox(height: DesignTokens.s12),
-          actions[i],
-        ],
       ],
     );
   }
@@ -172,47 +130,15 @@ class _ActionButton extends StatelessWidget {
     required this.onTap,
     this.label,
     this.color = DesignTokens.iconWhite,
-    this.compact = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String? label;
   final Color color;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    if (compact) {
-      return GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          width: 44,
-          height: 48,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 24),
-              if (label != null && label!.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  label!,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    height: 1,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
