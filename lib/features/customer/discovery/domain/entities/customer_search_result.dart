@@ -7,6 +7,9 @@ class SearchResultProduct {
     required this.price,
     required this.currency,
     required this.averageRating,
+    this.isSponsored = false,
+    this.sponsoredLabel,
+    this.organicPosition,
   });
 
   final String productId;
@@ -15,6 +18,22 @@ class SearchResultProduct {
   final double price;
   final String currency;
   final double averageRating;
+
+  /// Voyager "Transparent Sponsored Product Boosting": true when this result
+  /// is in a paid slot. Backend `ProductTileDto.IsSponsored`.
+  final bool isSponsored;
+
+  /// The disclosure the backend wants shown ("Sponsored"); null otherwise.
+  final String? sponsoredLabel;
+
+  /// Where this product ranked organically for the search (1-based); null
+  /// for organic results or when unknown.
+  final int? organicPosition;
+
+  /// The disclosure a sponsored result must show, falling back to
+  /// "Sponsored" if the label is missing; null for organic results.
+  String? get sponsoredDisclosure =>
+      isSponsored ? (sponsoredLabel ?? 'Sponsored') : null;
 }
 
 class SearchResultBrand {

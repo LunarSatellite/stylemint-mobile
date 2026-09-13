@@ -24,6 +24,10 @@ class CustomerSearchRemoteDataSource {
               price: (p['price'] as num?)?.toDouble() ?? 0,
               currency: p['currency'] as String? ?? 'NPR',
               averageRating: (p['averageRating'] as num?)?.toDouble() ?? 0,
+              isSponsored:
+                  p['isSponsored'] == true || p['isSponsored'] == 'true',
+              sponsoredLabel: _nonBlank(p['sponsoredLabel']),
+              organicPosition: _position(p['organicPosition']),
             ))
         .toList(growable: false);
 
@@ -66,4 +70,15 @@ class CustomerSearchRemoteDataSource {
       totalHits: (data['totalHits'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+String? _nonBlank(Object? raw) =>
+    raw is String && raw.trim().isNotEmpty ? raw.trim() : null;
+
+/// A 1-based rank; anything else reads as unknown.
+int? _position(Object? raw) {
+  final value = raw is num
+      ? raw.toInt()
+      : (raw is String ? int.tryParse(raw.trim()) : null);
+  return value != null && value > 0 ? value : null;
 }

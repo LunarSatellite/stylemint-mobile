@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_creator_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/sponsored_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -157,94 +158,146 @@ class _ProductResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push(
-        RouteNames.productDetail.replaceFirst(':productId', product.productId),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 72,
-                height: 72,
-                child: product.heroImageUrl.isNotEmpty
-                    ? Image.network(
-                        product.heroImageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _e, _s) => const ColoredBox(
+    final disclosure = product.sponsoredDisclosure;
+    // One spoken label for the whole result, disclosure first. The visible
+    // texts are excluded so they aren't read twice; the badge's info control
+    // stays a separate button.
+    return Semantics(
+      key: ValueKey('search-product-${product.productId}'),
+      container: true,
+      button: true,
+      label: searchProductSemanticsLabel(product),
+      child: InkWell(
+        onTap: () => context.push(
+          RouteNames.productDetail.replaceFirst(
+            ':productId',
+            product.productId,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: product.heroImageUrl.isNotEmpty
+                      ? Image.network(
+                          product.heroImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const ColoredBox(
+                            color: DesignTokens.bgAppBodyLight,
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: DesignTokens.iconLight,
+                              size: 22,
+                            ),
+                          ),
+                        )
+                      : const ColoredBox(
                           color: DesignTokens.bgAppBodyLight,
-                          child: Icon(Icons.image_not_supported_outlined,
-                              color: DesignTokens.iconLight, size: 22),
-                        ),
-                      )
-                    : const ColoredBox(
-                        color: DesignTokens.bgAppBodyLight,
-                        child: Icon(Icons.image_not_supported_outlined,
-                            color: DesignTokens.iconLight, size: 22),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        '${product.currency} ${product.price.toStringAsFixed(0)}',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textLight,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (product.averageRating > 0) ...[
-                        const SizedBox(width: 8),
-                        const Icon(Icons.star_rounded,
-                            size: 14, color: DesignTokens.secondaryYellow),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${product.averageRating.toStringAsFixed(1)} Stars',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                            fontSize: 12,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: DesignTokens.iconLight,
+                            size: 22,
                           ),
                         ),
-                      ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ExcludeSemantics(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: DesignTokens.mediumSemibold.copyWith(
+                              color: DesignTokens.textWhite,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                '${product.currency} '
+                                '${product.price.toStringAsFixed(0)}',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textLight,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (product.averageRating > 0) ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: DesignTokens.secondaryYellow,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${product.averageRating.toStringAsFixed(1)}'
+                                  ' Stars',
+                                  style: DesignTokens.smallRegular.copyWith(
+                                    color: DesignTokens.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (disclosure != null) ...[
+                      const SizedBox(height: 2),
+                      SponsoredBadge(
+                        label: disclosure,
+                        onInfo: () => showSponsoredInfoSheet(
+                          context,
+                          label: disclosure,
+                          organicPosition: product.organicPosition,
+                        ),
+                      ),
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8, top: 4),
-              child: Icon(
-                Icons.shopping_cart_outlined,
-                color: DesignTokens.textMuted,
-                size: 22,
+              const Padding(
+                padding: EdgeInsets.only(left: 8, top: 4),
+                child: Icon(
+                  Icons.shopping_cart_outlined,
+                  color: DesignTokens.textMuted,
+                  size: 22,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+/// What a screen reader says for a product result: the sponsored disclosure
+/// first (when paid), then name, price and rating.
+String searchProductSemanticsLabel(SearchResultProduct product) => [
+  ?product.sponsoredDisclosure,
+  product.name,
+  '${product.currency} ${product.price.toStringAsFixed(0)}',
+  if (product.averageRating > 0)
+    'Rated ${product.averageRating.toStringAsFixed(1)} stars',
+].join('. ');
 
 // ─── CREATORS TAB ─────────────────────────────────────────────────────────────
 class _CreatorsTab extends StatelessWidget {
