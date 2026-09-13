@@ -1,0 +1,232 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+typedef CareActionHandler = void Function(CareItem item);
+
+/// Returns what tapping [action] on [item] should do, or null to omit that
+/// button (e.g. the screen has no flow for it).
+typedef CareActionResolver =
+    CareActionHandler? Function(CareItem item, CareAction action);
+
+/// Voyager "Post-Purchase Care" — a "Care & returns" card listing, per item,
+/// the backend's one-sentence guidance, a days-left chip while the return
+/// window is open, and buttons for the actions the screen can handle.
+/// Supplementary like the cards beside it: renders nothing while loading,
+/// on any failure or 404, or when the plan has no items.
+class OrderCareCard extends ConsumerWidget {
+  const OrderCareCard({
+    required this.orderNumber,
+    this.resolveAction,
+    super.key,
+  });
+
+  final String orderNumber;
+  final CareActionResolver? resolveAction;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plan = ref.watch(orderCarePlanProvider(orderNumber)).asData?.value;
+    if (plan == null || plan.items.isEmpty) return const SizedBox.shrink();
+
+    final deadline = plan.nextReturnDeadlineUtc;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.s12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: DesignTokens.cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(
+                  Icons.assignment_return_outlined,
+                  size: 18,
+                  color: DesignTokens.primaryGreen,
+                ),
+                SizedBox(width: DesignTokens.s8),
+                Text('Care & returns', style: DesignTokens.sectionInnerTitle),
+              ],
+            ),
+            if (deadline != null) ...[
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                'Next return deadline: '
+                '${DateFormat('MMM d').format(deadline.toLocal())}',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
+            const SizedBox(height: DesignTokens.s12),
+            for (var i = 0; i < plan.items.length; i++) ...[
+              if (i > 0)
+                const Divider(
+                  height: DesignTokens.s24,
+                  color: DesignTokens.borderDefault,
+                ),
+              _CareItemRow(item: plan.items[i], resolveAction: resolveAction),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CareItemRow extends StatelessWidget {
+  const _CareItemRow({required this.item, required this.resolveAction});
+
+  final CareItem item;
+  final CareActionResolver? resolveAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final buttons = <Widget>[
+      for (final action in item.actions)
+        if (resolveAction?.call(item, action) case final handler?)
+          OutlinedButton(
+            onPressed: () => handler(item),
+            style: DesignTokens.outlinedButtonStyle(),
+            child: Text(
+              careActionLabel(action),
+              style: DesignTokens.smallRegular.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+    ];
+    final daysLeft = item.daysLeftToReturn;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (item.thumbnailUrl != null) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(DesignTokens.s8),
+            child: Image.network(
+              item.thumbnailUrl!,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                width: 44,
+                height: 44,
+                color: DesignTokens.bgAppBodyLight,
+                child: const Icon(
+                  Icons.image,
+                  size: 18,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.mediumSemibold.copyWith(
+                  color: DesignTokens.textWhite,
+                  fontSize: 14,
+                ),
+              ),
+              if (item.variantLabel != null)
+                Text(
+                  item.variantLabel!,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              if (item.guidance.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s4),
+                Text(
+                  item.guidance,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textLight,
+                  ),
+                ),
+              ],
+              if (item.isReturnWindowOpen && daysLeft != null) ...[
+                const SizedBox(height: DesignTokens.s8),
+                _DaysLeftChip(days: daysLeft),
+              ],
+              if (buttons.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.s8),
+                Wrap(
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s8,
+                  children: buttons,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DaysLeftChip extends StatelessWidget {
+  const _DaysLeftChip({required this.days});
+
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = days <= 3
+        ? DesignTokens.warning500
+        : DesignTokens.primaryGreen;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.s8,
+        vertical: DesignTokens.s4,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.schedule, size: 14, color: color),
+          const SizedBox(width: DesignTokens.s4),
+          Text(
+            daysLeftToReturnLabel(days),
+            style: DesignTokens.smallRegular.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "N days left to return"; the backend counts days up, so 0 only appears
+/// on the final day.
+String daysLeftToReturnLabel(int days) {
+  if (days <= 0) return 'Last day to return';
+  if (days == 1) return '1 day left to return';
+  return '$days days left to return';
+}
+
+String careActionLabel(CareAction action) => switch (action) {
+  CareAction.track => 'Track package',
+  CareAction.returnItem => 'Start a return',
+  CareAction.review => 'Write a review',
+  CareAction.reorder => 'Buy again',
+  CareAction.getHelp => 'Get help',
+};

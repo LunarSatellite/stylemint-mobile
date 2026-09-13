@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasour
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
@@ -222,6 +223,30 @@ class OrdersRepositoryImpl implements OrdersRepository {
     }
     try {
       final dto = await remoteDataSource.getCarbonImpact();
+      return right(dto.toDomain());
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response?.statusCode == 404) {
+          return left(const NetworkExceptions.notFound());
+        }
+        return left(NetworkExceptions.server(e.message.toString()));
+      } else if (e is NetworkExceptions) {
+        return left(e);
+      } else {
+        return left(const NetworkExceptions.unexpectedError());
+      }
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, OrderCarePlan>> getOrderCarePlan(
+    String orderNumber,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dto = await remoteDataSource.getOrderCarePlan(orderNumber);
       return right(dto.toDomain());
     } catch (e) {
       if (e is DioException) {

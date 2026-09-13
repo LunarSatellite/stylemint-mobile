@@ -9,7 +9,9 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -129,6 +131,43 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
     );
   }
 
+  /// Wires a Post-Purchase Care action to the flow this screen already has;
+  /// null omits the button (no tracking to scroll to, or no matching order
+  /// line to return, review or buy again).
+  CareActionHandler? _careActionFor(
+    OrderDetail order,
+    CareItem care,
+    CareAction action,
+  ) {
+    final line = _orderLineFor(order, care);
+    switch (action) {
+      case CareAction.track:
+        return order.trackingNumber?.trim().isNotEmpty == true
+            ? (_) => _scrollToTracking()
+            : null;
+      case CareAction.returnItem:
+        if (line == null) return null;
+        return (_) => _startReturnRequest(
+          context,
+          order: order,
+          notifier: widget.notifier,
+          initialItem: line,
+        );
+      case CareAction.review:
+        if (line == null || line.productId.isEmpty) return null;
+        return (_) => _showRateReviewSheet(
+          context,
+          productId: line.productId,
+          orderId: order.id,
+        );
+      case CareAction.reorder:
+        if (line == null || line.productId.isEmpty) return null;
+        return (_) => context.push('/product/${line.productId}');
+      case CareAction.getHelp:
+        return (_) => context.push(RouteNames.supportContact);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
@@ -156,6 +195,11 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             _PackageSealCard(trackingNumber: trackingNumber),
             const CarbonImpactCard(),
           ],
+          OrderCareCard(
+            orderNumber: order.orderNumber,
+            resolveAction: (item, action) =>
+                _careActionFor(order, item, action),
+          ),
           const SizedBox(height: DesignTokens.s24),
           KeyedSubtree(
             key: _trackingSectionKey,
@@ -1797,23 +1841,47 @@ class _OtherDetails extends StatelessWidget {
     endIndent: 16,
   );
 
-  void _handleRequestReturn(BuildContext context) {
-    showDialog<_ReturnRequestResult>(
-      context: context,
-      builder: (ctx) =>
-          _ReturnRequestDialog(items: order.items, notifier: notifier),
-    ).then((result) {
-      if (result != null) {
-        notifier.requestReturn(
-          subOrderId: result.item.subOrderId,
-          subOrderLineId: result.item.id,
-          quantity: result.quantity,
-          reason: result.reason,
-          photoUrls: result.photoUrls,
-        );
-      }
-    });
+  void _handleRequestReturn(BuildContext context) =>
+      _startReturnRequest(context, order: order, notifier: notifier);
+}
+
+/// The order line a Post-Purchase Care item refers to (care
+/// `subOrderLineId` is the order detail line id), or null if absent.
+OrderDetailItem? _orderLineFor(OrderDetail order, CareItem care) {
+  final lineId = care.subOrderLineId.toLowerCase();
+  if (lineId.isEmpty) return null;
+  for (final item in order.items) {
+    if (item.id.toLowerCase() == lineId) return item;
   }
+  return null;
+}
+
+/// Opens the return request dialog (optionally preselecting [initialItem])
+/// and submits the collected return through the order detail notifier.
+void _startReturnRequest(
+  BuildContext context, {
+  required OrderDetail order,
+  required OrderDetailNotifier notifier,
+  OrderDetailItem? initialItem,
+}) {
+  showDialog<_ReturnRequestResult>(
+    context: context,
+    builder: (ctx) => _ReturnRequestDialog(
+      items: order.items,
+      notifier: notifier,
+      initialItem: initialItem,
+    ),
+  ).then((result) {
+    if (result != null) {
+      notifier.requestReturn(
+        subOrderId: result.item.subOrderId,
+        subOrderLineId: result.item.id,
+        quantity: result.quantity,
+        reason: result.reason,
+        photoUrls: result.photoUrls,
+      );
+    }
+  });
 }
 
 class _ActionRowCard extends StatelessWidget {
@@ -1919,10 +1987,17 @@ class _ReturnRequestResult {
 /// item, how many units, why, and at least one photo (skill §13.7) — a
 /// bare reason string always 400s server-side.
 class _ReturnRequestDialog extends StatefulWidget {
-  const _ReturnRequestDialog({required this.items, required this.notifier});
+  const _ReturnRequestDialog({
+    required this.items,
+    required this.notifier,
+    this.initialItem,
+  });
 
   final List<OrderDetailItem> items;
   final OrderDetailNotifier notifier;
+
+  /// Preselected line (e.g. from the Care & returns card); first item if null.
+  final OrderDetailItem? initialItem;
 
   @override
   State<_ReturnRequestDialog> createState() => _ReturnRequestDialogState();
@@ -1939,7 +2014,7 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedItem = widget.items.first;
+    _selectedItem = widget.initialItem ?? widget.items.first;
   }
 
   @override
@@ -2240,6 +2315,24 @@ class _DetailRow extends StatelessWidget {
 }
 
 // ── Write a Review (delivered orders only) ────────────────────────────────────
+void _showRateReviewSheet(
+  BuildContext context, {
+  required String productId,
+  required String orderId,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: DesignTokens.bgAppBody,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(DesignTokens.cardRadius),
+      ),
+    ),
+    builder: (_) => RateReviewSheet(productId: productId, orderId: orderId),
+  );
+}
+
 class _ReviewableItemsSection extends StatelessWidget {
   const _ReviewableItemsSection({required this.order});
   final OrderDetail order;
@@ -2290,19 +2383,10 @@ class _ReviewableItemsSection extends StatelessWidget {
                 ),
                 const SizedBox(width: DesignTokens.s8),
                 OutlinedButton(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: DesignTokens.bgAppBody,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(DesignTokens.cardRadius),
-                      ),
-                    ),
-                    builder: (_) => RateReviewSheet(
-                      productId: item.productId,
-                      orderId: order.id,
-                    ),
+                  onPressed: () => _showRateReviewSheet(
+                    context,
+                    productId: item.productId,
+                    orderId: order.id,
                   ),
                   style: DesignTokens.outlinedButtonStyle(),
                   child: Text(

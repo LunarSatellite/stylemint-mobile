@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasour
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
@@ -98,6 +99,26 @@ final carbonImpactProvider = FutureProvider.autoDispose<CarbonImpact?>((
     return null;
   }
 });
+
+/// Voyager "Post-Purchase Care" — per-item next steps and return deadlines
+/// for one order, keyed by order number. Best-effort like the carbon card:
+/// null (no card) on any failure, 404 or an empty plan, with errors
+/// swallowed so Riverpod's automatic retry never runs for a supplementary
+/// card.
+final orderCarePlanProvider = FutureProvider.autoDispose
+    .family<OrderCarePlan?, String>((ref, orderNumber) async {
+      try {
+        final result = await ref
+            .watch(ordersRepositoryProvider)
+            .getOrderCarePlan(orderNumber);
+        return result.fold(
+          (_) => null,
+          (plan) => plan.items.isEmpty ? null : plan,
+        );
+      } catch (_) {
+        return null;
+      }
+    });
 
 final orderInvoiceProvider = FutureProvider.autoDispose
     .family<OrderInvoice, String>((ref, orderNumber) async {

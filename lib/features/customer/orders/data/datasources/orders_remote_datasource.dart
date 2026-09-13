@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/carbon_impact_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_care_plan_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
@@ -42,6 +43,14 @@ class OrdersRemoteDataSource {
   Future<OrderInvoiceDto> getOrderInvoice(String orderNumber) async {
     final response = await apiClient.get('/v1/orders/$orderNumber/invoice');
     return OrderInvoiceDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/orders/{orderNumber}/care` — Voyager Post-Purchase Care plan:
+  /// per item, its stage, return deadline, available actions and one
+  /// guidance sentence (Orders module `OrderController.GetCarePlan`).
+  Future<OrderCarePlanDto> getOrderCarePlan(String orderNumber) async {
+    final response = await apiClient.get('/v1/orders/$orderNumber/care');
+    return OrderCarePlanDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// GET `/v1/customer/reorder-suggestions` — "Buy It Again" predictions.
