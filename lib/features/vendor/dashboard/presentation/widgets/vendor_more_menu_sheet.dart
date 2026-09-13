@@ -98,6 +98,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorAnalytics),
               ),
               const _MoreDivider(),
+              // Voyager demand sensing: aggregate shopper searches, leading
+              // with the ones that found nothing (GET
+              // /api/v1/vendor/demand-signals).
+              _MoreItem(
+                icon: Icons.manage_search_rounded,
+                title: 'What shoppers search for',
+                onTap: () => _go(context, RouteNames.vendorDemandSignals),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.question_answer_outlined,
                 title: 'Customer Inquiries',
