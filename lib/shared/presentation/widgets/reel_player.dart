@@ -533,10 +533,10 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
         fit: StackFit.expand,
         children: [
           if (_initialized && controller != null)
+            // Every reel fills the whole page with no bars (owner decision,
+            // 2026-09-13); a video of another shape is trimmed at the edges.
             FittedBox(
-              fit: controller.value.aspectRatio < 1
-                  ? BoxFit.cover
-                  : BoxFit.contain,
+              fit: BoxFit.cover,
               clipBehavior: Clip.hardEdge,
               child: SizedBox(
                 width: controller.value.size.width,

@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_sco
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/embed/reel_shapes.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poster.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -126,6 +127,10 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
       ].nonNulls.toList(),
     );
     final last = (_settledIndex + 3).clamp(0, _reels.length - 1);
+    // Learn video shapes ahead of the swipe so wide videos are already sized.
+    for (var i = _settledIndex; i <= last; i++) {
+      unawaited(ReelShapes.instance.learnReel(_reels[i]));
+    }
     for (var i = _settledIndex + 1; i <= last; i++) {
       final url = ReelPoster.urlFor(_reels[i]);
       if (url != null) {
@@ -191,6 +196,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
                       indexOfKey: (key) => _embedIndex[key],
                       playerRectAt: (index, page) =>
                           reelPlayerRect(reels[index], page),
+                      layoutChanges: ReelShapes.instance,
                     ),
                   ),
                   PageView.builder(

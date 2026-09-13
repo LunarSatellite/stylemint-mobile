@@ -17,8 +17,13 @@ class EmbedPlayerLayer extends StatelessWidget {
     required this.settledIndex,
     required this.indexOfKey,
     required this.playerRectAt,
+    this.layoutChanges,
     super.key,
   });
+
+  /// Notifies when a player rectangle may have changed shape, e.g. when a
+  /// reel's video turns out to be wider than a Short.
+  final Listenable? layoutChanges;
 
   final EmbedPlayerPool pool;
   final PageController controller;
@@ -38,7 +43,7 @@ class EmbedPlayerLayer extends StatelessWidget {
       builder: (context, constraints) {
         final page = constraints.biggest;
         return ListenableBuilder(
-          listenable: Listenable.merge([controller, pool]),
+          listenable: Listenable.merge([controller, pool, layoutChanges]),
           builder: (context, _) {
             final scroll =
                 controller.hasClients && controller.position.haveDimensions

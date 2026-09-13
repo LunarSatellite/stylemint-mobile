@@ -15,8 +15,53 @@ void main() {
     expect(shortOn(const Size(360, 688)), const Rect.fromLTWH(0, 0, 360, 640));
   });
 
-  test('on a shorter page a Short keeps the page height instead of cropping', () {
-    expect(shortOn(const Size(360, 600)), const Rect.fromLTWH(0, 0, 360, 600));
+  test(
+    'on a shorter page a Short keeps the page height instead of cropping',
+    () {
+      expect(
+        shortOn(const Size(360, 600)),
+        const Rect.fromLTWH(0, 0, 360, 600),
+      );
+    },
+  );
+
+  group('coverRect fills the page with no bars', () {
+    const page = Size(360, 688);
+
+    test('a Short covers the full height and is trimmed at the sides', () {
+      final player = EmbedLayoutPolicy.coverRect(
+        page: page,
+        aspectRatio: EmbedLayoutPolicy.shortsAspectRatio,
+      );
+
+      expect(player.top, 0);
+      expect(player.height, 688);
+      expect(player.width, closeTo(387, 0.01));
+      expect(player.left, closeTo(-13.5, 0.01));
+      expect(player.center.dx, closeTo(page.width / 2, 0.01));
+    });
+
+    test('a landscape video still covers the whole page', () {
+      final player = EmbedLayoutPolicy.coverRect(
+        page: page,
+        aspectRatio: 16 / 9,
+      );
+
+      expect(player.height, 688);
+      expect(player.contains(Offset.zero), isTrue);
+      expect(player.left <= 0 && player.right >= page.width, isTrue);
+    });
+
+    test('on a page wider than the video the top and bottom are trimmed', () {
+      final player = EmbedLayoutPolicy.coverRect(
+        page: const Size(400, 600),
+        aspectRatio: EmbedLayoutPolicy.shortsAspectRatio,
+      );
+
+      expect(player.width, 400);
+      expect(player.height, closeTo(711.11, 0.01));
+      expect(player.top, closeTo(-55.56, 0.01));
+    });
   });
 
   test('a stats rail beside a YouTube player stays outside it', () {
@@ -28,7 +73,12 @@ void main() {
       panelHeight: 176,
       rightInset: EmbedLayoutPolicy.railWidth,
     );
-    final rail = Rect.fromLTRB(player.right, player.top, page.width, player.bottom);
+    final rail = Rect.fromLTRB(
+      player.right,
+      player.top,
+      page.width,
+      player.bottom,
+    );
 
     expect(rail.width, EmbedLayoutPolicy.railWidth);
     expect(player.overlaps(rail), isFalse);
