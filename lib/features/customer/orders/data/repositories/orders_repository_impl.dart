@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
@@ -210,6 +211,28 @@ class OrdersRepositoryImpl implements OrdersRepository {
         return left(e);
       } else {
         return left(NetworkExceptions.unexpectedError());
+      }
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, CarbonImpact>> getCarbonImpact() async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final dto = await remoteDataSource.getCarbonImpact();
+      return right(dto.toDomain());
+    } catch (e) {
+      if (e is DioException) {
+        if (e.response?.statusCode == 404) {
+          return left(const NetworkExceptions.notFound());
+        }
+        return left(NetworkExceptions.server(e.message.toString()));
+      } else if (e is NetworkExceptions) {
+        return left(e);
+      } else {
+        return left(const NetworkExceptions.unexpectedError());
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/carbon_impact_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
@@ -51,6 +52,14 @@ class OrdersRemoteDataSource {
     return (response as List<dynamic>)
         .map((e) => ReorderSuggestionDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
+  }
+
+  /// GET `/v1/customer/delivery/carbon-impact` — the signed-in customer's
+  /// cumulative CO2 saved by community delivery hops versus a traditional
+  /// courier (Delivery module `CarbonController`).
+  Future<CarbonImpactDto> getCarbonImpact() async {
+    final response = await apiClient.get('/v1/customer/delivery/carbon-impact');
+    return CarbonImpactDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// DELETE `/v1/customer/reorder-suggestions/{productId}` — dismiss one

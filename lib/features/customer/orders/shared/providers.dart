@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
@@ -78,6 +79,25 @@ final ordersRepositoryProvider = Provider<OrdersRepository>(
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
   ),
 );
+
+/// Voyager "Carbon impact of delivery" — the customer's cumulative CO2
+/// saved by community delivery. Best-effort: null (no card) on any failure
+/// or 404, and when nothing has been saved yet. Errors are swallowed here
+/// rather than surfaced so Riverpod's automatic retry never kicks in for a
+/// supplementary card.
+final carbonImpactProvider = FutureProvider.autoDispose<CarbonImpact?>((
+  ref,
+) async {
+  try {
+    final result = await ref.watch(ordersRepositoryProvider).getCarbonImpact();
+    return result.fold(
+      (_) => null,
+      (impact) => impact.hasSavings ? impact : null,
+    );
+  } catch (_) {
+    return null;
+  }
+});
 
 final orderInvoiceProvider = FutureProvider.autoDispose
     .family<OrderInvoice, String>((ref, orderNumber) async {

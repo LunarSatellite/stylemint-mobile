@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -153,6 +154,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             const SizedBox(height: DesignTokens.s12),
             _DeliveryRiskBanner(trackingNumber: trackingNumber!),
             _PackageSealCard(trackingNumber: trackingNumber),
+            const CarbonImpactCard(),
           ],
           const SizedBox(height: DesignTokens.s24),
           KeyedSubtree(
