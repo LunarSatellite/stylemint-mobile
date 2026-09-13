@@ -98,6 +98,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                     children: [
                       const _BasketInsightsCard(),
+                      const _TryOtherBasketsEntry(),
                       ...List.generate(cart.items.length, (i) {
                         return CartItemTile(
                           item: cart.items[i],
@@ -772,6 +773,65 @@ class _CheckoutBar extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens "Try other baskets". Only built for a cart with items, like the
+/// list it sits in.
+class _TryOtherBasketsEntry extends StatelessWidget {
+  const _TryOtherBasketsEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        0,
+      ),
+      child: Material(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(DesignTokens.s12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(DesignTokens.s12),
+          onTap: () => context.push(RouteNames.cartScenarios),
+          child: const Padding(
+            padding: EdgeInsets.all(DesignTokens.s12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.alt_route_rounded,
+                  size: 20,
+                  color: DesignTokens.primaryGreen,
+                ),
+                SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Try other baskets',
+                        style: DesignTokens.mediumSemibold,
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'See this cart within a budget, for less, or sooner',
+                        style: DesignTokens.smallRegular,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: DesignTokens.textMuted,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

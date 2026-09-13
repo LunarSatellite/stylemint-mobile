@@ -60,6 +60,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/sc
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
@@ -504,6 +505,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.cart,
         builder: (ctx, state) => const CartScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.cartScenarios,
+        builder: (ctx, state) => const CartScenariosScreen(),
       ),
 
       // Checkout

@@ -1,11 +1,20 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 
 abstract interface class CartRepository {
   Future<Either<NetworkExceptions, Cart>> getCart();
 
   Future<Either<NetworkExceptions, BasketOptimization>> getBasketOptimization();
+
+  /// "Try other baskets": read-only alternatives to the current cart, built
+  /// within [budget] (when given) without touching [keepLineIds].
+  Future<Either<NetworkExceptions, BasketScenarios>> getScenarios({
+    double? budget,
+    List<String> keepLineIds,
+    List<String> excludeProductIds,
+  });
 
   Future<Either<NetworkExceptions, Cart>> addToCart({
     required String productId,

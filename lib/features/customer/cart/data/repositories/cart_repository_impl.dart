@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasources/cart_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -52,6 +54,28 @@ class CartRepositoryImpl implements CartRepository {
       ));
     } catch (e) {
       return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, BasketScenarios>> getScenarios({
+    double? budget,
+    List<String> keepLineIds = const [],
+    List<String> excludeProductIds = const [],
+  }) async {
+    try {
+      final dto = await remoteDataSource.getScenarios(
+        budget: budget,
+        keepLineIds: keepLineIds,
+        excludeProductIds: excludeProductIds,
+      );
+      return right(dto.toDomain());
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (e) {
+      // The shared mapper keeps a 400's `field`, so a rejected budget can be
+      // shown on the budget field rather than as a generic error.
+      return left(mapDioExceptionToNetworkException(e));
     }
   }
 

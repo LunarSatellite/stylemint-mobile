@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasource
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/repositories/cart_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/basket_scenarios_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 
 final cartRemoteDataSourceProvider = Provider<CartRemoteDataSource>(
@@ -27,3 +28,11 @@ final basketOptimizationProvider = FutureProvider.autoDispose<BasketOptimization
   final result = await ref.watch(cartRepositoryProvider).getBasketOptimization();
   return result.fold((_) => null, (opt) => opt);
 });
+
+/// "Try other baskets" — autoDispose so reopening the screen builds fresh
+/// options for the cart as it is now.
+final basketScenariosNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      BasketScenariosNotifier,
+      BasketScenariosState
+    >((ref) => BasketScenariosNotifier(ref.watch(cartRepositoryProvider)));

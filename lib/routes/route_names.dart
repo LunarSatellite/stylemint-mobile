@@ -44,6 +44,7 @@ abstract class RouteNames {
   static const discoverCreators = '/discover/creators';
   static const productDetail = '/product/:productId';
   static const cart = '/cart';
+  static const cartScenarios = '/cart/scenarios';
   static const checkout = '/checkout';
   static const checkoutPayment = '/checkout/payment';
   static const orders = '/orders';

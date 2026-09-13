@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart' show Options;
+import 'package:dio/dio.dart' show ListFormat, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/basket_scenarios_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/cart_dto.dart';
 
 class CartRemoteDataSource {
@@ -17,6 +18,31 @@ class CartRemoteDataSource {
   Future<Map<String, dynamic>> getBasketOptimization() async {
     final response = await apiClient.get('/v1/cart/optimize');
     return response as Map<String, dynamic>;
+  }
+
+  /// GET `/v1/cart/scenarios` — Voyager "Counterfactual Basket Laboratory":
+  /// the cart as it is next to alternatives (within [budget], lower cost,
+  /// ready sooner). [keepLineIds] are never changed and [excludeProductIds]
+  /// never come back as swaps. Read-only: the cart is not modified.
+  Future<BasketScenariosDto> getScenarios({
+    double? budget,
+    List<String> keepLineIds = const [],
+    List<String> excludeProductIds = const [],
+  }) async {
+    final response = await apiClient.get(
+      '/v1/cart/scenarios',
+      queryParameters: {
+        'budget': ?budget,
+        if (keepLineIds.isNotEmpty) 'keep': keepLineIds,
+        if (excludeProductIds.isNotEmpty) 'exclude': excludeProductIds,
+      },
+      // Repeated keys (?keep=a&keep=b), which ASP.NET binds to Guid[].
+      options: Options(
+        headers: {'requiresToken': true},
+        listFormat: ListFormat.multi,
+      ),
+    );
+    return BasketScenariosDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<CartDto> addToCart({

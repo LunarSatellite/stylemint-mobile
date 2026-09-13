@@ -11,6 +11,7 @@ import 'core/config/api_config.dart';
 import 'core/storage/token_storage.dart';
 import 'features/messaging/shared/providers.dart';
 import 'features/creator/social_connect/shared/providers.dart';
+import 'features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'features/customer/cart/domain/entities/cart.dart';
 import 'features/customer/cart/domain/repositories/cart_repository.dart';
 import 'features/customer/cart/presentation/notifiers/cart_notifier.dart';
@@ -74,6 +75,13 @@ class _MockCartRepository implements CartRepository {
   @override
   Future<Either<NetworkExceptions, BasketOptimization>>
   getBasketOptimization() async => right(const BasketOptimization(insights: []));
+
+  @override
+  Future<Either<NetworkExceptions, BasketScenarios>> getScenarios({
+    double? budget,
+    List<String> keepLineIds = const [],
+    List<String> excludeProductIds = const [],
+  }) async => right(const BasketScenarios(currency: _npr, scenarios: []));
 
   @override
   Future<Either<NetworkExceptions, Cart>> addToCart({
