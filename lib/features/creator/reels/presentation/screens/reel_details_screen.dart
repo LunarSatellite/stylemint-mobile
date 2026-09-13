@@ -8,7 +8,11 @@ import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/no
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_policy.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -63,132 +67,199 @@ class _Body extends StatefulWidget {
 class _BodyState extends State<_Body> {
   final _playback = ReelPlaybackController();
 
+  static const _topBarHeight = 56.0;
+
+  /// Creator strip, meta row and spacing below a YouTube player.
+  static double _panelHeight(CreatorReelDetail reel) =>
+      176 + (reel.taggedProducts.isEmpty ? 0 : 108);
+
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        ReelPlayer(
-          reel: reel,
-          isActive: true,
-          playbackController: _playback,
-          // Single reel on screen, no bandwidth competition from siblings —
-          // opt into autoplay so the user lands on playback immediately.
-          autoplay: true,
-        ),
-
-        // Full-screen tap target for play/pause, below the interactive
-        // controls so their own taps still register.
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _playback.toggle,
-          ),
-        ),
-
-        // Combined top + bottom scrim so the top bar (top ~22%) and
-        // the bottom info block (bottom ~55%) stay legible over any video,
-        // while leaving the middle of the frame fully visible.
-        const IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xCC000000),
-                  Color(0x00000000),
-                  Color(0x00000000),
-                  Color(0xDD000000),
-                ],
-                stops: [0.0, 0.22, 0.45, 1.0],
+    final source = resolveReelPlayback(reel);
+    // Nothing may be drawn over a YouTube player, so a YouTube reel plays
+    // between the top bar and the info panel, with the stats beside it.
+    final besidePlayer =
+        source is EmbedSource &&
+        EmbedLayoutPolicy.reservesPlayerRect(source.platform);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final padding = MediaQuery.paddingOf(context);
+        final player = besidePlayer
+            ? EmbedLayoutPolicy.playerRect(
+                platform: SocialPlatform.youtube,
+                page: constraints.biggest,
+                topInset: padding.top + _topBarHeight,
+                panelHeight: _panelHeight(reel) + padding.bottom,
+              )
+            : Offset.zero & constraints.biggest;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fromRect(
+              rect: player,
+              child: ReelPlayer(
+                reel: reel,
+                isActive: true,
+                playbackController: _playback,
               ),
             ),
-          ),
-        ),
 
-        // Top bar: circular back button on the left, popup-menu actions on the
-        // right. Backdrop keeps the back button legible over any video frame.
-        SafeArea(
-          bottom: false,
-          child: SizedBox(
-            height: 56,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-              child: Row(
-                children: [
-                  Material(
-                    color: DesignTokens.baseBlack.withValues(alpha: 0.45),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => context.pop(),
-                      child: const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: Icon(
-                          Icons.arrow_back_ios_new,
-                          size: 18,
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
+            // Tap target for play/pause, below the interactive controls so
+            // their own taps still register. It draws nothing.
+            Positioned.fromRect(
+              rect: player,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _playback.toggle,
+              ),
+            ),
+
+            // Combined top + bottom scrim so the top bar (top ~22%) and
+            // the bottom info block (bottom ~55%) stay legible over any
+            // video, while leaving the middle of the frame fully visible.
+            if (!besidePlayer)
+              const IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xCC000000),
+                        Color(0x00000000),
+                        Color(0x00000000),
+                        Color(0xDD000000),
+                      ],
+                      stops: [0.0, 0.22, 0.45, 1.0],
                     ),
                   ),
-                  const Spacer(),
-                  _ReelActionsMenu(reel: reel),
-                ],
+                ),
+              ),
+
+            // Top bar: circular back button on the left, popup-menu actions
+            // on the right. Backdrop keeps the back button legible over any
+            // video frame.
+            SafeArea(
+              bottom: false,
+              child: SizedBox(
+                height: _topBarHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s8,
+                  ),
+                  child: Row(
+                    children: [
+                      Material(
+                        color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => context.pop(),
+                          child: const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 18,
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      _ReelActionsMenu(reel: reel),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        // Right-rail read-only analytics — same visual language as the
-        // Home feed's ReelActions right rail.
-        Positioned(
-          right: DesignTokens.s12,
-          bottom: 320,
-          child: _AnalyticsRail(reel: reel),
-        ),
 
-        // Bottom info block: creator strip (avatar + @handle + Subscribe +
-        // caption) on top, then the chip/music meta row, then the tagged-
-        // products strip. The right-edge padding (72) leaves room for the
-        // analytics rail above this block.
-        SafeArea(
-          top: false,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 72),
-                child: ReelCreatorStrip(
-                  creatorId: reel.creatorId,
-                  creatorHandle: reel.creatorHandle,
-                  creatorDisplayName: reel.creatorDisplayName,
-                  creatorAvatarUrl: reel.creatorAvatarUrl,
-                  caption: reel.caption,
-                  initialFollowing: reel.isCreatorFollowed,
+            // Right-rail read-only analytics — same visual language as the
+            // Home feed's ReelActions right rail.
+            if (besidePlayer)
+              Positioned(
+                left: player.right,
+                top: player.top,
+                right: 0,
+                height: player.height,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _AnalyticsRail(reel: reel),
+                  ),
+                ),
+              )
+            else
+              Positioned(
+                right: DesignTokens.s12,
+                bottom: 320,
+                child: _AnalyticsRail(reel: reel),
+              ),
+
+            if (besidePlayer)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: player.bottom,
+                bottom: 0,
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.only(
+                    top: DesignTokens.s12,
+                    bottom: padding.bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _infoBlock(reel, railInset: DesignTokens.s12),
+                  ),
+                ),
+              )
+            else
+              // The right-edge padding (72) leaves room for the analytics
+              // rail above this block.
+              SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _infoBlock(reel, railInset: 72),
                 ),
               ),
-              const SizedBox(height: DesignTokens.s12),
-              Padding(
-                padding: const EdgeInsets.only(
-                  right: 72,
-                  left: DesignTokens.s12,
-                ),
-                child: _ReelInfo(reel: reel),
-              ),
-              if (reel.taggedProducts.isNotEmpty) ...[
-                const SizedBox(height: DesignTokens.s12),
-                _TaggedProductsStrip(products: reel.taggedProducts),
-              ],
-              const SizedBox(height: DesignTokens.s16),
-            ],
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
+  }
+
+  /// Creator strip (avatar + @handle + Subscribe + caption), then the
+  /// chip/music meta row, then the tagged-products strip.
+  List<Widget> _infoBlock(CreatorReelDetail reel, {required double railInset}) {
+    return [
+      Padding(
+        padding: EdgeInsets.only(right: railInset),
+        child: ReelCreatorStrip(
+          creatorId: reel.creatorId,
+          creatorHandle: reel.creatorHandle,
+          creatorDisplayName: reel.creatorDisplayName,
+          creatorAvatarUrl: reel.creatorAvatarUrl,
+          caption: reel.caption,
+          initialFollowing: reel.isCreatorFollowed,
+        ),
+      ),
+      const SizedBox(height: DesignTokens.s12),
+      Padding(
+        padding: EdgeInsets.only(right: railInset, left: DesignTokens.s12),
+        child: _ReelInfo(reel: reel),
+      ),
+      if (reel.taggedProducts.isNotEmpty) ...[
+        const SizedBox(height: DesignTokens.s12),
+        _TaggedProductsStrip(products: reel.taggedProducts),
+      ],
+      const SizedBox(height: DesignTokens.s16),
+    ];
   }
 }
 

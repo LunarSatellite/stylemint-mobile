@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.stylemint_mobile_frontend"
+    namespace = "app.stylemint.stylemint_mobile_frontend"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,8 +16,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.stylemint_mobile_frontend"
+        // Must match the Play Console package, the package in
+        // stylemint.voyageritnepal.com/.well-known/assetlinks.json (passkeys +
+        // app links), and the HTTP Referer YouTube's embedded player requires.
+        applicationId = "app.stylemint.stylemint_mobile_frontend"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -62,6 +62,7 @@ class CreatorReelDetailDto {
     required this.comments,
     required this.publishedAtUtc,
     required this.taggedProducts,
+    this.externalId = '',
     this.creatorId = '',
     this.creatorHandle = '',
     this.creatorDisplayName = '',
@@ -70,6 +71,9 @@ class CreatorReelDetailDto {
   });
 
   final String id;
+
+  /// The platform's own video id (`ReelDto.ExternalId`).
+  final String externalId;
 
   /// Backend `sourcePlatform` integer (1=Instagram, 2=TikTok, 3=YouTube Shorts,
   /// 4=Facebook). Kept alongside [platformLabel] (the human-readable chip
@@ -117,6 +121,7 @@ class CreatorReelDetailDto {
     final sourcePlatform = (json['sourcePlatform'] as num?)?.toInt() ?? 0;
     return CreatorReelDetailDto(
       id: (json['id'] as String?) ?? '',
+      externalId: (json['externalId'] as String?) ?? '',
       sourcePlatform: sourcePlatform,
       platformLabel: _platforms[sourcePlatform] ?? 'External',
       sourceUrl: (json['sourceUrl'] as String?) ?? '',
@@ -163,6 +168,7 @@ class CreatorReelDetailDto {
 
   CreatorReelDetail toDomain() => CreatorReelDetail(
     id: id,
+    externalId: externalId,
     sourcePlatform: sourcePlatform,
     platformLabel: platformLabel,
     sourceUrl: sourceUrl,

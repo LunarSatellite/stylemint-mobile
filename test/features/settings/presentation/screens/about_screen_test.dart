@@ -9,7 +9,7 @@ void main() {
   ) async {
     PackageInfo.setMockInitialValues(
       appName: 'StyleMint',
-      packageName: 'com.example.stylemint_mobile_frontend',
+      packageName: 'app.stylemint.stylemint_mobile_frontend',
       version: '2.3.4',
       buildNumber: '57',
       buildSignature: '',

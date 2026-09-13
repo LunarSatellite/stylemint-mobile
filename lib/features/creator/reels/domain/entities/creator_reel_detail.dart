@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/platform_video_id.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 
 class ReelTaggedProduct {
@@ -32,6 +33,7 @@ class CreatorReelDetail implements ReelMedia {
     required this.comments,
     required this.publishedAtUtc,
     required this.taggedProducts,
+    this.externalId = '',
     this.creatorId = '',
     this.creatorHandle = '',
     this.creatorDisplayName = '',
@@ -40,6 +42,10 @@ class CreatorReelDetail implements ReelMedia {
   });
 
   final String id;
+
+  /// The platform's own video id as stored by the backend. Empty when the
+  /// payload did not include it.
+  final String externalId;
 
   /// Backend `sourcePlatform` integer (1=Instagram, 2=TikTok, 3=YouTube Shorts,
   /// 4=Facebook). The single source of truth used to resolve [platform]; do
@@ -94,30 +100,12 @@ class CreatorReelDetail implements ReelMedia {
   @override
   SocialPlatform? get platform => SocialPlatform.tryParseWire(sourcePlatform);
 
-  /// Platform-specific video ID parsed from [sourceUrl]. Only YouTube is
-  /// supported today (TikTok / Facebook fall back to external app).
+  /// The platform's video id: the backend-stored [externalId] when present,
+  /// otherwise read from [sourceUrl].
   @override
-  String? get platformVideoId {
-    if (platform != SocialPlatform.youtube) return null;
-    final uri = Uri.tryParse(sourceUrl);
-    if (uri == null) return null;
-    // Standard watch URL: https://www.youtube.com/watch?v=ID
-    final v = uri.queryParameters['v'];
-    if (v != null && v.isNotEmpty) return v;
-    // Short URL: https://youtu.be/ID
-    if (uri.host.contains('youtu.be') && uri.pathSegments.isNotEmpty) {
-      final seg = uri.pathSegments.first;
-      if (seg.isNotEmpty) return seg;
-    }
-    // Shorts URL: https://www.youtube.com/shorts/ID
-    final path = uri.pathSegments;
-    final shortsIdx = path.indexOf('shorts');
-    if (shortsIdx >= 0 && shortsIdx + 1 < path.length) {
-      final id = path[shortsIdx + 1];
-      if (id.isNotEmpty) return id;
-    }
-    return null;
-  }
+  String? get platformVideoId => externalId.isNotEmpty
+      ? externalId
+      : parsePlatformVideoId(platform, sourceUrl);
 
   @override
   String get permalink => sourceUrl;
