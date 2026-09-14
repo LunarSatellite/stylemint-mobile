@@ -473,7 +473,8 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
 
   void _handleUri(Uri uri) {
     // ignore: avoid_print
-    print('[OAUTH-DEBUG] _handleUri: $uri scheme=${uri.scheme} host=${uri.host} path=${uri.path} query=${uri.query}');
+    // Never log the query: OAuth returns carry a one-time code and state.
+    print('[OAUTH-DEBUG] _handleUri: scheme=${uri.scheme} host=${uri.host} path=${uri.path} queryKeys=${uri.queryParameters.keys.toList()}');
     // Backend API URLs (e.g. the OAuth callback
     // /v1/social/connect/*/callback) are NOT app routes. They must be handled
     // server-side; if one reaches us (App Links can over-match on the shared
@@ -527,7 +528,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
         ? ''
         : '?${uri.queryParameters.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
     // ignore: avoid_print
-    print('[OAUTH-DEBUG] _navigate: router.go(\'$path$query\')');
+    print('[OAUTH-DEBUG] _navigate: router.go(\'$path\') queryKeys=${uri.queryParameters.keys.toList()}');
     router.go('$path$query');
   }
 
