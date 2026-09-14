@@ -63,6 +63,14 @@ class CreatorApplyStep2SocialScreenState
           ),
     };
     _refreshConnectedFromNotifier();
+    // The connected-accounts list may still be loading when this step opens
+    // (e.g. right after app start), and it changes again when a connect
+    // returns. Refresh whenever it updates, or accounts that are already
+    // connected show as not connected.
+    ref.listenManual(
+      socialConnectNotifierProvider,
+      (_, __) => _refreshConnectedFromNotifier(),
+    );
   }
 
   @override
@@ -131,8 +139,10 @@ class CreatorApplyStep2SocialScreenState
     final state = ref.read(socialConnectNotifierProvider);
     final accounts = state.maybeWhen(
       loadSuccess: (a) => a,
-      orElse: () => const <SocialAccount>[],
+      orElse: () => null,
     );
+    // Still loading or failed: keep what the form already has.
+    if (accounts == null) return;
     final next = <String, SocialAccount>{};
     for (final opt in kCreatorPlatforms) {
       SocialAccount? match;

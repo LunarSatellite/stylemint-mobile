@@ -8,8 +8,6 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/logout_acti
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/domain/entities/profile_summary.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/widgets/profile_header.dart';
@@ -512,26 +510,9 @@ class _RoleSwitcherSectionState extends ConsumerState<_RoleSwitcherSection> {
               _pushOnce(RouteNames.creatorHome);
               return;
             }
-            // Mirror user_type_selection_screen: when the role isn't active,
-            // resolve the existing application status so a submitted/under-
-            // review account lands on the right status screen instead of
-            // re-entering the apply form.
-            await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
-            if (!mounted) return;
-            final statusState = ref.read(creatorApplyNotifierProvider);
-            final route = statusState.maybeWhen(
-              loadSuccess: (application) => switch (application.status) {
-                CreatorApplicationStatus.approved =>
-                  RouteNames.creatorApplyApproved,
-                CreatorApplicationStatus.rejected =>
-                  RouteNames.creatorApplyRejected,
-                CreatorApplicationStatus.pending ||
-                CreatorApplicationStatus.underReview =>
-                  RouteNames.creatorApplyUnderReview,
-              },
-              orElse: () => RouteNames.creatorApply,
-            );
-            _pushOnce(route);
+            // Creator onboarding is instant (POST /v1/creator/activate), so
+            // there is no application or review status to check first.
+            _pushOnce(RouteNames.creatorApply);
           },
         ),
         ProfileMenuItem(

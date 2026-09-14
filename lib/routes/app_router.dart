@@ -23,7 +23,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/use
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/full_analytics_report_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/reel_detail_analytics_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_activate_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_rejected_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/screens/creator_submitted_screen.dart';
@@ -339,7 +339,8 @@ GoRouter appRouter(Ref ref) {
       final path = state.matchedLocation;
       // ignore: avoid_print
       print(
-        '[OAUTH-DEBUG] router.redirect: uri=${state.uri} matchedLocation=$path session=$session',
+        // Path only: the query can carry an OAuth code and state.
+        '[OAUTH-DEBUG] router.redirect: path=${state.uri.path} matchedLocation=$path session=$session',
       );
       final isPublic = _publicPaths.any((p) => path.startsWith(p));
       final isAuthOnly = _authOnlyPaths.any((p) => path.startsWith(p));
@@ -668,7 +669,9 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: RouteNames.creatorApply,
-        builder: (ctx, state) => const CreatorApplyScreen(),
+        // Instant, one-step onboarding. The status sub-routes below only
+        // serve accounts that applied through the retired review flow.
+        builder: (ctx, state) => const CreatorActivateScreen(),
         routes: [
           GoRoute(
             path: _subPath(

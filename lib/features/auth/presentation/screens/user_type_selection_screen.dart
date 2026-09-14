@@ -7,8 +7,6 @@ import 'package:stylemint_mobile_frontend/features/auth/data/models/role_profile
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/domain/entities/creator_application.dart';
-import 'package:stylemint_mobile_frontend/features/creator/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -148,25 +146,9 @@ class _UserTypeSelectionScreenState
           context.go(RouteNames.creatorHome);
           return;
         }
-        // Check existing application status before routing.
-        setState(() => _loadingRole = true);
-        await ref.read(creatorApplyNotifierProvider.notifier).checkStatus();
-        if (!mounted) return;
-        setState(() => _loadingRole = false);
-        final statusState = ref.read(creatorApplyNotifierProvider);
-        final route = statusState.maybeWhen(
-          loadSuccess: (application) => switch (application.status) {
-            CreatorApplicationStatus.approved =>
-              RouteNames.creatorApplyApproved,
-            CreatorApplicationStatus.rejected =>
-              RouteNames.creatorApplyRejected,
-            CreatorApplicationStatus.pending ||
-            CreatorApplicationStatus.underReview =>
-              RouteNames.creatorApplyUnderReview,
-          },
-          orElse: () => RouteNames.creatorApply,
-        );
-        context.go(route);
+        // Creator onboarding is instant (POST /v1/creator/activate), so
+        // there is no application or review status to check first.
+        context.go(RouteNames.creatorApply);
       case 3:
         if (_isRoleActivated(3)) {
           context.go(RouteNames.vendorHome);

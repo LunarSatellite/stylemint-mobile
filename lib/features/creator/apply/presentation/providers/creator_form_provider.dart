@@ -121,11 +121,9 @@ const List<ContentKindOption> kContentKinds = [
 /// learns these fields.
 class CreatorFormData {
   // --- Step 1: personal info -----------------------------------------------
+  // Email and phone are not collected here: the account already holds them,
+  // verified at sign-up.
   final String fullName;
-  final String email;
-  final String phone;
-  final String country; // display name, e.g. "Nepal"
-  final String countryCode; // ISO-2, e.g. "NP" - reserved for BE later
 
   /// Display names of the selected content categories (for the review screen).
   final Set<String> categories;
@@ -164,10 +162,6 @@ class CreatorFormData {
 
   const CreatorFormData({
     this.fullName = '',
-    this.email = '',
-    this.phone = '',
-    this.country = '',
-    this.countryCode = '',
     this.categories = const {},
     this.categoryIds = const {},
     this.whyJoin = '',
@@ -182,10 +176,6 @@ class CreatorFormData {
 
   CreatorFormData copyWith({
     String? fullName,
-    String? email,
-    String? phone,
-    String? country,
-    String? countryCode,
     Set<String>? categories,
     Set<String>? categoryIds,
     String? whyJoin,
@@ -198,10 +188,6 @@ class CreatorFormData {
     String? otherCategoryDescription,
   }) => CreatorFormData(
     fullName: fullName ?? this.fullName,
-    email: email ?? this.email,
-    phone: phone ?? this.phone,
-    country: country ?? this.country,
-    countryCode: countryCode ?? this.countryCode,
     categories: categories ?? this.categories,
     categoryIds: categoryIds ?? this.categoryIds,
     whyJoin: whyJoin ?? this.whyJoin,
@@ -221,10 +207,6 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
 
   void saveStep1({
     required String fullName,
-    required String email,
-    required String phone,
-    required String country,
-    required String countryCode,
     required Set<String> categories,
     required Set<String> categoryIds,
     required String whyJoin,
@@ -232,10 +214,6 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
   }) {
     state = state.copyWith(
       fullName: fullName,
-      email: email,
-      phone: phone,
-      country: country,
-      countryCode: countryCode,
       categories: Set.unmodifiable(categories),
       categoryIds: Set.unmodifiable(categoryIds),
       whyJoin: whyJoin,
@@ -263,9 +241,8 @@ class CreatorFormNotifier extends StateNotifier<CreatorFormData> {
 
   /// Pre-fill the wizard from a fetched [CreatorApplication]. Used by the
   /// reapply flow so the user lands on step 1 with their previous bio,
-  /// categories, socials and audience band already filled in. Step-1
-  /// personal fields the BE doesn't store (fullName/email/phone/country)
-  /// remain empty — the user must re-enter those.
+  /// categories, socials and audience band already filled in. The name isn't
+  /// stored on the application; step 1 prefills it from the account.
   void loadFromApplication(CreatorApplication app) {
     state = state.copyWith(
       whyJoin: app.bio,

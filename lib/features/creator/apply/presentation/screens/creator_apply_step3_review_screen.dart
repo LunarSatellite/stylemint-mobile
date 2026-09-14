@@ -157,9 +157,6 @@ class CreatorApplyStep3ReviewScreenState
 
   List<_Row> _personalRows(CreatorFormData data) => [
     if (data.fullName.isNotEmpty) _Row('Full Name', data.fullName),
-    if (data.email.isNotEmpty) _Row('Email Address', data.email),
-    if (data.phone.isNotEmpty) _Row('Phone Number', data.phone),
-    if (data.country.isNotEmpty) _Row('Country/Region', data.country),
     if (data.categories.isNotEmpty)
       _Row('Content Categories', data.categories.join(', '), chips: true),
     if (data.whyJoin.isNotEmpty)
