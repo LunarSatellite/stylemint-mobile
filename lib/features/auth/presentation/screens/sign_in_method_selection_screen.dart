@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
@@ -127,8 +129,28 @@ class _SignInMethodSelectionScreenState
         );
   }
 
-  // Social sign-in (Apple/Facebook/Google) is disabled — see the note above
-  // _PlanB's social section for why.
+  /// Social sign-in (Google / Facebook). Fetches the authorization URL and
+  /// stashes the CSRF state, then opens it in an in-app browser. The provider
+  /// redirects back via `stylemint://auth/oauth/callback?code=&state=`, which
+  /// the deep-link handler routes to [OAuthCallbackScreen] to finish the
+  /// exchange.
+  Future<void> _startSocial(String provider) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final url =
+        await ref.read(oauthSignInProvider.notifier).authorize(provider);
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (url == null || url.isEmpty) {
+      SmSnackbar.error(
+        context,
+        'Could not start $provider sign-in. Please try again.',
+      );
+      return;
+    }
+    await FlutterWebBrowser.openWebPage(url: url);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +239,7 @@ class _SignInMethodSelectionScreenState
                         // bootstrap-signup fallback) — NOT the login-required
                         // /passkey Setup screen.
                         onPasskey: _continueWithPasskey,
+                        onSocial: _startSocial,
                       ),
                     ],
                   ],
@@ -235,10 +258,14 @@ class _SignInMethodSelectionScreenState
 class _PlanB extends StatelessWidget {
   const _PlanB({
     required this.onPasskey,
+    required this.onSocial,
   });
 
   /// Triggers usernameless passkey authentication. Null while busy.
   final VoidCallback? onPasskey;
+
+  /// Starts the Google / Facebook OAuth browser flow.
+  final Future<void> Function(String provider) onSocial;
 
   @override
   Widget build(BuildContext context) {
@@ -299,13 +326,78 @@ class _PlanB extends StatelessWidget {
         // ),
         // const SizedBox(height: DesignTokens.s24),
 
-        // Social sign-in (Apple/Facebook/Google) is hidden: the backend has
-        // no real OAuth adapters wired yet (NoOpOAuthProviderClient stubs
-        // out to a non-existent domain — confirmed live, DNS_PROBE_FINISHED
-        // _NXDOMAIN), so every one of these buttons was a guaranteed dead
-        // end. Re-add once real Google/Facebook/Apple OAuth credentials are
-        // wired into IOAuthProviderClient.
+        Row(
+          children: [
+            const Expanded(
+              child: Divider(color: DesignTokens.borderDefault, height: 1),
+            ),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+              child: Text(
+                'Or Continue With',
+                style: DesignTokens.smallRegular
+                    .copyWith(color: DesignTokens.textLight),
+              ),
+            ),
+            const Expanded(
+              child: Divider(color: DesignTokens.borderDefault, height: 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.s24),
+
+        // Google and Facebook sign-in are live on the server. Apple stays
+        // hidden until Apple sign-in credentials are configured there too.
+        _SocialButton(
+          assetPath: 'assets/icons/google.svg',
+          label: 'Google ID',
+          onTap: () => onSocial('Google'),
+        ),
+        const SizedBox(height: DesignTokens.s16),
+        _SocialButton(
+          assetPath: 'assets/icons/facebook.svg',
+          label: 'Facebook ID',
+          onTap: () => onSocial('Facebook'),
+        ),
       ],
+    );
+  }
+}
+
+/// Full-width gray pill social button: [logo] [label].
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({
+    required this.assetPath,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String assetPath;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: DesignTokens.buttonHeight,
+      child: Material(
+        color: DesignTokens.buttonGrayFill,
+        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset(assetPath, width: 20, height: 20),
+              const SizedBox(width: DesignTokens.s8),
+              Text(label, style: DesignTokens.oneLinerSemibold),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
