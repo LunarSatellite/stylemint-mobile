@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/data/datasources/social_connect_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/audience_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/repositories/social_connect_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -22,6 +23,25 @@ class SocialConnectRepositoryImpl implements SocialConnectRepository {
       try {
         final dtos = await remoteDataSource.getConnectedAccounts();
         return right(dtos.map((d) => d.toDomain()).toList(growable: false));
+      } catch (e) {
+        if (e is DioException) {
+          return left(NetworkExceptions.server(e.message.toString()));
+        } else if (e is NetworkExceptions) {
+          return left(e);
+        } else {
+          return left(NetworkExceptions.unexpectedError());
+        }
+      }
+    } else {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, AudienceSummary>> getAudienceSummary() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return right(await remoteDataSource.getAudienceSummary());
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

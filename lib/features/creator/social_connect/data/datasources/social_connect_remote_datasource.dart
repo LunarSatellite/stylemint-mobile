@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/data/models/audience_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/data/models/social_account_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/audience_summary.dart';
 
 class SocialConnectRemoteDataSource {
   SocialConnectRemoteDataSource({required this.apiClient});
@@ -14,6 +16,13 @@ class SocialConnectRemoteDataSource {
         .map((e) => SocialAccountDto.fromJson(e as Map<String, dynamic>))
         .toList(growable: false);
     return list;
+  }
+
+  /// `GET /v1/social/accounts/audience-summary` — followers and engagement
+  /// rate per connected platform plus totals, read from the platforms' APIs.
+  Future<AudienceSummary> getAudienceSummary() async {
+    final response = await apiClient.get('/v1/social/accounts/audience-summary');
+    return AudienceSummaryDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// OAuth leg 1 — `POST /v1/social/connect/{providerSlug}/begin` returns the

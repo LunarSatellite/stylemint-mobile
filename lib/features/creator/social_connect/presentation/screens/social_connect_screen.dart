@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/notifiers/social_connect_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/widgets/audience_summary_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/widgets/platform_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -128,6 +129,11 @@ class SocialConnectScreen extends ConsumerWidget {
                         horizontal: DesignTokens.s16,
                       ),
                       children: [
+                        if (ref.watch(audienceSummaryProvider)
+                            case AsyncData(:final value?)) ...[
+                          AudienceSummaryCard(summary: value),
+                          const SizedBox(height: DesignTokens.s16),
+                        ],
                         if (accounts.isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(

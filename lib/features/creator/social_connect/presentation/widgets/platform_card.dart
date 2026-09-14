@@ -45,7 +45,8 @@ class PlatformCard extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s4),
                 Text(
                   account.isConnected
-                      ? '@${account.handle}  ·  ${_formatCount(account.followerCount)} followers'
+                      // YouTube's customUrl already starts with '@'.
+                      ? '@${account.handle.replaceFirst(RegExp('^@+'), '')}  ·  ${_formatCount(account.followerCount)} followers'
                       : 'Not connected',
                   style: DesignTokens.smallRegular,
                 ),

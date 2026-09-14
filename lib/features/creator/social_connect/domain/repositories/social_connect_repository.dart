@@ -1,9 +1,13 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/audience_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
 abstract interface class SocialConnectRepository {
   Future<Either<NetworkExceptions, List<SocialAccount>>> getConnectedAccounts();
+
+  /// Followers and engagement rate imported from the connected platforms.
+  Future<Either<NetworkExceptions, AudienceSummary>> getAudienceSummary();
 
   /// Starts the OAuth dance: asks the backend for the provider authorize URL +
   /// state to open in a browser. The backend handles the provider callback
