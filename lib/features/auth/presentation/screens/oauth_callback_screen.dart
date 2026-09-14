@@ -92,8 +92,17 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<LoginState>(oauthSignInProvider, (previous, next) {
+      // State name only: LoginState.loadSuccess carries the access and refresh
+      // tokens, and its toString() would write them to the device log.
+      final stateName = next.maybeWhen(
+        initial: () => 'initial',
+        loadInProgress: () => 'loadInProgress',
+        loadSuccess: (_) => 'loadSuccess',
+        loadFailure: (f) => 'loadFailure(${f.validationCode ?? f.runtimeType})',
+        orElse: () => 'other',
+      );
       // ignore: avoid_print
-      print('[OAUTH-DEBUG] oauthSignInProvider changed: $previous -> $next');
+      print('[OAUTH-DEBUG] oauthSignInProvider changed: $stateName');
       next.maybeWhen(
         loadSuccess: (auth) {
           if (auth.isNewAccount) {
