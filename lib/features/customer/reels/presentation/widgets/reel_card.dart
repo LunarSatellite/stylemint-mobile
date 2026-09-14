@@ -121,9 +121,10 @@ class _ReelCardState extends State<ReelCard> {
                   ),
                 ),
 
-              // Right-rail actions (like / comment / share / wishlist / cart) —
-              // pulled down so the rail sits near the creator/follow row instead
-              // of floating high above it.
+              // Right rail (creator + follow, like, comments, share, tagged
+              // product or cart), drawn over the video for every platform —
+              // pulled down so it sits near the creator row instead of
+              // floating high above it.
               Positioned(
                 right: DesignTokens.s12,
                 bottom: 180,
@@ -138,7 +139,8 @@ class _ReelCardState extends State<ReelCard> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 72),
-                      child: CreatorInfo(reel: widget.reel),
+                      // The rail carries follow; this row keeps name + track.
+                      child: CreatorInfo(reel: widget.reel, showFollow: false),
                     ),
                     if (widget.reel.taggedProducts.isNotEmpty) ...[
                       const SizedBox(height: DesignTokens.s12),

@@ -14,9 +14,13 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// /v1/follows/{creatorId}). Initial state is seeded from the reel's
 /// isCreatorFollowed flag.
 class CreatorInfo extends ConsumerStatefulWidget {
-  const CreatorInfo({required this.reel, super.key});
+  const CreatorInfo({required this.reel, this.showFollow = true, super.key});
 
   final Reel reel;
+
+  /// Whether the row shows its Follow pill. The feed passes false because its
+  /// right rail already carries the creator's follow badge.
+  final bool showFollow;
 
   @override
   ConsumerState<CreatorInfo> createState() => _CreatorInfoState();
@@ -116,9 +120,14 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
                   ],
                 ),
               ),
-              const SizedBox(width: DesignTokens.s12),
-              _FollowButton(
-                  isFollowing: isFollowing, busy: _busy, onTap: _toggleFollow),
+              if (widget.showFollow) ...[
+                const SizedBox(width: DesignTokens.s12),
+                _FollowButton(
+                  isFollowing: isFollowing,
+                  busy: _busy,
+                  onTap: _toggleFollow,
+                ),
+              ],
             ],
           ),
           if (reel.caption.isNotEmpty) ...[

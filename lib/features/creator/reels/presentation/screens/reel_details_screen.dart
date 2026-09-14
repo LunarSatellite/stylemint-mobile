@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/caption_editor.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
@@ -17,6 +16,8 @@ import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_layout_pol
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_resolver.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_button.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -346,71 +347,35 @@ class _AnalyticsRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _RailStat(icon: Icons.remove_red_eye_outlined, value: reel.views),
-        const SizedBox(height: DesignTokens.s28),
-        _RailStat(icon: Icons.favorite_outline, value: reel.likes),
-        const SizedBox(height: DesignTokens.s28),
-        _RailStat(
-          icon: Icons.chat_bubble_outline,
-          value: reel.comments,
-          onTap: () => showReelCommentsSheet(context, reel.id),
-        ),
-      ],
-    );
-  }
-}
-
-class _RailStat extends StatelessWidget {
-  const _RailStat({required this.icon, required this.value, this.onTap});
-  final IconData icon;
-  final int value;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-        child: Container(
-          width: 56,
-          padding: const EdgeInsets.symmetric(
-            vertical: DesignTokens.s12,
-            horizontal: DesignTokens.s4,
-          ),
-          decoration: const BoxDecoration(
-            color: Color(0xCC333333),
-            borderRadius: BorderRadius.all(Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: DesignTokens.iconWhite, size: 26),
-              Text(
-                _formatCount(value),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  height: 1,
-                  color: DesignTokens.textWhite,
-                ),
-              ),
-            ],
-          ),
+    // The feed rail's icon language with counts only: no avatar, follow or
+    // product on the creator's own reel. 52dp wide, so it fits the 64dp
+    // column beside a YouTube player.
+    return RepaintBoundary(
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReelRailButton(
+              icon: ReelRailIcons.views,
+              label: 'Views',
+              count: formatRailCount(reel.views),
+            ),
+            ReelRailButton(
+              icon: ReelRailIcons.heart,
+              label: 'Likes',
+              count: formatRailCount(reel.likes),
+            ),
+            ReelRailButton(
+              icon: ReelRailIcons.comment,
+              label: 'Comments',
+              count: formatRailCount(reel.comments),
+              onTap: () => showReelCommentsSheet(context, reel.id),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  static String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return '$count';
   }
 }
 

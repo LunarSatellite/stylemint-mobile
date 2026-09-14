@@ -1,24 +1,32 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
-import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_button.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 
-/// Right-rail reel actions: like, comment, share, cart (Design Spec Doc —
-/// Home Page Reel.pdf, "Reel Interactions" §1-4).
+/// Right-hand rail on a feed reel ("A · Studio", approved 2026-09-14), top to
+/// bottom: the creator (profile + follow), like, comments, share, and the
+/// first tagged product — or the cart when nothing is tagged.
 ///
 /// Comments are native Style Mint interactions. A reel's likes are owned by
 /// its source platform, so the heart hands off to that provider instead of
-/// showing a misleading local-only toggle. Share and cart are authenticated.
+/// showing a misleading local-only toggle. Follow, share and cart are
+/// authenticated.
 class ReelActions extends ConsumerStatefulWidget {
   const ReelActions({required this.reel, super.key});
 
@@ -30,10 +38,88 @@ class ReelActions extends ConsumerStatefulWidget {
 
 class _ReelActionsState extends ConsumerState<ReelActions> {
   static const _externalLauncher = ReelExternalLauncher();
+
   // Optimistic local override — reel.commentCount is a frozen snapshot from
   // the feed fetch that nothing else refreshes, so a successful post has to
-  // update this directly or the badge never reflects it.
+  // update this directly or the count never reflects it.
   late int _commentCount = widget.reel.commentCount;
+  bool _followBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _seedFollow();
+  }
+
+  @override
+  void didUpdateWidget(ReelActions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reel.id != widget.reel.id) {
+      _commentCount = widget.reel.commentCount;
+      _seedFollow();
+    }
+  }
+
+  /// Seeds shared follow state from the reel's isCreatorFollowed flag after
+  /// the first frame (a provider must not change during build). A no-op once
+  /// the creator was seeded or toggled this session.
+  void _seedFollow() {
+    final reel = widget.reel;
+    final seed = reel.isCreatorFollowed;
+    if (reel.creatorId.isEmpty || seed == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(followNotifierProvider.notifier)
+            .seed(reel.creatorId, following: seed);
+      }
+    });
+  }
+
+  /// Same follow flow as `CreatorInfo`: auth gate, then the optimistic
+  /// one-way follow toggle (POST/DELETE /v1/follows/{creatorId}).
+  Future<void> _toggleFollow() async {
+    if (_followBusy) return;
+    if (!await ensureAuth(context, ref, reason: AuthReason.follow)) return;
+    final id = widget.reel.creatorId;
+    if (!mounted || id.isEmpty) return;
+    _followBusy = true;
+    try {
+      await ref.read(followNotifierProvider.notifier).toggle(id);
+    } on Object {
+      if (mounted) {
+        SmSnackbar.error(context, "Couldn't update follow. Please try again.");
+      }
+    } finally {
+      _followBusy = false;
+    }
+  }
+
+  void _openProfile() {
+    final reel = widget.reel;
+    final avatarUrl = reel.creatorAvatarUrl.trim();
+    unawaited(
+      context.push(
+        RouteNames.creatorProfile.replaceFirst(':accountId', reel.creatorId),
+        extra: CreatorProfileArgs(
+          accountId: reel.creatorId,
+          displayName: reel.creatorName,
+          handle: reel.creatorName,
+          avatarUrl: avatarUrl.isEmpty ? null : avatarUrl,
+        ),
+      ),
+    );
+  }
+
+  /// Same destination as tapping a product in the feed's tagged-products
+  /// strip (`TaggedProductsSection`): the product detail page.
+  void _openProduct(TaggedProductEntity product) {
+    unawaited(
+      context.push(
+        RouteNames.productDetail.replaceFirst(':productId', product.id),
+      ),
+    );
+  }
 
   Future<void> _likeOnProvider() async {
     final url = Uri.tryParse(widget.reel.sourceUrl);
@@ -59,124 +145,109 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     );
   }
 
+  Future<void> _share() async {
+    final reel = widget.reel;
+    if (await ensureAuth(context, ref, reason: AuthReason.share)) {
+      unawaited(
+        SharePlus.instance.share(
+          ShareParams(
+            text:
+                "${reel.caption}\n\nWatch ${reel.creatorName}'s reel "
+                'on Style Mint: ${reel.sourceUrl}',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openCart() async {
+    if (await ensureAuth(context, ref, reason: AuthReason.addToCart)) {
+      if (mounted) await context.push(RouteNames.cart);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reel = widget.reel;
-    // Cart badge — so "did my add-to-cart tap do anything?" has a visible
-    // answer right on the rail, not just inside the cart screen itself.
-    final cartItemCount = ref
-        .watch(cartNotifierProvider)
-        .maybeWhen(
-          loadSuccess: (cart) =>
-              cart.items.fold<int>(0, (sum, i) => sum + i.quantity),
-          orElse: () => 0,
-        );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ActionButton(
-          icon: Icons.favorite_outline,
-          label: _formatCount(reel.likeCount),
-          onTap: () => _likeOnProvider(),
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        _ActionButton(
-          icon: Icons.chat_bubble_outline,
-          label: _formatCount(_commentCount),
-          onTap: _openComments,
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        _ActionButton(
-          icon: Icons.share_outlined,
-          label: _formatCount(reel.shareCount),
-          onTap: () async {
-            if (await ensureAuth(context, ref, reason: AuthReason.share)) {
-              unawaited(
-                SharePlus.instance.share(
-                  ShareParams(
-                    text:
-                        "${reel.caption}\n\nWatch ${reel.creatorName}'s reel "
-                        'on Style Mint: ${reel.sourceUrl}',
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-        const SizedBox(height: DesignTokens.s12),
-        _ActionButton(
-          icon: Icons.shopping_cart_outlined,
-          label: cartItemCount > 0 ? _formatCount(cartItemCount) : null,
-          onTap: () async {
-            if (await ensureAuth(context, ref, reason: AuthReason.addToCart)) {
-              if (context.mounted) await context.push('/cart');
-            }
-          },
-        ),
-      ],
+    final creatorId = reel.creatorId;
+    final hasCreator = creatorId.isNotEmpty;
+    final creatorName = reel.creatorName.trim().isEmpty
+        ? 'creator'
+        : reel.creatorName.trim();
+    final isFollowing = ref.watch(
+      followNotifierProvider.select(
+        (ids) => hasCreator && ids.contains(creatorId),
+      ),
     );
-  }
-
-  String _formatCount(int count) {
-    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
-    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
-    return '$count';
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.onTap,
-    this.label,
-    this.color = DesignTokens.iconWhite,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final String? label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          // Compact pill: smaller footprint, tighter blur container, so the
-          // rail reads as small polished chips rather than bulky buttons.
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 10,
+    final products = reel.taggedProducts;
+    final product = products.isEmpty ? null : products.first;
+    final productName = product == null || product.name.trim().isEmpty
+        ? 'product'
+        : product.name.trim();
+    // Cart badge — so "did my add-to-cart tap do anything?" has a visible
+    // answer right on the rail. Only watched while the cart is on the rail.
+    final cartItemCount = product != null
+        ? 0
+        : ref.watch(
+            cartNotifierProvider.select(
+              (state) => state.maybeWhen(
+                loadSuccess: (cart) =>
+                    cart.items.fold<int>(0, (sum, i) => sum + i.quantity),
+                orElse: () => 0,
+              ),
             ),
-            decoration: BoxDecoration(
-              color: const Color(0x99333333),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 22),
-                if (label != null && label!.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    label!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      height: 1,
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          );
+
+    return RepaintBoundary(
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: SizedBox(
+          width: ReelRailStyle.width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ReelRailAvatar(
+                creatorName: creatorName,
+                imageUrls: PlatformAvatarCarousel.resolveUrls(
+                  reel.creatorAvatarUrls,
+                  reel.creatorAvatarUrl,
+                ),
+                isFollowing: isFollowing,
+                onOpenProfile: hasCreator ? _openProfile : null,
+                onToggleFollow: hasCreator ? _toggleFollow : null,
+              ),
+              ReelRailButton(
+                icon: ReelRailIcons.heart,
+                label: 'Like',
+                hint: 'Opens the source reel',
+                count: formatRailCount(reel.likeCount),
+                popOnTap: true,
+                onTap: _likeOnProvider,
+              ),
+              ReelRailButton(
+                icon: ReelRailIcons.comment,
+                label: 'Comments',
+                count: formatRailCount(_commentCount),
+                onTap: _openComments,
+              ),
+              ReelRailButton(
+                icon: ReelRailIcons.share,
+                label: 'Share',
+                count: formatRailCount(reel.shareCount),
+                onTap: _share,
+              ),
+              if (product != null)
+                ReelRailProductTile(
+                  imageUrl: product.imageUrl,
+                  priceLabel: formatMoneyCompact(product.price),
+                  label:
+                      'Shop $productName, '
+                      '${formatMoney(product.price, decimalDigits: 0)}',
+                  onTap: () => _openProduct(product),
+                )
+              else
+                ReelRailCartDisc(itemCount: cartItemCount, onTap: _openCart),
+            ],
           ),
         ),
       ),
