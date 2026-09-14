@@ -20,6 +20,14 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- main.dart routes every stylemint:// link itself (app_links), as iOS
+                 does via FlutterDeepLinkingEnabled=false. Leaving Flutter's own deep
+                 linking on also pushed links like stylemint://social-connected into
+                 the router, which has no such page and showed "Page not found". -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

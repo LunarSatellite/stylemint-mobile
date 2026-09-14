@@ -727,6 +727,13 @@ GoRouter appRouter(Ref ref) {
           isOnboarding: state.uri.queryParameters['onboarding'] == 'true',
         ),
       ),
+      // The social-connect return link (stylemint://social-connected?...) is
+      // handled in main.dart. If it ever reaches the router, land on the
+      // social accounts screen instead of "Page not found".
+      GoRoute(
+        path: '/social-connected',
+        redirect: (ctx, state) => RouteNames.socialConnect,
+      ),
       GoRoute(
         path: RouteNames.reelImport,
         builder: (ctx, state) => const ImportReelScreen(),
