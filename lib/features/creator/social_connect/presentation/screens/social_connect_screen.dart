@@ -157,8 +157,21 @@ class SocialConnectScreen extends ConsumerWidget {
                                 account: a,
                                 onConnect: () =>
                                     _connect(context, ref, a.platform),
-                                onDisconnect: () =>
-                                    notifier.disconnect(a.platform),
+                                onDisconnect: () async {
+                                  final failure =
+                                      await notifier.disconnect(a.platform);
+                                  if (failure != null && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Could not disconnect '
+                                          '${a.platform.displayName}. '
+                                          'Please try again.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ),
                           ),

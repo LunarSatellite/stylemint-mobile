@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/creator_profile_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/datasources/youtube_channel_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain/entities/youtube_channel.dart';
@@ -218,6 +219,10 @@ const _providerIntToSlug = <int, String>{
 final creatorConnectedAccountsProvider =
     FutureProvider.family.autoDispose<List<SocialAccountSummary>, String>(
   (ref, accountId) async {
+    // Refetch whenever a platform is connected or disconnected anywhere in the
+    // app (Connect Accounts, the connect deep-link return, this profile's
+    // popup): all of those reload the social-connect notifier.
+    ref.watch(socialConnectNotifierProvider);
     try {
       final api = ref.read(apiClientProvider);
       final raw = await api.get('/v1/social/accounts');

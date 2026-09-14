@@ -351,8 +351,24 @@ class _ConnectedBody extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await notifier.disconnect(plat);
-    ref.invalidate(creatorConnectedSocialIdsProvider);
+    final failure = await notifier.disconnect(plat);
+    if (failure != null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not disconnect ${platform.name}. Please try again.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    // Refetch the source list; invalidating only the derived id set would
+    // recompute it from the same cached accounts and keep showing the platform.
+    ref
+      ..invalidate(creatorConnectedAccountsProvider)
+      ..invalidate(creatorConnectedSocialIdsProvider);
     if (context.mounted) Navigator.of(context).pop();
   }
 }

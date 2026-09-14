@@ -78,7 +78,7 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
   Future<void> onConnectReturn({required bool ok, String? errorCode}) async {
     await closeInAppWebView();
     if (ok) {
-      await load();
+      await refresh();
       return;
     }
     // The connect failed server-side (token exchange or profile fetch). Surface
@@ -93,11 +93,37 @@ class SocialConnectNotifier extends StateNotifier<SocialConnectState> {
     );
   }
 
-  Future<void> disconnect(SocialPlatform platform) async {
-    final either = await _repository.disconnectPlatform(platform);
+  /// Reloads the accounts without switching to
+  /// [SocialConnectState.loadInProgress], so screens keep the current list
+  /// (no full-page spinner) and swap in the fresh one when it arrives. A failed
+  /// refresh keeps the current list.
+  Future<void> refresh() async {
+    final either = await _repository.getConnectedAccounts();
     either.fold(
-      (_) => null,
-      (_) => unawaited(load()),
+      (_) {},
+      (accounts) => state = SocialConnectState.loadSuccess(accounts),
+    );
+  }
+
+  /// Disconnects [platform]. On success its card disappears straight away and
+  /// the list refreshes quietly; on failure nothing changes and the failure is
+  /// returned so the screen can say so.
+  Future<NetworkExceptions?> disconnect(SocialPlatform platform) async {
+    final either = await _repository.disconnectPlatform(platform);
+    return either.fold<NetworkExceptions?>(
+      (failure) => failure,
+      (_) {
+        state.maybeWhen<void>(
+          loadSuccess: (accounts) => state = SocialConnectState.loadSuccess(
+            accounts
+                .where((a) => a.platform != platform)
+                .toList(growable: false),
+          ),
+          orElse: () {},
+        );
+        unawaited(refresh());
+        return null;
+      },
     );
   }
 }
