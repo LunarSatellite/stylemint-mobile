@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/platform_video_id.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 
@@ -9,6 +10,7 @@ class ReelTaggedProduct {
     required this.priceLabel,
     required this.imageUrl,
     required this.commissionPercent,
+    this.price,
   });
 
   final String productId;
@@ -16,6 +18,9 @@ class ReelTaggedProduct {
   final String priceLabel;
   final String? imageUrl;
   final double commissionPercent;
+
+  /// Price snapshot taken at tag time; drives the caption's product line.
+  final Money? price;
 }
 
 class CreatorReelDetail implements ReelMedia {
@@ -38,6 +43,7 @@ class CreatorReelDetail implements ReelMedia {
     this.creatorHandle = '',
     this.creatorDisplayName = '',
     this.creatorAvatarUrl = '',
+    this.creatorAvatarUrls = const <String>[],
     this.isCreatorFollowed,
   });
 
@@ -88,6 +94,10 @@ class CreatorReelDetail implements ReelMedia {
 
   /// Avatar CDN URL. Empty when missing → placeholder.
   final String creatorAvatarUrl;
+
+  /// Connected-platform profile pictures in rotation order (Instagram,
+  /// TikTok, YouTube, Facebook). Empty → [creatorAvatarUrl] is used.
+  final List<String> creatorAvatarUrls;
 
   /// Whether the current viewer already follows this creator. Null when
   /// the backend has not hydrated this field.

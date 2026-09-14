@@ -37,6 +37,7 @@ class Reel implements ReelMedia {
     this.isLikedByUser,
     this.isWishlistedByUser,
     this.isCreatorFollowed,
+    this.creatorAvatarUrls = const <String>[],
   });
 
   final String id;
@@ -50,6 +51,11 @@ class Reel implements ReelMedia {
   final String creatorId;
   final String creatorName;
   final String creatorAvatarUrl;
+
+  /// Profile pictures of the creator's connected platforms in rotation order
+  /// (Instagram, TikTok, YouTube, Facebook). Empty when none are synced; the
+  /// avatar then falls back to [creatorAvatarUrl].
+  final List<String> creatorAvatarUrls;
   final String caption;
   final String musicTitle;
   final String musicArtist;
@@ -77,6 +83,7 @@ class Reel implements ReelMedia {
     String? creatorId,
     String? creatorName,
     String? creatorAvatarUrl,
+    List<String>? creatorAvatarUrls,
     String? caption,
     String? musicTitle,
     String? musicArtist,
@@ -98,6 +105,7 @@ class Reel implements ReelMedia {
       creatorId: creatorId ?? this.creatorId,
       creatorName: creatorName ?? this.creatorName,
       creatorAvatarUrl: creatorAvatarUrl ?? this.creatorAvatarUrl,
+      creatorAvatarUrls: creatorAvatarUrls ?? this.creatorAvatarUrls,
       caption: caption ?? this.caption,
       musicTitle: musicTitle ?? this.musicTitle,
       musicArtist: musicArtist ?? this.musicArtist,

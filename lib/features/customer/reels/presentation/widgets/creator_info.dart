@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -77,15 +78,13 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: DesignTokens.avatarMedium / 2,
-                backgroundColor: DesignTokens.bgAppBodyLight,
-                backgroundImage: reel.creatorAvatarUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(reel.creatorAvatarUrl)
-                    : null,
-                child: reel.creatorAvatarUrl.isEmpty
-                    ? const Icon(Icons.person, color: DesignTokens.iconLight)
-                    : null,
+              PlatformAvatarCarousel(
+                imageUrls: PlatformAvatarCarousel.resolveUrls(
+                  reel.creatorAvatarUrls,
+                  reel.creatorAvatarUrl,
+                ),
+                size: DesignTokens.avatarMedium,
+                semanticLabel: 'Creator profile picture',
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
@@ -124,16 +123,8 @@ class _CreatorInfoState extends ConsumerState<CreatorInfo> {
           ),
           if (reel.caption.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s12),
-            Text(reel.caption, maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                // Spec: caption 12/400/130% white.
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
-                  color: DesignTokens.textWhite,
-                )),
+            // Reel Caption Standard renderer (hook + first product, "more").
+            ReelCaptionText(caption: reel.caption, maxExpandedHeight: 220),
           ],
         ],
       ),

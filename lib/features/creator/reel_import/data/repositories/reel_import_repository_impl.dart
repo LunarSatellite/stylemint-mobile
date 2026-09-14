@@ -53,8 +53,9 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
-    ImportableReel reel,
-  ) async {
+    ImportableReel reel, {
+    String? caption,
+  }) async {
     if (reel.videoDuration <= 0) {
       return left(const NetworkExceptions.validation(
         code: 'reels.metadata_required',
@@ -72,7 +73,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
         externalId: reel.platformPostId,
         durationSeconds: reel.videoDuration,
         idempotencyKey: const Uuid().v4(),
-        caption: reel.caption,
+        caption: caption ?? reel.caption,
         thumbnailCdnUrl: reel.thumbnailUrl,
         videoUrl: reel.videoUrl,
       );

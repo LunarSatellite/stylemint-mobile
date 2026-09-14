@@ -55,6 +55,22 @@ class CreatorReelsRemoteDataSource {
     );
   }
 
+  // PUT /v1/creator/reels/{reelId}/caption — null/blank clears the caption.
+  Future<void> updateCaption(
+    String reelId,
+    String? caption,
+    String idempotencyKey,
+  ) async {
+    await apiClient.put(
+      '/v1/creator/reels/$reelId/caption',
+      data: <String, dynamic>{'caption': caption},
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': idempotencyKey,
+      }),
+    );
+  }
+
   Future<List<ReelTagManagementDto>> listTaggedProducts(String reelId) async {
     final response = await apiClient.get(
       '/v1/creator/reels/$reelId/tagged-products',

@@ -29,6 +29,15 @@ class _FakeRepository implements CreatorReelsRepository {
   }
 
   @override
+  Future<NetworkEither<Unit>> updateCaption(
+    String reelId,
+    String? caption,
+  ) async {
+    calls.add('caption:$reelId:$caption');
+    return unitResult ?? networkRight(unit);
+  }
+
+  @override
   Future<NetworkEither<Unit>> untagProduct(
     String reelId,
     String taggedProductId,
@@ -143,6 +152,33 @@ void main() {
         expect(repo.calls.single, 'tag:reel-1:prod-1:0.5,0.5');
       },
     );
+
+    test('updateCaption sends the caption and reports "Caption updated."',
+        () async {
+      final repo = _FakeRepository();
+      final notifier = CreatorReelActionsNotifier(repo);
+
+      final ok = await notifier.updateCaption('reel-1', 'Hook\n\n#StyleMint');
+
+      expect(ok, isTrue);
+      expect(repo.calls.single, 'caption:reel-1:Hook\n\n#StyleMint');
+      expect(
+        (notifier.state as CreatorReelActionSucceeded).message,
+        'Caption updated.',
+      );
+    });
+
+    test('updateCaption failure surfaces the repository message', () async {
+      final repo = _FakeRepository(
+        unitResult: networkLeft(const NetworkExceptions.noInternetConnection()),
+      );
+      final notifier = CreatorReelActionsNotifier(repo);
+
+      final ok = await notifier.updateCaption('reel-1', 'Hook');
+
+      expect(ok, isFalse);
+      expect(notifier.state, isA<CreatorReelActionFailed>());
+    });
 
     test('untagProduct passes the tag id, not the product id', () async {
       final repo = _FakeRepository();

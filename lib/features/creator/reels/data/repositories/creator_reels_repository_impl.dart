@@ -54,6 +54,17 @@ class CreatorReelsRepositoryImpl implements CreatorReelsRepository {
   });
 
   @override
+  Future<NetworkEither<Unit>> updateCaption(String reelId, String? caption) =>
+      _guard(() async {
+        await remoteDataSource.updateCaption(
+          reelId,
+          caption,
+          const Uuid().v4(),
+        );
+        return unit;
+      });
+
+  @override
   Future<NetworkEither<List<ReelProductTag>>> listTaggedProducts(
     String reelId,
   ) => _guard(() async {

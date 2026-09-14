@@ -45,6 +45,11 @@ class CreatorReelActionsNotifier extends StateNotifier<CreatorReelActionState> {
         'Reel unpublished.',
       );
 
+  Future<bool> updateCaption(String reelId, String? caption) => _run(
+        () => _repository.updateCaption(reelId, caption),
+        'Caption updated.',
+      );
+
   Future<bool> tagProduct(
     String reelId, {
     required String productId,

@@ -34,8 +34,10 @@ class _FakeRepository implements ReelImportRepository {
   }
 
   @override
-  Future<NetworkEither<ImportedReel>> importReel(ImportableReel reel) async =>
-      networkLeft(const NetworkExceptions.unexpectedError());
+  Future<NetworkEither<ImportedReel>> importReel(
+    ImportableReel reel, {
+    String? caption,
+  }) async => networkLeft(const NetworkExceptions.unexpectedError());
 
   @override
   Future<NetworkEither<List<TaggedProductForImport>>> searchProducts(

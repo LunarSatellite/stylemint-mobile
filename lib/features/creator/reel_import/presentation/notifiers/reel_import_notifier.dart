@@ -226,13 +226,16 @@ class ReelSubmitNotifier extends StateNotifier<ReelSubmitState> {
 
   final ReelImportRepository _repository;
 
+  /// [caption] is the StyleMint caption composed on the Review screen; it is
+  /// what the import request stores (the platform caption is only a seed).
   Future<void> submit(
     ImportableReel reel,
-    List<TaggedProductForImport> taggedProducts,
-  ) async {
+    List<TaggedProductForImport> taggedProducts, {
+    String? caption,
+  }) async {
     state = ReelSubmitInProgress();
 
-    final importResult = await _repository.importReel(reel);
+    final importResult = await _repository.importReel(reel, caption: caption);
     if (importResult.isLeft()) {
       final failure = importResult.getLeft().toNullable()!;
       // 409 means this reel was already imported — treat as success

@@ -81,6 +81,10 @@ class ReelsRemoteDataSource {
       creatorId: (r['creatorProfileId'] as String?) ?? '',
       creatorName: (r['creatorHandle'] as String?) ?? '',
       creatorAvatarUrl: (r['creatorAvatarUrl'] as String?) ?? '',
+      creatorAvatarUrls: (r['creatorAvatarUrls'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .where((url) => url.isNotEmpty)
+          .toList(growable: false),
       caption: (r['caption'] as String?) ?? '',
       createdAt: DateTime.now(),
       platform: platform,

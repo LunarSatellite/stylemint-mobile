@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/caption_editor.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -16,6 +19,7 @@ class ReviewReelArgs {
     required this.taggedProducts,
     required this.potentialEarningsPerSale,
     this.publishedReelId,
+    this.composedCaption,
   });
 
   final ImportableReel? reel;
@@ -27,12 +31,17 @@ class ReviewReelArgs {
   /// distinct from `reel.id`, which is the external platform post ID.
   final String? publishedReelId;
 
-  ReviewReelArgs copyWith({String? publishedReelId}) {
+  /// The StyleMint caption composed in the Caption card and sent with the
+  /// import. Null until the reel has been shared.
+  final String? composedCaption;
+
+  ReviewReelArgs copyWith({String? publishedReelId, String? composedCaption}) {
     return ReviewReelArgs(
       reel: reel,
       taggedProducts: taggedProducts,
       potentialEarningsPerSale: potentialEarningsPerSale,
       publishedReelId: publishedReelId ?? this.publishedReelId,
+      composedCaption: composedCaption ?? this.composedCaption,
     );
   }
 }
@@ -49,10 +58,20 @@ class ReviewReelScreen extends ConsumerStatefulWidget {
 class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
   late final List<TaggedProductForImport> _taggedProducts;
 
+  /// Reel Caption Standard draft; seeded from the platform caption.
+  late ReelCaptionDraft _captionDraft;
+
   @override
   void initState() {
     super.initState();
     _taggedProducts = List.from(widget.args.taggedProducts);
+    _captionDraft = ReelCaptionDraft.fromPlatformCaption(
+      widget.args.reel?.caption ?? '',
+      products: [
+        for (final p in _taggedProducts)
+          CaptionProduct(name: p.productName, price: p.price),
+      ],
+    );
   }
 
   @override
@@ -64,7 +83,10 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
         if (next is ReelSubmitSuccess) {
           context.pushReplacement(
             RouteNames.reelPublished,
-            extra: widget.args.copyWith(publishedReelId: next.reelId),
+            extra: widget.args.copyWith(
+              publishedReelId: next.reelId,
+              composedCaption: _captionDraft.caption,
+            ),
           );
         } else if (next is ReelSubmitFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -123,9 +145,6 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
     final reel = widget.args.reel;
     final totalDuration = reel?.videoDuration ?? 55;
     final elapsed = (totalDuration * 0.78).toInt();
-    final caption = reel?.caption.isNotEmpty == true
-        ? reel!.caption
-        : 'New Year calls for rich, delicious cakes to celebrate with your near and dear ones in a get together';
     final platform = reel?.platform ?? SocialPlatform.instagram;
     const projectedSales = 50;
     final projectedEarnings = widget.args.potentialEarningsPerSale * projectedSales;
@@ -181,15 +200,11 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
                           ),
                         ),
                         const SizedBox(height: DesignTokens.s8),
-                        Text(
-                          caption,
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: DesignTokens.textWhite,
-                            height: 1.5,
-                          ),
+                        // Original platform caption, rendered with the
+                        // shared caption renderer (hashtags highlighted).
+                        ReelCaptionText(
+                          caption: reel?.caption,
+                          emptyText: 'No caption on this post',
                         ),
                         const SizedBox(height: DesignTokens.s12),
                         Row(
@@ -243,6 +258,13 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: DesignTokens.s16),
+
+                  // ── Caption (StyleMint Reel Caption Standard) ────────────
+                  CaptionEditor(
+                    initialDraft: _captionDraft,
+                    onChanged: (draft) => setState(() => _captionDraft = draft),
+                  ),
                 ],
               ),
             ),
@@ -253,6 +275,8 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
             builder: (context, ref, _) {
               final submitState = ref.watch(reelSubmitNotifierProvider);
               final isLoading = submitState is ReelSubmitInProgress;
+              // Share stays disabled until the hook is 20–70 characters.
+              final canShare = !isLoading && _captionDraft.canSubmit;
               return Container(
                 padding: const EdgeInsets.fromLTRB(
                   DesignTokens.s16, DesignTokens.s8,
@@ -263,14 +287,18 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
                   width: double.infinity,
                   height: DesignTokens.buttonHeight,
                   child: ElevatedButton(
-                    onPressed: isLoading
+                    onPressed: !canShare
                         ? null
                         : () {
                             final reel = widget.args.reel;
                             if (reel == null) return;
                             ref
                                 .read(reelSubmitNotifierProvider.notifier)
-                                .submit(reel, _taggedProducts);
+                                .submit(
+                                  reel,
+                                  _taggedProducts,
+                                  caption: _captionDraft.caption,
+                                );
                           },
                     style: DesignTokens.primaryButtonStyle(),
                     child: isLoading

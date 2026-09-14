@@ -20,9 +20,13 @@ abstract interface class ReelImportRepository {
     String? cursor,
   });
 
+  /// [caption] is the caption to store on StyleMint — the Review screen
+  /// passes the one composed with the Reel Caption Standard. Falls back to
+  /// the platform's [ImportableReel.caption] when null.
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
-    ImportableReel reel,
-  );
+    ImportableReel reel, {
+    String? caption,
+  });
 
   Future<Either<NetworkExceptions, List<TaggedProductForImport>>>
       searchProducts(

@@ -54,6 +54,8 @@ Map<String, dynamic> _card({
   required Object? sourcePlatform,
   String? externalId,
   String externalUrl = '',
+  String creatorAvatarUrl = '',
+  List<Object?>? creatorAvatarUrls,
 }) => {
   'kind': 'Reel',
   'reel': {
@@ -65,7 +67,8 @@ Map<String, dynamic> _card({
     'videoUrl': null,
     'creatorProfileId': 'creator-1',
     'creatorHandle': 'miko',
-    'creatorAvatarUrl': '',
+    'creatorAvatarUrl': creatorAvatarUrl,
+    'creatorAvatarUrls': ?creatorAvatarUrls,
     'caption': 'hi',
     'taggedProducts': <dynamic>[],
   },
@@ -132,6 +135,37 @@ void main() {
       ]);
 
       expect(reels.single.platform, SocialPlatform.instagram);
+    });
+
+    test('maps creatorAvatarUrls in order and keeps creatorAvatarUrl',
+        () async {
+      final reels = await mapCards([
+        _card(
+          reelId: 'r5',
+          sourcePlatform: 'Instagram',
+          creatorAvatarUrl: 'https://tt.example/avatar.jpg',
+          creatorAvatarUrls: [
+            'https://ig.example/avatar.jpg',
+            '',
+            null,
+            'https://tt.example/avatar.jpg',
+          ],
+        ),
+      ]);
+
+      expect(reels.single.creatorAvatarUrl, 'https://tt.example/avatar.jpg');
+      expect(reels.single.creatorAvatarUrls, [
+        'https://ig.example/avatar.jpg',
+        'https://tt.example/avatar.jpg',
+      ]);
+    });
+
+    test('a card without creatorAvatarUrls maps to an empty list', () async {
+      final reels = await mapCards([
+        _card(reelId: 'r6', sourcePlatform: 'TikTok'),
+      ]);
+
+      expect(reels.single.creatorAvatarUrls, isEmpty);
     });
   });
 

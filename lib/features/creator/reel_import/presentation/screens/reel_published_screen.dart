@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 
 class ReelPublishedScreen extends StatelessWidget {
@@ -132,9 +133,9 @@ class ReelPublishedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final reel = args.reel;
     final platform = reel?.platform ?? SocialPlatform.instagram;
-    final caption = reel?.caption.isNotEmpty == true
-        ? reel!.caption
-        : 'New Year calls for rich, delicious cakes to celebrate with your near and dear ones in a get together';
+    // The caption composed on the Review screen is what was published; fall
+    // back to the platform caption for reels that skipped the editor.
+    final caption = args.composedCaption ?? reel?.caption;
     const projectedSales = 50;
     final projectedEarnings = args.potentialEarningsPerSale * projectedSales;
 
@@ -212,17 +213,10 @@ class ReelPublishedScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    caption,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontFamily: DesignTokens.fontFamily,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: DesignTokens.textWhite,
-                                      height: 1.4,
-                                    ),
+                                  ReelCaptionText(
+                                    caption: caption,
+                                    collapsedMaxLines: 2,
+                                    emptyText: 'No caption on this post',
                                   ),
                                   const SizedBox(height: 6),
                                   Row(

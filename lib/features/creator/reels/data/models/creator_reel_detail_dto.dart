@@ -1,6 +1,7 @@
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/reel_product_tag.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 class ReelTaggedProductDto {
   const ReelTaggedProductDto({
@@ -9,6 +10,7 @@ class ReelTaggedProductDto {
     required this.priceLabel,
     required this.imageUrl,
     required this.commissionPercent,
+    this.price,
   });
 
   final String productId;
@@ -16,6 +18,7 @@ class ReelTaggedProductDto {
   final String priceLabel;
   final String? imageUrl;
   final double commissionPercent;
+  final Money? price;
 
   factory ReelTaggedProductDto.fromJson(Map<String, dynamic> json) {
     final amount =
@@ -33,6 +36,7 @@ class ReelTaggedProductDto {
       imageUrl: absoluteMediaUrl(json['productPrimaryImageUrl'] as String?),
       commissionPercent:
           (json['commissionRateSnapshotPercent'] as num?)?.toDouble() ?? 0,
+      price: Money(amount: amount, currency: currency),
     );
   }
 
@@ -42,6 +46,7 @@ class ReelTaggedProductDto {
     priceLabel: priceLabel,
     imageUrl: imageUrl,
     commissionPercent: commissionPercent,
+    price: price,
   );
 }
 
@@ -67,6 +72,7 @@ class CreatorReelDetailDto {
     this.creatorHandle = '',
     this.creatorDisplayName = '',
     this.creatorAvatarUrl = '',
+    this.creatorAvatarUrls = const <String>[],
     this.isCreatorFollowed,
   });
 
@@ -101,6 +107,7 @@ class CreatorReelDetailDto {
   final String creatorHandle;
   final String creatorDisplayName;
   final String creatorAvatarUrl;
+  final List<String> creatorAvatarUrls;
   final bool? isCreatorFollowed;
 
   static const _platforms = {
@@ -162,6 +169,11 @@ class CreatorReelDetailDto {
           (json['avatarUrl'] as String?) ??
           (json['creatorAvatarCdnUrl'] as String?) ??
           '',
+      creatorAvatarUrls:
+          (json['creatorAvatarUrls'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .where((url) => url.isNotEmpty)
+              .toList(growable: false),
       isCreatorFollowed: json['isCreatorFollowed'] as bool?,
     );
   }
@@ -187,6 +199,7 @@ class CreatorReelDetailDto {
     creatorHandle: creatorHandle,
     creatorDisplayName: creatorDisplayName,
     creatorAvatarUrl: creatorAvatarUrl,
+    creatorAvatarUrls: creatorAvatarUrls,
     isCreatorFollowed: isCreatorFollowed,
   );
 }

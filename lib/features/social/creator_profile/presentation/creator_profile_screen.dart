@@ -19,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/domain
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Display info handed to [CreatorProfileScreen] via go_router `extra`.
@@ -146,7 +147,11 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
                   children: [
                     _topBar(effectiveAccountId, loadedProfile),
                     const SizedBox(height: DesignTokens.s12),
-                    _avatarSection(),
+                    _avatarSection(
+                      isOwnProfile: sessionId.isNotEmpty &&
+                          effectiveAccountId == sessionId,
+                      accountId: effectiveAccountId,
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _nameRow(profileData, loadedProfile),
                     const SizedBox(height: 4),
@@ -252,9 +257,17 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
     );
   }
 
-  Widget _avatarSection() {
+  Widget _avatarSection({
+    required bool isOwnProfile,
+    required String accountId,
+  }) {
     final localPath = ref.watch(avatarImagePathProvider);
     final url = widget.args.avatarUrl;
+    // GET /v1/social/accounts is scoped to the signed-in user, so its
+    // pictures only belong on the creator's own profile.
+    final platformAvatars = isOwnProfile
+        ? ref.watch(creatorPlatformAvatarUrlsProvider(accountId))
+        : const <String>[];
     return SizedBox(
       width: 124,
       height: 124,
@@ -262,20 +275,19 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         alignment: Alignment.center,
         children: [
           CustomPaint(size: const Size(124, 124), painter: _ArcPainter()),
-          ClipOval(
-            child: SizedBox(
-              width: 100,
-              height: 100,
-              child: localPath != null
-                  ? Image.file(File(localPath), fit: BoxFit.cover)
-                  : (url != null && url.isNotEmpty)
-                  ? Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, _e) => _avatarFallback(),
-                    )
-                  : _avatarFallback(),
-            ),
+          PlatformAvatarCarousel(
+            imageUrls: platformAvatars,
+            size: 100,
+            semanticLabel: 'Profile picture',
+            fallback: localPath != null
+                ? Image.file(File(localPath), fit: BoxFit.cover)
+                : (url != null && url.isNotEmpty)
+                ? Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, _e) => _avatarFallback(),
+                  )
+                : _avatarFallback(),
           ),
         ],
       ),

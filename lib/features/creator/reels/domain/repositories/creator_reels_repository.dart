@@ -25,6 +25,10 @@ abstract class CreatorReelsRepository {
   /// snapshots are retained so republishing does not re-price them.
   Future<NetworkEither<Unit>> unpublishReel(String reelId);
 
+  /// Replaces the reel's caption (compose it with `ReelCaption.compose`).
+  /// Null or blank clears it.
+  Future<NetworkEither<Unit>> updateCaption(String reelId, String? caption);
+
   Future<NetworkEither<List<ReelProductTag>>> listTaggedProducts(String reelId);
 
   /// Overlay coordinates are fractions of the video frame (0.0–1.0).

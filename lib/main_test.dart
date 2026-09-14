@@ -424,15 +424,16 @@ class _MockReelImportRepository implements ReelImportRepository {
 
   @override
   Future<Either<NetworkExceptions, ImportedReel>> importReel(
-    ImportableReel reel,
-  ) async => right(
+    ImportableReel reel, {
+    String? caption,
+  }) async => right(
     ImportedReel(
       id: 'imported-${reel.platformPostId}',
       status: ImportStatus.processing,
       reelReelId: 'reel-${reel.platformPostId}',
       tags: const [],
       importedAt: DateTime.now(),
-      caption: reel.caption,
+      caption: caption ?? reel.caption,
       thumbnailUrl: '',
       sourceUrl: reel.sourceUrl,
       platform: SocialPlatform.instagram,

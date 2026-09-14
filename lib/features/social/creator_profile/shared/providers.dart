@@ -255,6 +255,50 @@ final creatorConnectedAccountsProvider =
   },
 );
 
+/// Platform order the rotating creator avatar cycles through.
+const _avatarRotationOrder = <String>[
+  'instagram',
+  'tiktok',
+  'youtube',
+  'facebook',
+];
+
+/// Profile pictures of the signed-in creator's connected accounts in avatar
+/// rotation order (see [platformAvatarUrlsInRotationOrder]). Empty while
+/// loading, on error, or when no account has a picture.
+/// accountId is ignored (endpoint is user-scoped via auth).
+final creatorPlatformAvatarUrlsProvider =
+    Provider.family.autoDispose<List<String>, String>((ref, accountId) {
+  final accounts = ref
+      .watch(creatorConnectedAccountsProvider(accountId))
+      .maybeWhen(
+        data: (list) => list,
+        orElse: () => const <SocialAccountSummary>[],
+      );
+  return platformAvatarUrlsInRotationOrder(accounts);
+});
+
+/// Avatar URLs of [accounts] ordered Instagram, TikTok, YouTube, Facebook
+/// (any other platform last), skipping blanks and duplicates.
+List<String> platformAvatarUrlsInRotationOrder(
+  List<SocialAccountSummary> accounts,
+) {
+  int rank(String slug) {
+    final index = _avatarRotationOrder.indexOf(slug);
+    return index < 0 ? _avatarRotationOrder.length : index;
+  }
+
+  final sorted = [...accounts]
+    ..sort((a, b) => rank(a.slug).compareTo(rank(b.slug)));
+  final seen = <String>{};
+  return [
+    for (final account in sorted)
+      if (account.avatarUrl.trim().isNotEmpty &&
+          seen.add(account.avatarUrl.trim()))
+        account.avatarUrl.trim(),
+  ];
+}
+
 /// Set of connected platform slugs derived from [creatorConnectedAccountsProvider].
 /// accountId is ignored (endpoint is user-scoped via auth).
 final creatorConnectedSocialIdsProvider =

@@ -3,8 +3,10 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/caption_editor.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/domain/entities/creator_reel_detail.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/notifiers/creator_reel_actions_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_creator_strip.dart';
@@ -137,44 +139,6 @@ class _BodyState extends State<_Body> {
                 ),
               ),
 
-            // Top bar: circular back button on the left, popup-menu actions
-            // on the right. Backdrop keeps the back button legible over any
-            // video frame.
-            SafeArea(
-              bottom: false,
-              child: SizedBox(
-                height: _topBarHeight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DesignTokens.s8,
-                  ),
-                  child: Row(
-                    children: [
-                      Material(
-                        color: DesignTokens.baseBlack.withValues(alpha: 0.45),
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () => context.pop(),
-                          child: const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 18,
-                              color: DesignTokens.textWhite,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      _ReelActionsMenu(reel: reel),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
             // Right-rail read-only analytics — same visual language as the
             // Home feed's ReelActions right rail.
             if (besidePlayer)
@@ -228,6 +192,49 @@ class _BodyState extends State<_Body> {
                   children: _infoBlock(reel, railInset: 72),
                 ),
               ),
+
+            // Top bar: circular back button on the left, popup-menu actions
+            // on the right. Pinned to the top and painted last, so the
+            // analytics rail and info block never sit over its buttons.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: SizedBox(
+                  height: _topBarHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.s8,
+                    ),
+                    child: Row(
+                      children: [
+                        Material(
+                          color: DesignTokens.baseBlack.withValues(alpha: 0.45),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () => context.pop(),
+                            child: const SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 18,
+                                color: DesignTokens.textWhite,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        _ReelActionsMenu(reel: reel),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -245,6 +252,7 @@ class _BodyState extends State<_Body> {
           creatorHandle: reel.creatorHandle,
           creatorDisplayName: reel.creatorDisplayName,
           creatorAvatarUrl: reel.creatorAvatarUrl,
+          creatorAvatarUrls: reel.creatorAvatarUrls,
           caption: reel.caption,
           initialFollowing: reel.isCreatorFollowed,
         ),
@@ -597,6 +605,10 @@ class _ReelActionsMenu extends ConsumerWidget {
                     child: Text(isPublished ? 'Unpublish' : 'Publish'),
                   ),
                   const PopupMenuItem(
+                    value: _ReelAction.editCaption,
+                    child: Text('Edit caption'),
+                  ),
+                  const PopupMenuItem(
                     value: _ReelAction.manageTags,
                     child: Text('Manage tagged products'),
                   ),
@@ -622,6 +634,14 @@ class _ReelActionsMenu extends ConsumerWidget {
         if (await notifier.unpublish(reel.id)) {
           ref.invalidate(creatorReelDetailProvider(reel.id));
         }
+      case _ReelAction.editCaption:
+        if (!context.mounted) return;
+        await showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: DesignTokens.baseBlack,
+          isScrollControlled: true,
+          builder: (_) => _EditCaptionSheet(reel: reel),
+        );
       case _ReelAction.manageTags:
         if (!context.mounted) return;
         await showModalBottomSheet<void>(
@@ -634,7 +654,134 @@ class _ReelActionsMenu extends ConsumerWidget {
   }
 }
 
-enum _ReelAction { publish, unpublish, manageTags }
+enum _ReelAction { publish, unpublish, editCaption, manageTags }
+
+/// "Edit caption": the same structured [CaptionEditor] used on Review Reel,
+/// pre-filled by parsing the current caption and the reel's tagged products.
+/// Save → `PUT /v1/creator/reels/{id}/caption` via
+/// [CreatorReelActionsNotifier.updateCaption]; the "Caption updated."
+/// snackbar comes from the [_ReelActionsMenu] listener.
+class _EditCaptionSheet extends ConsumerStatefulWidget {
+  const _EditCaptionSheet({required this.reel});
+
+  static const String titleLabel = 'Edit caption';
+  static const String saveLabel = 'Save caption';
+  static const Key saveButtonKey = ValueKey('edit_caption_save');
+
+  final CreatorReelDetail reel;
+
+  @override
+  ConsumerState<_EditCaptionSheet> createState() => _EditCaptionSheetState();
+}
+
+class _EditCaptionSheetState extends ConsumerState<_EditCaptionSheet> {
+  late ReelCaptionDraft _draft;
+  bool _saving = false;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = ReelCaptionDraft.fromExistingCaption(
+      widget.reel.caption,
+      products: [
+        for (final p in widget.reel.taggedProducts)
+          if (p.price != null)
+            CaptionProduct(name: p.name ?? 'Product', price: p.price!),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _saving = true;
+      _failed = false;
+    });
+    final ok = await ref
+        .read(creatorReelActionsNotifierProvider.notifier)
+        .updateCaption(widget.reel.id, _draft.caption);
+    if (!mounted) return;
+    if (ok) {
+      ref.invalidate(creatorReelDetailProvider(widget.reel.id));
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _saving = false;
+      _failed = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _EditCaptionSheet.titleLabel,
+                      style: DesignTokens.sectionInnerTitle.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(
+                      Icons.close,
+                      color: DesignTokens.textLight,
+                    ),
+                    onPressed: _saving
+                        ? null
+                        : () => Navigator.of(context).maybePop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s8),
+              CaptionEditor(
+                initialDraft: _draft,
+                onChanged: (draft) => setState(() => _draft = draft),
+              ),
+              if (_failed) ...[
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  "Couldn't save the caption. Please try again.",
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.colorError,
+                  ),
+                ),
+              ],
+              const SizedBox(height: DesignTokens.s16),
+              ElevatedButton(
+                key: _EditCaptionSheet.saveButtonKey,
+                onPressed: _saving || !_draft.canSubmit ? null : _save,
+                style: DesignTokens.primaryButtonStyle(),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignTokens.textWhite,
+                        ),
+                      )
+                    : const Text(_EditCaptionSheet.saveLabel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Lists the reel's tags from the creator-scoped management endpoint (which,
 /// unlike the public projection embedded in the reel, carries each tag's own

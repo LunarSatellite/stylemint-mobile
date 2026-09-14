@@ -18,6 +18,7 @@ import 'package:stylemint_mobile_frontend/features/notifications/domain/entities
 import 'package:stylemint_mobile_frontend/features/notifications/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/root_back_guard.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
@@ -71,6 +72,7 @@ class _CreatorDashboardView extends ConsumerWidget {
       loadSuccess: (dashboard) => _DashboardContent(
         dashboard: dashboard,
         firstName: firstName,
+        accountId: accountId,
         avatarUrl: profile?.avatarUrl,
         onRefresh: () => ref.read(creatorDashboardNotifierProvider.notifier).load(),
       ),
@@ -131,12 +133,14 @@ class _DashboardContent extends StatelessWidget {
     required this.dashboard,
     required this.onRefresh,
     required this.firstName,
+    required this.accountId,
     this.avatarUrl,
   });
 
   final CreatorDashboard dashboard;
   final VoidCallback onRefresh;
   final String firstName;
+  final String accountId;
   final String? avatarUrl;
 
   @override
@@ -155,7 +159,11 @@ class _DashboardContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Header(firstName: firstName, avatarUrl: avatarUrl),
+            _Header(
+              firstName: firstName,
+              accountId: accountId,
+              avatarUrl: avatarUrl,
+            ),
             const SizedBox(height: DesignTokens.s20),
             _QuickMetricsCard(
               earnings: dashboard.earnings,
@@ -188,9 +196,14 @@ class _DashboardContent extends StatelessWidget {
 // ── Header ────────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header({required this.firstName, this.avatarUrl});
+  const _Header({
+    required this.firstName,
+    required this.accountId,
+    this.avatarUrl,
+  });
 
   final String firstName;
+  final String accountId;
   final String? avatarUrl;
 
   @override
@@ -200,20 +213,23 @@ class _Header extends StatelessWidget {
         Consumer(
           builder: (_, ref, __) {
             final localPath = ref.watch(avatarImagePathProvider);
-            return ClipOval(
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: localPath != null
-                    ? Image.file(File(localPath), fit: BoxFit.cover)
-                    : (avatarUrl != null && avatarUrl!.isNotEmpty)
-                        ? Image.network(
-                            avatarUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _avatarPlaceholder(),
-                          )
-                        : _avatarPlaceholder(),
-              ),
+            // Rotate the connected platforms' pictures; the existing avatar
+            // is the fallback when none of them has one.
+            final platformAvatars =
+                ref.watch(creatorPlatformAvatarUrlsProvider(accountId));
+            return PlatformAvatarCarousel(
+              imageUrls: platformAvatars,
+              size: 40,
+              semanticLabel: 'Your profile picture',
+              fallback: localPath != null
+                  ? Image.file(File(localPath), fit: BoxFit.cover)
+                  : (avatarUrl != null && avatarUrl!.isNotEmpty)
+                      ? Image.network(
+                          avatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _avatarPlaceholder(),
+                        )
+                      : _avatarPlaceholder(),
             );
           },
         ),

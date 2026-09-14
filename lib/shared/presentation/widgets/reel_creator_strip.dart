@@ -1,8 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -26,13 +27,19 @@ class ReelCreatorStrip extends ConsumerStatefulWidget {
     required this.creatorAvatarUrl,
     required this.caption,
     required this.initialFollowing,
+    this.creatorAvatarUrls = const <String>[],
     super.key,
   });
 
   final String creatorId;
   final String creatorHandle;
   final String creatorDisplayName;
+
+  /// Single avatar, shown when [creatorAvatarUrls] is empty.
   final String creatorAvatarUrl;
+
+  /// Connected-platform profile pictures to rotate through, in order.
+  final List<String> creatorAvatarUrls;
   final String? caption;
   final bool? initialFollowing;
 
@@ -42,7 +49,6 @@ class ReelCreatorStrip extends ConsumerStatefulWidget {
 
 class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
   bool _busy = false;
-  bool _expanded = false;
 
   @override
   void initState() {
@@ -90,10 +96,6 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
     }
   }
 
-  void _toggleExpanded() {
-    setState(() => _expanded = !_expanded);
-  }
-
   @override
   Widget build(BuildContext context) {
     final displayName = widget.creatorDisplayName.isNotEmpty
@@ -112,15 +114,13 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
       children: [
         Row(
           children: [
-            CircleAvatar(
-              radius: DesignTokens.avatarMedium / 2,
-              backgroundColor: DesignTokens.bgAppBodyLight,
-              backgroundImage: widget.creatorAvatarUrl.isNotEmpty
-                  ? CachedNetworkImageProvider(widget.creatorAvatarUrl)
-                  : null,
-              child: widget.creatorAvatarUrl.isEmpty
-                  ? const Icon(Icons.person, color: DesignTokens.iconLight)
-                  : null,
+            PlatformAvatarCarousel(
+              imageUrls: PlatformAvatarCarousel.resolveUrls(
+                widget.creatorAvatarUrls,
+                widget.creatorAvatarUrl,
+              ),
+              size: DesignTokens.avatarMedium,
+              semanticLabel: 'Creator profile picture',
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -159,26 +159,8 @@ class _ReelCreatorStripState extends ConsumerState<ReelCreatorStrip> {
         ),
         if (hasCaption) ...[
           const SizedBox(height: DesignTokens.s12),
-          GestureDetector(
-            onTap: _toggleExpanded,
-            behavior: HitTestBehavior.opaque,
-            child: Text(
-              widget.caption!,
-              maxLines: _expanded ? null : 3,
-              overflow: _expanded
-                  ? TextOverflow.visible
-                  : TextOverflow.ellipsis,
-              // Spec: caption 12/400/130% white. Inline style keeps it stable
-              // even if DesignTokens.body shifts in the future.
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 1.3,
-                color: DesignTokens.textWhite,
-              ),
-            ),
-          ),
+          // Reel Caption Standard renderer; tap toggles expanded.
+          ReelCaptionText(caption: widget.caption, maxExpandedHeight: 240),
         ],
       ],
     );
