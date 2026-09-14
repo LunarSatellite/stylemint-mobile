@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/creator_chip_dto.dart';
@@ -67,7 +68,7 @@ class _FollowCreatorsDiscoveryScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Discover Creators',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -125,7 +126,7 @@ class _AddPaymentMethodScreenState
               _selected == _Platform.laxmiBank) {
             context.push(RouteNames.creatorBankVerification);
           } else {
-            context.pop();
+            context.popOrHome();
           }
         },
         error: (error, _) {
@@ -153,7 +154,7 @@ class _AddPaymentMethodScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Add Payment Method',

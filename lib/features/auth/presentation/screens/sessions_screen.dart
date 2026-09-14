@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/user_session_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -124,7 +125,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
             color: DesignTokens.textWhite,
             size: DesignTokens.iconMedium,
           ),
-          onPressed: () => context.canPop() ? context.pop() : null,
+          onPressed: () => context.canPop() ? context.popOrHome() : null,
         ),
         title: Text('Sessions', style: DesignTokens.sectionInnerTitle),
         actions: [

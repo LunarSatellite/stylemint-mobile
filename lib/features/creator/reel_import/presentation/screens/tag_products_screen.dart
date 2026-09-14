@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
@@ -165,7 +166,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text('Tag Products', style: DesignTokens.titleMedium),
         elevation: 0,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -85,7 +86,7 @@ class _BankVerificationScreenState extends State<BankVerificationScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new,
               size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text('Bank Verification',
             style: DesignTokens.sectionInnerTitle),

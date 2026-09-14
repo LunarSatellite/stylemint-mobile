@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -223,7 +224,7 @@ class _VendorApplyStep4ScreenState
   void _goPrevious() {
     _saveDraft();
     if (context.canPop()) {
-      context.pop();
+      context.popOrHome();
     } else {
       context.go(RouteNames.vendorApplyStep3);
     }

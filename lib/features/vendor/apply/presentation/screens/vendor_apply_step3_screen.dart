@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -160,7 +161,7 @@ class _VendorApplyStep3ScreenState
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
           onPressed: () => context.canPop()
-                  ? context.pop()
+                  ? context.popOrHome()
                   : context.go(RouteNames.vendorApplyStep2),
         ),
       ),
@@ -512,7 +513,7 @@ class _VendorApplyStep3ScreenState
           Expanded(
             child: ElevatedButton(
               onPressed: () => context.canPop()
-                  ? context.pop()
+                  ? context.popOrHome()
                   : context.go(RouteNames.vendorApplyStep2),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F3F46),

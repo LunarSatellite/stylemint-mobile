@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -99,7 +100,7 @@ class _PasskeySetupScreenState extends ConsumerState<PasskeySetupScreen> {
           ),
           onPressed: isLoading
               ? null
-              : () => context.canPop() ? context.pop() : null,
+              : () => context.canPop() ? context.popOrHome() : null,
         ),
       ),
       body: SafeArea(

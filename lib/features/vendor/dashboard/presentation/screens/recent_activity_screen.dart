@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
@@ -109,7 +110,7 @@ class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen> {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text('Recent Activity', style: DesignTokens.oneLinerSemibold),
         actions: [

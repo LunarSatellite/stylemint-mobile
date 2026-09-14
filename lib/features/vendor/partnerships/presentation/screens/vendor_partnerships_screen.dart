@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 
 import 'package:stylemint_mobile_frontend/features/messaging/domain/entities/message_thread.dart';
 import 'package:stylemint_mobile_frontend/features/messaging/presentation/widgets/chat_view.dart';
@@ -308,7 +309,7 @@ class _VendorPartnershipsScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         titleSpacing: 0,
         title: const Text(

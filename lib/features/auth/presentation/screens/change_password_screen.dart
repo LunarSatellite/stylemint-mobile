@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -91,7 +92,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       (_) => SmSnackbar.error(context, 'Failed to change password'),
       (_) {
         SmSnackbar.success(context, 'Password changed successfully');
-        context.pop();
+        context.popOrHome();
       },
     );
   }
@@ -109,7 +110,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new,
               size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Change Password',

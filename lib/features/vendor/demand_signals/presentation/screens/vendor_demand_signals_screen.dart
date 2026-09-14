@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/domain/entities/demand_signals.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/shared/providers.dart';
@@ -33,7 +34,7 @@ class VendorDemandSignalsScreen extends ConsumerWidget {
             color: DesignTokens.textWhite,
             size: 18,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text(
           'What shoppers search for',

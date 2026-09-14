@@ -2,6 +2,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -92,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: DesignTokens.textWhite,
             size: DesignTokens.iconMedium,
           ),
-          onPressed: () => context.canPop() ? context.pop() : null,
+          onPressed: () => context.canPop() ? context.popOrHome() : null,
         ),
       ),
       body: SafeArea(

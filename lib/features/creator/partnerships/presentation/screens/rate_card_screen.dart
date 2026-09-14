@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
@@ -217,7 +218,7 @@ class _RateCardScreenState extends ConsumerState<RateCardScreen> {
             if (_editing) {
               setState(() => _editing = false);
             } else {
-              context.pop();
+              context.popOrHome();
             }
           },
         ),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
@@ -98,7 +99,7 @@ class _EditCategoryNicheScreenState
       ref.invalidate(creatorSpecializationIdsProvider(_accountId));
       ref.invalidate(creatorNicheNamesProvider(_accountId));
       ref.invalidate(creatorSpecializationsWithPrimaryProvider(_accountId));
-      if (mounted) context.pop();
+      if (mounted) context.popOrHome();
     } on NetworkExceptions catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,7 +137,7 @@ class _EditCategoryNicheScreenState
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new,
               size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Edit Category Niche',

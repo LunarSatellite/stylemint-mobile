@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/notifiers/add_product_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/step1_basic_info_screen.dart';
@@ -202,7 +203,7 @@ class _AddProductWizardScreenState
           if (!discard || !context.mounted) return;
         }
         if (context.canPop()) {
-          context.pop();
+          context.popOrHome();
         } else {
           context.go('/vendor/products');
         }

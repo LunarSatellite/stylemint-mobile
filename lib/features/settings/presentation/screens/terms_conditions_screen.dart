@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -24,7 +25,7 @@ class TermsConditionsScreen extends StatelessWidget {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Terms of Service',

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/notifiers/creator_profile_notifier.dart';
@@ -124,7 +125,7 @@ class _CreatorEditProfileScreenState
                       .load(),
                 );
               }
-              if (mounted) context.pop();
+              if (mounted) context.popOrHome();
             },
             failure: (f) {
               if (mounted) {
@@ -169,7 +170,7 @@ class _CreatorEditProfileScreenState
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new,
               size: 18, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Edit Profile Details',

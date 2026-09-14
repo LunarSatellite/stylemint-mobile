@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
@@ -29,7 +30,7 @@ class ProductReviewsScreen extends ConsumerWidget {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, color: DesignTokens.textWhite),
-            onPressed: () => context.pop(),
+            onPressed: () => context.popOrHome(),
           ),
           title: Text('Customer Reviews', style: DesignTokens.sectionInnerTitle),
           centerTitle: true,

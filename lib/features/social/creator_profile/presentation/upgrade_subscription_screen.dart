@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/data/models/subscription_plan_dto.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/providers/subscription_providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/widgets/upgrade_confirmation_sheet.dart';
@@ -112,7 +113,7 @@ class _UpgradeSubscriptionScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Upgrade Subscription Plan',

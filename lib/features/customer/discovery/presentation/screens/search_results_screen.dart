@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_creator_card.dart';
@@ -48,7 +49,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text('Search Results', style: DesignTokens.sectionInnerTitle),
         centerTitle: false,

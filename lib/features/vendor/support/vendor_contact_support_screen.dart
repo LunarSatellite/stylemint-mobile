@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/support_category.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
@@ -49,7 +50,7 @@ class _VendorContactSupportScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text('Contact Support', style: DesignTokens.oneLinerSemibold),
       ),

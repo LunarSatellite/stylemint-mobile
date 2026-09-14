@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/app_settings.dart';
@@ -50,7 +51,7 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
           // doesn't otherwise know the account changed — without this it
           // keeps showing the old code after popping back.
           ref.read(profileNotifierProvider.notifier).fetchProfile();
-          context.pop();
+          context.popOrHome();
         },
         failure: (f) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -75,7 +76,7 @@ class _LanguageScreenState extends ConsumerState<LanguageScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
           style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
         title: const Text('Language', style: DesignTokens.sectionInnerTitle),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/earnings/domain/entities/earnings.dart';
@@ -115,7 +116,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payout requested!')),
           );
-          context.pop();
+          context.popOrHome();
         },
         failure: (_) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +146,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text('Request Payout', style: DesignTokens.titleMedium),
       ),

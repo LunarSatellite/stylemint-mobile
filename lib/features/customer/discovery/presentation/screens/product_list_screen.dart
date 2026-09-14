@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
@@ -29,7 +30,7 @@ class ProductListScreen extends ConsumerWidget {
             Icons.arrow_back_ios_new_rounded,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text(title, style: DesignTokens.sectionInnerTitle),
         centerTitle: false,

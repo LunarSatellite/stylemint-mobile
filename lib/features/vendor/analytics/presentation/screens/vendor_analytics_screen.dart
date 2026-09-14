@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/domain/entities/vendor_analytics_summary.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/analytics/shared/providers.dart';
@@ -34,7 +35,7 @@ class VendorAnalyticsScreen extends ConsumerWidget {
             color: DesignTokens.textWhite,
             size: 18,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Analytics (30 days)',

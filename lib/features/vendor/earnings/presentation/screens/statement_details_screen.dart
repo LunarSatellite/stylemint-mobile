@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/domain/entities/vendor_earnings.dart';
@@ -33,7 +34,7 @@ class StatementDetailsScreen extends ConsumerWidget {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text('Statement Details', style: DesignTokens.oneLinerSemibold),
       ),

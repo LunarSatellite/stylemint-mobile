@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/messaging/domain/entities/message_thread.dart';
 import 'package:stylemint_mobile_frontend/features/messaging/presentation/widgets/chat_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -82,7 +83,7 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
           color: DesignTokens.textWhite,
           size: 20,
         ),
-        onPressed: () => context.pop(),
+        onPressed: () => context.popOrHome(),
       ),
       title: Row(
         children: [

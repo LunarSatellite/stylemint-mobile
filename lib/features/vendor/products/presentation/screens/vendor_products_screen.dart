@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/domain/entities/vendor_product.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/notifiers/vendor_products_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/widgets/vendor_product_actions.dart';
@@ -96,7 +97,7 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: DesignTokens.textWhite, size: 20),
           onPressed: () => context.canPop()
-              ? context.pop()
+              ? context.popOrHome()
               : context.go(RouteNames.vendorHome),
         ),
         titleSpacing: DesignTokens.s16,

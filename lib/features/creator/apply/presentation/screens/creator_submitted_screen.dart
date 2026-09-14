@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/profile/shared/providers.dart';
@@ -169,7 +170,7 @@ class _CreatorSubmittedScreenState
                             // caller's _pushOnce whenComplete fires and
                             // resets its navigation guard; then go home.
                             if (context.canPop()) {
-                              context.pop();
+                              context.popOrHome();
                             }
                             context.go(RouteNames.home);
                           },

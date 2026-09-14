@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/apply/presentation/providers/creator_form_provider.dart';
@@ -221,7 +222,7 @@ class _CreatorProfileScreenState extends ConsumerState<CreatorProfileScreen> {
         children: [
           if (context.canPop())
             GestureDetector(
-              onTap: () => context.pop(),
+              onTap: () => context.popOrHome(),
               child: const Icon(
                 Icons.arrow_back_ios_new,
                 size: 18,
@@ -1410,7 +1411,7 @@ class _BottomNav extends StatelessWidget {
             _NavBtn(
               icon: Icons.home_rounded,
               label: 'Home',
-              onTap: () => context.canPop() ? context.pop() : null,
+              onTap: () => context.canPop() ? context.popOrHome() : null,
             ),
             _NavBtn(
               icon: Icons.auto_graph_rounded,

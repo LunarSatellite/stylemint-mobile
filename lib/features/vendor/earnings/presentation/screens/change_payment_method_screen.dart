@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -34,7 +35,7 @@ class _ChangePaymentMethodScreenState extends State<ChangePaymentMethodScreen> {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text(
           'Change Payment Method',
@@ -129,7 +130,7 @@ class _ChangePaymentMethodScreenState extends State<ChangePaymentMethodScreen> {
                   if (_selectedId == 'bank') {
                     context.push(RouteNames.vendorAddBankAccount);
                   } else {
-                    context.pop();
+                    context.popOrHome();
                   }
                 },
                 style: ElevatedButton.styleFrom(

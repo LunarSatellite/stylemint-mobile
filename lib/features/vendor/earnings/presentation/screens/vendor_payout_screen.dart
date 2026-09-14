@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/data/models/payout_destination_dto.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/domain/payout_destination_enums.dart';
 import 'package:stylemint_mobile_frontend/features/payouts/shared/providers.dart';
@@ -43,7 +44,7 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payout requested!')),
           );
-          context.pop();
+          context.popOrHome();
         },
         failure: (_) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to request payout.')),
@@ -72,7 +73,7 @@ class _VendorPayoutScreenState extends ConsumerState<VendorPayoutScreen> {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: Text('Request Payout', style: DesignTokens.oneLinerSemibold),
         actions: [

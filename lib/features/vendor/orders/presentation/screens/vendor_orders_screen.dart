@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
@@ -75,7 +76,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
               size: 20,
             ),
             onPressed: () => context.canPop()
-                ? context.pop()
+                ? context.popOrHome()
                 : context.go(RouteNames.vendorHome),
           ),
           title: const Text(

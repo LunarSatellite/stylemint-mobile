@@ -5,6 +5,7 @@ import 'package:dio/dio.dart' show DioException, Options;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
@@ -163,7 +164,7 @@ class _PartnershipRequestScreenState
       developer.log('response: $response', name: 'partnership_apply');
       if (!mounted) return;
       SmSnackbar.info(context, 'Partnership request sent!');
-      context.pop();
+      context.popOrHome();
     } catch (e, st) {
       developer.log(
         'request failed',
@@ -241,7 +242,7 @@ class _PartnershipRequestScreenState
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         title: const Text(
           'Send Partnership Request',

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_web_browser/flutter_web_browser.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/auth/data/models/auth_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
@@ -419,7 +420,7 @@ class _TopBar extends StatelessWidget {
         ),
         onPressed: () {
           if (context.canPop()) {
-            context.pop();
+            context.popOrHome();
           } else {
             context.go(RouteNames.userTypeSelection);
           }

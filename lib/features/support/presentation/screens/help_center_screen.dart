@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_center_content.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/help_center_data.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -42,7 +43,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
           style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
         title: const Text('Help Center', style: DesignTokens.sectionInnerTitle),

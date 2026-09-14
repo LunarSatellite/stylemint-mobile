@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
@@ -237,7 +238,7 @@ class _ProductBody extends StatelessWidget {
                   Icons.arrow_back_ios_new,
                   color: DesignTokens.textWhite,
                 ),
-                onPressed: () => context.pop(),
+                onPressed: () => context.popOrHome(),
               ),
               actions: [
                 IconButton(

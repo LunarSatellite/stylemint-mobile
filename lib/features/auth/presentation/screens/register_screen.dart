@@ -4,6 +4,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 
 import '../../../../core/network/network_exceptions.dart';
 import '../../../../routes/route_names.dart';
@@ -267,7 +268,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             if (_currentStep > 0) {
               setState(() => _currentStep = _currentStep - 1);
             } else {
-              context.canPop() ? context.pop() : null;
+              context.canPop() ? context.popOrHome() : null;
             }
           },
         ),

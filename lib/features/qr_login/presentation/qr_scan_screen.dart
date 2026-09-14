@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/data/qr_login_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/data/qr_scan_info.dart';
@@ -64,11 +65,11 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
         await ds.approve(token);
         if (mounted) {
           SmSnackbar.success(context, 'Logged in on ${info.appLabel}.');
-          context.pop();
+          context.popOrHome();
         }
       } else {
         await ds.reject(token);
-        if (mounted) context.pop();
+        if (mounted) context.popOrHome();
       }
     } catch (_) {
       if (mounted) {

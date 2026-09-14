@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/contact_channels.dart';
@@ -67,7 +68,7 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: DesignTokens.textWhite),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
           style: IconButton.styleFrom(backgroundColor: Colors.transparent),
         ),
         title: const Text(

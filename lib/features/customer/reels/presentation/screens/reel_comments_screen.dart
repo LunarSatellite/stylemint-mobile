@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_comment_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_comments_controller.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -51,7 +52,7 @@ class _ReelCommentsScreenState extends ConsumerState<ReelCommentsScreen> {
             size: 18,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () => context.popOrHome(),
         ),
         centerTitle: true,
         // Spec: header title 16/600/lh1.0 white, centered.
