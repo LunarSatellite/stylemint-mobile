@@ -252,6 +252,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               trailingText: widget.summary.language,
               onTap: () => context.push('${RouteNames.settings}/language'),
             ),
+            // Where "link this provider from settings" (the sign-in conflict
+            // message) sends people: connect Google/Facebook to this account.
+            ProfileMenuItem(
+              icon: Icons.link_rounded,
+              label: 'Linked Accounts',
+              onTap: () => context.push(RouteNames.linkedAccounts),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s16),

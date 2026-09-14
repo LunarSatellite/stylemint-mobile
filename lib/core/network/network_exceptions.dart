@@ -134,6 +134,9 @@ abstract class NetworkExceptions with _$NetworkExceptions {
   );
 
   /// True for `.conflict()` — e.g. a duplicate-account (409) on registration.
+  /// Also true for a 409 the mapper turned into `.validation` because the body
+  /// carried an error code (`state.conflict`), such as a social sign-in whose
+  /// email already belongs to another account.
   bool get isConflict => when(
     server: (_) => false,
     serverUnavailable: () => false,
@@ -141,7 +144,8 @@ abstract class NetworkExceptions with _$NetworkExceptions {
     unexpectedError: () => false,
     formatException: () => false,
     emptyData: () => false,
-    validation: (_, __, ___, ____) => false,
+    validation: (code, _, __, ___) =>
+        code == 'state.conflict' || code.endsWith('.conflict'),
     auth: () => false,
     notFound: () => false,
     conflict: () => true,
