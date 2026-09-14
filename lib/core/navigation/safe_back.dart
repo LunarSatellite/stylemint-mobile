@@ -15,13 +15,7 @@ extension SafeBack on BuildContext {
       pop();
       return;
     }
-    String path;
-    try {
-      path = GoRouterState.of(this).uri.path;
-    } on Error {
-      // GoRouterState.of throws a GoError outside a route's subtree.
-      path = '';
-    }
+    final path = GoRouter.maybeOf(this)?.state.uri.path ?? '';
     go(backFallbackFor(path));
   }
 }
