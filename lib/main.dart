@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fpdart/fpdart.dart';
+import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
@@ -372,11 +374,32 @@ void main() async {
   // );
 
   // ─── FULL APP ────────────────────────────────────────────────────────────────
-  runApp(
-    const ProviderScope(
-      child: _AppWithDeepLinks(),
-    ),
-  );
+  runApp(const _SessionScope());
+}
+
+/// Owns the app's [ProviderScope] and swaps in a fresh one whenever a signed-in
+/// session ends. Logout only resets a handful of notifiers, so every other
+/// cached provider (creator studio, feed, social accounts, orders, …) used to
+/// keep the previous account's data until the app was closed and reopened.
+class _SessionScope extends StatefulWidget {
+  const _SessionScope();
+
+  @override
+  State<_SessionScope> createState() => _SessionScopeState();
+}
+
+class _SessionScopeState extends State<_SessionScope> {
+  int _generation = 0;
+
+  void _restart() {
+    if (mounted) setState(() => _generation++);
+  }
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+        key: ValueKey(_generation),
+        child: _AppWithDeepLinks(onSignedOut: _restart),
+      );
 }
 
 /// Wraps [StyleMintApp] and listens for incoming deep links so that magic-link
@@ -386,14 +409,23 @@ void main() async {
 ///   `stylemint://auth/magic?token=<token>`
 ///   `https://stylemint.voyageritnepal.com/auth/magic?token=<token>`
 class _AppWithDeepLinks extends ConsumerStatefulWidget {
-  const _AppWithDeepLinks();
+  const _AppWithDeepLinks({required this.onSignedOut});
+
+  /// Called once a signed-in session ends, to rebuild the provider graph.
+  final VoidCallback onSignedOut;
 
   @override
   ConsumerState<_AppWithDeepLinks> createState() => _AppWithDeepLinksState();
 }
 
 class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
+  /// The link that cold-launched the app is handled once per process, so a
+  /// provider scope rebuilt after sign-out never replays an old magic link or
+  /// OAuth callback.
+  static bool _initialLinkHandled = false;
+
   late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
 
   /// A deep link that arrived while the session was still bootstrapping
   /// (`AuthSessionState.unknown`). The router's redirect bounces every
@@ -425,6 +457,27 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     ref.listenManual<AuthSessionState>(sessionControllerProvider, (_, next) {
       _syncRealtime(next);
     });
+
+    // Signing out (or the session expiring) starts the next account from a
+    // clean provider graph instead of the previous account's cached state.
+    ref.listenManual<AuthSessionState>(sessionControllerProvider, (prev, next) {
+      final wasSignedIn =
+          prev?.maybeWhen(authenticated: (_) => true, orElse: () => false) ??
+          false;
+      final signedOut =
+          next.maybeWhen(unauthenticated: () => true, orElse: () => false);
+      if (wasSignedIn && signedOut) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => widget.onSignedOut(),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _syncRealtime(AuthSessionState session) async {
@@ -450,7 +503,7 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   void _listenDeepLinks() {
     // ignore: avoid_print
     print('[OAUTH-DEBUG] _listenDeepLinks: subscribing to uriLinkStream');
-    _appLinks.uriLinkStream.listen(
+    _linkSubscription = _appLinks.uriLinkStream.listen(
       (uri) => _handleUri(uri),
       onError: (e) {
         // ignore: avoid_print
@@ -458,6 +511,8 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       },
     );
     // Also handle the initial link that launched the app cold.
+    if (_initialLinkHandled) return;
+    _initialLinkHandled = true;
     _appLinks
         .getInitialLink()
         .then((uri) {

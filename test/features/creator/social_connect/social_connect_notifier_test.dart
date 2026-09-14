@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/audience_summary.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/repositories/social_connect_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/notifiers/social_connect_notifier.dart';
@@ -37,6 +38,11 @@ class _FakeRepository implements SocialConnectRepository {
     disconnectCalls++;
     return disconnectResult ?? networkRight(unit);
   }
+
+  // The notifier never reads the audience summary; its own provider does.
+  @override
+  Future<Either<NetworkExceptions, AudienceSummary>> getAudienceSummary() =>
+      throw UnimplementedError();
 }
 
 SocialAccount _account({

@@ -953,7 +953,7 @@ class _ReelPreviewCard extends StatelessWidget {
                 Text(
                   reel.caption.isNotEmpty
                       ? reel.caption
-                      : 'New Year calls for rich, delicious cakes to celebrate with your near an...',
+                      : 'No caption on this post',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

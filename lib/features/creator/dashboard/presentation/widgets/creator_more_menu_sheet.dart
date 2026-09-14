@@ -61,6 +61,15 @@ class _CreatorMoreMenu extends StatelessWidget {
                 ),
               ),
               _MoreItem(
+                icon: Icons.shopping_bag_outlined,
+                title: 'Switch to Shopping',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  parentContext.go(RouteNames.home);
+                },
+              ),
+              const _MoreDivider(),
+              _MoreItem(
                 icon: Icons.bar_chart_rounded,
                 title: 'Analytics',
                 onTap: () => _go(context, RouteNames.creatorAnalytics),
