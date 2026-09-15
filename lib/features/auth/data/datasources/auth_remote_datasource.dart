@@ -937,7 +937,8 @@ class AuthRemoteDataSource {
 
   /// POST `/v1/accounts/{accountId}/roles`
   Future<RoleProfileDto> requestRole(String accountId, int role) async {
-    final response = await apiClient.authPost(
+    // Owner-only route: sends the signed-in account's token.
+    final response = await apiClient.post(
       '/v1/accounts/$accountId/roles',
       data: {'role': role},
     );
@@ -946,7 +947,8 @@ class AuthRemoteDataSource {
 
   /// POST `/v1/accounts/{accountId}/roles/{role}/activate`
   Future<void> activateRole(String accountId, int role) async {
-    await apiClient.authPost(
+    // Owner-only route: sends the signed-in account's token.
+    await apiClient.post(
       '/v1/accounts/$accountId/roles/$role/activate',
     );
   }
@@ -988,11 +990,11 @@ class AuthRemoteDataSource {
     required String accountId,
     required String idempotencyKey,
   }) async {
-    await apiClient.authPost(
+    // Owner-only route: sends the signed-in account's token.
+    await apiClient.post(
       '/v1/accounts/$accountId/deletion-requests',
-      data: {},
+      data: <String, dynamic>{},
       options: Options(headers: {
-        'requiresToken': false,
         'Idempotency-Key': idempotencyKey,
       }),
     );

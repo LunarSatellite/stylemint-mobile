@@ -68,11 +68,11 @@ class SettingsRemoteDataSource {
   /// POST `/v1/accounts/{accountId}/deletion-requests`
   Future<void> deleteAccount(String idempotencyKey, String reason) async {
     final accountId = await _accountId();
-    await apiClient.authPost(
+    // Owner-only route: sends the signed-in account's token.
+    await apiClient.post(
       '/v1/accounts/$accountId/deletion-requests',
       data: <String, dynamic>{'reason': reason},
       options: Options(headers: {
-        'requiresToken': false,
         'Idempotency-Key': idempotencyKey,
       }),
     );
