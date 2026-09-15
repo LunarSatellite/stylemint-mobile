@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
@@ -352,6 +353,10 @@ final _previewRouter = GoRouter(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Portrait only: the reel feed, its right-hand rail and the bottom bar are
+  // laid out for a tall screen (owner decision, 2026-09-15). The Android
+  // manifest and iOS Info.plist lock it before Flutter starts too.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   initTimezone();
 
   // ─── SINGLE SCREEN — CartScreen → CheckoutScreen preview (uncomment to use)─
