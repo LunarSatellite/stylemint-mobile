@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_dto.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_like_response_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Remote datasource for the reels feature.
@@ -14,13 +15,11 @@ class ReelsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// GET `/v1/feed` — cursor-paginated reels feed.
   /// GET `/api/v1/customer/feed` — the customer "For You" reel feed
   /// (Discovery). Returns `{ items: [{ kind, reel: {...}, ... }], nextCursor }`;
-  /// we keep the reel-bearing items and map each card to [ReelDto]. Caption +
-  /// tagged products aren't on the card — they're hydrated lazily via
-  /// [getReelDetail]. `nextCursor` is surfaced so the feed screen can page in
-  /// more reels as the user nears the end instead of dead-ending at [limit].
+  /// we keep the reel-bearing items and map each card to a [Reel].
+  /// `nextCursor` is surfaced so the feed screen can page in more reels as the
+  /// user nears the end instead of dead-ending at [limit].
   Future<ReelsFeedPage> getReelsFeed({
     required int limit,
     String? cursor,
@@ -45,10 +44,6 @@ class ReelsRemoteDataSource {
   }
 
   /// Builds a [Reel] domain entity directly from a Discovery feed card.
-  /// Bypasses [ReelDto] because the DTO doesn't carry `platform` (which we
-  /// need for the player to pick Instagram vs. YouTube vs. TikTok). The
-  /// detail endpoint (`getReelDetail`) still uses `ReelDto.fromJson` because
-  /// the player falls back to Instagram-only rendering when platform is null.
   Reel _cardJsonToReel(Map<String, dynamic> r) {
     final taggedProducts = (r['taggedProducts'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
@@ -81,43 +76,136 @@ class ReelsRemoteDataSource {
       creatorId: (r['creatorProfileId'] as String?) ?? '',
       creatorName: (r['creatorHandle'] as String?) ?? '',
       creatorAvatarUrl: (r['creatorAvatarUrl'] as String?) ?? '',
-      creatorAvatarUrls: (r['creatorAvatarUrls'] as List<dynamic>? ?? const [])
-          .whereType<String>()
-          .where((url) => url.isNotEmpty)
-          .toList(growable: false),
+      creatorAvatarUrls: _stringList(r['creatorAvatarUrls']),
       caption: (r['caption'] as String?) ?? '',
       createdAt: DateTime.now(),
       platform: platform,
       musicTitle: (r['audioTrackName'] as String?) ?? '',
       musicArtist: (r['audioArtistName'] as String?) ?? '',
       taggedProducts: taggedProducts,
-      likeCount: (r['likeCount'] as num?)?.toInt() ?? 0,
-      commentCount: (r['commentCount'] as num?)?.toInt() ?? 0,
-      shareCount: (r['shareCount'] as num?)?.toInt() ?? 0,
-      isCreatorFollowed: r['isCreatorFollowed'] as bool?,
+      likeCount: _int(r['likeCount']),
+      commentCount: _int(r['commentCount']),
+      shareCount: _int(r['shareCount']),
+      isLikedByMe: _bool(r['isLikedByMe']),
+      isCreatorFollowed: _bool(r['isCreatorFollowed']),
     );
   }
 
-  /// GET `/v1/public/reels/{id}` — single reel detail.
-  Future<ReelDto> getReelDetail(String reelId) async {
+  /// GET `/v1/public/reels/{id}` — single reel detail (backend `ReelDto`).
+  ///
+  /// Read tolerantly: the detail projection names fields differently from the
+  /// feed card (`id`/`sourceUrl`/`thumbnailCdnUrl`/`likesSnapshot` vs.
+  /// `reelId`/`externalUrl`/`thumbnailUrl`/`likeCount`), so both spellings are
+  /// accepted and the card's wins where both exist.
+  Future<Reel> getReelDetail(String reelId) async {
     final response = await apiClient.get('/v1/public/reels/$reelId');
-    return ReelDto.fromJson(response as Map<String, dynamic>);
+    return _detailJsonToReel(response as Map<String, dynamic>, reelId);
   }
 
-  /// POST `/v1/reactions/posts/{postId}` — like a reel (reels are posts).
-  Future<void> likeReel(String reelId, String idempotencyKey) async {
-    await apiClient.post(
-      '/v1/reactions/posts/$reelId',
-      options: _idempotent(idempotencyKey),
+  Reel _detailJsonToReel(Map<String, dynamic> r, String requestedId) {
+    String str(List<String> keys) {
+      for (final key in keys) {
+        final value = r[key];
+        if (value is String && value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    final taggedProducts = (r['taggedProducts'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map((p) {
+          final amount = p['priceAmount'] ?? p['productPriceSnapshotAmount'];
+          final currency =
+              p['priceCurrency'] ?? p['productPriceSnapshotCurrency'];
+          final tagId = p['taggedProductId'] ?? p['id'];
+          return TaggedProductEntity(
+            id: (p['productId'] as String?) ?? '',
+            taggedProductId: tagId is String ? tagId : null,
+            name: (p['name'] ?? p['productName']) as String? ?? '',
+            imageUrl: absoluteMediaUrl(
+              (p['imageUrl'] ?? p['productPrimaryImageUrl']) as String?,
+            ),
+            price: Money(
+              amount: amount is num ? amount.toDouble() : 0,
+              currency: currency is String ? currency : 'NPR',
+            ),
+            quantity: 1,
+          );
+        })
+        .toList(growable: false);
+
+    final id = str(['reelId', 'id']);
+    final externalId = str(['externalId']);
+    final videoUrl = str(['videoUrl', 'videoCdnUrl']);
+    final avatarUrls = _stringList(r['creatorAvatarUrls']);
+    return Reel(
+      id: id.isEmpty ? requestedId : id,
+      externalId: externalId.isEmpty ? null : externalId,
+      sourceUrl: str(['externalUrl', 'sourceUrl']),
+      thumbnailUrl: str(['thumbnailUrl', 'thumbnailCdnUrl']),
+      videoUrl: videoUrl.isEmpty ? null : videoUrl,
+      creatorId: str([
+        'creatorProfileId',
+        'creatorId',
+        'creatorAccountId',
+        'accountId',
+      ]),
+      creatorName: str(['creatorHandle', 'creatorDisplayName', 'handle']),
+      creatorAvatarUrl: str(['creatorAvatarUrl', 'avatarUrl']),
+      creatorAvatarUrls: avatarUrls,
+      caption: str(['caption']),
+      createdAt:
+          DateTime.tryParse(str(['publishedAtUtc', 'createdAtUtc'])) ??
+          DateTime.now(),
+      platform:
+          SocialPlatform.tryParseWire(r['sourcePlatform']) ??
+          SocialPlatform.instagram,
+      musicTitle: str(['audioTrackName', 'musicTrackTitle']),
+      musicArtist: str(['audioArtistName', 'musicArtistName']),
+      taggedProducts: taggedProducts,
+      likeCount: _int(r['likeCount'] ?? r['likesSnapshot']),
+      commentCount: _int(r['commentCount'] ?? r['commentsSnapshot']),
+      shareCount: _int(r['shareCount'] ?? r['sharesSnapshot']),
+      isLikedByMe: _bool(r['isLikedByMe']),
+      isCreatorFollowed: _bool(r['isCreatorFollowed']),
     );
   }
 
-  /// DELETE `/v1/reactions/posts/{postId}` — unlike a reel (reels are posts).
-  Future<void> unlikeReel(String reelId, String idempotencyKey) async {
-    await apiClient.authDelete(
-      '/v1/reactions/posts/$reelId',
+  static int _int(Object? value) => value is num ? value.toInt() : 0;
+
+  static bool? _bool(Object? value) => value is bool ? value : null;
+
+  static List<String> _stringList(Object? value) =>
+      (value is List ? value : const <Object?>[])
+          .whereType<String>()
+          .where((url) => url.isNotEmpty)
+          .toList(growable: false);
+
+  /// POST `/v1/customer/reels/{reelId}/like` — the viewer likes the reel on
+  /// StyleMint. Idempotent server-side; answers
+  /// `{ reelId, liked, likeCount }`.
+  Future<ReelLikeResult> likeReel(String reelId, String idempotencyKey) async {
+    final response = await apiClient.post(
+      '/v1/customer/reels/$reelId/like',
       options: _idempotent(idempotencyKey),
     );
+    return ReelLikeResponseDto.fromJson(
+      response,
+      requestedLiked: true,
+    ).toDomain();
+  }
+
+  /// DELETE `/v1/customer/reels/{reelId}/like` — removes the viewer's
+  /// StyleMint like. Repeated unlikes are a no-op server-side.
+  Future<ReelLikeResult> unlikeReel(String reelId, String idempotencyKey) async {
+    final response = await apiClient.authDelete(
+      '/v1/customer/reels/$reelId/like',
+      options: _idempotent(idempotencyKey),
+    );
+    return ReelLikeResponseDto.fromJson(
+      response,
+      requestedLiked: false,
+    ).toDomain();
   }
 
   /// POST `/v1/cart/saved-for-later` — add to saved-for-later (wishlist).

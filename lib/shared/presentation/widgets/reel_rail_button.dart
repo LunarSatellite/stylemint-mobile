@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
+import 'package:flutter/semantics.dart' show SemanticsService;
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
@@ -29,6 +31,9 @@ abstract final class ReelRailStyle {
   /// The check on the white "following" badge.
   static const Color inkDeep = Color(0xFF0B3D22);
 
+  /// The filled heart of a reel the viewer liked on StyleMint.
+  static const Color liked = Color(0xFFFF3B5C);
+
   /// Keeps rail text legible over bright video.
   static const List<Shadow> textShadow = [
     Shadow(color: Color(0x80000000), blurRadius: 5, offset: Offset(0, 1)),
@@ -37,8 +42,98 @@ abstract final class ReelRailStyle {
   static const double pressedScale = 0.9;
   static const Duration pressDuration = Duration(milliseconds: 120);
 
+  /// The "added to cart" pop and mint ring on the rail's last item.
+  static const Duration celebrationDuration = Duration(milliseconds: 600);
+
+  /// Announced to screen readers when the rail celebrates an add.
+  static const String addedAnnouncement = 'Added to cart';
+
   static bool reduceMotion(BuildContext context) =>
       MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+}
+
+/// Whether the rail's last item may celebrate a cart change: only on the reel
+/// the shopper is looking at. Every rail watches the same cart, and the feed
+/// keeps neighbouring reels built off screen (and other tabs alive with their
+/// tickers off), so without this they would all buzz at once.
+bool _mayCelebrate(BuildContext context) {
+  if (!TickerMode.valuesOf(context).enabled) return false;
+  if (!(ModalRoute.isCurrentOf(context) ?? true)) return false;
+  final box = context.findRenderObject();
+  if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+  final centre = box.localToGlobal(box.size.center(Offset.zero));
+  return (Offset.zero & MediaQuery.sizeOf(context)).contains(centre);
+}
+
+/// The non-visual half of a celebration, played once per add: a light haptic
+/// and a screen-reader announcement.
+void _celebrationFeedback(BuildContext context) {
+  unawaited(HapticFeedback.lightImpact());
+  unawaited(
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      ReelRailStyle.addedAnnouncement,
+      Directionality.maybeOf(context) ?? TextDirection.ltr,
+    ),
+  );
+}
+
+/// 1 → 1.18 → 1 over the first 450ms of the celebration.
+final Animatable<double> _celebrationPop = TweenSequence<double>([
+  TweenSequenceItem(
+    tween: Tween<double>(
+      begin: 1,
+      end: 1.18,
+    ).chain(CurveTween(curve: Curves.easeOut)),
+    weight: 35,
+  ),
+  TweenSequenceItem(
+    tween: Tween<double>(
+      begin: 1.18,
+      end: 1,
+    ).chain(CurveTween(curve: Curves.easeOutBack)),
+    weight: 65,
+  ),
+]).chain(CurveTween(curve: const Interval(0, 0.75)));
+
+/// A mint ring that grows out from an item's edge and fades while
+/// [progress] runs; nothing is drawn at rest. Painted, never blurred.
+class _CelebrationRingPainter extends CustomPainter {
+  _CelebrationRingPainter({required this.progress, this.radius})
+    : super(repaint: progress);
+
+  final Animation<double> progress;
+
+  /// Corner radius of the item's frame; null draws a circle.
+  final double? radius;
+
+  static const double _spread = 12;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = progress.value;
+    if (t <= 0 || t >= 1) return;
+    final eased = Curves.easeOutCubic.transform(t);
+    final grow = _spread * eased;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3 - 2 * eased
+      ..color = DesignTokens.primaryGreen.withValues(alpha: 0.9 * (1 - t));
+    final rect = (Offset.zero & size).inflate(grow);
+    final corner = radius;
+    if (corner == null) {
+      canvas.drawOval(rect, paint);
+    } else {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, Radius.circular(corner + grow)),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CelebrationRingPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.radius != radius;
 }
 
 /// Tap target for one rail item: at least 48×48dp, scales to 0.9 while
@@ -460,12 +555,21 @@ class _HitTarget extends StatelessWidget {
 }
 
 /// The reel's first tagged product at the bottom of the rail: a 48dp photo
-/// tile with a green bag badge and the compact price in a green chip.
-class ReelRailProductTile extends StatelessWidget {
+/// tile with a green badge and the compact price in a green chip.
+///
+/// The badge carries the cart: the number of items in the cart once there are
+/// any (a bag while it is empty), and a 2dp mint frame while this product is
+/// in the cart ([inCart]). When the cart grows the tile gives a quiet pop, a
+/// mint ring and a badge bounce with a light haptic — no text or pop-up (only
+/// the state change with reduced motion; nothing on a reel that is not on
+/// screen).
+class ReelRailProductTile extends StatefulWidget {
   const ReelRailProductTile({
     required this.imageUrl,
     required this.priceLabel,
     required this.label,
+    this.inCart = false,
+    this.cartCount,
     this.onTap,
     this.padding = ReelRailStyle.itemPadding,
     super.key,
@@ -476,13 +580,27 @@ class ReelRailProductTile extends StatelessWidget {
   /// Compact price, e.g. "Rs 1.8K" ([formatMoneyCompact]).
   final String priceLabel;
 
-  /// Semantics label, e.g. "Shop Nomad Canvas Tote, Rs 1,800".
+  /// Semantics label, e.g. "Shop Nomad Canvas Tote, Rs 1,800"; ", in cart" is
+  /// appended while [inCart].
   final String label;
+
+  /// Whether this product is in the shopper's cart.
+  final bool inCart;
+
+  /// Items in the cart, or null until the cart has loaded. The tile celebrates
+  /// when it rises or the product joins the cart — never from null, so the
+  /// first load stays quiet.
+  final int? cartCount;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
 
   static const double size = 48;
   static const double radius = 13;
+
+  static const Key frameKey = ValueKey('reel-rail-product-frame');
+  static const Key popKey = ValueKey('reel-rail-product-pop');
+  static const Key inCartBadgeKey = ValueKey('reel-rail-product-in-cart');
+  static const Key cartCountKey = ValueKey('reel-rail-product-cart-count');
 
   static const TextStyle priceStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -505,71 +623,138 @@ class ReelRailProductTile extends StatelessWidget {
   );
 
   @override
+  State<ReelRailProductTile> createState() => _ReelRailProductTileState();
+}
+
+class _ReelRailProductTileState extends State<ReelRailProductTile>
+    with SingleTickerProviderStateMixin {
+  static const BorderRadius _borderRadius = BorderRadius.all(
+    Radius.circular(ReelRailProductTile.radius),
+  );
+  static const Border _frame = Border.fromBorderSide(
+    BorderSide(color: Color(0xE6FFFFFF), width: 1.5),
+  );
+  static const Border _inCartFrame = Border.fromBorderSide(
+    BorderSide(color: DesignTokens.primaryGreen, width: 2),
+  );
+
+  /// 1 → 1.35 → 1, a beat after the tile starts to pop.
+  static final Animatable<double> _badgeBounce = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 1.35,
+      ).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 40,
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1.35,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.elasticOut)),
+      weight: 60,
+    ),
+  ]).chain(CurveTween(curve: const Interval(0.15, 0.9)));
+
+  late final AnimationController _celebration = AnimationController(
+    vsync: this,
+    duration: ReelRailStyle.celebrationDuration,
+  );
+
+  @override
+  void didUpdateWidget(ReelRailProductTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final before = oldWidget.cartCount;
+    final after = widget.cartCount;
+    if (before == null || after == null) return;
+    if (after > before || (widget.inCart && !oldWidget.inCart)) _celebrate();
+  }
+
+  void _celebrate() {
+    if (!_mayCelebrate(context)) return;
+    if (!ReelRailStyle.reduceMotion(context)) {
+      unawaited(_celebration.forward(from: 0));
+    }
+    _celebrationFeedback(context);
+  }
+
+  @override
+  void dispose() {
+    _celebration.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final inCart = widget.inCart;
+    final imageUrl = widget.imageUrl;
     final image = imageUrl.isEmpty
-        ? _placeholder
+        ? ReelRailProductTile._placeholder
         : CachedNetworkImage(
             imageUrl: imageUrl,
-            width: size,
-            height: size,
+            width: ReelRailProductTile.size,
+            height: ReelRailProductTile.size,
             fit: BoxFit.cover,
             placeholder: (_, _) =>
                 const ColoredBox(color: DesignTokens.bgAppBodyLight),
-            errorWidget: (_, _, _) => _placeholder,
+            errorWidget: (_, _, _) => ReelRailProductTile._placeholder,
           );
     return ReelRailPressable(
-      label: label,
-      onTap: onTap,
-      padding: padding,
+      label: inCart ? '${widget.label}, in cart' : widget.label,
+      onTap: widget.onTap,
+      padding: widget.padding,
       child: SizedBox(
         width: ReelRailStyle.width,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox.square(
-              dimension: size,
+              dimension: ReelRailProductTile.size,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Positioned.fill(
-                    child: Container(
-                      clipBehavior: Clip.antiAlias,
-                      decoration: const BoxDecoration(
-                        color: DesignTokens.bgAppBodyLight,
-                        borderRadius: BorderRadius.all(Radius.circular(radius)),
+                    child: CustomPaint(
+                      painter: _CelebrationRingPainter(
+                        progress: _celebration,
+                        radius: ReelRailProductTile.radius,
                       ),
-                      foregroundDecoration: BoxDecoration(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(radius),
-                        ),
-                        border: Border.all(
-                          color: const Color(0xE6FFFFFF),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: image,
                     ),
                   ),
-                  Positioned(
-                    top: -6,
-                    right: -6,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: DesignTokens.primaryGreen,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF111111),
-                          width: 2,
-                        ),
-                      ),
-                      child: const ReelRailIcon(
-                        ReelRailIcons.bagBadge,
-                        size: 11,
-                        color: ReelRailStyle.ink,
-                        shadow: false,
+                  Positioned.fill(
+                    child: ScaleTransition(
+                      key: ReelRailProductTile.popKey,
+                      scale: _celebration.drive(_celebrationPop),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fill(
+                            child: Container(
+                              key: ReelRailProductTile.frameKey,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: const BoxDecoration(
+                                color: DesignTokens.bgAppBodyLight,
+                                borderRadius: _borderRadius,
+                              ),
+                              foregroundDecoration: BoxDecoration(
+                                borderRadius: _borderRadius,
+                                border: inCart ? _inCartFrame : _frame,
+                              ),
+                              child: image,
+                            ),
+                          ),
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: ScaleTransition(
+                              scale: _celebration.drive(_badgeBounce),
+                              child: _ProductCartBadge(
+                                inCart: inCart,
+                                cartCount: widget.cartCount ?? 0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -593,10 +778,10 @@ class ReelRailProductTile extends StatelessWidget {
                     vertical: 2,
                   ),
                   child: Text(
-                    priceLabel,
+                    widget.priceLabel,
                     maxLines: 1,
                     softWrap: false,
-                    style: priceStyle,
+                    style: ReelRailProductTile.priceStyle,
                   ),
                 ),
               ),
@@ -608,88 +793,203 @@ class ReelRailProductTile extends StatelessWidget {
   }
 }
 
+/// The badge on the product tile's corner: the number of items in the cart
+/// (capped at 99+) once there are any, otherwise a bag. A 20dp circle that
+/// widens into a pill for two or three digits; it grows leftwards over the
+/// tile because the rail sits close to the screen edge.
+class _ProductCartBadge extends StatelessWidget {
+  const _ProductCartBadge({required this.inCart, required this.cartCount});
+
+  final bool inCart;
+  final int cartCount;
+
+  static const double _size = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasItems = cartCount > 0;
+    return Container(
+      key: inCart ? ReelRailProductTile.inCartBadgeKey : null,
+      constraints: const BoxConstraints(minWidth: _size, minHeight: _size),
+      padding: EdgeInsets.symmetric(horizontal: hasItems ? 4 : 0),
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: DesignTokens.primaryGreen,
+        borderRadius: BorderRadius.all(Radius.circular(_size / 2)),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0xFF111111), width: 2),
+        ),
+      ),
+      child: hasItems
+          ? KeyedSubtree(
+              key: ReelRailProductTile.cartCountKey,
+              child: Text(
+                cartCount > 99 ? '99+' : '$cartCount',
+                maxLines: 1,
+                softWrap: false,
+                style: const TextStyle(
+                  fontFamily: DesignTokens.fontFamily,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  color: ReelRailStyle.ink,
+                ),
+              ),
+            )
+          : const ReelRailIcon(
+              ReelRailIcons.bagBadge,
+              size: 11,
+              color: ReelRailStyle.ink,
+              shadow: false,
+            ),
+    );
+  }
+}
+
 /// The cart at the bottom of the rail when a reel has no tagged products: a
 /// 44dp brand-green disc with a bag, and the cart's item count as a badge.
-class ReelRailCartDisc extends StatelessWidget {
+///
+/// When the count rises the disc pops inside a mint ring with a light haptic
+/// and an announcement (no pop or ring with reduced motion; nothing at all on
+/// a reel that is not on screen).
+class ReelRailCartDisc extends StatefulWidget {
   const ReelRailCartDisc({
-    this.itemCount = 0,
+    this.itemCount,
     this.onTap,
     this.padding = ReelRailStyle.itemPadding,
     super.key,
   });
 
-  final int itemCount;
+  /// Items in the cart, or null until the cart has loaded (no badge either
+  /// way at zero). A rise from a known count celebrates.
+  final int? itemCount;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
 
   static const double size = 44;
 
+  static const Key popKey = ValueKey('reel-rail-cart-pop');
+
+  @override
+  State<ReelRailCartDisc> createState() => _ReelRailCartDiscState();
+}
+
+class _ReelRailCartDiscState extends State<ReelRailCartDisc>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _celebration = AnimationController(
+    vsync: this,
+    duration: ReelRailStyle.celebrationDuration,
+  );
+
+  @override
+  void didUpdateWidget(ReelRailCartDisc oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final before = oldWidget.itemCount;
+    final after = widget.itemCount;
+    if (before == null || after == null || after <= before) return;
+    if (!_mayCelebrate(context)) return;
+    if (!ReelRailStyle.reduceMotion(context)) {
+      unawaited(_celebration.forward(from: 0));
+    }
+    _celebrationFeedback(context);
+  }
+
+  @override
+  void dispose() {
+    _celebration.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final itemCount = widget.itemCount ?? 0;
     final badge = itemCount > 0 ? formatRailCount(itemCount) : null;
     return ReelRailPressable(
       label: badge == null ? 'Cart' : 'Cart, $badge',
-      onTap: onTap,
-      padding: padding,
+      onTap: widget.onTap,
+      padding: widget.padding,
       child: SizedBox(
         width: ReelRailStyle.width,
-        height: size,
+        height: ReelRailCartDisc.size,
         child: Center(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: size,
-                height: size,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: DesignTokens.primaryGreen,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0x40000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
+          child: SizedBox.square(
+            dimension: ReelRailCartDisc.size,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _CelebrationRingPainter(progress: _celebration),
+                  ),
                 ),
-                child: const ReelRailIcon(
-                  ReelRailIcons.bag,
-                  size: 22,
-                  color: ReelRailStyle.ink,
-                  shadow: false,
-                ),
-              ),
-              if (badge != null)
-                Positioned(
-                  top: -4,
-                  right: -6,
-                  child: Container(
-                    constraints: const BoxConstraints(minWidth: 18),
-                    height: 18,
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: DesignTokens.textWhite,
-                      borderRadius: const BorderRadius.all(Radius.circular(9)),
-                      border: Border.all(
-                        color: DesignTokens.primaryGreen,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                        color: ReelRailStyle.ink,
-                      ),
+                Positioned.fill(
+                  child: ScaleTransition(
+                    key: ReelRailCartDisc.popKey,
+                    scale: _celebration.drive(_celebrationPop),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: ReelRailCartDisc.size,
+                          height: ReelRailCartDisc.size,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            color: DesignTokens.primaryGreen,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x40000000),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: const ReelRailIcon(
+                            ReelRailIcons.bag,
+                            size: 22,
+                            color: ReelRailStyle.ink,
+                            shadow: false,
+                          ),
+                        ),
+                        if (badge != null)
+                          Positioned(
+                            top: -4,
+                            right: -6,
+                            child: Container(
+                              constraints: const BoxConstraints(minWidth: 18),
+                              height: 18,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                              ),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: DesignTokens.textWhite,
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(9),
+                                ),
+                                border: Border.all(
+                                  color: DesignTokens.primaryGreen,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Text(
+                                badge,
+                                style: const TextStyle(
+                                  fontFamily: DesignTokens.fontFamily,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1,
+                                  color: ReelRailStyle.ink,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

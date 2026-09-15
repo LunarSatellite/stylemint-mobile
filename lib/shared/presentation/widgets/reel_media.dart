@@ -30,7 +30,7 @@ abstract class ReelMedia {
   /// reel detail) don't carry a thumbnail until the platform sync ran.
   String? get thumbnailUrl;
 
-  /// Full URL to open in the native app when the platform does not have an
-  /// in-app player (e.g. TikTok / Facebook).
+  /// Canonical post URL on the platform. Used by embeds that play by URL and
+  /// as a cache key; never opened outside StyleMint.
   String get permalink;
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/data/reel_video_cache.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_pool.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_scope.dart';
@@ -13,54 +12,8 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_play_indicator.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poster.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
-
-typedef ExternalUrlLauncher =
-    Future<bool> Function(
-      Uri url, {
-      LaunchMode mode,
-    });
-
-/// Opens a provider permalink in the best available native experience.
-///
-/// Used by screens outside [ReelPlayer] (e.g. "view on Instagram" actions)
-/// that need an explicit external hand-off even for platforms [ReelPlayer]
-/// itself plays inline. Provider HTTPS links are intentional: Android App
-/// Links and iOS Universal Links hand them to Instagram, TikTok, YouTube, or
-/// Facebook when installed, without relying on undocumented,
-/// provider-specific URL schemes. If no native handler accepts the link, the
-/// same canonical URL opens externally in the browser rather than leaving
-/// the tap unresponsive.
-class ReelExternalLauncher {
-  const ReelExternalLauncher({this.launcher = launchUrl});
-
-  final ExternalUrlLauncher launcher;
-
-  Future<bool> open(Uri permalink) async {
-    // Imported reels are canonical provider HTTPS permalinks. Reject anything
-    // else before it reaches the operating-system URL resolver.
-    if (permalink.scheme != 'https' && permalink.scheme != 'http') {
-      return false;
-    }
-    try {
-      final openedNatively = await launcher(
-        permalink,
-        mode: LaunchMode.externalNonBrowserApplication,
-      );
-      if (openedNatively) return true;
-    } on Exception {
-      // The browser fallback below keeps a valid provider link actionable.
-    }
-
-    try {
-      return await launcher(permalink, mode: LaunchMode.externalApplication);
-    } on Exception {
-      return false;
-    }
-  }
-}
 
 /// Lets an ancestor (e.g. a full-screen tap layer) toggle the player's
 /// play/pause state without owning the underlying controller.
@@ -81,7 +34,11 @@ class ReelPlaybackController {
 ///   player. Inside an [EmbedPlayerScope] (the feed) the player lives in the
 ///   scope's pool beneath the page, and this widget draws the poster until
 ///   the player has frames. Elsewhere it owns a single player.
-/// - **External only**: the poster, and a tap opens the reel in its app.
+/// - **External only**: the poster with a short "can't play here" note.
+///
+/// A reel that cannot play (external only, a refused media URL, or an embed
+/// that gave up) never opens its platform's app or site: nothing on a reel
+/// surface leaves StyleMint (owner decision, 2026-09-14).
 ///
 /// Plays while [isActive] is true, its tab is visible and the app is in the
 /// foreground. A tap through [playbackController] pauses and resumes it.
@@ -90,9 +47,11 @@ class ReelPlayer extends StatefulWidget {
     required this.reel,
     required this.isActive,
     this.playbackController,
-    this.externalLauncher = const ReelExternalLauncher(),
     super.key,
   });
+
+  /// Shown over the poster when the reel cannot play in StyleMint.
+  static const unavailableMessage = "This reel can't play here right now";
 
   /// Media meta extracted from the reel entity. See [ReelMedia].
   final ReelMedia reel;
@@ -103,10 +62,6 @@ class ReelPlayer extends StatefulWidget {
 
   /// Optional handle so an ancestor can toggle play/pause on tap.
   final ReelPlaybackController? playbackController;
-
-  /// Opens provider permalinks in the native app with a browser fallback.
-  /// Injectable so the hand-off behavior can be verified without leaving tests.
-  final ReelExternalLauncher externalLauncher;
 
   @override
   State<ReelPlayer> createState() => _ReelPlayerState();
@@ -425,7 +380,8 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
         await _initInstagramVideoFromNetwork(source.url);
         return;
       }
-      // An expired or refused media URL: hand the reel off to Instagram.
+      // An expired or refused media URL: show the poster and the
+      // can't-play note.
       if (mounted) setState(() => _hasError = true);
     }
   }
@@ -483,35 +439,24 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
 
   void _togglePlayPause() {
     final source = _source;
+    // A reel that cannot play here has nothing to pause, and nothing to open.
     if (source is ExternalOnlySource ||
         (source is NativeVideoSource && _hasError)) {
-      unawaited(_openExternally());
       return;
     }
     if (source is EmbedSource) {
       final key = EmbedRequest(source).key;
       final scope = _scopePool;
       if (scope != null) {
-        if (scope.hasGivenUp(key)) {
-          unawaited(_openExternally());
-        } else if (scope.activeKey == key) {
+        if (!scope.hasGivenUp(key) && scope.activeKey == key) {
           scope.togglePause();
         }
         return;
       }
-      if (_ownPool?.hasGivenUp(key) ?? false) {
-        unawaited(_openExternally());
-        return;
-      }
+      if (_ownPool?.hasGivenUp(key) ?? false) return;
     }
     setState(() => _manuallyPaused = !_manuallyPaused);
     _reconcilePlayback();
-  }
-
-  Future<void> _openExternally() async {
-    final permalink = Uri.tryParse(widget.reel.permalink);
-    if (permalink == null) return;
-    await widget.externalLauncher.open(permalink);
   }
 
   @override
@@ -519,9 +464,9 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
     final source = _source;
     return switch (source) {
       NativeVideoSource() =>
-        _hasError ? _buildExternalLayer() : _buildNativeLayer(),
+        _hasError ? _buildUnavailableLayer() : _buildNativeLayer(),
       EmbedSource() => _buildEmbedLayer(source),
-      ExternalOnlySource() => _buildExternalLayer(),
+      ExternalOnlySource() => _buildUnavailableLayer(),
     };
   }
 
@@ -567,50 +512,45 @@ class _ReelPlayerState extends State<ReelPlayer> with WidgetsBindingObserver {
       request: EmbedRequest(source),
       ownsPlayer: _scopePool == null,
       poster: ReelPoster(reel: widget.reel),
-      fallback: _buildExternalLayer(),
+      fallback: _buildUnavailableLayer(),
     );
   }
 
-  Widget _buildExternalLayer() {
-    final platform = widget.reel.platform ?? SocialPlatform.instagram;
-    return Semantics(
-      button: true,
-      label: 'Open reel on ${platform.displayName}',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _openExternally,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ReelPoster(reel: widget.reel),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const ReelPlayIndicator(),
-                  const SizedBox(height: DesignTokens.s12),
-                  TextButton.icon(
-                    onPressed: _openExternally,
-                    icon: const Icon(
-                      Icons.open_in_new_rounded,
-                      size: 18,
-                      color: DesignTokens.iconWhite,
-                    ),
-                    label: Text(
-                      'Watch on ${platform.displayName}',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        color: DesignTokens.iconWhite,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+  /// The poster with a short note. Deliberately not interactive: a reel that
+  /// cannot play here is never handed off to its platform.
+  Widget _buildUnavailableLayer() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ReelPoster(reel: widget.reel),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s24),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: DesignTokens.baseBlack.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s12,
+                  vertical: DesignTokens.s8,
+                ),
+                child: Text(
+                  ReelPlayer.unavailableMessage,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: DesignTokens.iconWhite,
                   ),
-                ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

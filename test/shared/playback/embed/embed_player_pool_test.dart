@@ -3,6 +3,8 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_origins.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_player_pool.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_slot.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_startup_metrics.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_warmup.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 
 class _FakeDriver implements EmbedSlotDriver {
@@ -54,11 +56,13 @@ EmbedRequest _tikTok(String id) => EmbedRequest(
 Future<(EmbedPlayerPool, List<_FakeDriver>)> _pool({
   int slots = 2,
   Duration readyTimeout = const Duration(seconds: 12),
+  EmbedStartupMetrics? metrics,
 }) async {
   final pool = EmbedPlayerPool(
     slotCount: slots,
     origins: Future.value(_origins),
     readyTimeout: readyTimeout,
+    metrics: metrics,
   );
   final drivers = [for (final slot in pool.slots) _FakeDriver(slot)];
   for (final driver in drivers) {
@@ -212,5 +216,150 @@ void main() {
 
     pool.setWindow(active: a, neighbours: [b]);
     expect(pool.slots[1].key, isNull);
+  });
+
+  group('TikTok start-up', () {
+    final t1 = _tikTok('7000000000000000001');
+    final t2 = _tikTok('7000000000000000002');
+    final t3 = _tikTok('7000000000000000003');
+
+    test(
+      'loads the next TikTok reel ahead and swipes to it without a new player',
+      () async {
+        final (pool, d) = await _pool();
+
+        pool.setWindow(active: t1, neighbours: [t2]);
+        d[0].finishLoad();
+        d[1].finishLoad();
+        expect(d[1].assigns.single, contains('"tiktok","7000000000000000002"'));
+        // wantPlay, muted, preroll: loaded (and pre-rolled) before the swipe.
+        expect(d[1].assigns.single, endsWith(',false,false,true)'));
+
+        pool.setWindow(active: t2, neighbours: [t3, t1]);
+
+        expect(d[1].assigns, hasLength(1), reason: 'the loaded player is kept');
+        expect(d[1].hosts, hasLength(1), reason: 'no page reload');
+        expect(
+          d[1].scripts.where((s) => s == 'smPlayer.play()'),
+          hasLength(1),
+        );
+        // Two slots: the previous reel makes way for the next one.
+        expect(pool.slotFor(t1.key), isNull);
+        expect(d[0].assigns.last, contains('"7000000000000000003"'));
+        expect(d[0].assigns.last, endsWith(',false,false,true)'));
+      },
+    );
+
+    test(
+      'retries TikTok server and playback errors once; an invalid video '
+      'gives up at once',
+      () async {
+        for (final code in ['tt_2001', 'tt_3001']) {
+          final (pool, d) = await _pool(slots: 1);
+          pool.setWindow(active: t1);
+          d[0].finishLoad();
+
+          pool.slots.single.handleEvent({
+            'type': 'error',
+            'token': d[0].lastToken,
+            'code': code,
+          });
+          await Future<void>.delayed(Duration.zero);
+          expect(d[0].assigns, hasLength(2), reason: code);
+          expect(pool.hasGivenUp(t1.key), isFalse, reason: code);
+
+          pool.slots.single.handleEvent({
+            'type': 'error',
+            'token': d[0].lastToken,
+            'code': code,
+          });
+          await Future<void>.delayed(Duration.zero);
+          expect(pool.hasGivenUp(t1.key), isTrue, reason: code);
+          expect(d[0].assigns, hasLength(2), reason: code);
+        }
+
+        final (pool, d) = await _pool(slots: 1);
+        pool.setWindow(active: t1);
+        d[0].finishLoad();
+        pool.slots.single.handleEvent({
+          'type': 'error',
+          'token': d[0].lastToken,
+          'code': 'tt_1001',
+        });
+        await Future<void>.delayed(Duration.zero);
+        expect(pool.hasGivenUp(t1.key), isTrue);
+        expect(d[0].assigns, hasLength(1));
+      },
+    );
+
+    test('beside a native reel a two-slot pool keeps the previous reel too',
+        () async {
+      final (pool, d) = await _pool();
+
+      pool.setWindow(active: null, neighbours: [t2, t1]);
+      d[0].finishLoad();
+      d[1].finishLoad();
+
+      expect(pool.slotFor(t2.key)?.prerolls, isTrue);
+      expect(pool.slotFor(t1.key)?.prerolls, isFalse);
+    });
+
+    test("recycles a slot whose page is already on the reel's origin",
+        () async {
+      final (pool, d) = await _pool(slots: 3);
+      pool.setWindow(active: a, neighbours: [t1, b]);
+      for (final driver in d) {
+        driver.finishLoad();
+      }
+      final tikTokSlot = pool.slotFor(t1.key)!;
+
+      pool.setWindow(active: t2);
+
+      expect(pool.slotFor(t2.key), same(tikTokSlot));
+      expect(d[tikTokSlot.index].hosts, hasLength(1), reason: 'no page reload');
+      expect(pool.slotFor(a.key), isNotNull);
+    });
+
+    test(
+      'warms TikTok player hosts when a TikTok reel is two pages away, at '
+      'most every 10 s and never in the background',
+      () async {
+        var now = Duration.zero;
+        final (pool, d) = await _pool(
+          metrics: EmbedStartupMetrics(clock: () => now),
+        );
+        List<String> warms() => [
+          for (final driver in d)
+            ...driver.scripts.where((s) => s.startsWith('smPlayer.warm(')),
+        ];
+
+        pool.setWindow(active: a, neighbours: [b]);
+        d[0].finishLoad();
+        d[1].finishLoad();
+        expect(warms(), isEmpty, reason: 'no TikTok reel nearby');
+
+        pool.setWindow(active: a, neighbours: [b], upcoming: [t1]);
+        expect(warms(), hasLength(1));
+        for (final origin in EmbedWarmup.tikTokOrigins) {
+          expect(warms().single, contains('"$origin"'));
+        }
+
+        now = const Duration(seconds: 5);
+        pool.setWindow(active: b, neighbours: [t1, a]);
+        for (final driver in d) {
+          driver.finishLoad();
+        }
+        expect(warms(), hasLength(1));
+
+        now = const Duration(seconds: 11);
+        pool.setWindow(active: b, neighbours: [t1, a]);
+        expect(warms(), hasLength(2));
+
+        pool.setHostActive(false);
+        now = const Duration(seconds: 30);
+        pool.setWindow(active: b, neighbours: [t1, a]);
+        expect(warms(), hasLength(2));
+      },
+    );
   });
 }

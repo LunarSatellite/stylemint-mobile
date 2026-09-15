@@ -33,6 +33,28 @@ abstract final class EmbedLayoutPolicy {
   static bool reservesPlayerRect(SocialPlatform? platform) =>
       platform == SocialPlatform.youtube;
 
+  /// Whether a full-bleed [platform] player keeps below the status bar.
+  /// TikTok's player draws its creator header and logo along its top edge,
+  /// which must never sit under the clock and battery; its video still runs
+  /// to the bottom of the page. Nothing is drawn over the player instead.
+  static bool keepsClearOfStatusBar(SocialPlatform platform) =>
+      platform == SocialPlatform.tiktok;
+
+  /// Like [coverRect], for the part of [page] below [topInset], and pinned to
+  /// that edge: the player is trimmed at the sides or the bottom, never above
+  /// [topInset].
+  static Rect coverRectBelow({
+    required Size page,
+    required double aspectRatio,
+    required double topInset,
+  }) {
+    final top = topInset.clamp(0.0, page.height);
+    final area = Size(page.width, page.height - top);
+    if (area.height <= 0) return Rect.fromLTWH(0, top, page.width, 0);
+    final cover = coverRect(page: area, aspectRatio: aspectRatio);
+    return Rect.fromLTWH(cover.left, top, cover.width, cover.height);
+  }
+
   /// The player's rectangle within a page of size [page]. [topInset] is space
   /// kept clear above it, [panelHeight] a panel below it and [rightInset] a
   /// rail beside it. With [aspectRatio] the player is no taller than that

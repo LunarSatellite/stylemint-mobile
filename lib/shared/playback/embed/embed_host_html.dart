@@ -1,17 +1,22 @@
 import 'dart:convert';
 
+import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_warmup.dart';
+
 /// Builds the page an embed slot's WebView loads. [origin] is the origin the
 /// platform players are told they are embedded on.
 ///
 /// The page only drives each platform's official player API: the YouTube
 /// IFrame Player API, TikTok's Embed Player over postMessage, and the Facebook
 /// Embedded Video Player. It never styles, hides or scripts inside a
-/// platform's player; YouTube's developer policies forbid that.
+/// platform's player; YouTube's developer policies forbid that. Besides that
+/// it only adds resource hints that open connections to TikTok's player hosts
+/// ([EmbedWarmup]) ahead of a TikTok reel.
 ///
 /// Dart talks to the page through `window.smPlayer`; the page reports back
 /// through the `sm` JavaScript handler with `{token, type, ...}` events.
-String embedHostHtml({required String origin}) =>
-    _template.replaceFirst('__ORIGIN__', jsonEncode(origin));
+String embedHostHtml({required String origin}) => _template
+    .replaceFirst('__ORIGIN__', jsonEncode(origin))
+    .replaceFirst('__TT_WARM__', jsonEncode(EmbedWarmup.tikTokOrigins));
 
 const _template = r'''<!DOCTYPE html>
 <html>
@@ -31,6 +36,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
 (function () {
   'use strict';
   var ORIGIN = __ORIGIN__;
+  var TT_WARM = __TT_WARM__;
+  var WARM_MS = 10000;
   var stage = document.getElementById('stage');
   var cur = blank(0);
   var bridgeReady = !!(window.flutter_inappwebview && window.flutter_inappwebview.callHandler);
@@ -39,7 +46,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   function blank(token) {
     return {token: token, platform: null, id: null, href: null, wantPlay: false,
             muted: false, durationSent: false, fbStarted: false,
-            preroll: false, prerolled: false};
+            preroll: false, prerolled: false, refusedMuted: false, progressed: false};
   }
 
   window.addEventListener('flutterInAppWebViewPlatformReady', function () {
@@ -60,6 +67,32 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     if (cur.durationSent || !(seconds > 0)) return;
     cur.durationSent = true;
     emit('duration', {seconds: Math.round(seconds)});
+  }
+
+  // ---- Connection warm-up: resource hints to official player hosts only. ----
+  var warmedAt = {};
+
+  function warm(origins) {
+    if (!origins || !origins.length || !document.head) return;
+    var now = Date.now();
+    var hints = ['dns-prefetch', 'preconnect'];
+    for (var i = 0; i < origins.length; i++) {
+      var origin = origins[i];
+      if (typeof origin !== 'string' || !/^https:\/\/[a-z0-9.-]+$/i.test(origin)) continue;
+      if (warmedAt[origin] && now - warmedAt[origin] < WARM_MS) continue;
+      warmedAt[origin] = now;
+      for (var j = 0; j < hints.length; j++) {
+        // Re-inserted, because a hint only acts when it enters the document.
+        var id = 'warm-' + hints[j] + '-' + origin;
+        var old = document.getElementById(id);
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+        var link = document.createElement('link');
+        link.id = id;
+        link.rel = hints[j];
+        link.href = origin;
+        document.head.appendChild(link);
+      }
+    }
   }
 
   // ---- YouTube: IFrame Player API. One player per slot, reused per reel. ----
@@ -144,8 +177,19 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   }
 
   // ---- TikTok: Embed Player v1, controlled over postMessage. ----
-  var tt = null;
-  var TT_STATES = {'0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering'};
+  // One player per reel. A slot asked again for the reel it already holds
+  // keeps that player (see smPlayer.assign), so a pre-loaded reel starts from
+  // the page, scripts and video it has already fetched.
+  //
+  // Playback always starts muted, in one step (mute + play): TikTok refuses
+  // to start with sound (error 3002) and waiting for that refusal costs a
+  // round trip. Sound is asked for once frames are moving. TikTok's muted
+  // URL parameter is not used: it would stop the sound being turned on at
+  // all. A reel already on screen when its player is created also autoplays,
+  // a second chance should a play message be lost; a pre-loaded one does not.
+  var tt = null, ttId = null, ttReady = false, ttPlaying = false, ttStarted = false, ttFailed = false;
+  var ttSound = false, ttSoundOk = false, ttTime = null, ttTimeSeen = false;
+  var TT_STATES = {'-1': 'init', '0': 'ended', '1': 'playing', '2': 'paused', '3': 'buffering'};
 
   function ttSend(type, value) {
     if (!tt || !tt.contentWindow) return;
@@ -154,12 +198,69 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     tt.contentWindow.postMessage(message, '*');
   }
 
+  // Whether this slot's player already holds TikTok reel [id], loaded and
+  // healthy, so it can be re-activated without a new iframe.
+  function ttKeeps(id) {
+    return !!tt && ttReady && !ttFailed && ttId === id;
+  }
+
+  function ttStartMuted() {
+    ttSound = false;
+    ttSend('mute');
+    ttSend('play');
+  }
+
+  function ttAskSound() {
+    if (cur.muted || !cur.wantPlay || ttSound) return;
+    ttSound = true;
+    ttSend('unMute');
+  }
+
+  // The frames are moving for the reel on screen: tell Dart once, then ask
+  // for sound.
+  function ttProgress() {
+    if (!cur.progressed) { cur.progressed = true; emit('progress'); }
+    ttAskSound();
+  }
+
+  // TikTok would not play with sound: carry on muted at once, in one step.
+  // A refusal while already muted is retried only once per reel.
+  function ttSoundRefused() {
+    var retry = ttSound || !cur.refusedMuted;
+    if (!ttSound) cur.refusedMuted = true;
+    cur.muted = true;
+    ttSound = false;
+    ttSoundOk = false;
+    emit('autoplayBlocked');
+    ttSend('mute');
+    if (cur.wantPlay && retry) ttSend('play');
+  }
+
   function ttApply() {
-    if (cur.wantPlay) { ttSend('play'); ttSend(cur.muted ? 'mute' : 'unMute'); }
-    else ttSend('pause');
+    if (!tt || !ttReady) return; // onPlayerReady applies the latest request.
+    if (cur.wantPlay) {
+      if (ttPlaying) ttAskSound();
+      else if (ttSoundOk && !cur.muted) ttSend('play');
+      else ttStartMuted();
+    } else if (cur.preroll && !ttStarted) {
+      // Pre-roll: fetch and decode the first frames muted, then hold them.
+      ttStartMuted();
+    } else {
+      ttSend('pause');
+    }
+  }
+
+  // Dart saw no moving frames soon after asking for them: start again muted.
+  // Sound follows the next sign of moving frames. A player that says it is
+  // playing but has never reported its time gives no better sign than that.
+  function ttRetryStart() {
+    if (!tt || !ttReady || !cur.wantPlay || cur.progressed) return;
+    if (ttPlaying && !ttTimeSeen) { ttProgress(); return; }
+    ttStartMuted();
   }
 
   function ttAssign() {
+    warm(TT_WARM);
     var frame = document.createElement('iframe');
     frame.src = 'https://www.tiktok.com/player/v1/' + encodeURIComponent(cur.id) +
       '?controls=0&progress_bar=0&play_button=0&volume_control=0&fullscreen_button=0' +
@@ -168,6 +269,17 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     frame.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
     stage.appendChild(frame);
     tt = frame;
+    ttId = cur.id;
+    ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
+    ttSound = false; ttSoundOk = false; ttTime = null;
+  }
+
+  // Re-activates the player this slot already holds for the current reel.
+  function ttReuse() {
+    emit('ready');
+    if (ttPlaying && cur.wantPlay) emit('playing');
+    ttApply();
+    if (!cur.wantPlay && !(cur.preroll && !ttStarted)) emit('cued');
   }
 
   window.addEventListener('message', function (event) {
@@ -177,31 +289,54 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     if (!data || !data['x-tiktok-player']) return;
     switch (data.type) {
       case 'onPlayerReady':
+        ttReady = true;
         emit('ready');
-        if (cur.wantPlay) ttApply(); else emit('cued');
+        if (cur.wantPlay || (cur.preroll && !ttStarted)) ttApply(); else emit('cued');
         break;
       case 'onStateChange':
+        ttPlaying = data.value === 1;
+        if (data.value === 1) {
+          ttStarted = true;
+          if (!cur.wantPlay) {
+            // Off screen: hold the first frames of a pre-roll, or stay still.
+            // Dart is not told the reel played, so its poster stays up.
+            ttSend('pause');
+            if (cur.preroll && !cur.prerolled) { cur.prerolled = true; emit('prerolled'); }
+            break;
+          }
+          emit('playing');
+          ttAskSound();
+          break;
+        }
+        // Paused right after asking for sound: the sound was refused.
+        if (data.value === 2 && cur.wantPlay && ttSound && !ttSoundOk) { ttSoundRefused(); break; }
+        // -1 (init) and 3 (buffering) are still loading: the poster stays.
         var state = TT_STATES[String(data.value)];
         if (state) emit(state);
-        // The player starts muted; ask for sound once frames are moving.
-        if (data.value === 1 && !cur.muted) ttSend('unMute');
         break;
       case 'onCurrentTime':
-        if (data.value && data.value.duration) emitDuration(data.value.duration);
+        var time = data.value || {};
+        if (time.duration) emitDuration(time.duration);
+        if (typeof time.currentTime === 'number') {
+          ttTimeSeen = true;
+          var advanced = ttTime !== null && time.currentTime > ttTime;
+          ttTime = time.currentTime;
+          if (advanced && cur.wantPlay) ttProgress();
+        }
         break;
       case 'onMute':
-        emit('muted', {value: !!data.value});
+        // Only this page changes the player's sound (the viewer cannot reach
+        // its controls), so this confirms a request rather than reporting one.
+        if (!data.value && ttSound) ttSoundOk = true;
         break;
       case 'onPlayerError':
         var code = data.value && data.value.errorCode;
-        if (code === 3002) {
-          cur.muted = true;
-          emit('autoplayBlocked');
-          ttSend('mute');
-          if (cur.wantPlay) ttSend('play');
-        } else {
-          emit('error', {code: 'tt_' + code});
-        }
+        if (code === 3002) { ttSoundRefused(); break; }
+        // 1001 invalid video, 2001 server error, 3001 playback error: this
+        // player is finished. Dart shows the poster with its can't-play note,
+        // after one retry with a new player for 2001 and 3001.
+        ttFailed = true;
+        emit('error', {code: 'tt_' + code});
         break;
     }
   });
@@ -305,7 +440,9 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     if (yt && yt.destroy) { try { yt.destroy(); } catch (e) {} }
     clearTimeout(fbWatchdog);
     stage.innerHTML = '';
-    yt = null; ytReady = false; ytVideoId = null; tt = null; fbPlayer = null;
+    yt = null; ytReady = false; ytVideoId = null; fbPlayer = null;
+    tt = null; ttId = null; ttReady = false; ttPlaying = false; ttStarted = false; ttFailed = false;
+    ttSound = false; ttSoundOk = false; ttTime = null;
   }
 
   function applyPlayback() {
@@ -324,7 +461,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     if (cur.platform === 'youtube') {
       if (yt && ytReady) { if (cur.muted || !cur.wantPlay) yt.mute(); else yt.unMute(); }
     } else if (cur.platform === 'tiktok') {
-      ttSend(cur.muted ? 'mute' : 'unMute');
+      if (cur.muted) { ttSound = false; ttSend('mute'); } else if (ttPlaying) ttAskSound();
     } else if (cur.platform === 'facebook' && fbPlayer) {
       if (cur.muted) fbPlayer.mute(); else fbPlayer.unmute();
     }
@@ -340,6 +477,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
       cur.wantPlay = !!wantPlay;
       cur.muted = !!muted;
       cur.preroll = !!preroll && !cur.wantPlay;
+      // The TikTok reel this slot already holds keeps its player: a new
+      // iframe would throw away everything it has fetched.
+      if (platform === 'tiktok' && previous === 'tiktok' && ttKeeps(id)) {
+        ttReuse();
+        return;
+      }
       if (previous !== platform || platform !== 'youtube') clearStage();
       if (platform === 'youtube') ytAssign();
       else if (platform === 'tiktok') ttAssign();
@@ -349,6 +492,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     play: function () { cur.wantPlay = true; applyPlayback(); },
     pause: function () { cur.wantPlay = false; applyPlayback(); },
     setMuted: function (muted) { cur.muted = !!muted; applyMute(); },
+    retryStart: function () { if (cur.platform === 'tiktok') ttRetryStart(); },
+    warm: function (origins) { warm(origins); },
     stop: function (token) { clearStage(); cur = blank(token); }
   };
 

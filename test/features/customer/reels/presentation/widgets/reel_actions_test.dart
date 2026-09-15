@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/storage/token_storage.dart';
 import 'package:stylemint_mobile_frontend/features/auth/domain/repositories/auth_repository.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/account_notifier.dart';
@@ -14,13 +16,18 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/reposito
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_button.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class _MockCartRepository extends Mock implements CartRepository {}
 
@@ -66,6 +73,38 @@ class _FakeFollowApi implements FollowApi {
   Future<FollowStats> stats(String accountId) => throw UnimplementedError();
 }
 
+class _FakeReelsRepository implements ReelsRepository {
+  final likeCalls = <String>[];
+  final unlikeCalls = <String>[];
+  bool fail = false;
+
+  Either<NetworkExceptions, ReelLikeResult> _answer({
+    required bool liked,
+    required int count,
+  }) => fail
+      ? left(const NetworkExceptions.server('boom'))
+      : right(ReelLikeResult(liked: liked, likeCount: count));
+
+  @override
+  Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
+    String reelId,
+  ) async {
+    likeCalls.add(reelId);
+    return _answer(liked: true, count: 129);
+  }
+
+  @override
+  Future<Either<NetworkExceptions, ReelLikeResult>> unlikeReel(
+    String reelId,
+  ) async {
+    unlikeCalls.add(reelId);
+    return _answer(liked: false, count: 127);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 const _zero = Money(amount: 0, currency: 'NPR');
 
 const _tote = TaggedProductEntity(
@@ -76,13 +115,13 @@ const _tote = TaggedProductEntity(
   quantity: 1,
 );
 
-Cart _cart(int quantity) => Cart(
+Cart _cart(int quantity, {String productId = 'prod-9'}) => Cart(
   id: 'cart-1',
   items: [
     if (quantity > 0)
       CartItem(
         id: 'line-1',
-        productId: 'prod-9',
+        productId: productId,
         productName: 'Linen shirt',
         productImageUrl: '',
         variantName: 'M',
@@ -100,10 +139,13 @@ Cart _cart(int quantity) => Cart(
 Reel _reel({
   List<TaggedProductEntity> products = const [],
   bool? followed,
-  String sourceUrl = 'https://www.tiktok.com/@sumendra/video/1',
+  bool? liked,
+  int likes = 128,
+  int comments = 24,
+  int shares = 9,
 }) => Reel(
   id: 'reel-1',
-  sourceUrl: sourceUrl,
+  sourceUrl: 'https://www.tiktok.com/@sumendra/video/1',
   thumbnailUrl: '',
   creatorId: 'creator-1',
   creatorName: 'Sumendra',
@@ -112,20 +154,33 @@ Reel _reel({
   musicTitle: '',
   musicArtist: '',
   taggedProducts: products,
-  likeCount: 128,
-  commentCount: 24,
-  shareCount: 9,
+  likeCount: likes,
+  commentCount: comments,
+  shareCount: shares,
   createdAt: DateTime(2026, 9, 14),
   isCreatorFollowed: followed,
+  isLikedByMe: liked,
+);
+
+/// The rail's heart icon.
+ReelRailIcon _heart(WidgetTester tester) => tester.widget<ReelRailIcon>(
+  find.byWidgetPredicate(
+    (widget) =>
+        widget is ReelRailIcon &&
+        (widget.svg == ReelRailIcons.heart ||
+            widget.svg == ReelRailIcons.heartFilled),
+  ),
 );
 
 void main() {
   late _MockCartRepository cartRepository;
   late _FakeFollowApi followApi;
+  late _FakeReelsRepository reelsRepository;
 
   setUp(() {
     cartRepository = _MockCartRepository();
     followApi = _FakeFollowApi();
+    reelsRepository = _FakeReelsRepository();
     when(
       () => cartRepository.getCart(),
     ).thenAnswer((_) async => right(_cart(0)));
@@ -157,6 +212,10 @@ void main() {
               Text('Profile page ${state.pathParameters['accountId']}'),
         ),
         GoRoute(path: RouteNames.cart, builder: (_, _) => const Text('Cart')),
+        GoRoute(
+          path: RouteNames.signInMethod,
+          builder: (_, _) => const Text('Sign in'),
+        ),
       ],
     );
     addTearDown(router.dispose);
@@ -165,6 +224,7 @@ void main() {
         overrides: [
           cartRepositoryProvider.overrideWithValue(cartRepository),
           followApiProvider.overrideWithValue(followApi),
+          reelsRepositoryProvider.overrideWithValue(reelsRepository),
           if (signedIn)
             sessionControllerProvider.overrideWith((ref) => _SignedInSession()),
         ],
@@ -199,6 +259,17 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(ReelRailCartDisc), findsNothing);
+  });
+
+  testWidgets('hides like, comment and share counts while they are zero', (
+    tester,
+  ) async {
+    await pumpRail(tester, _reel(likes: 0, comments: 0, shares: 3));
+
+    expect(find.bySemanticsLabel('Like'), findsOneWidget);
+    expect(find.bySemanticsLabel('Comments'), findsOneWidget);
+    expect(find.bySemanticsLabel('Share, 3'), findsOneWidget);
+    expect(find.text('0'), findsNothing);
   });
 
   testWidgets('shows the cart disc with its item count when nothing is '
@@ -254,18 +325,226 @@ void main() {
     expect(find.text('Profile page creator-1'), findsOneWidget);
   });
 
+  testWidgets('the heart is a white outline until the reel is liked', (
+    tester,
+  ) async {
+    await pumpRail(tester, _reel(liked: false));
+
+    final heart = _heart(tester);
+    expect(heart.svg, ReelRailIcons.heart);
+    expect(heart.color, DesignTokens.textWhite);
+    expect(find.bySemanticsLabel('Like, 128'), findsOneWidget);
+  });
+
+  testWidgets('a reel the viewer liked shows the filled red heart', (
+    tester,
+  ) async {
+    await pumpRail(tester, _reel(liked: true));
+
+    final heart = _heart(tester);
+    expect(heart.svg, ReelRailIcons.heartFilled);
+    expect(heart.color, ReelRailStyle.liked);
+    expect(heart.color, const Color(0xFFFF3B5C));
+    expect(find.bySemanticsLabel('Liked, 128'), findsOneWidget);
+  });
+
+  testWidgets('tapping the heart likes the reel on StyleMint', (tester) async {
+    await pumpRail(tester, _reel(liked: false), signedIn: true);
+
+    await tester.tap(find.bySemanticsLabel('Like, 128'));
+    await tester.pumpAndSettle();
+
+    expect(reelsRepository.likeCalls, ['reel-1']);
+    expect(_heart(tester).svg, ReelRailIcons.heartFilled);
+    expect(find.bySemanticsLabel('Liked, 129'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Liked, 129'));
+    await tester.pumpAndSettle();
+
+    expect(reelsRepository.unlikeCalls, ['reel-1']);
+    expect(_heart(tester).svg, ReelRailIcons.heart);
+    expect(find.bySemanticsLabel('Like, 127'), findsOneWidget);
+  });
+
+  testWidgets('a failed like rolls the heart back and says so', (
+    tester,
+  ) async {
+    reelsRepository.fail = true;
+    await pumpRail(tester, _reel(liked: false), signedIn: true);
+
+    await tester.tap(find.bySemanticsLabel('Like, 128'));
+    await tester.pumpAndSettle();
+
+    expect(_heart(tester).svg, ReelRailIcons.heart);
+    expect(find.bySemanticsLabel('Like, 128'), findsOneWidget);
+    expect(
+      find.text("Couldn't update your like. Please try again."),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a guest is asked to sign in and nothing is liked', (
+    tester,
+  ) async {
+    await pumpRail(tester, _reel());
+
+    await tester.tap(find.bySemanticsLabel('Like, 128'));
+    await tester.pumpAndSettle();
+
+    expect(reelsRepository.likeCalls, isEmpty);
+    expect(find.text('Sign in to like'), findsOneWidget);
+    expect(_heart(tester).svg, ReelRailIcons.heart);
+  });
+
   testWidgets('the like pop does not throw with reduced motion', (
     tester,
   ) async {
-    await pumpRail(tester, _reel(sourceUrl: ''), disableAnimations: true);
+    await pumpRail(tester, _reel(), signedIn: true, disableAnimations: true);
 
     await tester.tap(find.bySemanticsLabel('Like, 128'));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Unable to open the source reel.'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Liked, 129'), findsOneWidget);
+  });
+
+  group('cart feedback on the rail', () {
+    /// Records the haptic types the rail asks for.
+    List<Object?> recordHaptics(WidgetTester tester) {
+      final haptics = <Object?>[];
+      final messenger = tester.binding.defaultBinaryMessenger
+        ..setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments);
+          }
+          return null;
+        });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      return haptics;
+    }
+
+    void stubAdd(Cart result) {
+      when(
+        () => cartRepository.addToCart(
+          productId: any(named: 'productId'),
+          quantity: any(named: 'quantity'),
+          variantId: any(named: 'variantId'),
+          reelTagContextId: any(named: 'reelTagContextId'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((_) async => right(result));
+    }
+
+    CartNotifier cartNotifier(WidgetTester tester) => ProviderScope.containerOf(
+      tester.element(find.byType(ReelActions)),
+    ).read(cartNotifierProvider.notifier);
+
+    testWidgets('the product tile shows the cart count while its product is '
+        'not in the cart', (tester) async {
+      when(
+        () => cartRepository.getCart(),
+      ).thenAnswer((_) async => right(_cart(2)));
+
+      await pumpRail(tester, _reel(products: const [_tote]));
+
+      expect(
+        find.descendant(
+          of: find.byKey(ReelRailProductTile.cartCountKey),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(ReelRailProductTile.inCartBadgeKey), findsNothing);
+      expect(
+        find.bySemanticsLabel('Shop Nomad Canvas Tote, Rs 1,800'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a loaded cart holding the product shows it in cart without '
+        'celebrating', (tester) async {
+      final haptics = recordHaptics(tester);
+      when(
+        () => cartRepository.getCart(),
+      ).thenAnswer((_) async => right(_cart(1, productId: 'prod-1')));
+
+      await pumpRail(tester, _reel(products: const [_tote]));
+
+      expect(find.byKey(ReelRailProductTile.inCartBadgeKey), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Shop Nomad Canvas Tote, Rs 1,800, in cart'),
+        findsOneWidget,
+      );
+      expect(haptics, isEmpty);
+    });
+
+    testWidgets('adding the tagged product celebrates on the tile', (
+      tester,
+    ) async {
+      final haptics = recordHaptics(tester);
+      stubAdd(_cart(1, productId: 'prod-1'));
+      await pumpRail(tester, _reel(products: const [_tote]));
+
+      expect(find.byKey(ReelRailProductTile.inCartBadgeKey), findsNothing);
+      expect(haptics, isEmpty);
+
+      // However it gets there — here straight through the cart notifier, as
+      // the tagged-product card does.
+      await cartNotifier(tester).addItem(
+        productId: 'prod-1',
+        quantity: 1,
+        idempotencyKey: 'reel-atc-test',
+      );
+      await tester.pump();
+
+      expect(find.byKey(ReelRailProductTile.inCartBadgeKey), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Shop Nomad Canvas Tote, Rs 1,800, in cart'),
+        findsOneWidget,
+      );
+      // The count shows on the tile; no "added" text anywhere.
+      expect(
+        find.descendant(
+          of: find.byKey(ReelRailProductTile.inCartBadgeKey),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Added'), findsNothing);
+      expect(haptics, ['HapticFeedbackType.lightImpact']);
+      expect(
+        tester.takeAnnouncements().map((a) => a.message),
+        ['Added to cart'],
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.text('Rs 1.8K'), findsOneWidget);
+      expect(find.byKey(ReelRailProductTile.inCartBadgeKey), findsOneWidget);
+      expect(haptics, hasLength(1));
+    });
+
+    testWidgets('adding to the cart pops the cart disc', (tester) async {
+      final haptics = recordHaptics(tester);
+      stubAdd(_cart(1));
+      await pumpRail(tester, _reel());
+
+      expect(find.bySemanticsLabel('Cart'), findsOneWidget);
+
+      await cartNotifier(tester).addItem(
+        productId: 'prod-9',
+        quantity: 1,
+        idempotencyKey: 'reel-atc-test',
+      );
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('Cart, 1'), findsOneWidget);
+      expect(haptics, ['HapticFeedbackType.lightImpact']);
+      await tester.pumpAndSettle();
+    });
   });
 
   testWidgets('CreatorInfo can leave the Follow pill to the rail', (

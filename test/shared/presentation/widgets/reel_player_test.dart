@@ -3,119 +3,83 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_poster.dart';
 
-/// A TikTok reel with no embeddable video id, so it can only be handed off to
-/// TikTok. (With an id it plays in TikTok's embedded player.)
-class _ExternalReel implements ReelMedia {
-  const _ExternalReel();
+/// A reel that cannot play in StyleMint: no embeddable video id (TikTok), or
+/// no official media URL (Instagram).
+class _UnplayableReel implements ReelMedia {
+  const _UnplayableReel(this.platform, this.permalink);
+
+  @override
+  final SocialPlatform platform;
+
+  @override
+  final String permalink;
 
   @override
   String? get platformVideoId => null;
 
   @override
-  SocialPlatform? get platform => SocialPlatform.tiktok;
-
-  @override
-  String get permalink => 'https://www.tiktok.com/@stylemint/video/123';
-
-  @override
   String? get thumbnailUrl => null;
 
   @override
-  String? get videoUrl => 'legacy-provider-metadata';
+  String? get videoUrl =>
+      platform == SocialPlatform.instagram ? null : 'legacy-provider-metadata';
 }
 
 void main() {
-  testWidgets(
-    'renders an external-provider action when the reel cannot be embedded',
-    (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: SizedBox(
-            width: 320,
-            height: 560,
-            child: ReelPlayer(reel: _ExternalReel(), isActive: true),
+  const reels = [
+    _UnplayableReel(
+      SocialPlatform.tiktok,
+      'https://www.tiktok.com/@stylemint/video/123',
+    ),
+    _UnplayableReel(
+      SocialPlatform.instagram,
+      'https://www.instagram.com/reel/abc/',
+    ),
+  ];
+
+  for (final reel in reels) {
+    testWidgets(
+      'a ${reel.platform.displayName} reel that cannot play shows the poster '
+      'and a note, with no way out of StyleMint',
+      (tester) async {
+        final playback = ReelPlaybackController();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 320,
+              height: 560,
+              child: ReelPlayer(
+                reel: reel,
+                isActive: true,
+                playbackController: playback,
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Watch on TikTok'), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.properties.label == 'Open reel on TikTok',
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+        final player = find.byType(ReelPlayer);
+        expect(find.byType(ReelPoster), findsOneWidget);
+        expect(find.text(ReelPlayer.unavailableMessage), findsOneWidget);
+        expect(find.textContaining('Watch on'), findsNothing);
+        expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
+        expect(
+          find.descendant(of: player, matching: find.byType(ButtonStyleButton)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: player, matching: find.byType(GestureDetector)),
+          findsNothing,
+        );
+        expect(find.bySemanticsLabel(RegExp('Open reel')), findsNothing);
 
-  testWidgets('prefers the native provider handler before browser fallback', (
-    tester,
-  ) async {
-    final modes = <LaunchMode>[];
-    final launcher = ReelExternalLauncher(
-      launcher: (_, {mode = LaunchMode.platformDefault}) async {
-        modes.add(mode);
-        return mode == LaunchMode.externalNonBrowserApplication;
+        // The feed's tap layer toggles through the controller: a no-op here.
+        playback.toggle();
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(find.text(ReelPlayer.unavailableMessage), findsOneWidget);
       },
     );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: SizedBox(
-          width: 320,
-          height: 560,
-          child: ReelPlayer(
-            reel: const _ExternalReel(),
-            isActive: true,
-            externalLauncher: launcher,
-          ),
-        ),
-      ),
-    );
-
-    await tester.tap(find.byType(ReelPlayer));
-    await tester.pump();
-
-    expect(modes, [LaunchMode.externalNonBrowserApplication]);
-  });
-
-  test('falls back to the provider permalink externally', () async {
-    final modes = <LaunchMode>[];
-    final launcher = ReelExternalLauncher(
-      launcher: (_, {mode = LaunchMode.platformDefault}) async {
-        modes.add(mode);
-        return mode == LaunchMode.externalApplication;
-      },
-    );
-
-    final opened = await launcher.open(
-      Uri.parse('https://www.tiktok.com/@stylemint/video/123'),
-    );
-
-    expect(opened, isTrue);
-    expect(modes, [
-      LaunchMode.externalNonBrowserApplication,
-      LaunchMode.externalApplication,
-    ]);
-  });
-
-  test('never sends a non-web reel pointer to the URL resolver', () async {
-    var calls = 0;
-    final launcher = ReelExternalLauncher(
-      launcher: (_, {mode = LaunchMode.platformDefault}) async {
-        calls++;
-        return true;
-      },
-    );
-
-    final opened = await launcher.open(Uri.parse('file:///not-a-reel'));
-
-    expect(opened, isFalse);
-    expect(calls, 0);
-  });
+  }
 }

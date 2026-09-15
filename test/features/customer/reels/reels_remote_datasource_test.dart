@@ -11,6 +11,10 @@ class _CapturingApiClient extends ApiClient {
   String? postUri;
   String? deleteUri;
   Object? postData;
+  Options? postOptions;
+  Options? deleteOptions;
+  Object? postResponse = <String, dynamic>{};
+  Object? deleteResponse;
 
   @override
   Future<dynamic> post(
@@ -21,7 +25,8 @@ class _CapturingApiClient extends ApiClient {
   }) async {
     postUri = uri;
     postData = data;
-    return <String, dynamic>{};
+    postOptions = options;
+    return postResponse;
   }
 
   @override
@@ -32,7 +37,8 @@ class _CapturingApiClient extends ApiClient {
     Options? options,
   }) async {
     deleteUri = uri;
-    return null;
+    deleteOptions = options;
+    return deleteResponse;
   }
 }
 
@@ -56,6 +62,7 @@ Map<String, dynamic> _card({
   String externalUrl = '',
   String creatorAvatarUrl = '',
   List<Object?>? creatorAvatarUrls,
+  Map<String, Object?> extra = const {},
 }) => {
   'kind': 'Reel',
   'reel': {
@@ -71,6 +78,7 @@ Map<String, dynamic> _card({
     'creatorAvatarUrls': ?creatorAvatarUrls,
     'caption': 'hi',
     'taggedProducts': <dynamic>[],
+    ...extra,
   },
 };
 
@@ -166,6 +174,123 @@ void main() {
       ]);
 
       expect(reels.single.creatorAvatarUrls, isEmpty);
+    });
+
+    test('maps isLikedByMe and the combined likeCount', () async {
+      final reels = await mapCards([
+        _card(
+          reelId: 'r7',
+          sourcePlatform: 'TikTok',
+          extra: {'isLikedByMe': true, 'likeCount': 129},
+        ),
+        _card(
+          reelId: 'r8',
+          sourcePlatform: 'TikTok',
+          extra: {'isLikedByMe': null, 'likeCount': 4},
+        ),
+      ]);
+
+      expect(reels.first.isLikedByMe, isTrue);
+      expect(reels.first.likeCount, 129);
+      // Guests get null.
+      expect(reels.last.isLikedByMe, isNull);
+    });
+  });
+
+  group('reel detail mapping', () {
+    Future<Reel> mapDetail(Map<String, dynamic> body) =>
+        ReelsRemoteDataSource(
+          apiClient: _FeedApiClient(body),
+        ).getReelDetail('requested-id');
+
+    test('reads the public ReelDto shape', () async {
+      final reel = await mapDetail({
+        'id': 'r9',
+        'sourcePlatform': 3,
+        'externalId': '39bix0Z0NOQ',
+        'sourceUrl': 'https://youtube.com/shorts/39bix0Z0NOQ',
+        'thumbnailCdnUrl': 'https://cdn.example/thumb.jpg',
+        'caption': 'Three ways to style a tote',
+        'likesSnapshot': 12,
+        'commentsSnapshot': 3,
+        'isLikedByMe': false,
+        'creatorHandle': 'miko',
+        'taggedProducts': [
+          {
+            'id': 'tag-1',
+            'productId': 'prod-1',
+            'productName': 'Tote',
+            'productPriceSnapshotAmount': 1800,
+            'productPriceSnapshotCurrency': 'NPR',
+          },
+        ],
+      });
+
+      expect(reel.id, 'r9');
+      expect(reel.platform, SocialPlatform.youtube);
+      expect(reel.platformVideoId, '39bix0Z0NOQ');
+      expect(reel.thumbnailUrl, 'https://cdn.example/thumb.jpg');
+      expect(reel.likeCount, 12);
+      expect(reel.commentCount, 3);
+      expect(reel.isLikedByMe, isFalse);
+      expect(reel.creatorName, 'miko');
+      expect(reel.taggedProducts.single.taggedProductId, 'tag-1');
+      expect(reel.taggedProducts.single.price.amount, 1800);
+    });
+
+    test('prefers the combined likeCount and falls back to the requested id',
+        () async {
+      final reel = await mapDetail({
+        'sourcePlatform': 'TikTok',
+        'likeCount': 20,
+        'likesSnapshot': 12,
+      });
+
+      expect(reel.id, 'requested-id');
+      expect(reel.likeCount, 20);
+      expect(reel.isLikedByMe, isNull);
+    });
+  });
+
+  group('StyleMint reel likes', () {
+    test('like and unlike hit the customer like endpoint with an '
+        'Idempotency-Key', () async {
+      final api = _CapturingApiClient()
+        ..postResponse = {'reelId': 'reel-1', 'liked': true, 'likeCount': 129}
+        ..deleteResponse = {
+          'reelId': 'reel-1',
+          'liked': false,
+          'likeCount': 128,
+        };
+      final datasource = ReelsRemoteDataSource(apiClient: api);
+
+      final liked = await datasource.likeReel('reel-1', 'key-1');
+      final unliked = await datasource.unlikeReel('reel-1', 'key-2');
+
+      expect(api.postUri, '/v1/customer/reels/reel-1/like');
+      expect(api.postData, isNull);
+      expect(api.postOptions?.headers?['Idempotency-Key'], 'key-1');
+      expect(liked.liked, isTrue);
+      expect(liked.likeCount, 129);
+      expect(api.deleteUri, '/v1/customer/reels/reel-1/like');
+      expect(api.deleteOptions?.headers?['Idempotency-Key'], 'key-2');
+      expect(unliked.liked, isFalse);
+      expect(unliked.likeCount, 128);
+    });
+
+    test('reads like responses tolerantly', () async {
+      final api = _CapturingApiClient()
+        ..postResponse = null
+        ..deleteResponse = {'liked': 'no', 'likeCount': '5'};
+      final datasource = ReelsRemoteDataSource(apiClient: api);
+
+      final liked = await datasource.likeReel('reel-1', 'key-1');
+      final unliked = await datasource.unlikeReel('reel-1', 'key-2');
+
+      expect(liked.liked, isTrue);
+      expect(liked.likeCount, isNull);
+      expect(unliked.liked, isFalse);
+      expect(unliked.likeCount, isNull);
     });
   });
 

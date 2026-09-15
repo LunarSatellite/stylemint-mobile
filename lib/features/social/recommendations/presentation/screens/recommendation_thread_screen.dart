@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/in_app_link.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/domain/entities/recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/presentation/notifiers/recommendations_notifier.dart';
@@ -28,6 +29,14 @@ class _RecommendationThreadScreenState
   bool _showProductField = false;
   bool _isSendingReply = false;
   final _productController = TextEditingController();
+
+  /// Opens a suggested product in-app when [url] is a StyleMint product
+  /// link; null (not tappable) for anything else.
+  VoidCallback? _suggestedProductTap(String? url) {
+    final route = styleMintProductRoute(url);
+    if (route == null) return null;
+    return () => unawaited(context.push(route));
+  }
 
   @override
   void initState() {
@@ -287,21 +296,10 @@ class _RecommendationThreadScreenState
             if (reply.suggestedProduct != null) ...[
               const SizedBox(height: DesignTokens.s8),
               InkWell(
-                onTap: () {
-                  // Backend doesn't populate this field yet (always null in
-                  // practice) — was previously an empty if-block that did
-                  // nothing even when a URL was present, silently eating
-                  // the tap on this chip.
-                  final url = reply.suggestedProductUrl;
-                  if (url != null) {
-                    unawaited(
-                      launchUrl(
-                        Uri.parse(url),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                    );
-                  }
-                },
+                // Backend doesn't populate the URL yet (always null in
+                // practice). A StyleMint product link opens the product
+                // in-app; any other link is not followed.
+                onTap: _suggestedProductTap(reply.suggestedProductUrl),
                 child: Container(
                   padding: const EdgeInsets.all(DesignTokens.s8),
                   decoration: DesignTokens.cardDecoration(

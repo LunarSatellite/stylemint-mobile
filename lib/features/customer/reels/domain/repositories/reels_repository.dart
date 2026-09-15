@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 
 abstract interface class ReelsRepository {
   Future<Either<NetworkExceptions, ReelsFeedPage>> getReelsFeed({
@@ -10,9 +11,11 @@ abstract interface class ReelsRepository {
 
   Future<Either<NetworkExceptions, Reel>> getReelDetail(String reelId);
 
-  Future<Either<NetworkExceptions, Unit>> likeReel(String reelId);
+  /// Likes the reel on StyleMint (not on its source platform).
+  Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(String reelId);
 
-  Future<Either<NetworkExceptions, Unit>> unlikeReel(String reelId);
+  /// Removes the viewer's StyleMint like.
+  Future<Either<NetworkExceptions, ReelLikeResult>> unlikeReel(String reelId);
 
   Future<Either<NetworkExceptions, Unit>> addToWishlist(String reelId);
 

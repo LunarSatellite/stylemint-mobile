@@ -30,13 +30,12 @@ final class EmbedSource extends ReelPlaybackSource {
   /// The platform's own video id (YouTube videoId, TikTok item id, ...).
   final String externalId;
 
-  /// Canonical post URL. The Facebook player embeds by URL, and every
-  /// platform falls back to it when the embed fails.
+  /// Canonical post URL. The Facebook player embeds by URL.
   final String permalink;
 }
 
-/// No inline playback is possible: show the poster and hand off to the
-/// platform's app or site.
+/// No inline playback is possible: show the poster with a "can't play here"
+/// note. The platform's app or site is never opened.
 final class ExternalOnlySource extends ReelPlaybackSource {
   const ExternalOnlySource({required this.permalink});
 

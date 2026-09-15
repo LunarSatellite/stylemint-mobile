@@ -15,8 +15,15 @@ abstract final class ReelRailIcons {
   static const heartPath =
       'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3C14.7 3 13.5 3.5 12 5 '
       '10.5 3.5 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z';
-  static const commentPath = 'M7.9 20A9 9 0 1 0 4 16.1L2 22z';
-  static const sharePath = 'm22 2-7 20-4-9-9-4zM22 2 11 13';
+  /// Round speech bubble with a short tail at the lower left.
+  static const commentPath =
+      'M12 3.6c-4.9 0-8.9 3.4-8.9 7.6 0 2.1 1 4 2.6 5.4l-.9 3.8 4.3-1.9 '
+      'c.9.3 1.9.4 2.9.4 4.9 0 8.9-3.4 8.9-7.7S16.9 3.6 12 3.6z';
+
+  /// Paper plane with rounded corners and its fold line.
+  static const sharePath =
+      'M20.4 3.6 3.9 9.9c-.8.3-.8 1.4 0 1.7l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0 '
+      'l6.3-16.5c.2-.5-.3-1-.8-.8zM10.2 13.8l4.3-4.3';
   static const viewsPath =
       'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z '
       'M15 12a3 3 0 1 1-6 0 3 3 0 1 1 6 0z';
@@ -38,15 +45,16 @@ abstract final class ReelRailIcons {
       '$_open<path d="$heartPath" fill="#fff" stroke="#fff" '
       'stroke-width="2.2" $_round/></svg>';
 
-  /// Speech bubble for comments.
+  /// Speech bubble for comments. A touch heavier than the heart so the
+  /// rounder, more open shape carries the same visual weight.
   static const comment =
       '$_open<path d="$commentPath" fill="none" stroke="#fff" '
-      'stroke-width="2.2" $_round/></svg>';
+      'stroke-width="2.4" $_round/></svg>';
 
-  /// Paper plane for share.
+  /// Paper plane for share, same weight as the comment bubble.
   static const share =
       '$_open<path d="$sharePath" fill="none" stroke="#fff" '
-      'stroke-width="2.2" $_round/></svg>';
+      'stroke-width="2.4" $_round/></svg>';
 
   /// Eye for views.
   static const views =

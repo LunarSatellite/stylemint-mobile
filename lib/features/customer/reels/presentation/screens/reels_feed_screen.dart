@@ -27,8 +27,9 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// Tracks the visible reel index so only the active [ReelCard] plays.
 /// Embedded reels (YouTube, TikTok, Facebook) share a small pool of players
 /// hosted beneath the pages by [EmbedPlayerLayer]: the reel the feed rests on
-/// plays and the next one is cued, so a swipe starts playback without
-/// loading a new player.
+/// plays and the next one is loaded (and pre-rolled) the moment the feed
+/// settles, so a swipe only tells an already-loaded player to play. A TikTok
+/// reel up to two pages ahead also warms TikTok's connections.
 class ReelsFeedScreen extends ConsumerStatefulWidget {
   const ReelsFeedScreen({super.key});
 
@@ -125,6 +126,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
         _embedAt(_settledIndex + 1),
         _embedAt(_settledIndex - 1),
       ].nonNulls.toList(),
+      upcoming: [_embedAt(_settledIndex + 2)].nonNulls.toList(),
     );
     final last = (_settledIndex + 3).clamp(0, _reels.length - 1);
     // Learn video shapes ahead of the swipe so wide videos are already sized.
@@ -182,6 +184,7 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
               icon: Icons.video_library_outlined,
             );
           }
+          final topInset = MediaQuery.paddingOf(context).top;
           return EmbedPlayerScope(
             pool: _embedPool,
             child: NotificationListener<ScrollEndNotification>(
@@ -194,8 +197,11 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen>
                       controller: _pageController,
                       settledIndex: _settledIndex,
                       indexOfKey: (key) => _embedIndex[key],
-                      playerRectAt: (index, page) =>
-                          reelPlayerRect(reels[index], page),
+                      playerRectAt: (index, page) => reelPlayerRect(
+                        reels[index],
+                        page,
+                        topInset: topInset,
+                      ),
                       layoutChanges: ReelShapes.instance,
                     ),
                   ),

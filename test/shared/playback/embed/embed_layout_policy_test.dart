@@ -114,4 +114,45 @@ void main() {
       );
     }
   });
+
+  group('a TikTok player keeps below the status bar', () {
+    test('only TikTok draws a header along its top edge', () {
+      expect(
+        EmbedLayoutPolicy.keepsClearOfStatusBar(SocialPlatform.tiktok),
+        isTrue,
+      );
+      for (final platform in [
+        SocialPlatform.youtube,
+        SocialPlatform.facebook,
+        SocialPlatform.instagram,
+      ]) {
+        expect(EmbedLayoutPolicy.keepsClearOfStatusBar(platform), isFalse);
+      }
+    });
+
+    test('it covers the page below the status bar down to the bottom', () {
+      const page = Size(360, 780);
+      final player = EmbedLayoutPolicy.coverRectBelow(
+        page: page,
+        aspectRatio: EmbedLayoutPolicy.shortsAspectRatio,
+        topInset: 24,
+      );
+
+      expect(player.top, 24);
+      expect(player.bottom, closeTo(780, 0.01));
+      expect(player.left <= 0 && player.right >= page.width, isTrue);
+    });
+
+    test('on a wide page it is trimmed at the bottom, never above the bar', () {
+      final player = EmbedLayoutPolicy.coverRectBelow(
+        page: const Size(600, 800),
+        aspectRatio: EmbedLayoutPolicy.shortsAspectRatio,
+        topInset: 24,
+      );
+
+      expect(player.top, 24);
+      expect(player.width, 600);
+      expect(player.bottom, greaterThan(800));
+    });
+  });
 }

@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasources/reels_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 
 class ReelsRepositoryImpl implements ReelsRepository {
@@ -51,10 +52,12 @@ class ReelsRepositoryImpl implements ReelsRepository {
   Future<Either<NetworkExceptions, Reel>> getReelDetail(String reelId) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getReelDetail(reelId);
-        return right(dto.toDomain());
+        return right(await remoteDataSource.getReelDetail(reelId));
       } catch (e) {
         if (e is DioException) {
+          if (e.response?.statusCode == 404) {
+            return left(const NetworkExceptions.notFound());
+          }
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
           return left(e);
@@ -68,42 +71,34 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> likeReel(String reelId) async {
-    if (await networkInfo.isConnected) {
-      try {
-        await remoteDataSource.likeReel(reelId, _uuid.v4());
-        return right(unit);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
+  Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
+    String reelId,
+  ) => _like(() => remoteDataSource.likeReel(reelId, _uuid.v4()));
 
   @override
-  Future<Either<NetworkExceptions, Unit>> unlikeReel(String reelId) async {
-    if (await networkInfo.isConnected) {
-      try {
-        await remoteDataSource.unlikeReel(reelId, _uuid.v4());
-        return right(unit);
-      } catch (e) {
-        if (e is DioException) {
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
+  Future<Either<NetworkExceptions, ReelLikeResult>> unlikeReel(
+    String reelId,
+  ) => _like(() => remoteDataSource.unlikeReel(reelId, _uuid.v4()));
+
+  /// One Idempotency-Key per call: the notifier calls once per tap and never
+  /// retries, so a key is never reused across attempts.
+  Future<Either<NetworkExceptions, ReelLikeResult>> _like(
+    Future<ReelLikeResult> Function() request,
+  ) async {
+    if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await request());
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        return left(const NetworkExceptions.auth());
+      }
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object {
+      return left(NetworkExceptions.unexpectedError());
     }
   }
 

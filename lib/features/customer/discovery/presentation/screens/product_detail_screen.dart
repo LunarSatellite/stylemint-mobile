@@ -18,6 +18,7 @@ import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentati
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/reel_review_thumbnail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
@@ -26,7 +27,6 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -1295,7 +1295,8 @@ class _ReelReviewsContent extends StatelessWidget {
               mainAxisSpacing: 2,
             ),
             itemCount: reviews.length,
-            itemBuilder: (_, index) => _ReelThumb(review: reviews[index]),
+            itemBuilder: (_, index) =>
+                ReelReviewThumbnail(review: reviews[index], compact: true),
           ),
 
         // ── See all reviews button ─────────────────────────────────────────
@@ -1326,60 +1327,6 @@ class _ReelReviewsContent extends StatelessWidget {
       ],
     );
   }
-}
-
-class _ReelThumb extends StatelessWidget {
-  const _ReelThumb({required this.review});
-  final Review review;
-
-  @override
-  Widget build(BuildContext context) {
-    final source = Uri.tryParse(review.reelSourceUrl ?? '');
-    return Material(
-      color: DesignTokens.bgAppBodyLight,
-      child: InkWell(
-        onTap: source == null
-            ? null
-            : () => launchUrl(source, mode: LaunchMode.externalApplication),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Center(
-              child: Icon(
-                Icons.play_circle_outline_rounded,
-                color: Colors.white38,
-                size: 26,
-              ),
-            ),
-            Positioned(
-              right: 4,
-              bottom: 4,
-              left: 4,
-              child: Text(
-                _platformLabel(review.reelPlatform),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _platformLabel(String? platform) => switch (platform) {
-    '0' || 'Instagram' || 'instagram' => 'Instagram',
-    '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
-    '2' || 'TikTok' || 'tiktok' => 'TikTok',
-    '3' || 'Facebook' || 'facebook' => 'Facebook',
-    _ => 'Open reel',
-  };
 }
 
 // ── Written tab ───────────────────────────────────────────────────────────────

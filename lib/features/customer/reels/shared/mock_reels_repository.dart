@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/reels_mock_data.dart';
 
@@ -30,21 +31,30 @@ class MockReelsRepository implements ReelsRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> likeReel(String reelId) async {
+  Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
+    String reelId,
+  ) async {
     _toggle(reelId, (r) => r.copyWith(
-      isLikedByUser: true,
+      isLikedByMe: true,
       likeCount: r.likeCount + 1,
     ));
-    return right(unit);
+    return right(_likeResult(reelId, liked: true));
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> unlikeReel(String reelId) async {
+  Future<Either<NetworkExceptions, ReelLikeResult>> unlikeReel(
+    String reelId,
+  ) async {
     _toggle(reelId, (r) => r.copyWith(
-      isLikedByUser: false,
-      likeCount: r.likeCount - 1,
+      isLikedByMe: false,
+      likeCount: r.likeCount > 0 ? r.likeCount - 1 : 0,
     ));
-    return right(unit);
+    return right(_likeResult(reelId, liked: false));
+  }
+
+  ReelLikeResult _likeResult(String reelId, {required bool liked}) {
+    final reel = _reels.where((r) => r.id == reelId).firstOrNull;
+    return ReelLikeResult(liked: liked, likeCount: reel?.likeCount);
   }
 
   @override

@@ -21,11 +21,28 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// the picture inside. Reels are vertical (9:16) unless [ReelShapes] learns a
 /// YouTube video's real shape. A native video fills the page and follows the
 /// same rule itself. The feed places its shared players with the same
-/// rectangle.
-Rect reelPlayerRect(Reel reel, Size page) {
-  if (resolveReelPlayback(reel) is! EmbedSource) return Offset.zero & page;
+/// rectangle. [topInset] is the status bar's height: a TikTok player starts
+/// below it (see [EmbedLayoutPolicy.keepsClearOfStatusBar]).
+Rect reelPlayerRect(Reel reel, Size page, {double topInset = 0}) {
+  final source = resolveReelPlayback(reel);
+  if (source is! EmbedSource) return Offset.zero & page;
   final aspect =
       ReelShapes.instance.aspectOf(reel) ?? EmbedLayoutPolicy.shortsAspectRatio;
+  if (topInset > 0 &&
+      EmbedLayoutPolicy.keepsClearOfStatusBar(source.platform)) {
+    return EmbedLayoutPolicy.fillsScreen(aspect)
+        ? EmbedLayoutPolicy.coverRectBelow(
+            page: page,
+            aspectRatio: aspect,
+            topInset: topInset,
+          )
+        : Rect.fromLTRB(
+            0,
+            topInset.clamp(0.0, page.height),
+            page.width,
+            page.height,
+          );
+  }
   return EmbedLayoutPolicy.fillsScreen(aspect)
       ? EmbedLayoutPolicy.coverRect(page: page, aspectRatio: aspect)
       : Offset.zero & page;
@@ -67,16 +84,31 @@ class _ReelCardState extends State<ReelCard> {
   Widget build(BuildContext context) {
     final source = resolveReelPlayback(widget.reel);
     final embed = source is EmbedSource ? EmbedRequest(source) : null;
+    final topInset = MediaQuery.paddingOf(context).top;
     return ListenableBuilder(
       listenable: ReelShapes.instance,
       builder: (context, _) => LayoutBuilder(
         builder: (context, constraints) {
-          final player = reelPlayerRect(widget.reel, constraints.biggest);
+          final player = reelPlayerRect(
+            widget.reel,
+            constraints.biggest,
+            topInset: topInset,
+          );
           return Stack(
             fit: StackFit.expand,
             // The player can be larger than the page; the page clips it.
             clipBehavior: Clip.hardEdge,
             children: [
+              // Behind the status bar, above a player that starts below it:
+              // plain black, beside the player rather than over it.
+              if (player.top > 0)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  height: player.top,
+                  child: const ColoredBox(color: DesignTokens.baseBlack),
+                ),
               Positioned.fromRect(
                 rect: player,
                 child: ReelPlayer(

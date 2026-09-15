@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/reel_review_thumbnail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class ProductReviewsScreen extends ConsumerWidget {
@@ -96,7 +95,7 @@ class _ReelReviewsTab extends ConsumerWidget {
           ),
           itemCount: reelReviews.length,
           itemBuilder: (_, index) =>
-              _ReelThumbnailTile(review: reelReviews[index]),
+              ReelReviewThumbnail(review: reelReviews[index]),
         );
       },
       loadFailure: (_) => SmErrorView(
@@ -106,58 +105,6 @@ class _ReelReviewsTab extends ConsumerWidget {
       orElse: () => const SmPageLoader(),
     );
   }
-}
-
-class _ReelThumbnailTile extends StatelessWidget {
-  const _ReelThumbnailTile({required this.review});
-
-  final Review review;
-
-  @override
-  Widget build(BuildContext context) {
-    final source = Uri.tryParse(review.reelSourceUrl ?? '');
-    final provider = _providerName(review.reelPlatform);
-    return Material(
-      color: DesignTokens.bgAppBodyLight,
-      child: InkWell(
-        onTap: source == null
-            ? null
-            : () => launchUrl(source, mode: LaunchMode.externalApplication),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Center(
-              child: Icon(Icons.play_circle_outline_rounded,
-                  color: Colors.white54, size: 32),
-            ),
-            Positioned(
-              right: 6,
-              bottom: 6,
-              left: 6,
-              child: Text(
-                provider,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _providerName(String? platform) => switch (platform) {
-        '0' || 'Instagram' || 'instagram' => 'Instagram',
-        '1' || 'YouTubeShorts' || 'youtubeShorts' => 'YouTube',
-        '2' || 'TikTok' || 'tiktok' => 'TikTok',
-        '3' || 'Facebook' || 'facebook' => 'Facebook',
-        _ => 'Open reel',
-      };
 }
 
 // ── Written Reviews Tab ───────────────────────────────────────────────────────
@@ -265,7 +212,7 @@ class _AddReviewBar extends StatelessWidget {
         border: Border(top: BorderSide(color: DesignTokens.borderDefault, width: 0.5)),
       ),
       child: ElevatedButton(
-        onPressed: () => showModalBottomSheet(
+        onPressed: () => showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
           backgroundColor: DesignTokens.bgAppBody,

@@ -54,14 +54,9 @@ class _ProductTile extends ConsumerWidget {
               'reel-atc-${product.id}-${DateTime.now().millisecondsSinceEpoch}',
         );
     if (!context.mounted) return;
-    if (succeeded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Added to cart'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
+    // A successful add shows on the rail's product tile (cart count badge)
+    // instead of a pop-up; only failures are reported here.
+    if (!succeeded) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to add to cart. Please try again.'),
@@ -194,39 +189,13 @@ class _ProductTile extends ConsumerWidget {
                   ),
                   const SizedBox(width: DesignTokens.s8),
                   // Once it's in the cart, swap the "add" pill for a real
-                  // quantity stepper so +/- works right here instead of just
-                  // showing a static "added" icon that does nothing further. An
-                  // explicit green "In Cart" badge sits above it so the state is
-                  // obvious at a glance, not just implied by the stepper shape.
+                  // quantity stepper so +/- works right here. No extra label:
+                  // the stepper itself and the rail's cart count say it.
                   if (inCart)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.check_circle_rounded,
-                              size: 12,
-                              color: DesignTokens.primaryGreen,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'In Cart',
-                              style: DesignTokens.tiny.copyWith(
-                                color: DesignTokens.primaryGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        _QuantityStepper(
-                          quantity: cartItem.quantity,
-                          onDecrement: () => _changeQuantity(ref, cartItem, -1),
-                          onIncrement: () => _changeQuantity(ref, cartItem, 1),
-                        ),
-                      ],
+                    _QuantityStepper(
+                      quantity: cartItem.quantity,
+                      onDecrement: () => _changeQuantity(ref, cartItem, -1),
+                      onIncrement: () => _changeQuantity(ref, cartItem, 1),
                     )
                   else
                     // A real, filled pill button — not a text link — so it reads

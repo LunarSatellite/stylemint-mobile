@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/shared/playback/embed/embed_startup_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/reel_playback_source.dart';
 
 /// What an embed slot's player is doing, as reported by its host page.
@@ -43,8 +45,16 @@ abstract interface class EmbedSlotDriver {
 /// the token of the assignment it belongs to, so late events from a reel the
 /// slot has moved on from are dropped. Commands sent before the host page has
 /// loaded are queued and replayed once it has.
+///
+/// The slot times each reel's start-up into [metrics], and retries a TikTok
+/// start that stalls (see [startTimeout]).
 class EmbedSlot extends ChangeNotifier {
-  EmbedSlot(this.index, {this.readyTimeout = const Duration(seconds: 12)});
+  EmbedSlot(
+    this.index, {
+    this.readyTimeout = const Duration(seconds: 12),
+    this.startTimeout = const Duration(milliseconds: 2500),
+    EmbedStartupMetrics? metrics,
+  }) : metrics = metrics ?? EmbedStartupMetrics();
 
   final int index;
 
@@ -52,11 +62,21 @@ class EmbedSlot extends ChangeNotifier {
   /// treats the embed as failed.
   final Duration readyTimeout;
 
+  /// How long a TikTok reel may be asked to play, once its player is ready,
+  /// before its video time must have moved (the host page's `progress`
+  /// event). Otherwise the start is retried, once, muted. A player that
+  /// reports paused before any frame is retried at once.
+  final Duration startTimeout;
+
+  /// Where start-up timings are recorded.
+  final EmbedStartupMetrics metrics;
+
   EmbedSlotDriver? _driver;
   String? _hostOrigin;
   bool _hostReady = false;
   final List<String> _pending = [];
   Timer? _readyTimer;
+  Timer? _startTimer;
   bool _disposed = false;
 
   int _token = 0;
@@ -70,11 +90,26 @@ class EmbedSlot extends ChangeNotifier {
   String? _errorCode;
   int _generation = 0;
 
+  // Start-up trace of the current assignment.
+  Duration? _assignedAt;
+  Duration? _readyAt;
+  Duration? _playRequestedAt;
+  bool _warmAtPlay = false;
+  bool _prerolled = false;
+  bool _progressed = false;
+  bool _traced = false;
+  bool _startRetried = false;
+  String? _startRetryReason;
+
   /// Recency stamp the pool uses to recycle the least recently used slot.
   int lastUsed = 0;
 
   EmbedRequest? get request => _request;
   String? get key => _request?.key;
+
+  /// Origin the host page is loaded (or loading) under. Null until the slot
+  /// is first assigned.
+  String? get hostOrigin => _hostOrigin;
   EmbedPlayerState get state => _state;
   bool get wantsPlay => _wantsPlay;
 
@@ -86,7 +121,9 @@ class EmbedSlot extends ChangeNotifier {
   /// on its first moving frames, so it shows video the moment it is on screen.
   bool get prerolls => _preroll;
 
-  /// True once the current reel has shown moving frames.
+  /// True once the current reel has shown moving frames. A TikTok reel only
+  /// counts frames it showed while asked to play, so its poster covers the
+  /// player's start screen until then.
   bool get hasStarted => _hasStarted;
 
   /// Length reported by the player, when it reports one.
@@ -135,6 +172,7 @@ class EmbedSlot extends ChangeNotifier {
     _durationSeconds = null;
     _errorCode = null;
     _state = EmbedPlayerState.loading;
+    _startTrace(play: play);
     _pending.clear();
     if (_hostOrigin != origin) {
       _hostOrigin = origin;
@@ -153,12 +191,21 @@ class EmbedSlot extends ChangeNotifier {
     if (_request == null || _wantsPlay) return;
     _wantsPlay = true;
     _preroll = false;
+    if (!_traced && _playRequestedAt == null) {
+      _playRequestedAt = metrics.now();
+      _warmAtPlay = _readyAt != null;
+    }
     _run('smPlayer.play()');
+    _armStartWatchdog();
   }
 
   void pause() {
     if (_request == null || !_wantsPlay) return;
     _wantsPlay = false;
+    _startTimer?.cancel();
+    // A reel left before it started is timed afresh when it is back.
+    if (!_traced) _playRequestedAt = null;
+    if (!_progressed) _startRetried = false;
     _run('smPlayer.pause()');
   }
 
@@ -167,6 +214,14 @@ class EmbedSlot extends ChangeNotifier {
     _muted = muted;
     _run('smPlayer.setMuted($muted)');
     notifyListeners();
+  }
+
+  /// Asks the host page to open connections to [origins] ahead of a player
+  /// that will need them. Best effort: dropped when the slot has no host page,
+  /// or when a new reel is assigned before the page has loaded.
+  void warm(List<String> origins) {
+    if (_hostOrigin == null || origins.isEmpty) return;
+    _run('smPlayer.warm(${jsonEncode(origins)})');
   }
 
   /// Empties the slot and frees the platform player it held.
@@ -179,6 +234,8 @@ class EmbedSlot extends ChangeNotifier {
     _hasStarted = false;
     _errorCode = null;
     _readyTimer?.cancel();
+    _startTimer?.cancel();
+    _traced = true;
     _pending.clear();
     _state = EmbedPlayerState.idle;
     if (_hostReady) _run('smPlayer.stop($_token)');
@@ -206,6 +263,9 @@ class EmbedSlot extends ChangeNotifier {
     _driver = null;
     _hostReady = false;
     _generation++;
+    _readyAt = null;
+    _progressed = false;
+    _startTimer?.cancel();
     if (_request != null) {
       _state = EmbedPlayerState.loading;
       _armReadyTimer();
@@ -223,21 +283,46 @@ class EmbedSlot extends ChangeNotifier {
     }
     final token = event['token'];
     if (_request == null || token is! num || token.toInt() != _token) return;
+    if (embedTrace) {
+      debugPrint(
+        '[embed-event] slot$index $key $type'
+        '${event['code'] == null ? '' : ' ${event['code']}'} '
+        'want=$_wantsPlay started=$_hasStarted state=${_state.name}',
+      );
+    }
 
     switch (type) {
       case 'ready':
         _readyTimer?.cancel();
+        _readyAt ??= metrics.now();
         if (_state == EmbedPlayerState.loading) {
           _setState(EmbedPlayerState.ready);
         }
+        _armStartWatchdog();
+      case 'init':
+        // TikTok's player is initialising: still loading, the poster stays.
+        break;
       case 'cued':
         _readyTimer?.cancel();
         _setState(EmbedPlayerState.cued);
+      case 'progress':
+        // The video time moved while asked to play: the start succeeded.
+        _startTimer?.cancel();
+        _progressed = true;
+      case 'prerolled':
+        // First frames fetched and held off screen; not shown, not started.
+        _readyTimer?.cancel();
+        _prerolled = true;
       case 'buffering':
         _readyTimer?.cancel();
         _setState(EmbedPlayerState.buffering);
       case 'playing':
         _readyTimer?.cancel();
+        if (_wantsPlay) {
+          _recordStartup();
+        } else {
+          _prerolled = true;
+        }
         final firstFrame = !_hasStarted;
         _hasStarted = true;
         if (_state == EmbedPlayerState.playing && firstFrame) {
@@ -246,11 +331,15 @@ class EmbedSlot extends ChangeNotifier {
           _setState(EmbedPlayerState.playing);
         }
       case 'paused':
+        // Asked to play but paused before any frame: TikTok's player is
+        // sitting on its start screen. Start it again muted, at once.
+        if (_wantsPlay && !_hasStarted) _retryStart('paused');
         _setState(EmbedPlayerState.paused);
       case 'ended':
         _setState(EmbedPlayerState.ended);
       case 'error':
         _readyTimer?.cancel();
+        _startTimer?.cancel();
         _errorCode = '${event['code']}';
         _state = EmbedPlayerState.failed;
         notifyListeners();
@@ -303,6 +392,85 @@ class EmbedSlot extends ChangeNotifier {
     });
   }
 
+  void _startTrace({required bool play}) {
+    _startTimer?.cancel();
+    final now = metrics.now();
+    _assignedAt = now;
+    _readyAt = null;
+    _playRequestedAt = play ? now : null;
+    _warmAtPlay = false;
+    _prerolled = false;
+    _progressed = false;
+    _traced = false;
+    _startRetried = false;
+    _startRetryReason = null;
+  }
+
+  /// TikTok's player can sit on its start screen instead of playing; the
+  /// other platforms report blocked playback themselves.
+  bool get _watchesStart =>
+      _request?.source.platform == SocialPlatform.tiktok;
+
+  /// Times the start from the later of the play request and the player being
+  /// ready: a player still loading is covered by [readyTimeout].
+  void _armStartWatchdog() {
+    _startTimer?.cancel();
+    if (!_watchesStart ||
+        !_wantsPlay ||
+        _progressed ||
+        _startRetried ||
+        _readyAt == null) {
+      return;
+    }
+    final token = _token;
+    _startTimer = Timer(startTimeout, () {
+      if (_disposed || token != _token) return;
+      _retryStart('timeout');
+    });
+  }
+
+  void _retryStart(String reason) {
+    _startTimer?.cancel();
+    final key = this.key;
+    if (key == null ||
+        !_watchesStart ||
+        !_wantsPlay ||
+        _progressed ||
+        _startRetried) {
+      return;
+    }
+    _startRetried = true;
+    _startRetryReason = reason;
+    final since = _playRequestedAt ?? _assignedAt;
+    metrics.recordStartRetry(
+      key,
+      reason,
+      since == null ? Duration.zero : metrics.now() - since,
+    );
+    _run('smPlayer.retryStart()');
+  }
+
+  void _recordStartup() {
+    final key = this.key;
+    final assignedAt = _assignedAt;
+    final playAt = _playRequestedAt;
+    if (_traced || key == null || assignedAt == null || playAt == null) return;
+    _traced = true;
+    final now = metrics.now();
+    final readyAt = _readyAt;
+    metrics.record(
+      EmbedStartupSample(
+        key: key,
+        warm: _warmAtPlay,
+        prerolled: _prerolled,
+        assignToReady: readyAt == null ? null : readyAt - assignedAt,
+        assignToFirstFrame: now - assignedAt,
+        playToFirstFrame: now - playAt,
+        startRetry: _startRetryReason,
+      ),
+    );
+  }
+
   void _setState(EmbedPlayerState next) {
     if (_state == next) return;
     _state = next;
@@ -326,6 +494,7 @@ class EmbedSlot extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _readyTimer?.cancel();
+    _startTimer?.cancel();
     super.dispose();
   }
 }

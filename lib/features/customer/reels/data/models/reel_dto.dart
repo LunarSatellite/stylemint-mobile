@@ -53,7 +53,7 @@ abstract class ReelDto with _$ReelDto {
     likeCount: likeCount,
     commentCount: commentCount,
     shareCount: shareCount,
-    isLikedByUser: isLikedByUser,
+    isLikedByMe: isLikedByUser,
     isWishlistedByUser: isWishlistedByUser,
     isCreatorFollowed: isCreatorFollowed,
     createdAt: createdAt,

@@ -29,7 +29,8 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 /// followed by the tagged-products strip.
 ///
 /// Backend: `GET /v1/public/reels/{id}` → ReelDto (caption, metrics, tagged
-/// products). Video is external — the source opens via [CreatorReelDetail.sourceUrl].
+/// products). The video plays in-app through [ReelPlayer]; the source
+/// platform is shown as a plain chip and never opened.
 class ReelDetailsScreen extends ConsumerWidget {
   const ReelDetailsScreen({required this.reelId, super.key});
 
@@ -273,26 +274,12 @@ class _BodyState extends State<_Body> {
   }
 }
 
-class _ReelInfo extends StatefulWidget {
+class _ReelInfo extends StatelessWidget {
   const _ReelInfo({required this.reel});
   final CreatorReelDetail reel;
 
   @override
-  State<_ReelInfo> createState() => _ReelInfoState();
-}
-
-class _ReelInfoState extends State<_ReelInfo> {
-  static const _externalLauncher = ReelExternalLauncher();
-
-  Future<void> _openSource() async {
-    final source = Uri.tryParse(widget.reel.sourceUrl);
-    if (source == null || !source.hasScheme) return;
-    await _externalLauncher.open(source);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final reel = widget.reel;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -300,17 +287,6 @@ class _ReelInfoState extends State<_ReelInfo> {
         Row(
           children: [
             _Chip(icon: Icons.public, label: reel.platformLabel),
-            if (reel.sourceUrl.isNotEmpty) ...[
-              const SizedBox(width: DesignTokens.s8),
-              GestureDetector(
-                onTap: _openSource,
-                child: const Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ],
           ],
         ),
         if (reel.musicLabel != null) ...[

@@ -34,7 +34,7 @@ class Reel implements ReelMedia {
     this.platform,
     this.externalId,
     this.videoUrl,
-    this.isLikedByUser,
+    this.isLikedByMe,
     this.isWishlistedByUser,
     this.isCreatorFollowed,
     this.creatorAvatarUrls = const <String>[],
@@ -45,7 +45,9 @@ class Reel implements ReelMedia {
   /// The platform's own post/video id (YouTube videoId, TikTok item id,
   /// Instagram media id, Facebook video id) as stored by the backend.
   final String? externalId;
-  final String sourceUrl; // Deep link to IG / TikTok / YouTube / FB
+  /// Canonical post URL on IG / TikTok / YouTube / FB. Feeds the official
+  /// embedded players; never opened outside StyleMint.
+  final String sourceUrl;
   final String thumbnailUrl; // Preview image
   final String? videoUrl; // Direct MP4 for inline playback (optional)
   final String creatorId;
@@ -60,6 +62,7 @@ class Reel implements ReelMedia {
   final String musicTitle;
   final String musicArtist;
   final List<TaggedProductEntity> taggedProducts;
+  /// Platform likes plus StyleMint likes.
   final int likeCount;
   final int commentCount;
   final int shareCount;
@@ -70,7 +73,8 @@ class Reel implements ReelMedia {
   /// (legacy data).
   final SocialPlatform? platform;
 
-  final bool? isLikedByUser;
+  /// Whether the viewer liked this reel on StyleMint. Null for guests.
+  final bool? isLikedByMe;
   final bool? isWishlistedByUser;
   final bool? isCreatorFollowed;
 
@@ -93,7 +97,7 @@ class Reel implements ReelMedia {
     int? shareCount,
     DateTime? createdAt,
     SocialPlatform? platform,
-    bool? isLikedByUser,
+    bool? isLikedByMe,
     bool? isWishlistedByUser,
     bool? isCreatorFollowed,
   }) {
@@ -115,7 +119,7 @@ class Reel implements ReelMedia {
       shareCount: shareCount ?? this.shareCount,
       createdAt: createdAt ?? this.createdAt,
       platform: platform ?? this.platform,
-      isLikedByUser: isLikedByUser ?? this.isLikedByUser,
+      isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       isWishlistedByUser: isWishlistedByUser ?? this.isWishlistedByUser,
       isCreatorFollowed: isCreatorFollowed ?? this.isCreatorFollowed,
       externalId: externalId ?? this.externalId,
@@ -131,8 +135,7 @@ class Reel implements ReelMedia {
     return parsePlatformVideoId(platform, sourceUrl);
   }
 
-  /// Open URL for the platform's native app / web. Alias of [sourceUrl]
-  /// for the [ReelMedia] contract.
+  /// Canonical post URL. Alias of [sourceUrl] for the [ReelMedia] contract.
   @override
   String get permalink => sourceUrl;
 }

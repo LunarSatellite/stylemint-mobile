@@ -4,8 +4,8 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// A reel's still image, shown before playback and when a reel can only be
-/// opened in its app.
+/// A reel's still image, shown before playback and when a reel can't play
+/// in StyleMint.
 class ReelPoster extends StatelessWidget {
   const ReelPoster({required this.reel, super.key});
 
