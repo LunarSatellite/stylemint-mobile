@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
@@ -12,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entitie
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reel_share.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_like_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_share_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
@@ -33,9 +33,10 @@ const _RailCart _unknownCart = (count: null, inCart: false);
 /// first tagged product — or the cart when nothing is tagged. The last item
 /// reacts when something is added to the cart, from anywhere.
 ///
-/// Nothing on the rail leaves StyleMint (owner decision, 2026-09-14): like
-/// and comments are native StyleMint interactions, and share sends a
-/// StyleMint link. Follow, like, share and cart are authenticated.
+/// Nothing on the rail leaves StyleMint (owner decisions, 2026-09-14/15):
+/// like and comments are native StyleMint interactions, and share opens
+/// StyleMint's own sheet to copy a StyleMint link — never another app.
+/// Follow, like, share and cart are authenticated.
 class ReelActions extends ConsumerStatefulWidget {
   const ReelActions({required this.reel, super.key});
 
@@ -190,22 +191,31 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     );
   }
 
-  /// Shares a StyleMint link to the reel (`/reels/{reelId}`) with the
-  /// caption's hook line and the creator's name — never the platform URL.
+  /// Opens StyleMint's share sheet for the reel's StyleMint link
+  /// (`/reels/{reelId}`) — never the platform URL. The viewer can send it to
+  /// an app of their choice or copy it.
   Future<void> _share() async {
     final reel = widget.reel;
-    if (await ensureAuth(context, ref, reason: AuthReason.share)) {
-      unawaited(
-        SharePlus.instance.share(
-          ShareParams(
-            text: ReelShare.text(
-              reelId: reel.id,
-              caption: reel.caption,
-              creatorName: reel.creatorName,
-            ),
-          ),
-        ),
-      );
+    if (!await ensureAuth(context, ref, reason: AuthReason.share)) return;
+    if (!mounted) return;
+    final outcome = await showReelShareSheet(
+      context,
+      link: ReelShare.link(reel.id),
+      message: ReelShare.text(
+        reelId: reel.id,
+        caption: reel.caption,
+        creatorName: reel.creatorName,
+      ),
+    );
+    if (!mounted) return;
+    switch (outcome) {
+      case ReelShareOutcome.copied:
+        SmSnackbar.success(context, ReelShareSheet.copiedMessage);
+      case ReelShareOutcome.failed:
+        SmSnackbar.error(context, ReelShareSheet.failedMessage);
+      case ReelShareOutcome.sent:
+      case ReelShareOutcome.dismissed:
+        break;
     }
   }
 

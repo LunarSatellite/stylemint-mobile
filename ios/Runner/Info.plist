@@ -85,5 +85,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>viber</string>
+		<string>whatsapp</string>
+		<string>sms</string>
+	</array>
 </dict>
 </plist>

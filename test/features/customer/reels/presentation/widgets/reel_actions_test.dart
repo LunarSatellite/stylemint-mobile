@@ -17,9 +17,11 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/no
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reel_share.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_share_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/notifiers/profile_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api.dart';
@@ -259,6 +261,19 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(ReelRailCartDisc), findsNothing);
+  });
+
+  testWidgets("share opens StyleMint's sheet with the reel's StyleMint link", (
+    tester,
+  ) async {
+    await pumpRail(tester, _reel(), signedIn: true);
+
+    await tester.tap(find.bySemanticsLabel('Share, 9'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(ReelShareSheet.title), findsOneWidget);
+    expect(find.text(ReelShare.link('reel-1').toString()), findsOneWidget);
+    expect(find.text(ReelShareSheet.copyLabel), findsOneWidget);
   });
 
   testWidgets('hides like, comment and share counts while they are zero', (
