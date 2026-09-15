@@ -1000,28 +1000,46 @@ class _SoldByRow extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: DesignTokens.bgAppBodyLight,
-            backgroundImage: vendorAvatarUrl.isNotEmpty
-                ? CachedNetworkImageProvider(vendorAvatarUrl)
-                : null,
-            child: vendorAvatarUrl.isEmpty
-                ? const Icon(
-                    Icons.store_rounded,
-                    color: DesignTokens.iconLight,
-                    size: 18,
-                  )
-                : null,
-          ),
-          const SizedBox(width: DesignTokens.s8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Sold By', style: DesignTokens.smallRegular),
-                Text(vendorName, style: DesignTokens.mediumSemibold),
-              ],
+            // Opens the brand's storefront.
+            child: InkWell(
+              borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
+              onTap: vendorId.isEmpty
+                  ? null
+                  : () => context.push(
+                      RouteNames.brandStorefront.replaceFirst(
+                        ':vendorAccountId',
+                        Uri.encodeComponent(vendorId),
+                      ),
+                    ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: DesignTokens.bgAppBodyLight,
+                    backgroundImage: vendorAvatarUrl.isNotEmpty
+                        ? CachedNetworkImageProvider(vendorAvatarUrl)
+                        : null,
+                    child: vendorAvatarUrl.isEmpty
+                        ? const Icon(
+                            Icons.store_rounded,
+                            color: DesignTokens.iconLight,
+                            size: 18,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Sold By', style: DesignTokens.smallRegular),
+                        Text(vendorName, style: DesignTokens.mediumSemibold),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           OutlinedButton.icon(

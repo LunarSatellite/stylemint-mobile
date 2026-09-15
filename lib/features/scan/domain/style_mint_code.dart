@@ -23,6 +23,7 @@ sealed class StyleMintCode {
     'products': '/product',
     'reels': '/reels',
     'creator-profile': '/creator-profile',
+    'brands': '/brands',
     'drop': '/drop',
     'group-cart': '/group-cart',
   };

@@ -88,10 +88,10 @@ void main() {
         'categorySlug': 'shoes',
         'title': 'Go',
       });
-      final brand = Uri.parse(
-        pushed(destinationForCta(cta(HomeCtaTargetKind.brand, 'v-1')))!,
+      expect(
+        pushed(destinationForCta(cta(HomeCtaTargetKind.brand, 'v-1'))),
+        '/brands/v-1',
       );
-      expect(brand.queryParameters['vendorAccountId'], 'v-1');
     });
 
     test('follow only StyleMint links', () {

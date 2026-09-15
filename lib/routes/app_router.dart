@@ -77,6 +77,7 @@ import 'package:stylemint_mobile_frontend/features/customer/in_store/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_store_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/brand_storefront/presentation/screens/brand_storefront_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/collection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/product_listing_screen.dart';
@@ -127,6 +128,7 @@ import 'package:stylemint_mobile_frontend/features/social/co_watch/presentation/
 import 'package:stylemint_mobile_frontend/features/social/community/presentation/screens/community_hub_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_edit_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
+import 'package:stylemint_mobile_frontend/features/social/creator_storefront/presentation/screens/creator_profile_gate.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/change_password_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/edit_category_niche_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/upgrade_subscription_screen.dart';
@@ -268,6 +270,8 @@ const _publicPaths = {
   RouteNames.productReviews,
   // Public creator storefronts browse signed out; follow and save ask to sign in.
   RouteNames.creatorProfile,
+  // Brand storefronts browse signed out; follow asks to sign in.
+  RouteNames.brandStorefront,
   // Mall listing and collections browse signed out.
   RouteNames.productListing,
   RouteNames.collectionRoot,
@@ -592,6 +596,14 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.collection,
         builder: (ctx, state) =>
             CollectionScreen(slug: state.pathParameters['slug']!),
+      ),
+
+      // A brand's public flagship storefront.
+      GoRoute(
+        path: RouteNames.brandStorefront,
+        builder: (ctx, state) => BrandStorefrontScreen(
+          vendorAccountId: state.pathParameters['vendorAccountId']!,
+        ),
       ),
 
       // Orders list: opened from Profile's "My Orders" (not a bar tab since
@@ -952,7 +964,9 @@ GoRouter appRouter(Ref ref) {
                   displayName: '',
                   handle: '',
                 );
-          return CreatorProfileScreen(args: extra);
+          // The creator gets their own profile (owner tools); everyone else
+          // gets the public storefront.
+          return CreatorProfileGate(args: extra);
         },
       ),
       GoRoute(

@@ -437,7 +437,17 @@ class _BrandResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial = brand.name.trim().isEmpty ? '?' : brand.name.trim()[0].toUpperCase();
-    return Padding(
+    // Opens the brand's storefront (brandId is the vendor account id).
+    return InkWell(
+      onTap: brand.brandId.isEmpty
+          ? null
+          : () => context.push(
+              RouteNames.brandStorefront.replaceFirst(
+                ':vendorAccountId',
+                Uri.encodeComponent(brand.brandId),
+              ),
+            ),
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
@@ -493,6 +503,7 @@ class _BrandResultTile extends StatelessWidget {
           ),
           const Icon(Icons.chevron_right_rounded, color: DesignTokens.iconLight),
         ],
+      ),
       ),
     );
   }

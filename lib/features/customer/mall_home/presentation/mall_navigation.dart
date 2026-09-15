@@ -42,10 +42,12 @@ abstract final class MallRoutes {
     ).toString();
   }
 
-  /// A brand's products until brand storefronts ship.
-  static String brand(String vendorAccountId, String name) => listing({
-    ProductListingQuery.keyVendorAccountId: vendorAccountId,
-  }, title: name);
+  /// A brand's public flagship storefront. [name] is kept for callers that
+  /// still pass the display name; the storefront loads it itself.
+  // ignore: avoid_unused_parameters
+  static String brand(String vendorAccountId, String name) => RouteNames
+      .brandStorefront
+      .replaceFirst(':vendorAccountId', Uri.encodeComponent(vendorAccountId));
 
   static String category(HomeCategory category) => listing({
     if (category.slug.isNotEmpty)
