@@ -199,14 +199,19 @@ class EmbedSlot extends ChangeNotifier {
     _armStartWatchdog();
   }
 
-  void pause() {
+  /// Stops playback. [byViewer] marks a pause the viewer asked for on the reel
+  /// on screen: the host page then puts a YouTube player back in its cued
+  /// state at the current time rather than pausing it, because a paused
+  /// YouTube player shows its own suggestions panel, which nobody can tap
+  /// here. [play] resumes from that time. Other platforms pause either way.
+  void pause({bool byViewer = false}) {
     if (_request == null || !_wantsPlay) return;
     _wantsPlay = false;
     _startTimer?.cancel();
     // A reel left before it started is timed afresh when it is back.
     if (!_traced) _playRequestedAt = null;
     if (!_progressed) _startRetried = false;
-    _run('smPlayer.pause()');
+    _run(byViewer ? 'smPlayer.pause(true)' : 'smPlayer.pause()');
   }
 
   void setMuted(bool muted) {
@@ -303,6 +308,10 @@ class EmbedSlot extends ChangeNotifier {
         // TikTok's player is initialising: still loading, the poster stays.
         break;
       case 'cued':
+        // Asked to play, a cue is stale: from a viewer pause (see [pause])
+        // resumed before its cue was reported, or from the reel before.
+        // Keeps the state, and [hasStarted], of the reel that plays on.
+        if (_wantsPlay) break;
         _readyTimer?.cancel();
         _setState(EmbedPlayerState.cued);
       case 'progress':

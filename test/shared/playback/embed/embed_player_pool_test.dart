@@ -362,4 +362,91 @@ void main() {
       },
     );
   });
+
+  group('viewer pause', () {
+    Future<(EmbedPlayerPool, List<_FakeDriver>)> playing({
+      int slots = 1,
+    }) async {
+      final (pool, d) = await _pool(slots: slots);
+      pool.setWindow(active: a, neighbours: [if (slots > 1) b]);
+      for (final driver in d) {
+        driver.finishLoad();
+      }
+      pool.slotFor(a.key)!.handleEvent({
+        'type': 'playing',
+        'token': d[pool.slotFor(a.key)!.index].lastToken,
+      });
+      return (pool, d);
+    }
+
+    test('holds the reel on screen, keeps its frames, and play resumes it',
+        () async {
+      final (pool, d) = await playing();
+      final slot = pool.slots.single;
+
+      pool.togglePause();
+      expect(d[0].scripts.last, 'smPlayer.pause(true)');
+      slot.handleEvent({'type': 'cued', 'token': d[0].lastToken});
+      expect(slot.state, EmbedPlayerState.cued);
+      expect(slot.hasStarted, isTrue, reason: 'no poster over a held reel');
+
+      pool.togglePause();
+      expect(d[0].scripts.last, 'smPlayer.play()');
+      expect(d[0].assigns, hasLength(1), reason: 'resumed in place');
+    });
+
+    test('a hidden feed pauses without holding, and never resumes a reel the '
+        'viewer paused', () async {
+      final (pool, d) = await playing();
+
+      pool.setHostActive(false);
+      expect(d[0].scripts.last, 'smPlayer.pause()');
+      pool.setHostActive(true);
+      expect(d[0].scripts.last, 'smPlayer.play()');
+
+      pool.togglePause();
+      final sent = d[0].scripts.length;
+      pool
+        ..setHostActive(false)
+        ..setHostActive(true);
+      expect(d[0].scripts, hasLength(sent));
+      expect(pool.userPaused, isTrue);
+    });
+
+    test('ignores a cue reported after the viewer resumed', () async {
+      final (pool, d) = await playing();
+      final slot = pool.slots.single;
+      final token = d[0].lastToken;
+
+      pool
+        ..togglePause()
+        ..togglePause();
+      slot
+        ..handleEvent({'type': 'buffering', 'token': token})
+        ..handleEvent({'type': 'cued', 'token': token});
+      expect(slot.state, EmbedPlayerState.buffering);
+
+      slot.handleEvent({'type': 'playing', 'token': token});
+      expect(slot.state, EmbedPlayerState.playing);
+    });
+
+    test('a held reel swiped away and back plays again', () async {
+      final (pool, d) = await playing(slots: 2);
+      final driver = d[pool.slotFor(a.key)!.index];
+
+      pool.togglePause();
+      expect(driver.scripts.last, 'smPlayer.pause(true)');
+
+      pool.setWindow(active: b, neighbours: [a]);
+      expect(
+        driver.scripts.last,
+        'smPlayer.pause(true)',
+        reason: 'already still',
+      );
+      expect(pool.userPaused, isFalse);
+
+      pool.setWindow(active: a, neighbours: [b]);
+      expect(driver.scripts.last, 'smPlayer.play()');
+    });
+  });
 }

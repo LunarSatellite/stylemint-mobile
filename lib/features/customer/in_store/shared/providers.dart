@@ -7,8 +7,10 @@ import 'package:stylemint_mobile_frontend/features/customer/in_store/data/dataso
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/repositories/in_store_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/product_reels_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/store_products_notifier.dart';
 
 export 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/product_reels_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/store_products_notifier.dart';
 
 final inStoreRemoteDataSourceProvider = Provider<InStoreRemoteDataSource>(
   (ref) => InStoreRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -26,4 +28,16 @@ final productReelsNotifierProvider = StateNotifierProvider.autoDispose
     .family<ProductReelsNotifier, ProductReelsState, String>(
       (ref, productId) =>
           ProductReelsNotifier(ref.watch(inStoreRepositoryProvider), productId),
+    );
+
+/// A vendor's products for the store screen, keyed by vendor account id.
+final StateNotifierProviderFamily<
+  StoreProductsNotifier,
+  StoreProductsState,
+  String
+>
+storeProductsNotifierProvider = StateNotifierProvider.autoDispose
+    .family<StoreProductsNotifier, StoreProductsState, String>(
+      (ref, vendorId) =>
+          StoreProductsNotifier(ref.watch(inStoreRepositoryProvider), vendorId),
     );

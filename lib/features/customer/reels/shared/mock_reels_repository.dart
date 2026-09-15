@@ -31,6 +31,21 @@ class MockReelsRepository implements ReelsRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getRelatedReels(
+    String reelId, {
+    int limit = 10,
+    String? cursor,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return right(
+      ReelsFeedPage(
+        reels: _reels.where((r) => r.id != reelId).toList(),
+        nextCursor: null,
+      ),
+    );
+  }
+
+  @override
   Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
     String reelId,
   ) async {

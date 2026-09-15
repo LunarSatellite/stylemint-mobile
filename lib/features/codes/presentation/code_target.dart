@@ -39,6 +39,7 @@ CodeTarget? codeTargetFor(ResolvedCode code) {
           storeName: code.storeName,
           storeCity: code.storeCity,
           vendorName: code.vendorDisplayName,
+          vendorId: code.vendorAccountId,
         ),
       );
     case CodeKind.profile:

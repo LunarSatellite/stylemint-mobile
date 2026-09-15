@@ -684,6 +684,7 @@ GoRouter appRouter(Ref ref) {
             storeName: query[InStoreQuery.store],
             storeCity: query[InStoreQuery.city],
             vendorName: query[InStoreQuery.vendor],
+            vendorId: query[InStoreQuery.vendorId],
           );
         },
       ),

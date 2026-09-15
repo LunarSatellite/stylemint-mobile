@@ -11,6 +11,14 @@ abstract interface class ReelsRepository {
 
   Future<Either<NetworkExceptions, Reel>> getReelDetail(String reelId);
 
+  /// Reels to keep watching after [reelId]: the creator's other reels, then
+  /// reels sharing a tagged product, then the latest reels. Never [reelId].
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getRelatedReels(
+    String reelId, {
+    int limit,
+    String? cursor,
+  });
+
   /// Likes the reel on StyleMint (not on its source platform).
   Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(String reelId);
 

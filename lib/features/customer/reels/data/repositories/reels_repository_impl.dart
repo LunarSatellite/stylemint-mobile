@@ -71,6 +71,35 @@ class ReelsRepositoryImpl implements ReelsRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, ReelsFeedPage>> getRelatedReels(
+    String reelId, {
+    int limit = 10,
+    String? cursor,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(
+        await remoteDataSource.getRelatedReels(
+          reelId,
+          limit: limit,
+          cursor: cursor,
+        ),
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return left(const NetworkExceptions.notFound());
+      }
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (e) {
+      return left(NetworkExceptions.server('$e'));
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, ReelLikeResult>> likeReel(
     String reelId,
   ) => _like(() => remoteDataSource.likeReel(reelId, _uuid.v4()));

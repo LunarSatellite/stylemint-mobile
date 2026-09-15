@@ -102,6 +102,35 @@ class ReelsRemoteDataSource {
     return _detailJsonToReel(response as Map<String, dynamic>, reelId);
   }
 
+  /// GET `/v1/public/reels/{id}/related` — reels to keep watching after a
+  /// shared reel: the creator's other reels, then reels sharing a tagged
+  /// product, then the latest reels (backend `PagedResult<ReelDto>`). Items
+  /// use the detail projection, so they map like [getReelDetail].
+  Future<ReelsFeedPage> getRelatedReels(
+    String reelId, {
+    required int limit,
+    String? cursor,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/public/reels/$reelId/related',
+      queryParameters: {
+        'pageSize': limit,
+        'cursor': ?cursor,
+      },
+    );
+
+    final data = response as Map<String, dynamic>;
+    final reels = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map((r) => _detailJsonToReel(r, ''))
+        .where((reel) => reel.id.isNotEmpty)
+        .toList(growable: false);
+    return ReelsFeedPage(
+      reels: reels,
+      nextCursor: data['nextCursor'] as String?,
+    );
+  }
+
   Reel _detailJsonToReel(Map<String, dynamic> r, String requestedId) {
     String str(List<String> keys) {
       for (final key in keys) {

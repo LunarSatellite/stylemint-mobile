@@ -9,6 +9,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_product_screen.dart';
@@ -39,6 +40,12 @@ class _FakeInStoreRepository implements InStoreRepository {
     requested.add(productId);
     return answers.length > 1 ? answers.removeAt(0) : answers.single;
   }
+
+  @override
+  Future<Either<NetworkExceptions, StoreProductsPage>> getVendorProducts(
+    String vendorAccountId, {
+    String? cursor,
+  }) async => right((products: const <StoreProduct>[], nextCursor: null));
 }
 
 const _product = ProductDetail(

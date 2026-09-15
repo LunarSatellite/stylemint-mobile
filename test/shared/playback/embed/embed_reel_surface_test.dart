@@ -90,11 +90,20 @@ Future<_Feed> _feed(
   return _Feed(pool, drivers);
 }
 
+EmbedRequest _youTube(String id) => EmbedRequest(
+  EmbedSource(
+    platform: SocialPlatform.youtube,
+    externalId: id,
+    permalink: 'https://www.youtube.com/shorts/$id',
+  ),
+);
+
 Future<void> _show(
   WidgetTester tester,
   _Feed feed,
   EmbedRequest request, {
   bool reduceMotion = false,
+  bool showPauseIndicator = false,
 }) => tester.pumpWidget(
   MediaQuery(
     data: MediaQueryData(disableAnimations: reduceMotion),
@@ -103,7 +112,7 @@ Future<void> _show(
       child: EmbedReelSurface(
         pool: feed.pool,
         request: request,
-        showPauseIndicator: false,
+        showPauseIndicator: showPauseIndicator,
         poster: const ColoredBox(key: _poster, color: Color(0xFF203040)),
         fallback: const SizedBox(key: _fallback),
       ),
@@ -303,6 +312,43 @@ void main() {
       await tester.pump();
       await tester.pump(EmbedReelSurface.posterFadeOut);
       expect(_posterOpacity(tester), 0);
+
+      await _close(tester, feed);
+    },
+  );
+
+  testWidgets(
+    'a YouTube reel the viewer paused stays on its cued player with the play '
+    'mark, never our poster, and resumes in place',
+    (tester) async {
+      final feed = await _feed(tester);
+      final short = _youTube('aaaaaaaaaaa');
+      feed.pool.setWindow(active: short);
+      feed.loadHosts();
+      await _show(tester, feed, short, showPauseIndicator: true);
+      feed
+        ..report(short, 'ready')
+        ..report(short, 'playing');
+      await tester.pump();
+      await tester.pump(EmbedReelSurface.posterFadeOut);
+      expect(_posterOpacity(tester), 0);
+
+      feed.pool.togglePause();
+      expect(feed.holding(short).scripts.last, 'smPlayer.pause(true)');
+      feed.report(short, 'cued');
+      await tester.pump();
+      await tester.pump(EmbedReelSurface.posterFadeOut);
+      expect(_posterOpacity(tester), 0, reason: "YouTube's cued thumbnail");
+      expect(find.bySemanticsLabel('Paused'), findsOneWidget);
+
+      feed.pool.togglePause();
+      expect(feed.holding(short).scripts.last, 'smPlayer.play()');
+      feed
+        ..report(short, 'buffering')
+        ..report(short, 'playing');
+      await tester.pump();
+      expect(_posterOpacity(tester), 0);
+      expect(find.bySemanticsLabel('Paused'), findsNothing);
 
       await _close(tester, feed);
     },

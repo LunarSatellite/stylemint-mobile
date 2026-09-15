@@ -6,7 +6,12 @@ abstract final class InStoreQuery {
   static const String code = 'code';
   static const String store = 'store';
   static const String city = 'city';
+
+  /// The vendor's display name.
   static const String vendor = 'vendor';
+
+  /// The vendor's account id.
+  static const String vendorId = 'vendorId';
 }
 
 /// `/in-store/product/{productId}` with the store and code it was scanned
@@ -27,13 +32,14 @@ String inStoreProductLocation({
   },
 );
 
-/// `/in-store/store/{storeId}?code=&store=&city=&vendor=`.
+/// `/in-store/store/{storeId}?code=&store=&city=&vendor=&vendorId=`.
 String inStoreStoreLocation({
   required String storeId,
   String? code,
   String? storeName,
   String? storeCity,
   String? vendorName,
+  String? vendorId,
 }) => _location(
   RouteNames.inStoreStore.replaceFirst(':storeId', storeId),
   {
@@ -41,6 +47,7 @@ String inStoreStoreLocation({
     InStoreQuery.store: storeName,
     InStoreQuery.city: storeCity,
     InStoreQuery.vendor: vendorName,
+    InStoreQuery.vendorId: vendorId,
   },
 );
 

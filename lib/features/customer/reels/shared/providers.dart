@@ -5,8 +5,8 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/datasources/reels_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/repositories/reels_repository_impl.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_landing_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_like_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
 
@@ -32,17 +32,17 @@ final reelLikeNotifierProvider =
       (ref) => ReelLikeNotifier(ref.watch(reelsRepositoryProvider)),
     );
 
-/// One reel by id, for `/reels/:reelId` (StyleMint share links). Throws the
-/// typed [NetworkExceptions] so the screen can tell "not found" apart.
+/// `/reels/:reelId` (StyleMint share links): the landed reel, then related
+/// reels, then the general feed. Disposed with the screen.
+// The family's provider type is long and says nothing the right side doesn't.
 // ignore: specify_nonobvious_property_types
-final reelDetailProvider = FutureProvider.autoDispose.family<Reel, String>(
-  (ref, reelId) async =>
-      (await ref.watch(reelsRepositoryProvider).getReelDetail(reelId)).fold(
-        // ignore: only_throw_errors
-        (failure) => throw failure,
-        (reel) => reel,
+final reelLandingNotifierProvider = StateNotifierProvider.autoDispose
+    .family<ReelLandingNotifier, ReelLandingState, String>(
+      (ref, reelId) => ReelLandingNotifier(
+        ref.watch(reelsRepositoryProvider),
+        reelId: reelId,
       ),
-);
+    );
 
 /// Bumped each time the Home (reels) tab is tapped while already on it.
 /// The reels feed listens to this to refresh its content and scroll to top.

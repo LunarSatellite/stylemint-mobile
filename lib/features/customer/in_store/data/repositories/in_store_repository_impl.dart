@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/datasources/in_store_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
 
 class InStoreRepositoryImpl implements InStoreRepository {
@@ -20,8 +21,25 @@ class InStoreRepositoryImpl implements InStoreRepository {
     String productId,
   ) => guardedNetworkCall(
     networkInfo,
-    () async => (await remoteDataSource.getProductReels(productId))
-        .map((dto) => dto.toDomain())
-        .toList(growable: false),
+    () async => (await remoteDataSource.getProductReels(
+      productId,
+    )).map((dto) => dto.toDomain()).toList(growable: false),
   );
+
+  @override
+  Future<Either<NetworkExceptions, StoreProductsPage>> getVendorProducts(
+    String vendorAccountId, {
+    String? cursor,
+  }) => guardedNetworkCall<StoreProductsPage>(networkInfo, () async {
+    final page = await remoteDataSource.getVendorProducts(
+      vendorAccountId,
+      cursor: cursor,
+    );
+    return (
+      products: page.products
+          .map((dto) => dto.toDomain())
+          .toList(growable: false),
+      nextCursor: page.nextCursor,
+    );
+  });
 }

@@ -64,7 +64,8 @@ void main() {
           builder: (_, state) => Text(
             'store ${state.pathParameters['storeId']} '
             '${state.uri.queryParameters[InStoreQuery.store]} by '
-            '${state.uri.queryParameters[InStoreQuery.vendor]}',
+            '${state.uri.queryParameters[InStoreQuery.vendor]} '
+            '(${state.uri.queryParameters[InStoreQuery.vendorId]})',
           ),
         ),
         GoRoute(
@@ -150,6 +151,7 @@ void main() {
           kind: CodeKind.store,
           storeId: 's-1',
           storeName: 'Mint Thamel',
+          vendorAccountId: 'v-1',
           vendorDisplayName: 'Mint Studio',
         ),
       ),
@@ -157,7 +159,10 @@ void main() {
 
     await pump(tester, '/c/ABCD2345?via=Nfc');
 
-    expect(find.text('store s-1 Mint Thamel by Mint Studio'), findsOneWidget);
+    expect(
+      find.text('store s-1 Mint Thamel by Mint Studio (v-1)'),
+      findsOneWidget,
+    );
     verify(() => repository.resolve('ABCD2345', CodeScanVia.nfc)).called(1);
   });
 

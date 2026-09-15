@@ -55,6 +55,25 @@ class _FeedApiClient extends ApiClient {
   }) async => body;
 }
 
+class _RecordingGetApiClient extends ApiClient {
+  _RecordingGetApiClient(this.body) : super(dio: Dio());
+
+  final Map<String, dynamic> body;
+  String? uri;
+  Map<String, dynamic>? queryParameters;
+
+  @override
+  Future<dynamic> get(
+    String uri, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    this.uri = uri;
+    this.queryParameters = queryParameters;
+    return body;
+  }
+}
+
 Map<String, dynamic> _card({
   required String reelId,
   required Object? sourcePlatform,
@@ -249,6 +268,61 @@ void main() {
       expect(reel.id, 'requested-id');
       expect(reel.likeCount, 20);
       expect(reel.isLikedByMe, isNull);
+    });
+  });
+
+  group('related reels', () {
+    test('pages GET /v1/public/reels/{id}/related and maps its ReelDto items',
+        () async {
+      final api = _RecordingGetApiClient({
+        'items': [
+          {
+            'id': 'r1',
+            'sourcePlatform': 'TikTok',
+            'externalId': '7000000000000000001',
+            'sourceUrl':
+                'https://www.tiktok.com/@maker/video/7000000000000000001',
+            'creatorDisplayName': 'Maker',
+            'likeCount': 7,
+            'isLikedByMe': true,
+            'caption': 'Packing light #AIgenerated',
+          },
+          // No id: nothing to show or to dedupe by.
+          {'sourcePlatform': 'TikTok'},
+        ],
+        'totalCount': 12,
+        'nextCursor': 'next-1',
+        'previousCursor': null,
+        'pageSize': 10,
+      });
+
+      final page = await ReelsRemoteDataSource(
+        apiClient: api,
+      ).getRelatedReels('landed', limit: 10, cursor: 'c-1');
+
+      expect(api.uri, '/v1/public/reels/landed/related');
+      expect(api.queryParameters, {'pageSize': 10, 'cursor': 'c-1'});
+      expect(page.nextCursor, 'next-1');
+      expect(page.reels.map((r) => r.id), ['r1']);
+      final reel = page.reels.single;
+      expect(reel.platform, SocialPlatform.tiktok);
+      expect(reel.platformVideoId, '7000000000000000001');
+      expect(reel.creatorName, 'Maker');
+      expect(reel.likeCount, 7);
+      expect(reel.isLikedByMe, isTrue);
+      expect(reel.caption, 'Packing light #AIgenerated');
+    });
+
+    test('asks for the first page without a cursor', () async {
+      final api = _RecordingGetApiClient({'items': <dynamic>[]});
+
+      final page = await ReelsRemoteDataSource(
+        apiClient: api,
+      ).getRelatedReels('landed', limit: 10);
+
+      expect(api.queryParameters, {'pageSize': 10});
+      expect(page.reels, isEmpty);
+      expect(page.nextCursor, isNull);
     });
   });
 

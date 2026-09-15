@@ -219,7 +219,9 @@ class EmbedPlayerPool extends ChangeNotifier {
           // a play command.
           existing.play();
         } else {
-          existing.pause();
+          // The viewer's own pause holds a YouTube reel on its cued
+          // thumbnail (see EmbedSlot.pause); a hidden feed just pauses.
+          existing.pause(byViewer: _userPaused && _hostActive);
         }
       }
     }

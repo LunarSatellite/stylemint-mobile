@@ -46,7 +46,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
   function blank(token) {
     return {token: token, platform: null, id: null, href: null, wantPlay: false,
             muted: false, durationSent: false, fbStarted: false,
-            preroll: false, prerolled: false, refusedMuted: false, progressed: false};
+            preroll: false, prerolled: false, refusedMuted: false, progressed: false,
+            held: false};
   }
 
   window.addEventListener('flutterInAppWebViewPlatformReady', function () {
@@ -133,6 +134,18 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     }
   }
 
+  // The viewer paused the reel on screen. A paused YouTube player shows its
+  // own suggestions panel, which nobody can tap here (the page never takes
+  // touches). Cue the video again at the current time instead: a cued player
+  // shows the video's thumbnail, and playVideo() starts from startSeconds
+  // (IFrame Player API, cueVideoById).
+  function ytHold() {
+    var at = 0;
+    try { at = yt.getCurrentTime() || 0; } catch (e) {}
+    cur.held = true;
+    yt.cueVideoById({videoId: cur.id, startSeconds: at});
+  }
+
   function ytAssign() {
     var token = cur.token;
     withYouTube(function () {
@@ -154,15 +167,22 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
         events: {
           onReady: function () { ytReady = true; emit('ready'); ytApply(); },
           onStateChange: function (event) {
+            // A cue reported while asked to play is not this reel's state: the
+            // viewer resumed before a hold's cue landed (so play again, in
+            // case the cue came last), or it is left over from the reel this
+            // player held before.
+            if (event.data === 5 && cur.wantPlay) { if (cur.held) yt.playVideo(); return; }
             var state = YT_STATES[String(event.data)];
             if (state) emit(state);
             if (event.data === 1) emitDuration(yt.getDuration());
+            if (event.data === 1 && cur.wantPlay) cur.held = false;
             // Reels loop. Replay on end rather than the loop playerVar, which
             // needs a playlist and re-buffers from the network each pass.
             if (event.data === 0 && cur.wantPlay) { yt.seekTo(0, true); yt.playVideo(); }
             // A pre-rolling reel holds its first moving frames until it is on
-            // screen, so a swipe to it shows video at once.
-            if (event.data === 1 && !cur.wantPlay) { cur.prerolled = true; yt.pauseVideo(); }
+            // screen, so a swipe to it shows video at once. A held reel stays
+            // cued: pausing it would bring the suggestions panel back.
+            if (event.data === 1 && !cur.wantPlay) { if (!cur.held) { cur.prerolled = true; yt.pauseVideo(); } }
           },
           onError: function (event) { emit('error', {code: 'yt_' + event.data}); },
           onAutoplayBlocked: function () {
@@ -445,10 +465,15 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
     ttSound = false; ttSoundOk = false; ttTime = null;
   }
 
-  function applyPlayback() {
+  // [byViewer]: the viewer paused the reel on screen (see ytHold). TikTok's
+  // player shows only its still frame while paused, and Facebook pauses as
+  // before, so both pause either way.
+  function applyPlayback(byViewer) {
     if (cur.platform === 'youtube') {
       if (yt && ytReady) {
-        if (cur.wantPlay) { if (!cur.muted) yt.unMute(); yt.playVideo(); } else yt.pauseVideo();
+        if (cur.wantPlay) { if (!cur.muted) yt.unMute(); yt.playVideo(); }
+        else if (byViewer) ytHold();
+        else yt.pauseVideo();
       }
     } else if (cur.platform === 'tiktok') {
       ttApply();
@@ -489,8 +514,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hid
       else if (platform === 'facebook') fbAssign();
       else emit('error', {code: 'unsupported_platform'});
     },
-    play: function () { cur.wantPlay = true; applyPlayback(); },
-    pause: function () { cur.wantPlay = false; applyPlayback(); },
+    play: function () { cur.wantPlay = true; applyPlayback(false); },
+    pause: function (byViewer) { cur.wantPlay = false; applyPlayback(!!byViewer); },
     setMuted: function (muted) { cur.muted = !!muted; applyMute(); },
     retryStart: function () { if (cur.platform === 'tiktok') ttRetryStart(); },
     warm: function (origins) { warm(origins); },

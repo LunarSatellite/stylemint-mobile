@@ -260,4 +260,78 @@ void main() {
       }
     });
   });
+
+  group('YouTube viewer pause', () {
+    test('cues the video at its current time instead of pausing it', () {
+      final hold = section('function ytHold()', 'function ytAssign()');
+      expect(hold, contains('yt.getCurrentTime()'));
+      expect(
+        hold,
+        contains('yt.cueVideoById({videoId: cur.id, startSeconds: at})'),
+      );
+      expect(hold, isNot(contains('pauseVideo')));
+
+      final apply = section(
+        'function applyPlayback(byViewer)',
+        'function applyMute()',
+      );
+      expect(
+        apply,
+        matches(RegExp(r'else if \(byViewer\) ytHold\(\);\s*else yt\.pauseVideo\(\);')),
+      );
+      expect(
+        html,
+        contains(
+          'pause: function (byViewer) { cur.wantPlay = false; '
+          'applyPlayback(!!byViewer); }',
+        ),
+      );
+      expect(
+        html,
+        contains(
+          'play: function () { cur.wantPlay = true; applyPlayback(false); }',
+        ),
+      );
+    });
+
+    test('a stale cue never stops a reel asked to play, and a held reel is '
+        'never paused into the suggestions panel', () {
+      final change = section('onStateChange: function (event) {', 'onError:');
+      expect(
+        change,
+        contains(
+          'if (event.data === 5 && cur.wantPlay) '
+          '{ if (cur.held) yt.playVideo(); return; }',
+        ),
+      );
+      expect(
+        change,
+        contains('if (event.data === 1 && cur.wantPlay) cur.held = false;'),
+      );
+      expect(
+        change,
+        contains(
+          'if (event.data === 1 && !cur.wantPlay) '
+          '{ if (!cur.held) { cur.prerolled = true; yt.pauseVideo(); } }',
+        ),
+      );
+      expect(
+        section('function blank(token)', "window.addEventListener('flutter"),
+        contains('held: false'),
+      );
+    });
+
+    test('TikTok and Facebook pause the same way for the viewer', () {
+      final apply = section(
+        'function applyPlayback(byViewer)',
+        'function applyMute()',
+      );
+      final others = apply.substring(
+        apply.indexOf("cur.platform === 'tiktok'"),
+      );
+      expect(others, contains('ttApply();'));
+      expect(others, contains('fbApply();'));
+      expect(others, isNot(contains('byViewer')));
+    });
+  });
 }
