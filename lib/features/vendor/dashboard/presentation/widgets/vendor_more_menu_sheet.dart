@@ -134,6 +134,14 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorSponsoredProducts),
               ),
               const _MoreDivider(),
+              // StyleMint Codes: the vendor's physical stores, with QR shelf
+              // cards and NFC tags for their products (v1/vendor/stores).
+              _MoreItem(
+                icon: Icons.qr_code_2_rounded,
+                title: 'Stores & shelf codes',
+                onTap: () => _go(context, RouteNames.vendorStores),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.question_answer_outlined,
                 title: 'Customer Inquiries',

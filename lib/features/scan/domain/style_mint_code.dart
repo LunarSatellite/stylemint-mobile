@@ -1,9 +1,14 @@
 import 'package:stylemint_mobile_frontend/core/navigation/in_app_link.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/code_links.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/style_mint_code_format.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 /// What a scanned StyleMint QR code asks the app to do.
 ///
-/// Only three kinds are recognised: a web-login code, a drop party join code
-/// and a StyleMint link to something to browse. Anything else — including
+/// Only four kinds are recognised: a web-login code, a drop party join code,
+/// a StyleMint code link (`/c/{code}`: a shelf tag, store or person) and a
+/// StyleMint link to something to browse. Anything else — including
 /// StyleMint links that would sign in, sign out or change settings — is not
 /// a StyleMint code, and the scanner opens nothing for it.
 sealed class StyleMintCode {
@@ -46,6 +51,13 @@ sealed class StyleMintCode {
       final token = uri.queryParameters['token']?.trim() ?? '';
       return token.isEmpty ? null : QrLoginCode(token);
     }
+    if (parts.length == 2 && parts.first == 'c') {
+      final code = StyleMintCodeFormat.normalize(parts.last);
+      if (code == null) return null;
+      // NFC tags carry `?via=nfc`; nothing else in a link is trusted.
+      final fromTag = uri.queryParameters['via']?.trim().toLowerCase() == 'nfc';
+      return StyleMintShortCode(code, via: fromTag ? CodeScanVia.nfc : null);
+    }
     if (parts.length != 2) return null;
     final root = _linkRoots[parts.first];
     final id = parts.last;
@@ -69,6 +81,28 @@ final class DropPartyInviteCode extends StyleMintCode {
   const DropPartyInviteCode(this.joinCode);
 
   final String joinCode;
+}
+
+/// A StyleMint code link — `https://<StyleMint host>/c/{code}` or
+/// `stylemint://c/{code}` — for a product on a shelf, a store or a person.
+final class StyleMintShortCode extends StyleMintCode {
+  const StyleMintShortCode(this.code, {this.via});
+
+  /// The 8-character code, upper case.
+  final String code;
+
+  /// [CodeScanVia.nfc] when the link came off an NFC tag (`via=nfc`);
+  /// null for an ordinary link.
+  final CodeScanVia? via;
+
+  /// The in-app route: `/c/{code}`, or `/c/{code}?via=Nfc` for a tag. With
+  /// no `via` the code resolves as a link.
+  String get route {
+    final from = via;
+    return from == null
+        ? '${RouteNames.styleMintCodeRoot}$code'
+        : StyleMintCodeLinks.route(code, from);
+  }
 }
 
 /// A StyleMint link to a product, reel, creator, drop party or group cart.

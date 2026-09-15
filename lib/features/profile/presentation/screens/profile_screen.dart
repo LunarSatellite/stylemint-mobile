@@ -185,6 +185,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         const _RoleSwitcherSection(),
         const SizedBox(height: DesignTokens.s16),
 
+        // StyleMint Codes: a QR friends scan to open this profile.
+        ProfileMenuSection(
+          items: [
+            ProfileMenuItem(
+              icon: Icons.qr_code_2_rounded,
+              label: 'My StyleMint code',
+              onTap: () => context.push(RouteNames.myStyleMintCode),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.s16),
+
         // Account & preferences
         ProfileMenuSection(
           items: [

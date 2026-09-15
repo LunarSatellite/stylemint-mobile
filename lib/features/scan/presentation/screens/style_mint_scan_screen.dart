@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/code_links.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_login_approval.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/shared/providers.dart';
@@ -24,7 +26,8 @@ class StyleMintScanScreen extends ConsumerStatefulWidget {
   static const String title = 'Scan';
   static const String hint = 'Point at a StyleMint QR code';
   static const String kinds =
-      'Products, reels, creators, drop parties and web login';
+      'Shelf and profile codes, products, reels, creators, drop parties and '
+      'web login';
   static const String notStyleMint = "That isn't a StyleMint code";
 
   @override
@@ -88,6 +91,16 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
           return false;
         }
         unawaited(router.pushReplacement(route));
+        return true;
+
+      case StyleMintShortCode(:final code):
+        // Scanned with StyleMint's own camera, so it counts as a QR scan
+        // whatever the link says.
+        unawaited(
+          GoRouter.of(
+            context,
+          ).pushReplacement(StyleMintCodeLinks.route(code, CodeScanVia.qr)),
+        );
         return true;
 
       case QrLoginCode(:final token):

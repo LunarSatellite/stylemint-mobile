@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
@@ -575,6 +576,15 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
 
   void _navigate(Uri uri) {
     final router = ref.read(appRouterProvider);
+    // StyleMint codes — stylemint://c/{code} and
+    // https://<StyleMint host>/c/{code}, from printed QR codes, NFC tags and
+    // shared links — open the resolve screen. A tag's via=nfc is kept;
+    // anything else counts as a link.
+    final styleMintCode = StyleMintCode.parse(uri.toString());
+    if (styleMintCode is StyleMintShortCode) {
+      router.go(styleMintCode.route);
+      return;
+    }
     // Convert the incoming deep link to a go_router path.
     //  - https links: the host is the domain, so the route is just `uri.path`
     //    (e.g. https://host/auth/magic -> /auth/magic).

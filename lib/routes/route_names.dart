@@ -71,6 +71,25 @@ abstract class RouteNames {
   static const profileSavedItems = '/profile/saved-items';
   static const wallet = '/wallet';
 
+  // StyleMint Codes
+  /// Opens a StyleMint code: `/c/{code}?via=Qr|Nfc|Link` (no `via` = Link).
+  static const styleMintCode = '/c/:code';
+
+  /// Prefix of [styleMintCode] locations; open to guests.
+  static const styleMintCodeRoot = '/c/';
+
+  /// A product scanned in a store: `?storeId=&code=&store=&city=`.
+  static const inStoreProduct = '/in-store/product/:productId';
+
+  /// A store's code: `?code=&store=&city=&vendor=`.
+  static const inStoreStore = '/in-store/store/:storeId';
+
+  /// Prefix of the in-store routes; open to guests.
+  static const inStoreRoot = '/in-store/';
+
+  /// The signed-in person's own Profile code.
+  static const myStyleMintCode = '/account/stylemint-code';
+
   // Creator
   static const creatorHome = '/creator/home';
   static const creatorApply = '/creator/apply';
@@ -138,6 +157,14 @@ abstract class RouteNames {
   static const vendorEditProduct = '/vendor/products/:productId/edit';
   static const vendorProductAnalytics = '/vendor/products/analytics';
   static const vendorTopProducts = '/vendor/products/top';
+  // Per-product StyleMint shelf codes (extra: VendorProduct).
+  static const vendorProductInStoreCodes =
+      '/vendor/products/:productId/in-store-codes';
+  // Physical stores/branches and their codes.
+  static const vendorStores = '/vendor/stores';
+  static const vendorStoreNew = '/vendor/stores/new';
+  static const vendorStoreDetail = '/vendor/stores/:storeId';
+  static const vendorStoreEdit = '/vendor/stores/:storeId/edit';
   static const vendorRecentActivity = '/vendor/activity';
   static const vendorPartnerships = '/vendor/partnerships';
   static const vendorSendPartnershipRequest = '/vendor/partnerships/send';

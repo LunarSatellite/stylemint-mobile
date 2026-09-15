@@ -78,6 +78,13 @@ dependencies:
   # fails :file_picker:compileDebugKotlin. beta.4 is the known-good build.
   file_picker: 11.0.2
   mobile_scanner: ^7.2.0
+  # StyleMint Codes: branded QR, printable shelf cards, NFC tag writing.
+  # printing 5.15+ needs pdf 3.13 (xml 7), which flutter_local_notifications
+  # 21 can't share (xml 6), so printing stays on 5.14.
+  pretty_qr_code: ^3.6.0
+  pdf: ^3.11.3
+  printing: ^5.14.3
+  flutter_nfc_kit: ^3.6.2
   url_launcher: ^6.3.1
   flutter_web_browser: ^0.17.1
   package_info_plus: ^9.0.1

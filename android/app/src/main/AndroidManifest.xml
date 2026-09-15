@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- StyleMint Codes: vendors write shelf-code links to NFC tags. NFC isn't
+         required, so phones without it can still install the app. -->
+    <uses-permission android:name="android.permission.NFC"/>
+    <uses-feature android:name="android.hardware.nfc" android:required="false"/>
     <application
         android:label="StyleMint"
         android:name="${applicationName}"
@@ -52,6 +56,17 @@
                 <data android:scheme="https"/>
                 <data android:host="stylemint.voyageritnepal.com"/>
                 <data android:pathPrefix="/reels/"/>
+            </intent-filter>
+            <!-- StyleMint Codes (https://stylemint.voyageritnepal.com/c/{code}) from
+                 printed QR codes and NFC tags open in-app (main.dart routes them to
+                 /c/:code). Verified against the same assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="stylemint.voyageritnepal.com"/>
+                <data android:pathPrefix="/c/"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

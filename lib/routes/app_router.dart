@@ -20,6 +20,9 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pas
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pause_account_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
+import 'package:stylemint_mobile_frontend/features/codes/presentation/screens/code_resolve_screen.dart';
+import 'package:stylemint_mobile_frontend/features/codes/presentation/screens/my_style_mint_code_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/full_analytics_report_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/analytics/presentation/screens/reel_detail_analytics_screen.dart';
@@ -69,6 +72,9 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_product_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_store_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/fedex_tracking_screen.dart';
@@ -174,6 +180,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/statement_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_earnings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/earnings/presentation/screens/vendor_payout_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/in_store_codes/presentation/screens/product_in_store_codes_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/inquiries/presentation/screens/vendor_inquiries_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/matchmaking/presentation/screens/matchmaking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/order_waiting_tracking_screen.dart';
@@ -195,6 +202,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/analytics/presentation
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/presentation/screens/vendor_demand_signals_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/sponsored_products/presentation/screens/vendor_sponsored_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/store_actions/presentation/screens/vendor_store_actions_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/stores/domain/entities/vendor_store.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/stores/presentation/screens/vendor_store_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/stores/presentation/screens/vendor_store_form_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/stores/presentation/screens/vendor_stores_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/support/vendor_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/product_analytics_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/top_products_screen.dart';
@@ -250,6 +261,10 @@ const _publicPaths = {
   RouteNames.productReviews,
   // Scanning is open to guests; login and drop party codes ask to sign in.
   RouteNames.scan,
+  // StyleMint codes (printed QR, NFC tags, /c/ links) and the in-store pages
+  // they open work signed out.
+  RouteNames.styleMintCodeRoot,
+  RouteNames.inStoreRoot,
   // Settings/support readable without auth
   RouteNames.settings,
   RouteNames.settingsPrivacy,
@@ -635,6 +650,42 @@ GoRouter appRouter(Ref ref) {
         builder: (ctx, state) => ReelDetailScreen(
           reelId: state.pathParameters['reelId']!,
         ),
+      ),
+
+      // StyleMint Codes: /c/{code} resolves (counting the scan), then replaces
+      // itself with the in-store product, the store or the person's profile.
+      GoRoute(
+        path: RouteNames.styleMintCode,
+        builder: (ctx, state) => CodeResolveScreen(
+          code: state.pathParameters['code']!,
+          via: CodeScanVia.parse(state.uri.queryParameters['via']),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.inStoreProduct,
+        builder: (ctx, state) {
+          final query = state.uri.queryParameters;
+          return InStoreProductScreen(
+            productId: state.pathParameters['productId']!,
+            storeId: query[InStoreQuery.storeId],
+            code: query[InStoreQuery.code],
+            storeName: query[InStoreQuery.store],
+            storeCity: query[InStoreQuery.city],
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteNames.inStoreStore,
+        builder: (ctx, state) {
+          final query = state.uri.queryParameters;
+          return InStoreStoreScreen(
+            storeId: state.pathParameters['storeId']!,
+            code: query[InStoreQuery.code],
+            storeName: query[InStoreQuery.store],
+            storeCity: query[InStoreQuery.city],
+            vendorName: query[InStoreQuery.vendor],
+          );
+        },
       ),
 
       // Saved Items
@@ -1037,6 +1088,43 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.vendorProducts,
         builder: (ctx, state) => const VendorProductsScreen(),
       ),
+      // StyleMint Codes for vendors: a product's shelf codes per store, and
+      // the stores themselves. "new" is listed before ":storeId".
+      GoRoute(
+        path: RouteNames.vendorProductInStoreCodes,
+        builder: (ctx, state) => ProductInStoreCodesScreen(
+          productId: state.pathParameters['productId']!,
+          product: state.extra is VendorProduct
+              ? state.extra! as VendorProduct
+              : null,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorStores,
+        builder: (ctx, state) => const VendorStoresScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorStoreNew,
+        builder: (ctx, state) => const VendorStoreFormScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.vendorStoreEdit,
+        builder: (ctx, state) => VendorStoreFormScreen(
+          storeId: state.pathParameters['storeId'],
+          store: state.extra is VendorStore
+              ? state.extra! as VendorStore
+              : null,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorStoreDetail,
+        builder: (ctx, state) => VendorStoreDetailScreen(
+          storeId: state.pathParameters['storeId']!,
+          store: state.extra is VendorStore
+              ? state.extra! as VendorStore
+              : null,
+        ),
+      ),
       GoRoute(
         path: RouteNames.vendorUpdateStock,
         builder: (ctx, state) => UpdateProductStockScreen(
@@ -1353,6 +1441,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.scan,
         builder: (ctx, state) => const StyleMintScanScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.myStyleMintCode,
+        builder: (ctx, state) => const MyStyleMintCodeScreen(),
       ),
 
       // Settings

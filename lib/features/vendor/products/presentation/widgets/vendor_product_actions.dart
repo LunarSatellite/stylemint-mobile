@@ -77,6 +77,24 @@ Future<void> showVendorProductActions(
           ),
           const _ActionDivider(),
 
+          // In-store codes: a StyleMint QR / NFC shelf code for this product
+          // in one of the vendor's stores.
+          _ActionRow(
+            icon: Icons.qr_code_2_rounded,
+            title: 'In-store codes',
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await context.push(
+                RouteNames.vendorProductInStoreCodes.replaceFirst(
+                  ':productId',
+                  product.id,
+                ),
+                extra: product,
+              );
+            },
+          ),
+          const _ActionDivider(),
+
           // Sponsor this product (Active only; the backend only sponsors
           // live products). Opens the sponsor form for this product.
           if (isActive) ...[

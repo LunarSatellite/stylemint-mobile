@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 
 void main() {
@@ -35,6 +36,66 @@ void main() {
       final code = StyleMintCode.parse(raw);
       expect(code, isA<StyleMintLinkCode>(), reason: raw);
       expect((code! as StyleMintLinkCode).route, route, reason: raw);
+    }
+  });
+
+  test('reads StyleMint code links as /c routes', () {
+    const cases = {
+      'https://stylemint.voyageritnepal.com/c/ABCD2345': '/c/ABCD2345',
+      // Codes are case-insensitive.
+      'https://stylemint.voyageritnepal.com/c/abcd2345': '/c/ABCD2345',
+      'https://stylemint.app/c/7K9M2PQR/': '/c/7K9M2PQR',
+      'stylemint://c/7k9m2pqr': '/c/7K9M2PQR',
+      // An NFC tag's via=nfc is kept, in any casing.
+      'https://stylemint.voyageritnepal.com/c/ABCD2345?via=nfc':
+          '/c/ABCD2345?via=Nfc',
+      'https://stylemint.voyageritnepal.com/c/ABCD2345?via=NFC':
+          '/c/ABCD2345?via=Nfc',
+      // Anything else in `via` is ignored: the link counts as a link.
+      'https://stylemint.voyageritnepal.com/c/ABCD2345?via=Qr': '/c/ABCD2345',
+    };
+    for (final MapEntry(key: raw, value: route) in cases.entries) {
+      final code = StyleMintCode.parse(raw);
+      expect(code, isA<StyleMintShortCode>(), reason: raw);
+      expect((code! as StyleMintShortCode).route, route, reason: raw);
+    }
+
+    final fromTag =
+        StyleMintCode.parse(
+              'https://stylemint.voyageritnepal.com/c/abcd2345?via=nfc',
+            )!
+            as StyleMintShortCode;
+    expect(fromTag.code, 'ABCD2345');
+    expect(fromTag.via, CodeScanVia.nfc);
+    expect(
+      (StyleMintCode.parse('stylemint://c/ABCD2345')! as StyleMintShortCode)
+          .via,
+      isNull,
+    );
+  });
+
+  test('code links that are not StyleMint codes open nothing', () {
+    for (final raw in [
+      // Wrong length.
+      'https://stylemint.voyageritnepal.com/c/ABCD234',
+      'https://stylemint.voyageritnepal.com/c/ABCD23456',
+      'stylemint://c/',
+      // I, L, O and U are not in the code alphabet.
+      'https://stylemint.voyageritnepal.com/c/ABCI2345',
+      'https://stylemint.voyageritnepal.com/c/ABCL2345',
+      'stylemint://c/ABCO2345',
+      'stylemint://c/abcu2345',
+      'https://stylemint.voyageritnepal.com/c/ABCD-234',
+      // Not a StyleMint host.
+      'https://example.com/c/ABCD2345',
+      'https://stylemint.voyageritnepal.com.evil.com/c/ABCD2345',
+      'ftp://stylemint.voyageritnepal.com/c/ABCD2345',
+      // Extra segments.
+      'stylemint://c/ABCD2345/extra',
+      // A bare code isn't a link.
+      'ABCD2345',
+    ]) {
+      expect(StyleMintCode.parse(raw), isNull, reason: raw);
     }
   });
 
