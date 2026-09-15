@@ -173,11 +173,11 @@ void main() {
       expect(find.text('reel:r-human'), findsOneWidget);
     });
 
-    testWidgets('a brand opens its product listing', (tester) async {
+    testWidgets('a brand opens its storefront', (tester) async {
       await _pump(tester, height: 6000);
       await tester.tap(find.text('Stylemint Nepal'), warnIfMissed: false);
       await settleTransition(tester);
-      expect(find.textContaining('vendorAccountId=v-1'), findsOneWidget);
+      expect(find.textContaining('/brands/v-1'), findsOneWidget);
     });
 
     testWidgets('See all opens the listing with the section query', (
