@@ -6,7 +6,9 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/datasources/reel_import_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/repositories/reel_import_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/repositories/reel_import_repository.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/last_import_platform_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
 final reelImportRemoteDataSourceProvider =
     Provider<ReelImportRemoteDataSource>(
@@ -25,6 +27,12 @@ final reelImportRepositoryProvider = Provider<ReelImportRepository>(
 final reelImportNotifierProvider =
     StateNotifierProvider<ReelImportNotifier, ReelImportState>(
       (ref) => ReelImportNotifier(ref.watch(reelImportRepositoryProvider)),
+    );
+
+/// Last platform the creator imported from, persisted on the device.
+final lastImportPlatformProvider =
+    StateNotifierProvider<LastImportPlatformNotifier, SocialPlatform?>(
+      (ref) => LastImportPlatformNotifier(),
     );
 
 final importHistoryNotifierProvider =

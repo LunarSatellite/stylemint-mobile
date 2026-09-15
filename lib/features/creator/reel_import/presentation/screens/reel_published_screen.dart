@@ -7,7 +7,6 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
 
 class ReelPublishedScreen extends StatelessWidget {
   const ReelPublishedScreen({super.key, required this.args});
@@ -37,7 +36,7 @@ class ReelPublishedScreen extends StatelessWidget {
   }
 
   void _showWhatHappensNow(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       shape: const RoundedRectangleBorder(
@@ -114,7 +113,7 @@ class ReelPublishedScreen extends StatelessWidget {
   }
 
   void _showTaggedSheet(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       isScrollControlled: true,
@@ -369,18 +368,15 @@ class ReelPublishedScreen extends StatelessWidget {
                             size: 24,
                           ),
                           label: 'Watch\nReel',
-                          onTap: args.reel?.sourceUrl.isNotEmpty == true
-                              ? () async {
-                                  final source = Uri.tryParse(
-                                    args.reel!.sourceUrl,
-                                  );
-                                  if (source == null || !source.hasScheme) {
-                                    return;
-                                  }
-                                  await const ReelExternalLauncher().open(
-                                    source,
-                                  );
-                                }
+                          // Plays in-app on the reel's details page; the
+                          // source platform is never opened.
+                          onTap: args.publishedReelId?.isNotEmpty == true
+                              ? () => context.push(
+                                  RouteNames.creatorReelDetail.replaceFirst(
+                                    ':reelId',
+                                    args.publishedReelId!,
+                                  ),
+                                )
                               : null,
                         ),
                       ),

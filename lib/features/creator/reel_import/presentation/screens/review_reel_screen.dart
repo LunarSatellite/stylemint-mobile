@@ -117,7 +117,7 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
   }
 
   void _showTaggedSheet() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       isScrollControlled: true,

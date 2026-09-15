@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/datasources/reel_import_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/repositories/reel_import_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -21,6 +23,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
   Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
     SocialPlatform platform, {
     String? cursor,
+    bool refresh = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
@@ -29,6 +32,7 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
       final page = await remoteDataSource.getImportableReels(
         platform,
         cursor: cursor,
+        refresh: refresh,
       );
       return right(
         ImportableReelsResult(
@@ -37,13 +41,11 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
               .where((reel) => reel.videoDuration > 0)
               .toList(growable: false),
           nextCursor: page.nextCursor,
+          freshness: page.toFreshness(),
         ),
       );
     } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        return left(const NetworkExceptions.notFound());
-      }
-      return left(NetworkExceptions.server(e.message.toString()));
+      return left(_mapContentError(e));
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (_) {
@@ -270,6 +272,18 @@ class ReelImportRepositoryImpl implements ReelImportRepository {
     } on Object catch (_) {
       return left(const NetworkExceptions.unexpectedError());
     }
+  }
+
+  /// Keeps the backend `errorCode` of a content-listing failure. Provider
+  /// problems arrive as HTTP 400 with codes like `RATE_LIMITED` or
+  /// `TOKEN_EXPIRED` and become `.validation(code:)`; a missing connection
+  /// (`resource.not_found`, 404) becomes `.notFound()` whatever the status.
+  static NetworkExceptions _mapContentError(DioException e) {
+    final mapped = mapDioExceptionToNetworkException(e);
+    final issue = ContentProviderIssue.fromCode(mapped.validationCode);
+    return issue == ContentProviderIssue.notConnected
+        ? const NetworkExceptions.notFound()
+        : mapped;
   }
 
   static ReelIntent _parseReelIntent(Map<String, dynamic> body) {

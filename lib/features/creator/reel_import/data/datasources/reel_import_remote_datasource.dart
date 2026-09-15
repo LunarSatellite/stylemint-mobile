@@ -1,17 +1,74 @@
 import 'package:dio/dio.dart' show DioException, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
-/// One provider-native page of importable reels plus the opaque cursor to
-/// fetch the next page (null once the provider has no more pages).
+/// One page of importable reels plus the opaque cursor to fetch the next page
+/// (null once there are no more pages) and freshness metadata.
+///
+/// `servedFromCache`, `fetchedUtc`, `staleSinceUtc` and `providerStatus` are
+/// additive: older servers omit them, which parses as a live page.
 class ImportableReelsPage {
-  const ImportableReelsPage({required this.reels, required this.nextCursor});
+  const ImportableReelsPage({
+    required this.reels,
+    required this.nextCursor,
+    this.servedFromCache = false,
+    this.fetchedUtc,
+    this.staleSinceUtc,
+    this.providerStatus,
+  });
 
   final List<ImportableReelDto> reels;
   final String? nextCursor;
+  final bool servedFromCache;
+  final DateTime? fetchedUtc;
+  final DateTime? staleSinceUtc;
+  final ProviderStatusPayload? providerStatus;
+
+  ContentFreshness toFreshness() => ContentFreshness(
+    servedFromCache: servedFromCache,
+    fetchedUtc: fetchedUtc,
+    staleSinceUtc: staleSinceUtc,
+    providerStatus: providerStatus?.toDomain(),
+  );
 }
+
+/// `providerStatus` of a content page: `{code, message, retryAfterUtc}`.
+class ProviderStatusPayload {
+  const ProviderStatusPayload({
+    required this.code,
+    required this.message,
+    this.retryAfterUtc,
+  });
+
+  /// Null when [json] is not an object or has no usable `code`.
+  static ProviderStatusPayload? tryParse(Object? json) {
+    if (json is! Map) return null;
+    final code = json['code'];
+    if (code is! String || code.trim().isEmpty) return null;
+    final message = json['message'];
+    return ProviderStatusPayload(
+      code: code.trim(),
+      message: message is String ? message : '',
+      retryAfterUtc: _parseUtc(json['retryAfterUtc']),
+    );
+  }
+
+  final String code;
+  final String message;
+  final DateTime? retryAfterUtc;
+
+  ContentProviderStatus toDomain() => ContentProviderStatus(
+    code: code,
+    message: message,
+    retryAfterUtc: retryAfterUtc,
+  );
+}
+
+DateTime? _parseUtc(Object? value) =>
+    value is String ? DateTime.tryParse(value)?.toUtc() : null;
 
 class ReelImportRemoteDataSource {
   ReelImportRemoteDataSource({required this.apiClient});
@@ -34,21 +91,25 @@ class ReelImportRemoteDataSource {
     _ => 'instagram',
   };
 
-  // GET /v1/social/accounts/{provider}/content?limit=25&cursor=...
-  // Lists recent posts from the creator's connected social account, one
-  // provider-native page at a time. A single page can legitimately return
-  // zero importable (video) items even when more pages exist — e.g. a run of
-  // photo posts — so the caller should keep calling with [nextCursor] rather
-  // than treat an empty page as "no more content".
+  // GET /v1/social/accounts/{provider}/content?limit=25&cursor=...&refresh=true
+  // Lists recent posts from the creator's connected social account, one page
+  // at a time — live from the provider, or the saved copy (servedFromCache)
+  // when the provider is throttled/unreachable or the saved copy is fresh.
+  // A single page can legitimately return zero importable (video) items even
+  // when more pages exist — e.g. a run of photo posts — so the caller should
+  // keep calling with [nextCursor] rather than treat an empty page as "no
+  // more content". [refresh] asks for a live read of the first page.
   Future<ImportableReelsPage> getImportableReels(
     SocialPlatform platform, {
     String? cursor,
+    bool refresh = false,
   }) async {
     final response = await apiClient.get(
       '/v1/social/accounts/${platform.name}/content',
       queryParameters: {
         'limit': 25,
-        if (cursor != null) 'cursor': cursor,
+        'cursor': ?cursor,
+        if (refresh) 'refresh': true,
       },
     );
     final body = response as Map<String, dynamic>? ?? const {};
@@ -76,9 +137,16 @@ class ReelImportRemoteDataSource {
           );
         })
         .toList(growable: false);
+    final nextCursor = body['nextCursor'];
     return ImportableReelsPage(
       reels: reels,
-      nextCursor: body['nextCursor'] as String?,
+      nextCursor: nextCursor is String && nextCursor.isNotEmpty
+          ? nextCursor
+          : null,
+      servedFromCache: body['servedFromCache'] == true,
+      fetchedUtc: _parseUtc(body['fetchedUtc']),
+      staleSinceUtc: _parseUtc(body['staleSinceUtc']),
+      providerStatus: ProviderStatusPayload.tryParse(body['providerStatus']),
     );
   }
 

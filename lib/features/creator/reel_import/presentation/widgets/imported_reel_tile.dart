@@ -1,25 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_player.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ImportedReelTile extends StatelessWidget {
   const ImportedReelTile({super.key, required this.reel});
 
   final ImportedReel reel;
-  static const _externalLauncher = ReelExternalLauncher();
 
-  Future<void> _openSource() async {
-    final source = Uri.tryParse(reel.sourceUrl);
-    if (source == null || !source.hasScheme) return;
-    await _externalLauncher.open(source);
+  /// Opens the reel's in-app details, which play it through the official
+  /// embedded player. Nothing opens outside StyleMint.
+  void _openReel(BuildContext context) {
+    unawaited(
+      context.push(
+        RouteNames.creatorReelDetail.replaceFirst(':reelId', reel.reelReelId),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: reel.sourceUrl.isNotEmpty ? _openSource : null,
+      onTap: reel.reelReelId.isNotEmpty ? () => _openReel(context) : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: DesignTokens.s8),
         padding: const EdgeInsets.all(DesignTokens.s12),

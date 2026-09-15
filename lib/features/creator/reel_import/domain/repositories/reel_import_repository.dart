@@ -1,23 +1,38 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 
-/// One provider-native page of importable reels plus the opaque cursor to
-/// fetch the next page (null once the provider has no more pages).
+/// One page of importable reels plus the opaque cursor to fetch the next page
+/// (null once there are no more pages) and where the page came from.
 class ImportableReelsResult {
-  const ImportableReelsResult({required this.reels, required this.nextCursor});
+  const ImportableReelsResult({
+    required this.reels,
+    required this.nextCursor,
+    this.freshness = const ContentFreshness(),
+  });
 
   final List<ImportableReel> reels;
+
+  /// A provider cursor continues a live listing; a cursor starting `sm1.`
+  /// continues through saved posts. Either way it is opaque to the client.
   final String? nextCursor;
+  final ContentFreshness freshness;
 }
 
 abstract interface class ReelImportRepository {
-  /// [cursor] is the provider-native opaque cursor from a previous page's
+  /// [cursor] is the opaque cursor from a previous page's
   /// [ImportableReelsResult.nextCursor] — omit for the first page.
+  /// [refresh] asks the backend for a live read instead of saved posts.
+  ///
+  /// Provider problems come back as `NetworkExceptions.validation(code:)`
+  /// carrying the backend `errorCode` (see [ContentProviderIssue.fromCode]);
+  /// a missing connection is `NetworkExceptions.notFound()`.
   Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
     SocialPlatform platform, {
     String? cursor,
+    bool refresh = false,
   });
 
   /// [caption] is the caption to store on StyleMint — the Review screen

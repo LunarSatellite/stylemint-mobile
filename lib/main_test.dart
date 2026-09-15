@@ -374,6 +374,7 @@ class _MockReelImportRepository implements ReelImportRepository {
   Future<Either<NetworkExceptions, ImportableReelsResult>> getImportableReels(
     SocialPlatform platform, {
     String? cursor,
+    bool refresh = false,
   }) async => right(
     ImportableReelsResult(
       nextCursor: null,

@@ -128,7 +128,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
   }
 
   void _showTaggedProductsSheet() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: DesignTokens.bgAppBody,
       isScrollControlled: true,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/repositories/reel_import_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -15,10 +16,19 @@ abstract class ReelImportState with _$ReelImportState {
 
   const factory ReelImportState.initial() = _ReelImportInitial;
   const factory ReelImportState.loadInProgress() = _ReelImportLoadInProgress;
+
+  /// [freshness] says whether [reels] are the saved copy and why the provider
+  /// was not read live. [refreshBlockedUntil] is set when a pull to refresh
+  /// was skipped because the provider asked us to wait; [refreshFailure] when
+  /// a refresh failed but the current list was kept. Both clear on the next
+  /// refresh attempt.
   const factory ReelImportState.loadSuccess(
     List<ImportableReel> reels, {
     @Default(false) bool hasMore,
     @Default(false) bool isLoadingMore,
+    @Default(ContentFreshness()) ContentFreshness freshness,
+    DateTime? refreshBlockedUntil,
+    NetworkExceptions? refreshFailure,
   }) = _ReelImportLoadSuccess;
   const factory ReelImportState.loadFailure(NetworkExceptions failure) =
       _ReelImportLoadFailure;
@@ -53,63 +63,186 @@ abstract class ProductSearchState with _$ProductSearchState {
 }
 
 class ReelImportNotifier extends StateNotifier<ReelImportState> {
-  ReelImportNotifier(this._repository) : super(const ReelImportState.initial());
+  ReelImportNotifier(this._repository, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now,
+      super(const ReelImportState.initial());
 
   final ReelImportRepository _repository;
+  final DateTime Function() _clock;
 
   String? _cursor;
   bool _hasMore = false;
   bool _isLoadingMore = false;
+  bool _isRefreshing = false;
   SocialPlatform? _platform;
   List<ImportableReel> _reels = const [];
+  ContentFreshness _freshness = const ContentFreshness();
 
-  Future<void> load(SocialPlatform platform) async {
+  /// Bumped whenever the list is replaced (platform load or refresh) so a
+  /// response for a list that is no longer shown is dropped instead of
+  /// overwriting or being appended to the new one.
+  int _generation = 0;
+
+  /// Loads the first page for [platform], replacing whatever is shown.
+  /// [refresh] asks the backend for a live read instead of saved posts.
+  Future<void> load(SocialPlatform platform, {bool refresh = false}) async {
+    final generation = ++_generation;
     _platform = platform;
     _cursor = null;
+    _hasMore = false;
+    _isLoadingMore = false;
     _reels = const [];
+    _freshness = const ContentFreshness();
     state = const ReelImportState.loadInProgress();
-    final either = await _repository.getImportableReels(platform);
+    final either = await _repository.getImportableReels(
+      platform,
+      refresh: refresh,
+    );
+    if (generation != _generation) return;
     state = either.fold(
       ReelImportState.loadFailure,
       (page) {
-        _reels = page.reels;
-        _cursor = page.nextCursor;
-        _hasMore = page.nextCursor != null;
-        return ReelImportState.loadSuccess(_reels, hasMore: _hasMore);
+        _applyFirstPage(page);
+        return _success();
       },
     );
   }
 
-  /// Fetches the next provider-native page and appends its (possibly zero,
-  /// if that page was all non-video posts) importable reels to what's
-  /// already shown. No-ops if there's no known next page or a fetch is
-  /// already in flight.
+  /// Pull to refresh: asks for a live first page and swaps it in, keeping
+  /// the current list on screen meanwhile.
+  ///
+  /// When the last page said the provider must not be called before
+  /// `retryAfterUtc`, nothing is fetched: the list stays and the state
+  /// carries [ReelImportState.loadSuccess] `refreshBlockedUntil`. A failed
+  /// refresh keeps the list and reports `refreshFailure`, except a lost
+  /// connection (not found), which shows the not-connected state.
+  /// Without a list on screen this is a plain [load] with `refresh`.
+  Future<void> refresh() async {
+    final platform = _platform;
+    if (platform == null || _isRefreshing) return;
+
+    final hasList = state.maybeWhen(
+      loadSuccess: (_, _, _, _, _, _) => true,
+      orElse: () => false,
+    );
+    if (!hasList) {
+      await load(platform, refresh: true);
+      return;
+    }
+
+    // Clear any earlier notice first so a repeated pull reports again.
+    state = _success();
+    if (_freshness.isRefreshBlockedAt(_clock())) {
+      state = _success(
+        refreshBlockedUntil: _freshness.providerStatus?.retryAfterUtc,
+      );
+      return;
+    }
+
+    final generation = ++_generation;
+    _isRefreshing = true;
+    _isLoadingMore = false;
+    state = _success();
+    final either = await _repository.getImportableReels(
+      platform,
+      refresh: true,
+    );
+    _isRefreshing = false;
+    if (generation != _generation) return;
+
+    state = either.fold(
+      (failure) {
+        if (failure.isNotFound) {
+          _reels = const [];
+          _cursor = null;
+          _hasMore = false;
+          _freshness = const ContentFreshness();
+          return ReelImportState.loadFailure(failure);
+        }
+        _noteProviderProblem(failure);
+        return _success(refreshFailure: failure);
+      },
+      (page) {
+        _applyFirstPage(page);
+        return _success();
+      },
+    );
+  }
+
+  /// Fetches the next page (a provider cursor or a saved-posts `sm1.` cursor,
+  /// both opaque) and appends its (possibly zero, if that page was all
+  /// non-video posts) importable reels to what's already shown. No-ops if
+  /// there's no known next page or a fetch/refresh is already in flight.
   Future<void> loadMore() async {
     final platform = _platform;
-    if (platform == null || !_hasMore || _isLoadingMore) return;
+    if (platform == null || !_hasMore || _isLoadingMore || _isRefreshing) {
+      return;
+    }
 
+    final generation = _generation;
     _isLoadingMore = true;
-    state = ReelImportState.loadSuccess(
-      _reels,
-      hasMore: _hasMore,
-      isLoadingMore: true,
-    );
+    state = _success();
 
     final either = await _repository.getImportableReels(
       platform,
       cursor: _cursor,
     );
+    if (generation != _generation) return;
     _isLoadingMore = false;
     state = either.fold(
-      (_) => ReelImportState.loadSuccess(_reels, hasMore: _hasMore),
+      (failure) {
+        // A live listing cannot continue from saved posts, so a throttled
+        // provider fails the next page. Keep what is shown and say why.
+        _noteProviderProblem(failure);
+        return _success();
+      },
       (page) {
         _reels = [..._reels, ...page.reels];
         _cursor = page.nextCursor;
         _hasMore = page.nextCursor != null;
-        return ReelImportState.loadSuccess(_reels, hasMore: _hasMore);
+        _freshness = page.freshness;
+        return _success();
       },
     );
   }
+
+  void _applyFirstPage(ImportableReelsResult page) {
+    _reels = page.reels;
+    _cursor = page.nextCursor;
+    _hasMore = page.nextCursor != null;
+    _isLoadingMore = false;
+    _freshness = page.freshness;
+  }
+
+  /// Records a provider problem from an error body on the current freshness
+  /// so the banner can explain it; other failures leave it unchanged.
+  void _noteProviderProblem(NetworkExceptions failure) {
+    final code = failure.validationCode;
+    final issue = ContentProviderIssue.fromCode(code);
+    if (code == null ||
+        issue == null ||
+        issue == ContentProviderIssue.notConnected) {
+      return;
+    }
+    _freshness = _freshness.withProviderStatus(
+      ContentProviderStatus(
+        code: code,
+        message: NetworkExceptions.getMessage(failure),
+      ),
+    );
+  }
+
+  ReelImportState _success({
+    DateTime? refreshBlockedUntil,
+    NetworkExceptions? refreshFailure,
+  }) => ReelImportState.loadSuccess(
+    _reels,
+    hasMore: _hasMore,
+    isLoadingMore: _isLoadingMore,
+    freshness: _freshness,
+    refreshBlockedUntil: refreshBlockedUntil,
+    refreshFailure: refreshFailure,
+  );
 }
 
 class ImportHistoryNotifier extends StateNotifier<ImportHistoryState> {
