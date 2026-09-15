@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/bulk_action_result.dart';
@@ -111,6 +112,16 @@ class VendorOrdersNotifier extends StateNotifier<OrdersState> {
     });
   }
 
+  /// Bulk "Accept" from the Your Orders select mode. Reloads the list on
+  /// success so accepted rows show their new badge.
+  Future<BulkActionResult?> bulkAccept(List<String> orderIds) async {
+    final either = await _repository.bulkAccept(orderIds);
+    return either.fold((_) => null, (result) {
+      unawaited(loadOrders(status: _activeFilter));
+      return result;
+    });
+  }
+
   Future<PackingSlip?> getPackingSlip(String orderId) async {
     final either = await _repository.getPackingSlip(orderId);
     return either.fold((_) => null, (slip) => slip);
@@ -172,61 +183,74 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   }
 
   /// "Mark as Shipped" from the order detail screen.
-  Future<void> markReadyToShip() async {
-    state.maybeWhen(
-      loadSuccess: (order) async {
-        state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.markReadyToShip(order.id);
-        state = either.fold(
-          (f) {
-            _onActionFailure(order, f);
-            return OrderDetailState.actionFailure(order, f);
-          },
-          OrderDetailState.loadSuccess,
-        );
-      },
-      orElse: () {},
-    );
-  }
+  Future<void> markReadyToShip() =>
+      _runAction((order) => _repository.markReadyToShip(order.id));
 
   Future<void> addTracking({
     required String carrier,
     required String trackingNumber,
-  }) async {
-    state.maybeWhen(
-      loadSuccess: (order) async {
-        state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.addTracking(
-          order.id,
-          carrier: carrier,
-          trackingNumber: trackingNumber,
-        );
-        state = either.fold(
-          (f) {
-            _onActionFailure(order, f);
-            return OrderDetailState.actionFailure(order, f);
-          },
-          OrderDetailState.loadSuccess,
-        );
-      },
-      orElse: () {},
-    );
-  }
+  }) => _runAction(
+    (order) => _repository.addTracking(
+      order.id,
+      carrier: carrier,
+      trackingNumber: trackingNumber,
+    ),
+  );
 
-  Future<void> markDelivered() async {
-    state.maybeWhen(
-      loadSuccess: (order) async {
-        state = OrderDetailState.actionInProgress(order);
-        final either = await _repository.markDelivered(order.id);
-        state = either.fold(
-          (f) {
-            _onActionFailure(order, f);
-            return OrderDetailState.actionFailure(order, f);
-          },
-          OrderDetailState.loadSuccess,
-        );
-      },
-      orElse: () {},
+  Future<void> markDelivered() =>
+      _runAction((order) => _repository.markDelivered(order.id));
+
+  // ── Seller steps (Orders contract §2) ─────────────────────────────────────
+
+  /// Paid/AwaitingFulfillment -> Accepted.
+  Future<void> accept() =>
+      _runAction((order) => _repository.acceptOrder(order.id));
+
+  /// Paid/AwaitingFulfillment -> Cancelled (buyer refunded).
+  Future<void> reject({
+    required VendorRejectionReason reason,
+    String? note,
+  }) => _runAction(
+    (order) => _repository.rejectOrder(order.id, reason: reason, note: note),
+  );
+
+  /// Accepted -> Packed.
+  Future<void> markPacked() =>
+      _runAction((order) => _repository.markPacked(order.id));
+
+  /// Packed -> HandedOver.
+  Future<void> handOver({
+    String? carrier,
+    String? trackingNumber,
+    String? note,
+  }) => _runAction(
+    (order) => _repository.handOver(
+      order.id,
+      carrier: carrier,
+      trackingNumber: trackingNumber,
+      note: note,
+    ),
+  );
+
+  /// One state change: actionInProgress while it runs, then the refreshed
+  /// order, or actionFailure (the screen shows a snackbar and keeps the
+  /// buttons usable). Starts from a loaded order or a previous failure.
+  Future<void> _runAction(
+    Future<Either<NetworkExceptions, VendorOrder>> Function(VendorOrder order)
+    action,
+  ) async {
+    final order = state.maybeWhen(
+      loadSuccess: (o) => o,
+      actionFailure: (o, _) => o,
+      orElse: () => null,
+    );
+    if (order == null) return;
+    state = OrderDetailState.actionInProgress(order);
+    final either = await action(order);
+    if (!mounted) return;
+    state = either.fold(
+      (failure) => OrderDetailState.actionFailure(order, failure),
+      OrderDetailState.loadSuccess,
     );
   }
 

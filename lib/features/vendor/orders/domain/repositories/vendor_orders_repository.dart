@@ -58,6 +58,35 @@ abstract interface class VendorOrdersRepository {
     String orderId,
   );
 
+  // Seller steps (Orders contract §2). Each mints its own Idempotency-Key
+  // and returns the re-fetched detail.
+
+  /// Paid/AwaitingFulfillment -> Accepted.
+  Future<Either<NetworkExceptions, VendorOrder>> acceptOrder(String orderId);
+
+  /// Paid/AwaitingFulfillment -> Cancelled; [note] required for Other.
+  Future<Either<NetworkExceptions, VendorOrder>> rejectOrder(
+    String orderId, {
+    required VendorRejectionReason reason,
+    String? note,
+  });
+
+  /// Accepted -> Packed.
+  Future<Either<NetworkExceptions, VendorOrder>> markPacked(String orderId);
+
+  /// Packed -> HandedOver; [carrier] and [trackingNumber] both or neither.
+  Future<Either<NetworkExceptions, VendorOrder>> handOver(
+    String orderId, {
+    String? carrier,
+    String? trackingNumber,
+    String? note,
+  });
+
+  /// Accepts several paid sub-orders at once.
+  Future<Either<NetworkExceptions, BulkActionResult>> bulkAccept(
+    List<String> orderIds,
+  );
+
   /// Vendor §3D read-only packing slip projection.
   Future<Either<NetworkExceptions, PackingSlip>> getPackingSlip(
     String orderId,

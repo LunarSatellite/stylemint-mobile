@@ -35,6 +35,20 @@ class DesignTokens {
   static const Color bgAppBody = Color(0xFF18181B); // Text/Dark, Radio fill
   static const Color bgAppBodyLight = Color(0xFF27272A); // Fill/App Body Light
 
+  /// A quiet step above [bgAppBody] for layered cards — depth comes from tone
+  /// and shadow rather than borders.
+  static const Color surfaceRaised = Color(0xFF1F1F23);
+
+  // --- Glass (controls laid over imagery only) ------------------------------
+  static const Color glassFill = Color(0x29FFFFFF); // white @ 16%
+  static const Color glassStroke = Color(0x33FFFFFF); // white @ 20%
+  static const double glassBlurSigma = 16;
+
+  // --- Light-mode neutrals (zinc — same family as the dark palette) --------
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightSurfaceContainer = Color(0xFFF4F4F5); // zinc-100
+  static const Color lightSurfaceContainerHigh = Color(0xFFE4E4E7); // zinc-200
+
   // --- Text ----------------------------------------------------------------
   static const Color textWhite = Color(0xFFFFFFFF); // Text/White
   static const Color textLight = Color(0xFFD4D4D8); // Text/Light, Gray/300
@@ -225,6 +239,66 @@ class DesignTokens {
     color: textMuted,
   );
 
+  // --- Editorial display (Instrument Serif) ---------------------------------
+  // Use with restraint: campaign-hero titles and section titles only. Every
+  // other piece of UI text stays in Poppins.
+
+  static const String displayFontFamily = 'InstrumentSerif';
+
+  /// Display / Hero — 40 / 44. Campaign hero titles.
+  static const TextStyle displayHero = TextStyle(
+    fontFamily: displayFontFamily,
+    fontSize: 40,
+    fontWeight: FontWeight.w400,
+    height: 44 / 40,
+    letterSpacing: -0.4,
+    color: textWhite,
+  );
+
+  /// Display / Title — 30 / 34. Page-level editorial titles.
+  static const TextStyle displayTitle = TextStyle(
+    fontFamily: displayFontFamily,
+    fontSize: 30,
+    fontWeight: FontWeight.w400,
+    height: 34 / 30,
+    letterSpacing: -0.3,
+    color: textWhite,
+  );
+
+  /// Display / Section — 24 / 28. Mall section titles.
+  static const TextStyle displaySection = TextStyle(
+    fontFamily: displayFontFamily,
+    fontSize: 24,
+    fontWeight: FontWeight.w400,
+    height: 28 / 24,
+    letterSpacing: -0.2,
+    color: textWhite,
+  );
+
+  /// Display / Accent — italic 24 / 28. For one emphasised word or phrase
+  /// inside a display title (e.g. a TextSpan); copyWith the size of the title
+  /// it sits in.
+  static const TextStyle displayAccent = TextStyle(
+    fontFamily: displayFontFamily,
+    fontSize: 24,
+    fontWeight: FontWeight.w400,
+    fontStyle: FontStyle.italic,
+    height: 28 / 24,
+    letterSpacing: -0.2,
+    color: textWhite,
+  );
+
+  /// Eyebrow — Poppins 11 / 600, tracked +1.2. Render the text uppercase
+  /// (`text.toUpperCase()`); a TextStyle cannot transform case.
+  static const TextStyle eyebrow = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
+    letterSpacing: 1.2,
+    color: textMuted,
+  );
+
   // Legacy numeric aliases (kept; some widgets reference these)
   static const double h1Size = 24;
   static const FontWeight h1Weight = FontWeight.w600;
@@ -285,6 +359,68 @@ class DesignTokens {
   // Fixed component heights (from Figma frames)
   static const double buttonHeight = 52;
   static const double inputHeight = 48;
+
+  // Radii for layered imagery (cardRadius stays the default card corner)
+  static const double radiusSmall = 8;
+  static const double radiusMedium = 12;
+  static const double radiusLarge = 24;
+
+  /// Minimum interactive size: iOS HIG 44pt. Never go below this.
+  static const double minTouchTarget = 44;
+
+  // ==========================================================================
+  // ELEVATION, SCRIMS & MOTION
+  // ==========================================================================
+
+  /// Soft resting shadow for cards on the dark foundation.
+  static const List<BoxShadow> shadowCard = [
+    BoxShadow(
+      color: Color(0x52000000),
+      offset: Offset(0, 6),
+      blurRadius: 18,
+      spreadRadius: -4,
+    ),
+  ];
+
+  /// Lifted shadow for layers that float: sheets, sticky bars, hero cards.
+  static const List<BoxShadow> shadowLifted = [
+    BoxShadow(
+      color: Color(0x6B000000),
+      offset: Offset(0, 18),
+      blurRadius: 40,
+      spreadRadius: -10,
+    ),
+    BoxShadow(color: Color(0x33000000), offset: Offset(0, 2), blurRadius: 6),
+  ];
+
+  /// Bottom-weighted scrim so white copy stays legible over any photo.
+  static const LinearGradient imageScrim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0x00000000),
+      Color(0x14000000),
+      Color(0x8C000000),
+      Color(0xE6000000),
+    ],
+    stops: [0, 0.4, 0.75, 1],
+  );
+
+  /// Light top scrim for status-bar icons and top-aligned labels over photos.
+  static const LinearGradient imageScrimTop = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x66000000), Color(0x00000000)],
+    stops: [0, 0.3],
+  );
+
+  // Motion — restrained. Swap for Duration.zero when
+  // MediaQuery.disableAnimations is set.
+  static const Duration motionFast = Duration(milliseconds: 150);
+  static const Duration motionMedium = Duration(milliseconds: 280);
+  static const Duration motionSlow = Duration(milliseconds: 450);
+  static const Curve motionCurve = Curves.easeOutCubic;
+  static const Duration heroAutoAdvance = Duration(seconds: 6);
 
   // ==========================================================================
   // COMPONENT STYLES
@@ -380,9 +516,9 @@ class DesignTokens {
           borderColor != null ? Border.all(color: borderColor, width: 1) : null,
       boxShadow: hasShadow
           ? [
-              BoxShadow(
-                color: const Color.fromARGB(255, 16, 16, 16).withOpacity(0.06),
-                offset: const Offset(0, 4),
+              const BoxShadow(
+                color: Color(0x0F101010), // #101010 @ 6%
+                offset: Offset(0, 4),
                 blurRadius: 12,
                 spreadRadius: 0,
               ),

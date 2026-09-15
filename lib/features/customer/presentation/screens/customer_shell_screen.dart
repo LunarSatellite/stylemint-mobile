@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/home_mode.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/current_user_avatar_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -58,9 +60,14 @@ class CustomerShellScreen extends ConsumerWidget {
           }
           final branch = _branchFor(barIndex);
           final reselected = branch == navigationShell.currentIndex;
-          // Tapping Home while already on it refreshes the reels feed.
+          // Tapping Home while already on it scrolls the Mall to the top and
+          // refreshes it, or refreshes the reels feed when Reels is showing.
           if (reselected && branch == _homeBranch) {
-            ref.read(homeTabReselectedProvider.notifier).state++;
+            if (ref.read(homeModeProvider) == HomeMode.mall) {
+              ref.read(mallHomeReselectedProvider.notifier).state++;
+            } else {
+              ref.read(homeTabReselectedProvider.notifier).state++;
+            }
           }
           // Profile's role list needs to notice a vendor/creator approval
           // that happened elsewhere.

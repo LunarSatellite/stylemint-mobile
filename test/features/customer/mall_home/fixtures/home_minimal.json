@@ -1,0 +1,14 @@
+{
+  "greeting": null,
+  "sections": [
+    {
+      "id": "new-arrivals",
+      "kind": "products",
+      "items": [
+        { "id": "p-9", "name": "Everyday tee", "price": { "amount": 999, "currency": "NPR" } }
+      ]
+    },
+    { "kind": "unknown-future-kind" },
+    { "id": "trust", "kind": "trust" }
+  ]
+}

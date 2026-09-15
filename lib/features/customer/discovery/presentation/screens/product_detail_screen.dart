@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
@@ -15,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/regret_check_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
@@ -51,7 +53,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ref
           .read(productDetailNotifierProvider(widget.productId).notifier)
           .loadProduct(widget.productId);
+      _recordRecentlyViewed();
     });
+  }
+
+  /// Home's "Recently viewed" rail: one fire-and-forget post per open, for
+  /// signed-in viewers only. Never blocks the page or shows an error.
+  void _recordRecentlyViewed() {
+    if (!mounted) return;
+    try {
+      if (!ref.read(sessionControllerProvider).isAuthenticated) return;
+      ref.read(recentlyViewedRecorderProvider).record(widget.productId);
+    } on Object catch (_) {
+      // Best effort only.
+    }
   }
 
   @override

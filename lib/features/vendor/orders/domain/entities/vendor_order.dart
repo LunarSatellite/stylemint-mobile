@@ -4,6 +4,9 @@ enum VendorOrderStatus {
   pending('Pending'),
   confirmed('Confirmed'),
   processing('Processing'),
+  accepted('Accepted'),
+  packed('Packed'),
+  handedOver('Handed over'),
   shipped('Shipped'),
   delivered('Delivered'),
   cancelled('Cancelled'),
@@ -14,18 +17,112 @@ enum VendorOrderStatus {
   final String label;
 }
 
+/// Backend `SubOrderState` ints (Orders contract §1).
+abstract final class SubOrderStateCode {
+  static const pending = 1;
+  static const paid = 2;
+  static const awaitingFulfillment = 3;
+  static const readyToShip = 4;
+  static const awaitingTracking = 5;
+  static const shipped = 6;
+  static const delivered = 7;
+  static const cancelled = 8;
+  static const returned = 9;
+  static const inTransit = 10;
+  static const outForDelivery = 11;
+  static const accepted = 12;
+  static const packed = 13;
+  static const handedOver = 14;
+}
+
+/// SubOrderState int -> UI status. The legacy vendor-workflow states
+/// (Paid/AwaitingFulfillment/ReadyToShip/AwaitingTracking) collapse to
+/// Confirmed/Processing and courier states to Shipped; the seller steps keep
+/// their own labels. An unknown int reads as Pending rather than throwing.
+VendorOrderStatus vendorOrderStatusFromState(int state) => switch (state) {
+  SubOrderStateCode.pending => VendorOrderStatus.pending,
+  SubOrderStateCode.paid => VendorOrderStatus.confirmed,
+  SubOrderStateCode.awaitingFulfillment ||
+  SubOrderStateCode.readyToShip ||
+  SubOrderStateCode.awaitingTracking => VendorOrderStatus.processing,
+  SubOrderStateCode.accepted => VendorOrderStatus.accepted,
+  SubOrderStateCode.packed => VendorOrderStatus.packed,
+  SubOrderStateCode.handedOver => VendorOrderStatus.handedOver,
+  SubOrderStateCode.shipped ||
+  SubOrderStateCode.inTransit ||
+  SubOrderStateCode.outForDelivery => VendorOrderStatus.shipped,
+  SubOrderStateCode.delivered => VendorOrderStatus.delivered,
+  SubOrderStateCode.cancelled => VendorOrderStatus.cancelled,
+  SubOrderStateCode.returned => VendorOrderStatus.returned,
+  _ => VendorOrderStatus.pending,
+};
+
+/// A state-changing step a vendor can take from the order detail screen.
+enum VendorOrderAction {
+  accept,
+  reject,
+  markPacked,
+  handOver,
+  readyToShip,
+  markDelivered,
+}
+
+/// The next actions allowed from a backend state (Orders contract §1,
+/// "Allowed transitions"), primary action first.
+List<VendorOrderAction> vendorActionsForState(int state) => switch (state) {
+  SubOrderStateCode.paid || SubOrderStateCode.awaitingFulfillment => const [
+    VendorOrderAction.accept,
+    VendorOrderAction.reject,
+  ],
+  SubOrderStateCode.accepted => const [VendorOrderAction.markPacked],
+  SubOrderStateCode.packed => const [
+    VendorOrderAction.handOver,
+    VendorOrderAction.readyToShip,
+  ],
+  SubOrderStateCode.handedOver ||
+  SubOrderStateCode.shipped ||
+  SubOrderStateCode.inTransit ||
+  SubOrderStateCode.outForDelivery => const [VendorOrderAction.markDelivered],
+  _ => const [],
+};
+
+/// Backend `VendorRejectionReason` (contract §2, reject).
+enum VendorRejectionReason {
+  outOfStock(1, 'Out of stock'),
+  cannotFulfillInTime(2, 'Can’t fulfil in time'),
+  pricingError(3, 'Pricing error'),
+  addressNotServiceable(4, 'Can’t deliver to this address'),
+  suspectedFraud(5, 'Suspected fraud'),
+  other(6, 'Other');
+
+  const VendorRejectionReason(this.code, this.label);
+
+  final int code;
+  final String label;
+
+  /// A note is required for [other].
+  bool get requiresNote => this == other;
+}
+
+/// Maximum length of the reject note and handover note (contract §2).
+const int vendorNoteMaxLength = 200;
+
+/// Contract §2 handover limits.
+const int vendorCarrierMaxLength = 100;
+const int vendorTrackingMaxLength = 200;
+
 /// Client-side bucketing for the "Your Orders" tabs and the Ready-to-Ship
 /// screen. The backend's list-filter `status` query values aren't confirmed
 /// against Swagger, so screens fetch unfiltered and bucket locally using the
 /// same collapsed status the DTOs already compute.
 extension VendorOrderStatusBucketing on VendorOrderStatus {
   /// Candidates for the "Mark as Shipped" action. The backend's SubOrder
-  /// state machine only allows the ReadyToShip transition from
-  /// AwaitingFulfillment (collapsed into `processing` here) — Pending/Paid
-  /// orders reject with "Cannot transition SubOrder from Pending to
-  /// ReadyToShip." Previously this included pending/confirmed too, which
-  /// showed the button on orders the backend would immediately reject.
-  bool get isToShip => this == VendorOrderStatus.processing;
+  /// state machine allows the ReadyToShip transition from
+  /// AwaitingFulfillment (collapsed into `processing` here) and from Packed —
+  /// Pending/Paid orders reject with "Cannot transition SubOrder from Pending
+  /// to ReadyToShip."
+  bool get isToShip =>
+      this == VendorOrderStatus.processing || this == VendorOrderStatus.packed;
 
   /// Orders visible on the "Your Orders" list before shipment — broader than
   /// [isToShip] since Pending/Confirmed orders are real (just not yet
@@ -33,12 +130,16 @@ extension VendorOrderStatusBucketing on VendorOrderStatus {
   bool get isPreShipment =>
       this == VendorOrderStatus.pending ||
       this == VendorOrderStatus.confirmed ||
-      this == VendorOrderStatus.processing;
+      this == VendorOrderStatus.processing ||
+      this == VendorOrderStatus.accepted ||
+      this == VendorOrderStatus.packed;
 
-  /// NOTE: the backend only exposes one intermediate "shipped" status, so
-  /// "In Transit" and "Shipped" currently show the same set of orders until
-  /// backend exposes a finer-grained distinction.
-  bool get isInTransit => this == VendorOrderStatus.shipped;
+  /// Handed over to a courier or further along the delivery. "In Transit"
+  /// and "Shipped" show the same set until the backend exposes a finer
+  /// distinction.
+  bool get isInTransit =>
+      this == VendorOrderStatus.shipped ||
+      this == VendorOrderStatus.handedOver;
 
   bool get isCompleted =>
       this == VendorOrderStatus.delivered ||
@@ -54,6 +155,11 @@ extension VendorOrderTrackingBucketing on VendorOrder {
   /// ready to ship" — best-effort bucket until backend exposes finer state.
   bool get isWaitingTracking =>
       status == VendorOrderStatus.processing && trackingNumber == null;
+
+  /// Paid or awaiting fulfillment: can be accepted (alone or in bulk).
+  bool get canAccept => vendorActionsForState(
+    stateCode,
+  ).contains(VendorOrderAction.accept);
 }
 
 class VendorOrderItem {
@@ -113,6 +219,7 @@ class VendorOrder {
     required this.itemCount,
     required this.total,
     required this.status,
+    this.stateCode = 0,
     this.placedAt,
     this.shippingMethod,
     this.trackingNumber,
@@ -132,6 +239,10 @@ class VendorOrder {
   final int itemCount;
   final Money total;
   final VendorOrderStatus status;
+
+  /// Raw backend `SubOrderState` int ([SubOrderStateCode]); drives which
+  /// next actions are offered. 0 for sample rows.
+  final int stateCode;
 
   /// Backend `placedUtc`.
   final DateTime? placedAt;
@@ -158,6 +269,7 @@ class VendorOrder {
     int? itemCount,
     Money? total,
     VendorOrderStatus? status,
+    int? stateCode,
     DateTime? placedAt,
     String? shippingMethod,
     String? trackingNumber,
@@ -173,6 +285,7 @@ class VendorOrder {
       itemCount: itemCount ?? this.itemCount,
       total: total ?? this.total,
       status: status ?? this.status,
+      stateCode: stateCode ?? this.stateCode,
       placedAt: placedAt ?? this.placedAt,
       shippingMethod: shippingMethod ?? this.shippingMethod,
       trackingNumber: trackingNumber ?? this.trackingNumber,
@@ -193,6 +306,7 @@ class VendorOrder {
       _listEquals(other.items, items) &&
       other.total == total &&
       other.status == status &&
+      other.stateCode == stateCode &&
       other.placedAt == placedAt &&
       other.shippingMethod == shippingMethod &&
       other.trackingNumber == trackingNumber &&
@@ -209,6 +323,7 @@ class VendorOrder {
     Object.hashAll(items),
     total,
     status,
+    stateCode,
     placedAt,
     shippingMethod,
     trackingNumber,

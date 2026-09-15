@@ -48,7 +48,12 @@ class OrderDetail {
     this.trackingNumber,
     required this.canCancel,
     required this.canReturn,
+    this.submittedReturnId,
   });
+
+  /// Set once a return is submitted from this screen: the new return's id,
+  /// or an empty string when the backend response didn't carry one.
+  final String? submittedReturnId;
 
   final String id;
   final String orderNumber;
@@ -84,8 +89,12 @@ class OrderDetail {
     String? trackingNumber,
     bool? canCancel,
     bool? canReturn,
+    String? submittedReturnId,
   }) {
     return OrderDetail(
+      receiverName: receiverName,
+      receiverPhone: receiverPhone,
+      submittedReturnId: submittedReturnId ?? this.submittedReturnId,
       id: id ?? this.id,
       orderNumber: orderNumber ?? this.orderNumber,
       status: status ?? this.status,

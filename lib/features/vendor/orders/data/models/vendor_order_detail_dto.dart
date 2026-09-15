@@ -21,6 +21,7 @@ class VendorOrderDetailDto {
     final currency = json['subtotalCurrency'] as String? ?? 'NPR';
     final lines = (json['lines'] as List<dynamic>? ?? const <dynamic>[])
         .cast<Map<String, dynamic>>();
+    final state = (json['state'] as num?)?.toInt() ?? 1;
 
     return VendorOrder(
       id: json['id'] as String? ?? '',
@@ -30,7 +31,8 @@ class VendorOrderDetailDto {
         amount: (json['subtotalAmount'] as num?)?.toDouble() ?? 0,
         currency: currency,
       ),
-      status: _statusFromState((json['state'] as num?)?.toInt() ?? 1),
+      status: vendorOrderStatusFromState(state),
+      stateCode: state,
       placedAt: _parseDate(json['placedUtc']),
       shippingMethod: json['carrier'] as String?,
       trackingNumber: json['trackingNumber'] as String?,
@@ -67,31 +69,5 @@ class VendorOrderDetailDto {
           .join(' '),
     ].where((s) => s.isNotEmpty).toList();
     return parts.isEmpty ? null : parts.join(', ');
-  }
-
-  /// SubOrderState enum int -> UI status (mirrors VendorOrderDto).
-  static VendorOrderStatus _statusFromState(int state) {
-    switch (state) {
-      case 1:
-        return VendorOrderStatus.pending;
-      case 2:
-        return VendorOrderStatus.confirmed;
-      case 3:
-      case 4:
-      case 5:
-        return VendorOrderStatus.processing;
-      case 6:
-      case 10:
-      case 11:
-        return VendorOrderStatus.shipped;
-      case 7:
-        return VendorOrderStatus.delivered;
-      case 8:
-        return VendorOrderStatus.cancelled;
-      case 9:
-        return VendorOrderStatus.returned;
-      default:
-        return VendorOrderStatus.pending;
-    }
   }
 }

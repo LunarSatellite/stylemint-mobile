@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/guarded_network_call.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -328,6 +329,74 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> acceptOrder(String orderId) =>
+      _stepThenRefetch(
+        orderId,
+        () => remoteDataSource.acceptOrder(orderId, _uuid.v4()),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> rejectOrder(
+    String orderId, {
+    required VendorRejectionReason reason,
+    String? note,
+  }) => _stepThenRefetch(
+    orderId,
+    () => remoteDataSource.rejectOrder(
+      orderId,
+      reasonCode: reason.code,
+      note: note,
+      idempotencyKey: _uuid.v4(),
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> markPacked(String orderId) =>
+      _stepThenRefetch(
+        orderId,
+        () => remoteDataSource.markPacked(orderId, _uuid.v4()),
+      );
+
+  @override
+  Future<Either<NetworkExceptions, VendorOrder>> handOver(
+    String orderId, {
+    String? carrier,
+    String? trackingNumber,
+    String? note,
+  }) => _stepThenRefetch(
+    orderId,
+    () => remoteDataSource.handOver(
+      orderId,
+      idempotencyKey: _uuid.v4(),
+      carrier: carrier,
+      trackingNumber: trackingNumber,
+      handoverNote: note,
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, BulkActionResult>> bulkAccept(
+    List<String> orderIds,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async => _parseBulkResult(
+      await remoteDataSource.bulkAccept(orderIds, _uuid.v4()),
+      orderIds,
+    ),
+  );
+
+  /// Runs a seller step (one fresh Idempotency-Key per call, i.e. per tap),
+  /// then re-fetches the full detail — the step responds with the thin
+  /// SubOrderDto the detail screen can't render.
+  Future<Either<NetworkExceptions, VendorOrder>> _stepThenRefetch(
+    String orderId,
+    Future<void> Function() step,
+  ) => guardedNetworkCall(networkInfo, () async {
+    await step();
+    return (await remoteDataSource.getOrderDetail(orderId)).toDomain();
+  });
 
   @override
   Future<Either<NetworkExceptions, PackingSlip>> getPackingSlip(

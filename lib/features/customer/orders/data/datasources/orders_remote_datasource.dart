@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/carbon_impact_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/customer_return_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_timeline_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_acceptance_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_care_plan_dto.dart';
@@ -142,10 +144,40 @@ class OrdersRemoteDataSource {
     );
   }
 
+  /// GET `/v1/orders/{orderNumber}/timeline` — buyer tracking steps per
+  /// sub-order (Orders contract §3).
+  Future<OrderTimelineDto> getOrderTimeline(String orderNumber) async {
+    final response = await apiClient.get('/v1/orders/$orderNumber/timeline');
+    return OrderTimelineDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/orders/returns` — the buyer's returns, newest first, as a
+  /// cursor-paged `PagedResult<CustomerReturnRequestDto>` (contract §4).
+  Future<Map<String, dynamic>> getMyReturns({
+    required int pageSize,
+    String? cursor,
+  }) async {
+    final response = await apiClient.get(
+      '/v1/orders/returns',
+      queryParameters: {
+        'pageSize': pageSize,
+        'cursor': ?cursor,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// GET `/v1/orders/returns/{id}` — one of the buyer's returns.
+  Future<CustomerReturnDto> getReturn(String returnId) async {
+    final response = await apiClient.get('/v1/orders/returns/$returnId');
+    return CustomerReturnDto.fromJson(response as Map<String, dynamic>);
+  }
+
   /// POST `/v1/orders/{orderNumber}/returns` — request a return.
   /// Backend `SubmitReturnVm` requires subOrderId/subOrderLineId/quantity/
   /// reason/photoUrls (skill §5 + §13.7) — a bare reason always 400s.
-  Future<void> requestReturn(
+  /// Returns the new return request id when the response carries one.
+  Future<String?> requestReturn(
     String orderId,
     String subOrderId,
     String subOrderLineId,
@@ -154,7 +186,7 @@ class OrdersRemoteDataSource {
     List<String> photoUrls,
     String idempotencyKey,
   ) async {
-    await apiClient.post(
+    final response = await apiClient.post(
       '/v1/orders/$orderId/returns',
       data: {
         'subOrderId': subOrderId,
@@ -165,6 +197,8 @@ class OrdersRemoteDataSource {
       },
       options: _idempotent(idempotencyKey),
     );
+    // The backend answers with the created ReturnRequestDto.
+    return response is Map<String, dynamic> ? response['id'] as String? : null;
   }
 
   /// POST `/v1/orders/returns/images` — multipart upload, returns the CDN

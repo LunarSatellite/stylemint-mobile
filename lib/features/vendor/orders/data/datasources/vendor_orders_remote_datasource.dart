@@ -124,6 +124,85 @@ class VendorOrdersRemoteDataSource {
     );
   }
 
+  // ── Seller steps (Orders contract §2). Responses are the thin SubOrderDto;
+  // the repository re-fetches the detail afterward, as above.
+
+  /// POST /v1/vendor/sub-orders/{id}/accept — Paid/AwaitingFulfillment ->
+  /// Accepted. No body.
+  Future<void> acceptOrder(String orderId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/accept',
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/reject — Paid/AwaitingFulfillment ->
+  /// Cancelled. `note` (≤ 200) is required when `reasonCode` is 6 (Other).
+  Future<void> rejectOrder(
+    String orderId, {
+    required int reasonCode,
+    required String idempotencyKey,
+    String? note,
+  }) async {
+    final trimmed = note?.trim();
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/reject',
+      data: {
+        'reasonCode': reasonCode,
+        if (trimmed != null && trimmed.isNotEmpty) 'note': trimmed,
+      },
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/packed — Accepted -> Packed. No body.
+  Future<void> markPacked(String orderId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/packed',
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// POST /v1/vendor/sub-orders/{id}/handover — Packed -> HandedOver.
+  /// `carrier` and `trackingNumber` travel together or not at all; the body
+  /// may be empty.
+  Future<void> handOver(
+    String orderId, {
+    required String idempotencyKey,
+    String? carrier,
+    String? trackingNumber,
+    String? handoverNote,
+  }) async {
+    final c = carrier?.trim() ?? '';
+    final t = trackingNumber?.trim() ?? '';
+    final n = handoverNote?.trim() ?? '';
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/handover',
+      data: {
+        if (c.isNotEmpty && t.isNotEmpty) ...{
+          'carrier': c,
+          'trackingNumber': t,
+        },
+        if (n.isNotEmpty) 'handoverNote': n,
+      },
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
+  /// POST /v1/vendor/sub-orders/bulk/accept — 1–100 ids; outer 200 with a
+  /// per-id BulkResult, same shape as bulk/ready-to-ship.
+  Future<Map<String, dynamic>> bulkAccept(
+    List<String> orderIds,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/vendor/sub-orders/bulk/accept',
+      data: {'subOrderIds': orderIds},
+      options: _idempotent(idempotencyKey),
+    );
+    return response as Map<String, dynamic>;
+  }
+
   /// GET /v1/vendor/sub-orders/{subOrderId}/packing-slip — Vendor §3D,
   /// read-only PackingSlipDto projection. Returned raw so the repository can
   /// translate the backend DTO into the presentation entity.

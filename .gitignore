@@ -81,7 +81,7 @@ ios/Flutter/Generated.xcconfig
 ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 
 # ── Asset placeholders (committed as empty dirs via .gitkeep) ────────────────
-assets/fonts/*.ttf
+# Fonts in assets/fonts/ are bundled (Poppins + Instrument Serif, OFL) and committed.
 assets/animations/*.json
 
 # FVM (per-machine Flutter SDK symlink; .fvmrc is the committed pin)

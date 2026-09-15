@@ -11,6 +11,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/customer_returns_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/order_timeline_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
@@ -178,6 +180,41 @@ final cancelOrderControllerProvider =
       CancelOrderUiState
     >(
       (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
+    );
+
+/// Buyer tracking timeline per order number (Orders contract §3).
+final StateNotifierProviderFamily<
+  OrderTimelineNotifier,
+  OrderTimelineState,
+  String
+>
+orderTimelineNotifierProvider = StateNotifierProvider.autoDispose
+    .family<OrderTimelineNotifier, OrderTimelineState, String>(
+      (ref, orderNumber) => OrderTimelineNotifier(
+        ref.watch(ordersRepositoryProvider),
+        orderNumber,
+      ),
+    );
+
+/// "My returns" list (Orders contract §4).
+final StateNotifierProvider<MyReturnsNotifier, MyReturnsState>
+myReturnsNotifierProvider =
+    StateNotifierProvider.autoDispose<MyReturnsNotifier, MyReturnsState>(
+      (ref) => MyReturnsNotifier(ref.watch(ordersRepositoryProvider)),
+    );
+
+/// One return request, keyed by id.
+final StateNotifierProviderFamily<
+  ReturnDetailNotifier,
+  ReturnDetailState,
+  String
+>
+returnDetailNotifierProvider = StateNotifierProvider.autoDispose
+    .family<ReturnDetailNotifier, ReturnDetailState, String>(
+      (ref, returnId) => ReturnDetailNotifier(
+        ref.watch(ordersRepositoryProvider),
+        returnId,
+      ),
     );
 
 final reorderSuggestionsNotifierProvider = StateNotifierProvider.autoDispose<

@@ -62,7 +62,9 @@ abstract class VendorOrderDto with _$VendorOrderDto {
     orderNumber: orderNumber,
     itemCount: itemCount,
     total: Money(amount: totalAmount.toDouble(), currency: currency),
-    status: _statusFromState(stateCode),
+    // SubOrderState int -> UI status, shared with the detail DTO.
+    status: vendorOrderStatusFromState(stateCode),
+    stateCode: stateCode,
     placedAt: placedAt,
     shippingMethod: shippingMethod,
     trackingNumber: trackingNumber,
@@ -70,32 +72,4 @@ abstract class VendorOrderDto with _$VendorOrderDto {
     deliveredAt: deliveredAt,
     customerName: customerName,
   );
-
-  /// SubOrderState enum int -> UI status. The internal vendor-workflow states
-  /// (Paid/AwaitingFulfillment/ReadyToShip/AwaitingTracking) collapse to
-  /// Confirmed/Processing; transit states map to Shipped.
-  static VendorOrderStatus _statusFromState(int state) {
-    switch (state) {
-      case 1: // Pending
-        return VendorOrderStatus.pending;
-      case 2: // Paid
-        return VendorOrderStatus.confirmed;
-      case 3: // AwaitingFulfillment
-      case 4: // ReadyToShip
-      case 5: // AwaitingTracking
-        return VendorOrderStatus.processing;
-      case 6: // Shipped
-      case 10: // InTransit
-      case 11: // OutForDelivery
-        return VendorOrderStatus.shipped;
-      case 7: // Delivered
-        return VendorOrderStatus.delivered;
-      case 8: // Cancelled
-        return VendorOrderStatus.cancelled;
-      case 9: // Returned
-        return VendorOrderStatus.returned;
-      default:
-        return VendorOrderStatus.pending;
-    }
-  }
 }

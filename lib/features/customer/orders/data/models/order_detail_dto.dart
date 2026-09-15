@@ -190,7 +190,14 @@ abstract class OrderDetailDto with _$OrderDetailDto {
         return 'In Transit';
       case 11:
         return 'Out for Delivery';
-      default:
+      case 12: // Accepted (seller step)
+        return 'Accepted';
+      case 13: // Packed (seller step)
+        return 'Packed';
+      case 14: // HandedOver (seller step)
+        return 'Handed over';
+      default: // Pending..AwaitingTracking and any state this app doesn't know
+
         return 'Confirmed';
     }
   }

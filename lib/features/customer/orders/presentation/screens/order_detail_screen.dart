@@ -14,6 +14,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -79,19 +81,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         child: state.when(
           initial: () => _loader(),
           loadInProgress: () => _loader(),
-          loadSuccess: (order) => _OrderDetailBody(
-            order: order,
-            notifier: ref.read(provider.notifier),
+          loadSuccess: (order) => _refreshable(
+            order,
+            _OrderDetailBody(
+              order: order,
+              notifier: ref.read(provider.notifier),
+            ),
           ),
           loadFailure: (failure) => SmErrorView(
             message: 'Failed to load order details.',
             onRetry: () =>
                 ref.read(provider.notifier).loadOrder(widget.orderId),
           ),
-          actionInProgress: (order) => _OrderDetailBody(
-            order: order,
-            actionPending: true,
-            notifier: ref.read(provider.notifier),
+          actionInProgress: (order) => _refreshable(
+            order,
+            _OrderDetailBody(
+              order: order,
+              actionPending: true,
+              notifier: ref.read(provider.notifier),
+            ),
           ),
           actionFailure: (failure) => _loader(),
         ),
@@ -100,6 +108,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _loader() => const SmPageLoader();
+
+  Widget _refreshable(OrderDetail order, Widget child) => RefreshIndicator(
+    color: DesignTokens.primaryGreen,
+    onRefresh: () =>
+        refreshOrderDetail(ref, routeOrderId: widget.orderId, order: order),
+    child: child,
+  );
 }
 
 class _OrderDetailBody extends ConsumerStatefulWidget {
@@ -182,6 +197,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
       return _buildCancelledView(order);
     }
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(DesignTokens.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,25 +222,41 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             resolveAction: (item, action) =>
                 _careActionFor(order, item, action),
           ),
+          OrderReturnLink(order: order),
           const SizedBox(height: DesignTokens.s24),
           KeyedSubtree(
             key: _trackingSectionKey,
-            child:
-                story?.when(
-                  data: (chapters) => chapters.isEmpty
-                      ? _TrackingTimeline(status: order.status)
-                      : _DeliveryStoryTimeline(
-                          status: order.status,
-                          chapters: chapters,
-                        ),
-                  loading: () => const _DeliveryStoryLoading(),
-                  error: (_, __) => _DeliveryStoryError(
-                    onRetry: () => ref.invalidate(
-                      deliveryStoryProvider(trackingNumber!),
+            // Backend timeline per sub-order; the derived stages below are
+            // the fallback when that call fails.
+            child: OrderTrackingSection(
+              orderNumber: order.orderNumber,
+              supplement: story?.maybeWhen(
+                data: (chapters) => chapters.isEmpty
+                    ? null
+                    : _DeliveryStoryTimeline(
+                        status: order.status,
+                        chapters: chapters,
+                        showStages: false,
+                      ),
+                orElse: () => null,
+              ),
+              fallback:
+                  story?.when(
+                    data: (chapters) => chapters.isEmpty
+                        ? _TrackingTimeline(status: order.status)
+                        : _DeliveryStoryTimeline(
+                            status: order.status,
+                            chapters: chapters,
+                          ),
+                    loading: () => const _DeliveryStoryLoading(),
+                    error: (_, __) => _DeliveryStoryError(
+                      onRetry: () => ref.invalidate(
+                        deliveryStoryProvider(trackingNumber!),
+                      ),
                     ),
-                  ),
-                ) ??
-                _TrackingTimeline(status: order.status),
+                  ) ??
+                  _TrackingTimeline(status: order.status),
+            ),
           ),
           if (order.status == OrderTrackStatus.delivered) ...[
             const SizedBox(height: DesignTokens.s24),
@@ -251,6 +283,7 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
 
   Widget _buildCancelledView(OrderDetail order) {
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(DesignTokens.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,9 +292,17 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           const SizedBox(height: DesignTokens.s16),
           _CancInfoCard(order: order),
           const SizedBox(height: DesignTokens.s16),
-          const _CancelledTimeline3(),
-          const SizedBox(height: DesignTokens.s16),
-          _OrderHistoryTimeline(order: order),
+          OrderTrackingSection(
+            orderNumber: order.orderNumber,
+            fallback: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _CancelledTimeline3(),
+                const SizedBox(height: DesignTokens.s16),
+                _OrderHistoryTimeline(order: order),
+              ],
+            ),
+          ),
           const SizedBox(height: DesignTokens.s8),
           _ViewOtherDetails(
             expanded: _expanded,
@@ -778,10 +819,14 @@ class _DeliveryStoryTimeline extends StatelessWidget {
   const _DeliveryStoryTimeline({
     required this.status,
     required this.chapters,
+    this.showStages = true,
   });
 
   final OrderTrackStatus status;
   final List<DeliveryStoryChapter> chapters;
+
+  /// False when the backend timeline above already shows the stages.
+  final bool showStages;
 
   static IconData _iconFor(DeliveryStoryChapterKind kind) => switch (kind) {
     DeliveryStoryChapterKind.sealed => Icons.inventory_2_outlined,
@@ -798,8 +843,10 @@ class _DeliveryStoryTimeline extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _TrackingTimeline(status: status),
-      const SizedBox(height: DesignTokens.s16),
+      if (showStages) ...[
+        _TrackingTimeline(status: status),
+        const SizedBox(height: DesignTokens.s16),
+      ],
       Container(
         width: double.infinity,
         padding: const EdgeInsets.all(DesignTokens.s16),

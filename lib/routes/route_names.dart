@@ -43,6 +43,20 @@ abstract class RouteNames {
   static const reelComments = '/reels/:reelId/comments';
   static const discoverCreators = '/discover/creators';
   static const productDetail = '/product/:productId';
+
+  /// Mall product listing. Query = the `GET v1/public/products` filters
+  /// (sort, categoryId, categorySlug, vendorAccountId, minPrice, maxPrice,
+  /// inStock, onSale, minRating, q) plus `title`.
+  static const productListing = '/products';
+
+  /// An editorial collection or a look.
+  static const collection = '/collections/:slug';
+
+  /// Prefix of [collection] locations; open to guests.
+  static const collectionRoot = '/collections/';
+
+  /// A brand's public flagship storefront; open to guests.
+  static const brandStorefront = '/brands/:vendorAccountId';
   static const cart = '/cart';
   static const cartScenarios = '/cart/scenarios';
   static const checkout = '/checkout';
@@ -53,6 +67,11 @@ abstract class RouteNames {
   static const orderCancel = '/orders/:orderId/cancel';
   static const orderInvoice = '/orders/:orderId/invoice';
   static const orderFedEx = '/orders/:orderId/fedex';
+
+  /// The buyer's returns and one return. Registered before [orderDetail] so
+  /// `returns` is never read as an order number.
+  static const myReturns = '/orders/returns';
+  static const returnDetail = '/orders/returns/:returnId';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';

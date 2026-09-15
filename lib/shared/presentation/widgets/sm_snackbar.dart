@@ -22,6 +22,12 @@ abstract class SmSnackbar {
     IconData icon, {
     int seconds = 2,
   }) {
+    // Status fills are bright brand tokens (green, yellow): pick dark or white
+    // content by the fill's brightness so every variant stays legible.
+    final foreground =
+        ThemeData.estimateBrightnessForColor(bg) == Brightness.light
+            ? kTextInverse
+            : Colors.white;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -33,12 +39,12 @@ abstract class SmSnackbar {
           margin: const EdgeInsets.all(12),
           content: Row(
             children: [
-              Icon(icon, color: Colors.white, size: 20),
+              Icon(icon, color: foreground, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: TextStyle(color: foreground, fontSize: 14),
                 ),
               ),
             ],

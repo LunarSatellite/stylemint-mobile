@@ -162,13 +162,26 @@ flutter:
     - assets/branding/
 
 
-#  fonts:
-#    - family: Inter
-#      fonts:
-#        - asset: assets/fonts/Inter-Regular.ttf
-#        - asset: assets/fonts/Inter-Medium.ttf
-#          weight: 500
-#        - asset: assets/fonts/Inter-SemiBold.ttf
-#          weight: 600
-#        - asset: assets/fonts/Inter-Bold.ttf
-#          weight: 700
+  # Bundled OFL fonts from github.com/google/fonts. Licence texts ship as
+  # assets/fonts/*-OFL.txt (covered by the assets/fonts/ entry above) and are
+  # registered with LicenseRegistry by lib/theme/font_licenses.dart.
+  # Poppins is the UI face; Instrument Serif is the editorial display face,
+  # used only for hero and section titles.
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+    - family: InstrumentSerif
+      fonts:
+        - asset: assets/fonts/InstrumentSerif-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/InstrumentSerif-Italic.ttf
+          weight: 400
+          style: italic

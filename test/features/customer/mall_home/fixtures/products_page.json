@@ -1,0 +1,53 @@
+{
+  "items": [
+    {
+      "id": "5d0c",
+      "vendorAccountId": "a1f2",
+      "categoryId": "c3d4",
+      "name": "Linen shirt",
+      "shortDescription": "Breathable",
+      "longDescriptionMarkdown": "Soft washed linen.",
+      "state": 2,
+      "averageRating": 4.5,
+      "reviewCount": 8,
+      "createdUtc": "2026-09-01T09:00:00Z",
+      "updatedUtc": "2026-09-01T09:00:00Z",
+      "rowVersion": "AAAAAAAAB9E=",
+      "variants": [
+        { "id": "v-1", "productId": "5d0c", "sku": "LINEN-M", "isDefault": true, "priceAmount": 2499.0, "priceCurrency": "NPR", "quantityOnHand": 7 }
+      ],
+      "images": [
+        { "id": "i-1", "productId": "5d0c", "cdnUrl": "https://cdn.stylemint.app/p/cover.jpg", "sortOrder": 0, "isPrimary": true }
+      ],
+      "video": null,
+      "shippingOptions": [],
+      "activeFlashSale": { "flashSaleId": "fs-1", "originalPrice": 2999.0, "salePrice": 2499.0, "currency": "NPR", "endsUtc": "2026-09-15T18:00:00Z", "unitsLeft": 4 },
+      "vendorDisplayName": "Mint Goods",
+      "vendorAvatarUrl": null
+    },
+    {
+      "id": "7a21",
+      "vendorAccountId": "a1f2",
+      "name": "Canvas tote",
+      "state": 3,
+      "averageRating": 0,
+      "reviewCount": 0,
+      "variants": [
+        { "isDefault": false, "priceAmount": 900, "priceCurrency": "NPR", "quantityOnHand": 0 },
+        { "isDefault": true, "priceAmount": 1200, "priceCurrency": "NPR", "quantityOnHand": 40 }
+      ],
+      "images": [
+        { "cdnUrl": "https://cdn.stylemint.app/p/b.jpg", "sortOrder": 1, "isPrimary": false },
+        { "cdnUrl": "https://cdn.stylemint.app/p/a.jpg", "sortOrder": 0, "isPrimary": false }
+      ],
+      "activeFlashSale": null,
+      "vendorDisplayName": null
+    },
+    { "id": "e9b0", "name": "No price yet", "state": 1, "variants": [], "images": [] }
+  ],
+  "totalCount": 134,
+  "nextCursor": "cC5iZXN0c2VsbGluZ3w5fDEyfDVkMGM",
+  "previousCursor": null,
+  "pageSize": 20,
+  "hasMore": true
+}

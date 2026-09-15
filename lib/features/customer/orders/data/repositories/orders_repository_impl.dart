@@ -1,12 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/core/network/guarded_network_call.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/customer_return_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_timeline.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
@@ -122,7 +127,50 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, Unit>> requestReturn(
+  Future<Either<NetworkExceptions, OrderTimeline>> getOrderTimeline(
+    String orderNumber,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async => (await remoteDataSource.getOrderTimeline(orderNumber))
+        .toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, PagedResult<CustomerReturn>>> getMyReturns({
+    String? cursor,
+    int pageSize = 20,
+  }) => guardedNetworkCall(networkInfo, () async {
+    final data = await remoteDataSource.getMyReturns(
+      pageSize: pageSize,
+      cursor: cursor,
+    );
+    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
+        .map(
+          (e) => CustomerReturnDto.fromJson(e as Map<String, dynamic>)
+              .toDomain(),
+        )
+        .toList(growable: false);
+    final nextCursor = data['nextCursor'] as String?;
+    return PagedResult<CustomerReturn>(
+      items: items,
+      totalCount: (data['totalCount'] as num?)?.toInt() ?? items.length,
+      pageSize: (data['pageSize'] as num?)?.toInt() ?? pageSize,
+      nextCursor: nextCursor,
+      previousCursor: data['previousCursor'] as String?,
+      hasMore: data['hasMore'] as bool? ?? nextCursor != null,
+    );
+  });
+
+  @override
+  Future<Either<NetworkExceptions, CustomerReturn>> getReturn(
+    String returnId,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async => (await remoteDataSource.getReturn(returnId)).toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, String?>> requestReturn(
     String orderId, {
     required String subOrderId,
     required String subOrderLineId,
@@ -132,7 +180,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }) async {
     if (await networkInfo.isConnected) {
       try {
-        await remoteDataSource.requestReturn(
+        final returnId = await remoteDataSource.requestReturn(
           orderId,
           subOrderId,
           subOrderLineId,
@@ -141,7 +189,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
           photoUrls,
           _uuid.v4(),
         );
-        return right(unit);
+        return right(returnId);
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -19,9 +20,77 @@ class VendorOrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<VendorOrdersScreen> createState() => _VendorOrdersScreenState();
 }
 
+/// Sub-filter of the "To Ship" tab by seller step.
+enum _ToShipFilter {
+  all('All'),
+  fresh('New'),
+  accepted('Accepted'),
+  packed('Packed');
+
+  const _ToShipFilter(this.label);
+
+  final String label;
+
+  bool matches(VendorOrder order) => switch (this) {
+    _ToShipFilter.all => true,
+    _ToShipFilter.fresh =>
+      order.status == VendorOrderStatus.pending ||
+          order.status == VendorOrderStatus.confirmed ||
+          order.status == VendorOrderStatus.processing,
+    _ToShipFilter.accepted => order.status == VendorOrderStatus.accepted,
+    _ToShipFilter.packed => order.status == VendorOrderStatus.packed,
+  };
+}
+
 class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+
+  _ToShipFilter _toShipFilter = _ToShipFilter.all;
+
+  /// Bulk accept, same select pattern as Orders Ready to Ship.
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
+  bool _busy = false;
+
+  void _enterSelectMode() {
+    _tabController.animateTo(0);
+    setState(() {
+      _selectMode = true;
+      _selectedIds.clear();
+    });
+  }
+
+  void _exitSelectMode() => setState(() {
+    _selectMode = false;
+    _selectedIds.clear();
+  });
+
+  void _toggleSelection(String id) => setState(() {
+    if (!_selectedIds.remove(id)) _selectedIds.add(id);
+  });
+
+  Future<void> _bulkAccept() async {
+    if (_selectedIds.isEmpty || _busy) return;
+    setState(() => _busy = true);
+    final result = await ref
+        .read(vendorOrdersNotifierProvider.notifier)
+        .bulkAccept(_selectedIds.toList(growable: false));
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _selectMode = false;
+      _selectedIds.clear();
+    });
+    final message = result == null
+        ? 'Couldn’t accept those orders. Please try again.'
+        : result.failureCount == 0
+        ? '${result.successCount} order(s) accepted.'
+        : '${result.successCount} accepted, ${result.failureCount} failed.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   void initState() {
@@ -56,6 +125,10 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
     final completed = orders
         .where((o) => o.status.isCompleted)
         .toList(growable: false);
+    final toShipVisible = toShip
+        .where(_toShipFilter.matches)
+        .toList(growable: false);
+    final canBulkAccept = toShip.any((o) => o.canAccept);
 
     return RootBackGuard(
       fallback: RouteNames.vendorHome,
@@ -69,19 +142,28 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
           // clears back history — there's nothing for GoRouter to auto-detect,
           // so the leading back arrow needs to be explicit, not just re-enabled.
           automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite,
-              size: 20,
-            ),
-            onPressed: () => context.canPop()
-                ? context.popOrHome()
-                : context.go(RouteNames.vendorHome),
-          ),
-          title: const Text(
-            'Your Orders',
-            style: TextStyle(
+          leading: _selectMode
+              ? IconButton(
+                  tooltip: 'Cancel selection',
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: DesignTokens.textWhite,
+                  ),
+                  onPressed: _busy ? null : _exitSelectMode,
+                )
+              : IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: DesignTokens.textWhite,
+                    size: 20,
+                  ),
+                  onPressed: () => context.canPop()
+                      ? context.popOrHome()
+                      : context.go(RouteNames.vendorHome),
+                ),
+          title: Text(
+            _selectMode ? 'Select orders to accept' : 'Your Orders',
+            style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -90,6 +172,15 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
             ),
           ),
           actions: [
+            if (!_selectMode && canBulkAccept)
+              IconButton(
+                tooltip: 'Accept several orders',
+                icon: const Icon(
+                  Icons.checklist_rounded,
+                  color: DesignTokens.textWhite,
+                ),
+                onPressed: _enterSelectMode,
+              ),
             IconButton(
               icon: const Icon(
                 Icons.filter_list,
@@ -162,20 +253,151 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
           orElse: () => TabBarView(
             controller: _tabController,
             children: [
-              _OrderList(orders: toShip),
+              _OrderList(
+                orders: toShipVisible,
+                header: _ToShipFilterChips(
+                  selected: _toShipFilter,
+                  onSelected: (f) => setState(() => _toShipFilter = f),
+                ),
+                selectMode: _selectMode,
+                selectedIds: _selectedIds,
+                onToggle: _toggleSelection,
+              ),
               _OrderList(orders: inTransit),
               _OrderList(orders: shipped),
               _OrderList(orders: completed),
             ],
           ),
         ),
-        bottomNavigationBar: VendorBottomNav(
-          selectedIndex: 1,
-          onTap: (i) {
-            if (i == 0) context.go(RouteNames.vendorHome);
-            if (i == 2) context.go(RouteNames.vendorProducts);
-            if (i == 3) context.push(RouteNames.vendorProfile);
-          },
+        bottomNavigationBar: _selectMode
+            ? _AcceptSelectBar(
+                count: _selectedIds.length,
+                busy: _busy,
+                onCancel: _exitSelectMode,
+                onAccept: _bulkAccept,
+              )
+            : VendorBottomNav(
+                selectedIndex: 1,
+                onTap: (i) {
+                  if (i == 0) context.go(RouteNames.vendorHome);
+                  if (i == 2) context.go(RouteNames.vendorProducts);
+                  if (i == 3) context.push(RouteNames.vendorProfile);
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _ToShipFilterChips extends StatelessWidget {
+  const _ToShipFilterChips({required this.selected, required this.onSelected});
+
+  final _ToShipFilter selected;
+  final ValueChanged<_ToShipFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          for (final filter in _ToShipFilter.values) ...[
+            ChoiceChip(
+              label: Text(filter.label),
+              selected: filter == selected,
+              onSelected: (_) => onSelected(filter),
+              showCheckmark: false,
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              backgroundColor: DesignTokens.bgAppBodyLight,
+              selectedColor: DesignTokens.primaryGreen,
+              side: BorderSide.none,
+              shape: const StadiumBorder(),
+              labelStyle: TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: filter == selected
+                    ? DesignTokens.buttonPrimaryText
+                    : DesignTokens.textLight,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AcceptSelectBar extends StatelessWidget {
+  const _AcceptSelectBar({
+    required this.count,
+    required this.busy,
+    required this.onCancel,
+    required this.onAccept,
+  });
+
+  final int count;
+  final bool busy;
+  final VoidCallback onCancel;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        boxShadow: DesignTokens.shadowLifted,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: busy ? null : onCancel,
+                  style: TextButton.styleFrom(
+                    foregroundColor: DesignTokens.textLight,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: count == 0 || busy ? null : onAccept,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: DesignTokens.primaryGreen,
+                    foregroundColor: DesignTokens.buttonPrimaryText,
+                    disabledBackgroundColor: DesignTokens.bgAppBodyLight,
+                    disabledForegroundColor: DesignTokens.textMuted,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: const StadiumBorder(),
+                    textStyle: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  child: busy
+                      ? const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        )
+                      : Text(count == 0 ? 'Accept' : 'Accept ($count)'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -615,13 +837,26 @@ class _SectionLabel extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _OrderList extends ConsumerWidget {
-  const _OrderList({required this.orders});
+  const _OrderList({
+    required this.orders,
+    this.header,
+    this.selectMode = false,
+    this.selectedIds = const {},
+    this.onToggle,
+  });
 
   final List<VendorOrder> orders;
 
+  /// Shown above the rows (and above the empty message).
+  final Widget? header;
+  final bool selectMode;
+  final Set<String> selectedIds;
+  final ValueChanged<String>? onToggle;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (orders.isEmpty) {
+    final top = header;
+    if (orders.isEmpty && top == null) {
       return const Center(
         child: Text(
           'No orders',
@@ -629,134 +864,199 @@ class _OrderList extends ConsumerWidget {
         ),
       );
     }
+    final offset = top == null ? 0 : 1;
     return RefreshIndicator(
       color: DesignTokens.primaryGreen,
       onRefresh: () =>
           ref.read(vendorOrdersNotifierProvider.notifier).loadOrders(),
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(top: 8, bottom: 24),
-        itemCount: orders.length,
-        itemBuilder: (_, i) => _OrderTile(order: orders[i]),
+        itemCount: orders.isEmpty ? offset + 1 : orders.length + offset,
+        itemBuilder: (_, i) {
+          if (top != null && i == 0) return top;
+          if (orders.isEmpty) {
+            return const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  'No orders',
+                  style: TextStyle(color: DesignTokens.textMuted),
+                ),
+              ),
+            );
+          }
+          final order = orders[i - offset];
+          return _OrderTile(
+            order: order,
+            selectMode: selectMode,
+            selected: selectedIds.contains(order.id),
+            onToggle: onToggle == null ? null : () => onToggle!(order.id),
+          );
+        },
       ),
     );
   }
 }
 
 class _OrderTile extends StatelessWidget {
-  const _OrderTile({required this.order});
+  const _OrderTile({
+    required this.order,
+    this.selectMode = false,
+    this.selected = false,
+    this.onToggle,
+  });
 
   final VendorOrder order;
+  final bool selectMode;
+  final bool selected;
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push(
-        RouteNames.vendorOrderDetail.replaceFirst(':orderId', order.id),
-      ),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 48×48 icon container
-            Container(
-              width: 48,
-              height: 48,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: DesignTokens.bgAppBodyLight,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Image.asset(
-                'assets/images/vendordashboard/package.png',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Content column
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Order number — white 14px semibold
-                  Text(
-                    'Order #${order.orderNumber}',
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textWhite,
-                      height: 1.3,
+    // In select mode only paid orders can be picked; the rest dim.
+    final selectable = selectMode && order.canAccept;
+    return Opacity(
+      opacity: selectMode && !selectable ? 0.45 : 1,
+      child: Semantics(
+        selected: selectable ? selected : null,
+        child: InkWell(
+          onTap: selectMode
+              ? (selectable ? onToggle : null)
+              : () => context.push(
+                  RouteNames.vendorOrderDetail.replaceFirst(
+                    ':orderId',
+                    order.id,
+                  ),
+                ),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (selectMode)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12, top: 12),
+                    child: Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 24,
+                      color: selected
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
                     ),
                   ),
-                  const SizedBox(height: 4),
-
-                  // Amount · date · items — muted 12px
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 0,
-                    children: [
-                      _MutedText(formatMoney(order.total)),
-                      if (order.placedAt != null) ...[
-                        _DotSep(),
-                        _MutedText(_formatDate(order.placedAt!)),
-                      ],
-                      _DotSep(),
-                      _MutedText('${order.itemCount} items'),
-                    ],
+                // 48×48 icon container
+                Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: DesignTokens.bgAppBodyLight,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 6),
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/images/vendordashboard/package.png',
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                const SizedBox(width: 12),
 
-                  // Customer chip — #B8E6FE bg, #024A70 text, person icon
-                  if (order.customerName != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB8E6FE),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                // Content column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Order number — white 14px semibold — and status badge.
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.person,
-                            size: 12,
-                            color: Color(0xFF024A70),
-                          ),
-                          const SizedBox(width: 4),
                           Text(
-                            'Customer: ${order.customerName}',
+                            'Order #${order.orderNumber}',
                             style: const TextStyle(
                               fontFamily: DesignTokens.fontFamily,
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF024A70),
-                              height: 1.0,
+                              color: DesignTokens.textWhite,
+                              height: 1.3,
                             ),
                           ),
+                          VendorOrderStatusBadge(status: order.status),
                         ],
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 4),
+                      const SizedBox(height: 4),
 
-            // Chevron — muted 16px
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Color(0xFF9F9FA9),
-              size: 16,
+                      // Amount · date · items — muted 12px
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 0,
+                        children: [
+                          _MutedText(formatMoney(order.total)),
+                          if (order.placedAt != null) ...[
+                            _DotSep(),
+                            _MutedText(_formatDate(order.placedAt!)),
+                          ],
+                          _DotSep(),
+                          _MutedText('${order.itemCount} items'),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Customer chip — #B8E6FE bg, #024A70 text, person icon
+                      if (order.customerName != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFB8E6FE),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.person,
+                                size: 12,
+                                color: Color(0xFF024A70),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Customer: ${order.customerName}',
+                                style: const TextStyle(
+                                  fontFamily: DesignTokens.fontFamily,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF024A70),
+                                  height: 1.0,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+
+                // Chevron — muted 16px
+                if (!selectMode)
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFF9F9FA9),
+                    size: 16,
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

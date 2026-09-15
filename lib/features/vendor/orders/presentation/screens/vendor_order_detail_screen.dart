@@ -7,6 +7,9 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -26,6 +29,43 @@ class _VendorOrderDetailScreenState
   bool _itemsExpanded = true;
   bool _revenueExpanded = true;
   bool _requested = false;
+
+  /// The step whose request is in flight, so only its button spins.
+  VendorOrderAction? _pendingAction;
+
+  /// Runs a seller step. Reject and Hand over collect their input in a sheet
+  /// first; closing the sheet cancels. Outcomes (snackbar, list refresh) are
+  /// handled by the state listener in [build].
+  Future<void> _onAction(VendorOrderAction action) async {
+    final notifier = ref.read(vendorOrderDetailNotifierProvider.notifier);
+    Future<void> Function()? run;
+    switch (action) {
+      case VendorOrderAction.accept:
+        run = notifier.accept;
+      case VendorOrderAction.reject:
+        final input = await showVendorRejectSheet(context);
+        if (input == null) return;
+        run = () => notifier.reject(reason: input.reason, note: input.note);
+      case VendorOrderAction.markPacked:
+        run = notifier.markPacked;
+      case VendorOrderAction.handOver:
+        final input = await showVendorHandoverSheet(context);
+        if (input == null) return;
+        run = () => notifier.handOver(
+          carrier: input.carrier,
+          trackingNumber: input.trackingNumber,
+          note: input.note,
+        );
+      case VendorOrderAction.readyToShip:
+        run = notifier.markReadyToShip;
+      case VendorOrderAction.markDelivered:
+        run = notifier.markDelivered;
+    }
+    if (!mounted) return;
+    setState(() => _pendingAction = action);
+    await run();
+    if (mounted) setState(() => _pendingAction = null);
+  }
 
   @override
   void initState() {
@@ -80,6 +120,8 @@ class _VendorOrderDetailScreenState
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Order updated.')),
             );
+            // The list screens bucket by status; refetch so the row moves.
+            ref.invalidate(vendorOrdersNotifierProvider);
           }
         },
         orElse: () {},
@@ -179,88 +221,18 @@ class _VendorOrderDetailScreenState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (order.status.isToShip)
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: actionInProgress
-                        ? null
-                        : () => ref
-                              .read(vendorOrderDetailNotifierProvider.notifier)
-                              .markReadyToShip(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.primaryGreen,
-                      foregroundColor: Colors.black,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: actionInProgress
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
-                        : const Text(
-                            'Mark as Shipped',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  ),
-                ),
-              if (order.status.isToShip) const SizedBox(height: 10),
-              // The backend's fulfillment lifecycle only ever reaches
-              // Delivered (and, downstream, the vendor's earnings ledger)
-              // through this action — there was previously no UI entry
-              // point for it anywhere in the app, so a vendor could ship
-              // an order but never actually mark it delivered or get paid
-              // out for it.
-              if (order.status.isInTransit)
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: actionInProgress
-                        ? null
-                        : () => ref
-                              .read(vendorOrderDetailNotifierProvider.notifier)
-                              .markDelivered(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: DesignTokens.primaryGreen,
-                      foregroundColor: Colors.black,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: actionInProgress
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
-                        : const Text(
-                            'Mark as Delivered',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                  ),
-                ),
-              if (order.status.isInTransit) const SizedBox(height: 10),
+              // Next step for the current backend state (Orders contract §1):
+              // Accept/Reject, Mark packed, Hand over or Mark as Shipped, and
+              // Mark as Delivered — the only route to Delivered and, from
+              // there, the vendor's earnings ledger.
+              VendorOrderActionBar(
+                stateCode: order.stateCode,
+                busy: actionInProgress,
+                pendingAction: actionInProgress ? _pendingAction : null,
+                onAction: _onAction,
+              ),
+              if (vendorActionsForState(order.stateCode).isNotEmpty)
+                const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -501,26 +473,7 @@ class _OrderSummaryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB8E6FE),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    order.status.label,
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF024A70),
-                      height: 1.0,
-                    ),
-                  ),
-                ),
+                VendorOrderStatusBadge(status: order.status),
               ],
             ),
           ),

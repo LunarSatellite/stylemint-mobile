@@ -1,0 +1,153 @@
+{
+  "generatedUtc": "2026-09-15T12:00:00Z",
+  "personalized": true,
+  "greeting": { "firstName": "Sumendra" },
+  "sections": [
+    {
+      "id": "hero",
+      "kind": "campaigns",
+      "eyebrow": null,
+      "title": null,
+      "subtitle": null,
+      "reason": null,
+      "seeAll": null,
+      "items": [
+        {
+          "id": "c0ff",
+          "slug": "dubai-evening-edit",
+          "eyebrow": "Limited drop",
+          "title": "Dubai Evening Edit",
+          "subtitle": "Gold-hour tailoring",
+          "heroImageUrl": "https://cdn.stylemint.app/campaigns/dubai.jpg",
+          "heroReelId": null,
+          "ctas": [
+            { "label": "Shop the collection", "targetKind": "Collection", "targetValue": "dubai-evening-edit" },
+            { "label": "Watch reels", "targetKind": 2, "targetValue": "" },
+            { "label": "Gift guide", "targetKind": "Url", "targetValue": "https://stylemint.app/gifts" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "picked-for-you",
+      "kind": "products",
+      "eyebrow": "For you",
+      "title": "Picked for you",
+      "subtitle": null,
+      "reason": "Because you follow Stylemint Nepal",
+      "seeAll": { "target": "productList", "params": { "sort": "bestselling" } },
+      "items": [
+        {
+          "id": "5d0c",
+          "name": "AquaGlow Pen Series",
+          "brandName": "Stylemint Nepal",
+          "vendorAccountId": "a1f2",
+          "imageUrl": "https://cdn.stylemint.app/p/pen.jpg",
+          "price": { "amount": 250, "currency": "NPR" },
+          "compareAtPrice": { "amount": 300, "currency": "NPR" },
+          "rating": 4.6,
+          "reviewCount": 12,
+          "isNew": true,
+          "isLowStock": false,
+          "isOnSale": true,
+          "saleEndsUtc": "2026-09-20T18:15:00Z"
+        },
+        {
+          "id": "7a21",
+          "name": "Canvas tote",
+          "brandName": null,
+          "vendorAccountId": "a1f2",
+          "imageUrl": null,
+          "price": { "amount": 1800, "currency": "NPR" },
+          "compareAtPrice": null,
+          "rating": null,
+          "reviewCount": 0,
+          "isNew": false,
+          "isLowStock": true,
+          "isOnSale": false,
+          "saleEndsUtc": null
+        },
+        { "id": "", "name": "Broken card" }
+      ]
+    },
+    {
+      "id": "live-now",
+      "kind": "liveStreams",
+      "title": "Live now",
+      "items": [ { "id": "live-1" } ]
+    },
+    {
+      "id": "shoppable-reels",
+      "kind": "reels",
+      "title": "Shoppable reels",
+      "seeAll": { "target": "reels", "params": {} },
+      "items": [
+        {
+          "id": "4be1",
+          "posterUrl": "https://cdn.stylemint.app/r/poster.jpg",
+          "creatorAccountId": "9f1a",
+          "creatorName": "Sumendra",
+          "creatorAvatarUrl": null,
+          "hook": "Write your secrets in style",
+          "taggedProductCount": 1,
+          "isAiGenerated": true,
+          "likeCount": 3,
+          "sourcePlatform": "TikTok"
+        }
+      ]
+    },
+    {
+      "id": "broken",
+      "kind": "products",
+      "title": "Broken rail",
+      "items": "not-a-list"
+    },
+    {
+      "id": "deals",
+      "kind": "products",
+      "title": "Deals",
+      "seeAll": { "target": "productList", "params": { "onSale": "true", "pageSize": 20 } },
+      "items": [
+        {
+          "id": "e9b0",
+          "name": "Silk scarf",
+          "price": { "amount": 1499, "currency": "NPR" },
+          "compareAtPrice": { "amount": 1999, "currency": "NPR" },
+          "isOnSale": true
+        }
+      ]
+    },
+    {
+      "id": "categories",
+      "kind": "Categories",
+      "title": "Shop by category",
+      "items": [ { "id": "c3d4", "slug": "fashion", "name": "Fashion", "imageUrl": null } ]
+    },
+    {
+      "id": "brands",
+      "kind": "brands",
+      "title": "Brands we love",
+      "items": [
+        { "vendorAccountId": "a1f2", "name": "Stylemint Nepal", "logoUrl": null, "coverImageUrl": null, "tagline": null, "isVerified": true }
+      ]
+    },
+    {
+      "id": "creators",
+      "kind": "creators",
+      "title": "Creators to follow",
+      "seeAll": { "target": "creators", "params": {} },
+      "items": [
+        { "accountId": "9f1a", "displayName": "Sumendra", "handle": "sumendra", "avatarUrl": null, "coverImageUrl": null, "isVerified": false, "styleTags": ["Minimal"], "followerCount": 120 }
+      ]
+    },
+    {
+      "id": "collections",
+      "kind": "collections",
+      "title": "The edits",
+      "items": [
+        { "slug": "minimal-workwear", "kind": "Editorial", "title": "Minimal workwear", "subtitle": null, "coverImageUrl": null, "itemCount": 8, "previewImageUrls": ["https://cdn.stylemint.app/p/1.jpg"] }
+      ]
+    },
+    { "id": "trust", "kind": "trust", "items": [] }
+  ]
+}

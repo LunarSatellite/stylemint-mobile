@@ -1,0 +1,22 @@
+/// StyleMint Mall component kit — presentational building blocks for the
+/// 360° Digital Mall. See README.md in this folder for design rules.
+library;
+
+export 'mall_brand_card.dart';
+export 'mall_campaign_hero.dart';
+export 'mall_category_tile.dart';
+export 'mall_collection_card.dart';
+export 'mall_creator_card.dart';
+export 'mall_empty_state.dart';
+export 'mall_image.dart';
+export 'mall_metrics.dart';
+export 'mall_primitives.dart';
+export 'mall_product_card.dart';
+export 'mall_product_grid.dart';
+export 'mall_rail.dart';
+export 'mall_reel_card.dart';
+export 'mall_section_header.dart';
+export 'mall_strings.dart';
+export 'mall_trust_strip.dart';
+export 'mall_view_models.dart';
+export 'sm_skeleton.dart';

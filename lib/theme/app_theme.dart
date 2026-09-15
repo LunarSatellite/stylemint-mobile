@@ -1,24 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'colors.dart';
-import 'design_tokens.dart';
-import 'typography.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/theme/typography.dart';
 
+/// Material themes for Style Mint.
+///
+/// Every colour comes from [DesignTokens] and every Material text style is
+/// Poppins. The editorial display face (Instrument Serif) is never applied
+/// theme-wide — hero and section titles opt in via `DesignTokens.display*`.
 abstract class AppTheme {
   // ── Light ─────────────────────────────────────────────────────────────────
-  static ThemeData get light => _build(_lightScheme, Brightness.light);
+  static ThemeData get light => _build(_lightScheme);
 
-  // ── Dark ──────────────────────────────────────────────────────────────────
-  static ThemeData get dark => _build(_darkScheme, Brightness.dark);
+  // ── Dark (the app's default) ──────────────────────────────────────────────
+  static ThemeData get dark => _build(_darkScheme);
 
   // ── Builder ───────────────────────────────────────────────────────────────
-  static ThemeData _build(ColorScheme scheme, Brightness brightness) {
+  static ThemeData _build(ColorScheme scheme) {
+    final isLight = scheme.brightness == Brightness.light;
+    final applied = AppTextTheme.staticTheme.apply(
+      fontFamily: DesignTokens.fontFamily,
+      bodyColor: scheme.onSurface,
+      displayColor: scheme.onSurface,
+    );
+    final textTheme = applied.copyWith(
+      bodySmall: applied.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+      labelSmall: applied.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+    );
+    final fieldRadius = BorderRadius.circular(10);
+
     return ThemeData(
       useMaterial3: true,
+      brightness: scheme.brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: scheme.surface,
-      fontFamily: 'Inter',
-      textTheme: AppTextTheme.staticTheme,
+      canvasColor: scheme.surface,
+      fontFamily: DesignTokens.fontFamily,
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
@@ -31,105 +49,164 @@ abstract class AppTheme {
         // the shorthand presets don't pin the nav bar color, so it fell
         // through to Android's own default (light grey) on any screen with
         // an AppBar, clashing against this app's near-black UI.
-        systemOverlayStyle: brightness == Brightness.light
+        systemOverlayStyle: isLight
             ? SystemUiOverlayStyle.dark.copyWith(
-                systemNavigationBarColor: Colors.white,
+                systemNavigationBarColor: DesignTokens.lightSurface,
                 systemNavigationBarIconBrightness: Brightness.dark,
                 systemNavigationBarDividerColor: Colors.transparent,
               )
             : SystemUiOverlayStyle.light.copyWith(
-                // The actual dark background every screen renders against —
-                // individual screens hardcode this directly on their
-                // Scaffold rather than reading scheme.surface, so this (not
-                // kSurfaceColorDark) is what the nav bar must match.
+                // The dark background every screen renders against.
                 systemNavigationBarColor: DesignTokens.bgAppFoundation,
                 systemNavigationBarIconBrightness: Brightness.light,
                 systemNavigationBarDividerColor: Colors.transparent,
               ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: kDividerColor,
+      dividerTheme: DividerThemeData(
+        color: isLight
+            ? DesignTokens.lightSurfaceContainerHigh
+            : DesignTokens.bgAppBodyLight,
         thickness: 1,
         space: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: isLight
+            ? DesignTokens.lightSurfaceContainer
+            : DesignTokens.inputFieldFill,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kBorderColor),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: scheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kBorderColor),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: scheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kPrimaryColor, width: 1.5),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kErrorColor),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: scheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kErrorColor, width: 1.5),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
-        hintStyle: const TextStyle(color: kHintTextColor, fontSize: 14),
-        errorStyle: const TextStyle(color: kErrorColor, fontSize: 12),
+        hintStyle: TextStyle(
+          color: isLight
+              ? DesignTokens.textContentSecondary
+              : DesignTokens.inputFieldPlaceholder,
+          fontSize: 14,
+        ),
+        errorStyle: TextStyle(color: scheme.error, fontSize: 12),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: kPrimaryColor,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(360)),
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          disabledBackgroundColor: isLight
+              ? DesignTokens.lightSurfaceContainerHigh
+              : DesignTokens.bgAppBodyLight,
+          disabledForegroundColor: DesignTokens.textMuted,
+          minimumSize: const Size(double.infinity, DesignTokens.buttonHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(360),
+          ),
           elevation: 0,
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: kPrimaryColor,
-          side: const BorderSide(color: kPrimaryColor),
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(360)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          foregroundColor: scheme.primary,
+          side: BorderSide(color: scheme.primary),
+          minimumSize: const Size(double.infinity, DesignTokens.buttonHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(360),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: DesignTokens.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: kPrimaryColor,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.primary,
       ),
-      iconTheme: const IconThemeData(color: kTextColor),
+      iconTheme: IconThemeData(color: scheme.onSurface),
     );
   }
 
   static const ColorScheme _lightScheme = ColorScheme(
     brightness: Brightness.light,
-    primary: kPrimaryColor,
-    onPrimary: Colors.white,
-    primaryContainer: kPrimaryLight,
-    onPrimaryContainer: kPrimaryDark,
-    secondary: kSecondaryColor,
-    onSecondary: Colors.white,
-    error: kErrorColor,
-    onError: Colors.white,
-    surface: kSurfaceColor,
-    onSurface: kTextColor,
+    primary: DesignTokens.primaryGreen,
+    onPrimary: DesignTokens.buttonPrimaryText,
+    primaryContainer: DesignTokens.primaryGreenLight,
+    onPrimaryContainer: DesignTokens.textWhite,
+    secondary: DesignTokens.secondaryYellow,
+    onSecondary: DesignTokens.textDark,
+    tertiary: DesignTokens.colorInfo,
+    onTertiary: DesignTokens.textDark,
+    error: DesignTokens.colorError,
+    onError: DesignTokens.textDark,
+    surface: DesignTokens.lightSurface,
+    onSurface: DesignTokens.textDark,
+    onSurfaceVariant: DesignTokens.textContentSecondary,
+    surfaceContainerLowest: DesignTokens.lightSurface,
+    surfaceContainerLow: DesignTokens.lightSurfaceContainer,
+    surfaceContainer: DesignTokens.lightSurfaceContainer,
+    surfaceContainerHigh: DesignTokens.lightSurfaceContainerHigh,
+    surfaceContainerHighest: DesignTokens.textLight,
+    outline: DesignTokens.textMuted,
+    outlineVariant: DesignTokens.lightSurfaceContainerHigh,
+    shadow: DesignTokens.baseBlack,
+    scrim: DesignTokens.baseBlack,
+    inverseSurface: DesignTokens.bgAppBody,
+    onInverseSurface: DesignTokens.textWhite,
+    inversePrimary: DesignTokens.primaryGreen,
   );
 
   static const ColorScheme _darkScheme = ColorScheme(
     brightness: Brightness.dark,
-    primary: kPrimaryColor,
-    onPrimary: Colors.white,
-    primaryContainer: kPrimaryDark,
-    onPrimaryContainer: kPrimaryLight,
-    secondary: kSecondaryColor,
-    onSecondary: Colors.white,
-    error: kErrorColor,
-    onError: Colors.white,
-    surface: kSurfaceColorDark,
-    onSurface: Colors.white,
+    primary: DesignTokens.primaryGreen,
+    onPrimary: DesignTokens.buttonPrimaryText,
+    primaryContainer: DesignTokens.primaryGreenLight,
+    onPrimaryContainer: DesignTokens.textWhite,
+    secondary: DesignTokens.secondaryYellow,
+    onSecondary: DesignTokens.textDark,
+    secondaryContainer: DesignTokens.warningFillDark,
+    onSecondaryContainer: DesignTokens.warningTextLight,
+    tertiary: DesignTokens.colorInfo,
+    onTertiary: DesignTokens.textDark,
+    tertiaryContainer: DesignTokens.infoFillDark,
+    onTertiaryContainer: DesignTokens.infoTextLight,
+    error: DesignTokens.colorError,
+    onError: DesignTokens.textDark,
+    surface: DesignTokens.bgAppFoundation,
+    onSurface: DesignTokens.textWhite,
+    onSurfaceVariant: DesignTokens.textMuted,
+    surfaceContainerLowest: DesignTokens.baseBlack,
+    surfaceContainerLow: DesignTokens.bgAppBody,
+    surfaceContainer: DesignTokens.bgAppBody,
+    surfaceContainerHigh: DesignTokens.surfaceRaised,
+    surfaceContainerHighest: DesignTokens.bgAppBodyLight,
+    outline: DesignTokens.inputFieldBorder,
+    outlineVariant: DesignTokens.borderDefault,
+    shadow: DesignTokens.baseBlack,
+    scrim: DesignTokens.baseBlack,
+    inverseSurface: DesignTokens.textWhite,
+    onInverseSurface: DesignTokens.textDark,
+    inversePrimary: DesignTokens.primaryGreenDark,
   );
 }

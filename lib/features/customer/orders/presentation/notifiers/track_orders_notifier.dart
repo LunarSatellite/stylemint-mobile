@@ -128,6 +128,26 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     );
   }
 
+  /// Pull-to-refresh: refetches without swapping the screen for a loader. A
+  /// failed refresh keeps the order already on screen.
+  Future<void> refresh(String orderId) async {
+    final current = state.maybeWhen(loadSuccess: (o) => o, orElse: () => null);
+    if (current == null) return loadOrder(orderId);
+    final either = await _repository.getOrderDetail(orderId);
+    if (!mounted) return;
+    either.fold(
+      (_) {},
+      (order) => state = OrderDetailState.loadSuccess(
+        current.submittedReturnId == null
+            ? order
+            : order.copyWith(
+                canReturn: false,
+                submittedReturnId: current.submittedReturnId,
+              ),
+      ),
+    );
+  }
+
   // Order cancellation moved to the dedicated cancel flow
   // (CancelOrderScreen + cancelOrderControllerProvider), which collects the
   // reason / note / refund acknowledgement the backend requires.
@@ -155,9 +175,12 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
             _onActionFailure(order, failure);
             return OrderDetailState.actionFailure(failure);
           },
-          (_) {
+          (returnId) {
             return OrderDetailState.loadSuccess(
-              order.copyWith(canReturn: false),
+              order.copyWith(
+                canReturn: false,
+                submittedReturnId: returnId ?? '',
+              ),
             );
           },
         );

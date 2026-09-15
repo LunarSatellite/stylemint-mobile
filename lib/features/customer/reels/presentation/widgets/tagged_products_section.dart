@@ -36,67 +36,86 @@ class TaggedProductsSection extends ConsumerWidget {
   }
 }
 
+/// Adds a reel's tagged [product] to the cart, attributed to the reel tag
+/// (commission). Guests are asked to sign in first. A success shows on the
+/// cart count; only failures are reported.
+///
+/// Shared by [TaggedProductsSection] and the Home quick product sheet.
+Future<void> addTaggedProductToCart(
+  BuildContext context,
+  WidgetRef ref,
+  TaggedProductEntity product,
+) async {
+  if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
+  if (!context.mounted) return;
+  final succeeded = await ref
+      .read(cartNotifierProvider.notifier)
+      .addItem(
+        productId: product.id,
+        quantity: 1,
+        reelTagContextId: product.taggedProductId,
+        idempotencyKey:
+            'reel-atc-${product.id}-${DateTime.now().millisecondsSinceEpoch}',
+      );
+  if (!context.mounted) return;
+  // A successful add shows on the rail's product tile (cart count badge)
+  // instead of a pop-up; only failures are reported here.
+  if (!succeeded) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Failed to add to cart. Please try again.'),
+        backgroundColor: DesignTokens.colorError,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+/// The cart line holding [productId], or null. Watches the cart.
+CartItem? watchCartItemForProduct(WidgetRef ref, String productId) => ref
+    .watch(cartNotifierProvider)
+    .maybeWhen(
+      loadSuccess: (cart) {
+        for (final item in cart.items) {
+          if (item.productId == productId) return item;
+        }
+        return null;
+      },
+      orElse: () => null,
+    );
+
+/// Steps a cart line's quantity by [delta]; at zero the line is removed.
+void changeCartItemQuantity(WidgetRef ref, CartItem item, int delta) {
+  final newQuantity = item.quantity + delta;
+  if (newQuantity <= 0) {
+    ref.read(cartNotifierProvider.notifier).removeItem(item.id);
+  } else {
+    ref
+        .read(cartNotifierProvider.notifier)
+        .updateItem(
+          itemId: item.id,
+          quantity: newQuantity,
+        );
+  }
+}
+
 class _ProductTile extends ConsumerWidget {
   const _ProductTile({required this.product});
 
   final TaggedProductEntity product;
 
-  Future<void> _addToCart(BuildContext context, WidgetRef ref) async {
-    if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
-    if (!context.mounted) return;
-    final succeeded = await ref
-        .read(cartNotifierProvider.notifier)
-        .addItem(
-          productId: product.id,
-          quantity: 1,
-          reelTagContextId: product.taggedProductId,
-          idempotencyKey:
-              'reel-atc-${product.id}-${DateTime.now().millisecondsSinceEpoch}',
-        );
-    if (!context.mounted) return;
-    // A successful add shows on the rail's product tile (cart count badge)
-    // instead of a pop-up; only failures are reported here.
-    if (!succeeded) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to add to cart. Please try again.'),
-          backgroundColor: DesignTokens.colorError,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
+  Future<void> _addToCart(BuildContext context, WidgetRef ref) =>
+      addTaggedProductToCart(context, ref, product);
 
   void _openProduct(BuildContext context) =>
       context.push('/product/${product.id}');
 
-  void _changeQuantity(WidgetRef ref, CartItem item, int delta) {
-    final newQuantity = item.quantity + delta;
-    if (newQuantity <= 0) {
-      ref.read(cartNotifierProvider.notifier).removeItem(item.id);
-    } else {
-      ref
-          .read(cartNotifierProvider.notifier)
-          .updateItem(
-            itemId: item.id,
-            quantity: newQuantity,
-          );
-    }
-  }
+  void _changeQuantity(WidgetRef ref, CartItem item, int delta) =>
+      changeCartItemQuantity(ref, item, delta);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cartItem = ref
-        .watch(cartNotifierProvider)
-        .maybeWhen(
-          loadSuccess: (cart) {
-            for (final item in cart.items) {
-              if (item.productId == product.id) return item;
-            }
-            return null;
-          },
-          orElse: () => null,
-        );
+    final cartItem = watchCartItemForProduct(ref, product.id);
     final inCart = cartItem != null;
     // The blur lives in its own IgnorePointer'd layer, separate from the
     // interactive Row below — a GestureDetector/InkWell *nested inside* a

@@ -74,6 +74,10 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
     final config = SizeConfig(context);
     final h = widget.height ?? (tablet ? 58 : 52);
     final fs = widget.labelSize ?? (tablet ? 18.0 : 16.0);
+    // On the default brand-green fill the label must be the dark on-primary
+    // token; white on #2ECC71 fails contrast. Custom fills keep white.
+    final labelColor = widget.labelColor ??
+        (widget.color == null ? kOnPrimaryColor : Colors.white);
 
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -91,7 +95,7 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
       ),
       onPressed: (_loading || widget.disabled) ? null : _handlePress,
       child: _loading
-          ? CupertinoActivityIndicator(color: widget.labelColor ?? Colors.white)
+          ? CupertinoActivityIndicator(color: labelColor)
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -105,7 +109,7 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
                   style: TextStyle(
                     fontSize: fs,
                     fontWeight: widget.labelWeight ?? FontWeight.w600,
-                    color: widget.disabled?Colors.grey:widget.labelColor ?? Colors.white,
+                    color: widget.disabled ? Colors.grey : labelColor,
                   ),
                 ),
                 if (widget.suffixIcon != null) ...[

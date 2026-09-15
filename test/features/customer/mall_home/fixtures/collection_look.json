@@ -1,0 +1,65 @@
+{
+  "id": "0b6e",
+  "slug": "monsoon-look",
+  "title": "Monsoon look",
+  "subtitle": "Rain-ready layers",
+  "description": "Layers that shrug off the rain.",
+  "coverImageUrl": "https://cdn.stylemint.app/c/monsoon.jpg",
+  "kind": 4,
+  "owner": { "kind": 2, "accountId": "9f1a", "displayName": null, "avatarUrl": null },
+  "itemCount": 6,
+  "startsUtc": null,
+  "endsUtc": null,
+  "publishedUtc": "2026-09-15T06:00:00Z",
+  "items": {
+    "items": [
+      {
+        "productId": "5d0c",
+        "sortOrder": 0,
+        "note": "The hero piece",
+        "positionX": 0.3125,
+        "positionY": 0.75,
+        "product": {
+          "id": "5d0c",
+          "name": "Rain shell",
+          "state": 2,
+          "variants": [ { "isDefault": true, "priceAmount": 4999, "priceCurrency": "NPR", "quantityOnHand": 9 } ],
+          "images": []
+        }
+      },
+      {
+        "productId": "7a21",
+        "sortOrder": 1,
+        "note": null,
+        "positionX": 0.5,
+        "positionY": null,
+        "product": {
+          "id": "7a21",
+          "name": "Wellies",
+          "state": 2,
+          "variants": [ { "isDefault": true, "priceAmount": 2999, "priceCurrency": "NPR" } ],
+          "images": []
+        }
+      },
+      {
+        "productId": "e9b0",
+        "sortOrder": 2,
+        "positionX": 1.4,
+        "positionY": -0.2,
+        "product": {
+          "id": "e9b0",
+          "name": "Umbrella",
+          "state": 2,
+          "variants": [ { "isDefault": true, "priceAmount": 899, "priceCurrency": "NPR" } ],
+          "images": []
+        }
+      },
+      { "productId": "gone", "sortOrder": 3, "product": null }
+    ],
+    "totalCount": 6,
+    "nextCursor": "Y29sbGVjdGlvbi1pdGVtc3wwfDVkMGM",
+    "previousCursor": null,
+    "pageSize": 20,
+    "hasMore": true
+  }
+}

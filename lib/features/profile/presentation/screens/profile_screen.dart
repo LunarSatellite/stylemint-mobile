@@ -177,6 +177,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ),
         const SizedBox(height: DesignTokens.s20),
         ProfileStatsRow(summary: widget.summary),
+        const SizedBox(height: DesignTokens.s12),
+
+        // Returns sit directly under My Orders.
+        ProfileMenuSection(
+          items: [
+            ProfileMenuItem(
+              icon: Icons.assignment_return_outlined,
+              label: 'My returns',
+              onTap: () => context.push(RouteNames.myReturns),
+            ),
+          ],
+        ),
         const SizedBox(height: DesignTokens.s20),
 
         // Selling & Creating — apply for / switch into the Creator & Vendor

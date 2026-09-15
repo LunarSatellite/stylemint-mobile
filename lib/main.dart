@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
+import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
 import 'app.dart';
@@ -354,6 +355,8 @@ final _previewRouter = GoRouter(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // OFL licence texts for the bundled Poppins + Instrument Serif fonts.
+  registerFontLicenses();
   // Portrait only: the reel feed, its right-hand rail and the bottom bar are
   // laid out for a tall screen (owner decision, 2026-09-15). The Android
   // manifest and iOS Info.plist lock it before Flutter starts too.

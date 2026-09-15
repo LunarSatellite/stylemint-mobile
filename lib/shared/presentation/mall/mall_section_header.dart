@@ -1,0 +1,157 @@
+import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+
+/// Editorial section header: optional eyebrow, a display-face title, an
+/// optional subtitle and an optional "See all" action with a 44dp target.
+class MallSectionHeader extends StatelessWidget {
+  const MallSectionHeader({
+    required this.title,
+    super.key,
+    this.eyebrow,
+    this.subtitle,
+    this.onSeeAll,
+    this.seeAllLabel,
+    this.padding,
+  });
+
+  final String title;
+  final String? eyebrow;
+  final String? subtitle;
+  final VoidCallback? onSeeAll;
+
+  /// Overrides [MallStrings.seeAll].
+  final String? seeAllLabel;
+
+  /// Defaults to 16dp page gutters and 12dp below. The end gutter tightens
+  /// when there is an action, whose own padding supplies the visual gutter.
+  final EdgeInsetsGeometry? padding;
+
+  static const TextStyle _subtitleStyle = TextStyle(
+    fontFamily: DesignTokens.fontFamily,
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+    color: DesignTokens.textMuted,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final eyebrowText = eyebrow;
+    final subtitleText = subtitle;
+    final action = onSeeAll;
+    return Padding(
+      padding:
+          padding ??
+          EdgeInsetsDirectional.fromSTEB(
+            DesignTokens.s16,
+            0,
+            action == null ? DesignTokens.s16 : DesignTokens.s4,
+            DesignTokens.s12,
+          ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (eyebrowText != null) ...[
+                  MallEyebrow(eyebrowText, maxLines: 2),
+                  const SizedBox(height: DesignTokens.s6),
+                ],
+                Semantics(
+                  header: true,
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignTokens.displaySection,
+                  ),
+                ),
+                if (subtitleText != null) ...[
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    subtitleText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _subtitleStyle,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (action != null) ...[
+            const SizedBox(width: DesignTokens.s8),
+            _SeeAllButton(
+              label: seeAllLabel ?? MallStrings.of(context).seeAll,
+              sectionTitle: title,
+              onPressed: action,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SeeAllButton extends StatelessWidget {
+  const _SeeAllButton({
+    required this.label,
+    required this.sectionTitle,
+    required this.onPressed,
+  });
+
+  final String label;
+  final String sectionTitle;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$label, $sectionTitle',
+      excludeSemantics: true,
+      onTap: onPressed,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 200),
+        child: TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            foregroundColor: DesignTokens.textLight,
+            minimumSize: const Size.square(DesignTokens.minTouchTarget),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: DesignTokens.s12),
+            shape: const StadiumBorder(),
+            textStyle: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s4),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: MallMetrics.scalerOf(context).scale(16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

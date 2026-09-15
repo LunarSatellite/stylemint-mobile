@@ -75,11 +75,18 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_product_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_store_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/collection_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/product_listing_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/fedex_tracking_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/my_returns_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_invoice_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/return_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/track_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/presentation/screens/add_card_screen.dart';
@@ -88,7 +95,6 @@ import 'package:stylemint_mobile_frontend/features/customer/presentation/screens
 import 'package:stylemint_mobile_frontend/features/customer/presentation/widgets/swipeable_branch_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_comments_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_detail_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/screens/product_reviews_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/screens/saved_items_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
@@ -214,6 +220,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
 
 import 'route_names.dart';
+import 'route_path_match.dart';
 
 part 'app_router.g.dart';
 
@@ -259,6 +266,11 @@ const _publicPaths = {
   RouteNames.profile,
   RouteNames.productDetail,
   RouteNames.productReviews,
+  // Public creator storefronts browse signed out; follow and save ask to sign in.
+  RouteNames.creatorProfile,
+  // Mall listing and collections browse signed out.
+  RouteNames.productListing,
+  RouteNames.collectionRoot,
   // Scanning is open to guests; login and drop party codes ask to sign in.
   RouteNames.scan,
   // StyleMint codes (printed QR, NFC tags, /c/ links) and the in-store pages
@@ -358,8 +370,11 @@ GoRouter appRouter(Ref ref) {
         // Path only: the query can carry an OAuth code and state.
         '[OAUTH-DEBUG] router.redirect: path=${state.uri.path} matchedLocation=$path session=$session',
       );
-      final isPublic = _publicPaths.any((p) => path.startsWith(p));
-      final isAuthOnly = _authOnlyPaths.any((p) => path.startsWith(p));
+      // Patterns with :parameters (e.g. /product/:productId) match real
+      // locations segment by segment; a plain startsWith never matched them,
+      // so guests were sent to sign in from product and creator pages.
+      final isPublic = _publicPaths.any((p) => routePathMatches(path, p));
+      final isAuthOnly = _authOnlyPaths.any((p) => routePathMatches(path, p));
       final atSplash = path == RouteNames.splash;
 
       // The redirect OWNS splash routing: once the session resolves, send the
@@ -559,11 +574,46 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
 
+      // Mall product listing: Home "See all", brands and categories. The
+      // query carries the listing filters and the title.
+      GoRoute(
+        path: RouteNames.productListing,
+        builder: (ctx, state) {
+          final params = state.uri.queryParameters;
+          return ProductListingScreen(
+            query: ProductListingQuery.fromQueryParameters(params),
+            title: params[MallRoutes.titleParam],
+          );
+        },
+      ),
+
+      // Editorial collection or look.
+      GoRoute(
+        path: RouteNames.collection,
+        builder: (ctx, state) =>
+            CollectionScreen(slug: state.pathParameters['slug']!),
+      ),
+
       // Orders list: opened from Profile's "My Orders" (not a bar tab since
       // 2026-09-15).
       GoRoute(
         path: RouteNames.orders,
         builder: (ctx, state) => const TrackOrdersScreen(),
+      ),
+
+      // My returns and one return. Keep above Order Detail, or
+      // `/orders/:orderId` reads "returns" as an order number.
+      GoRoute(
+        path: RouteNames.myReturns,
+        builder: (ctx, state) => const MyReturnsScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.myReturns, RouteNames.returnDetail),
+            builder: (ctx, state) => ReturnDetailScreen(
+              returnId: state.pathParameters['returnId']!,
+            ),
+          ),
+        ],
       ),
 
       // Order Detail
@@ -1553,7 +1603,9 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: RouteNames.home,
-                builder: (ctx, state) => const ReelsFeedScreen(),
+                // "Mall | Reels": the Mall by default, the reels feed on
+                // the switch.
+                builder: (ctx, state) => const HomeScreen(),
               ),
             ],
           ),
