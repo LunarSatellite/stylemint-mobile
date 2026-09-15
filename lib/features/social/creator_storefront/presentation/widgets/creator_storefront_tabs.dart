@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/repositories/storefront_repository.dart';
@@ -235,7 +236,7 @@ class CreatorHomeTab extends ConsumerWidget {
             itemWidth: width,
             height: height,
             semanticLabel: "$firstName's picks",
-            itemBuilder: (context, product, _) => MallProductCard(
+            itemBuilder: (context, product, _) => SaveableMallProductCard(
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.productId),

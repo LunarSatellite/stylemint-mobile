@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/product_filter_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/notifiers/storefront_paged_notifier.dart';
@@ -259,7 +260,7 @@ class BrandHomeTab extends ConsumerWidget {
             itemWidth: width,
             height: height,
             semanticLabel: title,
-            itemBuilder: (context, product, _) => MallProductCard(
+            itemBuilder: (context, product, _) => SaveableMallProductCard(
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.id),

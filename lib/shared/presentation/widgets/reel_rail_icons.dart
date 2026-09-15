@@ -15,6 +15,7 @@ abstract final class ReelRailIcons {
   static const heartPath =
       'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3C14.7 3 13.5 3.5 12 5 '
       '10.5 3.5 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z';
+
   /// Round speech bubble with a short tail at the lower left.
   static const commentPath =
       'M12 3.6c-4.9 0-8.9 3.4-8.9 7.6 0 2.1 1 4 2.6 5.4l-.9 3.8 4.3-1.9 '
@@ -55,6 +56,21 @@ abstract final class ReelRailIcons {
   static const share =
       '$_open<path d="$sharePath" fill="none" stroke="#fff" '
       'stroke-width="2.4" $_round/></svg>';
+
+  /// Bookmark with a notched foot, for saving a reel on StyleMint.
+  static const bookmarkPath =
+      'M6.8 3.4h10.4c.8 0 1.4.6 1.4 1.4v15.1c0 .6-.7.9-1.1.5L12 16.1 '
+      '6.5 20.4c-.4.4-1.1.1-1.1-.5V4.8c0-.8.6-1.4 1.4-1.4z';
+
+  /// Outline bookmark, same weight as the heart.
+  static const bookmark =
+      '$_open<path d="$bookmarkPath" fill="none" stroke="#fff" '
+      'stroke-width="2.2" $_round/></svg>';
+
+  /// Filled bookmark, for a saved state.
+  static const bookmarkFilled =
+      '$_open<path d="$bookmarkPath" fill="#fff" stroke="#fff" '
+      'stroke-width="2.2" $_round/></svg>';
 
   /// Eye for views.
   static const views =

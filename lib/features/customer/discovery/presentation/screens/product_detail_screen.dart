@@ -12,8 +12,13 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/delivery_estimate_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/regret_check_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
@@ -24,7 +29,6 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/review_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -88,7 +92,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           onToggleDesc: () => setState(() => _descExpanded = !_descExpanded),
           onAddToCart: () => _handleAddToCart(product),
           onBuyNow: () => _handleBuyNow(product),
-          onToggleSave: () => _handleToggleSave(),
         ),
         loadFailure: (_) => SmErrorView(
           message: 'Failed to load product.',
@@ -177,28 +180,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (!mounted) return;
     await context.push(RouteNames.checkout);
   }
-
-  Future<void> _handleToggleSave() async {
-    final success = await ref
-        .read(productDetailNotifierProvider(widget.productId).notifier)
-        .toggleSave(widget.productId);
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't save this item. Please try again."),
-          backgroundColor: DesignTokens.colorError,
-        ),
-      );
-      return;
-    }
-    // Profile's Saved Items screen (and its stats-row count) reads from a
-    // singleton provider that only ever fetched once at first access —
-    // without this it silently kept showing whatever it loaded before this
-    // save/unsave happened, even though the backend was updated correctly.
-    if (success) {
-      ref.read(savedItemsNotifierProvider.notifier).load();
-    }
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -223,7 +204,6 @@ class _ProductBody extends StatelessWidget {
     required this.onToggleDesc,
     required this.onAddToCart,
     required this.onBuyNow,
-    required this.onToggleSave,
   });
 
   final ProductDetail product;
@@ -235,7 +215,6 @@ class _ProductBody extends StatelessWidget {
   final VoidCallback onToggleDesc;
   final VoidCallback onAddToCart;
   final VoidCallback onBuyNow;
-  final VoidCallback onToggleSave;
 
   @override
   Widget build(BuildContext context) {
@@ -256,16 +235,9 @@ class _ProductBody extends StatelessWidget {
                 onPressed: () => context.popOrHome(),
               ),
               actions: [
-                IconButton(
-                  icon: Icon(
-                    product.isSaved
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: product.isSaved
-                        ? DesignTokens.colorError
-                        : DesignTokens.textWhite,
-                  ),
-                  onPressed: onToggleSave,
+                ProductSaveButton(
+                  productId: product.id,
+                  variantId: product.defaultVariantId,
                 ),
                 IconButton(
                   icon: const Icon(
@@ -291,6 +263,10 @@ class _ProductBody extends StatelessWidget {
                     _BadgesRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
                     _NamePriceRow(product: product),
+                    DeliveryEstimateLine(
+                      delivery: product.delivery,
+                      padding: const EdgeInsets.only(top: DesignTokens.s8),
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _UrgencyBanner(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
@@ -317,6 +293,10 @@ class _ProductBody extends StatelessWidget {
                       vendorId: product.vendorId,
                       productId: product.id,
                     ),
+                    ProductReelsRail(
+                      productId: product.id,
+                      padding: const EdgeInsets.only(top: DesignTokens.s24),
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _PassportSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
@@ -334,6 +314,10 @@ class _ProductBody extends StatelessWidget {
                     _FromTheReelSection(
                       vendorName: product.vendorName,
                       vendorAvatarUrl: product.vendorAvatarUrl,
+                    ),
+                    RelatedProductsRail(
+                      productId: product.id,
+                      padding: const EdgeInsets.only(top: DesignTokens.s24),
                     ),
                     // Reserves space for the overlaid _BottomBar, whose own
                     // height grows with MediaQuery's bottom safe-area inset
@@ -461,11 +445,13 @@ class _BadgesRow extends StatelessWidget {
           iconColor: DesignTokens.secondaryYellow,
           label: '${product.rating.toStringAsFixed(1)} Stars',
         ),
-        const _Badge(
-          icon: Icons.local_shipping_outlined,
-          iconColor: DesignTokens.primaryGreen,
-          label: 'Free Delivery',
-        ),
+        // Only when an enabled delivery option really is free.
+        if (product.delivery?.hasFreeDelivery ?? false)
+          const _Badge(
+            icon: Icons.local_shipping_outlined,
+            iconColor: DesignTokens.primaryGreen,
+            label: 'Free Delivery',
+          ),
         if (discountPct != null && discountPct > 0)
           _Badge(
             icon: Icons.sell_outlined,
@@ -476,7 +462,8 @@ class _BadgesRow extends StatelessWidget {
           _Badge(
             icon: Icons.bolt_rounded,
             iconColor: DesignTokens.colorError,
-            label: 'Flash Sale · ends ${_formatCountdown(product.flashSaleEndsAt!)}',
+            label:
+                'Flash Sale · ends ${_formatCountdown(product.flashSaleEndsAt!)}',
           ),
       ],
     );
@@ -814,7 +801,10 @@ class _PassportSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final passport = ref.watch(productPassportProvider(productId)).asData?.value;
+    final passport = ref
+        .watch(productPassportProvider(productId))
+        .asData
+        ?.value;
     if (passport == null || passport.authenticityStatement.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -841,7 +831,9 @@ class _PassportSection extends ConsumerWidget {
           Expanded(
             child: Text(
               passport.authenticityStatement,
-              style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           ),
         ],
@@ -862,7 +854,10 @@ class _ComparisonSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final comparison = ref.watch(productComparisonProvider(productId)).asData?.value;
+    final comparison = ref
+        .watch(productComparisonProvider(productId))
+        .asData
+        ?.value;
     if (comparison == null || comparison.alternatives.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -875,7 +870,11 @@ class _ComparisonSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.compare_arrows, size: 18, color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.compare_arrows,
+                size: 18,
+                color: DesignTokens.primaryGreen,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Expanded(
                 child: Text(
@@ -888,29 +887,42 @@ class _ComparisonSection extends ConsumerWidget {
           const SizedBox(height: DesignTokens.s8),
           Text(
             comparison.recommendation,
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
           const SizedBox(height: DesignTokens.s12),
           ...comparison.alternatives.map(
             (point) => InkWell(
               onTap: () => context.push(
-                RouteNames.productDetail.replaceFirst(':productId', point.productId),
+                RouteNames.productDetail.replaceFirst(
+                  ':productId',
+                  point.productId,
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: DesignTokens.s4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.chevron_right, size: 18, color: DesignTokens.textMuted),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: DesignTokens.textMuted,
+                    ),
                     const SizedBox(width: DesignTokens.s4),
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textWhite),
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
                           children: [
                             TextSpan(
                               text: '${point.productName}: ',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             TextSpan(text: point.howItDiffers),
                           ],
@@ -947,7 +959,10 @@ class _FaqSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Frequently Asked Questions', style: DesignTokens.sectionInnerTitle),
+        const Text(
+          'Frequently Asked Questions',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         const SizedBox(height: DesignTokens.s8),
         ...faq.map(
           (entry) => Theme(
@@ -1238,6 +1253,16 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
                   ),
                 ),
               ],
+            ),
+          ),
+
+          ReviewSummaryBlock(
+            productId: widget.productId,
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s16,
+              DesignTokens.s4,
             ),
           ),
 

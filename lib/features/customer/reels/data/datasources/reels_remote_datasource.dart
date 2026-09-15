@@ -40,7 +40,10 @@ class ReelsRemoteDataSource {
         .whereType<Map<String, dynamic>>()
         .map(_cardJsonToReel)
         .toList(growable: false);
-    return ReelsFeedPage(reels: reels, nextCursor: data['nextCursor'] as String?);
+    return ReelsFeedPage(
+      reels: reels,
+      nextCursor: data['nextCursor'] as String?,
+    );
   }
 
   /// Builds a [Reel] domain entity directly from a Discovery feed card.
@@ -69,7 +72,9 @@ class ReelsRemoteDataSource {
 
     return Reel(
       id: (r['reelId'] as String?) ?? '',
-      externalId: (externalId == null || externalId.isEmpty) ? null : externalId,
+      externalId: (externalId == null || externalId.isEmpty)
+          ? null
+          : externalId,
       sourceUrl: (r['externalUrl'] as String?) ?? '',
       thumbnailUrl: (r['thumbnailUrl'] as String?) ?? '',
       videoUrl: r['videoUrl'] as String?,
@@ -88,6 +93,8 @@ class ReelsRemoteDataSource {
       shareCount: _int(r['shareCount']),
       isLikedByMe: _bool(r['isLikedByMe']),
       isCreatorFollowed: _bool(r['isCreatorFollowed']),
+      isSavedByMe: _bool(r['isSavedByMe']),
+      saveCount: _int(r['saveCount']),
     );
   }
 
@@ -197,6 +204,8 @@ class ReelsRemoteDataSource {
       shareCount: _int(r['shareCount'] ?? r['sharesSnapshot']),
       isLikedByMe: _bool(r['isLikedByMe']),
       isCreatorFollowed: _bool(r['isCreatorFollowed']),
+      isSavedByMe: _bool(r['isSavedByMe']),
+      saveCount: _int(r['saveCount']),
     );
   }
 
@@ -226,7 +235,10 @@ class ReelsRemoteDataSource {
 
   /// DELETE `/v1/customer/reels/{reelId}/like` — removes the viewer's
   /// StyleMint like. Repeated unlikes are a no-op server-side.
-  Future<ReelLikeResult> unlikeReel(String reelId, String idempotencyKey) async {
+  Future<ReelLikeResult> unlikeReel(
+    String reelId,
+    String idempotencyKey,
+  ) async {
     final response = await apiClient.authDelete(
       '/v1/customer/reels/$reelId/like',
       options: _idempotent(idempotencyKey),

@@ -38,6 +38,8 @@ class Reel implements ReelMedia {
     this.isWishlistedByUser,
     this.isCreatorFollowed,
     this.creatorAvatarUrls = const <String>[],
+    this.isSavedByMe,
+    this.saveCount = 0,
   });
 
   final String id;
@@ -45,6 +47,7 @@ class Reel implements ReelMedia {
   /// The platform's own post/video id (YouTube videoId, TikTok item id,
   /// Instagram media id, Facebook video id) as stored by the backend.
   final String? externalId;
+
   /// Canonical post URL on IG / TikTok / YouTube / FB. Feeds the official
   /// embedded players; never opened outside StyleMint.
   final String sourceUrl;
@@ -62,6 +65,7 @@ class Reel implements ReelMedia {
   final String musicTitle;
   final String musicArtist;
   final List<TaggedProductEntity> taggedProducts;
+
   /// Platform likes plus StyleMint likes.
   final int likeCount;
   final int commentCount;
@@ -77,6 +81,12 @@ class Reel implements ReelMedia {
   final bool? isLikedByMe;
   final bool? isWishlistedByUser;
   final bool? isCreatorFollowed;
+
+  /// Whether the viewer saved this reel on StyleMint. Null for guests.
+  final bool? isSavedByMe;
+
+  /// Accounts that saved the reel on StyleMint.
+  final int saveCount;
 
   Reel copyWith({
     String? id,
@@ -100,6 +110,8 @@ class Reel implements ReelMedia {
     bool? isLikedByMe,
     bool? isWishlistedByUser,
     bool? isCreatorFollowed,
+    bool? isSavedByMe,
+    int? saveCount,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -123,6 +135,8 @@ class Reel implements ReelMedia {
       isWishlistedByUser: isWishlistedByUser ?? this.isWishlistedByUser,
       isCreatorFollowed: isCreatorFollowed ?? this.isCreatorFollowed,
       externalId: externalId ?? this.externalId,
+      isSavedByMe: isSavedByMe ?? this.isSavedByMe,
+      saveCount: saveCount ?? this.saveCount,
     );
   }
 

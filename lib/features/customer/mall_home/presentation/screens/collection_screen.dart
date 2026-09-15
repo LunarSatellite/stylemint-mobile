@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/collection_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_page_chrome.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -135,7 +136,8 @@ class _CollectionBody extends StatelessWidget {
               child: MallEmptyState(
                 icon: Icons.checkroom_outlined,
                 title: 'Nothing here yet',
-                body: 'The pieces in this collection are not available '
+                body:
+                    'The pieces in this collection are not available '
                     'right now.',
               ),
             ),
@@ -162,7 +164,7 @@ class _CollectionBody extends StatelessWidget {
           ),
         ] else ...[
           const SliverToBoxAdapter(child: SizedBox(height: DesignTokens.s24)),
-          MallSliverProductGrid(
+          SaveableSliverProductGrid(
             products: [for (final item in data.items) item.product.toVm()],
             onProductTap: (product) => openProduct(product.id),
           ),

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/reel_products_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -200,7 +201,7 @@ class _ProductRail extends StatelessWidget {
       itemWidth: width,
       height: MallProductCard.heightFor(context, width: width, size: size),
       semanticLabel: semanticLabel,
-      itemBuilder: (_, product, _) => MallProductCard(
+      itemBuilder: (_, product, _) => SaveableMallProductCard(
         product: product.toVm(),
         size: size,
         onTap: () => onTap(product),

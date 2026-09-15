@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Full product detail returned by GET /v1/products/{id}.
@@ -24,6 +25,7 @@ class ProductDetail {
     required this.isInCart,
     this.defaultVariantId,
     this.flashSaleEndsAt,
+    this.delivery,
   });
 
   final String id;
@@ -53,6 +55,9 @@ class ProductDetail {
   /// original price — the sale ends at this instant.
   final DateTime? flashSaleEndsAt;
 
+  /// Processing time and shipping options, for the delivery estimate.
+  final ProductDelivery? delivery;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -75,6 +80,7 @@ class ProductDetail {
     bool? isInCart,
     String? defaultVariantId,
     DateTime? flashSaleEndsAt,
+    ProductDelivery? delivery,
   }) {
     return ProductDetail(
       id: id ?? this.id,
@@ -98,6 +104,7 @@ class ProductDetail {
       isInCart: isInCart ?? this.isInCart,
       defaultVariantId: defaultVariantId ?? this.defaultVariantId,
       flashSaleEndsAt: flashSaleEndsAt ?? this.flashSaleEndsAt,
+      delivery: delivery ?? this.delivery,
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_delivery_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -69,8 +70,12 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   ) async {
     if (await networkInfo.isConnected) {
       try {
-        final dto = await remoteDataSource.getProductDetail(productId);
-        return right(dto.toDomain());
+        final json = await remoteDataSource.getProductDetailJson(productId);
+        return right(
+          ProductDetailDto.fromJson(
+            json,
+          ).toDomain().copyWith(delivery: ProductDeliveryDto.fromJson(json)),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -92,11 +97,13 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductUrgency(productId);
-        return right(ProductUrgency(
-          stockRemaining: json['stockRemaining'] as int? ?? 0,
-          viewersRightNow: json['viewersRightNow'] as int? ?? 0,
-          cartAddsLast10Min: json['cartAddsLast10Min'] as int? ?? 0,
-        ));
+        return right(
+          ProductUrgency(
+            stockRemaining: json['stockRemaining'] as int? ?? 0,
+            viewersRightNow: json['viewersRightNow'] as int? ?? 0,
+            cartAddsLast10Min: json['cartAddsLast10Min'] as int? ?? 0,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -120,10 +127,12 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         final json = await remoteDataSource.getProductSeoContent(productId);
         final faq = (json['faq'] as List<dynamic>? ?? const <dynamic>[])
             .cast<Map<String, dynamic>>()
-            .map((e) => ProductFaqEntry(
-                  question: e['question'] as String? ?? '',
-                  answer: e['answer'] as String? ?? '',
-                ))
+            .map(
+              (e) => ProductFaqEntry(
+                question: e['question'] as String? ?? '',
+                answer: e['answer'] as String? ?? '',
+              ),
+            )
             .where((f) => f.question.isNotEmpty && f.answer.isNotEmpty)
             .toList(growable: false);
         return right(faq);
@@ -148,20 +157,25 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductComparison(productId);
-        final alternatives = (json['alternatives'] as List<dynamic>? ?? const <dynamic>[])
-            .cast<Map<String, dynamic>>()
-            .map((e) => ProductComparisonPoint(
-                  productId: e['productId'] as String? ?? '',
-                  productName: e['productName'] as String? ?? '',
-                  howItDiffers: e['howItDiffers'] as String? ?? '',
-                ))
-            .where((p) => p.productId.isNotEmpty)
-            .toList(growable: false);
-        return right(ProductComparison(
-          bestForTag: json['bestForTag'] as String? ?? '',
-          alternatives: alternatives,
-          recommendation: json['recommendation'] as String? ?? '',
-        ));
+        final alternatives =
+            (json['alternatives'] as List<dynamic>? ?? const <dynamic>[])
+                .cast<Map<String, dynamic>>()
+                .map(
+                  (e) => ProductComparisonPoint(
+                    productId: e['productId'] as String? ?? '',
+                    productName: e['productName'] as String? ?? '',
+                    howItDiffers: e['howItDiffers'] as String? ?? '',
+                  ),
+                )
+                .where((p) => p.productId.isNotEmpty)
+                .toList(growable: false);
+        return right(
+          ProductComparison(
+            bestForTag: json['bestForTag'] as String? ?? '',
+            alternatives: alternatives,
+            recommendation: json['recommendation'] as String? ?? '',
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -183,14 +197,18 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductPassport(productId);
-        return right(ProductPassport(
-          vendorBusinessName: json['vendorBusinessName'] as String? ?? '',
-          vendorIdentityVerified: json['vendorIdentityVerified'] as bool? ?? false,
-          vendorOnPlatformSince: json['vendorOnPlatformSinceUtc'] != null
-              ? DateTime.tryParse(json['vendorOnPlatformSinceUtc'] as String)
-              : null,
-          authenticityStatement: json['authenticityStatement'] as String? ?? '',
-        ));
+        return right(
+          ProductPassport(
+            vendorBusinessName: json['vendorBusinessName'] as String? ?? '',
+            vendorIdentityVerified:
+                json['vendorIdentityVerified'] as bool? ?? false,
+            vendorOnPlatformSince: json['vendorOnPlatformSinceUtc'] != null
+                ? DateTime.tryParse(json['vendorOnPlatformSinceUtc'] as String)
+                : null,
+            authenticityStatement:
+                json['authenticityStatement'] as String? ?? '',
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -224,7 +242,8 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, MissionShoppingPlan>> getMissionShoppingPlan({
+  Future<Either<NetworkExceptions, MissionShoppingPlan>>
+  getMissionShoppingPlan({
     required String missionText,
     double? budgetAmount,
     int maxItems = 5,
@@ -238,23 +257,28 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         );
         final items = (json['items'] as List<dynamic>? ?? const <dynamic>[])
             .cast<Map<String, dynamic>>()
-            .map((e) => MissionShoppingItem(
-                  productId: e['productId'] as String? ?? '',
-                  name: e['name'] as String? ?? '',
-                  thumbnailUrl: e['thumbnailUrl'] as String?,
-                  priceAmount: (e['priceAmount'] as num?)?.toDouble() ?? 0,
-                  reason: e['reason'] as String? ?? '',
-                ))
+            .map(
+              (e) => MissionShoppingItem(
+                productId: e['productId'] as String? ?? '',
+                name: e['name'] as String? ?? '',
+                thumbnailUrl: e['thumbnailUrl'] as String?,
+                priceAmount: (e['priceAmount'] as num?)?.toDouble() ?? 0,
+                reason: e['reason'] as String? ?? '',
+              ),
+            )
             .where((i) => i.productId.isNotEmpty)
             .toList(growable: false);
-        return right(MissionShoppingPlan(
-          missionSummary: json['missionSummary'] as String? ?? '',
-          items: items,
-          totalEstimatedCost: (json['totalEstimatedCost'] as num?)?.toDouble() ?? 0,
-          currency: json['currency'] as String? ?? 'NPR',
-          budgetAmount: (json['budgetAmount'] as num?)?.toDouble(),
-          withinBudget: json['withinBudget'] as bool? ?? true,
-        ));
+        return right(
+          MissionShoppingPlan(
+            missionSummary: json['missionSummary'] as String? ?? '',
+            items: items,
+            totalEstimatedCost:
+                (json['totalEstimatedCost'] as num?)?.toDouble() ?? 0,
+            currency: json['currency'] as String? ?? 'NPR',
+            budgetAmount: (json['budgetAmount'] as num?)?.toDouble(),
+            withinBudget: json['withinBudget'] as bool? ?? true,
+          ),
+        );
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));

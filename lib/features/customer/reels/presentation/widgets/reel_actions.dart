@@ -10,9 +10,11 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/shared/provider
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/reel_share.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_like_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reel_save_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_share_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/reel_save_providers.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/follow/presentation/follow_notifier.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -29,14 +31,14 @@ typedef _RailCart = ({int? count, bool inCart});
 const _RailCart _unknownCart = (count: null, inCart: false);
 
 /// Right-hand rail on a feed reel ("A · Studio", approved 2026-09-14), top to
-/// bottom: the creator (profile + follow), like, comments, share, and the
-/// first tagged product — or the cart when nothing is tagged. The last item
-/// reacts when something is added to the cart, from anywhere.
+/// bottom: the creator (profile + follow), like, comments, save, share, and
+/// the first tagged product — or the cart when nothing is tagged. The last
+/// item reacts when something is added to the cart, from anywhere.
 ///
 /// Nothing on the rail leaves StyleMint (owner decisions, 2026-09-14/15):
-/// like and comments are native StyleMint interactions, and share opens
+/// like, comments and save are native StyleMint interactions, and share opens
 /// StyleMint's own sheet to copy a StyleMint link — never another app.
-/// Follow, like, share and cart are authenticated.
+/// Follow, like, save, share and cart are authenticated.
 class ReelActions extends ConsumerStatefulWidget {
   const ReelActions({required this.reel, super.key});
 
@@ -61,6 +63,7 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     super.initState();
     _seedFollow();
     _seedLike();
+    _seedSave();
   }
 
   @override
@@ -71,6 +74,7 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
       _cart = _unknownCart;
       _seedFollow();
       _seedLike();
+      _seedSave();
     }
   }
 
@@ -123,6 +127,42 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
 
   static ReelLikeState _likeSnapshot(Reel reel) =>
       ReelLikeState(liked: reel.isLikedByMe ?? false, count: reel.likeCount);
+
+  /// Seeds shared save state from the reel's isSavedByMe flag (null for
+  /// guests) after the first frame. Ignored once the reel was toggled.
+  void _seedSave() {
+    final reel = widget.reel;
+    final saved = reel.isSavedByMe;
+    if (reel.id.isEmpty || saved == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(reelSaveNotifierProvider.notifier)
+            .seed(reel.id, saved: saved, count: reel.saveCount);
+      }
+    });
+  }
+
+  static ReelSaveState _saveSnapshot(Reel reel) =>
+      ReelSaveState(saved: reel.isSavedByMe ?? false, count: reel.saveCount);
+
+  /// StyleMint save (bookmark): auth gate, then the optimistic toggle
+  /// (POST/DELETE /v1/customer/reels/{reelId}/save), rolled back on failure.
+  /// The reel is kept in the viewer's saved reels on StyleMint only.
+  Future<void> _toggleSave() async {
+    if (!await ensureAuth(context, ref, reason: AuthReason.save)) return;
+    final reel = widget.reel;
+    if (!mounted || reel.id.isEmpty) return;
+    final ok = await ref
+        .read(reelSaveNotifierProvider.notifier)
+        .toggle(reel.id, fallback: _saveSnapshot(reel));
+    if (!ok && mounted) {
+      SmSnackbar.error(
+        context,
+        "Couldn't update your saved reels. Please try again.",
+      );
+    }
+  }
 
   /// Same follow flow as `CreatorInfo`: auth gate, then the optimistic
   /// one-way follow toggle (POST/DELETE /v1/follows/{creatorId}).
@@ -246,6 +286,9 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
     final like =
         ref.watch(reelLikeNotifierProvider.select((likes) => likes[reel.id])) ??
         _likeSnapshot(reel);
+    final save =
+        ref.watch(reelSaveNotifierProvider.select((saves) => saves[reel.id])) ??
+        _saveSnapshot(reel);
     final products = reel.taggedProducts;
     final product = products.isEmpty ? null : products.first;
     final productName = product == null || product.name.trim().isEmpty
@@ -296,6 +339,18 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
                 label: 'Comments',
                 count: _visibleCount(_commentCount),
                 onTap: _openComments,
+              ),
+              ReelRailButton(
+                icon: save.saved
+                    ? ReelRailIcons.bookmarkFilled
+                    : ReelRailIcons.bookmark,
+                iconColor: save.saved
+                    ? DesignTokens.secondaryYellow
+                    : DesignTokens.textWhite,
+                label: save.saved ? 'Saved' : 'Save',
+                count: _visibleCount(save.count),
+                popOnTap: true,
+                onTap: _toggleSave,
               ),
               ReelRailButton(
                 icon: ReelRailIcons.share,

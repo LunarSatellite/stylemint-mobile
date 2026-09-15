@@ -1,0 +1,36 @@
+{
+  "query": "glow",
+  "products": [
+    {
+      "id": "0d6f3c1e-6b1a-4f0e-9a51-1f2b9c3d4e01",
+      "name": "GlowBloom Natural Face Oil",
+      "imageUrl": "https://cdn.stylemint.test/p1.jpg"
+    },
+    { "id": "", "name": "No id" },
+    {
+      "id": "p-2",
+      "name": "Glow Serum",
+      "imageUrl": null,
+      "price": { "amount": 2400, "currency": "NPR" }
+    }
+  ],
+  "brands": [
+    { "vendorAccountId": "v-1", "name": "GlowBloom", "logoUrl": null, "isVerified": true }
+  ],
+  "creators": [
+    {
+      "accountId": "a-1",
+      "displayName": "Asha Rai",
+      "handle": "glowwithasha",
+      "avatarUrl": null,
+      "isVerified": false
+    }
+  ],
+  "categories": [
+    { "id": "c-1", "slug": "glow-skincare", "name": "Glow Skincare" }
+  ],
+  "hashtags": [
+    { "tag": "glowup", "usageCount": 42 },
+    { "tag": "", "usageCount": 3 }
+  ]
+}

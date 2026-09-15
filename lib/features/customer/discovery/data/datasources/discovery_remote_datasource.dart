@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart' show Options;
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/discover_data_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_review_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/regret_check_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_review_summary.dart';
 
 class DiscoveryRemoteDataSource {
   DiscoveryRemoteDataSource({required this.apiClient});
@@ -21,19 +24,24 @@ class DiscoveryRemoteDataSource {
     final results = await Future.wait([
       apiClient.get('/v1/public/categories'),
       apiClient.get('/v1/public/popular-searches'),
-      apiClient.get('/api/v1/customer/discover/trending', queryParameters: {
-        'window': '7d',
-        'limit': 20,
-      }),
+      apiClient.get(
+        '/api/v1/customer/discover/trending',
+        queryParameters: {
+          'window': '7d',
+          'limit': 20,
+        },
+      ),
       apiClient.get('/api/v1/customer/discover/top-creators'),
     ]);
 
     final categories = (results[0] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
-        .map((c) => DiscoverCategoryDto(
-              id: c['id'] as String? ?? '',
-              label: c['nameEn'] as String? ?? '',
-            ))
+        .map(
+          (c) => DiscoverCategoryDto(
+            id: c['id'] as String? ?? '',
+            label: c['nameEn'] as String? ?? '',
+          ),
+        )
         .where((c) => c.id.isNotEmpty)
         .toList(growable: false);
 
@@ -44,29 +52,34 @@ class DiscoveryRemoteDataSource {
         .toList(growable: false);
 
     final trendingPage = results[2] as Map<String, dynamic>? ?? const {};
-    final trending = (trendingPage['items'] as List<dynamic>? ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .map((item) => item['product'] as Map<String, dynamic>?)
-        .whereType<Map<String, dynamic>>()
-        .map((p) => TrendingProductDto(
-              id: p['productId'] as String? ?? '',
-              name: p['name'] as String? ?? '',
-              amount: (p['price'] as num?)?.toDouble() ?? 0,
-              currency: p['currency'] as String? ?? 'NPR',
-              imageUrl: p['heroImageUrl'] as String? ?? '',
-              rating: (p['averageRating'] as num?)?.toDouble() ?? 0,
-            ))
-        .toList(growable: false);
+    final trending =
+        (trendingPage['items'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map((item) => item['product'] as Map<String, dynamic>?)
+            .whereType<Map<String, dynamic>>()
+            .map(
+              (p) => TrendingProductDto(
+                id: p['productId'] as String? ?? '',
+                name: p['name'] as String? ?? '',
+                amount: (p['price'] as num?)?.toDouble() ?? 0,
+                currency: p['currency'] as String? ?? 'NPR',
+                imageUrl: p['heroImageUrl'] as String? ?? '',
+                rating: (p['averageRating'] as num?)?.toDouble() ?? 0,
+              ),
+            )
+            .toList(growable: false);
 
     final topCreators = (results[3] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
-        .map((c) => DiscoverCreatorDto(
-              id: c['accountId'] as String? ?? '',
-              name: c['displayName'] as String? ?? '',
-              handle: c['handle'] as String? ?? '',
-              avatarUrl: c['avatarUrl'] as String? ?? '',
-              followers: (c['followerCount'] as num?)?.toInt() ?? 0,
-            ))
+        .map(
+          (c) => DiscoverCreatorDto(
+            id: c['accountId'] as String? ?? '',
+            name: c['displayName'] as String? ?? '',
+            handle: c['handle'] as String? ?? '',
+            avatarUrl: c['avatarUrl'] as String? ?? '',
+            followers: (c['followerCount'] as num?)?.toInt() ?? 0,
+          ),
+        )
         .where((c) => c.id.isNotEmpty)
         .toList(growable: false);
 
@@ -103,9 +116,23 @@ class DiscoveryRemoteDataSource {
         .toList(growable: false);
   }
 
-  Future<ProductDetailDto> getProductDetail(String productId) async {
+  Future<ProductDetailDto> getProductDetail(String productId) async =>
+      ProductDetailDto.fromJson(await getProductDetailJson(productId));
+
+  /// The raw `ProductDto` of `GET /v1/public/products/{id}`, for fields the
+  /// freezed DTO doesn't map (processing time, shipping options).
+  Future<Map<String, dynamic>> getProductDetailJson(String productId) async {
     final response = await apiClient.get('/v1/public/products/$productId');
-    return ProductDetailDto.fromJson(response as Map<String, dynamic>);
+    return response as Map<String, dynamic>;
+  }
+
+  /// GET `/v1/public/products/{id}/reviews/summary` — average, counts, the
+  /// 5 → 1 star distribution and how many reviews carry photos.
+  Future<ProductReviewSummary> getReviewSummary(String productId) async {
+    final response = await apiClient.get(
+      '/v1/public/products/$productId/reviews/summary',
+    );
+    return ProductReviewSummaryDto.fromJson(readJsonObject(response));
   }
 
   /// PDP urgency signals: stock remaining, live viewer count, cart-adds in
@@ -140,7 +167,9 @@ class DiscoveryRemoteDataSource {
   /// GET `/v1/public/products/{id}/passport` — listing-level provenance
   /// (seller verification status, tenure, authenticity statement).
   Future<Map<String, dynamic>> getProductPassport(String productId) async {
-    final response = await apiClient.get('/v1/public/products/$productId/passport');
+    final response = await apiClient.get(
+      '/v1/public/products/$productId/passport',
+    );
     return response as Map<String, dynamic>;
   }
 
