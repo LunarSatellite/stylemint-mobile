@@ -42,7 +42,8 @@ class ProfileStatsRow extends StatelessWidget {
               value: summary.ordersCount,
               label: 'My Orders',
               badge: summary.ordersCount,
-              onTap: () => context.go(RouteNames.orders),
+              // Orders is not a bar tab: it opens over Profile, with back.
+              onTap: () => context.push(RouteNames.orders),
             ),
           ),
         ],

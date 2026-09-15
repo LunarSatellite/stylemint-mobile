@@ -2,19 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/data/qr_login_remote_datasource.dart';
-import 'package:stylemint_mobile_frontend/features/qr_login/data/qr_scan_info.dart';
-import 'package:stylemint_mobile_frontend/features/qr_login/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
-import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_login_approval.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Scans a Style Mint web QR, then asks the signed-in user to approve or reject
-/// the cross-device login. Backend: /v1/auth/qr/{token}/{scan|approve|reject}.
+/// the cross-device login (see [approveQrLogin]).
 class QrScanScreen extends ConsumerStatefulWidget {
   const QrScanScreen({super.key});
 
@@ -51,31 +47,17 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
 
     setState(() => _handling = true);
     await _controller.stop();
+    if (!mounted) return;
 
-    final ds = ref.read(qrLoginDataSourceProvider);
-    try {
-      final info = await ds.scan(token);
-      if (!mounted) return;
-      final approved = await _confirm(info);
-      if (approved == null) {
+    final outcome = await approveQrLogin(context, ref, token);
+    if (!mounted) return;
+    switch (outcome) {
+      case QrLoginOutcome.approved:
+      case QrLoginOutcome.rejected:
+        context.popOrHome();
+      case QrLoginOutcome.dismissed:
+      case QrLoginOutcome.failed:
         await _resume();
-        return;
-      }
-      if (approved) {
-        await ds.approve(token);
-        if (mounted) {
-          SmSnackbar.success(context, 'Logged in on ${info.appLabel}.');
-          context.popOrHome();
-        }
-      } else {
-        await ds.reject(token);
-        if (mounted) context.popOrHome();
-      }
-    } catch (_) {
-      if (mounted) {
-        SmSnackbar.error(context, "Couldn't complete the login. Try again.");
-        await _resume();
-      }
     }
   }
 
@@ -85,17 +67,6 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
     await _controller.start();
   }
 
-  Future<bool?> _confirm(QrScanInfo info) => showModalBottomSheet<bool>(
-        context: context,
-        backgroundColor: DesignTokens.bgAppBody,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(DesignTokens.s24)),
-        ),
-        builder: (_) => _ConfirmSheet(info: info),
-      );
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,7 +75,10 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: DesignTokens.textWhite),
-        title: const Text('Scan to log in', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Scan to log in',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: Stack(
         fit: StackFit.expand,
@@ -126,91 +100,21 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
             right: DesignTokens.s24,
             bottom: DesignTokens.s32,
             child: Text(
-              'Point your camera at the QR code on the Style Mint web login page.',
+              'Point your camera at the QR code on the Style Mint web login '
+              'page.',
               textAlign: TextAlign.center,
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textWhite),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
           if (_handling)
             const ColoredBox(
               color: Colors.black54,
-              child: const SmPageLoader(),
+              child: SmPageLoader(),
             ),
         ],
       ),
     );
   }
-}
-
-class _ConfirmSheet extends StatelessWidget {
-  const _ConfirmSheet({required this.info});
-
-  final QrScanInfo info;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.computer_rounded,
-                color: DesignTokens.primaryGreen, size: 40),
-            const SizedBox(height: DesignTokens.s16),
-            Text('Log in to ${info.appLabel}?',
-                style: DesignTokens.sectionInnerTitle),
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              'A web browser is requesting to sign in to your account.',
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted),
-            ),
-            const SizedBox(height: DesignTokens.s16),
-            if (info.creatorUserAgent != null)
-              _row(Icons.public, info.creatorUserAgent!),
-            if (info.creatorIp != null) _row(Icons.location_on_outlined, info.creatorIp!),
-            const SizedBox(height: DesignTokens.s24),
-            SmPrimaryButton(
-              label: 'Approve',
-              height: DesignTokens.buttonHeight,
-              borderRadius: DesignTokens.buttonRadius,
-              color: DesignTokens.primaryGreen,
-              labelColor: DesignTokens.buttonPrimaryText,
-              onPressed: () async => Navigator.of(context).pop(true),
-            ),
-            const SizedBox(height: DesignTokens.s12),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(DesignTokens.buttonHeight),
-              ),
-              child: Text('Reject',
-                  style: DesignTokens.mediumSemibold
-                      .copyWith(color: DesignTokens.colorError)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _row(IconData icon, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: DesignTokens.iconLight),
-            const SizedBox(width: DesignTokens.s8),
-            Expanded(
-              child: Text(text,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.smallRegular
-                      .copyWith(color: DesignTokens.textLight)),
-            ),
-          ],
-        ),
-      );
 }

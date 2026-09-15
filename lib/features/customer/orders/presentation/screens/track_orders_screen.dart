@@ -46,6 +46,22 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Opened afresh from Profile's "My Orders" each time: show orders placed
+    // since the list was last loaded.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final signedIn = ref
+          .read(sessionControllerProvider)
+          .maybeWhen(authenticated: (_) => true, orElse: () => false);
+      if (signedIn) {
+        ref.read(trackOrdersNotifierProvider.notifier).fetchOrders();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -90,9 +106,7 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
       orElse: () => false,
     );
 
-    // The shell keeps this screen mounted (just hidden) across tab switches,
-    // so bump-driven refresh (rather than provider lifecycle) is what
-    // actually catches orders placed elsewhere in the session.
+    // A bump from elsewhere (e.g. an order placed) refreshes a mounted list.
     ref.listen<int>(
       ordersTabVisitedProvider,
       (_, _) => ref.read(trackOrdersNotifierProvider.notifier).fetchOrders(),
@@ -108,7 +122,16 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          tooltip: 'Back',
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+          ),
+          onPressed: () => context.canPop()
+              ? context.pop()
+              : context.go(RouteNames.profile),
+        ),
         title: _searchOpen
             ? TextField(
                 controller: _searchCtrl,

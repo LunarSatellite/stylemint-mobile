@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,8 +15,11 @@ import 'package:stylemint_mobile_frontend/features/creator/analytics/shared/prov
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/current_user_avatar_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_bottom_nav_bar.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -1161,126 +1165,45 @@ class _AnalyticsBottomNav extends ConsumerWidget {
     final accountId = ref
         .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
-    return Container(
-      height: 68 + MediaQuery.of(context).padding.bottom,
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        border: Border(
-          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+    return SmBottomNavBar(
+      currentIndex: 1,
+      items: [
+        SmBottomNavItem.glyph(SmNavIcons.home, label: 'Home'),
+        SmBottomNavItem.glyph(SmNavIcons.analytics, label: 'Analytics'),
+        SmBottomNavItem.glyph(SmNavIcons.tag, label: 'Brands'),
+        SmBottomNavItem.glyph(
+          SmNavIcons.person,
+          label: 'Profile',
+          avatarUrl: ref.watch(currentUserAvatarUrlProvider),
         ),
+      ],
+      centerAction: SmNavCenterAction(
+        semanticLabel: 'Import reel',
+        onTap: () => context.push(RouteNames.reelImport),
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavBtn(
-              iconWidget: const Icon(
-                Icons.home_rounded,
-                size: 22,
-                color: DesignTokens.textMuted,
-              ),
-              label: 'Home',
-              onTap: () => context.go(RouteNames.creatorHome),
-            ),
-            _NavBtn(
-              iconWidget: Image.asset(
-                'assets/images/creatordash/Analytics_Icon_green.png',
-                width: 22,
-                height: 22,
-              ),
-              label: 'Analytics',
-              active: true,
-              onTap: null,
-            ),
-            GestureDetector(
-              onTap: () => context.push(RouteNames.reelImport),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: DesignTokens.primaryGreen,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: DesignTokens.buttonPrimaryText,
-                  size: 26,
-                ),
-              ),
-            ),
-            _NavBtn(
-              iconWidget: Image.asset(
-                'assets/images/creatordash/Brand_Icon.png',
-                width: 22,
-                height: 22,
-              ),
-              label: 'Brands',
-              onTap: () => context.push(RouteNames.partnerships),
-            ),
-            _NavBtn(
-              iconWidget: const Icon(
-                Icons.person_rounded,
-                size: 22,
-                color: DesignTokens.textMuted,
-              ),
-              label: 'Profile',
-              onTap: () => context.push(
-                RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+      onTap: (index) {
+        switch (index) {
+          case 0:
+            context.go(RouteNames.creatorHome);
+          case 2:
+            unawaited(context.push(RouteNames.partnerships));
+          case 3:
+            final profilePath = RouteNames.creatorProfile.replaceFirst(
+              ':accountId',
+              accountId,
+            );
+            unawaited(
+              context.push(
+                profilePath,
                 extra: CreatorProfileArgs(
                   accountId: accountId,
                   displayName: '',
                   handle: '',
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavBtn extends StatelessWidget {
-  const _NavBtn({
-    required this.iconWidget,
-    required this.label,
-    required this.onTap,
-    this.active = false,
-  });
-
-  final Widget iconWidget;
-  final String label;
-  final VoidCallback? onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            iconWidget,
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: color,
-                height: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ),
+            );
+        }
+      },
     );
   }
 }

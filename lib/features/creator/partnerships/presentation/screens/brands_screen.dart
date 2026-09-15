@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
@@ -11,7 +12,10 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/p
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/presentation/creator_profile_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_profile/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/profile/presentation/providers/current_user_avatar_provider.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_bottom_nav_bar.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -371,13 +375,11 @@ class _StatSummaryCard extends StatelessWidget {
     required this.iconBg,
     required this.label,
     required this.value,
-    this.icon,
     this.imagePath,
   });
 
   final Color bg;
   final Color iconBg;
-  final IconData? icon;
   final String label;
   final String value;
   final String? imagePath;
@@ -408,7 +410,7 @@ class _StatSummaryCard extends StatelessWidget {
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                       )
-                    : Icon(icon, size: 20, color: Colors.white),
+                    : const SizedBox.shrink(),
               ),
               const Spacer(),
               const Icon(
@@ -510,14 +512,12 @@ class _MetricRow extends StatelessWidget {
     this.iconWidget,
     required this.label,
     this.trailing,
-    this.trailingText,
   }) : assert(icon != null || iconWidget != null);
 
   final IconData? icon;
   final Widget? iconWidget;
   final String label;
   final Widget? trailing;
-  final String? trailingText;
 
   @override
   Widget build(BuildContext context) {
@@ -535,16 +535,6 @@ class _MetricRow extends StatelessWidget {
         ),
         const Spacer(),
         if (trailing != null) trailing!,
-        if (trailingText != null)
-          Text(
-            trailingText!,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: DesignTokens.textWhite,
-            ),
-          ),
       ],
     );
   }
@@ -750,119 +740,45 @@ class _BrandsBottomNav extends ConsumerWidget {
     final accountId = ref
         .watch(sessionControllerProvider)
         .maybeWhen(authenticated: (id) => id, orElse: () => '');
-    return Container(
-      height: 68 + MediaQuery.of(context).padding.bottom,
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        border: Border(
-          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+    return SmBottomNavBar(
+      currentIndex: 2,
+      items: [
+        SmBottomNavItem.glyph(SmNavIcons.home, label: 'Home'),
+        SmBottomNavItem.glyph(SmNavIcons.analytics, label: 'Analytics'),
+        SmBottomNavItem.glyph(SmNavIcons.tag, label: 'Brands'),
+        SmBottomNavItem.glyph(
+          SmNavIcons.person,
+          label: 'Profile',
+          avatarUrl: ref.watch(currentUserAvatarUrlProvider),
         ),
+      ],
+      centerAction: SmNavCenterAction(
+        semanticLabel: 'Import reel',
+        onTap: () => context.push(RouteNames.reelImport),
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavBtn(
-              icon: Icons.home_rounded,
-              label: 'Home',
-              onTap: () => context.go(RouteNames.creatorHome),
-            ),
-            _NavBtn(
-              iconWidget: Image.asset(
-                'assets/images/creatordash/Analytics_icon.png',
-                width: 22,
-                height: 22,
-              ),
-              label: 'Analytics',
-              onTap: () => context.push(RouteNames.creatorAnalytics),
-            ),
-            GestureDetector(
-              onTap: () => context.push(RouteNames.reelImport),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: DesignTokens.primaryGreen,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-            ),
-            _NavBtn(
-              iconWidget: Image.asset(
-                'assets/images/creatordash/open_brand_icon.png',
-                width: 22,
-                height: 22,
-              ),
-              label: 'Brands',
-              active: true,
-              onTap: null,
-            ),
-            _NavBtn(
-              icon: Icons.person_rounded,
-              label: 'Profile',
-              onTap: () => context.push(
-                RouteNames.creatorProfile.replaceFirst(':accountId', accountId),
+      onTap: (index) {
+        switch (index) {
+          case 0:
+            context.go(RouteNames.creatorHome);
+          case 1:
+            unawaited(context.push(RouteNames.creatorAnalytics));
+          case 3:
+            final profilePath = RouteNames.creatorProfile.replaceFirst(
+              ':accountId',
+              accountId,
+            );
+            unawaited(
+              context.push(
+                profilePath,
                 extra: CreatorProfileArgs(
                   accountId: accountId,
                   displayName: '',
                   handle: '',
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavBtn extends StatelessWidget {
-  const _NavBtn({
-    this.icon,
-    this.iconWidget,
-    required this.label,
-    required this.onTap,
-    this.active = false,
-  }) : assert(icon != null || iconWidget != null);
-
-  final IconData? icon;
-  final Widget? iconWidget;
-  final String label;
-  final VoidCallback? onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? DesignTokens.primaryGreen : DesignTokens.textMuted;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 56,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            iconWidget ?? Icon(icon!, size: 22, color: color),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
+            );
+        }
+      },
     );
   }
 }

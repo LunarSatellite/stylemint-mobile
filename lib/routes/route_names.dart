@@ -64,6 +64,9 @@ abstract class RouteNames {
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
   static const qrScan = '/qr-login/scan';
+
+  /// The customer bar's Scan action: reads any StyleMint QR code.
+  static const scan = '/scan';
   static const profileFollowing = '/profile/following';
   static const profileSavedItems = '/profile/saved-items';
   static const wallet = '/wallet';

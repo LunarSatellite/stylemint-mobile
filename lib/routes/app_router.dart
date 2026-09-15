@@ -57,7 +57,6 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/create_draft_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentation/screens/reel_studio_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
-import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
@@ -82,6 +81,7 @@ import 'package:stylemint_mobile_frontend/features/customer/payment/presentation
 import 'package:stylemint_mobile_frontend/features/customer/presentation/screens/customer_shell_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/presentation/widgets/swipeable_branch_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_comments_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reel_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/screens/reels_feed_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/screens/product_reviews_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/screens/saved_items_screen.dart';
@@ -124,6 +124,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
+import 'package:stylemint_mobile_frontend/features/scan/presentation/screens/style_mint_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_room_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_sessions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/referrals/presentation/screens/referrals_screen.dart';
@@ -147,8 +148,6 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/help_
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/help_topic_screen.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/screens/my_tickets_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/add_product_wizard_screen.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/apply/domain/entities/vendor_application.dart';
-import 'package:stylemint_mobile_frontend/features/vendor/apply/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_approved_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_rejected_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/apply/presentation/screens/vendor_apply_screen.dart';
@@ -249,6 +248,8 @@ const _publicPaths = {
   RouteNames.profile,
   RouteNames.productDetail,
   RouteNames.productReviews,
+  // Scanning is open to guests; login and drop party codes ask to sign in.
+  RouteNames.scan,
   // Settings/support readable without auth
   RouteNames.settings,
   RouteNames.settingsPrivacy,
@@ -543,6 +544,13 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
 
+      // Orders list: opened from Profile's "My Orders" (not a bar tab since
+      // 2026-09-15).
+      GoRoute(
+        path: RouteNames.orders,
+        builder: (ctx, state) => const TrackOrdersScreen(),
+      ),
+
       // Order Detail
       GoRoute(
         path: RouteNames.orderDetail,
@@ -617,6 +625,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.reelComments,
         builder: (ctx, state) => ReelCommentsScreen(
+          reelId: state.pathParameters['reelId']!,
+        ),
+      ),
+
+      // Single reel: StyleMint share links (/reels/{id}) and search results.
+      GoRoute(
+        path: RouteNames.reelDetail,
+        builder: (ctx, state) => ReelDetailScreen(
           reelId: state.pathParameters['reelId']!,
         ),
       ),
@@ -1334,6 +1350,10 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.qrScan,
         builder: (ctx, state) => const QrScanScreen(),
       ),
+      GoRoute(
+        path: RouteNames.scan,
+        builder: (ctx, state) => const StyleMintScanScreen(),
+      ),
 
       // Settings
       GoRoute(
@@ -1449,14 +1469,6 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: RouteNames.search,
                 builder: (ctx, state) => const SearchScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: RouteNames.orders,
-                builder: (ctx, state) => const TrackOrdersScreen(),
               ),
             ],
           ),
