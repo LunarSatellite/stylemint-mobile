@@ -16,3 +16,15 @@ extension StorefrontReelToVm on StorefrontReel {
     likeCount: likeCount,
   );
 }
+
+/// What a storefront reel rail hands `openMallReelWindow`: the id the window
+/// resolves playback by, plus the poster, hook and AI-generated flag its
+/// chrome shows. Same shape a product tile's reel already carries.
+extension StorefrontReelToRef on StorefrontReel {
+  MallReelRef toRef() => MallReelRef(
+    reelId: id,
+    posterUrl: posterUrl,
+    hook: hook,
+    isAiGenerated: isAiGenerated,
+  );
+}

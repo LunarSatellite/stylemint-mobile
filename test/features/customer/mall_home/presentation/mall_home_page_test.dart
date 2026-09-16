@@ -12,8 +12,11 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/mall_home_page.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_home_skeleton.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
+import '../../reels/fake_reels_repository.dart';
 import '../mall_test_support.dart';
 
 final _home = GoRoute(path: '/home', builder: (_, _) => const HomeScreen());
@@ -22,6 +25,9 @@ List<Object> _overrides(FakeMallHomeRepository repo) => [
   mallHomeRepositoryProvider.overrideWithValue(repo),
   mallViewerSignedInProvider.overrideWithValue(false),
   mallClockProvider.overrideWithValue(mallTestNow),
+  // The reels rail opens the window, and the window resolves playback
+  // through this repository.
+  reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
 ];
 
 Future<FakeMallHomeRepository> _pump(
@@ -253,11 +259,23 @@ void main() {
       expect(find.text('product:p-1'), findsOneWidget);
     });
 
-    testWidgets('a reel opens the landing pager', (tester) async {
+    testWidgets('a reel rail plays in the window, not the pager', (
+      tester,
+    ) async {
+      addTearDown(ReelWindow.debugResetOpenState);
       await _pump(tester, height: 6000);
       await tester.tap(find.text('Aarav'), warnIfMissed: false);
       await settleTransition(tester);
-      expect(find.text('reel:r-human'), findsOneWidget);
+      expect(find.byType(ReelWindow), findsOneWidget);
+      expect(find.text('reel:r-human'), findsNothing);
+    });
+
+    testWidgets('the window keeps the reel rail AI disclosure', (tester) async {
+      addTearDown(ReelWindow.debugResetOpenState);
+      await _pump(tester, height: 6000);
+      await tester.tap(find.text('Priya'), warnIfMissed: false);
+      await settleTransition(tester);
+      expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
     });
 
     testWidgets('a brand opens its storefront', (tester) async {

@@ -30,6 +30,8 @@ import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/enti
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/data/datasources/saved_for_later_api.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/saved_products_providers.dart';
@@ -38,6 +40,8 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/app_theme.dart';
+
+import '../../reels/fake_reels_repository.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
@@ -228,9 +232,10 @@ void main() {
   });
 
   group('See it in reels', () {
-    testWidgets('lists reels tagging the product and opens one', (
+    testWidgets('lists reels tagging the product and plays one in the window', (
       tester,
     ) async {
+      addTearDown(ReelWindow.debugResetOpenState);
       await _pump(
         tester,
         ProviderScope(
@@ -238,6 +243,7 @@ void main() {
             inStoreRepositoryProvider.overrideWithValue(
               _FakeInStoreRepository(_reels),
             ),
+            reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
           ],
           child: _app(const ProductReelsRail(productId: 'p-1')),
         ),
@@ -251,7 +257,11 @@ void main() {
 
       await tester.tap(find.byType(MallReelCard).first);
       await _settle(tester);
-      expect(find.text('reel r-1'), findsOneWidget);
+      // The window over the product page, not a push to the reel screen —
+      // and r-1 is AI-generated, so the disclosure comes with it.
+      expect(find.byType(ReelWindow), findsOneWidget);
+      expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
+      expect(find.text('reel r-1'), findsNothing);
     });
 
     testWidgets('is hidden when no reel tags the product', (tester) async {

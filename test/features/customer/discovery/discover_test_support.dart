@@ -137,11 +137,14 @@ Future<void> pumpDiscover(
   MemoryRecentSearchesStore? recents,
   bool signedIn = true,
   double width = 390,
+  double? height,
   double textScale = 1,
+  List<Object> overrides = const [],
 }) => pumpMallApp(
   tester,
   location: '/search',
   width: width,
+  height: height,
   textScale: textScale,
   routes: [
     GoRoute(path: '/search', builder: (_, _) => const SearchScreen()),
@@ -178,5 +181,6 @@ Future<void> pumpDiscover(
     ),
     mallViewerSignedInProvider.overrideWithValue(signedIn),
     discoverAuthGateProvider.overrideWithValue((_, _) async => signedIn),
+    ...overrides,
   ],
 );

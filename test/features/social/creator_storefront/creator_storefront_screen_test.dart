@@ -11,6 +11,8 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_follow_summary.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/repositories/storefront_repository.dart';
@@ -27,6 +29,7 @@ import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
+import '../../customer/reels/fake_reels_repository.dart';
 import '../../customer/storefront/storefront_test_support.dart';
 import '../../customer/storefront/storefront_widget_harness.dart';
 
@@ -71,6 +74,8 @@ void main() {
         storefrontViewerAccountIdProvider.overrideWithValue('viewer-1'),
         storefrontExternalActionsProvider.overrideWithValue(external),
         followApiProvider.overrideWithValue(FollowApi(ApiClient(dio: Dio()))),
+        // Home's reels rail opens the window, which resolves playback here.
+        reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
       ],
       child: app,
     ),
@@ -144,6 +149,25 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('reel-human')));
     await settleStorefront(tester);
     expect(find.text('reel reel-human'), findsOneWidget);
+  });
+
+  testWidgets('the home reels rail plays in the window, not the pager', (
+    tester,
+  ) async {
+    addTearDown(ReelWindow.debugResetOpenState);
+    storefront.creatorReels[CreatorReelSort.latest] = right(page([aiReel]));
+    await pump(tester);
+
+    final card = find.byType(MallReelCard).first;
+    await tester.ensureVisible(card);
+    await tester.pump();
+    await tester.tap(card, warnIfMissed: false);
+    await settleStorefront(tester);
+
+    expect(find.byType(ReelWindow), findsOneWidget);
+    // The disclosure follows the reel into the window's chrome.
+    expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
+    expect(find.text('reel reel-ai'), findsNothing);
   });
 
   testWidgets('shop groups by brand and sorts most loved', (tester) async {

@@ -193,7 +193,9 @@ class CreatorHomeTab extends ConsumerWidget {
             semanticLabel: 'Latest reels',
             itemBuilder: (context, reel, _) => MallReelCard(
               reel: reel.toVm(fallbackCreatorName: displayName),
-              onTap: () => _openReel(context, reel),
+              // The rail plays in the window over the storefront; the Reels
+              // tab's own grid still opens the full-screen pager.
+              onTap: () => unawaited(openMallReelWindow(context, reel.toRef())),
             ),
           ),
         ),
@@ -243,8 +245,7 @@ class CreatorHomeTab extends ConsumerWidget {
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.productId),
-              onReelTap: (reel) =>
-                  unawaited(openMallReelWindow(context, reel)),
+              onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
             ),
           ),
         ),

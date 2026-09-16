@@ -11,6 +11,8 @@ import 'package:stylemint_mobile_frontend/features/customer/brand_storefront/sha
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_follow_summary.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/presentation/storefront_links.dart';
@@ -20,6 +22,7 @@ import 'package:stylemint_mobile_frontend/features/social/follow/data/follow_api
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
+import '../reels/fake_reels_repository.dart';
 import '../storefront/storefront_test_support.dart';
 import '../storefront/storefront_widget_harness.dart';
 
@@ -60,6 +63,8 @@ void main() {
         mallCatalogRepositoryProvider.overrideWithValue(catalog),
         storefrontExternalActionsProvider.overrideWithValue(external),
         followApiProvider.overrideWithValue(FollowApi(ApiClient(dio: Dio()))),
+        // Home's reels rail opens the window, which resolves playback here.
+        reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
       ],
       child: app,
     ),
@@ -133,6 +138,25 @@ void main() {
         (vendorId, ProductSort.bestselling),
       ]),
     );
+  });
+
+  testWidgets('the home reels rail plays in the window, not the pager', (
+    tester,
+  ) async {
+    addTearDown(ReelWindow.debugResetOpenState);
+    storefront.vendorReels = right(page([aiReel]));
+    await pump(tester, height: 3200);
+
+    final card = find.byType(MallReelCard).first;
+    await tester.ensureVisible(card);
+    await tester.pump();
+    await tester.tap(card, warnIfMissed: false);
+    await settleStorefront(tester);
+
+    expect(find.byType(ReelWindow), findsOneWidget);
+    // The disclosure follows the reel into the window's chrome.
+    expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
+    expect(find.text('reel reel-ai'), findsNothing);
   });
 
   testWidgets('shop all sorts and filters through the filter sheet', (

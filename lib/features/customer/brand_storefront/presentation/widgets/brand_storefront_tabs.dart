@@ -266,8 +266,7 @@ class BrandHomeTab extends ConsumerWidget {
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.id),
-              onReelTap: (reel) =>
-                  unawaited(openMallReelWindow(context, reel)),
+              onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
             ),
           ),
         ),
@@ -340,7 +339,9 @@ class BrandHomeTab extends ConsumerWidget {
             semanticLabel: 'Reels featuring $brandName',
             itemBuilder: (context, reel, _) => MallReelCard(
               reel: reel.toVm(fallbackCreatorName: 'StyleMint creator'),
-              onTap: () => _openReel(context, reel),
+              // The rail plays in the window over the storefront; the Reels
+              // tab's own grid still opens the full-screen pager.
+              onTap: () => unawaited(openMallReelWindow(context, reel.toRef())),
             ),
           ),
         ),

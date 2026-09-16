@@ -68,6 +68,18 @@ extension HomeReelToVm on HomeReel {
   );
 }
 
+/// What a reel rail hands `openMallReelWindow`: the id the window resolves
+/// playback by, plus the poster, hook and AI-generated flag its chrome shows
+/// while the reel loads. Same shape a product tile's reel already carries.
+extension HomeReelToRef on HomeReel {
+  MallReelRef toRef() => MallReelRef(
+    reelId: id,
+    posterUrl: posterUrl,
+    hook: hook,
+    isAiGenerated: isAiGenerated,
+  );
+}
+
 extension HomeCreatorToVm on HomeCreator {
   MallCreatorVm toVm() => MallCreatorVm(
     id: accountId,

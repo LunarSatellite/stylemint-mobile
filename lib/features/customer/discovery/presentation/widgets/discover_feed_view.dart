@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_page_chrome.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -227,7 +228,8 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
                   itemWidth: MallReelCard.compactWidth,
                   height: MallReelCard.heightFor(MallReelCard.compactWidth),
                   semanticLabel: block.title,
-                  itemBuilder: (context, reel, _) => _reelCard(reel),
+                  itemBuilder: (context, reel, _) =>
+                      _reelCard(reel, inRail: true),
                 ),
               ),
             )
@@ -236,7 +238,7 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
               count: visible.length,
               minTileWidth: MallReelCard.compactWidth,
               extentFor: MallReelCard.heightFor,
-              builder: (index) => _reelCard(visible[index]),
+              builder: (index) => _reelCard(visible[index], inRail: false),
             ),
         ];
       case DiscoverCreatorsBlock(:final items, layout: final blockLayout):
@@ -456,7 +458,15 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
     ),
   );
 
-  Widget _reelCard(HomeReel reel) {
+  /// One reel in a Discover block.
+  ///
+  /// [inRail] decides how it opens, and the two are genuinely different
+  /// surfaces. A rail is a peek beside other blocks — a row of play marks —
+  /// so it plays in the window over Discover, like a product tile's reel.
+  /// The block's grid is the feed's own wall of reels, paged as you scroll:
+  /// tapping one there enters the full-screen pager and keeps the swipe to
+  /// the next reel that a wall of reels promises, so it stays a push.
+  Widget _reelCard(HomeReel reel, {required bool inRail}) {
     final label = 'Reel by ${reel.toVm().creatorName}';
     return DiscoverActionable(
       key: ValueKey('discover-reel-${reel.id}'),
@@ -464,7 +474,9 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
       onMore: () => _openActions(NotInterestedKind.reel, reel.id, label),
       child: MallReelCard(
         reel: reel.toVm(),
-        onTap: () => _push(MallRoutes.reel(reel.id)),
+        onTap: inRail
+            ? () => unawaited(openMallReelWindow(context, reel.toRef()))
+            : () => _push(MallRoutes.reel(reel.id)),
       ),
     );
   }

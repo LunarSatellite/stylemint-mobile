@@ -74,7 +74,9 @@ class MallHomeSectionView extends ConsumerWidget {
           semanticLabel: title.isEmpty ? 'Shoppable reels' : title,
           itemBuilder: (context, reel, _) => MallReelCard(
             reel: reel.toVm(),
-            onTap: () => push(MallRoutes.reel(reel.id)),
+            // A rail card is a play mark: it opens the reel in the window
+            // over the Mall, exactly as a product tile's does.
+            onTap: () => unawaited(openMallReelWindow(context, reel.toRef())),
             onTaggedProductsTap: reel.taggedProductCount > 0
                 ? () => unawaited(showReelProductsSheet(context, reel: reel))
                 : null,

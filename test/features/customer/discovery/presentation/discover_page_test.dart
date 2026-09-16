@@ -4,9 +4,12 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feedback.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_item_actions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
 import '../../mall_home/mall_test_support.dart';
+import '../../reels/fake_reels_repository.dart';
 import '../discover_test_support.dart';
 
 const ValueKey<String> _field = ValueKey('discover-search-field');
@@ -151,6 +154,49 @@ void main() {
 
     expect(discover.marked, isEmpty);
     expect(_key('discover-product-p-2'), findsOneWidget);
+  });
+
+  testWidgets('a reel in the For you rail plays in the window', (tester) async {
+    addTearDown(ReelWindow.debugResetOpenState);
+    await pumpDiscover(
+      tester,
+      // Tall enough that the For you feed lays its reels rail out.
+      height: 2400,
+      overrides: [
+        reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
+      ],
+    );
+    await tester.pump();
+
+    final card = _key('discover-reel-r-ai');
+    await tester.ensureVisible(card);
+    await tester.pump();
+    await tester.tap(card, warnIfMissed: false);
+    await settleTransition(tester);
+
+    expect(find.byType(ReelWindow), findsOneWidget);
+    expect(find.byKey(ReelWindow.aiLabelKey), findsOneWidget);
+    expect(find.text('reel:r-ai'), findsNothing);
+  });
+
+  // The Reels chip's block is the feed's own wall of reels, not a rail: it
+  // pages as you scroll, so tapping one enters the full-screen pager and
+  // keeps the swipe onward.
+  testWidgets('the reels grid still opens the full-screen pager', (
+    tester,
+  ) async {
+    await pumpDiscover(tester);
+    await tester.pump();
+
+    await _selectChip(tester, 'reels');
+    final card = _key('discover-reel-r-ai');
+    await tester.ensureVisible(card);
+    await tester.pump();
+    await tester.tap(card, warnIfMissed: false);
+    await settleTransition(tester);
+
+    expect(find.text('reel:r-ai'), findsOneWidget);
+    expect(find.byType(ReelWindow), findsNothing);
   });
 
   testWidgets('reels can be reported with a reason', (tester) async {

@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/pdp_bleed.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// "See it in reels": published reels that tag this product
-/// (`GET /v1/public/reels/by-product/{productId}`). Each opens StyleMint's
-/// own reel screen. Nothing shows while loading, on failure or when no reel
-/// tags the product.
+/// (`GET /v1/public/reels/by-product/{productId}`). Each plays in the reel
+/// window over the product page — the rail is a row of play marks, so it
+/// behaves like a product tile's. Nothing shows while loading, on failure or
+/// when no reel tags the product.
 class ProductReelsRail extends ConsumerWidget {
   const ProductReelsRail({
     required this.productId,
@@ -29,6 +29,18 @@ class ProductReelsRail extends ConsumerWidget {
   /// Creators disclose AI-generated reels with `#AIgenerated` in the caption.
   static bool isAiGenerated(String caption) =>
       caption.toLowerCase().contains('#aigenerated');
+
+  /// What the window needs: the id it resolves playback by, the poster and
+  /// the caption it shows as the hook while the reel loads.
+  static MallReelRef toRef(ProductReel reel) {
+    final caption = reel.caption.trim();
+    return MallReelRef(
+      reelId: reel.id,
+      posterUrl: reel.thumbnailUrl,
+      hook: caption.isEmpty ? null : caption,
+      isAiGenerated: isAiGenerated(caption),
+    );
+  }
 
   static MallReelVm toVm(ProductReel reel) {
     final creator = reel.creatorName.trim();
@@ -68,11 +80,8 @@ class ProductReelsRail extends ConsumerWidget {
               semanticLabel: title,
               itemBuilder: (context, reel, _) => MallReelCard(
                 reel: toVm(reel),
-                onTap: () => unawaited(
-                  context.push(
-                    RouteNames.reelDetail.replaceFirst(':reelId', reel.id),
-                  ),
-                ),
+                onTap: () =>
+                    unawaited(openMallReelWindow(context, toRef(reel))),
               ),
             ),
           ),
