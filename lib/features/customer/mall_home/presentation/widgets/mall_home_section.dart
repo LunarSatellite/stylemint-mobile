@@ -265,6 +265,11 @@ class _CampaignStage extends StatelessWidget {
       overline: overline,
       // Stops advancing while Home is hidden (Reels, another tab).
       autoAdvance: TickerMode.valuesOf(context).enabled,
+      onReel: (campaign) {
+        final reelId = campaign.reelId?.trim();
+        if (reelId == null || reelId.isEmpty) return;
+        onOpen(MallPush(MallRoutes.reel(reelId)));
+      },
       heroTagFor: (campaign) {
         final source = campaigns
             .where((item) => item.id == campaign.id)

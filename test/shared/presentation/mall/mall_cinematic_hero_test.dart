@@ -14,11 +14,13 @@ Future<void> _settle(WidgetTester tester) async {
 Widget _hero({
   List<MallCampaignVm> campaigns = heroCampaigns,
   void Function(MallCampaignVm, MallCampaignAction)? onAction,
+  ValueChanged<MallCampaignVm>? onReel,
   String? Function(MallCampaignVm)? heroTagFor,
   Widget? overline,
 }) => MallCinematicHero(
   campaigns: campaigns,
   onAction: onAction ?? (_, _) {},
+  onReel: onReel,
   heroTagFor: heroTagFor,
   overline: overline,
 );
@@ -100,7 +102,9 @@ void main() {
   testWidgets('a one-word title keeps its single span', (tester) async {
     await pumpMall(
       tester,
-      _hero(campaigns: const [MallCampaignVm(id: 'k', title: 'Drop')]),
+      _hero(
+        campaigns: const [MallCampaignVm(id: 'k', title: 'Drop')],
+      ),
     );
     expect(find.text('Drop'), findsOneWidget);
   });
@@ -146,6 +150,23 @@ void main() {
     expect(action?.id, 'b');
   });
 
+  testWidgets('reel campaign exposes a Watch reel action', (tester) async {
+    MallCampaignVm? watched;
+    await pumpMall(
+      tester,
+      _hero(
+        campaigns: const [
+          MallCampaignVm(id: 'k-reel', title: 'Watch the look', reelId: 'r-1'),
+        ],
+        onReel: (campaign) => watched = campaign,
+      ),
+    );
+
+    final watch = find.text('Watch reel');
+    expect(watch, findsOneWidget);
+    await tester.tap(watch);
+    expect(watched?.reelId, 'r-1');
+  });
   testWidgets('auto-advances, and stops dead under reduced motion', (
     tester,
   ) async {

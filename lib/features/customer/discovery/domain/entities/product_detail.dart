@@ -1,6 +1,7 @@
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 /// Full product detail returned by GET /v1/products/{id}.
 class ProductDetail {
@@ -287,6 +288,7 @@ class RelatedProduct {
     required this.imageUrl,
     required this.price,
     required this.rating,
+    this.reel,
   });
 
   final String id;
@@ -294,4 +296,5 @@ class RelatedProduct {
   final String imageUrl;
   final Money price;
   final double rating;
+  final ProductReelRef? reel;
 }

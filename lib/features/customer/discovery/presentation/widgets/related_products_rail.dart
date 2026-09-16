@@ -7,9 +7,11 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/related_products_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/pdp_bleed.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/product_reel_vm.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// "You may also like" (`GET /v1/public/products/{id}/related`): skeleton
@@ -32,6 +34,7 @@ class RelatedProductsRail extends ConsumerWidget {
     price: product.price,
     imageUrl: product.imageUrl.isEmpty ? null : product.imageUrl,
     rating: product.rating > 0 ? product.rating : null,
+    reel: product.reel?.toVm(),
   );
 
   @override
@@ -74,6 +77,8 @@ class RelatedProductsRail extends ConsumerWidget {
               itemBuilder: (context, product, _) => SaveableMallProductCard(
                 product: toVm(product),
                 size: size,
+                onReelTap: (reel) =>
+                    unawaited(openMallReelWindow(context, reel)),
                 onTap: () => unawaited(
                   context.push(
                     RouteNames.productDetail.replaceFirst(

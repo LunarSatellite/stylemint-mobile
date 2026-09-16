@@ -6,9 +6,8 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// The reel a product is sold through, when it has one.
 ///
-/// Null on most products — 24 of 106 carry a reel on production data — so
-/// every Mall surface has to render well without it. The field does not
-/// exist on the server yet either, so it is always parsed defensively.
+/// Parsed defensively so older payloads and products still syncing their reel
+/// can fall back gracefully.
 @immutable
 class MallReelRef {
   const MallReelRef({
@@ -86,8 +85,8 @@ class MallProductVm {
   /// sale — never inferred.
   final DateTime? saleEndsUtc;
 
-  /// The product's reel. Null for most products, which then show the
-  /// designed type tile instead of a poster.
+  /// The product's reel. A temporarily missing value falls back to the
+  /// designed type tile instead of leaving a broken poster.
   final MallReelRef? reel;
 
   /// Whether the buyer must choose a size or a colour before this product can
@@ -274,6 +273,7 @@ class MallCampaignVm {
     this.eyebrow,
     this.subtitle,
     this.imageUrl,
+    this.reelId,
     this.actions = const [],
   });
 
@@ -282,6 +282,7 @@ class MallCampaignVm {
   final String? eyebrow;
   final String? subtitle;
   final String? imageUrl;
+  final String? reelId;
   final List<MallCampaignAction> actions;
 }
 

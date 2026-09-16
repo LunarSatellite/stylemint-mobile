@@ -25,7 +25,7 @@ localise, wrap the page in a `MallStringsScope`.
 | `MallReelTile` | 4:5 reel poster with the play affordance, the reel's length, its hook and — whenever flagged — the **AI-generated** disclosure, which wraps and is never truncated. Brand, name and price sit underneath. Tapping opens the reel. Holds the screen's single play slot when it is the most visible reel, and its play mark then fills with brand green. | `MallProductVm`, `MallReelRef`, `onTap?`, `onSaveTap?` |
 | `MallTypeTile` | The no-photo tile for the majority of the catalogue: a tonal ground picked deterministically from the product id, the brand as a tracked eyebrow, the name set large in Instrument Serif, a hairline and the price. Same footprint as `MallReelTile`, so a row mixes the two. | `MallProductVm`, `onTap?`, `onSaveTap?` |
 | `MallReelPlaySlot` / `MallReelPlaySlotController` | Grants one tile on screen the single play slot — the most visible one, over half in view. Never grants one under `MediaQuery.disableAnimations`. Nothing plays inline in the Mall today (see below); the slot decides which tile is "the one on screen". | `id`, `builder(context, holdsSlot)` |
-| `MallProductCard` | 4:5 **photo** with badges (discount, New, Low stock), rating and a save heart. Below it: brand, a two-line name, and the price with a struck-through original. For the product details page and the surfaces that belong to it — not for Mall surfaces. Sizes: `compact` and `regular`. | `MallProductVm`, `onTap?`, `onSaveTap?` |
+| `MallProductCard` | 4:5 **photo** with badges (discount, New, Low stock), rating and a save heart. Reel-backed products gain a centered play mark and an independent 44dp `Watch reel` action while the rest of the card still opens product details. For detail-adjacent and discovery surfaces; the Mall itself uses `MallProductTile`. | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?` |
 | `MallProductGrid` / `MallSliverProductGrid` | Responsive grid: 2 columns under 600dp, 3 from 600dp, 4 from 900dp of available width. Box and sliver versions. | `List<MallProductVm>`, `onProductTap?`, `onSaveTap?`, `isLoading`, `emptyState?` |
 | `MallReelCard` | 9:16 poster with a play mark, creator, tagged-product count and like count. Always shows the **AI-generated** label when flagged; the label wraps and is never truncated. | `MallReelVm`, `onTap?`, `onTaggedProductsTap?` (makes the product pill its own 44dp button) |
 | `MallCreatorCard` | Cover strip, overlapping avatar, name and verified tick, style tags on one line, follower count, and a follow-button slot. | `MallCreatorVm`, `onTap?`, `followAction?` |
@@ -33,7 +33,7 @@ localise, wrap the page in a `MallStringsScope`.
 | `MallCategoryTile` | Image tile with a scrim and label. Shapes: `square` (1:1) and `tall` (3:4). | `MallCategoryVm`, `shape`, `onTap?` |
 | `MallCollectionCard` | Editorial cover card: eyebrow, title, up to three preview thumbnails and an item count. | `MallCollectionVm`, `aspectRatio`, `onTap?` |
 | `MallCampaignHero` | Full-width carousel with scrim, eyebrow, display title, subtitle, up to 3 CTAs (first filled, the rest glass) and a page indicator. Auto-advances every 6 s, pauses while touched, and stays still when animations are disabled. Height is 62% of the screen, clamped to 360–640. | `List<MallCampaignVm>`, `onAction(campaign, action)` |
-| `MallCinematicHero` | **The Mall's stage.** Full-bleed carousel that drifts (`MallKenBurns`), lags the page (`MallParallax`) and fades its copy out as you scroll. Display title closes on an italic word; segmented progress bars; secondary CTAs are translucent, never blurred. `heroTagFor` opts the campaign on screen into a shared-element flight. Height is 72% of the screen, clamped to 420–720. | `List<MallCampaignVm>`, `onAction`, `topInset`, `overline?`, `heroTagFor?` |
+| `MallCinematicHero` | **The Mall's stage.** Full-bleed carousel that drifts (`MallKenBurns`), lags the page (`MallParallax`) and fades its copy out as you scroll. Reel campaigns lead with a glass-dark `Watch reel` pill and green play mark. Display title closes on an italic word; segmented progress bars; secondary CTAs are translucent, never blurred. | `List<MallCampaignVm>`, `onAction`, `onReel?`, `topInset`, `overline?`, `heroTagFor?` |
 | `MallDealBand` | **Bold-retail plate.** Colour-blocked sheet with an angled cut, an oversized discount numeral, a live countdown and an inverted CTA, with the block's products running underneath. Every figure is optional: pass null and it is not drawn. | `title`, `child`, `eyebrow?`, `topDiscountPercent?`, `endsUtc?`, `ctaLabel?`+`onCta?`, `now?` |
 | `MallEditorialSpread` | **Magazine block.** A 4:5 lead holding 62% of the width with two tiles stacked beside it; anything past the third runs on as a rail. Stacks below 360 dp. Tiles get exact boxes, so the block cannot overflow at any text scale. | `List<MallCollectionVm>`, `semanticLabel`, `onOpen?` |
 | `MallCategoryMosaic` | **Graphic block.** Uneven tiles in a repeating 58/42, 42/58, thirds rhythm, typographic by default because Catalog categories carry no artwork; uses an image with a scrim when one ever arrives. | `List<MallCategoryVm>`, `semanticLabel`, `onOpen?` |
@@ -58,14 +58,14 @@ MallProductVm     id, name, price: Money, brandName?, imageUrl?, compareAtPrice?
                   reel?: MallReelRef
                   → isOnSale, discountPercent (floored), withSaved(saved:)
 MallReelRef       reelId, posterUrl?, hook?, isAiGenerated, durationSeconds
-                  → hasDuration. Null on most products (24 of 106 in production).
+                  → hasDuration. Missing or syncing metadata falls back safely.
 MallReelVm        id, creatorName, posterUrl?, creatorAvatarUrl?, caption?,
                   taggedProductCount, isAiGenerated, likeCount?
 MallCreatorVm     id, name, handle?, avatarUrl?, coverUrl?, isVerified, styleTags, followerCount?
 MallBrandVm       id, name, logoUrl?, coverUrl?, isVerified, tagline?
 MallCategoryVm    id, label, imageUrl?
 MallCollectionVm  id, title, eyebrow?, coverUrl?, itemCount?, previewImageUrls
-MallCampaignVm    id, title, eyebrow?, subtitle?, imageUrl?, actions: List<MallCampaignAction(id, label)>
+MallCampaignVm    id, title, eyebrow?, subtitle?, imageUrl?, reelId?, actions: List<MallCampaignAction(id, label)>
 MallTrustItem     icon, title, body?
 ```
 

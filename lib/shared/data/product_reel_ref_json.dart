@@ -4,10 +4,9 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_re
 
 /// Reads the nullable `reel` object off a public product payload.
 ///
-/// The field does not exist on the server yet, so this has to be tolerant in
-/// both directions: absent, null, a non-object, or an object missing every
-/// field but the id all read as "no reel", and a product renders its type
-/// tile. Nothing here throws — a malformed reel must never cost the page a
+/// This stays tolerant during rollout and media sync: absent, null, a non-object,
+/// or an object missing every field but the id all read as "no reel", and a
+/// product renders its designed fallback tile. Nothing here throws — a malformed reel must never cost the page a
 /// product card.
 ProductReelRef? readProductReelRef(Object? raw) {
   if (raw is! Map) return null;

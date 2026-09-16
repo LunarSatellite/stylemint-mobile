@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'product_detail_dto.freezed.dart';
@@ -191,6 +193,8 @@ abstract class RelatedProductDto with _$RelatedProductDto {
     required double amount,
     @Default('NPR') String currency,
     @Default(0) double rating,
+    @JsonKey(fromJson: readProductReelRef, includeToJson: false)
+    ProductReelRef? reel,
   }) = _RelatedProductDto;
 
   const RelatedProductDto._();
@@ -204,5 +208,6 @@ abstract class RelatedProductDto with _$RelatedProductDto {
     imageUrl: imageUrl,
     price: Money(amount: amount, currency: currency),
     rating: rating,
+    reel: reel,
   );
 }

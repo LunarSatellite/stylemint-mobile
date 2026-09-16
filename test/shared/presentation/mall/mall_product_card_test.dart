@@ -195,6 +195,37 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('reel-backed photo has an independent play action', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var productTaps = 0;
+    var playedReel = '';
+    await pumpMall(
+      tester,
+      Center(
+        child: SizedBox(
+          width: MallProductCard.regularWidth,
+          child: MallProductCard(
+            product: reelProduct,
+            onTap: () => productTaps++,
+            onReelTap: (reel) => playedReel = reel.reelId,
+          ),
+        ),
+      ),
+    );
+
+    final play = find.byKey(MallProductCard.playKey);
+    expect(play, findsOneWidget);
+    expect(find.bySemanticsLabel('Watch reel'), findsOneWidget);
+    await tester.tap(play);
+    expect(playedReel, productReel.reelId);
+    expect(productTaps, 0);
+
+    await tester.tap(find.byType(MallProductCard));
+    expect(productTaps, 1);
+    semantics.dispose();
+  });
   testWidgets('saved state reads as remove-from-saved', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpMall(

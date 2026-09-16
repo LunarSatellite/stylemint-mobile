@@ -26,6 +26,7 @@ class MallProductCard extends StatelessWidget {
     super.key,
     this.size = MallCardSize.regular,
     this.onTap,
+    this.onReelTap,
     this.onSaveTap,
     this.showRating = true,
     this.signal,
@@ -35,6 +36,9 @@ class MallProductCard extends StatelessWidget {
   final MallProductVm product;
   final MallCardSize size;
   final VoidCallback? onTap;
+
+  /// Plays the product's reel while the rest of the card opens the product.
+  final void Function(MallReelRef reel)? onReelTap;
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
@@ -52,6 +56,8 @@ class MallProductCard extends StatelessWidget {
   /// Suggested rail item widths.
   static const double compactWidth = 148;
   static const double regularWidth = 184;
+
+  static const Key playKey = Key('mall-product-card-play');
 
   /// Image width : height.
   static const double imageAspectRatio = MallTileMetrics.mediaAspectRatio;
@@ -85,6 +91,13 @@ class MallProductCard extends StatelessWidget {
     final item = product;
     final rating = showRating ? item.rating : null;
     final saveTap = onSaveTap;
+    final reel = item.reel;
+    final playTap = reel == null || onReelTap == null
+        ? null
+        : () => onReelTap!(reel);
+    final playSize = metrics.isCompact
+        ? DesignTokens.minTouchTarget
+        : DesignTokens.s48;
     final radius = BorderRadius.circular(
       size == MallCardSize.compact
           ? DesignTokens.radiusMedium
@@ -109,6 +122,14 @@ class MallProductCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   MallNetworkImage(url: item.imageUrl),
+                  if (playTap != null) ...[
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: DesignTokens.imageScrim,
+                      ),
+                    ),
+                    Center(child: MallPlayMark(size: playSize, primed: true)),
+                  ],
                   if (badges.isNotEmpty)
                     PositionedDirectional(
                       top: DesignTokens.s8,
@@ -166,6 +187,37 @@ class MallProductCard extends StatelessWidget {
             borderRadius: radius,
           ),
         ),
+        if (playTap != null)
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final mediaHeight =
+                    constraints.maxWidth / MallProductCard.imageAspectRatio;
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: (constraints.maxWidth - playSize) / 2,
+                      top: (mediaHeight - playSize) / 2,
+                      width: playSize,
+                      height: playSize,
+                      child: Semantics(
+                        button: true,
+                        label: strings.watchReel,
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: InkWell(
+                            key: playKey,
+                            onTap: playTap,
+                            customBorder: const CircleBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         if (saveTap != null)
           PositionedDirectional(
             top: 2,

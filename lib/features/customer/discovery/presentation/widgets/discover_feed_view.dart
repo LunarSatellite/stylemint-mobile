@@ -455,6 +455,7 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
     child: MallProductCard(
       product: product.toVm(),
       onTap: () => _push(MallRoutes.product(product.id)),
+      onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
     ),
   );
 

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart' show Options;
-import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/discover_data_dto.dart';
@@ -7,6 +6,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/data/model
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_review_summary_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/regret_check_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_review_summary.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
+import 'package:uuid/uuid.dart';
 
 class DiscoveryRemoteDataSource {
   DiscoveryRemoteDataSource({required this.apiClient});
@@ -260,6 +261,7 @@ class DiscoveryRemoteDataSource {
       amount: (defaultVariant?['priceAmount'] as num?)?.toDouble() ?? 0,
       currency: defaultVariant?['priceCurrency'] as String? ?? 'NPR',
       rating: (json['averageRating'] as num?)?.toDouble() ?? 0,
+      reel: readProductReelRef(json['reel']),
     );
   }
 

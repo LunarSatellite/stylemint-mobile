@@ -27,6 +27,7 @@ class MallCinematicHero extends StatefulWidget {
     required this.campaigns,
     required this.onAction,
     super.key,
+    this.onReel,
     this.autoAdvance = true,
     this.interval = DesignTokens.heroAutoAdvance,
     this.height,
@@ -38,6 +39,7 @@ class MallCinematicHero extends StatefulWidget {
   final List<MallCampaignVm> campaigns;
   final void Function(MallCampaignVm campaign, MallCampaignAction action)
   onAction;
+  final ValueChanged<MallCampaignVm>? onReel;
   final bool autoAdvance;
   final Duration interval;
 
@@ -246,6 +248,7 @@ class _MallCinematicHeroState extends State<MallCinematicHero> {
                             key: ValueKey(current.id),
                             campaign: current,
                             onAction: widget.onAction,
+                            onReel: widget.onReel,
                           ),
                         ),
                         if (campaigns.length > 1) ...[
@@ -313,12 +316,14 @@ class _HeroCopy extends StatelessWidget {
   const _HeroCopy({
     required this.campaign,
     required this.onAction,
+    required this.onReel,
     super.key,
   });
 
   final MallCampaignVm campaign;
   final void Function(MallCampaignVm campaign, MallCampaignAction action)
   onAction;
+  final ValueChanged<MallCampaignVm>? onReel;
 
   static const TextStyle _subtitleStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
@@ -332,8 +337,10 @@ class _HeroCopy extends StatelessWidget {
   Widget build(BuildContext context) {
     final eyebrow = campaign.eyebrow;
     final subtitle = campaign.subtitle;
+    final reelId = campaign.reelId?.trim();
+    final canWatch = reelId != null && reelId.isNotEmpty && onReel != null;
     final actions = campaign.actions
-        .take(MallCinematicHero.maxActions)
+        .take(MallCinematicHero.maxActions - (canWatch ? 1 : 0))
         .toList();
     final titleStyle = MallCinematicHero.titleStyleFor(context);
 
@@ -372,12 +379,17 @@ class _HeroCopy extends StatelessWidget {
             ],
           ),
         ),
-        if (actions.isNotEmpty) ...[
+        if (actions.isNotEmpty || canWatch) ...[
           const SizedBox(height: DesignTokens.s20),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
+              if (canWatch)
+                _HeroWatchCta(
+                  label: MallStrings.of(context).watchReel,
+                  onPressed: () => onReel!(campaign),
+                ),
               for (final (i, action) in actions.indexed)
                 if (i == 0)
                   MallPrimaryCta(
@@ -436,6 +448,51 @@ class _EyebrowRule extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Reel-first hero action: a compact glass pill with a bright play mark.
+class _HeroWatchCta extends StatelessWidget {
+  const _HeroWatchCta({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: const DecoratedBox(
+        decoration: BoxDecoration(
+          color: DesignTokens.primaryGreen,
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox.square(
+          dimension: 28,
+          child: Icon(
+            Icons.play_arrow_rounded,
+            size: 20,
+            color: DesignTokens.buttonPrimaryText,
+          ),
+        ),
+      ),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: DesignTokens.textWhite,
+        backgroundColor: const Color(0x52000000),
+        minimumSize: const Size(DesignTokens.minTouchTarget, 48),
+        padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 18, 8),
+        shape: const StadiumBorder(
+          side: BorderSide(color: DesignTokens.glassStroke),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          height: 1.25,
+        ),
+      ),
     );
   }
 }

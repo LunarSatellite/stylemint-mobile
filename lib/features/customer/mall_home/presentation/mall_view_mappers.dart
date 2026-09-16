@@ -137,6 +137,7 @@ extension HomeCampaignToVm on HomeCampaign {
     eyebrow: eyebrow,
     subtitle: subtitle,
     imageUrl: heroImageUrl,
+    reelId: heroReelId,
     actions: [
       for (final (index, cta) in ctas.indexed)
         MallCampaignAction(id: '$index', label: cta.label),
