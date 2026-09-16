@@ -44,6 +44,21 @@ class MallStrings {
     this.verifiedCount = _verifiedCount,
     this.taggedTotal = _taggedTotal,
     this.pieces = _pieces,
+    this.addToBag = 'Add to bag',
+    this.added = 'Added',
+    this.addItem = _addItem,
+    this.addFailed = "Couldn't add to bag",
+    this.viewItem = 'View',
+    this.biggestSaving = 'Biggest saving here',
+    this.endingSoonest = 'Ending soonest here',
+    this.bestReviewed = 'Best reviewed here',
+    this.justArrived = 'Just arrived',
+    this.inTheMall = 'In the Mall right now',
+    this.brandCount = _brandCount,
+    this.creatorCount = _creatorCount,
+    this.categoryCount = _categoryCount,
+    this.editCount = _editCount,
+    this.reelCount = _reelCount,
   });
 
   static const MallStrings english = MallStrings();
@@ -128,6 +143,39 @@ class MallStrings {
   /// Products across a collection block, e.g. "48 pieces".
   final String Function(int count) pieces;
 
+  /// Quick-add's label on a block wide enough to spell it out.
+  final String addToBag;
+
+  /// Quick-add's confirmation, held briefly after the item lands.
+  final String added;
+
+  /// Spoken quick-add, e.g. "Add Linen co-ord set to bag".
+  final String Function(String name) addItem;
+
+  /// Spoken state when an add did not go through.
+  final String addFailed;
+
+  /// Secondary action beside quick-add: open the product.
+  final String viewItem;
+
+  /// Why one product earned the spotlight. Each is a fact the block checked
+  /// against its own items — never a claim about the catalogue at large.
+  final String biggestSaving;
+  final String endingSoonest;
+  final String bestReviewed;
+  final String justArrived;
+
+  /// Spoken name of the directory band.
+  final String inTheMall;
+
+  final String Function(int count) brandCount;
+  final String Function(int count) creatorCount;
+  final String Function(int count) categoryCount;
+
+  /// Collections, e.g. "32 edits".
+  final String Function(int count) editCount;
+  final String Function(int count) reelCount;
+
   static String _discountBadge(int percent) => '-$percent%';
 
   static String _percentOff(int percent) => '$percent% off';
@@ -184,6 +232,21 @@ class MallStrings {
       count == 1 ? '1 product tagged' : '$count products tagged';
 
   static String _pieces(int count) => count == 1 ? '1 piece' : '$count pieces';
+
+  static String _addItem(String name) => 'Add $name to bag';
+
+  static String _brandCount(int count) =>
+      count == 1 ? '1 brand' : '$count brands';
+
+  static String _creatorCount(int count) =>
+      count == 1 ? '1 creator' : '$count creators';
+
+  static String _categoryCount(int count) =>
+      count == 1 ? '1 category' : '$count categories';
+
+  static String _editCount(int count) => count == 1 ? '1 edit' : '$count edits';
+
+  static String _reelCount(int count) => count == 1 ? '1 reel' : '$count reels';
 }
 
 /// Provides [MallStrings] to the Mall components below it.

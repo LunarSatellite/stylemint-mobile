@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_cart_actions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_zones.dart';
@@ -10,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/saved_products_providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -25,12 +27,17 @@ class MallHomeSectionView extends ConsumerWidget {
     this.index = 0,
     this.topInset = 0,
     this.overline,
+    this.showSpotlight = false,
   });
 
   final HomeSection section;
 
   /// 1-based block number for the section marker; 0 hides the marker.
   final int index;
+
+  /// Whether this block leads with the page's one spotlight. Decided for the
+  /// whole page by `spotlightSectionIndex`, not by the block itself.
+  final bool showSpotlight;
 
   /// Space the cinematic hero keeps clear for the Home switch.
   final double topInset;
@@ -49,6 +56,16 @@ class MallHomeSectionView extends ConsumerWidget {
     final seeAll = destinationForSeeAll(section);
     final onSeeAll = seeAll == null ? null : () => open(seeAll);
     final title = section.title ?? '';
+
+    // One cart write for the whole page: the same path the product details
+    // page and Buy It Again take, gated for guests, reported back so the buy
+    // control can show its own result.
+    Future<bool> addToBag(HomeProduct product) => mallAddToBag(
+      context,
+      ref,
+      productId: product.id,
+      productName: product.name,
+    );
 
     Widget titled(Widget child) => _Titled(
       section: section,
@@ -70,7 +87,13 @@ class MallHomeSectionView extends ConsumerWidget {
         MallRail<HomeReel>(
           items: items,
           itemWidth: MallReelCard.regularWidth,
-          height: MallReelCard.heightFor(MallReelCard.regularWidth),
+          height: MallRail.heightForStaggered(
+            MallReelCard.heightFor(MallReelCard.regularWidth),
+          ),
+          // The discovery zone's rails sit off the line; the editorial
+          // zone's brand and creator rails stay flush, so the two read as
+          // different densities of the same page rather than one rhythm.
+          stagger: MallRail.defaultStagger,
           semanticLabel: title.isEmpty ? 'Shoppable reels' : title,
           itemBuilder: (context, reel, _) => MallReelCard(
             reel: reel.toVm(),
@@ -94,15 +117,17 @@ class MallHomeSectionView extends ConsumerWidget {
               now: now,
               onCta: onSeeAll,
               onOpenProduct: (id) => push(MallRoutes.product(id)),
+              onAddToBag: addToBag,
             )
           : titled(
-              _SignalRail(
+              _ShoppableProducts(
                 items: items,
+                pick: showSpotlight ? spotlightPickOf(items) : null,
                 now: now,
                 strings: strings,
-                size: MallCardSize.compact,
                 semanticLabel: title.isEmpty ? 'Products' : title,
                 onOpenProduct: (id) => push(MallRoutes.product(id)),
+                onAddToBag: addToBag,
               ),
             ),
       HomeCreatorsSection(:final items) => titled(
@@ -271,6 +296,7 @@ class _DropBlock extends StatelessWidget {
     required this.now,
     required this.onCta,
     required this.onOpenProduct,
+    required this.onAddToBag,
   });
 
   final HomeSection section;
@@ -280,6 +306,7 @@ class _DropBlock extends StatelessWidget {
   final DateTime now;
   final VoidCallback? onCta;
   final void Function(String productId) onOpenProduct;
+  final Future<bool> Function(HomeProduct product) onAddToBag;
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +326,118 @@ class _DropBlock extends StatelessWidget {
         strings: strings,
         semanticLabel: title.isEmpty ? 'Deals' : title,
         onOpenProduct: onOpenProduct,
+        onAddToBag: onAddToBag,
       ),
+    );
+  }
+}
+
+/// A discovery products block: the spotlight, where the page gave this block
+/// the one it has, and the rest of the items as a signal rail underneath.
+///
+/// A block holding a single product shows the spotlight alone rather than a
+/// rail of one — the catalogue is small today, and a composition that admits
+/// it reads as a decision instead of as missing content.
+class _ShoppableProducts extends StatelessWidget {
+  const _ShoppableProducts({
+    required this.items,
+    required this.pick,
+    required this.now,
+    required this.strings,
+    required this.semanticLabel,
+    required this.onOpenProduct,
+    required this.onAddToBag,
+  });
+
+  final List<HomeProduct> items;
+  final MallSpotlightPick? pick;
+  final DateTime now;
+  final MallStrings strings;
+  final String semanticLabel;
+  final void Function(String productId) onOpenProduct;
+  final Future<bool> Function(HomeProduct product) onAddToBag;
+
+  @override
+  Widget build(BuildContext context) {
+    final featured = pick;
+    if (featured == null) {
+      return _SignalRail(
+        items: items,
+        now: now,
+        strings: strings,
+        size: MallCardSize.compact,
+        semanticLabel: semanticLabel,
+        onOpenProduct: onOpenProduct,
+        onAddToBag: onAddToBag,
+      );
+    }
+    final rest = [
+      for (final product in items)
+        if (product.id != featured.product.id) product,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Spotlight(
+          pick: featured,
+          now: now,
+          strings: strings,
+          onOpenProduct: onOpenProduct,
+          onAddToBag: onAddToBag,
+        ),
+        if (rest.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s24),
+          _SignalRail(
+            items: rest,
+            now: now,
+            strings: strings,
+            size: MallCardSize.compact,
+            semanticLabel: semanticLabel,
+            onOpenProduct: onOpenProduct,
+            onAddToBag: onAddToBag,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The spotlight, wired to the shared saved list, the reel window and the
+/// cart. Narrow by design: only the heart's own state is watched here.
+class _Spotlight extends ConsumerWidget {
+  const _Spotlight({
+    required this.pick,
+    required this.now,
+    required this.strings,
+    required this.onOpenProduct,
+    required this.onAddToBag,
+  });
+
+  final MallSpotlightPick pick;
+  final DateTime now;
+  final MallStrings strings;
+  final void Function(String productId) onOpenProduct;
+  final Future<bool> Function(HomeProduct product) onAddToBag;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final product = pick.product;
+    final saved = ref.watch(
+      savedProductsNotifierProvider.select((s) => s.isSaved(product.id)),
+    );
+    return MallSpotlight(
+      product: mallProductWithSaved(product.toVm(), saved: saved),
+      eyebrow: mallSpotlightEyebrow(pick.reason, strings),
+      signal: mallProductSignal(product, now: now, strings: strings),
+      endsUtc: product.saleEndsUtc,
+      now: () => now,
+      onTap: () => onOpenProduct(product.id),
+      onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
+      onSaveTap: () => unawaited(
+        toggleSavedProduct(context, ref, productId: product.id),
+      ),
+      onQuickAdd: () => onAddToBag(product),
     );
   }
 }
@@ -315,6 +453,7 @@ class _SignalRail extends StatelessWidget {
     required this.strings,
     required this.semanticLabel,
     required this.onOpenProduct,
+    required this.onAddToBag,
     this.size = MallCardSize.regular,
   });
 
@@ -323,6 +462,7 @@ class _SignalRail extends StatelessWidget {
   final MallStrings strings;
   final String semanticLabel;
   final void Function(String productId) onOpenProduct;
+  final Future<bool> Function(HomeProduct product) onAddToBag;
   final MallCardSize size;
 
   @override
@@ -338,12 +478,18 @@ class _SignalRail extends StatelessWidget {
     return MallRail<HomeProduct>(
       items: items,
       itemWidth: width,
-      height: MallProductTile.heightFor(
-        context,
-        width: width,
-        size: size,
-        withSignal: withSignal,
+      height: MallRail.heightForStaggered(
+        MallProductTile.heightFor(
+          context,
+          width: width,
+          size: size,
+          withSignal: withSignal,
+          // Every tile on the Mall's product rails can be bought from, so
+          // the buy line is reserved for the whole rail rather than per tile.
+          withAction: true,
+        ),
       ),
+      stagger: MallRail.defaultStagger,
       semanticLabel: semanticLabel,
       itemBuilder: (context, product, _) => SaveableMallProductTile(
         product: product.toVm(),
@@ -352,6 +498,7 @@ class _SignalRail extends StatelessWidget {
         reserveSignal: withSignal,
         onTap: () => onOpenProduct(product.id),
         onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
+        onQuickAdd: () => onAddToBag(product),
       ),
     );
   }

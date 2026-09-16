@@ -21,6 +21,7 @@ class MallProductTile extends StatelessWidget {
     this.onTap,
     this.onReelTap,
     this.onSaveTap,
+    this.onQuickAdd,
     this.showRating = true,
     this.signal,
     this.reserveSignal = false,
@@ -40,6 +41,12 @@ class MallProductTile extends StatelessWidget {
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
+
+  /// Adds the product to the bag without leaving the page. Shows the buy
+  /// control on the price line when non-null — size the rail or grid with
+  /// `heightFor(withAction: true)` to match.
+  final Future<bool> Function()? onQuickAdd;
+
   final bool showRating;
 
   /// One live fact under the price.
@@ -61,11 +68,13 @@ class MallProductTile extends StatelessWidget {
     required double width,
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics.heightFor(
     context,
     width: width,
     size: size,
     withSignal: withSignal,
+    withAction: withAction,
   );
 
   @override
@@ -77,6 +86,7 @@ class MallProductTile extends StatelessWidget {
         size: size,
         onTap: onTap,
         onSaveTap: onSaveTap,
+        onQuickAdd: onQuickAdd,
         showRating: showRating,
         signal: signal,
         reserveSignal: reserveSignal,
@@ -90,6 +100,7 @@ class MallProductTile extends StatelessWidget {
       onTap: onTap ?? (openReel == null ? null : () => openReel(reel)),
       onPlayTap: openReel == null ? null : () => openReel(reel),
       onSaveTap: onSaveTap,
+      onQuickAdd: onQuickAdd,
       showRating: showRating,
       signal: signal,
       reserveSignal: reserveSignal,

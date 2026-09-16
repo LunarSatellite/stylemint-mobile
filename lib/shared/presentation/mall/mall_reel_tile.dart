@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_quick_add.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_reel_play_slot.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
@@ -28,6 +29,7 @@ class MallReelTile extends StatelessWidget {
     this.onTap,
     this.onPlayTap,
     this.onSaveTap,
+    this.onQuickAdd,
     this.showRating = true,
     this.signal,
     this.reserveSignal = false,
@@ -51,6 +53,11 @@ class MallReelTile extends StatelessWidget {
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
+
+  /// Adds the product to the bag from the tile. Shows the buy control on the
+  /// price line when non-null; size the tile with `withAction: true`.
+  final Future<bool> Function()? onQuickAdd;
+
   final bool showRating;
 
   /// One live fact under the price.
@@ -74,11 +81,13 @@ class MallReelTile extends StatelessWidget {
     required double width,
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics.heightFor(
     context,
     width: width,
     size: size,
     withSignal: withSignal,
+    withAction: withAction,
   );
 
   @override
@@ -86,10 +95,12 @@ class MallReelTile extends StatelessWidget {
     final strings = MallStrings.of(context);
     final fact = signal;
     final showSignal = reserveSignal || fact != null;
+    final quickAdd = onQuickAdd;
     final metrics = MallTileMetrics.of(
       context,
       size: size,
       withSignal: showSignal,
+      withAction: quickAdd != null,
     );
     final radius = BorderRadius.circular(
       size == MallCardSize.compact
@@ -231,6 +242,9 @@ class MallReelTile extends StatelessWidget {
           metrics: metrics,
           signal: fact,
           showSignal: showSignal,
+          action: quickAdd == null
+              ? null
+              : SizedBox(width: metrics.actionHeight + DesignTokens.s6),
         ),
       ],
     );
@@ -290,6 +304,18 @@ class MallReelTile extends StatelessWidget {
               semanticLabel: product.isSaved
                   ? strings.unsaveItem(product.name)
                   : strings.saveItem(product.name),
+            ),
+          ),
+        // The buy control rides above the tile's tap layer so one tap buys
+        // and the rest of the tile still opens the product. Its slot on the
+        // price line is reserved above, so nothing sits under it.
+        if (quickAdd != null)
+          PositionedDirectional(
+            end: 0,
+            bottom: metrics.bottomSlotOffset,
+            child: MallQuickAdd(
+              onAdd: quickAdd,
+              semanticLabel: strings.addItem(product.name),
             ),
           ),
       ],

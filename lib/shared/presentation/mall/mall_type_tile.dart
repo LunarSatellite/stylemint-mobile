@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_quick_add.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_tile_text.dart';
@@ -24,6 +25,7 @@ class MallTypeTile extends StatelessWidget {
     this.size = MallCardSize.regular,
     this.onTap,
     this.onSaveTap,
+    this.onQuickAdd,
     this.showRating = true,
     this.signal,
     this.reserveSignal = false,
@@ -35,6 +37,10 @@ class MallTypeTile extends StatelessWidget {
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
+
+  /// Adds the product to the bag from the tile. Shows the buy control on the
+  /// price line when non-null; size the tile with `withAction: true`.
+  final Future<bool> Function()? onQuickAdd;
 
   /// Kept for parity with the other tiles; the rating rides in the spoken
   /// label here rather than crowding the composition.
@@ -51,10 +57,12 @@ class MallTypeTile extends StatelessWidget {
     final strings = MallStrings.of(context);
     final fact = signal;
     final showSignal = reserveSignal || fact != null;
+    final quickAdd = onQuickAdd;
     final metrics = MallTileMetrics.of(
       context,
       size: size,
       withSignal: showSignal,
+      withAction: quickAdd != null,
     );
     final radius = BorderRadius.circular(
       size == MallCardSize.compact
@@ -109,6 +117,7 @@ class MallTypeTile extends StatelessWidget {
                               signal: fact,
                               showSignal: showSignal,
                               hasSaveButton: saveTap != null,
+                              hasQuickAdd: quickAdd != null,
                             ),
                           ),
                         ],
@@ -136,6 +145,20 @@ class MallTypeTile extends StatelessWidget {
                         : strings.saveItem(product.name),
                   ),
                 ),
+              // Above the tap layer, on the price line, in the slot the
+              // composition reserved for it.
+              if (quickAdd != null)
+                PositionedDirectional(
+                  end: metrics.isCompact ? 8 : 10,
+                  bottom:
+                      (metrics.isCompact ? 12 : 14) +
+                      metrics.bottomSlotOffset -
+                      MallTileMetrics.bottomGap,
+                  child: MallQuickAdd(
+                    onAdd: quickAdd,
+                    semanticLabel: strings.addItem(product.name),
+                  ),
+                ),
             ],
           ),
         );
@@ -152,11 +175,13 @@ class MallTypeTile extends StatelessWidget {
     required double width,
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics.heightFor(
     context,
     width: width,
     size: size,
     withSignal: withSignal,
+    withAction: withAction,
   );
 
   /// The letter drawn behind the type: the brand's initial, else the
@@ -178,6 +203,7 @@ class _Composition extends StatelessWidget {
     required this.signal,
     required this.showSignal,
     required this.hasSaveButton,
+    required this.hasQuickAdd,
   });
 
   final MallProductVm product;
@@ -186,6 +212,10 @@ class _Composition extends StatelessWidget {
   final MallSignal? signal;
   final bool showSignal;
   final bool hasSaveButton;
+
+  /// Keeps the trailing slot on the price line clear for the buy control,
+  /// which the tile draws above its own tap layer.
+  final bool hasQuickAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +267,7 @@ class _Composition extends StatelessWidget {
         const _Hairline(),
         const SizedBox(height: DesignTokens.s8),
         SizedBox(
-          height: metrics.priceHeight,
+          height: metrics.priceRowHeight,
           child: Row(
             children: [
               Expanded(
@@ -254,6 +284,8 @@ class _Composition extends StatelessWidget {
                   child: MallScaleDownStart(child: badges.first),
                 ),
               ],
+              if (hasQuickAdd)
+                SizedBox(width: metrics.actionHeight + DesignTokens.s6),
             ],
           ),
         ),

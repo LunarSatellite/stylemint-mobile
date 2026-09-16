@@ -114,6 +114,7 @@ class SaveableMallProductTile extends ConsumerWidget {
     this.size = MallCardSize.regular,
     this.onTap,
     this.onReelTap,
+    this.onQuickAdd,
     this.variantId,
     this.showRating = true,
     this.signal,
@@ -128,6 +129,11 @@ class SaveableMallProductTile extends ConsumerWidget {
 
   /// Opens the reel on a tile that has one. Falls back to [onTap].
   final void Function(MallReelRef reel)? onReelTap;
+
+  /// Adds the product to the bag from the tile. The caller owns the cart
+  /// write; this widget only forwards it. Size the rail or grid with
+  /// `heightFor(withAction: true)` whenever it is non-null.
+  final Future<bool> Function()? onQuickAdd;
 
   /// The SKU to save; the product's default variant when null.
   final String? variantId;
@@ -151,6 +157,7 @@ class SaveableMallProductTile extends ConsumerWidget {
       size: size,
       onTap: onTap,
       onReelTap: onReelTap,
+      onQuickAdd: onQuickAdd,
       showRating: showRating,
       signal: signal,
       reserveSignal: reserveSignal,

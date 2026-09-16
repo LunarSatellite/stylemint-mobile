@@ -30,6 +30,7 @@ class MallRail<T> extends StatelessWidget {
     ),
     this.snap = true,
     this.controller,
+    this.stagger = 0,
   });
 
   final List<T> items;
@@ -51,6 +52,25 @@ class MallRail<T> extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final bool snap;
   final ScrollController? controller;
+
+  /// Drops every second item by this many pixels, so the rail reads as a
+  /// composed row rather than a filmstrip of identical boxes.
+  ///
+  /// Purely typographic rhythm: nothing is hidden, the items keep their
+  /// order and their size, and the rail simply grows by [stagger] to hold
+  /// the offset — pass the same value to [heightForStaggered] when sizing.
+  /// Zero, the default, leaves the row flush.
+  final double stagger;
+
+  /// The offset the Mall's shopping rails use. Enough to break the line,
+  /// small enough that the row still scans left to right.
+  static const double defaultStagger = 18;
+
+  /// The height a rail needs to carry [itemHeight] items with [stagger].
+  static double heightForStaggered(
+    double itemHeight, [
+    double stagger = defaultStagger,
+  ]) => itemHeight + stagger;
 
   @override
   Widget build(BuildContext context) {
@@ -81,13 +101,18 @@ class MallRail<T> extends StatelessWidget {
           physics: physics,
           itemCount: isLoading ? skeletonCount : items.length,
           separatorBuilder: (_, _) => SizedBox(width: spacing),
-          itemBuilder: (context, index) => SizedBox(
-            width: itemWidth,
-            child: Align(
-              alignment: AlignmentDirectional.topStart,
-              child: isLoading
-                  ? _skeleton(context, index)
-                  : itemBuilder(context, items[index], index),
+          itemBuilder: (context, index) => Padding(
+            padding: EdgeInsetsDirectional.only(
+              top: stagger > 0 && index.isOdd ? stagger : 0,
+            ),
+            child: SizedBox(
+              width: itemWidth,
+              child: Align(
+                alignment: AlignmentDirectional.topStart,
+                child: isLoading
+                    ? _skeleton(context, index)
+                    : itemBuilder(context, items[index], index),
+              ),
             ),
           ),
         ),

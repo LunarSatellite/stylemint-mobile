@@ -21,6 +21,7 @@ class MallTileMetrics {
     MallCardSize size, {
     required bool withSignal,
     required double signalHeight,
+    bool withAction = false,
   }) {
     final compact = size == MallCardSize.compact;
     final brandStyle = DesignTokens.eyebrow.copyWith(
@@ -68,6 +69,7 @@ class MallTileMetrics {
       nameHeight: lines(nameStyle, 2),
       priceHeight: price > compare ? price : compare,
       signalHeight: withSignal ? signalHeight : 0,
+      actionHeight: withAction ? DesignTokens.minTouchTarget : 0,
     );
   }
 
@@ -81,6 +83,7 @@ class MallTileMetrics {
     required this.nameHeight,
     required this.priceHeight,
     required this.signalHeight,
+    required this.actionHeight,
   });
 
   /// The metrics for [size] at [context]'s text scale.
@@ -88,10 +91,12 @@ class MallTileMetrics {
     BuildContext context, {
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics(
     MallMetrics.scalerOf(context),
     size,
     withSignal: withSignal,
+    withAction: withAction,
     signalHeight: withSignal ? MallSignalLine.heightFor(context) : 0,
   );
 
@@ -117,7 +122,22 @@ class MallTileMetrics {
   /// Zero when the tile reserves no signal slot.
   final double signalHeight;
 
+  /// Zero when the tile carries no quick-add. A touch target, so it is a
+  /// fixed 44dp and does not grow with the text scale.
+  final double actionHeight;
+
   bool get isCompact => size == MallCardSize.compact;
+
+  /// Height of the line the price sits on. A tile that can be bought from
+  /// gives that line a full touch target, so the buy control is reachable
+  /// without the tile guessing at its own height.
+  double get priceRowHeight =>
+      actionHeight > priceHeight ? actionHeight : priceHeight;
+
+  /// Distance from the bottom of the tile to the bottom of the price line —
+  /// where a tile anchors the buy control it draws in its own top layer.
+  double get bottomSlotOffset =>
+      bottomGap + (signalHeight > 0 ? signalGap + signalHeight : 0);
 
   /// Height of the brand / name / price (/ signal) stack under the media.
   double get textHeight =>
@@ -125,7 +145,7 @@ class MallTileMetrics {
       brandGap +
       nameHeight +
       nameGap +
-      priceHeight +
+      priceRowHeight +
       (signalHeight > 0 ? signalGap + signalHeight : 0) +
       bottomGap;
 
@@ -139,10 +159,12 @@ class MallTileMetrics {
     required double width,
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics.of(
     context,
     size: size,
     withSignal: withSignal,
+    withAction: withAction,
   ).tileHeight(width);
 }
 
@@ -155,6 +177,7 @@ class MallTileText extends StatelessWidget {
     super.key,
     this.signal,
     this.showSignal = false,
+    this.action,
   });
 
   final MallProductVm product;
@@ -166,6 +189,12 @@ class MallTileText extends StatelessWidget {
   /// Keeps the signal slot even with nothing to say, so every tile in a rail
   /// is the same height.
   final bool showSignal;
+
+  /// The trailing slot on the price line. Tiles pass a plain spacer here and
+  /// draw the live buy control in their own top layer — above the tile's tap
+  /// overlay — so it is its own semantics node and its own tap target. Pass
+  /// `withAction: true` to the metrics whenever this is non-null.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -201,12 +230,19 @@ class MallTileText extends StatelessWidget {
         ),
         const SizedBox(height: MallTileMetrics.nameGap),
         SizedBox(
-          height: metrics.priceHeight,
-          child: MallTilePriceRow(
-            price: product.price,
-            compareAtPrice: compareAt,
-            priceStyle: metrics.priceStyle,
-            compareStyle: metrics.compareStyle,
+          height: metrics.priceRowHeight,
+          child: Row(
+            children: [
+              Expanded(
+                child: MallTilePriceRow(
+                  price: product.price,
+                  compareAtPrice: compareAt,
+                  priceStyle: metrics.priceStyle,
+                  compareStyle: metrics.compareStyle,
+                ),
+              ),
+              ?action,
+            ],
           ),
         ),
         if (showSignal) ...[

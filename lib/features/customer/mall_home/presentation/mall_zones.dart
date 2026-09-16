@@ -163,6 +163,205 @@ MallSignal? mallProductSignal(
   return null;
 }
 
+// ── The spotlight ──────────────────────────────────────────────────────────
+
+/// Why one product was given the whole block.
+///
+/// Each value is a fact checked against the block's own items, which is why
+/// the copy says "here" — the claim is about this block, never the catalogue.
+enum MallSpotlightReason {
+  /// Largest genuine discount among the items.
+  biggestSaving,
+
+  /// Soonest real sale deadline among the items.
+  endingSoonest,
+
+  /// Most-reviewed item that also carries a rating.
+  bestReviewed,
+
+  /// Flagged new by the server.
+  justArrived,
+}
+
+/// The product a block leads with, and why.
+@immutable
+class MallSpotlightPick {
+  const MallSpotlightPick({required this.product, this.reason});
+
+  final HomeProduct product;
+
+  /// Null when the API gave this block nothing to single anybody out for. The
+  /// block still runs — a name, a price and a way to buy is a complete idea —
+  /// it just makes no claim it cannot support.
+  final MallSpotlightReason? reason;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MallSpotlightPick &&
+      other.product == product &&
+      other.reason == reason;
+
+  @override
+  int get hashCode => Object.hash(product, reason);
+}
+
+/// The item [items] leads with, or null when the block is empty.
+///
+/// Ordered by what a shopper acts on: money off, then a deadline, then what
+/// other people thought, then newness. Falls through to the first item with
+/// no reason attached rather than skipping the block, because a thin
+/// catalogue still deserves a composed page.
+MallSpotlightPick? spotlightPickOf(List<HomeProduct> items) {
+  if (items.isEmpty) return null;
+
+  HomeProduct? best;
+  var bestPercent = 0;
+  for (final product in items) {
+    final percent = discountPercentOf(product);
+    if (percent != null && percent > bestPercent) {
+      best = product;
+      bestPercent = percent;
+    }
+  }
+  if (best != null) {
+    return MallSpotlightPick(
+      product: best,
+      reason: MallSpotlightReason.biggestSaving,
+    );
+  }
+
+  HomeProduct? soonest;
+  for (final product in items) {
+    final ends = product.saleEndsUtc;
+    if (ends == null) continue;
+    if (soonest == null || ends.isBefore(soonest.saleEndsUtc!)) {
+      soonest = product;
+    }
+  }
+  if (soonest != null) {
+    return MallSpotlightPick(
+      product: soonest,
+      reason: MallSpotlightReason.endingSoonest,
+    );
+  }
+
+  HomeProduct? reviewed;
+  for (final product in items) {
+    if (product.rating == null || product.reviewCount <= 0) continue;
+    if (reviewed == null || product.reviewCount > reviewed.reviewCount) {
+      reviewed = product;
+    }
+  }
+  if (reviewed != null) {
+    return MallSpotlightPick(
+      product: reviewed,
+      reason: MallSpotlightReason.bestReviewed,
+    );
+  }
+
+  final arrival = items.where((product) => product.isNew).firstOrNull;
+  if (arrival != null) {
+    return MallSpotlightPick(
+      product: arrival,
+      reason: MallSpotlightReason.justArrived,
+    );
+  }
+
+  return MallSpotlightPick(product: items.first);
+}
+
+/// The eyebrow for [reason], or null when the pick makes no claim.
+String? mallSpotlightEyebrow(
+  MallSpotlightReason? reason,
+  MallStrings strings,
+) => switch (reason) {
+  MallSpotlightReason.biggestSaving => strings.biggestSaving,
+  MallSpotlightReason.endingSoonest => strings.endingSoonest,
+  MallSpotlightReason.bestReviewed => strings.bestReviewed,
+  MallSpotlightReason.justArrived => strings.justArrived,
+  null => null,
+};
+
+/// Which section on the page leads with the spotlight, or null for none.
+///
+/// One per page: the block is a statement, and a page of statements is a page
+/// of noise. The drop plate is skipped — it is already the loud one, and two
+/// oversized discount numerals in a row read as a mistake rather than a
+/// rhythm.
+int? spotlightSectionIndex(List<HomeSection> sections) {
+  for (var index = 0; index < sections.length; index++) {
+    final section = sections[index];
+    if (section is! HomeProductsSection) continue;
+    if (isDropBlock(section.items)) continue;
+    if (spotlightPickOf(section.items) == null) continue;
+    return index;
+  }
+  return null;
+}
+
+// ── The directory band ─────────────────────────────────────────────────────
+
+/// The words the signage band scrolls: the brands, edits and categories the
+/// page is actually carrying, interleaved so the band reads as a directory
+/// rather than as three lists stitched together.
+///
+/// Names only — no counts, no claims. Every string is one the server sent,
+/// so the band gets richer as the catalogue does and never overstates it.
+List<String> mallTickerWords(List<HomeSection> sections, {int max = 16}) {
+  final brands = <String>[];
+  final edits = <String>[];
+  final categories = <String>[];
+  for (final section in sections) {
+    switch (section) {
+      case HomeBrandsSection(:final items):
+        brands.addAll(items.map((item) => item.name));
+      case HomeCollectionsSection(:final items):
+        edits.addAll(items.map((item) => item.title));
+      case HomeCategoriesSection(:final items):
+        categories.addAll(items.map((item) => item.name));
+      case HomeCampaignsSection() ||
+          HomeProductsSection() ||
+          HomeReelsSection() ||
+          HomeCreatorsSection() ||
+          HomeTrustSection():
+        break;
+    }
+  }
+
+  final lanes = [brands, edits, categories];
+  final longest = lanes.fold(0, (a, lane) => lane.length > a ? lane.length : a);
+  final words = <String>[];
+  final seen = <String>{};
+  for (var index = 0; index < longest && words.length < max; index++) {
+    for (final lane in lanes) {
+      if (index >= lane.length) continue;
+      final word = lane[index].trim();
+      if (word.isEmpty || !seen.add(word.toLowerCase())) continue;
+      words.add(word);
+      if (words.length == max) break;
+    }
+  }
+  return words;
+}
+
+/// Fewer than this and a marquee reads as a glitch rather than a directory.
+const int mallTickerMinimumWords = 3;
+
+/// The block the directory band is hung under: the first one after the
+/// stage, so the page's one self-moving element lands where it is seen and
+/// the stage hands over to the shopping rather than simply stopping.
+int? tickerSectionIndex(List<HomeSection> sections) {
+  for (var index = 0; index < sections.length; index++) {
+    final section = sections[index];
+    if (section is HomeCampaignsSection || section is HomeTrustSection) {
+      continue;
+    }
+    // Nothing to separate if it is the last thing on the page.
+    return index == sections.length - 1 ? null : index;
+  }
+  return null;
+}
+
 /// Whether any card in [items] has something to say, and so whether the rail
 /// should reserve the signal slot for all of them.
 bool mallRailHasSignals(

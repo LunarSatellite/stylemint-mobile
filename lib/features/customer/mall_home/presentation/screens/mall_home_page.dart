@@ -213,6 +213,13 @@ class _MallHomePageState extends ConsumerState<MallHomePage> {
           );
     final markers = _sectionMarkers(sections);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // Both are decided for the page as a whole, from the page's own data: one
+    // spotlight, one directory band, and both only where they are earned.
+    final spotlightIndex = spotlightSectionIndex(sections);
+    final tickerWords = mallTickerWords(sections);
+    final tickerIndex = tickerWords.length >= mallTickerMinimumWords
+        ? tickerSectionIndex(sections)
+        : null;
 
     return MallScrollLink(
       offset: _offset,
@@ -245,6 +252,7 @@ class _MallHomePageState extends ConsumerState<MallHomePage> {
                   index: markers[index],
                   topInset: topInset,
                   overline: isHero ? greeting : null,
+                  showSpotlight: index == spotlightIndex,
                 );
                 return Padding(
                   padding: EdgeInsetsDirectional.only(
@@ -254,7 +262,20 @@ class _MallHomePageState extends ConsumerState<MallHomePage> {
                   ),
                   // The hero carries its own motion; everything else arrives
                   // once, as it scrolls into view.
-                  child: isHero ? block : MallEnter(child: block),
+                  child: index == tickerIndex
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            MallEnter(child: block),
+                            const SizedBox(height: DesignTokens.s40),
+                            MallTicker(
+                              words: tickerWords,
+                              semanticLabel: MallStrings.of(context).inTheMall,
+                            ),
+                          ],
+                        )
+                      : (isHero ? block : MallEnter(child: block)),
                 );
               },
             ),

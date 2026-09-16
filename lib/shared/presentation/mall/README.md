@@ -17,8 +17,11 @@ localise, wrap the page in a `MallStringsScope`.
 | Component | Purpose | Input |
 |---|---|---|
 | `MallSectionHeader` | Section title in the display face. Optional eyebrow, subtitle and "See all" (44dp target, spoken as "See all, {title}"). | `title`, `eyebrow?`, `subtitle?`, `onSeeAll?` |
-| `MallRail<T>` | Horizontal, lazily built rail that snaps item by item. Shows skeletons while loading and an empty-state slot when empty. | `items`, `itemBuilder`, `itemWidth`, `height`, `semanticLabel`, `isLoading`, `skeletonBuilder?`, `emptyState?` |
-| `MallProductTile` | **The Mall's product tile.** Picks `MallReelTile` when the product has a reel and `MallTypeTile` when it does not. Never builds a product photo — the Mall is video-first and photos belong to the product details page (owner directive, 2026-09-16). | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?` |
+| `MallRail<T>` | Horizontal, lazily built rail that snaps item by item. Shows skeletons while loading and an empty-state slot when empty. `stagger` drops every second item so a shopping rail reads as a composed row, not a filmstrip — size it with `heightForStaggered`. | `items`, `itemBuilder`, `itemWidth`, `height`, `semanticLabel`, `isLoading`, `skeletonBuilder?`, `emptyState?`, `stagger` |
+| `MallProductTile` | **The Mall's product tile.** Picks `MallReelTile` when the product has a reel and `MallTypeTile` when it does not. Never builds a product photo — the Mall is video-first and photos belong to the product details page (owner directive, 2026-09-16). Pass `onQuickAdd` to put the buy control on the price line, and size the rail with `heightFor(withAction: true)`. | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?`, `onQuickAdd?` |
+| `MallQuickAdd` | **The buy affordance.** One tap adds to the bag without leaving the page: idle → in-flight → tick, then it resets itself. Owns its own state, ignores a second tap in flight, and takes `Future<bool> Function()` so the caller keeps the cart write and the message. A 44dp target around a 34dp disc; pass `label` for the pill used on the spotlight. | `onAdd`, `semanticLabel`, `label?` |
+| `MallSpotlight` | **The Mall's counter.** One product given a whole block: the name at hero size, the price as a display numeral, the saving as a green slab, a live countdown, and both actions. The media panel runs past the trailing edge and drifts; below 360 dp the panel and copy stack. A product with no saving, rating or deadline simply shows its name and price, large. | `MallProductVm`, `eyebrow?`, `signal?`, `endsUtc?`, `onTap?`, `onReelTap?`, `onSaveTap?`, `onQuickAdd?` |
+| `MallTicker` | **The signage band.** A slow, continuous line of the page's own brands, edits and categories, set in tracked capitals edge to edge. The one element that moves without being scrolled. Names only, never counts. Holds still under reduced motion and stops with `TickerMode`. | `words`, `semanticLabel` |
 | `MallReelTile` | 4:5 reel poster with the play affordance, the reel's length, its hook and — whenever flagged — the **AI-generated** disclosure, which wraps and is never truncated. Brand, name and price sit underneath. Tapping opens the reel. Holds the screen's single play slot when it is the most visible reel, and its play mark then fills with brand green. | `MallProductVm`, `MallReelRef`, `onTap?`, `onSaveTap?` |
 | `MallTypeTile` | The no-photo tile for the majority of the catalogue: a tonal ground picked deterministically from the product id, the brand as a tracked eyebrow, the name set large in Instrument Serif, a hairline and the price. Same footprint as `MallReelTile`, so a row mixes the two. | `MallProductVm`, `onTap?`, `onSaveTap?` |
 | `MallReelPlaySlot` / `MallReelPlaySlotController` | Grants one tile on screen the single play slot — the most visible one, over half in view. Never grants one under `MediaQuery.disableAnimations`. Nothing plays inline in the Mall today (see below); the slot decides which tile is "the one on screen". | `id`, `builder(context, holdsSlot)` |
@@ -92,10 +95,34 @@ section gets is decided from the section's own data in
 
 | Zone | Blocks | Reads as |
 |---|---|---|
-| **Cinematic** | `MallCinematicHero`, the reel marquee | Full-bleed, moving, one thing at a time |
-| **Editorial** | `MallEditorialSpread`, brand plates | Asymmetric, image-led, generous whitespace |
-| **Dense discovery** | Signal rails of `MallProductCard`, creator rails | Compact, scannable, every card carries a live fact |
+| **Cinematic** | `MallCinematicHero`, the reel marquee, `MallTicker` | Full-bleed, moving, one thing at a time |
+| **Editorial** | `MallEditorialSpread`, brand plates | Asymmetric, image-led, generous whitespace, rails flush |
+| **Dense discovery** | `MallSpotlight`, staggered signal rails of `MallProductTile`, creator rails | Compact, scannable, buyable; every tile carries a live fact and a price you can act on |
 | **Bold retail** | `MallDealBand`, `MallCategoryMosaic` | Colour-blocked, hard shapes, punchy CTAs |
+
+### Page composition
+
+Three things are decided once for the page, from the page's own data, in
+`mall_zones.dart`:
+
+- `spotlightSectionIndex` — the **one** block that leads with a `MallSpotlight`.
+  The first discovery products block that yields a pick; the drop plate is
+  skipped because it is already the loud one.
+- `spotlightPickOf` — which product that block leads with, and why: biggest real
+  saving, then soonest real deadline, then most reviewed with a rating behind
+  it, then flagged new. A block with none of those still leads with its first
+  item and makes **no** claim about it.
+- `tickerSectionIndex` / `mallTickerWords` — where the signage band hangs, and
+  the real names it carries.
+
+### Buying from the Mall
+
+Every product tile on the home page carries `MallQuickAdd`, and so does the
+spotlight. The control is presentational: the cart write lives in
+`features/customer/mall_home/presentation/mall_cart_actions.dart`, which is the
+same `CartNotifier.addItem` path the product details page and Buy It Again use
+— sign-in gate, one unit, a fresh idempotency key per attempt, the notifier's
+own return value. There is no second cart path.
 
 ## Video first, photos on the details page
 
