@@ -58,9 +58,16 @@ class VendorOrderDetailDto {
   static DateTime? _parseDate(dynamic v) =>
       v is String ? DateTime.tryParse(v) : null;
 
-  /// "{line1}, {city}, {state} {zip}" — skips empty parts.
+  /// The customer's own directions when they exist, else the legacy postal
+  /// parts joined — skipping every empty one, so a null city never becomes
+  /// "null" or a stray comma. Location-captured addresses carry no postal
+  /// text at all, so the note (or the point) is all there is to show.
   static String? _formatAddress(Map<String, dynamic>? a) {
     if (a == null) return null;
+    final note = ((a['locationNote'] as String?) ?? '').trim();
+    if (note.isNotEmpty) return note;
+    final lat = (a['latitude'] as num?)?.toDouble();
+    final lng = (a['longitude'] as num?)?.toDouble();
     final parts = <String>[
       (a['addressLine1'] as String?) ?? '',
       (a['city'] as String?) ?? '',
@@ -68,6 +75,11 @@ class VendorOrderDetailDto {
           .where((s) => s.isNotEmpty)
           .join(' '),
     ].where((s) => s.isNotEmpty).toList();
-    return parts.isEmpty ? null : parts.join(', ');
+    if (parts.isNotEmpty) return parts.join(', ');
+    if (lat != null && lng != null) {
+      return '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}';
+    }
+    final link = ((a['mapsLink'] as String?) ?? '').trim();
+    return link.isEmpty ? null : link;
   }
 }

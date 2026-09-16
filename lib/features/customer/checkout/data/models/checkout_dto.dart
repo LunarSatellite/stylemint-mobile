@@ -7,10 +7,14 @@ part 'checkout_dto.freezed.dart';
 part 'checkout_dto.g.dart';
 
 /// Maps `ShippingAddressDto` from `StyleMint.Modules.CartCheckout` (the
-/// `/v1/addresses` endpoints) — field names are the backend's actual wire
-/// shape (`addressLine1`/`state`/`zipCode`/`country`), not the old
-/// `line1`/`stateProvince`/`postalCode`/`countryCode` guess, which silently
-/// failed to parse and made every saved address invisible to the app.
+/// `/v1/addresses` endpoints).
+///
+/// Since the location-capture contract the response carries `locationNote`
+/// and `mapsLink`, and **`addressLine1`, `city`, `state` and `zipCode` are
+/// nullable** — a location-captured address has none of them. They are
+/// declared `String?` deliberately: `@Default('')` on a non-nullable field
+/// only fills a *missing* key, so an explicit `"city": null` would throw in
+/// `fromJson` and make every saved address invisible to checkout again.
 @freezed
 abstract class ShippingAddressDto with _$ShippingAddressDto {
   const factory ShippingAddressDto({
@@ -18,12 +22,18 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
     @Default('Home') String label,
     @Default('') String receiverName,
     @Default('') String receiverPhone,
-    required String addressLine1,
-    String? landmark,
     @Default('NP') String country,
-    @Default('') String state,
-    required String city,
-    @Default('') String zipCode,
+    @Default('') String locationNote,
+    String? mapsLink,
+    double? latitude,
+    double? longitude,
+    double? locationAccuracyMetres,
+    int? locationCapturedFrom,
+    String? addressLine1,
+    String? landmark,
+    String? state,
+    String? city,
+    String? zipCode,
     @Default(false) bool isDefault,
     @Default('') String rowVersion,
   }) = _ShippingAddressDto;
@@ -36,13 +46,17 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
   ShippingAddress toDomain() => ShippingAddress(
         id: id,
         label: label,
+        countryCode: country,
+        isDefault: isDefault,
+        locationNote: locationNote,
+        mapsLink: mapsLink,
+        latitude: latitude,
+        longitude: longitude,
         line1: addressLine1,
         line2: landmark,
         city: city,
         stateProvince: state,
         postalCode: zipCode,
-        countryCode: country,
-        isDefault: isDefault,
         rowVersion: rowVersion,
       );
 }

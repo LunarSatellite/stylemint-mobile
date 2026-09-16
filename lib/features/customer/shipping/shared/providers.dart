@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/datasources/shipping_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/repositories/shipping_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/location_capture_service.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/repositories/shipping_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/presentation/notifiers/shipping_notifier.dart';
 
@@ -12,6 +13,12 @@ final shippingRemoteDataSourceProvider = Provider<ShippingRemoteDataSource>(
   (ref) => ShippingRemoteDataSource(
     apiClient: ref.watch(apiClientProvider),
   ),
+);
+
+/// The GPS wrapper behind "Use my current location". Overridden in tests to
+/// drive the denied / denied-forever / services-off / timeout paths.
+final locationCaptureServiceProvider = Provider<LocationCaptureService>(
+  (ref) => const GeolocatorLocationCaptureService(),
 );
 
 final shippingRepositoryProvider = Provider<ShippingRepository>(

@@ -40,41 +40,6 @@ class CheckoutRemoteDataSource {
         .toList(growable: false);
   }
 
-  Future<ShippingAddressDto> addAddress({
-    required String label,
-    required String receiverName,
-    required String receiverPhone,
-    required String addressLine1,
-    String? landmark,
-    required String country,
-    required String state,
-    required String city,
-    required String zipCode,
-    bool makeDefault = false,
-    required String idempotencyKey,
-  }) async {
-    final response = await apiClient.post(
-      '/v1/addresses',
-      data: {
-        'label': label,
-        'receiverName': receiverName,
-        'receiverPhone': receiverPhone,
-        'addressLine1': addressLine1,
-        'landmark': landmark,
-        'country': country,
-        'state': state,
-        'city': city,
-        'zipCode': zipCode,
-        'makeDefault': makeDefault,
-      },
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
-    );
-    return ShippingAddressDto.fromJson(response as Map<String, dynamic>);
-  }
-
   Future<List<PaymentMethodDto>> getPaymentMethods() async {
     final response = await apiClient.get(
       '/v1/payments/saved-methods',

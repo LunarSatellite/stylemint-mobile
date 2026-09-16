@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Maps SDK key for the "adjust the pin" map on the add-address screen.
+
+      Deliberately EMPTY in source control — no key is committed. Without a
+      real key the Maps SDK fails authorisation and draws grey tiles; the
+      marker and the drag-to-correct still work, and the captured coordinates
+      are shown above the map in text, so the flow stays usable. Supply a key
+      (Maps SDK for Android, restricted to this app's package + signing
+      certificate) before shipping the map to customers.
+    -->
+    <string name="google_maps_api_key" translatable="false"></string>
+</resources>

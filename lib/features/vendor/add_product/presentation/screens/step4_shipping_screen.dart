@@ -173,8 +173,7 @@ class _Step4ShippingScreenState extends ConsumerState<Step4ShippingScreen> {
       shipsFromAddressId: selectedAddress?.id,
       shipsFromLabel: selectedAddress == null
           ? null
-          : '${selectedAddress.label} — '
-              '${selectedAddress.addressLine1}, ${selectedAddress.city}',
+          : '${selectedAddress.label} — ${selectedAddress.summaryLine}',
       processingTimeDays: _processingTimeDays,
       shippingOptions: options,
     );
@@ -602,7 +601,7 @@ class _AddressDropdownField extends StatelessWidget {
                   (address) => DropdownMenuItem(
                     value: address.id,
                     child: Text(
-                      '${address.label} — ${address.addressLine1}, ${address.city}',
+                      '${address.label} — ${address.summaryLine}',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

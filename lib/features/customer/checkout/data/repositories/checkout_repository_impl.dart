@@ -80,55 +80,6 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, ShippingAddress>> addAddress({
-    required String label,
-    required String receiverName,
-    required String receiverPhone,
-    required String addressLine1,
-    String? landmark,
-    required String country,
-    required String state,
-    required String city,
-    required String zipCode,
-    bool makeDefault = false,
-    required String idempotencyKey,
-  }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final dto = await remoteDataSource.addAddress(
-          label: label,
-          receiverName: receiverName,
-          receiverPhone: receiverPhone,
-          addressLine1: addressLine1,
-          landmark: landmark,
-          country: country,
-          state: state,
-          city: city,
-          zipCode: zipCode,
-          makeDefault: makeDefault,
-          idempotencyKey: idempotencyKey,
-        );
-        return right(dto.toDomain());
-      } catch (e) {
-        if (e is DioException) {
-          if (e.response?.statusCode == 400) {
-            final data = e.response?.data;
-            final code = data is Map ? data['errorCode'] as String? : null;
-            if (code != null) return left(NetworkExceptions.validation(code: code));
-          }
-          return left(NetworkExceptions.server(e.message.toString()));
-        } else if (e is NetworkExceptions) {
-          return left(e);
-        } else {
-          return left(NetworkExceptions.unexpectedError());
-        }
-      }
-    } else {
-      return left(NetworkExceptions.noInternetConnection());
-    }
-  }
-
-  @override
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async {
     if (await networkInfo.isConnected) {
       try {

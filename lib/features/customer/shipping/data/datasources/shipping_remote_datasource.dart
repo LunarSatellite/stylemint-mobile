@@ -19,12 +19,12 @@ class ShippingRemoteDataSource {
   }
 
   Future<ShippingAddressDto> addAddress(
-    ShippingAddressDto address,
+    Map<String, dynamic> body,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
       '/v1/addresses',
-      data: address.toJson(),
+      data: body,
       options: _idempotent(idempotencyKey),
     );
     return ShippingAddressDto.fromJson(response as Map<String, dynamic>);
@@ -32,15 +32,28 @@ class ShippingRemoteDataSource {
 
   Future<ShippingAddressDto> updateAddress(
     String id,
-    ShippingAddressDto address,
+    Map<String, dynamic> body,
     String idempotencyKey,
   ) async {
     final response = await apiClient.patch(
       '/v1/addresses/$id',
-      data: address.toJson(),
+      data: body,
       options: _idempotent(idempotencyKey),
     );
     return ShippingAddressDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Turns a pasted Google/Apple Maps link into a point.
+  ///
+  /// Rate-limited to 20/min server-side. An unresolvable or non-allowlisted
+  /// link comes back as a 400 whose field is `mapsLink` — callers surface the
+  /// server's own message on that field rather than a raw error.
+  Future<ResolvedMapsLinkDto> resolveLink(String url) async {
+    final response = await apiClient.post(
+      '/v1/addresses/resolve-link',
+      data: {'url': url},
+    );
+    return ResolvedMapsLinkDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<void> deleteAddress(String id) async {

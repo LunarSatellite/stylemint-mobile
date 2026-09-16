@@ -58,17 +58,26 @@ abstract class SubOrderDto with _$SubOrderDto {
 }
 
 /// Maps the `shipTo` `ShippingAddressSnapshot`.
+///
+/// The postal fields are **nullable**: addresses captured by location have no
+/// street, city, state or postal code at all. They are `String?` rather than
+/// `@Default('')` because a default only fills a *missing* key — an explicit
+/// `"city": null` would throw and break the whole order detail screen.
 @freezed
 abstract class ShippingAddressSnapshotDto with _$ShippingAddressSnapshotDto {
   const factory ShippingAddressSnapshotDto({
     @Default('') String receiverName,
     @Default('') String receiverPhone,
-    @Default('') String addressLine1,
+    @Default('') String locationNote,
+    String? mapsLink,
+    double? latitude,
+    double? longitude,
+    String? addressLine1,
     String? landmark,
-    @Default('') String city,
-    @Default('') String state,
-    @Default('') String zipCode,
-    @Default('') String country,
+    String? city,
+    String? state,
+    String? zipCode,
+    String? country,
   }) = _ShippingAddressSnapshotDto;
 
   const ShippingAddressSnapshotDto._();
@@ -76,15 +85,30 @@ abstract class ShippingAddressSnapshotDto with _$ShippingAddressSnapshotDto {
   factory ShippingAddressSnapshotDto.fromJson(Map<String, dynamic> json) =>
       _$ShippingAddressSnapshotDtoFromJson(json);
 
+  /// One readable line for the order's ship-to address. Prefers the
+  /// customer's own directions, falls back to whatever postal text the
+  /// snapshot carries, then to the raw point. Every null/blank part is
+  /// dropped, so a null city never renders as "null" or an empty line.
   String toDisplayString() {
+    final note = locationNote.trim();
+    if (note.isNotEmpty) return note;
+
     final parts = [
       addressLine1,
-      if (landmark != null) landmark!,
+      landmark,
       city,
       state,
       zipCode,
-    ].where((p) => p.isNotEmpty);
-    return parts.join(', ');
+    ].map((p) => p?.trim() ?? '').where((p) => p.isNotEmpty);
+    if (parts.isNotEmpty) return parts.join(', ');
+
+    if (latitude != null && longitude != null) {
+      return '${latitude!.toStringAsFixed(5)}, '
+          '${longitude!.toStringAsFixed(5)}';
+    }
+    final link = mapsLink?.trim() ?? '';
+    if (link.isNotEmpty) return link;
+    return 'Location saved';
   }
 }
 

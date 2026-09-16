@@ -87,6 +87,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Shipping addresses are a map point plus the customer's own directions,
+	     not a typed street address. Location is read only when they tap "Use
+	     my current location" while adding or editing an address — never in the
+	     background. Pasting a Maps link is a full alternative if they decline. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>StyleMint uses your location to pin where your order should be delivered, so you don't have to type out an address. We only check when you tap "Use my current location".</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>viber</string>

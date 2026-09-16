@@ -101,42 +101,6 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     );
   }
 
-  /// Returns null on success, or the failure to show to the user.
-  Future<NetworkExceptions?> addAddress({
-    required String label,
-    required String receiverName,
-    required String receiverPhone,
-    required String addressLine1,
-    String? landmark,
-    required String country,
-    required String state,
-    required String city,
-    required String zipCode,
-    bool makeDefault = false,
-    required String idempotencyKey,
-  }) async {
-    final either = await _repository.addAddress(
-      label: label,
-      receiverName: receiverName,
-      receiverPhone: receiverPhone,
-      addressLine1: addressLine1,
-      landmark: landmark,
-      country: country,
-      state: state,
-      city: city,
-      zipCode: zipCode,
-      makeDefault: makeDefault,
-      idempotencyKey: idempotencyKey,
-    );
-    return either.fold(
-      (f) => f,
-      (_) {
-        unawaited(load());
-        return null;
-      },
-    );
-  }
-
   Future<void> placeOrder({
     required String addressId,
     required PaymentMethodType paymentMethod,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -116,8 +118,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         loadInProgress: (p) => _loader(placeOrderState: p),
         loadSuccess: (summary, placeOrderState) {
           final effectiveAddress = _selectedAddress ?? summary.shippingAddress;
-          final hasAddress =
-              effectiveAddress.line1.trim().isNotEmpty;
+          // Keyed off the id: a location-captured address has no `line1`
+          // at all, so the old blank-line1 test hid every new address.
+          final hasAddress = !effectiveAddress.isEmpty;
           final isProcessing = placeOrderState.maybeWhen(
             processing: () => true,
             orElse: () => false,
@@ -134,7 +137,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     _ShippingAddressCard(
                       address: effectiveAddress,
                       hasAddress: hasAddress,
-                      onAddAddress: () => _showAddAddressSheet(context),
+                      onAddAddress: () => unawaited(_openAddAddress(context)),
                       onChangeAddress: () =>
                           _showPickAddressSheet(context, summary),
                     ),
@@ -165,7 +168,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               _BottomBar(
                 hasAddress: hasAddress,
                 isProcessing: isProcessing,
-                onAddAddress: () => _showAddAddressSheet(context),
+                onAddAddress: () => unawaited(_openAddAddress(context)),
                 onPlaceOrder: () {
                   ref.read(checkoutNotifierProvider.notifier).placeOrder(
                     addressId: effectiveAddress.id,
@@ -230,37 +233,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         },
         onAddNew: () {
           Navigator.pop(context);
-          _showAddAddressSheet(context);
+          unawaited(_openAddAddress(context));
         },
       ),
     );
   }
 
-  // ── ADD ADDRESS SHEET ─────────────────────────────────────────────────────
-  void _showAddAddressSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: DesignTokens.bgAppBody,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _AddAddressSheet(
-        onSubmit: (fields) => ref.read(checkoutNotifierProvider.notifier).addAddress(
-              label: fields.label,
-              receiverName: fields.receiverName,
-              receiverPhone: fields.receiverPhone,
-              addressLine1: fields.addressLine1,
-              landmark: fields.landmark,
-              country: fields.countryCode,
-              state: fields.state,
-              city: fields.city,
-              zipCode: fields.zipCode,
-              idempotencyKey: _uuid.v4(),
-            ),
-        onSaved: () => Navigator.pop(context),
-      ),
-    );
+  // ── ADD ADDRESS ───────────────────────────────────────────────────────────
+  /// Checkout no longer carries its own typed address form — the customer
+  /// captures a location on the shared add-address screen (GPS, Maps link or
+  /// pin) and checkout just reloads when they come back.
+  Future<void> _openAddAddress(BuildContext context) async {
+    final saved = await context.push<bool>(RouteNames.shippingAddEdit);
+    if (!mounted) return;
+    if (saved == true) {
+      await ref.read(checkoutNotifierProvider.notifier).load();
+    }
   }
 
   Widget _loader({
@@ -311,13 +299,9 @@ class _ShippingAddressCard extends StatelessWidget {
       return _NoAddressCard(onAdd: onAddAddress);
     }
 
-    final addressLine = StringBuffer()..write(address.line1);
-    if (address.line2 != null && address.line2!.isNotEmpty) {
-      addressLine.write(', ${address.line2}');
-    }
-    addressLine.write(', ${address.city}');
-    if (address.stateProvince != null) addressLine.write(', ${address.stateProvince}');
-    if (address.postalCode != null) addressLine.write(' ${address.postalCode}');
+    // Render the customer's own directions (or the point) — never a city
+    // that may be null.
+    final addressLine = StringBuffer()..write(address.summaryLine);
 
     return GestureDetector(
       onTap: onChangeAddress,
@@ -1238,12 +1222,7 @@ class _AddressPickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final line = StringBuffer()..write(address.line1);
-    if (address.line2 != null && address.line2!.isNotEmpty) {
-      line.write(', ${address.line2}');
-    }
-    line.write(', ${address.city}');
-    if (address.stateProvince != null) line.write(', ${address.stateProvince}');
+    final line = StringBuffer()..write(address.summaryLine);
 
     return GestureDetector(
       onTap: onTap,
@@ -1311,306 +1290,6 @@ class _AddressPickerRow extends StatelessWidget {
     );
   }
 }
-
-// ─── ADD SHIPPING ADDRESS SHEET ───────────────────────────────────────────────
-/// Collected form values, mapped to backend field names/codes before submit.
-class _AddressFormFields {
-  const _AddressFormFields({
-    required this.label,
-    required this.receiverName,
-    required this.receiverPhone,
-    required this.addressLine1,
-    this.landmark,
-    required this.countryCode,
-    required this.state,
-    required this.city,
-    required this.zipCode,
-  });
-
-  final String label;
-  final String receiverName;
-  final String receiverPhone;
-  final String addressLine1;
-  final String? landmark;
-  final String countryCode;
-  final String state;
-  final String city;
-  final String zipCode;
-}
-
-class _AddAddressSheet extends StatefulWidget {
-  const _AddAddressSheet({required this.onSubmit, required this.onSaved});
-
-  /// Submits the form; returns null on success or a failure to display.
-  final Future<NetworkExceptions?> Function(_AddressFormFields fields)
-      onSubmit;
-  final VoidCallback onSaved;
-
-  @override
-  State<_AddAddressSheet> createState() => _AddAddressSheetState();
-}
-
-class _AddAddressSheetState extends State<_AddAddressSheet> {
-  final _line1Ctrl = TextEditingController();
-  final _landmarkCtrl = TextEditingController();
-  final _zipCtrl = TextEditingController();
-  final _cityCtrl = TextEditingController();
-  final _labelCtrl = TextEditingController();
-  final _receiverNameCtrl = TextEditingController();
-  final _receiverPhoneCtrl = TextEditingController();
-  String? _selectedCountry;
-  String? _selectedState;
-  bool _submitting = false;
-  String? _errorText;
-
-  static const _fill = Color(0xFF2C2C2C);
-
-  static const _countryCodes = {
-    'Nepal': 'NP',
-    'India': 'IN',
-    'USA': 'US',
-    'UK': 'GB',
-  };
-
-  InputDecoration _dec(String hint) => InputDecoration(
-    filled: true,
-    fillColor: _fill,
-    hintText: hint,
-    hintStyle:
-    const TextStyle(color: Color(0xFF666666), fontSize: 14),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide.none,
-    ),
-    contentPadding:
-    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-  );
-
-  @override
-  void dispose() {
-    _line1Ctrl.dispose();
-    _landmarkCtrl.dispose();
-    _zipCtrl.dispose();
-    _cityCtrl.dispose();
-    _labelCtrl.dispose();
-    _receiverNameCtrl.dispose();
-    _receiverPhoneCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_line1Ctrl.text.trim().isEmpty ||
-        _cityCtrl.text.trim().isEmpty ||
-        _receiverNameCtrl.text.trim().isEmpty ||
-        _receiverPhoneCtrl.text.trim().isEmpty ||
-        _selectedCountry == null ||
-        _selectedState == null) {
-      setState(() => _errorText = 'Please fill in all required fields.');
-      return;
-    }
-
-    setState(() {
-      _submitting = true;
-      _errorText = null;
-    });
-
-    final failure = await widget.onSubmit(_AddressFormFields(
-      label: _labelCtrl.text.trim().isEmpty ? 'Home' : _labelCtrl.text.trim(),
-      receiverName: _receiverNameCtrl.text.trim(),
-      receiverPhone: _receiverPhoneCtrl.text.trim(),
-      addressLine1: _line1Ctrl.text.trim(),
-      landmark: _landmarkCtrl.text.trim().isEmpty ? null : _landmarkCtrl.text.trim(),
-      countryCode: _countryCodes[_selectedCountry] ?? 'NP',
-      state: _selectedState!,
-      city: _cityCtrl.text.trim(),
-      zipCode: _zipCtrl.text.trim(),
-    ));
-
-    if (!mounted) return;
-
-    if (failure == null) {
-      widget.onSaved();
-    } else {
-      setState(() {
-        _submitting = false;
-        _errorText = 'Failed to save address. Please try again.';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(color: DesignTokens.textWhite, fontSize: 14);
-    return Padding(
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Add Shipping Address',
-                    style: DesignTokens.sectionInnerTitle),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close,
-                      color: DesignTokens.textWhite, size: 22),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            TextField(
-                controller: _receiverNameCtrl,
-                style: style,
-                decoration: _dec('Receiver Name')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _receiverPhoneCtrl,
-                style: style,
-                keyboardType: TextInputType.phone,
-                decoration: _dec('Receiver Phone')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _line1Ctrl,
-                style: style,
-                decoration: _dec('Address Line 1')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _landmarkCtrl,
-                style: style,
-                decoration: _dec('Nearest Landmark (Optional)')),
-            const SizedBox(height: 12),
-            _Dropdown(
-              hint: 'Country',
-              value: _selectedCountry,
-              items: const ['Nepal', 'India', 'USA', 'UK'],
-              onChanged: (v) => setState(() => _selectedCountry = v),
-            ),
-            const SizedBox(height: 12),
-            _Dropdown(
-              hint: 'State/Province',
-              value: _selectedState,
-              items: const [
-                'Bagmati',
-                'Gandaki',
-                'Lumbini',
-                'Koshi',
-                'Madhesh'
-              ],
-              onChanged: (v) => setState(() => _selectedState = v),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _zipCtrl,
-                style: style,
-                keyboardType: TextInputType.number,
-                decoration: _dec('Zip/Postal Code')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _cityCtrl,
-                style: style,
-                decoration: _dec('City')),
-            const SizedBox(height: 12),
-            TextField(
-                controller: _labelCtrl,
-                style: style,
-                decoration: _dec('Save Address As')),
-            if (_errorText != null) ...[
-              const SizedBox(height: 12),
-              Text(_errorText!,
-                  style: const TextStyle(color: DesignTokens.colorError, fontSize: 13)),
-            ],
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DesignTokens.primaryGreen,
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26)),
-                ),
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: DesignTokens.buttonPrimaryText),
-                      )
-                    : const Text(
-                        'Save Address',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: DesignTokens.buttonPrimaryText,
-                        ),
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
-}
-
-class _Dropdown extends StatelessWidget {
-  const _Dropdown({
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String hint;
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2C),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF2C2C2C),
-          hint: Text(hint,
-              style: const TextStyle(
-                  color: Color(0xFF666666), fontSize: 14)),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF666666)),
-          items: items
-              .map((e) => DropdownMenuItem(
-            value: e,
-            child: Text(e,
-                style: const TextStyle(
-                    color: DesignTokens.textWhite, fontSize: 14)),
-          ))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-
-// ─── PAINTERS ─────────────────────────────────────────────────────────────────
 
 class _DashedLinePainter extends CustomPainter {
   @override

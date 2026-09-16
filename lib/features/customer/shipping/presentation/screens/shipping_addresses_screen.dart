@@ -99,16 +99,23 @@ class ShippingAddressesScreen extends ConsumerWidget {
                           height: 35,
                         ),
                         const SizedBox(width: DesignTokens.s12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('Pro Tip', style: DesignTokens.mediumSemibold),
-                            Text(
-                              'You can save upto 10 shipping addresses',
-                              style: DesignTokens.smallRegular,
-                            ),
-                          ],
+                        // Expanded, or the tip text overflows the row on a
+                        // narrow screen (and at larger text scales).
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Pro Tip',
+                                style: DesignTokens.mediumSemibold,
+                              ),
+                              Text(
+                                'You can save upto 10 shipping addresses',
+                                style: DesignTokens.smallRegular,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -325,8 +332,9 @@ class _AddressTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary =
-        '${address.addressLine1}, ${address.city}, ${address.country}';
+    // Render from the customer's own words and the point — never from a city
+    // that may be null. `summaryLine` already drops every blank part.
+    final summary = address.summaryLine;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DesignTokens.s16),
@@ -383,6 +391,18 @@ class _AddressTile extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (address.isLegacy) ...[
+                  const SizedBox(height: DesignTokens.s4),
+                  Text(
+                    'No map location — edit to add one',
+                    key: const Key('legacy_address_hint'),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.colorWarning,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),

@@ -20,6 +20,9 @@ class OrderInvoiceDto {
 
   factory OrderInvoiceDto.fromJson(Map<String, dynamic> json) {
     final shipTo = json['shipTo'] as Map<String, dynamic>? ?? const {};
+    // Location-captured addresses have no postal text — the customer's own
+    // directions (or the point) are the address. Every blank part is dropped
+    // so a null city never renders as "null" or a dangling comma.
     final addressParts = [
       shipTo['addressLine1'] as String? ?? '',
       shipTo['landmark'] as String? ?? '',
@@ -27,12 +30,16 @@ class OrderInvoiceDto {
       shipTo['state'] as String? ?? '',
       shipTo['zipCode'] as String? ?? '',
     ].where((part) => part.isNotEmpty);
+    final locationNote = (shipTo['locationNote'] as String? ?? '').trim();
+    final shipToLine = locationNote.isNotEmpty
+        ? locationNote
+        : addressParts.join(', ');
     return OrderInvoiceDto(
       invoiceNumber: json['invoiceNumber'] as String? ?? '',
       orderNumber: json['orderNumber'] as String? ?? '',
       issuedUtc: DateTime.parse(json['issuedUtc'] as String),
       placedUtc: DateTime.parse(json['placedUtc'] as String),
-      shippingAddress: addressParts.join(', '),
+      shippingAddress: shipToLine,
       paymentMethod: _paymentMethodLabel(json['paymentMethod'] as int? ?? 4),
       paymentStatus: json['paymentStatus'] as String? ?? '',
       subtotalAmount: (json['subtotalAmount'] as num? ?? 0).toDouble(),

@@ -3,6 +3,18 @@
          required, so phones without it can still install the app. -->
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="false"/>
+    <!-- Shipping addresses are saved as a map point, not a typed street
+         address: the customer taps "Use my current location" and we store the
+         coordinates plus their own directions. Foreground use only — nothing
+         is read in the background, and nothing is read unless they tap.
+         COARSE is declared alongside FINE so a customer who grants only
+         approximate location still gets a usable pin they can drag. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Location hardware isn't required: pasting a Maps link is a complete
+         alternative, so phones without GPS can still install and check out. -->
+    <uses-feature android:name="android.hardware.location" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <application
         android:label="StyleMint"
         android:name="${applicationName}"
@@ -83,6 +95,15 @@
                 <data android:pathPrefix="/creator-profile/"/>
             </intent-filter>
         </activity>
+        <!-- Maps SDK key for the drag-to-correct pin on the add-address
+             screen. The value lives in res/values/google_maps_api.xml and is
+             empty in source control — see that file. Declaring the key (even
+             empty) is safer than omitting it: the SDK then fails
+             authorisation and draws grey tiles instead of throwing when the
+             map view is created. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_api_key" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

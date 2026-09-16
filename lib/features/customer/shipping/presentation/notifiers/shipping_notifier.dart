@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
@@ -17,7 +18,9 @@ abstract class AddressesState with _$AddressesState {
   const factory AddressesState.loadSuccess(
     List<ShippingAddress> addresses,
   ) = _LoadSuccess;
-  const factory AddressesState.loadFailure(NetworkExceptions failure) = _LoadFailure;
+  const factory AddressesState.loadFailure(
+    NetworkExceptions failure,
+  ) = _LoadFailure;
 }
 
 class AddressNotifier extends StateNotifier<AddressesState> {
@@ -36,21 +39,29 @@ class AddressNotifier extends StateNotifier<AddressesState> {
     );
   }
 
-  Future<bool> add(ShippingAddress address) async {
+  /// Returns null on success, or the failure — the add/edit screen needs the
+  /// server's per-field message (notably on `mapsLink`), not just a bool.
+  Future<NetworkExceptions?> add(ShippingAddress address) async {
     final either = await _repository.addAddress(address);
-    return either.fold((_) => false, (_) {
+    return either.fold((f) => f, (_) {
       unawaited(load());
-      return true;
+      return null;
     });
   }
 
-  Future<bool> update(String id, ShippingAddress address) async {
+  /// Returns null on success, or the failure. See [add].
+  Future<NetworkExceptions?> update(String id, ShippingAddress address) async {
     final either = await _repository.updateAddress(id, address);
-    return either.fold((_) => false, (_) {
+    return either.fold((f) => f, (_) {
       unawaited(load());
-      return true;
+      return null;
     });
   }
+
+  /// Resolves a pasted Maps link. Left carries the server's 400 on `mapsLink`.
+  Future<Either<NetworkExceptions, ResolvedMapsLink>> resolveMapsLink(
+    String url,
+  ) => _repository.resolveMapsLink(url);
 
   Future<bool> delete(String id) async {
     final either = await _repository.deleteAddress(id);
