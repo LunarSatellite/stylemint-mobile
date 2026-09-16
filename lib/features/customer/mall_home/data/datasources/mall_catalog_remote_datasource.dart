@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show ListFormat, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/catalog_dto.dart';
@@ -11,7 +12,7 @@ class MallCatalogRemoteDataSource {
 
   /// GET `v1/public/products` — [query] holds the listing filters.
   Future<CatalogProductPageDto> getProducts(
-    Map<String, String> query, {
+    Map<String, dynamic> query, {
     required int pageSize,
     String? cursor,
   }) async {
@@ -22,6 +23,9 @@ class MallCatalogRemoteDataSource {
         'cursor': ?cursor,
         'pageSize': pageSize,
       },
+      // `optionValue` repeats (?optionValue=a&optionValue=b), which the
+      // catalog listing binds to a Guid[].
+      options: Options(listFormat: ListFormat.multi),
     );
     return CatalogProductPageDto.fromJson(readJsonObject(response));
   }

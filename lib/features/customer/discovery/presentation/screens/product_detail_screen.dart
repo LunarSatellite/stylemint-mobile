@@ -12,6 +12,8 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_option_chooser.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_option_choosers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/delivery_estimate_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
@@ -49,6 +51,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _quantity = 1;
   final Map<String, String> _selectedVariants = {};
   bool _descExpanded = false;
+  ProductOptionChooser? _chooser;
+  String? _chooserProductId;
 
   @override
   void initState() {
@@ -73,6 +77,28 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
   }
 
+  /// The size/colour picks for [product], kept across reloads of the same
+  /// product (Add to Cart refetches it). Products with no options get an
+  /// empty selection that changes nothing on the page.
+  ProductOptionChooser _chooserFor(ProductDetail product) {
+    final existing = _chooser;
+    if (existing != null && _chooserProductId == product.id) return existing;
+    existing?.dispose();
+    _chooserProductId = product.id;
+    return _chooser = ProductOptionChooser.forProduct(product)
+      ..addListener(_onChoiceChanged);
+  }
+
+  void _onChoiceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _chooser?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(productDetailNotifierProvider(widget.productId));
@@ -82,17 +108,24 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       body: state.when(
         initial: () => const _Loader(),
         loadInProgress: () => const _Loader(),
-        loadSuccess: (product) => _ProductBody(
-          product: product,
-          quantity: _quantity,
-          selectedVariants: _selectedVariants,
-          descExpanded: _descExpanded,
-          onQuantityChanged: (v) => setState(() => _quantity = v),
-          onVariantSelected: (k, v) => setState(() => _selectedVariants[k] = v),
-          onToggleDesc: () => setState(() => _descExpanded = !_descExpanded),
-          onAddToCart: () => _handleAddToCart(product),
-          onBuyNow: () => _handleBuyNow(product),
-        ),
+        loadSuccess: (product) {
+          final chooser = _chooserFor(product);
+          // Price, stock and the add-to-cart bar follow the picked variant.
+          final chosen = chooser.value.applyTo(product);
+          return _ProductBody(
+            product: chosen,
+            chooser: product.options.isEmpty ? null : chooser,
+            quantity: _quantity,
+            selectedVariants: _selectedVariants,
+            descExpanded: _descExpanded,
+            onQuantityChanged: (v) => setState(() => _quantity = v),
+            onVariantSelected: (k, v) =>
+                setState(() => _selectedVariants[k] = v),
+            onToggleDesc: () => setState(() => _descExpanded = !_descExpanded),
+            onAddToCart: () => _handleAddToCart(chosen),
+            onBuyNow: () => _handleBuyNow(chosen),
+          );
+        },
         loadFailure: (_) => SmErrorView(
           message: 'Failed to load product.',
           onRetry: () => ref
@@ -204,9 +237,13 @@ class _ProductBody extends StatelessWidget {
     required this.onToggleDesc,
     required this.onAddToCart,
     required this.onBuyNow,
+    this.chooser,
   });
 
   final ProductDetail product;
+
+  /// Null for a product with no options — the legacy SKU chips show instead.
+  final ProductOptionChooser? chooser;
   final int quantity;
   final Map<String, String> selectedVariants;
   final bool descExpanded;
@@ -279,7 +316,10 @@ class _ProductBody extends StatelessWidget {
                       onToggle: onToggleDesc,
                     ),
                     const SizedBox(height: DesignTokens.s24),
-                    if (product.variants.isNotEmpty) ...[
+                    if (chooser case final ProductOptionChooser picker) ...[
+                      ProductOptionChoosers(chooser: picker),
+                      const SizedBox(height: DesignTokens.s16),
+                    ] else if (product.variants.isNotEmpty) ...[
                       _VariantChips(
                         variants: product.variants,
                         selected: selectedVariants,

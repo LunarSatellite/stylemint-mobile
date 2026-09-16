@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/active_filter_chips.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/product_filter_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
@@ -425,6 +426,16 @@ class BrandProductsTab extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  if (filtered)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        top: DesignTokens.s8,
+                      ),
+                      child: ActiveFilterChips(
+                        query: query,
+                        onChanged: onQueryChanged,
+                      ),
+                    ),
                 ],
               ),
             ),

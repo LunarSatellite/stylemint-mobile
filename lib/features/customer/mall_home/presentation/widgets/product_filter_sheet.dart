@@ -47,6 +47,17 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
   late bool _inStock = widget.initial.inStock;
   late bool _onSale = widget.initial.onSale;
   late double? _minRating = widget.initial.minRating;
+  late final TextEditingController _size = TextEditingController(
+    text: widget.initial.size ?? '',
+  );
+  late final TextEditingController _color = TextEditingController(
+    text: widget.initial.color ?? '',
+  );
+
+  /// Option-value ids arrive from a deep link; the sheet carries them through
+  /// untouched (the listing response has no option names to label them with)
+  /// and Reset drops them.
+  late List<String> _optionValueIds = widget.initial.optionValueIds;
   String? _priceError;
 
   static const List<(double?, String, String)> _ratings = [
@@ -72,6 +83,8 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
   void dispose() {
     _min.dispose();
     _max.dispose();
+    _size.dispose();
+    _color.dispose();
     super.dispose();
   }
 
@@ -81,6 +94,9 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
     _inStock = false;
     _onSale = false;
     _minRating = null;
+    _size.clear();
+    _color.clear();
+    _optionValueIds = const <String>[];
     _priceError = null;
   });
 
@@ -100,6 +116,9 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
         minPrice: min,
         maxPrice: max,
         minRating: _minRating,
+        size: _size.text,
+        color: _color.text,
+        optionValueIds: _optionValueIds,
       ),
     );
   }
@@ -196,6 +215,22 @@ class _ProductFilterSheetState extends State<ProductFilterSheet> {
                   ),
               ],
             ),
+            const SizedBox(height: DesignTokens.s16),
+            const MallEyebrow('Size'),
+            const SizedBox(height: 10),
+            _TextFilterField(
+              controller: _size,
+              hint: 'e.g. M',
+              semanticLabel: 'Size',
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            const MallEyebrow('Colour'),
+            const SizedBox(height: 10),
+            _TextFilterField(
+              controller: _color,
+              hint: 'e.g. Emerald',
+              semanticLabel: 'Colour',
+            ),
             const SizedBox(height: DesignTokens.s24),
             SafeArea(
               top: false,
@@ -235,6 +270,40 @@ class _PriceField extends StatelessWidget {
         color: DesignTokens.textWhite,
       ),
       decoration: DesignTokens.inputDecoration(hintText: hint),
+    );
+  }
+}
+
+/// Free-text Size / Colour. The listing response carries no option values to
+/// offer as a picker, so the shopper types one and the server matches it
+/// case-insensitively against that option kind.
+class _TextFilterField extends StatelessWidget {
+  const _TextFilterField({
+    required this.controller,
+    required this.hint,
+    required this.semanticLabel,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      textField: true,
+      label: semanticLabel,
+      child: TextField(
+        controller: controller,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 15,
+          color: DesignTokens.textWhite,
+        ),
+        decoration: DesignTokens.inputDecoration(hintText: hint),
+      ),
     );
   }
 }

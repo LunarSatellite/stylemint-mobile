@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/product_listing_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/active_filter_chips.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_page_chrome.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/product_filter_sheet.dart';
@@ -180,6 +181,12 @@ class ProductListingScreen extends ConsumerWidget {
                     if (sort == active.sort) return;
                     unawaited(notifier.applyQuery(active.withSort(sort)));
                   },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: ActiveFilterChips(
+                  query: active,
+                  onChanged: (next) => unawaited(notifier.applyQuery(next)),
                 ),
               ),
               ...body,

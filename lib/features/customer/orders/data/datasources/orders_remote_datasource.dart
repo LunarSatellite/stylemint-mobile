@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/o
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
+import 'package:stylemint_mobile_frontend/shared/data/option_label.dart';
 
 /// Remote datasource for customer orders. Throws on failure; the repository
 /// maps exceptions to [Failure].
@@ -40,7 +41,10 @@ class OrdersRemoteDataSource {
   /// GET `/v1/orders/{orderNumber}` — full order detail.
   Future<OrderDetailDto> getOrderDetail(String orderId) async {
     final response = await apiClient.get('/v1/orders/$orderId');
-    return OrderDetailDto.fromJson(response as Map<String, dynamic>);
+    // Order lines prefer the variant's `optionLabel` over the SKU snapshot.
+    return OrderDetailDto.fromJson(
+      withOptionLabels(response as Map<String, dynamic>),
+    );
   }
 
   /// GET `/v1/orders/{orderNumber}/invoice` — immutable receipt projection.

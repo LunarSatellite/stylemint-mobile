@@ -79,8 +79,9 @@ void main() {
     await settleTransition(tester);
     expect(find.byType(ProductFilterSheet), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField).first, '500');
-    await tester.enterText(find.byType(TextField).last, '3000');
+    // 0 and 1 are the price fields; Size and Colour follow them.
+    await tester.enterText(find.byType(TextField).at(0), '500');
+    await tester.enterText(find.byType(TextField).at(1), '3000');
     await tester.tap(find.text('On sale'));
     await tester.pump();
     await tester.tap(find.text('4★ & up'));
@@ -107,8 +108,8 @@ void main() {
     await tester.tap(find.text('Filter'));
     await settleTransition(tester);
 
-    await tester.enterText(find.byType(TextField).first, '5000');
-    await tester.enterText(find.byType(TextField).last, '100');
+    await tester.enterText(find.byType(TextField).at(0), '5000');
+    await tester.enterText(find.byType(TextField).at(1), '100');
     await tester.ensureVisible(find.text('Show results'));
     await tester.pump();
     await tester.tap(find.text('Show results'));

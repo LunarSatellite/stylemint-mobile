@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_delivery.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_option.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// Full product detail returned by GET /v1/products/{id}.
@@ -26,6 +27,8 @@ class ProductDetail {
     this.defaultVariantId,
     this.flashSaleEndsAt,
     this.delivery,
+    this.options = const <ProductOption>[],
+    this.optionVariants = const <ProductVariantOption>[],
   });
 
   final String id;
@@ -58,6 +61,13 @@ class ProductDetail {
   /// Processing time and shipping options, for the delivery estimate.
   final ProductDelivery? delivery;
 
+  /// Size / colour / material chooser rows, in `sortOrder`. Empty for a
+  /// product that defines no options — the page then behaves as it always has.
+  final List<ProductOption> options;
+
+  /// Every variant seen through its option values, for resolving a choice.
+  final List<ProductVariantOption> optionVariants;
+
   ProductDetail copyWith({
     String? id,
     String? name,
@@ -81,6 +91,10 @@ class ProductDetail {
     String? defaultVariantId,
     DateTime? flashSaleEndsAt,
     ProductDelivery? delivery,
+    List<ProductOption>? options,
+    List<ProductVariantOption>? optionVariants,
+    bool clearCompareAtPrice = false,
+    bool clearStockCount = false,
   }) {
     return ProductDetail(
       id: id ?? this.id,
@@ -88,7 +102,9 @@ class ProductDetail {
       description: description ?? this.description,
       images: images ?? this.images,
       price: price ?? this.price,
-      compareAtPrice: compareAtPrice ?? this.compareAtPrice,
+      compareAtPrice: clearCompareAtPrice
+          ? null
+          : (compareAtPrice ?? this.compareAtPrice),
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       soldCount: soldCount ?? this.soldCount,
@@ -96,7 +112,7 @@ class ProductDetail {
       vendorName: vendorName ?? this.vendorName,
       vendorAvatarUrl: vendorAvatarUrl ?? this.vendorAvatarUrl,
       isInStock: isInStock ?? this.isInStock,
-      stockCount: stockCount ?? this.stockCount,
+      stockCount: clearStockCount ? null : (stockCount ?? this.stockCount),
       variants: variants ?? this.variants,
       specifications: specifications ?? this.specifications,
       shippingInfo: shippingInfo ?? this.shippingInfo,
@@ -105,6 +121,8 @@ class ProductDetail {
       defaultVariantId: defaultVariantId ?? this.defaultVariantId,
       flashSaleEndsAt: flashSaleEndsAt ?? this.flashSaleEndsAt,
       delivery: delivery ?? this.delivery,
+      options: options ?? this.options,
+      optionVariants: optionVariants ?? this.optionVariants,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_delivery_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_option_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -71,10 +72,15 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductDetailJson(productId);
+        final options = ProductOptionsDto.fromJson(json);
         return right(
-          ProductDetailDto.fromJson(
-            json,
-          ).toDomain().copyWith(delivery: ProductDeliveryDto.fromJson(json)),
+          ProductDetailDto.fromJson(json).toDomain().copyWith(
+            delivery: ProductDeliveryDto.fromJson(json),
+            options: options.options,
+            optionVariants: options.variants,
+            // Real options replace the synthetic "pick a SKU" chip row.
+            variants: options.isEmpty ? null : const <ProductVariant>[],
+          ),
         );
       } catch (e) {
         if (e is DioException) {

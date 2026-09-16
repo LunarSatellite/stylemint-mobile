@@ -2,15 +2,21 @@ import 'package:dio/dio.dart' show ListFormat, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/basket_scenarios_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/models/cart_dto.dart';
+import 'package:stylemint_mobile_frontend/shared/data/option_label.dart';
 
 class CartRemoteDataSource {
   CartRemoteDataSource({required this.apiClient});
 
   final ApiClient apiClient;
 
+  /// A cart line shows the variant's `optionLabel` ("M / Emerald") when the
+  /// payload carries one, else the SKU snapshot it was frozen with.
+  static CartDto _cart(dynamic response) =>
+      CartDto.fromJson(withOptionLabels(response as Map<String, dynamic>));
+
   Future<CartDto> getCart() async {
     final response = await apiClient.get('/v1/cart');
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   /// GET `/v1/cart/optimize` — AI-generated observations grounded only in
@@ -66,7 +72,7 @@ class CartRemoteDataSource {
       },
       options: _idempotent(idempotencyKey),
     );
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   Future<CartDto> updateCartItem({
@@ -77,12 +83,12 @@ class CartRemoteDataSource {
       '/v1/cart/lines/$itemId',
       data: {'quantity': quantity},
     );
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   Future<CartDto> removeCartItem(String itemId) async {
     final response = await apiClient.authDelete('/v1/cart/lines/$itemId');
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   Future<CartDto> applyPromo({
@@ -94,7 +100,7 @@ class CartRemoteDataSource {
       data: {'code': code},
       options: _idempotent(idempotencyKey),
     );
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   Future<CartDto> removePromo(String idempotencyKey) async {
@@ -102,7 +108,7 @@ class CartRemoteDataSource {
       '/v1/cart/promo',
       options: _idempotent(idempotencyKey),
     );
-    return CartDto.fromJson(response as Map<String, dynamic>);
+    return _cart(response);
   }
 
   Future<void> saveForLater({

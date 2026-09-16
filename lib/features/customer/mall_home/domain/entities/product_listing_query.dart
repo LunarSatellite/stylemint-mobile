@@ -38,6 +38,9 @@ class ProductListingQuery {
     this.onSale = false,
     this.minRating,
     this.search,
+    this.size,
+    this.color,
+    this.optionValueIds = const <String>[],
   });
 
   factory ProductListingQuery.fromQueryParameters(Map<String, String> params) {
@@ -64,6 +67,14 @@ class ProductListingQuery {
       onSale: flag(keyOnSale),
       minRating: number(keyMinRating),
       search: text(keySearch),
+      size: text(keySize),
+      color: text(keyColor),
+      // A GoRouter route carries one `optionValue` key, so ids travel
+      // comma-separated in the app URL and repeated on the wire.
+      optionValueIds: List.unmodifiable([
+        for (final id in (text(keyOptionValue) ?? '').split(','))
+          if (id.trim().isNotEmpty) id.trim(),
+      ]),
     );
   }
 
@@ -77,6 +88,9 @@ class ProductListingQuery {
   static const keyOnSale = 'onSale';
   static const keyMinRating = 'minRating';
   static const keySearch = 'q';
+  static const keySize = 'size';
+  static const keyColor = 'color';
+  static const keyOptionValue = 'optionValue';
 
   final ProductSort sort;
   final String? categoryId;
@@ -89,12 +103,25 @@ class ProductListingQuery {
   final double? minRating;
   final String? search;
 
+  /// Matched case-insensitively against the values of Size-kind options.
+  final String? size;
+
+  /// Same, against Colour-kind options. US spelling on the wire.
+  final String? color;
+
+  /// `options[].values[].id`s from a product detail. Values of one option are
+  /// OR'd server-side; different options are AND'd.
+  final List<String> optionValueIds;
+
   /// Filters the viewer set in the filter sheet (not scope or sort).
   int get activeFilterCount =>
       (minPrice != null || maxPrice != null ? 1 : 0) +
       (inStock ? 1 : 0) +
       (onSale ? 1 : 0) +
-      (minRating != null ? 1 : 0);
+      (minRating != null ? 1 : 0) +
+      (size != null ? 1 : 0) +
+      (color != null ? 1 : 0) +
+      optionValueIds.length;
 
   ProductListingQuery withSort(ProductSort value) => _copy(sort: value);
 
@@ -105,6 +132,9 @@ class ProductListingQuery {
     double? minPrice,
     double? maxPrice,
     double? minRating,
+    String? size,
+    String? color,
+    List<String> optionValueIds = const <String>[],
   }) => ProductListingQuery(
     sort: sort,
     categoryId: categoryId,
@@ -116,13 +146,48 @@ class ProductListingQuery {
     inStock: inStock,
     onSale: onSale,
     minRating: minRating,
+    size: _clean(size),
+    color: _clean(color),
+    optionValueIds: List.unmodifiable(optionValueIds),
+  );
+
+  /// Drops one filter — what the removable chips call.
+  ProductListingQuery without({
+    bool price = false,
+    bool inStock = false,
+    bool onSale = false,
+    bool rating = false,
+    bool size = false,
+    bool color = false,
+    String? optionValueId,
+  }) => ProductListingQuery(
+    sort: sort,
+    categoryId: categoryId,
+    categorySlug: categorySlug,
+    vendorAccountId: vendorAccountId,
+    search: search,
+    minPrice: price ? null : minPrice,
+    maxPrice: price ? null : maxPrice,
+    inStock: inStock ? false : this.inStock,
+    onSale: onSale ? false : this.onSale,
+    minRating: rating ? null : minRating,
+    size: size ? null : this.size,
+    color: color ? null : this.color,
+    optionValueIds: optionValueId == null
+        ? optionValueIds
+        : List.unmodifiable([
+            for (final id in optionValueIds)
+              if (id != optionValueId) id,
+          ]),
   );
 
   /// Keeps scope (category, vendor, search) and sort.
   ProductListingQuery clearFilters() =>
       withFilters(inStock: false, onSale: false);
 
-  /// The query of `GET v1/public/products` (without cursor and page size).
+  /// The query of `GET v1/public/products` (without cursor and page size),
+  /// and the `/products` app route's parameters — both string-only, so
+  /// option-value ids are comma-separated here.
   Map<String, String> toQueryParameters() => {
     keySort: sort.wire,
     keyCategoryId: ?categoryId,
@@ -134,6 +199,16 @@ class ProductListingQuery {
     if (onSale) keyOnSale: 'true',
     if (minRating case final value?) keyMinRating: _formatNumber(value),
     keySearch: ?search,
+    keySize: ?size,
+    keyColor: ?color,
+    if (optionValueIds.isNotEmpty) keyOptionValue: optionValueIds.join(','),
+  };
+
+  /// The same query for Dio, where `optionValue` is a repeatable key
+  /// (`?optionValue=a&optionValue=b`) as the catalog contract requires.
+  Map<String, dynamic> toApiParameters() => {
+    ...toQueryParameters(),
+    if (optionValueIds.isNotEmpty) keyOptionValue: optionValueIds,
   };
 
   ProductListingQuery _copy({ProductSort? sort}) => ProductListingQuery(
@@ -147,7 +222,15 @@ class ProductListingQuery {
     onSale: onSale,
     minRating: minRating,
     search: search,
+    size: size,
+    color: color,
+    optionValueIds: optionValueIds,
   );
+
+  static String? _clean(String? value) {
+    final text = value?.trim();
+    return text == null || text.isEmpty ? null : text;
+  }
 
   static String _formatNumber(double value) =>
       value == value.truncateToDouble()
@@ -166,7 +249,10 @@ class ProductListingQuery {
       other.inStock == inStock &&
       other.onSale == onSale &&
       other.minRating == minRating &&
-      other.search == search;
+      other.search == search &&
+      other.size == size &&
+      other.color == color &&
+      other.optionValueIds.join(',') == optionValueIds.join(',');
 
   @override
   int get hashCode => Object.hash(
@@ -180,5 +266,8 @@ class ProductListingQuery {
     onSale,
     minRating,
     search,
+    size,
+    color,
+    Object.hashAll(optionValueIds),
   );
 }

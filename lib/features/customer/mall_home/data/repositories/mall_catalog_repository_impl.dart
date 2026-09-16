@@ -25,7 +25,7 @@ class MallCatalogRepositoryImpl implements MallCatalogRepository {
   }) => guardedNetworkCall(
     networkInfo,
     () async => (await remoteDataSource.getProducts(
-      query.toQueryParameters(),
+      query.toApiParameters(),
       cursor: cursor,
       pageSize: pageSize,
     )).toDomain(),

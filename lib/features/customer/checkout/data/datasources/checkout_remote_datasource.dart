@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/data/models/checkout_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
+import 'package:stylemint_mobile_frontend/shared/data/option_label.dart';
 
 class CheckoutRemoteDataSource {
   CheckoutRemoteDataSource({required this.apiClient});
@@ -25,7 +26,7 @@ class CheckoutRemoteDataSource {
     // silently created and operated on a second, different session every
     // time instead of the one the customer was actually looking at.
     _sessionId = data['id'] as String?;
-    return CheckoutSummaryDto.fromJson(data);
+    return CheckoutSummaryDto.fromJson(withOptionLabels(data));
   }
 
   Future<List<ShippingAddressDto>> getShippingAddresses() async {
