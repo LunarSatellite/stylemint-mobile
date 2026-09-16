@@ -50,6 +50,20 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       (updated) => state = ProfileState.loadSuccess(updated),
     );
   }
+
+  /// Refreshes the counters without replacing the rendered profile with a
+  /// full-page loader. The customer shell keeps Profile alive between tab
+  /// visits, so these values otherwise stay frozen at their first load.
+  Future<void> refreshStats() async {
+    final summary = state.maybeWhen(loadSuccess: (s) => s, orElse: () => null);
+    if (summary == null) return;
+
+    final statsEither = await _repository.getProfileStats(summary);
+    statsEither.fold(
+      (_) {},
+      (updated) => state = ProfileState.loadSuccess(updated),
+    );
+  }
 }
 
 @freezed

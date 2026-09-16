@@ -42,6 +42,13 @@ class ProfileScreen extends ConsumerWidget {
 
     final state = ref.watch(profileNotifierProvider);
 
+    // Profile is a persistent shell branch. Returning to it does not recreate
+    // the notifier, so purchases, saves and follows made since the first load
+    // need an explicit, non-blocking counter refresh.
+    ref.listen<int>(profileTabVisitedProvider, (_, _) {
+      unawaited(ref.read(profileNotifierProvider.notifier).refreshStats());
+    });
+
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
