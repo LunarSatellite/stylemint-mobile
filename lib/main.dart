@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart' hide State;
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
+import 'package:stylemint_mobile_frontend/routes/deep_links.dart';
 import 'package:stylemint_mobile_frontend/theme/font_licenses.dart';
 import 'core/network/network_exceptions.dart';
 import 'core/utils/format_date.dart';
@@ -586,6 +587,16 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
     final styleMintCode = StyleMintCode.parse(uri.toString());
     if (styleMintCode is StyleMintShortCode) {
       router.go(styleMintCode.route);
+      return;
+    }
+    // Shared brand and creator storefront links — the web pages
+    // (https://<StyleMint host>/brands/{id}, /creator-profile/{id}) and the
+    // stylemint:// forms their app-dock buttons use — open the storefront
+    // in-app. An id that is not a GUID lands on home instead of a storefront
+    // that can never load.
+    final storefront = styleMintStorefrontRoute(uri.toString());
+    if (storefront != null) {
+      router.go(storefront);
       return;
     }
     // Convert the incoming deep link to a go_router path.
