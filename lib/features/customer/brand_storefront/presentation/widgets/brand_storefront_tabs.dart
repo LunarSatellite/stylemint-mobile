@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/active_filter_chips.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/product_filter_sheet.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_reel.dart';
@@ -266,7 +267,7 @@ class BrandHomeTab extends ConsumerWidget {
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.id),
               onReelTap: (reel) =>
-                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
+                  unawaited(openMallReelWindow(context, reel)),
             ),
           ),
         ),
@@ -488,7 +489,7 @@ class BrandProductsTab extends ConsumerWidget {
               products: [for (final product in loaded.items) product.toVm()],
               onProductTap: (product) => _openProduct(context, product.id),
               onReelTap: (_, reel) =>
-                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
+                  unawaited(openMallReelWindow(context, reel)),
             ),
             StorefrontSliverPagingFooter(
               state: loaded,

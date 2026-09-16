@@ -26,6 +26,7 @@ class MallReelTile extends StatelessWidget {
     super.key,
     this.size = MallCardSize.regular,
     this.onTap,
+    this.onPlayTap,
     this.onSaveTap,
     this.showRating = true,
     this.signal,
@@ -41,8 +42,12 @@ class MallReelTile extends StatelessWidget {
 
   final MallCardSize size;
 
-  /// Opens the reel.
+  /// Opens the product. Playing the reel is [onPlayTap]'s job.
   final VoidCallback? onTap;
+
+  /// Plays the reel in a window over the Mall. The play mark is its target
+  /// and the only part of the tile that plays anything.
+  final VoidCallback? onPlayTap;
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
@@ -56,6 +61,9 @@ class MallReelTile extends StatelessWidget {
 
   /// Defaults to [MallReelPlaySlotController.instance].
   final MallReelPlaySlotController? playSlotController;
+
+  /// The play affordance's tap target.
+  static const Key playKey = Key('mall-reel-play');
 
   /// Suggested rail item widths — the same as every other product tile.
   static const double compactWidth = 148;
@@ -89,6 +97,10 @@ class MallReelTile extends StatelessWidget {
           : DesignTokens.cardRadius,
     );
     final saveTap = onSaveTap;
+    final playTap = onPlayTap;
+    final playSize = metrics.isCompact
+        ? DesignTokens.minTouchTarget
+        : DesignTokens.s48;
     final rating = showRating ? product.rating : null;
     final badges = mallTileBadges(strings, product);
     final hook = reel.hook?.trim();
@@ -98,7 +110,10 @@ class MallReelTile extends StatelessWidget {
       rating: rating,
       signal: fact,
       extras: [
-        strings.watchReel,
+        // Once the tile carries its own play affordance, the tile's tap
+        // opens the product and "Watch reel" belongs to that affordance
+        // alone — saying it twice would read as two ways to play.
+        if (playTap == null) strings.watchReel,
         if (reel.isAiGenerated) strings.aiGenerated,
         if (reel.hasDuration) strings.spokenReelDuration(reel.durationSeconds),
         if (hook != null && hook.isNotEmpty) hook,
@@ -150,12 +165,8 @@ class MallReelTile extends StatelessWidget {
           child: MallReelPlaySlot(
             id: reel.reelId,
             controller: playSlotController,
-            builder: (context, {required holdsSlot}) => MallPlayMark(
-              primed: holdsSlot,
-              size: metrics.isCompact
-                  ? DesignTokens.minTouchTarget
-                  : DesignTokens.s48,
-            ),
+            builder: (context, {required holdsSlot}) =>
+                MallPlayMark(primed: holdsSlot, size: playSize),
           ),
         ),
         PositionedDirectional(
@@ -234,6 +245,41 @@ class MallReelTile extends StatelessWidget {
             borderRadius: radius,
           ),
         ),
+        if (playTap != null)
+          // The play mark is its own target, above the tile's tap layer: it
+          // plays the reel in a window, while the rest of the tile keeps
+          // opening the product. Positioned rather than laid out in a column
+          // so a tile squeezed by its parent clips instead of overflowing.
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final mediaHeight =
+                    constraints.maxWidth / MallTileMetrics.mediaAspectRatio;
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: (constraints.maxWidth - playSize) / 2,
+                      top: (mediaHeight - playSize) / 2,
+                      width: playSize,
+                      height: playSize,
+                      child: Semantics(
+                        button: true,
+                        label: strings.watchReel,
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: InkWell(
+                            key: playKey,
+                            onTap: playTap,
+                            customBorder: const CircleBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         if (saveTap != null)
           PositionedDirectional(
             top: 2,

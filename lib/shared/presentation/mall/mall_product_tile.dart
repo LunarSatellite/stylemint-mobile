@@ -33,8 +33,9 @@ class MallProductTile extends StatelessWidget {
   /// Opens the product.
   final VoidCallback? onTap;
 
-  /// Opens the reel on a tile that has one. Falls back to [onTap] when null,
-  /// so a caller that only knows how to open products still works.
+  /// Plays the reel of a tile that has one — the play mark's target. The
+  /// rest of the tile opens the product through [onTap]; a caller that gave
+  /// no [onTap] keeps the whole tile opening the reel.
   final void Function(MallReelRef reel)? onReelTap;
 
   /// Shows the save heart when non-null.
@@ -86,7 +87,8 @@ class MallProductTile extends StatelessWidget {
       product: product,
       reel: reel,
       size: size,
-      onTap: openReel == null ? onTap : () => openReel(reel),
+      onTap: onTap ?? (openReel == null ? null : () => openReel(reel)),
+      onPlayTap: openReel == null ? null : () => openReel(reel),
       onSaveTap: onSaveTap,
       showRating: showRating,
       signal: signal,

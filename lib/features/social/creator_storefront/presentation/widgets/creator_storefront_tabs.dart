@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_choice_chip.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_collection.dart';
 import 'package:stylemint_mobile_frontend/features/customer/storefront/domain/entities/storefront_reel.dart';
@@ -243,7 +244,7 @@ class CreatorHomeTab extends ConsumerWidget {
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.productId),
               onReelTap: (reel) =>
-                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
+                  unawaited(openMallReelWindow(context, reel)),
             ),
           ),
         ),
@@ -539,8 +540,7 @@ class CreatorShopTab extends ConsumerWidget {
       MallSliverProductGrid(
         products: [for (final product in visible) product.toVm()],
         onProductTap: (product) => _openProduct(context, product.id),
-        onReelTap: (_, reel) =>
-            unawaited(context.push(MallRoutes.reel(reel.reelId))),
+        onReelTap: (_, reel) => unawaited(openMallReelWindow(context, reel)),
       ),
       StorefrontSliverPagingFooter(
         state: loaded,

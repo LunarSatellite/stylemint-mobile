@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/mall_page_chrome.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/widgets/product_filter_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_window.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -118,7 +119,7 @@ class ProductListingScreen extends ConsumerWidget {
             onProductTap: (product) =>
                 unawaited(context.push(MallRoutes.product(product.id))),
             onReelTap: (_, reel) =>
-                unawaited(context.push(MallRoutes.reel(reel.reelId))),
+                unawaited(openMallReelWindow(context, reel)),
           ),
           SliverToBoxAdapter(
             child: MallPagingFooter(

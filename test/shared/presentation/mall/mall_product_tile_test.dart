@@ -224,7 +224,7 @@ void main() {
       expect(find.byType(MallProductCard), findsNothing);
     });
 
-    testWidgets('a grid tap opens the product and a reel tile opens its reel', (
+    testWidgets('a grid tap opens the product and the play mark the reel', (
       tester,
     ) async {
       String? openedProduct;
@@ -247,7 +247,14 @@ void main() {
       expect(openedProduct, 'p-photo');
       expect(openedReel, isNull);
 
-      await tester.tap(find.byType(MallReelTile).first);
+      // The reel tile's body opens the product like any other tile; only the
+      // play mark plays the reel (owner decision, 2026-09-16).
+      final tile = tester.getRect(find.byType(MallReelTile).first);
+      await tester.tapAt(Offset(tile.center.dx, tile.bottom - 6));
+      expect(openedProduct, 'p-reel');
+      expect(openedReel, isNull);
+
+      await tester.tap(find.byKey(MallReelTile.playKey).first);
       expect(openedReel, 'pr-1');
     });
   });
