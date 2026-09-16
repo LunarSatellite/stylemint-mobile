@@ -16,6 +16,11 @@ abstract final class MallRoutes {
   /// Query parameter carrying the listing screen's title.
   static const titleParam = 'title';
 
+  /// Query parameter naming the shared element a screen should fly from.
+  /// Carried on the URL so the flight survives a push from anywhere, and
+  /// ignored by any caller that does not set it — deep links are unaffected.
+  static const heroParam = 'hero';
+
   static String product(String id) =>
       RouteNames.productDetail.replaceFirst(':productId', id);
 
@@ -25,8 +30,14 @@ abstract final class MallRoutes {
   static String creator(String accountId) =>
       RouteNames.creatorProfile.replaceFirst(':accountId', accountId);
 
-  static String collection(String slug) =>
-      RouteNames.collection.replaceFirst(':slug', slug);
+  /// A collection or look. With [heroTag] the destination's cover flies from
+  /// the tagged element; without it the location is unchanged.
+  static String collection(String slug, {String? heroTag}) {
+    final path = RouteNames.collection.replaceFirst(':slug', slug);
+    final tag = heroTag?.trim();
+    if (tag == null || tag.isEmpty) return path;
+    return Uri(path: path, queryParameters: {heroParam: tag}).toString();
+  }
 
   /// `/products` with the listing filters in [params].
   static String listing(Map<String, String> params, {String? title}) {
@@ -81,12 +92,20 @@ final class MallShowReels extends MallDestination {
   const MallShowReels();
 }
 
+/// The shared-element tag for a campaign's artwork, used by the cinematic
+/// hero and by whatever the campaign opens.
+String mallCampaignHeroTag(String campaignId) => 'mall-campaign-$campaignId';
+
 /// The destination of a campaign CTA, or null when it has nowhere to go.
-MallDestination? destinationForCta(HomeCampaignCta cta) {
+///
+/// [heroTag] opts a collection CTA into a shared-element flight from the
+/// campaign artwork it was tapped on.
+MallDestination? destinationForCta(HomeCampaignCta cta, {String? heroTag}) {
   final value = cta.targetValue.trim();
   return switch (cta.targetKind) {
-    HomeCtaTargetKind.collection =>
-      value.isEmpty ? null : MallPush(MallRoutes.collection(value)),
+    HomeCtaTargetKind.collection => value.isEmpty
+        ? null
+        : MallPush(MallRoutes.collection(value, heroTag: heroTag)),
     HomeCtaTargetKind.reels =>
       value.isEmpty ? const MallShowReels() : MallPush(MallRoutes.reel(value)),
     HomeCtaTargetKind.creators =>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
@@ -13,13 +14,23 @@ class MallCollectionCard extends StatelessWidget {
     super.key,
     this.onTap,
     this.aspectRatio = 4 / 5,
+    this.fill = false,
+    this.size = MallCardSize.regular,
   });
 
   final MallCollectionVm collection;
   final VoidCallback? onTap;
 
-  /// Width : height of the card.
+  /// Width : height of the card. Ignored when [fill] is set.
   final double aspectRatio;
+
+  /// Fills the parent box instead of imposing [aspectRatio]. Editorial
+  /// layouts size their own tiles, so the card must not fight them.
+  final bool fill;
+
+  /// [MallCardSize.compact] drops the preview strip and sets the title one
+  /// step down — for the small tiles beside an editorial lead.
+  final MallCardSize size;
 
   /// Suggested rail item width.
   static const double defaultWidth = 240;
@@ -30,6 +41,14 @@ class MallCollectionCard extends StatelessWidget {
   static const TextStyle _titleStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
     fontSize: 18,
+    fontWeight: FontWeight.w600,
+    height: 1.25,
+    color: DesignTokens.textWhite,
+  );
+
+  static const TextStyle _compactTitleStyle = TextStyle(
+    fontFamily: DesignTokens.fontFamily,
+    fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.25,
     color: DesignTokens.textWhite,
@@ -47,12 +66,16 @@ class MallCollectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = MallStrings.of(context);
     final item = collection;
+    final compact = size == MallCardSize.compact;
+    final inset = compact ? DesignTokens.s12 : DesignTokens.s16;
     final eyebrow = item.eyebrow;
     final count = item.itemCount;
-    final previews = item.previewImageUrls
-        .where((url) => url.trim().isNotEmpty)
-        .take(3)
-        .toList();
+    final previews = compact
+        ? const <String>[]
+        : item.previewImageUrls
+              .where((url) => url.trim().isNotEmpty)
+              .take(3)
+              .toList();
     final radius = BorderRadius.circular(DesignTokens.cardRadius);
     final label = [
       ?eyebrow,
@@ -60,9 +83,7 @@ class MallCollectionCard extends StatelessWidget {
       if (count != null) strings.itemCount(count),
     ].join(', ');
 
-    return AspectRatio(
-      aspectRatio: aspectRatio,
-      child: DecoratedBox(
+    final card = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: radius,
           boxShadow: DesignTokens.shadowCard,
@@ -83,9 +104,9 @@ class MallCollectionCard extends StatelessWidget {
                       ),
                     ),
                     PositionedDirectional(
-                      start: DesignTokens.s16,
-                      end: DesignTokens.s16,
-                      bottom: DesignTokens.s16,
+                      start: inset,
+                      end: inset,
+                      bottom: inset,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -98,7 +119,7 @@ class MallCollectionCard extends StatelessWidget {
                             item.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: _titleStyle,
+                            style: compact ? _compactTitleStyle : _titleStyle,
                           ),
                           if (previews.isNotEmpty) ...[
                             const SizedBox(height: DesignTokens.s12),
@@ -127,8 +148,9 @@ class MallCollectionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
+
+    return fill ? card : AspectRatio(aspectRatio: aspectRatio, child: card);
   }
 }
 

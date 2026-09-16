@@ -20,9 +20,13 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// grid) or a look ("Shop the look": numbered markers on the cover and the
 /// pieces listed in the same order). Items page in as the viewer scrolls.
 class CollectionScreen extends ConsumerWidget {
-  const CollectionScreen({required this.slug, super.key});
+  const CollectionScreen({required this.slug, super.key, this.heroTag});
 
   final String slug;
+
+  /// Shared element this screen's cover flies from, when it was opened from
+  /// a tagged image such as the Mall's campaign hero. Null on a deep link.
+  final String? heroTag;
 
   /// Start the next page this close to the end.
   static const double loadMoreExtent = 900;
@@ -39,8 +43,8 @@ class CollectionScreen extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           state.when(
-            initial: () => const _CollectionSkeleton(),
-            loadInProgress: () => const _CollectionSkeleton(),
+            initial: () => _CollectionSkeleton(heroTag: heroTag),
+            loadInProgress: () => _CollectionSkeleton(heroTag: heroTag),
             loadFailure: (failure) => SafeArea(
               child: SmErrorView(
                 message: failure.isNotFound
@@ -68,6 +72,7 @@ class CollectionScreen extends ConsumerWidget {
               },
               child: _CollectionBody(
                 data: data,
+                heroTag: heroTag,
                 onRetryMore: () => unawaited(notifier.loadMore()),
               ),
             ),
@@ -79,10 +84,31 @@ class CollectionScreen extends ConsumerWidget {
   }
 }
 
+/// Wraps [child] in a shared-element flight when the screen was opened from
+/// a tagged image. Without a tag nothing changes.
+class _CoverHero extends StatelessWidget {
+  const _CoverHero({required this.tag, required this.child});
+
+  final String? tag;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final heroTag = tag;
+    if (heroTag == null) return child;
+    return Hero(tag: heroTag, child: child);
+  }
+}
+
 class _CollectionBody extends StatelessWidget {
-  const _CollectionBody({required this.data, required this.onRetryMore});
+  const _CollectionBody({
+    required this.data,
+    required this.heroTag,
+    required this.onRetryMore,
+  });
 
   final CollectionViewData data;
+  final String? heroTag;
   final VoidCallback onRetryMore;
 
   static const TextStyle _descriptionStyle = TextStyle(
@@ -111,7 +137,11 @@ class _CollectionBody extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: _CollectionCover(data: data, onOpenProduct: openProduct),
+          child: _CollectionCover(
+            data: data,
+            heroTag: heroTag,
+            onOpenProduct: openProduct,
+          ),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -184,9 +214,14 @@ class _CollectionBody extends StatelessWidget {
 /// Cover image with the editorial copy; on a look, numbered markers where
 /// the curator pinned each piece.
 class _CollectionCover extends StatelessWidget {
-  const _CollectionCover({required this.data, required this.onOpenProduct});
+  const _CollectionCover({
+    required this.data,
+    required this.heroTag,
+    required this.onOpenProduct,
+  });
 
   final CollectionViewData data;
+  final String? heroTag;
   final ValueChanged<String> onOpenProduct;
 
   static const TextStyle _subtitleStyle = TextStyle(
@@ -225,7 +260,10 @@ class _CollectionCover extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               ExcludeSemantics(
-                child: MallNetworkImage(url: collection.coverImageUrl),
+                child: _CoverHero(
+                  tag: heroTag,
+                  child: MallNetworkImage(url: collection.coverImageUrl),
+                ),
               ),
               const IgnorePointer(
                 child: DecoratedBox(
@@ -498,7 +536,11 @@ class _LookItemRow extends StatelessWidget {
 }
 
 class _CollectionSkeleton extends StatelessWidget {
-  const _CollectionSkeleton();
+  const _CollectionSkeleton({this.heroTag});
+
+  /// The skeleton owns the cover slot until the real cover arrives, so it
+  /// carries the tag — otherwise a flight would have nothing to land on.
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -511,12 +553,15 @@ class _CollectionSkeleton extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
           children: [
-            SmSkeleton.box(
-              height: math.min(
-                constraints.maxWidth * 5 / 4,
-                screenHeight * 0.75,
+            _CoverHero(
+              tag: heroTag,
+              child: SmSkeleton.box(
+                height: math.min(
+                  constraints.maxWidth * 5 / 4,
+                  screenHeight * 0.75,
+                ),
+                radius: 0,
               ),
-              radius: 0,
             ),
             const Padding(
               padding: EdgeInsetsDirectional.fromSTEB(20, 20, 20, 24),

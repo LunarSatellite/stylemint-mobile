@@ -34,6 +34,8 @@ extension HomeProductToVm on HomeProduct {
     rating: rating,
     isNew: isNew,
     isLowStock: isLowStock,
+    reviewCount: reviewCount,
+    saleEndsUtc: saleEndsUtc,
   );
 }
 

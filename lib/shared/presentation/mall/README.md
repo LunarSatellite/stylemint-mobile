@@ -26,6 +26,12 @@ localise, wrap the page in a `MallStringsScope`.
 | `MallCategoryTile` | Image tile with a scrim and label. Shapes: `square` (1:1) and `tall` (3:4). | `MallCategoryVm`, `shape`, `onTap?` |
 | `MallCollectionCard` | Editorial cover card: eyebrow, title, up to three preview thumbnails and an item count. | `MallCollectionVm`, `aspectRatio`, `onTap?` |
 | `MallCampaignHero` | Full-width carousel with scrim, eyebrow, display title, subtitle, up to 3 CTAs (first filled, the rest glass) and a page indicator. Auto-advances every 6 s, pauses while touched, and stays still when animations are disabled. Height is 62% of the screen, clamped to 360–640. | `List<MallCampaignVm>`, `onAction(campaign, action)` |
+| `MallCinematicHero` | **The Mall's stage.** Full-bleed carousel that drifts (`MallKenBurns`), lags the page (`MallParallax`) and fades its copy out as you scroll. Display title closes on an italic word; segmented progress bars; secondary CTAs are translucent, never blurred. `heroTagFor` opts the campaign on screen into a shared-element flight. Height is 72% of the screen, clamped to 420–720. | `List<MallCampaignVm>`, `onAction`, `topInset`, `overline?`, `heroTagFor?` |
+| `MallDealBand` | **Bold-retail plate.** Colour-blocked sheet with an angled cut, an oversized discount numeral, a live countdown and an inverted CTA, with the block's products running underneath. Every figure is optional: pass null and it is not drawn. | `title`, `child`, `eyebrow?`, `topDiscountPercent?`, `endsUtc?`, `ctaLabel?`+`onCta?`, `now?` |
+| `MallEditorialSpread` | **Magazine block.** A 4:5 lead holding 62% of the width with two tiles stacked beside it; anything past the third runs on as a rail. Stacks below 360 dp. Tiles get exact boxes, so the block cannot overflow at any text scale. | `List<MallCollectionVm>`, `semanticLabel`, `onOpen?` |
+| `MallCategoryMosaic` | **Graphic block.** Uneven tiles in a repeating 58/42, 42/58, thirds rhythm, typographic by default because Catalog categories carry no artwork; uses an image with a scrim when one ever arrives. | `List<MallCategoryVm>`, `semanticLabel`, `onOpen?` |
+| `MallSignalChip` / `MallSignalLine` | One live fact — as a pill for section headers, as a bare line for cards. Tone is meaning: `urgent` is reserved for a real deadline or genuinely low stock. Numerals are tabular. | `MallSignal` |
+| `MallCountdown` | Live countdown to a real deadline. Ticks per second inside the last hour and per minute before it, stops at zero and whenever `TickerMode` mutes the subtree. Builder gets a `MallRemaining` (display + spoken) or null. | `endsUtc`, `builder`, `now?` |
 | `MallTrustStrip` | Authentic products from verified sellers, secure checkout, easy returns, live tracking. Tiles share the row when they fit and scroll horizontally otherwise. | `List<MallTrustItem>` (English defaults) |
 | `SmSkeleton.box/line/circle` | Loading primitives on `SmShimmer`. The sweep follows text direction and is static under reduced motion. Hidden from semantics. | sizes |
 | `SmSkeletonProductCard` / `SmSkeletonReelCard` / `SmSkeletonRail` | Skeletons with the same footprint as the real cards and rail. | widths |
@@ -41,7 +47,8 @@ Supporting pieces:
 
 ```
 MallProductVm     id, name, price: Money, brandName?, imageUrl?, compareAtPrice?: Money,
-                  rating?, isNew, isLowStock, isSaved      → isOnSale, discountPercent (floored)
+                  rating?, reviewCount, saleEndsUtc?, isNew, isLowStock, isSaved
+                  → isOnSale, discountPercent (floored), withSaved(saved:)
 MallReelVm        id, creatorName, posterUrl?, creatorAvatarUrl?, caption?,
                   taggedProductCount, isAiGenerated, likeCount?
 MallCreatorVm     id, name, handle?, avatarUrl?, coverUrl?, isVerified, styleTags, followerCount?
@@ -68,6 +75,42 @@ MallRail<MallProductVm>(
   itemBuilder: (context, product, _) => MallProductCard(product: product, size: MallCardSize.compact, onTap: () => …),
 )
 ```
+
+## Zones
+
+The Mall page is one system worn four ways. Zones differ in **density and dress, never in
+identity** — one palette, one type scale, one motion language runs through all four. Which zone a
+section gets is decided from the section's own data in
+`features/customer/mall_home/presentation/mall_zones.dart`, not from its id.
+
+| Zone | Blocks | Reads as |
+|---|---|---|
+| **Cinematic** | `MallCinematicHero`, the reel marquee | Full-bleed, moving, one thing at a time |
+| **Editorial** | `MallEditorialSpread`, brand plates | Asymmetric, image-led, generous whitespace |
+| **Dense discovery** | Signal rails of `MallProductCard`, creator rails | Compact, scannable, every card carries a live fact |
+| **Bold retail** | `MallDealBand`, `MallCategoryMosaic` | Colour-blocked, hard shapes, punchy CTAs |
+
+## Honest signals
+
+A signal is built from a field the API populated, or it is not built. Nothing on this page
+estimates, extrapolates, or rounds a number up to look busier than the data is.
+
+- **Allowed:** `reviewCount` behind a rating, a real `saleEndsUtc` (as a live countdown on the
+  plate, or a Kathmandu-day bucket on a card), the floored discount from `compareAtPrice`,
+  `taggedProductCount`, `followerCount`, `itemCount`, `isVerified`, rail lengths.
+- **Not allowed:** anything the contract does not carry — units sold, stock counts, live viewers,
+  trending deltas. `isLowStock` is a boolean meaning 1–5 units, so the card says "Only a few left"
+  and never a number.
+- A block whose data supports no claim simply shows no chips, and a products block only earns the
+  drop plate when it really carries a deadline or several genuine discounts.
+
+## Motion
+
+`MallScrollLink` publishes the page's scroll offset; `MallParallax`, `MallScrollFade`,
+`MallKenBurns` and `MallEnter` consume it. Each sits in its own `RepaintBoundary` and listens to a
+notifier rather than rebuilding its parent, so scrolling never repaints the page, and `MallEnter`
+drops out of the tree once its entrance finishes. All of it collapses to nothing under
+`MediaQuery.disableAnimations`.
 
 ## Design rules
 

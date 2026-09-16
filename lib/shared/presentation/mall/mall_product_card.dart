@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
@@ -23,6 +24,8 @@ class MallProductCard extends StatelessWidget {
     this.onTap,
     this.onSaveTap,
     this.showRating = true,
+    this.signal,
+    this.reserveSignal = false,
   });
 
   final MallProductVm product;
@@ -33,6 +36,15 @@ class MallProductCard extends StatelessWidget {
   final VoidCallback? onSaveTap;
   final bool showRating;
 
+  /// One live fact under the price — the dense-discovery zone's payload.
+  /// Always derived from data the API sent; see `mall_zones.dart`.
+  final MallSignal? signal;
+
+  /// Keeps the signal slot even when this card has nothing to say, so every
+  /// card in a rail is the same height. Pass it for the whole rail alongside
+  /// `heightFor(withSignal: true)`.
+  final bool reserveSignal;
+
   /// Suggested rail item widths.
   static const double compactWidth = 148;
   static const double regularWidth = 184;
@@ -41,19 +53,31 @@ class MallProductCard extends StatelessWidget {
   static const double imageAspectRatio = 4 / 5;
 
   /// Exact rendered height of a card [width] wide at the ambient text scale.
+  ///
+  /// Pass [withSignal] to match cards built with a signal slot.
   static double heightFor(
     BuildContext context, {
     required double width,
     MallCardSize size = MallCardSize.regular,
+    bool withSignal = false,
   }) => _ProductCardMetrics(
     MallMetrics.scalerOf(context),
     size,
+    withSignal: withSignal,
+    signalHeight: withSignal ? MallSignalLine.heightFor(context) : 0,
   ).cardHeight(width);
 
   @override
   Widget build(BuildContext context) {
     final strings = MallStrings.of(context);
-    final metrics = _ProductCardMetrics(MallMetrics.scalerOf(context), size);
+    final fact = signal;
+    final showSignal = reserveSignal || fact != null;
+    final metrics = _ProductCardMetrics(
+      MallMetrics.scalerOf(context),
+      size,
+      withSignal: showSignal,
+      signalHeight: showSignal ? MallSignalLine.heightFor(context) : 0,
+    );
     final item = product;
     final discount = item.discountPercent;
     final compareAt = discount == null ? null : item.compareAtPrice;
@@ -182,6 +206,13 @@ class MallProductCard extends StatelessWidget {
             ],
           ),
         ),
+        if (showSignal) ...[
+          const SizedBox(height: _ProductCardMetrics.signalGap),
+          SizedBox(
+            height: metrics.signalHeight,
+            child: fact == null ? null : MallSignalLine(signal: fact),
+          ),
+        ],
         const SizedBox(height: _ProductCardMetrics.bottomGap),
       ],
     );
@@ -238,6 +269,7 @@ class MallProductCard extends StatelessWidget {
       if (item.isNew) strings.newBadge,
       if (item.isLowStock) strings.lowStockBadge,
       if (rating != null) strings.rating(rating),
+      ?signal?.spoken,
     ].join(', ');
   }
 }
@@ -257,7 +289,12 @@ class _ScaleDownStart extends StatelessWidget {
 
 /// Type and slot heights for one card density at one text scale.
 class _ProductCardMetrics {
-  factory _ProductCardMetrics(TextScaler scaler, MallCardSize size) {
+  factory _ProductCardMetrics(
+    TextScaler scaler,
+    MallCardSize size, {
+    required bool withSignal,
+    required double signalHeight,
+  }) {
     final compact = size == MallCardSize.compact;
     final brandStyle = DesignTokens.eyebrow.copyWith(
       fontSize: compact ? 10 : 10.5,
@@ -302,6 +339,7 @@ class _ProductCardMetrics {
       brandHeight: lines(brandStyle),
       nameHeight: lines(nameStyle, 2),
       priceHeight: price > compare ? price : compare,
+      signalHeight: withSignal ? signalHeight : 0,
     );
   }
 
@@ -313,11 +351,13 @@ class _ProductCardMetrics {
     required this.brandHeight,
     required this.nameHeight,
     required this.priceHeight,
+    required this.signalHeight,
   });
 
   static const double imageGap = 10;
   static const double brandGap = 2;
   static const double nameGap = 6;
+  static const double signalGap = 5;
   static const double bottomGap = 2;
 
   final TextStyle brandStyle;
@@ -328,6 +368,9 @@ class _ProductCardMetrics {
   final double nameHeight;
   final double priceHeight;
 
+  /// Zero when the card reserves no signal slot.
+  final double signalHeight;
+
   double cardHeight(double width) =>
       (width / MallProductCard.imageAspectRatio +
               imageGap +
@@ -336,6 +379,7 @@ class _ProductCardMetrics {
               nameHeight +
               nameGap +
               priceHeight +
+              (signalHeight > 0 ? signalGap + signalHeight : 0) +
               bottomGap)
           .ceilToDouble();
 }

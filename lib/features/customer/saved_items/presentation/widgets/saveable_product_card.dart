@@ -41,23 +41,13 @@ Future<void> toggleSavedProduct(
 }
 
 /// [product] with its heart set to [saved].
+///
+/// Delegates to the view model so a field added to [MallProductVm] cannot go
+/// missing here — rebuilding it field by field silently dropped anything new.
 MallProductVm mallProductWithSaved(
   MallProductVm product, {
   required bool saved,
-}) => product.isSaved == saved
-    ? product
-    : MallProductVm(
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        brandName: product.brandName,
-        imageUrl: product.imageUrl,
-        compareAtPrice: product.compareAtPrice,
-        rating: product.rating,
-        isNew: product.isNew,
-        isLowStock: product.isLowStock,
-        isSaved: saved,
-      );
+}) => product.withSaved(saved: saved);
 
 /// A [MallProductCard] whose heart reads and toggles the shared saved list.
 class SaveableMallProductCard extends ConsumerWidget {
@@ -68,6 +58,8 @@ class SaveableMallProductCard extends ConsumerWidget {
     this.onTap,
     this.variantId,
     this.showRating = true,
+    this.signal,
+    this.reserveSignal = false,
   });
 
   final MallProductVm product;
@@ -78,8 +70,16 @@ class SaveableMallProductCard extends ConsumerWidget {
   final String? variantId;
   final bool showRating;
 
+  /// One live fact under the price. See [MallProductCard.signal].
+  final MallSignal? signal;
+
+  /// Keeps the signal slot so every card in a rail is the same height.
+  final bool reserveSignal;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Narrow by design: only this card rebuilds when its own saved state
+    // flips, never the rail and never the page.
     final saved = ref.watch(
       savedProductsNotifierProvider.select((s) => s.isSaved(product.id)),
     );
@@ -88,6 +88,8 @@ class SaveableMallProductCard extends ConsumerWidget {
       size: size,
       onTap: onTap,
       showRating: showRating,
+      signal: signal,
+      reserveSignal: reserveSignal,
       onSaveTap: () => unawaited(
         toggleSavedProduct(
           context,

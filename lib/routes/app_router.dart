@@ -594,8 +594,13 @@ GoRouter appRouter(Ref ref) {
       // Editorial collection or look.
       GoRoute(
         path: RouteNames.collection,
-        builder: (ctx, state) =>
-            CollectionScreen(slug: state.pathParameters['slug']!),
+        builder: (ctx, state) => CollectionScreen(
+          slug: state.pathParameters['slug']!,
+          // Shared-element tag when opened from tagged artwork such as the
+          // Mall's campaign hero; absent on a deep link, which just skips
+          // the flight.
+          heroTag: state.uri.queryParameters[MallRoutes.heroParam],
+        ),
       ),
 
       // A brand's public flagship storefront.

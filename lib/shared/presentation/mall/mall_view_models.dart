@@ -17,6 +17,8 @@ class MallProductVm {
     this.isNew = false,
     this.isLowStock = false,
     this.isSaved = false,
+    this.reviewCount = 0,
+    this.saleEndsUtc,
   });
 
   final String id;
@@ -34,6 +36,34 @@ class MallProductVm {
   final bool isNew;
   final bool isLowStock;
   final bool isSaved;
+
+  /// Ratings behind [rating]. Zero when the product has none.
+  final int reviewCount;
+
+  /// When the running sale ends, as the server sent it. Null when there is no
+  /// sale — never inferred.
+  final DateTime? saleEndsUtc;
+
+  /// The same product with its heart set to [saved].
+  ///
+  /// Rebuilding the view model field by field at call sites is how new fields
+  /// quietly go missing, so the copy lives here with the fields.
+  MallProductVm withSaved({required bool saved}) => saved == isSaved
+      ? this
+      : MallProductVm(
+          id: id,
+          name: name,
+          price: price,
+          brandName: brandName,
+          imageUrl: imageUrl,
+          compareAtPrice: compareAtPrice,
+          rating: rating,
+          isNew: isNew,
+          isLowStock: isLowStock,
+          isSaved: saved,
+          reviewCount: reviewCount,
+          saleEndsUtc: saleEndsUtc,
+        );
 
   bool get isOnSale {
     final was = compareAtPrice;

@@ -16,6 +16,11 @@ class MallStrings {
     this.verified = 'Verified',
     this.loading = 'Loading',
     this.featured = 'Featured',
+    this.limitedTime = 'Limited time',
+    this.shopTheDrop = 'Shop the drop',
+    this.onlyAFewLeft = 'Only a few left',
+    this.endsToday = 'Ends today',
+    this.endsTomorrow = 'Ends tomorrow',
     this.discountBadge = _discountBadge,
     this.percentOff = _percentOff,
     this.wasPrice = _wasPrice,
@@ -28,6 +33,14 @@ class MallStrings {
     this.itemCount = _itemCount,
     this.slideOf = _slideOf,
     this.reelBy = _reelBy,
+    this.reviews = _reviews,
+    this.endsIn = _endsIn,
+    this.endsInDays = _endsInDays,
+    this.upToPercentOff = _upToPercentOff,
+    this.picks = _picks,
+    this.verifiedCount = _verifiedCount,
+    this.taggedTotal = _taggedTotal,
+    this.pieces = _pieces,
   });
 
   static const MallStrings english = MallStrings();
@@ -50,6 +63,18 @@ class MallStrings {
   /// Semantic name of the campaign hero carousel.
   final String featured;
 
+  /// Eyebrow fallback on the drop block when the server sent none.
+  final String limitedTime;
+
+  /// Primary action on the drop block.
+  final String shopTheDrop;
+
+  /// Honest wording for `isLowStock`, which the contract defines as 1–5 units
+  /// left. The exact count is not sent, so no number is shown.
+  final String onlyAFewLeft;
+  final String endsToday;
+  final String endsTomorrow;
+
   /// Discount pill text, e.g. "-30%".
   final String Function(int percent) discountBadge;
 
@@ -67,6 +92,30 @@ class MallStrings {
   final String Function(int count) itemCount;
   final String Function(int position, int total) slideOf;
   final String Function(String creator) reelBy;
+
+  /// Ratings behind a score, e.g. "12 reviews".
+  final String Function(int count) reviews;
+
+  /// Live countdown, e.g. "Ends in 4h 12m".
+  final String Function(String remaining) endsIn;
+
+  /// Coarse deadline for a card, e.g. "Ends in 3 days".
+  final String Function(int days) endsInDays;
+
+  /// Best discount in a block, e.g. "Up to 30% off".
+  final String Function(int percent) upToPercentOff;
+
+  /// How many cards a rail carries, e.g. "12 picks".
+  final String Function(int count) picks;
+
+  /// Verified accounts in a rail, e.g. "4 verified".
+  final String Function(int count) verifiedCount;
+
+  /// Products tagged across a reel rail, e.g. "9 products tagged".
+  final String Function(int count) taggedTotal;
+
+  /// Products across a collection block, e.g. "48 pieces".
+  final String Function(int count) pieces;
 
   static String _discountBadge(int percent) => '-$percent%';
 
@@ -96,6 +145,25 @@ class MallStrings {
       'Slide $position of $total';
 
   static String _reelBy(String creator) => 'Reel by $creator';
+
+  static String _reviews(int count) =>
+      count == 1 ? '1 review' : '$count reviews';
+
+  static String _endsIn(String remaining) => 'Ends in $remaining';
+
+  static String _endsInDays(int days) =>
+      days == 1 ? 'Ends in 1 day' : 'Ends in $days days';
+
+  static String _upToPercentOff(int percent) => 'Up to $percent% off';
+
+  static String _picks(int count) => count == 1 ? '1 pick' : '$count picks';
+
+  static String _verifiedCount(int count) => '$count verified';
+
+  static String _taggedTotal(int count) =>
+      count == 1 ? '1 product tagged' : '$count products tagged';
+
+  static String _pieces(int count) => count == 1 ? '1 piece' : '$count pieces';
 }
 
 /// Provides [MallStrings] to the Mall components below it.

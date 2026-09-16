@@ -120,13 +120,30 @@ CatalogPage<CatalogProduct> productPage(
   totalCount: total,
 );
 
-HomeProduct homeProduct(String id, {String? name, Money? was}) => HomeProduct(
+HomeProduct homeProduct(
+  String id, {
+  String? name,
+  Money? was,
+  double? rating,
+  int reviewCount = 0,
+  DateTime? saleEndsUtc,
+  bool isLowStock = false,
+}) => HomeProduct(
   id: id,
   name: name ?? 'Product $id',
   price: rs(1500),
   compareAtPrice: was,
   brandName: 'Kathmandu Atelier',
+  rating: rating,
+  reviewCount: reviewCount,
+  isOnSale: was != null,
+  saleEndsUtc: saleEndsUtc,
+  isLowStock: isLowStock,
 );
+
+/// 4h 30m after [mallTestNow], and the same Kathmandu day: a live countdown
+/// on the drop plate and "Ends today" on the cards.
+DateTime mallTestSaleEnd() => DateTime.utc(2026, 9, 15, 17, 30);
 
 /// A signed-in page with one section of every kind.
 MallHome sampleHome({String? firstName = 'Sumendra'}) => MallHome(
@@ -164,7 +181,15 @@ MallHome sampleHome({String? firstName = 'Sumendra'}) => MallHome(
         target: HomeSeeAllTarget.productList,
         params: {'sort': 'bestselling'},
       ),
-      items: [homeProduct('p-1', name: 'Linen co-ord set'), homeProduct('p-2')],
+      items: [
+        homeProduct(
+          'p-1',
+          name: 'Linen co-ord set',
+          rating: 4.6,
+          reviewCount: 12,
+        ),
+        homeProduct('p-2', isLowStock: true),
+      ],
     ),
     const HomeReelsSection(
       id: 'shoppable-reels',
@@ -182,13 +207,31 @@ MallHome sampleHome({String? firstName = 'Sumendra'}) => MallHome(
     ),
     HomeProductsSection(
       id: 'deals',
+      eyebrow: 'Limited time',
       title: 'Deals',
-      items: [homeProduct('p-3', name: 'Silk scarf', was: rs(2000))],
+      seeAll: const HomeSeeAll(
+        target: HomeSeeAllTarget.productList,
+        params: {'onSale': 'true'},
+      ),
+      items: [
+        homeProduct(
+          'p-3',
+          name: 'Silk scarf',
+          was: rs(2000),
+          saleEndsUtc: mallTestSaleEnd(),
+        ),
+        homeProduct('p-4', name: 'Wool wrap', was: rs(3000)),
+      ],
     ),
     const HomeCategoriesSection(
       id: 'categories',
       title: 'Shop by category',
-      items: [HomeCategory(id: 'cat-1', slug: 'fashion', name: 'Fashion')],
+      items: [
+        HomeCategory(id: 'cat-1', slug: 'fashion', name: 'Fashion'),
+        HomeCategory(id: 'cat-2', slug: 'home', name: 'Home'),
+        HomeCategory(id: 'cat-3', slug: 'tech', name: 'Tech'),
+        HomeCategory(id: 'cat-4', slug: 'beauty', name: 'Beauty'),
+      ],
     ),
     const HomeBrandsSection(
       id: 'brands',
@@ -223,6 +266,16 @@ MallHome sampleHome({String? firstName = 'Sumendra'}) => MallHome(
           slug: 'minimal-workwear',
           title: 'Minimal workwear',
           itemCount: 8,
+        ),
+        HomeCollection(
+          slug: 'monsoon-layers',
+          title: 'Monsoon layers',
+          itemCount: 12,
+        ),
+        HomeCollection(
+          slug: 'gold-hour',
+          title: 'Gold hour',
+          itemCount: 6,
         ),
       ],
     ),
