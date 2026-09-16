@@ -124,6 +124,15 @@ void main() {
       expect(body['locationCapturedFrom'], 2);
     });
 
+    test('rounds decimal GPS accuracy to the API integer contract', () {
+      final body = ShippingAddressDto.writeBody(
+        gpsAddress.copyWith(locationAccuracyMetres: 8.42),
+      );
+
+      expect(body['locationAccuracyMetres'], 8);
+      expect(body['locationAccuracyMetres'], isA<int>());
+    });
+
     test('never sends SharedMapsLink (4) — the server stamps that', () {
       const linkOnly = ShippingAddress(
         id: 'addr-2',

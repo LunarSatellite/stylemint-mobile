@@ -71,7 +71,9 @@ abstract class ShippingAddressDto with _$ShippingAddressDto {
       if (address.hasPoint) ...{
         'latitude': address.latitude,
         'longitude': address.longitude,
-        'locationAccuracyMetres': address.locationAccuracyMetres,
+        // Geolocator reports a double, while the API contract stores whole
+        // metres (int?). A decimal makes System.Text.Json reject the body.
+        'locationAccuracyMetres': address.locationAccuracyMetres?.round(),
         'locationCapturedFrom':
             (address.locationCapturedFrom ?? LocationSource.deviceGps)
                 .wireValue,
