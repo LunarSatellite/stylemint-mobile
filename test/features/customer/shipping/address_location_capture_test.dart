@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -110,8 +111,8 @@ class _FakeShippingRepository implements ShippingRepository {
       right(unit);
 }
 
-/// Stand-in for the GoogleMap surface: a button that reports a dragged pin,
-/// so the drag path is testable without a platform view or an API key.
+/// Stand-in for the OpenStreetMap surface: a button that reports a dragged
+/// pin, so the drag path is testable without fetching a single tile.
 Widget _fakeMap(
   BuildContext context,
   double latitude,
@@ -645,6 +646,94 @@ void main() {
       );
       expect(repository.lastWritten!.latitude, 27.68);
       expect(repository.lastWritten!.longitude, 85.31);
+    });
+
+    testWidgets('the real map credits OpenStreetMap on screen', (tester) async {
+      // The default builder — no override — so this exercises the real
+      // flutter_map surface. Tiles can't load in a widget test, which is
+      // exactly the offline case: the map must still build, and the OSM
+      // credit must still be painted.
+      await tester.binding.setSurfaceSize(const Size(400, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: AddressPinMap(
+                latitude: 27.7172,
+                longitude: 85.324,
+                onPinMoved: (_, _) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(find.byType(TextSourceAttribution), findsOneWidget);
+      expect(find.text('© OpenStreetMap contributors'), findsOneWidget);
+
+      // The credit sits wholly inside the 180px map box — visible, not
+      // clipped away by the rounded corners or pushed off the bottom.
+      final mapBox = tester.getRect(find.byKey(const Key('address_pin_map')));
+      final credit = tester.getRect(find.byType(TextSourceAttribution));
+      expect(mapBox.contains(credit.topLeft), isTrue);
+      expect(mapBox.contains(credit.bottomRight - const Offset(1, 1)), isTrue);
+
+      // Tiles come from OSM, tagged with a real user agent.
+      final tileLayer = tester.widget<TileLayer>(find.byType(TileLayer));
+      expect(tileLayer.urlTemplate, contains('tile.openstreetmap.org'));
+      expect(
+        tileLayer.tileProvider.headers['User-Agent'],
+        'flutter_map (app.stylemint.stylemint_mobile_frontend)',
+      );
+
+      // No tile error escaped as an exception.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the real pin still drags with no tiles loaded', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(400, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      double? movedLat;
+      double? movedLng;
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: AddressPinMap(
+                latitude: 27.7172,
+                longitude: 85.324,
+                onPinMoved: (lat, lng) {
+                  movedLat = lat;
+                  movedLng = lng;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Drag the marker south-east across the map.
+      await tester.drag(
+        find.byKey(const Key('address_pin_marker')),
+        const Offset(30, 30),
+      );
+      await tester.pump();
+
+      // One callback, at the end of the gesture — not one per frame.
+      expect(movedLat, isNotNull);
+      expect(movedLng, isNotNull);
+      // Dragging right/down moves east and south.
+      expect(movedLng! > 85.324, isTrue);
+      expect(movedLat! < 27.7172, isTrue);
+      expect(tester.takeException(), isNull);
     });
   });
 

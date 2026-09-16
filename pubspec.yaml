@@ -90,7 +90,10 @@ dependencies:
   package_info_plus: ^9.0.1
 
   # ── Maps (Pillar B) ───────────────────────────────────────────────────────
-  google_maps_flutter: ^2.9.0
+  # OpenStreetMap raster tiles via flutter_map: no API key, no billing account.
+  # Usage is bound by the OSM tile policy — see address_pin_map.dart.
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
   geolocator: ^14.0.1
 
   # ── i18n ─────────────────────────────────────────────────────────────────
