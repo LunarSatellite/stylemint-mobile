@@ -117,6 +117,8 @@ class ProductListingScreen extends ConsumerWidget {
             products: [for (final product in data.products) product.toVm()],
             onProductTap: (product) =>
                 unawaited(context.push(MallRoutes.product(product.id))),
+            onReelTap: (_, reel) =>
+                unawaited(context.push(MallRoutes.reel(reel.reelId))),
           ),
           SliverToBoxAdapter(
             child: MallPagingFooter(

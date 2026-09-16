@@ -2,6 +2,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/product_reel_vm.dart';
 
 /// Nepal keeps UTC+5:45 all year (no daylight saving).
 const Duration nepalUtcOffset = Duration(hours: 5, minutes: 45);
@@ -36,6 +37,7 @@ extension HomeProductToVm on HomeProduct {
     isLowStock: isLowStock,
     reviewCount: reviewCount,
     saleEndsUtc: saleEndsUtc,
+    reel: reel?.toVm(),
   );
 }
 
@@ -49,6 +51,7 @@ extension CatalogProductToVm on CatalogProduct {
     compareAtPrice: compareAtPrice,
     rating: rating,
     isLowStock: isLowStock,
+    reel: reel?.toVm(),
   );
 }
 

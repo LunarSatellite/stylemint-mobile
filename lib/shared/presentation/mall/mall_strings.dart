@@ -27,6 +27,9 @@ class MallStrings {
     this.rating = _rating,
     this.saveItem = _saveItem,
     this.unsaveItem = _unsaveItem,
+    this.watchReel = 'Watch reel',
+    this.reelDuration = _reelDuration,
+    this.spokenReelDuration = _spokenReelDuration,
     this.taggedProducts = _taggedProducts,
     this.likes = _likes,
     this.followers = _followers,
@@ -86,6 +89,14 @@ class MallStrings {
   final String Function(double rating) rating;
   final String Function(String name) saveItem;
   final String Function(String name) unsaveItem;
+  /// What tapping a reel tile does.
+  final String watchReel;
+
+  /// Runtime on a reel poster, e.g. "0:12".
+  final String Function(int seconds) reelDuration;
+
+  /// Spoken runtime, e.g. "12 second reel".
+  final String Function(int seconds) spokenReelDuration;
   final String Function(int count) taggedProducts;
   final String Function(int count) likes;
   final String Function(int count) followers;
@@ -129,6 +140,15 @@ class MallStrings {
   static String _saveItem(String name) => 'Save $name';
 
   static String _unsaveItem(String name) => 'Remove $name from saved';
+
+  static String _reelDuration(int seconds) {
+    final total = seconds < 0 ? 0 : seconds;
+    final minutes = total ~/ 60;
+    return '$minutes:${(total % 60).toString().padLeft(2, '0')}';
+  }
+
+  static String _spokenReelDuration(int seconds) =>
+      seconds == 1 ? '1 second reel' : '$seconds second reel';
 
   static String _taggedProducts(int count) =>
       count == 1 ? '1 product' : '$count products';

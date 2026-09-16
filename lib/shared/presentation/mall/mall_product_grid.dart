@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_product_card.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_product_tile.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/sm_skeleton.dart';
@@ -10,7 +10,10 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Responsive product grid (box widget): 2 columns on phones, 3 from 600dp,
 /// 4 from 900dp of available width. Row heights come from
-/// [MallProductCard.heightFor], so cards never overflow at any text scale.
+/// [MallProductTile.heightFor], so tiles never overflow at any text scale.
+///
+/// Tiles are video-first: a reel tile where the product has a reel, the
+/// designed type tile where it does not. No product photo is built here.
 ///
 /// Inside a CustomScrollView use [MallSliverProductGrid] instead.
 class MallProductGrid extends StatelessWidget {
@@ -18,6 +21,7 @@ class MallProductGrid extends StatelessWidget {
     required this.products,
     super.key,
     this.onProductTap,
+    this.onReelTap,
     this.onSaveTap,
     this.size = MallCardSize.regular,
     this.isLoading = false,
@@ -33,6 +37,9 @@ class MallProductGrid extends StatelessWidget {
 
   final List<MallProductVm> products;
   final ValueChanged<MallProductVm>? onProductTap;
+
+  /// Opens the reel on a tile that has one. Falls back to [onProductTap].
+  final void Function(MallProductVm product, MallReelRef reel)? onReelTap;
 
   /// Shows save hearts when non-null.
   final ValueChanged<MallProductVm>? onSaveTap;
@@ -88,6 +95,7 @@ class MallProductGrid extends StatelessWidget {
             size: size,
             product: isLoading ? null : products[index],
             onProductTap: onProductTap,
+            onReelTap: onReelTap,
             onSaveTap: onSaveTap,
           ),
         );
@@ -108,6 +116,7 @@ class MallSliverProductGrid extends StatelessWidget {
     required this.products,
     super.key,
     this.onProductTap,
+    this.onReelTap,
     this.onSaveTap,
     this.size = MallCardSize.regular,
     this.isLoading = false,
@@ -120,6 +129,9 @@ class MallSliverProductGrid extends StatelessWidget {
 
   final List<MallProductVm> products;
   final ValueChanged<MallProductVm>? onProductTap;
+
+  /// Opens the reel on a tile that has one. Falls back to [onProductTap].
+  final void Function(MallProductVm product, MallReelRef reel)? onReelTap;
   final ValueChanged<MallProductVm>? onSaveTap;
   final MallCardSize size;
   final bool isLoading;
@@ -153,6 +165,7 @@ class MallSliverProductGrid extends StatelessWidget {
               size: size,
               product: isLoading ? null : products[index],
               onProductTap: onProductTap,
+              onReelTap: onReelTap,
               onSaveTap: onSaveTap,
             ),
           ),
@@ -167,15 +180,18 @@ Widget _buildTile({
   required MallCardSize size,
   required MallProductVm? product,
   required ValueChanged<MallProductVm>? onProductTap,
+  required void Function(MallProductVm product, MallReelRef reel)? onReelTap,
   required ValueChanged<MallProductVm>? onSaveTap,
 }) {
   if (product == null) {
     return SmSkeletonProductCard(width: layout.tileWidth, size: size);
   }
-  return MallProductCard(
+  final openReel = onReelTap;
+  return MallProductTile(
     product: product,
     size: size,
     onTap: onProductTap == null ? null : () => onProductTap(product),
+    onReelTap: openReel == null ? null : (reel) => openReel(product, reel),
     onSaveTap: onSaveTap == null ? null : () => onSaveTap(product),
   );
 }
@@ -204,7 +220,7 @@ class _GridLayout {
     return _GridLayout(
       columns: columns,
       tileWidth: tileWidth,
-      tileHeight: MallProductCard.heightFor(
+      tileHeight: MallProductTile.heightFor(
         context,
         width: tileWidth,
         size: size,

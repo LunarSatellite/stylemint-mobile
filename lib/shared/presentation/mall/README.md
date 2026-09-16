@@ -18,7 +18,11 @@ localise, wrap the page in a `MallStringsScope`.
 |---|---|---|
 | `MallSectionHeader` | Section title in the display face. Optional eyebrow, subtitle and "See all" (44dp target, spoken as "See all, {title}"). | `title`, `eyebrow?`, `subtitle?`, `onSeeAll?` |
 | `MallRail<T>` | Horizontal, lazily built rail that snaps item by item. Shows skeletons while loading and an empty-state slot when empty. | `items`, `itemBuilder`, `itemWidth`, `height`, `semanticLabel`, `isLoading`, `skeletonBuilder?`, `emptyState?` |
-| `MallProductCard` | 4:5 image with badges (discount, New, Low stock), rating and a save heart. Below it: brand, a two-line name, and the price with a struck-through original. Sizes: `compact` and `regular`. | `MallProductVm`, `onTap?`, `onSaveTap?` |
+| `MallProductTile` | **The Mall's product tile.** Picks `MallReelTile` when the product has a reel and `MallTypeTile` when it does not. Never builds a product photo — the Mall is video-first and photos belong to the product details page (owner directive, 2026-09-16). | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?` |
+| `MallReelTile` | 4:5 reel poster with the play affordance, the reel's length, its hook and — whenever flagged — the **AI-generated** disclosure, which wraps and is never truncated. Brand, name and price sit underneath. Tapping opens the reel. Holds the screen's single play slot when it is the most visible reel, and its play mark then fills with brand green. | `MallProductVm`, `MallReelRef`, `onTap?`, `onSaveTap?` |
+| `MallTypeTile` | The no-photo tile for the majority of the catalogue: a tonal ground picked deterministically from the product id, the brand as a tracked eyebrow, the name set large in Instrument Serif, a hairline and the price. Same footprint as `MallReelTile`, so a row mixes the two. | `MallProductVm`, `onTap?`, `onSaveTap?` |
+| `MallReelPlaySlot` / `MallReelPlaySlotController` | Grants one tile on screen the single play slot — the most visible one, over half in view. Never grants one under `MediaQuery.disableAnimations`. Nothing plays inline in the Mall today (see below); the slot decides which tile is "the one on screen". | `id`, `builder(context, holdsSlot)` |
+| `MallProductCard` | 4:5 **photo** with badges (discount, New, Low stock), rating and a save heart. Below it: brand, a two-line name, and the price with a struck-through original. For the product details page and the surfaces that belong to it — not for Mall surfaces. Sizes: `compact` and `regular`. | `MallProductVm`, `onTap?`, `onSaveTap?` |
 | `MallProductGrid` / `MallSliverProductGrid` | Responsive grid: 2 columns under 600dp, 3 from 600dp, 4 from 900dp of available width. Box and sliver versions. | `List<MallProductVm>`, `onProductTap?`, `onSaveTap?`, `isLoading`, `emptyState?` |
 | `MallReelCard` | 9:16 poster with a play mark, creator, tagged-product count and like count. Always shows the **AI-generated** label when flagged; the label wraps and is never truncated. | `MallReelVm`, `onTap?`, `onTaggedProductsTap?` (makes the product pill its own 44dp button) |
 | `MallCreatorCard` | Cover strip, overlapping avatar, name and verified tick, style tags on one line, follower count, and a follow-button slot. | `MallCreatorVm`, `onTap?`, `followAction?` |
@@ -47,8 +51,11 @@ Supporting pieces:
 
 ```
 MallProductVm     id, name, price: Money, brandName?, imageUrl?, compareAtPrice?: Money,
-                  rating?, reviewCount, saleEndsUtc?, isNew, isLowStock, isSaved
+                  rating?, reviewCount, saleEndsUtc?, isNew, isLowStock, isSaved,
+                  reel?: MallReelRef
                   → isOnSale, discountPercent (floored), withSaved(saved:)
+MallReelRef       reelId, posterUrl?, hook?, isAiGenerated, durationSeconds
+                  → hasDuration. Null on most products (24 of 106 in production).
 MallReelVm        id, creatorName, posterUrl?, creatorAvatarUrl?, caption?,
                   taggedProductCount, isAiGenerated, likeCount?
 MallCreatorVm     id, name, handle?, avatarUrl?, coverUrl?, isVerified, styleTags, followerCount?
@@ -89,6 +96,21 @@ section gets is decided from the section's own data in
 | **Editorial** | `MallEditorialSpread`, brand plates | Asymmetric, image-led, generous whitespace |
 | **Dense discovery** | Signal rails of `MallProductCard`, creator rails | Compact, scannable, every card carries a live fact |
 | **Bold retail** | `MallDealBand`, `MallCategoryMosaic` | Colour-blocked, hard shapes, punchy CTAs |
+
+## Video first, photos on the details page
+
+The Mall shows reels, never product photos (owner directive, 2026-09-16). Every Mall surface —
+home (all zones), the product listing and its filter results, the brand storefront including Shop
+All, and the creator storefront — builds `MallProductTile`. `MallProductCard` and its photo stay
+for the product details page and the rails that belong to it.
+
+**One reel plays at a time, and today none plays inline.** Mall tiles are posters that open the
+reel on tap, because a rail tile is 148–184 dp wide and YouTube's Required Minimum Functionality
+needs a player of at least 200 × 200 px, the contract's `reel` carries no permalink (so Facebook
+and Instagram sources cannot resolve to an embed at all), and re-attaching a WebView to whichever
+tile is most visible would thrash the 3.8 GB test phone, which has room for about two players in
+total. `MallReelPlaySlotController` still enforces the one-tile rule and is the seam an inline
+player plugs into.
 
 ## Honest signals
 

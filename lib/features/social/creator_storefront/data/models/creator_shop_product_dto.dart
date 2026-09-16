@@ -1,6 +1,8 @@
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_storefront/domain/entities/creator_shop_product.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 /// Reels `CreatorShopProductDto`.
 class CreatorShopProductDto {
@@ -14,6 +16,7 @@ class CreatorShopProductDto {
     this.priceCurrency,
     this.reelCount = 0,
     this.lastTaggedUtc,
+    this.reel,
   });
 
   factory CreatorShopProductDto.fromJson(Map<String, dynamic> json) =>
@@ -27,6 +30,8 @@ class CreatorShopProductDto {
         vendorDisplayName: readString(json['vendorDisplayName']),
         reelCount: readInt(json['reelCount']),
         lastTaggedUtc: readDate(json['lastTaggedUtc']),
+        // Nullable and not on the server yet.
+        reel: readProductReelRef(json['reel']),
       );
 
   final String productId;
@@ -40,6 +45,9 @@ class CreatorShopProductDto {
   final String vendorDisplayName;
   final int reelCount;
   final DateTime? lastTaggedUtc;
+
+  /// The reel this product is sold through, when the payload carries one.
+  final ProductReelRef? reel;
 
   static const String defaultCurrency = 'NPR';
 
@@ -59,6 +67,7 @@ class CreatorShopProductDto {
       imageUrl: primaryImageUrl,
       reelCount: reelCount < 0 ? 0 : reelCount,
       lastTaggedUtc: lastTaggedUtc,
+      reel: reel,
     );
   }
 }

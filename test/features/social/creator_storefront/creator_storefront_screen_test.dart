@@ -164,7 +164,7 @@ void main() {
     await tapStorefrontTab(tester, 'Shop');
 
     List<String> names() => tester
-        .widgetList<MallProductCard>(find.byType(MallProductCard))
+        .widgetList<MallProductTile>(find.byType(MallProductTile))
         .map((card) => card.product.name)
         .toList();
 

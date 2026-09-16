@@ -98,6 +98,58 @@ const MallProductVm plainProduct = MallProductVm(
   price: Money(amount: 1800, currency: npr),
 );
 
+/// A product photo URL. Mall surfaces must never build it.
+const String productPhotoUrl = 'https://example.com/product-photo.jpg';
+
+const String reelPosterUrl = 'https://example.com/reel-poster.jpg';
+
+const MallReelRef productReel = MallReelRef(
+  reelId: 'pr-1',
+  posterUrl: reelPosterUrl,
+  hook: 'Styled three ways for the monsoon',
+  durationSeconds: 12,
+);
+
+const MallReelRef aiProductReel = MallReelRef(
+  reelId: 'pr-2',
+  posterUrl: reelPosterUrl,
+  isAiGenerated: true,
+  durationSeconds: 8,
+);
+
+/// Carries a photo *and* a reel: the tile must show the reel and never the
+/// photo.
+const MallProductVm reelProduct = MallProductVm(
+  id: 'p-reel',
+  brandName: 'Kathmandu Atelier',
+  name: longProductName,
+  price: Money(amount: 3499, currency: npr),
+  compareAtPrice: Money(amount: 4999, currency: npr),
+  imageUrl: productPhotoUrl,
+  rating: 4.6,
+  reel: productReel,
+);
+
+const MallProductVm aiReelProduct = MallProductVm(
+  id: 'p-ai-reel',
+  brandName: 'Loom',
+  name: 'Hand-loomed scarf',
+  price: Money(amount: 2100, currency: npr),
+  imageUrl: productPhotoUrl,
+  reel: aiProductReel,
+);
+
+/// The majority case: a photo on the record, no reel. The Mall shows the
+/// type tile and builds no photo.
+const MallProductVm photoOnlyProduct = MallProductVm(
+  id: 'p-photo',
+  brandName: 'Kathmandu Atelier',
+  name: longProductName,
+  price: Money(amount: 1800, currency: npr),
+  imageUrl: productPhotoUrl,
+  isNew: true,
+);
+
 const MallReelVm aiReel = MallReelVm(
   id: 'r-ai',
   creatorName: 'Priya Styles With A Long Display Name',

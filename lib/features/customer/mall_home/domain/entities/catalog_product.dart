@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 /// A publicly listed product as a Catalog listing card.
 class CatalogProduct {
@@ -14,7 +15,11 @@ class CatalogProduct {
     this.reviewCount = 0,
     this.isLowStock = false,
     this.isOutOfStock = false,
+    this.reel,
   });
+
+  /// The reel this product is sold through. Null for most products.
+  final ProductReelRef? reel;
 
   final String id;
   final String name;

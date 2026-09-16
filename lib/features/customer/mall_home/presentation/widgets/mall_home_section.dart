@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_view_mappers.dart';
@@ -325,8 +326,8 @@ class _SignalRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = size == MallCardSize.compact
-        ? MallProductCard.compactWidth
-        : MallProductCard.regularWidth;
+        ? MallProductTile.compactWidth
+        : MallProductTile.regularWidth;
     final withSignal = mallRailHasSignals(
       items,
       now: now,
@@ -335,19 +336,21 @@ class _SignalRail extends StatelessWidget {
     return MallRail<HomeProduct>(
       items: items,
       itemWidth: width,
-      height: MallProductCard.heightFor(
+      height: MallProductTile.heightFor(
         context,
         width: width,
         size: size,
         withSignal: withSignal,
       ),
       semanticLabel: semanticLabel,
-      itemBuilder: (_, product, _) => SaveableMallProductCard(
+      itemBuilder: (context, product, _) => SaveableMallProductTile(
         product: product.toVm(),
         size: size,
         signal: mallProductSignal(product, now: now, strings: strings),
         reserveSignal: withSignal,
         onTap: () => onOpenProduct(product.id),
+        onReelTap: (reel) =>
+            unawaited(context.push(MallRoutes.reel(reel.reelId))),
       ),
     );
   }

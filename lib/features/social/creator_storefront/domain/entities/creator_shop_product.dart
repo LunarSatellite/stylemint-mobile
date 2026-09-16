@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 /// A publicly listed product a creator tagged on their public reels.
 class CreatorShopProduct {
@@ -11,7 +12,11 @@ class CreatorShopProduct {
     this.imageUrl,
     this.reelCount = 0,
     this.lastTaggedUtc,
+    this.reel,
   });
+
+  /// The reel this product is sold through. Null for most products.
+  final ProductReelRef? reel;
 
   final String productId;
   final String name;

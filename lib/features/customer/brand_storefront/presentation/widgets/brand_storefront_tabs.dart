@@ -228,8 +228,8 @@ class BrandHomeTab extends ConsumerWidget {
     required String title,
     required VoidCallback onSeeAll,
   }) {
-    const width = MallProductCard.compactWidth;
-    final height = MallProductCard.heightFor(
+    const width = MallProductTile.compactWidth;
+    final height = MallProductTile.heightFor(
       context,
       width: width,
       size: MallCardSize.compact,
@@ -261,10 +261,12 @@ class BrandHomeTab extends ConsumerWidget {
             itemWidth: width,
             height: height,
             semanticLabel: title,
-            itemBuilder: (context, product, _) => SaveableMallProductCard(
+            itemBuilder: (context, product, _) => SaveableMallProductTile(
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.id),
+              onReelTap: (reel) =>
+                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
             ),
           ),
         ),
@@ -485,6 +487,8 @@ class BrandProductsTab extends ConsumerWidget {
             MallSliverProductGrid(
               products: [for (final product in loaded.items) product.toVm()],
               onProductTap: (product) => _openProduct(context, product.id),
+              onReelTap: (_, reel) =>
+                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
             ),
             StorefrontSliverPagingFooter(
               state: loaded,

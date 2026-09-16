@@ -4,7 +4,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/mall_json_readers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 part 'home_dto.freezed.dart';
 part 'home_dto.g.dart';
@@ -410,6 +412,10 @@ abstract class HomeProductCardDto with _$HomeProductCardDto {
     @Default(false) bool isLowStock,
     @Default(false) bool isOnSale,
     DateTime? saleEndsUtc,
+    // Nullable and not on the server yet; read tolerantly so a product still
+    // renders (as its type tile) whatever shape arrives.
+    @JsonKey(fromJson: readProductReelRef, includeToJson: false)
+    ProductReelRef? reel,
   }) = _HomeProductCardDto;
 
   const HomeProductCardDto._();
@@ -435,6 +441,7 @@ abstract class HomeProductCardDto with _$HomeProductCardDto {
       isLowStock: isLowStock,
       isOnSale: isOnSale,
       saleEndsUtc: saleEndsUtc,
+      reel: reel,
     );
   }
 }

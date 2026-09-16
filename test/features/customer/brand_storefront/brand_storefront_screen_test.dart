@@ -175,7 +175,7 @@ void main() {
     await tester.tap(find.text('Clear filters'));
     await settleStorefront(tester);
     expect(catalog.queries.last.inStock, isFalse);
-    expect(find.byType(MallProductCard), findsOneWidget);
+    expect(find.byType(MallProductTile), findsOneWidget);
   });
 
   testWidgets('new and reels tabs show products and labelled reels', (
@@ -187,7 +187,7 @@ void main() {
 
     await tapStorefrontTab(tester, 'New');
     expect(find.text('New arrivals'), findsOneWidget);
-    expect(find.byType(MallProductCard), findsOneWidget);
+    expect(find.byType(MallProductTile), findsOneWidget);
 
     await tapStorefrontTab(tester, 'Reels');
     expect(find.byType(StorefrontReelTile), findsNWidgets(2));

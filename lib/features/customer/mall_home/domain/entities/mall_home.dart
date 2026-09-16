@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 /// The Mall home page (`GET api/v1/public/home`): sections in display order.
 class MallHome {
@@ -236,6 +237,7 @@ class HomeProduct {
     this.isLowStock = false,
     this.isOnSale = false,
     this.saleEndsUtc,
+    this.reel,
   });
 
   final String id;
@@ -243,7 +245,13 @@ class HomeProduct {
   final Money price;
   final String? brandName;
   final String? vendorAccountId;
+
+  /// Product photo. The Mall's tiles never build one — photos are the
+  /// product details page's (owner directive, 2026-09-16).
   final String? imageUrl;
+
+  /// The reel this product is sold through. Null for most products.
+  final ProductReelRef? reel;
 
   /// Null unless on sale.
   final Money? compareAtPrice;

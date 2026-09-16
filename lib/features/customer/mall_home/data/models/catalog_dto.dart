@@ -5,7 +5,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/mall_json_readers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
 
 part 'catalog_dto.freezed.dart';
 part 'catalog_dto.g.dart';
@@ -33,6 +35,10 @@ abstract class CatalogProductDto with _$CatalogProductDto {
     List<CatalogImageDto> images,
     CatalogFlashSaleDto? activeFlashSale,
     String? vendorDisplayName,
+    // Nullable and not on the server yet; read tolerantly so a product still
+    // renders (as its type tile) whatever shape arrives.
+    @JsonKey(fromJson: readProductReelRef, includeToJson: false)
+    ProductReelRef? reel,
   }) = _CatalogProductDto;
 
   const CatalogProductDto._();
@@ -72,6 +78,7 @@ abstract class CatalogProductDto with _$CatalogProductDto {
       reviewCount: reviewCount,
       isLowStock: stock != null && stock > 0 && stock <= lowStockThreshold,
       isOutOfStock: const {'3', 'outofstock'}.contains(state.toLowerCase()),
+      reel: reel,
     );
   }
 }

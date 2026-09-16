@@ -20,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/social/creator_storefront/dom
 import 'package:stylemint_mobile_frontend/features/social/creator_storefront/presentation/creator_shop_view.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_storefront/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/product_reel_vm.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// The tabs of a creator storefront, in order.
@@ -42,6 +43,7 @@ extension CreatorShopProductToVm on CreatorShopProduct {
     price: price,
     brandName: vendorDisplayName.trim().isEmpty ? null : vendorDisplayName,
     imageUrl: imageUrl,
+    reel: reel?.toVm(),
   );
 }
 
@@ -203,8 +205,8 @@ class CreatorHomeTab extends ConsumerWidget {
     BuildContext context,
     StorefrontPagedState<CreatorShopProduct> state,
   ) {
-    const width = MallProductCard.compactWidth;
-    final height = MallProductCard.heightFor(
+    const width = MallProductTile.compactWidth;
+    final height = MallProductTile.heightFor(
       context,
       width: width,
       size: MallCardSize.compact,
@@ -236,10 +238,12 @@ class CreatorHomeTab extends ConsumerWidget {
             itemWidth: width,
             height: height,
             semanticLabel: "$firstName's picks",
-            itemBuilder: (context, product, _) => SaveableMallProductCard(
+            itemBuilder: (context, product, _) => SaveableMallProductTile(
               product: product.toVm(),
               size: MallCardSize.compact,
               onTap: () => _openProduct(context, product.productId),
+              onReelTap: (reel) =>
+                  unawaited(context.push(MallRoutes.reel(reel.reelId))),
             ),
           ),
         ),
@@ -535,6 +539,8 @@ class CreatorShopTab extends ConsumerWidget {
       MallSliverProductGrid(
         products: [for (final product in visible) product.toVm()],
         onProductTap: (product) => _openProduct(context, product.id),
+        onReelTap: (_, reel) =>
+            unawaited(context.push(MallRoutes.reel(reel.reelId))),
       ),
       StorefrontSliverPagingFooter(
         state: loaded,

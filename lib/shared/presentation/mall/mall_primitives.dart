@@ -119,6 +119,59 @@ class MallBadge extends StatelessWidget {
   }
 }
 
+/// Play affordance over a poster: a translucent disc, or the brand-green
+/// disc when the tile holds the screen's single play slot.
+///
+/// No blur, so rails of posters stay cheap. Decorative — the tile around it
+/// carries the spoken label.
+class MallPlayMark extends StatelessWidget {
+  const MallPlayMark({
+    super.key,
+    this.primed = false,
+    this.size = DesignTokens.minTouchTarget,
+  });
+
+  /// The tile is the most visible reel on screen: the mark fills with brand
+  /// green so the one reel the viewer is looking at invites the tap.
+  final bool primed;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = MallMetrics.reduceMotion(context)
+        ? Duration.zero
+        : DesignTokens.motionFast;
+    return ExcludeSemantics(
+      child: AnimatedContainer(
+        duration: duration,
+        curve: DesignTokens.motionCurve,
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: primed
+              ? DesignTokens.primaryGreen
+              : const Color(0x59000000),
+          shape: BoxShape.circle,
+          border: Border.fromBorderSide(
+            BorderSide(
+              color: primed
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.glassStroke,
+            ),
+          ),
+        ),
+        child: Icon(
+          Icons.play_arrow_rounded,
+          size: size * 0.6,
+          color: primed
+              ? DesignTokens.buttonPrimaryText
+              : DesignTokens.textWhite,
+        ),
+      ),
+    );
+  }
+}
+
 /// Green verified tick that scales with the adjacent text.
 class MallVerifiedBadge extends StatelessWidget {
   const MallVerifiedBadge({super.key, this.size = 16});

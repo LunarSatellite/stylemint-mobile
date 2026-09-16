@@ -102,16 +102,84 @@ class SaveableMallProductCard extends ConsumerWidget {
   }
 }
 
+/// A [MallProductTile] whose heart reads and toggles the shared saved list.
+///
+/// The Mall's tile: a reel where the product has one, the designed type tile
+/// where it does not, never a product photo. [SaveableMallProductCard] stays
+/// for the product details page, which keeps its photos.
+class SaveableMallProductTile extends ConsumerWidget {
+  const SaveableMallProductTile({
+    required this.product,
+    super.key,
+    this.size = MallCardSize.regular,
+    this.onTap,
+    this.onReelTap,
+    this.variantId,
+    this.showRating = true,
+    this.signal,
+    this.reserveSignal = false,
+  });
+
+  final MallProductVm product;
+  final MallCardSize size;
+
+  /// Opens the product.
+  final VoidCallback? onTap;
+
+  /// Opens the reel on a tile that has one. Falls back to [onTap].
+  final void Function(MallReelRef reel)? onReelTap;
+
+  /// The SKU to save; the product's default variant when null.
+  final String? variantId;
+  final bool showRating;
+
+  /// One live fact under the price. See [MallProductTile.signal].
+  final MallSignal? signal;
+
+  /// Keeps the signal slot so every tile in a rail is the same height.
+  final bool reserveSignal;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Narrow by design: only this tile rebuilds when its own saved state
+    // flips, never the rail and never the page.
+    final saved = ref.watch(
+      savedProductsNotifierProvider.select((s) => s.isSaved(product.id)),
+    );
+    return MallProductTile(
+      product: mallProductWithSaved(product, saved: saved),
+      size: size,
+      onTap: onTap,
+      onReelTap: onReelTap,
+      showRating: showRating,
+      signal: signal,
+      reserveSignal: reserveSignal,
+      onSaveTap: () => unawaited(
+        toggleSavedProduct(
+          context,
+          ref,
+          productId: product.id,
+          variantId: variantId,
+        ),
+      ),
+    );
+  }
+}
+
 /// A [MallSliverProductGrid] whose hearts read and toggle the saved list.
 class SaveableSliverProductGrid extends ConsumerWidget {
   const SaveableSliverProductGrid({
     required this.products,
     super.key,
     this.onProductTap,
+    this.onReelTap,
   });
 
   final List<MallProductVm> products;
   final ValueChanged<MallProductVm>? onProductTap;
+
+  /// Opens the reel on a tile that has one. Falls back to [onProductTap].
+  final void Function(MallProductVm product, MallReelRef reel)? onReelTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,6 +192,7 @@ class SaveableSliverProductGrid extends ConsumerWidget {
           mallProductWithSaved(product, saved: saved.containsKey(product.id)),
       ],
       onProductTap: onProductTap,
+      onReelTap: onReelTap,
       onSaveTap: (product) => unawaited(
         toggleSavedProduct(context, ref, productId: product.id),
       ),

@@ -4,6 +4,39 @@ import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 // Small immutable view models consumed by the Mall kit. Feature screens map
 // their own domain entities into these; the kit never sees DTOs or entities.
 
+/// The reel a product is sold through, when it has one.
+///
+/// Null on most products — 24 of 106 carry a reel on production data — so
+/// every Mall surface has to render well without it. The field does not
+/// exist on the server yet either, so it is always parsed defensively.
+@immutable
+class MallReelRef {
+  const MallReelRef({
+    required this.reelId,
+    this.posterUrl,
+    this.hook,
+    this.isAiGenerated = false,
+    this.durationSeconds = 0,
+  });
+
+  final String reelId;
+
+  /// Poster frame. Null until the platform sync has run.
+  final String? posterUrl;
+
+  /// The reel's opening line.
+  final String? hook;
+
+  /// AI-generated reels must carry the visible "AI-generated" label. Only
+  /// ever what the server sent — never inferred.
+  final bool isAiGenerated;
+
+  /// Runtime in whole seconds; 0 when unknown, and then no duration shows.
+  final int durationSeconds;
+
+  bool get hasDuration => durationSeconds > 0;
+}
+
 @immutable
 class MallProductVm {
   const MallProductVm({
@@ -19,12 +52,18 @@ class MallProductVm {
     this.isSaved = false,
     this.reviewCount = 0,
     this.saleEndsUtc,
+    this.reel,
   });
 
   final String id;
   final String name;
   final Money price;
   final String? brandName;
+
+  /// Product photo. Shown on the product details page only: the Mall is
+  /// video-first, so its tiles never build a product photo (owner directive,
+  /// 2026-09-16). Kept on the view model because the details page and the
+  /// surfaces around it still use it.
   final String? imageUrl;
 
   /// Original price. The card shows a sale only when this is higher than
@@ -43,6 +82,10 @@ class MallProductVm {
   /// When the running sale ends, as the server sent it. Null when there is no
   /// sale — never inferred.
   final DateTime? saleEndsUtc;
+
+  /// The product's reel. Null for most products, which then show the
+  /// designed type tile instead of a poster.
+  final MallReelRef? reel;
 
   /// The same product with its heart set to [saved].
   ///
@@ -63,6 +106,7 @@ class MallProductVm {
           isSaved: saved,
           reviewCount: reviewCount,
           saleEndsUtc: saleEndsUtc,
+          reel: reel,
         );
 
   bool get isOnSale {

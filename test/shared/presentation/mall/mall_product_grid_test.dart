@@ -19,7 +19,7 @@ List<MallProductVm> _products(int count) => [
 ];
 
 int _columnCount(WidgetTester tester) => find
-    .byType(MallProductCard)
+    .byType(MallProductTile)
     .evaluate()
     .map(
       (element) =>
@@ -122,7 +122,7 @@ void main() {
     );
     expectNoLayoutErrors(tester);
     expect(_columnCount(tester), 2);
-    await tester.tap(find.byType(MallProductCard).first);
+    await tester.tap(find.byType(MallProductTile).first);
     expect(tapped, 'p-0');
   });
 }

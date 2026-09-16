@@ -156,7 +156,7 @@ class MallReelCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    const Center(child: _PlayMark()),
+                    const Center(child: MallPlayMark()),
                     if (productsTap == null)
                       PositionedDirectional(
                         start: 10,
@@ -238,30 +238,6 @@ class _TaggedProductsButton extends StatelessWidget {
             heightFactor: 1,
             child: MallBadge(label: label, icon: Icons.shopping_bag_outlined),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Quiet translucent play disc — no blur, so rails of reels stay cheap.
-class _PlayMark extends StatelessWidget {
-  const _PlayMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        color: Color(0x59000000),
-        shape: BoxShape.circle,
-        border: Border.fromBorderSide(BorderSide(color: Color(0x4DFFFFFF))),
-      ),
-      child: SizedBox.square(
-        dimension: DesignTokens.minTouchTarget,
-        child: Icon(
-          Icons.play_arrow_rounded,
-          size: 26,
-          color: DesignTokens.textWhite,
         ),
       ),
     );
