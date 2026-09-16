@@ -28,6 +28,7 @@ HomeProduct _product({
   reviewCount: reviewCount,
   saleEndsUtc: saleEndsUtc,
   isLowStock: isLowStock,
+  isInStock: true,
 );
 
 HomeProductsSection _products(List<HomeProduct> items) =>

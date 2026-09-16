@@ -60,11 +60,16 @@ class MallHomeSectionView extends ConsumerWidget {
     // One cart write for the whole page: the same path the product details
     // page and Buy It Again take, gated for guests, reported back so the buy
     // control can show its own result.
+    // The variant goes over the wire explicitly: the card already told us
+    // which one the server would have picked, so nothing is left implicit.
+    // Only products the card cleared reach here — the buy control on a
+    // product needing a size opens its page instead.
     Future<bool> addToBag(HomeProduct product) => mallAddToBag(
       context,
       ref,
       productId: product.id,
       productName: product.name,
+      variantId: product.defaultVariantId,
     );
 
     Widget titled(Widget child) => _Titled(
@@ -108,28 +113,29 @@ class MallHomeSectionView extends ConsumerWidget {
       ),
 
       // ── Bold retail, or dense discovery, decided by the data ───────────
-      HomeProductsSection(:final items) => isDropBlock(items)
-          ? _DropBlock(
-              section: section,
-              items: items,
-              facts: MallDealFacts.from(items),
-              strings: strings,
-              now: now,
-              onCta: onSeeAll,
-              onOpenProduct: (id) => push(MallRoutes.product(id)),
-              onAddToBag: addToBag,
-            )
-          : titled(
-              _ShoppableProducts(
+      HomeProductsSection(:final items) =>
+        isDropBlock(items)
+            ? _DropBlock(
+                section: section,
                 items: items,
-                pick: showSpotlight ? spotlightPickOf(items) : null,
-                now: now,
+                facts: MallDealFacts.from(items),
                 strings: strings,
-                semanticLabel: title.isEmpty ? 'Products' : title,
+                now: now,
+                onCta: onSeeAll,
                 onOpenProduct: (id) => push(MallRoutes.product(id)),
                 onAddToBag: addToBag,
+              )
+            : titled(
+                _ShoppableProducts(
+                  items: items,
+                  pick: showSpotlight ? spotlightPickOf(items) : null,
+                  now: now,
+                  strings: strings,
+                  semanticLabel: title.isEmpty ? 'Products' : title,
+                  onOpenProduct: (id) => push(MallRoutes.product(id)),
+                  onAddToBag: addToBag,
+                ),
               ),
-            ),
       HomeCreatorsSection(:final items) => titled(
         MallRail<HomeCreator>(
           items: items,
@@ -148,8 +154,7 @@ class MallHomeSectionView extends ConsumerWidget {
         MallEditorialSpread(
           collections: [for (final item in items) item.toVm()],
           semanticLabel: title.isEmpty ? 'Collections' : title,
-          onOpen: (collection) =>
-              push(MallRoutes.collection(collection.id)),
+          onOpen: (collection) => push(MallRoutes.collection(collection.id)),
         ),
       ),
       HomeBrandsSection(:final items) => titled(
@@ -176,8 +181,10 @@ class MallHomeSectionView extends ConsumerWidget {
           semanticLabel: title.isEmpty ? 'Categories' : title,
           onOpen: (category) {
             final source = items
-                .where((item) => (item.id.isEmpty ? item.slug : item.id) ==
-                    category.id)
+                .where(
+                  (item) =>
+                      (item.id.isEmpty ? item.slug : item.id) == category.id,
+                )
                 .firstOrNull;
             if (source != null) push(MallRoutes.category(source));
           },
@@ -274,7 +281,8 @@ class _CampaignStage extends StatelessWidget {
         if (index < 0 || index >= source.ctas.length) return;
         final cta = source.ctas[index];
         // Only the tagged campaign's collection CTA carries the flight.
-        final tag = cta.targetKind == HomeCtaTargetKind.collection &&
+        final tag =
+            cta.targetKind == HomeCtaTargetKind.collection &&
                 _leadsToCollection(source)
             ? mallCampaignHeroTag(source.id)
             : null;

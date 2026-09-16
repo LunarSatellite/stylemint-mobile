@@ -53,6 +53,9 @@ class MallProductVm {
     this.reviewCount = 0,
     this.saleEndsUtc,
     this.reel,
+    this.requiresOptionSelection = true,
+    this.defaultVariantId,
+    this.isInStock = false,
   });
 
   final String id;
@@ -87,6 +90,33 @@ class MallProductVm {
   /// designed type tile instead of a poster.
   final MallReelRef? reel;
 
+  /// Whether the buyer must choose a size or a colour before this product can
+  /// go in a cart — true when the card has an option offering a real choice,
+  /// or more than one variant.
+  ///
+  /// Defaults to **true**, which is the safe answer: a card whose payload did
+  /// not carry the field (every card, until the server ships it) sends the
+  /// buyer to the product page rather than putting a guessed size in the bag.
+  final bool requiresOptionSelection;
+
+  /// The variant the server would have picked, sent explicitly on a quick add
+  /// so nothing is left implicit. Null when the card did not carry one, and
+  /// then there is no quick add — see [canQuickAdd].
+  final String? defaultVariantId;
+
+  /// Whether the server proved this card's default variant is buyable now.
+  /// False by default so an older or malformed payload never offers Add.
+  final bool isInStock;
+
+  /// Whether this product may be added straight from a tile.
+  ///
+  /// Both halves of the contract have to hold: the card said no choice is
+  /// needed **and** it named the variant to send. `false` with no default
+  /// variant id is a card we cannot add without guessing, so it opens its
+  /// page like any other.
+  bool get canQuickAdd =>
+      isInStock && !requiresOptionSelection && defaultVariantId != null;
+
   /// The same product with its heart set to [saved].
   ///
   /// Rebuilding the view model field by field at call sites is how new fields
@@ -107,6 +137,9 @@ class MallProductVm {
           reviewCount: reviewCount,
           saleEndsUtc: saleEndsUtc,
           reel: reel,
+          requiresOptionSelection: requiresOptionSelection,
+          defaultVariantId: defaultVariantId,
+          isInStock: isInStock,
         );
 
   bool get isOnSale {

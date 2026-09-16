@@ -47,6 +47,8 @@ class MallStrings {
     this.addToBag = 'Add to bag',
     this.added = 'Added',
     this.addItem = _addItem,
+    this.chooseOptions = 'Choose options',
+    this.chooseItem = _chooseItem,
     this.addFailed = "Couldn't add to bag",
     this.viewItem = 'View',
     this.biggestSaving = 'Biggest saving here',
@@ -104,6 +106,7 @@ class MallStrings {
   final String Function(double rating) rating;
   final String Function(String name) saveItem;
   final String Function(String name) unsaveItem;
+
   /// What tapping a reel tile does.
   final String watchReel;
 
@@ -151,6 +154,13 @@ class MallStrings {
 
   /// Spoken quick-add, e.g. "Add Linen co-ord set to bag".
   final String Function(String name) addItem;
+
+  /// Words on the buy control of a product whose buyer has to pick a size or
+  /// a colour first. It opens the product page, so it must not say "add".
+  final String chooseOptions;
+
+  /// Spoken label of that control, e.g. "Choose options for Linen co-ord set".
+  final String Function(String name) chooseItem;
 
   /// Spoken state when an add did not go through.
   final String addFailed;
@@ -234,6 +244,8 @@ class MallStrings {
   static String _pieces(int count) => count == 1 ? '1 piece' : '$count pieces';
 
   static String _addItem(String name) => 'Add $name to bag';
+
+  static String _chooseItem(String name) => 'Choose options for $name';
 
   static String _brandCount(int count) =>
       count == 1 ? '1 brand' : '$count brands';

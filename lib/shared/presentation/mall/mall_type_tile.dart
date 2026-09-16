@@ -58,10 +58,19 @@ class MallTypeTile extends StatelessWidget {
     final fact = signal;
     final showSignal = reserveSignal || fact != null;
     final quickAdd = onQuickAdd;
+    // Adds, or opens the page to choose — decided by the card, not the tile.
+    final buy = MallQuickAdd.forProduct(
+      product: product,
+      strings: strings,
+      onAdd: quickAdd,
+      onChoose: onTap,
+    );
     final metrics = MallTileMetrics.of(
       context,
       size: size,
       withSignal: showSignal,
+      // The slot is reserved whenever the surface buys, so the two states are
+      // the same height and a rail never reflows on one tile's contract.
       withAction: quickAdd != null,
     );
     final radius = BorderRadius.circular(
@@ -146,18 +155,16 @@ class MallTypeTile extends StatelessWidget {
                   ),
                 ),
               // Above the tap layer, on the price line, in the slot the
-              // composition reserved for it.
-              if (quickAdd != null)
+              // composition reserved for it. Same slot in both states: a
+              // product needing a size shows the choose control, not a gap.
+              if (buy != null)
                 PositionedDirectional(
                   end: metrics.isCompact ? 8 : 10,
                   bottom:
                       (metrics.isCompact ? 12 : 14) +
                       metrics.bottomSlotOffset -
                       MallTileMetrics.bottomGap,
-                  child: MallQuickAdd(
-                    onAdd: quickAdd,
-                    semanticLabel: strings.addItem(product.name),
-                  ),
+                  child: buy,
                 ),
             ],
           ),

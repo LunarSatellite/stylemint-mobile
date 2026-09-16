@@ -4,6 +4,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/mall_json_readers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_options_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
@@ -38,14 +39,13 @@ abstract class HomeResponseDto with _$HomeResponseDto {
 
 /// Sections in server order. Kinds are matched case-insensitively; a
 /// section that fails to parse is skipped like an unknown kind.
-List<HomeSectionDto> readHomeSections(Object? raw) =>
-    readJsonList(raw, (json) {
-      final kind = json['kind'];
-      return HomeSectionDto.fromJson({
-        ...json,
-        'kind': kind is String ? kind.trim().toLowerCase() : kind,
-      });
-    });
+List<HomeSectionDto> readHomeSections(Object? raw) => readJsonList(raw, (json) {
+  final kind = json['kind'];
+  return HomeSectionDto.fromJson({
+    ...json,
+    'kind': kind is String ? kind.trim().toLowerCase() : kind,
+  });
+});
 
 @freezed
 abstract class HomeGreetingDto with _$HomeGreetingDto {
@@ -416,6 +416,17 @@ abstract class HomeProductCardDto with _$HomeProductCardDto {
     // renders (as its type tile) whatever shape arrives.
     @JsonKey(fromJson: readProductReelRef, includeToJson: false)
     ProductReelRef? reel,
+    // Ships with `defaultVariantId`, but not on the deployed server yet:
+    // absent or unparseable reads as true, so the card sends the buyer to the
+    // product page rather than guessing a variant.
+    @JsonKey(fromJson: readRequiresOptionSelection, includeToJson: false)
+    @Default(true)
+    bool requiresOptionSelection,
+    @JsonKey(fromJson: readDefaultVariantId, includeToJson: false)
+    String? defaultVariantId,
+    @JsonKey(fromJson: readIsInStock, includeToJson: false)
+    @Default(false)
+    bool isInStock,
   }) = _HomeProductCardDto;
 
   const HomeProductCardDto._();
@@ -442,6 +453,9 @@ abstract class HomeProductCardDto with _$HomeProductCardDto {
       isOnSale: isOnSale,
       saleEndsUtc: saleEndsUtc,
       reel: reel,
+      requiresOptionSelection: requiresOptionSelection,
+      defaultVariantId: defaultVariantId,
+      isInStock: isInStock,
     );
   }
 }

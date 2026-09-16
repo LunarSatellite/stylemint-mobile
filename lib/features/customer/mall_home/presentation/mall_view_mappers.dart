@@ -38,6 +38,9 @@ extension HomeProductToVm on HomeProduct {
     reviewCount: reviewCount,
     saleEndsUtc: saleEndsUtc,
     reel: reel?.toVm(),
+    requiresOptionSelection: requiresOptionSelection,
+    defaultVariantId: defaultVariantId,
+    isInStock: isInStock,
   );
 }
 
@@ -52,6 +55,9 @@ extension CatalogProductToVm on CatalogProduct {
     rating: rating,
     isLowStock: isLowStock,
     reel: reel?.toVm(),
+    requiresOptionSelection: requiresOptionSelection,
+    defaultVariantId: defaultVariantId,
+    isInStock: isInStock,
   );
 }
 

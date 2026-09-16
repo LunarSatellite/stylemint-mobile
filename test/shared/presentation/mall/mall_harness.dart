@@ -81,6 +81,13 @@ const String npr = 'NPR';
 const String longProductName =
     'Oversized linen co-ord set in washed sand with contrast stitching';
 
+// Most fixtures below carry the cleared contract — `requiresOptionSelection:
+// false` plus the default variant id — because the kit's buy tests are about
+// the buy control, not about the choice. [optionProduct] is the other case,
+// and a fixture that sets neither field (like [plainProduct]) is the
+// absent-field case: the view model defaults to requiring a choice.
+const String defaultVariantId = 'v-default';
+
 const MallProductVm saleProduct = MallProductVm(
   id: 'p-sale',
   brandName: 'Kathmandu Atelier',
@@ -90,12 +97,25 @@ const MallProductVm saleProduct = MallProductVm(
   rating: 4.6,
   isNew: true,
   isLowStock: true,
+  requiresOptionSelection: false,
+  defaultVariantId: 'v-sale',
+  isInStock: true,
 );
 
 const MallProductVm plainProduct = MallProductVm(
   id: 'p-plain',
   name: 'Canvas tote',
   price: Money(amount: 1800, currency: npr),
+);
+
+/// The same tote, cleared for quick add: one variant, no choice to make.
+const MallProductVm plainAddableProduct = MallProductVm(
+  id: 'p-plain',
+  name: 'Canvas tote',
+  price: Money(amount: 1800, currency: npr),
+  requiresOptionSelection: false,
+  defaultVariantId: defaultVariantId,
+  isInStock: true,
 );
 
 /// A product photo URL. Mall surfaces must never build it.
@@ -128,6 +148,9 @@ const MallProductVm reelProduct = MallProductVm(
   imageUrl: productPhotoUrl,
   rating: 4.6,
   reel: productReel,
+  requiresOptionSelection: false,
+  defaultVariantId: 'v-reel',
+  isInStock: true,
 );
 
 const MallProductVm aiReelProduct = MallProductVm(
@@ -137,6 +160,9 @@ const MallProductVm aiReelProduct = MallProductVm(
   price: Money(amount: 2100, currency: npr),
   imageUrl: productPhotoUrl,
   reel: aiProductReel,
+  requiresOptionSelection: false,
+  defaultVariantId: 'v-ai-reel',
+  isInStock: true,
 );
 
 /// The majority case: a photo on the record, no reel. The Mall shows the
@@ -148,6 +174,30 @@ const MallProductVm photoOnlyProduct = MallProductVm(
   price: Money(amount: 1800, currency: npr),
   imageUrl: productPhotoUrl,
   isNew: true,
+  requiresOptionSelection: false,
+  defaultVariantId: 'v-photo',
+  isInStock: true,
+);
+
+/// A product with sizes: the server says the buyer has to choose, so no
+/// surface may add it from a tile. It names a default variant all the same —
+/// the client must not reach for it.
+const MallProductVm optionProduct = MallProductVm(
+  id: 'p-sized',
+  brandName: 'Kathmandu Atelier',
+  name: 'Linen shirt',
+  price: Money(amount: 2400, currency: npr),
+  defaultVariantId: 'v-medium',
+  isInStock: true,
+);
+
+/// The same, carrying a reel, so the reel tile can be tested in both states.
+const MallProductVm optionReelProduct = MallProductVm(
+  id: 'p-sized-reel',
+  name: 'Linen shirt',
+  price: Money(amount: 2400, currency: npr),
+  reel: productReel,
+  isInStock: true,
 );
 
 const MallReelVm aiReel = MallReelVm(

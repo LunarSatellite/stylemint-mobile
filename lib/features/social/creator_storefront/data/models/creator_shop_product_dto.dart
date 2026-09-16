@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/social/creator_storefront/domain/entities/creator_shop_product.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_options_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
@@ -17,6 +18,9 @@ class CreatorShopProductDto {
     this.reelCount = 0,
     this.lastTaggedUtc,
     this.reel,
+    this.requiresOptionSelection = true,
+    this.defaultVariantId,
+    this.isInStock = false,
   });
 
   factory CreatorShopProductDto.fromJson(Map<String, dynamic> json) =>
@@ -32,6 +36,13 @@ class CreatorShopProductDto {
         lastTaggedUtc: readDate(json['lastTaggedUtc']),
         // Nullable and not on the server yet.
         reel: readProductReelRef(json['reel']),
+        // Ships with defaultVariantId, but not on the deployed server yet:
+        // absent or unparseable reads as true.
+        requiresOptionSelection: readRequiresOptionSelection(
+          json['requiresOptionSelection'],
+        ),
+        defaultVariantId: readDefaultVariantId(json['defaultVariantId']),
+        isInStock: readIsInStock(json['isInStock']),
       );
 
   final String productId;
@@ -48,6 +59,16 @@ class CreatorShopProductDto {
 
   /// The reel this product is sold through, when the payload carries one.
   final ProductReelRef? reel;
+
+  /// Whether the buyer has to choose before this can go in a cart. True
+  /// whenever the payload did not say.
+  final bool requiresOptionSelection;
+
+  /// The variant a quick add would send. Null when the payload sent none.
+  final String? defaultVariantId;
+
+  /// False when the payload cannot prove the default variant is buyable.
+  final bool isInStock;
 
   static const String defaultCurrency = 'NPR';
 
@@ -68,6 +89,9 @@ class CreatorShopProductDto {
       reelCount: reelCount < 0 ? 0 : reelCount,
       lastTaggedUtc: lastTaggedUtc,
       reel: reel,
+      requiresOptionSelection: requiresOptionSelection,
+      defaultVariantId: defaultVariantId,
+      isInStock: isInStock,
     );
   }
 }

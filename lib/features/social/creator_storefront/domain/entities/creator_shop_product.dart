@@ -13,10 +13,23 @@ class CreatorShopProduct {
     this.reelCount = 0,
     this.lastTaggedUtc,
     this.reel,
+    this.requiresOptionSelection = true,
+    this.defaultVariantId,
+    this.isInStock = false,
   });
 
   /// The reel this product is sold through. Null for most products.
   final ProductReelRef? reel;
+
+  /// Whether the buyer has to choose a size or a colour before this can go in
+  /// a cart. Defaults to `true`: a card that did not say is never quick-added.
+  final bool requiresOptionSelection;
+
+  /// The variant a quick add sends. Null when the server sent none.
+  final String? defaultVariantId;
+
+  /// Whether the server proved the default variant can currently be bought.
+  final bool isInStock;
 
   final String productId;
   final String name;

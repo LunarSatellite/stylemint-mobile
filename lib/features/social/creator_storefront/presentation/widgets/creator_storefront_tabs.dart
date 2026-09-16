@@ -45,6 +45,9 @@ extension CreatorShopProductToVm on CreatorShopProduct {
     brandName: vendorDisplayName.trim().isEmpty ? null : vendorDisplayName,
     imageUrl: imageUrl,
     reel: reel?.toVm(),
+    requiresOptionSelection: requiresOptionSelection,
+    defaultVariantId: defaultVariantId,
+    isInStock: isInStock,
   );
 }
 

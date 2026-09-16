@@ -344,8 +344,16 @@ class _Copy extends StatelessWidget {
     final discount = product.discountPercent;
     final compareAt = discount == null ? null : product.compareAtPrice;
     final ends = endsUtc;
-    final add = onQuickAdd;
     final open = onTap;
+    // Adds, or opens the page to choose — decided by the card, not the block.
+    // The pill spells out whichever it is.
+    final buy = MallQuickAdd.forProduct(
+      product: product,
+      strings: strings,
+      onAdd: onQuickAdd,
+      onChoose: open,
+      withLabel: true,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,12 +444,7 @@ class _Copy extends StatelessWidget {
           spacing: DesignTokens.s12,
           runSpacing: DesignTokens.s8,
           children: [
-            if (add != null)
-              MallQuickAdd(
-                onAdd: add,
-                label: strings.addToBag,
-                semanticLabel: strings.addItem(product.name),
-              ),
+            ?buy,
             if (open != null)
               SizedBox(
                 height: DesignTokens.minTouchTarget,

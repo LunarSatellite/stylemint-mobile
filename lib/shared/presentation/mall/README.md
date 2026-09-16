@@ -19,7 +19,7 @@ localise, wrap the page in a `MallStringsScope`.
 | `MallSectionHeader` | Section title in the display face. Optional eyebrow, subtitle and "See all" (44dp target, spoken as "See all, {title}"). | `title`, `eyebrow?`, `subtitle?`, `onSeeAll?` |
 | `MallRail<T>` | Horizontal, lazily built rail that snaps item by item. Shows skeletons while loading and an empty-state slot when empty. `stagger` drops every second item so a shopping rail reads as a composed row, not a filmstrip — size it with `heightForStaggered`. | `items`, `itemBuilder`, `itemWidth`, `height`, `semanticLabel`, `isLoading`, `skeletonBuilder?`, `emptyState?`, `stagger` |
 | `MallProductTile` | **The Mall's product tile.** Picks `MallReelTile` when the product has a reel and `MallTypeTile` when it does not. Never builds a product photo — the Mall is video-first and photos belong to the product details page (owner directive, 2026-09-16). Pass `onQuickAdd` to put the buy control on the price line, and size the rail with `heightFor(withAction: true)`. | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?`, `onQuickAdd?` |
-| `MallQuickAdd` | **The buy affordance.** One tap adds to the bag without leaving the page: idle → in-flight → tick, then it resets itself. Owns its own state, ignores a second tap in flight, and takes `Future<bool> Function()` so the caller keeps the cart write and the message. A 44dp target around a 34dp disc; pass `label` for the pill used on the spotlight. | `onAdd`, `semanticLabel`, `label?` |
+| `MallQuickAdd` | **The buy affordance, in two states.** `MallQuickAdd` adds: one tap puts the item in the bag without leaving the page, idle → in-flight → tick, then it resets itself. `MallQuickAdd.choose` opens the product page instead, for a product whose buyer has to pick a size or a colour — sliders glyph, "Choose options", and no cart call at all. Build it with `MallQuickAdd.forProduct`, which reads the card's own contract, rather than picking a state at the call site. Owns its own state, ignores a second tap in flight, and takes `Future<bool> Function()` so the caller keeps the cart write and the message. A 44dp target around a 34dp disc in both states; pass `withLabel` for the pill used on the spotlight. | `forProduct(product, strings, onAdd?, onChoose?, withLabel)` |
 | `MallSpotlight` | **The Mall's counter.** One product given a whole block: the name at hero size, the price as a display numeral, the saving as a green slab, a live countdown, and both actions. The media panel runs past the trailing edge and drifts; below 360 dp the panel and copy stack. A product with no saving, rating or deadline simply shows its name and price, large. | `MallProductVm`, `eyebrow?`, `signal?`, `endsUtc?`, `onTap?`, `onReelTap?`, `onSaveTap?`, `onQuickAdd?` |
 | `MallTicker` | **The signage band.** A slow, continuous line of the page's own brands, edits and categories, set in tracked capitals edge to edge. The one element that moves without being scrolled. Names only, never counts. Holds still under reduced motion and stops with `TickerMode`. | `words`, `semanticLabel` |
 | `MallReelTile` | 4:5 reel poster with the play affordance, the reel's length, its hook and — whenever flagged — the **AI-generated** disclosure, which wraps and is never truncated. Brand, name and price sit underneath. Tapping opens the reel. Holds the screen's single play slot when it is the most visible reel, and its play mark then fills with brand green. | `MallProductVm`, `MallReelRef`, `onTap?`, `onSaveTap?` |
@@ -123,6 +123,15 @@ spotlight. The control is presentational: the cart write lives in
 same `CartNotifier.addItem` path the product details page and Buy It Again use
 — sign-in gate, one unit, a fresh idempotency key per attempt, the notifier's
 own return value. There is no second cart path.
+
+**A tile never guesses a variant.** Public product cards carry
+`requiresOptionSelection`, `defaultVariantId` and `isInStock`. A card is
+quick-addable only when it says `requiresOptionSelection: false`, names its
+default variant, and explicitly confirms stock. The add sends that variant
+id; a card that needs a choice opens the product page, while unknown or false
+stock exposes no buy control. All fields are parsed defensively
+(`shared/data/product_options_json.dart`): absent or unparseable reads as
+*requires a choice*, no variant id, and out of stock.
 
 ## Video first, photos on the details page
 

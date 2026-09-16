@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// What quick-add is doing right now.
@@ -29,16 +30,40 @@ enum MallQuickAddPhase {
 /// 44dp target around a 34dp disc, the same geometry as the save heart, so
 /// the two controls read as a pair.
 class MallQuickAdd extends StatefulWidget {
+  /// The buy control on a product that needs no choice: one tap adds one unit.
   const MallQuickAdd({
-    required this.onAdd,
+    required Future<bool> Function() this.onAdd,
     required this.semanticLabel,
     super.key,
     this.label,
     this.dwell = const Duration(milliseconds: 1400),
-  });
+  }) : onChoose = null;
 
-  /// Performs the add and reports whether it succeeded.
-  final Future<bool> Function() onAdd;
+  /// The same control on a product whose buyer has to pick a size or a colour
+  /// first: it opens the product page and never touches the cart.
+  ///
+  /// A separate constructor rather than a flag, so the add callback is not
+  /// merely unused on this path — it does not exist, and no future edit can
+  /// reach it. Same geometry as the add form, so a rail does not reflow when
+  /// one tile turns out to need a choice.
+  const MallQuickAdd.choose({
+    required VoidCallback this.onChoose,
+    required this.semanticLabel,
+    super.key,
+    this.label,
+  }) : onAdd = null,
+       dwell = Duration.zero;
+
+  /// Performs the add and reports whether it succeeded. Null on the choose
+  /// form.
+  final Future<bool> Function()? onAdd;
+
+  /// Opens the product page so the buyer can choose. Null on the add form.
+  final VoidCallback? onChoose;
+
+  /// Whether this control sends the buyer to the product page instead of
+  /// adding.
+  bool get requiresSelection => onChoose != null;
 
   /// Spoken label, e.g. "Add Linen co-ord set to bag".
   final String semanticLabel;
@@ -57,6 +82,42 @@ class MallQuickAdd extends StatefulWidget {
   /// scale with text.
   static const double height = DesignTokens.minTouchTarget;
 
+  /// The buy control for [product], in the only state its card allows.
+  ///
+  /// One place decides, so every surface that shows the control — rail tile,
+  /// reel tile, spotlight — is honest in the same way: a product the card
+  /// cleared for quick add (`requiresOptionSelection: false` **and** a
+  /// default variant id) gets the add form; anything else, including every
+  /// card from a server that does not send the fields yet, gets the choose
+  /// form and opens the product page.
+  ///
+  /// Returns null when the control would do nothing: no [onAdd] (the surface
+  /// does not buy), or a product needing a choice with no [onChoose] page to
+  /// send the buyer to.
+  static Widget? forProduct({
+    required MallProductVm product,
+    required MallStrings strings,
+    Future<bool> Function()? onAdd,
+    VoidCallback? onChoose,
+    bool withLabel = false,
+  }) {
+    if (onAdd == null) return null;
+    if (!product.isInStock) return null;
+    if (!product.canQuickAdd) {
+      if (onChoose == null) return null;
+      return MallQuickAdd.choose(
+        onChoose: onChoose,
+        semanticLabel: strings.chooseItem(product.name),
+        label: withLabel ? strings.chooseOptions : null,
+      );
+    }
+    return MallQuickAdd(
+      onAdd: onAdd,
+      semanticLabel: strings.addItem(product.name),
+      label: withLabel ? strings.addToBag : null,
+    );
+  }
+
   @override
   State<MallQuickAdd> createState() => _MallQuickAddState();
 }
@@ -71,12 +132,21 @@ class _MallQuickAddState extends State<MallQuickAdd> {
     super.dispose();
   }
 
-  Future<void> _add() async {
+  Future<void> _tap() async {
+    // A product that needs a size or a colour is never added from a tile: the
+    // tap opens the page where the buyer chooses, and the control stays idle.
+    final choose = widget.onChoose;
+    if (choose != null) {
+      choose();
+      return;
+    }
+    final add = widget.onAdd;
+    if (add == null) return;
     // A second tap while the first is in flight would buy the item twice.
     if (_phase == MallQuickAddPhase.busy) return;
     _reset?.cancel();
     setState(() => _phase = MallQuickAddPhase.busy);
-    final ok = await widget.onAdd();
+    final ok = await add();
     if (!mounted) return;
     setState(
       () => _phase = ok ? MallQuickAddPhase.added : MallQuickAddPhase.idle,
@@ -104,9 +174,13 @@ class _MallQuickAddState extends State<MallQuickAdd> {
       transitionBuilder: (child, animation) =>
           ScaleTransition(scale: animation, child: child),
       child: switch (_phase) {
-        MallQuickAddPhase.idle => const Icon(
-          Icons.add_shopping_cart_rounded,
-          key: ValueKey(MallQuickAddPhase.idle),
+        // Sliders, not a cart: the tap opens a choice, and the glyph has to
+        // say so before the tap, not after it.
+        MallQuickAddPhase.idle => Icon(
+          widget.requiresSelection
+              ? Icons.tune_rounded
+              : Icons.add_shopping_cart_rounded,
+          key: const ValueKey(MallQuickAddPhase.idle),
           size: 18,
           color: DesignTokens.primaryGreen,
         ),
@@ -153,9 +227,7 @@ class _MallQuickAddState extends State<MallQuickAdd> {
                 const SizedBox(width: DesignTokens.s8),
                 Flexible(
                   child: Text(
-                    _phase == MallQuickAddPhase.added
-                        ? strings.added
-                        : label,
+                    _phase == MallQuickAddPhase.added ? strings.added : label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -179,7 +251,7 @@ class _MallQuickAddState extends State<MallQuickAdd> {
       enabled: _phase != MallQuickAddPhase.busy,
       label: spoken,
       excludeSemantics: true,
-      onTap: _add,
+      onTap: _tap,
       child: SizedBox(
         height: MallQuickAdd.height,
         width: label == null ? MallQuickAdd.height : null,
@@ -187,11 +259,12 @@ class _MallQuickAddState extends State<MallQuickAdd> {
           type: MaterialType.transparency,
           child: InkResponse(
             key: MallQuickAdd.tapKey,
-            onTap: () => unawaited(_add()),
+            onTap: () => unawaited(_tap()),
             radius: MallQuickAdd.height / 2,
             containedInkWell: label != null,
-            highlightShape:
-                label == null ? BoxShape.circle : BoxShape.rectangle,
+            highlightShape: label == null
+                ? BoxShape.circle
+                : BoxShape.rectangle,
             borderRadius: label == null
                 ? null
                 : BorderRadius.circular(DesignTokens.buttonRadius),

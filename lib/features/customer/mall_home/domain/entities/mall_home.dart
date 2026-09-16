@@ -238,6 +238,9 @@ class HomeProduct {
     this.isOnSale = false,
     this.saleEndsUtc,
     this.reel,
+    this.requiresOptionSelection = true,
+    this.defaultVariantId,
+    this.isInStock = false,
   });
 
   final String id;
@@ -245,6 +248,16 @@ class HomeProduct {
   final Money price;
   final String? brandName;
   final String? vendorAccountId;
+
+  /// Whether the buyer has to choose a size or a colour before this can go in
+  /// a cart. Defaults to `true`: a card that did not say is never quick-added.
+  final bool requiresOptionSelection;
+
+  /// The variant a quick add sends. Null when the server sent none.
+  final String? defaultVariantId;
+
+  /// Whether the server proved the default variant can currently be bought.
+  final bool isInStock;
 
   /// Product photo. The Mall's tiles never build one — photos are the
   /// product details page's (owner directive, 2026-09-16).

@@ -139,6 +139,7 @@ HomeProduct homeProduct(
   isOnSale: was != null,
   saleEndsUtc: saleEndsUtc,
   isLowStock: isLowStock,
+  isInStock: true,
 );
 
 /// 4h 30m after [mallTestNow], and the same Kathmandu day: a live countdown

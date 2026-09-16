@@ -22,6 +22,9 @@ const MallProductVm _spotlightProduct = MallProductVm(
   rating: 4.6,
   reviewCount: 12,
   imageUrl: productPhotoUrl,
+  requiresOptionSelection: false,
+  defaultVariantId: 'v-spot',
+  isInStock: true,
 );
 
 /// The thin-data case: a name, a price and nothing else the API populated.
@@ -100,6 +103,145 @@ void main() {
       await tester.pump();
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 1500));
+    });
+
+    testWidgets('a product needing a size opens its page and adds nothing', (
+      tester,
+    ) async {
+      var opened = 0;
+      var added = 0;
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) =>
+              MallQuickAdd.forProduct(
+                product: optionProduct,
+                strings: MallStrings.of(context),
+                onAdd: () async {
+                  added++;
+                  return true;
+                },
+                onChoose: () => opened++,
+              ) ??
+              const SizedBox.shrink(),
+        ),
+      );
+
+      await tester.tap(find.byKey(MallQuickAdd.tapKey));
+      await tester.pump();
+      await tester.pump();
+      expect(added, 0, reason: 'a size was never chosen');
+      expect(opened, 1);
+      // No phase change either: the control is still offering the choice.
+      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+    });
+
+    testWidgets('the two states do not read the same', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) {
+            final strings = MallStrings.of(context);
+            return Wrap(
+              children: [
+                MallQuickAdd.forProduct(
+                  product: plainAddableProduct,
+                  strings: strings,
+                  onAdd: () async => true,
+                  onChoose: () {},
+                  withLabel: true,
+                )!,
+                MallQuickAdd.forProduct(
+                  product: optionProduct,
+                  strings: strings,
+                  onAdd: () async => true,
+                  onChoose: () {},
+                  withLabel: true,
+                )!,
+              ],
+            );
+          },
+        ),
+      );
+
+      expect(find.text('Add to bag'), findsOneWidget);
+      expect(find.text('Choose options'), findsOneWidget);
+      expect(find.byIcon(Icons.add_shopping_cart_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Add Canvas tote to bag'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel('Choose options for Linen shirt'),
+        findsOneWidget,
+      );
+      // Same target in both states, so a rail never reflows.
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+
+    testWidgets('a card with unknown stock exposes no buy control', (
+      tester,
+    ) async {
+      var added = 0;
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) =>
+              MallQuickAdd.forProduct(
+                // Straight from the default constructor: the field was absent
+                // from the payload, which reads as "a choice is required".
+                product: plainProduct,
+                strings: MallStrings.of(context),
+                onAdd: () async {
+                  added++;
+                  return true;
+                },
+                onChoose: () {},
+              ) ??
+              const SizedBox.shrink(),
+        ),
+      );
+
+      expect(find.byKey(MallQuickAdd.tapKey), findsNothing);
+      expect(added, 0);
+    });
+
+    testWidgets('cleared but with no variant named is still a choice', (
+      tester,
+    ) async {
+      const half = MallProductVm(
+        id: 'p-half',
+        name: 'Linen shirt',
+        price: Money(amount: 2400, currency: npr),
+        requiresOptionSelection: false,
+        isInStock: true,
+      );
+      var added = 0;
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) =>
+              MallQuickAdd.forProduct(
+                product: half,
+                strings: MallStrings.of(context),
+                onAdd: () async {
+                  added++;
+                  return true;
+                },
+                onChoose: () {},
+              ) ??
+              const SizedBox.shrink(),
+        ),
+      );
+
+      await tester.tap(find.byKey(MallQuickAdd.tapKey));
+      await tester.pump();
+      await tester.pump();
+      expect(added, 0, reason: 'there is no variant to send');
     });
 
     testWidgets('the disc and the pill are both tappable sizes', (
@@ -206,6 +348,32 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1500));
     });
 
+    testWidgets('a product needing a size opens instead of adding', (
+      tester,
+    ) async {
+      var opened = 0;
+      var added = 0;
+      await pumpMall(
+        tester,
+        MallSpotlight(
+          product: optionProduct,
+          onTap: () => opened++,
+          onQuickAdd: () async {
+            added++;
+            return true;
+          },
+        ),
+      );
+
+      expect(find.text('Choose options'), findsOneWidget);
+      expect(find.text('Add to bag'), findsNothing);
+      await tester.tap(find.byKey(MallQuickAdd.tapKey));
+      await tester.pump();
+      await tester.pump();
+      expect(added, 0);
+      expect(opened, 1);
+    });
+
     testWidgets('a reel product plays its reel from the panel', (tester) async {
       MallReelRef? played;
       await pumpMall(
@@ -227,6 +395,26 @@ void main() {
         MallSpotlight(product: aiReelProduct, onReelTap: (_) {}),
       );
       expect(find.text('AI-generated'), findsOneWidget);
+    });
+
+    testMallLayouts('the block fits with the choose pill', (
+      tester,
+      width,
+      textScale,
+    ) async {
+      await pumpMall(
+        tester,
+        MallSpotlight(
+          product: optionProduct,
+          eyebrow: 'Biggest saving here',
+          onTap: () {},
+          onSaveTap: () {},
+          onQuickAdd: () async => true,
+        ),
+        width: width,
+        textScale: textScale,
+      );
+      expectNoLayoutErrors(tester);
     });
 
     testMallLayouts('the block fits', (tester, width, textScale) async {
@@ -401,6 +589,85 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1500));
     });
 
+    testWidgets('a tile whose product needs a size opens the page', (
+      tester,
+    ) async {
+      var opened = 0;
+      var added = 0;
+      await pumpMall(
+        tester,
+        tile(
+          product: optionProduct,
+          onTap: () => opened++,
+          onQuickAdd: () async {
+            added++;
+            return true;
+          },
+        ),
+      );
+
+      expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+      await tester.tap(find.byKey(MallQuickAdd.tapKey));
+      await tester.pump();
+      await tester.pump();
+      expect(added, 0, reason: 'a size was never chosen');
+      expect(opened, 1);
+      expectNoLayoutErrors(tester);
+    });
+
+    testWidgets('a reel tile whose product needs a size opens the page', (
+      tester,
+    ) async {
+      var opened = 0;
+      var added = 0;
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) => sized(
+            context,
+            MallProductTile(
+              product: optionReelProduct,
+              size: MallCardSize.compact,
+              reserveSignal: true,
+              onTap: () => opened++,
+              onReelTap: (_) {},
+              onQuickAdd: () async {
+                added++;
+                return true;
+              },
+            ),
+            action: true,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(MallQuickAdd.tapKey));
+      await tester.pump();
+      await tester.pump();
+      expect(added, 0);
+      expect(opened, 1);
+    });
+
+    testWidgets('both states occupy the same slot', (tester) async {
+      Rect control() => tester.getRect(find.byKey(MallQuickAdd.tapKey));
+
+      await pumpMall(
+        tester,
+        tile(onTap: () {}, onQuickAdd: () async => true),
+      );
+      final adds = control();
+
+      await pumpMall(
+        tester,
+        tile(
+          product: optionProduct,
+          onTap: () {},
+          onQuickAdd: () async => true,
+        ),
+      );
+      expect(control(), adds, reason: 'a rail must not reflow');
+    });
+
     testWidgets('no callback, no buy control', (tester) async {
       await pumpMall(
         tester,
@@ -417,6 +684,43 @@ void main() {
         ),
       );
       expect(find.byKey(MallQuickAdd.tapKey), findsNothing);
+      expectNoLayoutErrors(tester);
+    });
+
+    testMallLayouts('a rail of choose tiles fits', (
+      tester,
+      width,
+      textScale,
+    ) async {
+      await pumpMall(
+        tester,
+        Builder(
+          builder: (context) => MallRail<MallProductVm>(
+            items: const [optionReelProduct, optionProduct, plainProduct],
+            itemWidth: MallProductTile.compactWidth,
+            height: MallProductTile.heightFor(
+              context,
+              width: MallProductTile.compactWidth,
+              size: MallCardSize.compact,
+              withSignal: true,
+              withAction: true,
+            ),
+            semanticLabel: 'Products needing a choice',
+            itemBuilder: (_, product, _) => MallProductTile(
+              product: product,
+              size: MallCardSize.compact,
+              reserveSignal: true,
+              signal: const MallSignal(label: '12 reviews'),
+              onTap: () {},
+              onSaveTap: () {},
+              onReelTap: (_) {},
+              onQuickAdd: () async => true,
+            ),
+          ),
+        ),
+        width: width,
+        textScale: textScale,
+      );
       expectNoLayoutErrors(tester);
     });
 

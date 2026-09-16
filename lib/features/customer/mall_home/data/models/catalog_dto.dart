@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/models/mall_json_readers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
+import 'package:stylemint_mobile_frontend/shared/data/product_options_json.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/product_reel_ref.dart';
@@ -39,6 +40,17 @@ abstract class CatalogProductDto with _$CatalogProductDto {
     // renders (as its type tile) whatever shape arrives.
     @JsonKey(fromJson: readProductReelRef, includeToJson: false)
     ProductReelRef? reel,
+    // Ships with `defaultVariantId`, but not on the deployed server yet:
+    // absent or unparseable reads as true, so the card sends the buyer to the
+    // product page rather than guessing a variant.
+    @JsonKey(fromJson: readRequiresOptionSelection, includeToJson: false)
+    @Default(true)
+    bool requiresOptionSelection,
+    @JsonKey(fromJson: readDefaultVariantId, includeToJson: false)
+    String? defaultVariantId,
+    @JsonKey(fromJson: readIsInStock, includeToJson: false)
+    @Default(false)
+    bool isInStock,
   }) = _CatalogProductDto;
 
   const CatalogProductDto._();
@@ -49,20 +61,23 @@ abstract class CatalogProductDto with _$CatalogProductDto {
   /// Null without an id, a name or a price.
   CatalogProduct? toDomain() {
     if (id.isEmpty || name.trim().isEmpty) return null;
-    final variant = variants.where((v) => v.isDefault).firstOrNull ??
-        variants.firstOrNull;
+    final variant =
+        variants.where((v) => v.isDefault).firstOrNull ?? variants.firstOrNull;
     final sale = activeFlashSale;
     final saleAmount = sale?.salePrice;
     final amount = saleAmount ?? variant?.priceAmount;
     if (amount == null) return null;
-    final currency = (saleAmount != null ? sale?.currency : null) ??
+    final currency =
+        (saleAmount != null ? sale?.currency : null) ??
         variant?.priceCurrency ??
         'NPR';
     final original = sale?.originalPrice;
     final stock = sale?.unitsLeft ?? variant?.quantityOnHand;
-    final image = images.where((i) => i.isPrimary).firstOrNull ??
-        ([...images]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)))
-            .firstOrNull;
+    final image =
+        images.where((i) => i.isPrimary).firstOrNull ??
+        ([
+          ...images,
+        ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder))).firstOrNull;
     final rating = averageRating;
     return CatalogProduct(
       id: id,
@@ -79,6 +94,9 @@ abstract class CatalogProductDto with _$CatalogProductDto {
       isLowStock: stock != null && stock > 0 && stock <= lowStockThreshold,
       isOutOfStock: const {'3', 'outofstock'}.contains(state.toLowerCase()),
       reel: reel,
+      requiresOptionSelection: requiresOptionSelection,
+      defaultVariantId: defaultVariantId,
+      isInStock: isInStock,
     );
   }
 }

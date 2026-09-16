@@ -55,8 +55,8 @@ void main() {
       final home = HomeResponseDto.fromJson(
         loadMallFixture('home_full.json'),
       ).toDomain();
-      final campaign = (home.sections.first as HomeCampaignsSection).items
-          .single;
+      final campaign =
+          (home.sections.first as HomeCampaignsSection).items.single;
 
       expect(campaign.title, 'Dubai Evening Edit');
       expect(campaign.heroReelId, isNull);
@@ -217,6 +217,136 @@ void main() {
       expect(detail.items.items[1].hasPosition, isFalse, reason: 'x only');
       final umbrella = detail.items.items[2];
       expect((umbrella.positionX, umbrella.positionY), (1.0, 0.0));
+    });
+  });
+
+  group('the option contract on a public product card', () {
+    Map<String, dynamic> catalogCard(Map<String, Object?> extra) => {
+      'id': '5d0c',
+      'name': 'Linen shirt',
+      'variants': [
+        {'isDefault': true, 'priceAmount': 2499, 'priceCurrency': 'NPR'},
+      ],
+      ...extra,
+    };
+
+    Map<String, dynamic> homeCard(Map<String, Object?> extra) => {
+      'id': 'h-1',
+      'name': 'Linen shirt',
+      'price': {'amount': 2499, 'currency': 'NPR'},
+      ...extra,
+    };
+
+    test('a cleared card carries both fields through to the entity', () {
+      final card = CatalogProductDto.fromJson(
+        catalogCard({
+          'requiresOptionSelection': false,
+          'defaultVariantId': '0f8b2c1e-1111-4a2b-9c3d-4e5f60718293',
+          'isInStock': true,
+        }),
+      ).toDomain()!;
+
+      expect(card.requiresOptionSelection, isFalse);
+      expect(card.defaultVariantId, '0f8b2c1e-1111-4a2b-9c3d-4e5f60718293');
+      expect(card.isInStock, isTrue);
+
+      final home = HomeProductCardDto.fromJson(
+        homeCard({
+          'requiresOptionSelection': false,
+          'defaultVariantId': '0f8b2c1e-1111-4a2b-9c3d-4e5f60718293',
+          'isInStock': true,
+        }),
+      ).toDomain()!;
+      expect(home.requiresOptionSelection, isFalse);
+      expect(home.defaultVariantId, '0f8b2c1e-1111-4a2b-9c3d-4e5f60718293');
+      expect(home.isInStock, isTrue);
+    });
+
+    test('a card that needs a choice says so', () {
+      final card = CatalogProductDto.fromJson(
+        catalogCard({
+          'requiresOptionSelection': true,
+          'defaultVariantId': '0f8b2c1e-1111-4a2b-9c3d-4e5f60718293',
+        }),
+      ).toDomain()!;
+      expect(card.requiresOptionSelection, isTrue);
+      expect(
+        card.defaultVariantId,
+        isNotNull,
+        reason: 'the server still names its pick; the client must not use it',
+      );
+    });
+
+    test('the deployed server sends neither field: a choice is required', () {
+      final card = CatalogProductDto.fromJson(catalogCard({})).toDomain()!;
+      expect(card.requiresOptionSelection, isTrue);
+      expect(card.defaultVariantId, isNull);
+      expect(card.isInStock, isFalse);
+
+      final home = HomeProductCardDto.fromJson(homeCard({})).toDomain()!;
+      expect(home.requiresOptionSelection, isTrue);
+      expect(home.defaultVariantId, isNull);
+      expect(home.isInStock, isFalse);
+    });
+
+    test('anything but a plain false reads as requiring a choice', () {
+      for (final wire in <Object?>[null, 'maybe', 0, 1, <String>[], {}]) {
+        final card = CatalogProductDto.fromJson(
+          catalogCard({'requiresOptionSelection': wire}),
+        ).toDomain()!;
+        expect(
+          card.requiresOptionSelection,
+          isTrue,
+          reason: 'requiresOptionSelection: $wire must not clear the card',
+        );
+      }
+    });
+
+    test('a stringified boolean is still read', () {
+      expect(
+        CatalogProductDto.fromJson(
+          catalogCard({
+            'requiresOptionSelection': 'false',
+            'defaultVariantId': 'v-1',
+          }),
+        ).toDomain()!.requiresOptionSelection,
+        isFalse,
+      );
+      expect(
+        CatalogProductDto.fromJson(
+          catalogCard({'requiresOptionSelection': 'TRUE'}),
+        ).toDomain()!.requiresOptionSelection,
+        isTrue,
+      );
+    });
+
+    test('a blank or all-zero default variant id is no variant at all', () {
+      for (final wire in <Object?>[
+        '',
+        '   ',
+        '00000000-0000-0000-0000-000000000000',
+        42,
+      ]) {
+        final card = CatalogProductDto.fromJson(
+          catalogCard({
+            'requiresOptionSelection': false,
+            'defaultVariantId': wire,
+          }),
+        ).toDomain()!;
+        expect(card.defaultVariantId, isNull, reason: 'defaultVariantId $wire');
+      }
+    });
+
+    test('a malformed card still renders: nothing here throws', () {
+      expect(
+        () => CatalogProductDto.fromJson(
+          catalogCard({
+            'requiresOptionSelection': {'nested': true},
+            'defaultVariantId': {'nested': 'id'},
+          }),
+        ).toDomain(),
+        returnsNormally,
+      );
     });
   });
 }
