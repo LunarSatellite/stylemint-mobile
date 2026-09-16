@@ -1,9 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/data/services/location_capture_service.dart';
 import 'package:stylemint_mobile_frontend/features/customer/shipping/domain/entities/shipping_address.dart';
@@ -168,8 +170,28 @@ Future<void> _pumpAddEdit(
   await tester.pumpAndSettle();
 }
 
+/// True while the details sheet is on screen.
+bool _sheetIsOpen() =>
+    find.byKey(const Key('address_details_sheet')).evaluate().isNotEmpty;
+
+/// Brings the details sheet up if it isn't already — the screen always offers
+/// a way back in, so this never has to re-capture a location.
+Future<void> _openDetails(WidgetTester tester) async {
+  if (_sheetIsOpen()) return;
+  await tester.ensureVisible(find.byKey(const Key('open_details_button')));
+  await tester.tap(find.byKey(const Key('open_details_button')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _dismissDetails(WidgetTester tester) async {
+  if (!_sheetIsOpen()) return;
+  await tester.tap(find.byKey(const Key('close_details_sheet_button')));
+  await tester.pumpAndSettle();
+}
+
 /// Fills the required receiver fields so a save isn't blocked by them.
 Future<void> _fillReceiver(WidgetTester tester) async {
+  await _openDetails(tester);
   await tester.ensureVisible(find.byKey(const Key('receiver_name_field')));
   await tester.enterText(
     find.byKey(const Key('receiver_name_field')),
@@ -184,9 +206,15 @@ Future<void> _fillReceiver(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Saves from wherever the customer is: the sheet's own button when it is up,
+/// the screen's primary button when it isn't.
 Future<void> _tapSave(WidgetTester tester) async {
-  await tester.ensureVisible(find.byKey(const Key('address_save_button')));
-  await tester.tap(find.byKey(const Key('address_save_button')));
+  final sheetSave = find.byKey(const Key('details_sheet_save_button'));
+  final target = sheetSave.evaluate().isNotEmpty
+      ? sheetSave
+      : find.byKey(const Key('address_save_button'));
+  await tester.ensureVisible(target);
+  await tester.tap(target);
   await tester.pumpAndSettle();
 }
 
@@ -633,6 +661,8 @@ void main() {
       await tester.tap(find.byKey(const Key('use_current_location_button')));
       await tester.pumpAndSettle();
 
+      // The map lives on the screen behind the sheet, so step back to it.
+      await _dismissDetails(tester);
       await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
       await tester.tap(find.byKey(const Key('fake_pin_drag')));
       await tester.pumpAndSettle();
@@ -836,6 +866,7 @@ void main() {
         location: _FakeLocationService(const LocationPermissionDenied()),
         repository: _FakeShippingRepository(),
       );
+      await _openDetails(tester);
 
       expect(find.textContaining('Blue gate'), findsOneWidget);
       expect(find.textContaining('second floor'), findsOneWidget);
@@ -853,6 +884,7 @@ void main() {
       location: _FakeLocationService(const LocationPermissionDenied()),
       repository: _FakeShippingRepository(),
     );
+    await _openDetails(tester);
 
     expect(find.text('Address Line 1'), findsNothing);
     expect(find.text('City'), findsNothing);
@@ -959,6 +991,426 @@ void main() {
     });
   });
 
+  // ── The details sheet ──────────────────────────────────────────────────────
+
+  group('the details sheet', () {
+    _FakeLocationService gpsAt({double accuracy = 12}) => _FakeLocationService(
+      LocationCaptured(
+        latitude: 27.7172,
+        longitude: 85.324,
+        accuracyMetres: accuracy,
+      ),
+    );
+
+    testWidgets('capturing a location brings the rest of the form up', (
+      tester,
+    ) async {
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+      );
+
+      expect(find.byKey(const Key('address_details_sheet')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      // The point is named at the top, so the customer knows what these
+      // details belong to.
+      expect(
+        find.text('Your current location, accurate to about 12 m'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('receiver_name_field')), findsOneWidget);
+      expect(find.byKey(const Key('receiver_phone_field')), findsOneWidget);
+      expect(find.byKey(const Key('address_label_field')), findsOneWidget);
+      expect(find.byKey(const Key('location_note_field')), findsOneWidget);
+      expect(
+        find.byKey(const Key('details_sheet_save_button')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a resolved Maps link opens it and names the link', (
+      tester,
+    ) async {
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(const LocationPermissionDenied()),
+        repository: _FakeShippingRepository(),
+      );
+
+      await tester.ensureVisible(find.byKey(const Key('maps_link_field')));
+      await tester.enterText(
+        find.byKey(const Key('maps_link_field')),
+        'https://maps.app.goo.gl/AbCdEf123',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('resolve_maps_link_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(find.text('The spot from your Maps link'), findsOneWidget);
+    });
+
+    testWidgets('a dragged pin opens it and names the pin', (tester) async {
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _dismissDetails(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('fake_pin_drag')));
+      await tester.tap(find.byKey(const Key('fake_pin_drag')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(find.text('The pin you placed'), findsOneWidget);
+    });
+
+    testWidgets('dismissing keeps the point, and the sheet reopens', (
+      tester,
+    ) async {
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: _FakeShippingRepository(),
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _dismissDetails(tester);
+
+      // Dismissed, but nothing was thrown away.
+      expect(find.byKey(const Key('address_details_sheet')), findsNothing);
+      expect(find.byKey(const Key('captured_point_card')), findsOneWidget);
+      expect(find.text('27.71720, 85.32400'), findsOneWidget);
+
+      // And the way back in is on the screen, not hidden.
+      expect(find.byKey(const Key('details_summary_card')), findsOneWidget);
+      expect(find.text('Delivery details still needed'), findsOneWidget);
+
+      await _openDetails(tester);
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+    });
+
+    testWidgets('typed values survive a dismiss and a re-capture', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository();
+      final location = gpsAt();
+      await _pumpAddEdit(tester, location: location, repository: repository);
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await tester.enterText(
+        find.byKey(const Key('location_note_field')),
+        'Blue gate opposite the pharmacy',
+      );
+      await tester.pumpAndSettle();
+      await _dismissDetails(tester);
+
+      // Capture again, somewhere else entirely.
+      location.result = const LocationCaptured(
+        latitude: 27.68,
+        longitude: 85.29,
+        accuracyMetres: 6,
+      );
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(find.text('Sita Rai'), findsOneWidget);
+      expect(find.text('+9779800000000'), findsOneWidget);
+      expect(find.text('Blue gate opposite the pharmacy'), findsOneWidget);
+
+      await _tapSave(tester);
+      expect(repository.writeCalls, 1);
+      expect(repository.lastWritten!.receiverName, 'Sita Rai');
+      expect(repository.lastWritten!.locationNote,
+          'Blue gate opposite the pharmacy');
+      // The newer point won.
+      expect(repository.lastWritten!.latitude, 27.68);
+
+      // Saving from the sheet closes it and leaves the screen — it must not
+      // pop the sheet and strand the customer on the address form.
+      expect(find.byKey(const Key('address_details_sheet')), findsNothing);
+      expect(find.text('addresses'), findsOneWidget);
+    });
+
+    testWidgets('the screen sends you into the sheet rather than failing '
+        'a validation you cannot see', (tester) async {
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: gpsAt(),
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _dismissDetails(tester);
+
+      await tester.ensureVisible(find.byKey(const Key('address_save_button')));
+      await tester.tap(find.byKey(const Key('address_save_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(find.text('Required'), findsWidgets);
+      expect(repository.writeCalls, 0);
+    });
+  });
+
+  // ── What a rejection actually says ─────────────────────────────────────────
+
+  group('server errors reach the customer', () {
+    testWidgets('a field rejection shows the server sentence on that field', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository()
+        ..writeFailure = const NetworkExceptions.validation(
+          code: 'validation.out_of_range',
+          field: 'locationAccuracyMetres',
+          // What the mapper now pulls out of problem-details `detail`.
+          message: 'Your location is only accurate to about 140 m — we need '
+              '100 m or better. Step outside and try again, or drag the pin.',
+        );
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(
+          const LocationCaptured(
+            latitude: 27.7172,
+            longitude: 85.324,
+            accuracyMetres: 8,
+          ),
+        ),
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      // The specific sentence, against the point it is about — and never the
+      // problem-details title.
+      expect(
+        find.textContaining('only accurate to about 140 m'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('location_error')), findsOneWidget);
+      expect(find.textContaining('Validation error'), findsNothing);
+      // Still on the form, with everything they typed.
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(find.text('Sita Rai'), findsOneWidget);
+    });
+
+    testWidgets('a receiver-field rejection lands on that input', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository()
+        ..writeFailure = const NetworkExceptions.validation(
+          code: 'validation.multiple_errors',
+          message: 'Validation error',
+          errors: [
+            FieldErrorVm(
+              field: 'ReceiverPhone',
+              code: 'validation.invalid_format',
+              message: 'That phone number needs a country code, like +977.',
+            ),
+          ],
+        );
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(
+          const LocationCaptured(
+            latitude: 27.7172,
+            longitude: 85.324,
+            accuracyMetres: 8,
+          ),
+        ),
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      expect(
+        find.text('That phone number needs a country code, like +977.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Validation error'), findsNothing);
+      expect(find.byKey(const Key('address_save_error')), findsNothing);
+    });
+
+    testWidgets('a rejection with the sheet dismissed brings it back', (
+      tester,
+    ) async {
+      final repository = _FakeShippingRepository();
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(
+          const LocationCaptured(
+            latitude: 27.7172,
+            longitude: 85.324,
+            accuracyMetres: 8,
+          ),
+        ),
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _dismissDetails(tester);
+
+      repository.writeFailure = const NetworkExceptions.validation(
+        code: 'validation.invalid_format',
+        field: 'receiverPhone',
+        message: 'That phone number needs a country code, like +977.',
+      );
+      await tester.ensureVisible(find.byKey(const Key('address_save_button')));
+      await tester.tap(find.byKey(const Key('address_save_button')));
+      await tester.pumpAndSettle();
+
+      expect(repository.writeCalls, 1);
+      expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+      expect(
+        find.text('That phone number needs a country code, like +977.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a rejection with nothing but a generic title still says '
+        'something', (tester) async {
+      final repository = _FakeShippingRepository()
+        ..writeFailure = const NetworkExceptions.validation(
+          code: 'validation.out_of_range',
+          message: 'Validation error',
+        );
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(
+          const LocationCaptured(
+            latitude: 27.7172,
+            longitude: 85.324,
+            accuracyMetres: 8,
+          ),
+        ),
+        repository: repository,
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      expect(find.byKey(const Key('address_save_error')), findsOneWidget);
+      expect(find.textContaining('Validation error'), findsNothing);
+      expect(
+        find.textContaining('out of the allowed range'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an error below the fold is scrolled into view', (
+      tester,
+    ) async {
+      const message = 'Tell us which gate — "second floor" alone is not '
+          'enough for a rider who has never been here.';
+      final repository = _FakeShippingRepository()
+        ..writeFailure = const NetworkExceptions.validation(
+          code: 'validation.too_short',
+          field: 'locationNote',
+          message: message,
+        );
+      await _pumpAddEdit(
+        tester,
+        location: _FakeLocationService(
+          const LocationCaptured(
+            latitude: 27.7172,
+            longitude: 85.324,
+            accuracyMetres: 8,
+          ),
+        ),
+        repository: repository,
+        // Short enough that the note sits below the fold of the sheet.
+        surface: const Size(320, 480),
+      );
+
+      await tester.tap(find.byKey(const Key('use_current_location_button')));
+      await tester.pumpAndSettle();
+      await _fillReceiver(tester);
+      await _tapSave(tester);
+
+      expect(find.text(message), findsOneWidget);
+
+      // Visible, not merely present: the sheet scrolled to it.
+      final error = tester.getRect(find.text(message));
+      final sheet = tester.getRect(
+        find.byKey(const Key('address_details_sheet')),
+      );
+      expect(error.top, greaterThanOrEqualTo(sheet.top));
+      expect(error.bottom, lessThanOrEqualTo(sheet.bottom));
+    });
+
+    test('problem details: the specific detail beats the generic title', () {
+      final failure = mapDioExceptionToNetworkException(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/addresses'),
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/v1/addresses'),
+            statusCode: 400,
+            data: <String, dynamic>{
+              'type': 'https://stylemint/errors/validation',
+              'title': 'Validation error',
+              'detail':
+                  'Your location is only accurate to about 140 m — we need '
+                  '100 m or better.',
+              'errorCode': 'validation.out_of_range',
+              'field': 'locationAccuracyMetres',
+            },
+          ),
+        ),
+      );
+
+      expect(
+        NetworkExceptions.getMessage(failure),
+        'Your location is only accurate to about 140 m — we need 100 m or '
+        'better.',
+      );
+    });
+
+    test('a body with only a title never renders as "Validation error"', () {
+      final failure = mapDioExceptionToNetworkException(
+        DioException(
+          requestOptions: RequestOptions(path: '/v1/addresses'),
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/v1/addresses'),
+            statusCode: 400,
+            data: <String, dynamic>{
+              'title': 'Validation error',
+              'errorCode': 'validation.out_of_range',
+            },
+          ),
+        ),
+      );
+
+      final message = NetworkExceptions.getMessage(failure);
+      expect(message, isNot(contains('Validation error')));
+      expect(message, contains('out of the allowed range'));
+    });
+  });
+
   // ── Legacy addresses ───────────────────────────────────────────────────────
 
   group('legacy postal-only addresses', () {
@@ -1030,6 +1482,7 @@ void main() {
       expect(find.textContaining('saved the old way'), findsOneWidget);
 
       // Existing receiver details are preserved for editing.
+      await _openDetails(tester);
       await tester.ensureVisible(find.byKey(const Key('receiver_name_field')));
       await tester.pumpAndSettle();
       expect(find.text('Ram Thapa'), findsOneWidget);
@@ -1118,10 +1571,12 @@ void main() {
 
     expect(tester.takeException(), isNull);
 
-    // With a captured point the map and accuracy row are on screen too.
+    // With a captured point the map and accuracy row are on screen too. The
+    // sheet comes up over them, so step back to the screen to scroll it.
     await tester.tap(find.byKey(const Key('use_current_location_button')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await _dismissDetails(tester);
 
     // Scroll the whole form past the viewport so every row lays out at this
     // width — a lazy ListView would otherwise never build the lower fields.
@@ -1131,5 +1586,89 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('the sheet fits 320dp at 1.3x with the keyboard up', (
+    tester,
+  ) async {
+    final location = _FakeLocationService(
+      const LocationCaptured(
+        latitude: 27.7172,
+        longitude: 85.324,
+        accuracyMetres: 420,
+      ),
+    );
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final router = GoRouter(
+      initialLocation: '/add',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => const Scaffold(body: Text('addresses')),
+          routes: [
+            GoRoute(
+              path: 'add',
+              builder: (_, _) => const AddEditAddressScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          locationCaptureServiceProvider.overrideWithValue(location),
+          shippingRepositoryProvider.overrideWithValue(
+            _FakeShippingRepository(),
+          ),
+          pinMapBuilderProvider.overrideWithValue(_fakeMap),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            return MediaQuery(
+              // A software keyboard taking half a short screen: the worst
+              // case for a sheet full of text fields.
+              data: media.copyWith(
+                viewInsets: const EdgeInsets.only(bottom: 300),
+                textScaler: const TextScaler.linear(1.3),
+              ),
+              child: child!,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('use_current_location_button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('address_details_sheet')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // The sheet never grows past the space the keyboard leaves it.
+    final sheetRect = tester.getRect(
+      find.byKey(const Key('address_details_sheet')),
+    );
+    expect(sheetRect.height, lessThanOrEqualTo(640 - 300));
+
+    // Save stays reachable, and every field is reachable by scrolling.
+    expect(find.byKey(const Key('details_sheet_save_button')), findsOneWidget);
+    final scroller = find.descendant(
+      of: find.byKey(const Key('address_details_sheet')),
+      matching: find.byType(SingleChildScrollView),
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.drag(scroller, const Offset(0, -120));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    }
+    await tester.ensureVisible(find.byKey(const Key('location_note_field')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

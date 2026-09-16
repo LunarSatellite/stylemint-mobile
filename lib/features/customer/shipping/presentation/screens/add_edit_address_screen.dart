@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -83,6 +85,38 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
 
   String? _saveError;
 
+  /// Server messages that belong to one of the detail fields. Each is cleared
+  /// the moment that field is edited, so a stale rejection never lingers.
+  String? _receiverNameError;
+  String? _receiverPhoneError;
+  String? _labelError;
+  String? _countryError;
+  String? _noteError;
+
+  /// True while the details sheet is on screen. The screen and the sheet can
+  /// show the same save/location errors, so only one of them renders at a
+  /// time — and the sheet wins, because that is where the customer is looking.
+  bool _detailsSheetOpen = false;
+
+  /// The sheet is its own route, so a parent [setState] does not rebuild it.
+  /// Bumping this does.
+  final ValueNotifier<int> _sheetTick = ValueNotifier<int>(0);
+
+  /// Context of the live sheet, so a successful save can close it before
+  /// popping the screen.
+  BuildContext? _sheetContext;
+
+  final _sheetScrollCtl = ScrollController();
+
+  // Anchors for "scroll the sheet to the thing that is wrong".
+  final GlobalKey _pointSummaryAnchor = GlobalKey();
+  final GlobalKey _receiverNameAnchor = GlobalKey();
+  final GlobalKey _receiverPhoneAnchor = GlobalKey();
+  final GlobalKey _labelAnchor = GlobalKey();
+  final GlobalKey _countryAnchor = GlobalKey();
+  final GlobalKey _noteAnchor = GlobalKey();
+  final GlobalKey _saveErrorAnchor = GlobalKey();
+
   static const _countryMap = {
     'Nepal': 'NP',
     'India': 'IN',
@@ -147,7 +181,16 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     _labelCtl.dispose();
     _noteCtl.dispose();
     _mapsLinkCtl.dispose();
+    _sheetScrollCtl.dispose();
+    _sheetTick.dispose();
     super.dispose();
+  }
+
+  /// [setState] for anything the sheet also renders: the screen rebuilds and
+  /// so does the sheet route above it.
+  void _update(VoidCallback fn) {
+    setState(fn);
+    _sheetTick.value++;
   }
 
   bool get _hasPoint => _latitude != null && _longitude != null;
@@ -166,7 +209,7 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   // ── Current location ──────────────────────────────────────────────────────
 
   Future<void> _useCurrentLocation() async {
-    setState(() {
+    _update(() {
       _capturing = true;
       _locationMessage = null;
       _settingsAction = _SettingsAction.none;
@@ -175,7 +218,8 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     final result = await ref.read(locationCaptureServiceProvider).capture();
     if (!mounted) return;
 
-    setState(() {
+    var captured = false;
+    _update(() {
       _capturing = false;
       switch (result) {
         case LocationCaptured(
@@ -205,6 +249,7 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                     'confirm it when you save.'
               : null;
           _locationError = null;
+          captured = true;
         case LocationPermissionDenied():
           _locationMessage =
               'StyleMint needs location access to drop a pin where you are. '
@@ -228,6 +273,11 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
               'Try again, or paste a Maps link instead.';
       }
     });
+
+    // The point on its own is not an address. Bring the rest of the form up
+    // the moment there is something to attach it to, so nobody is left
+    // looking at a screen that appears finished.
+    if (captured) await _openDetailsSheet();
   }
 
   Future<void> _openSettings() async {
@@ -244,11 +294,11 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   Future<void> _resolveMapsLink() async {
     final url = _mapsLinkCtl.text.trim();
     if (url.isEmpty) {
-      setState(() => _mapsLinkError = 'Paste a Maps link first.');
+      _update(() => _mapsLinkError = 'Paste a Maps link first.');
       return;
     }
     if (url.length > _mapsLinkMaxLength) {
-      setState(
+      _update(
         () => _mapsLinkError =
             'That link is too long (max $_mapsLinkMaxLength characters).',
       );
@@ -265,7 +315,8 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
         .resolveMapsLink(url);
     if (!mounted) return;
 
-    setState(() {
+    var resolvedOk = false;
+    _update(() {
       _resolving = false;
       either.match(
         (failure) {
@@ -294,35 +345,54 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
           _locationConfirmed = false;
           _locationMessage = null;
           _locationError = null;
+          resolvedOk = true;
         },
       );
     });
+
+    if (resolvedOk) await _openDetailsSheet();
   }
 
   /// Pulls the message the backend attached to [field], from either the
   /// top-level `field` or the `errors[]` array.
+  ///
+  /// Field names are compared loosely — `receiverName`, `ReceiverName`,
+  /// `receiver_name` and `Receiver Name` all name the same input — because
+  /// which spelling arrives depends on which backend validator failed, and a
+  /// spelling mismatch silently demotes a helpful message to a generic one.
   static String? _fieldMessage(NetworkExceptions failure, String field) {
+    final wanted = _normalizeField(field);
     return failure.whenOrNull(
       validation: (code, message, failedField, errors) {
         for (final e in errors) {
-          if (e.field.toLowerCase() == field.toLowerCase()) {
-            return e.message.isNotEmpty ? e.message : e.code;
+          if (_normalizeField(e.field) == wanted) {
+            return e.message.isNotEmpty ? e.message : _readableCode(e.code);
           }
         }
-        if ((failedField ?? '').toLowerCase() == field.toLowerCase()) {
-          final m = message ?? '';
-          return m.isNotEmpty ? m : code;
+        if (_normalizeField(failedField ?? '') == wanted) {
+          final m = (message ?? '').trim();
+          return m.isNotEmpty && !NetworkExceptions.isGenericProblemTitle(m)
+              ? m
+              : _readableCode(code);
         }
         return null;
       },
     );
   }
 
+  static String _normalizeField(String field) =>
+      field.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+
+  /// Last-resort text for a field the server rejected without a sentence.
+  /// Never a bare code: `validation.out_of_range` reads as English.
+  static String _readableCode(String code) =>
+      NetworkExceptions.getMessage(NetworkExceptions.validation(code: code));
+
   // ── Pin ───────────────────────────────────────────────────────────────────
 
-  void _onPinMoved(double latitude, double longitude) {
+  Future<void> _onPinMoved(double latitude, double longitude) async {
     if (!isPlausibleCoordinate(latitude, longitude)) return;
-    setState(() {
+    _update(() {
       _latitude = latitude;
       _longitude = longitude;
       // A hand-placed pin is no longer the GPS reading, so its accuracy no
@@ -334,6 +404,99 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       _locationConfirmed = false;
       _locationMessage = null;
       _locationError = null;
+    });
+    // Same rule as a GPS capture: a placed pin is a captured location, so the
+    // rest of the form comes back up rather than waiting below the fold.
+    await _openDetailsSheet();
+  }
+
+  // ── The details sheet ─────────────────────────────────────────────────────
+
+  /// Everything that is not the location: who receives it, what to call it,
+  /// and how to find the door. It lives in a sheet so a captured point is
+  /// always followed by the question "and who is this for?" instead of a
+  /// screen that looks finished.
+  ///
+  /// Dismissing it keeps every captured point and every typed character —
+  /// the controllers and the location live on this state, not in the route —
+  /// and the screen always offers a way back in.
+  Future<void> _openDetailsSheet({
+    bool validateOnOpen = false,
+    GlobalKey? scrollTo,
+  }) async {
+    if (_detailsSheetOpen || !mounted) return;
+    setState(() => _detailsSheetOpen = true);
+
+    final future = showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: DesignTokens.bgAppBody,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.cardRadius),
+        ),
+      ),
+      builder: (sheetCtx) => ValueListenableBuilder<int>(
+        valueListenable: _sheetTick,
+        builder: (ctx, _, _) => _detailsSheet(ctx),
+      ),
+    );
+
+    if (validateOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _formKey.currentState?.validate();
+      });
+    }
+    _scrollSheetTo(scrollTo);
+
+    await future;
+    if (!mounted) return;
+    setState(() {
+      _detailsSheetOpen = false;
+      _sheetContext = null;
+    });
+  }
+
+  void _closeDetailsSheet() {
+    final ctx = _sheetContext;
+    if (ctx != null && ctx.mounted) Navigator.pop(ctx);
+  }
+
+  /// Anchor of the first server error, so a rejection is never left
+  /// off-screen below the fold of the sheet.
+  GlobalKey? _firstServerErrorAnchor() {
+    if (_locationError != null) return _pointSummaryAnchor;
+    if (_receiverNameError != null) return _receiverNameAnchor;
+    if (_receiverPhoneError != null) return _receiverPhoneAnchor;
+    if (_labelError != null) return _labelAnchor;
+    if (_countryError != null) return _countryAnchor;
+    if (_noteError != null) return _noteAnchor;
+    if (_saveError != null) return _saveErrorAnchor;
+    return null;
+  }
+
+  /// Scrolls the sheet to [anchor]. The sheet may still be building when a
+  /// rejection arrives, so a missing anchor is retried for a few frames
+  /// rather than dropped — an error scrolled to nowhere is an error unseen.
+  void _scrollSheetTo(GlobalKey? anchor, {int attempts = 4}) {
+    if (anchor == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctx = anchor.currentContext;
+      if (ctx == null || !ctx.mounted) {
+        if (attempts > 1) _scrollSheetTo(anchor, attempts: attempts - 1);
+        return;
+      }
+      unawaited(
+        Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.1,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        ),
+      );
     });
   }
 
@@ -356,15 +519,32 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   bool get _isFarFromDevice =>
       (_distanceFromDevice ?? 0) > kFarFromDeviceMetres;
 
+  /// Everything the sheet asks for that the backend requires.
+  bool get _detailsComplete =>
+      _receiverNameCtl.text.trim().isNotEmpty &&
+      _receiverPhoneCtl.text.trim().isNotEmpty &&
+      _country.isNotEmpty;
+
+  /// The screen's primary button. With a location but no details it opens the
+  /// sheet rather than failing a validation the customer cannot even see.
+  Future<void> _onPrimaryPressed() async {
+    if (!_detailsSheetOpen && _hasLocation && !_detailsComplete) {
+      await _openDetailsSheet(validateOnOpen: true);
+      return;
+    }
+    await _save();
+  }
+
   Future<void> _save() async {
-    setState(() {
+    _update(() {
       _saveError = null;
       _locationError = null;
     });
-    if (!_formKey.currentState!.validate()) return;
 
+    // Location first: with nothing to deliver to, which field is "wrong" is
+    // not a useful question.
     if (!_hasLocation) {
-      setState(
+      _update(
         () => _saveError =
             'Add a location first — use your current location, paste a Maps '
             'link, or drag the pin.',
@@ -372,15 +552,28 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       return;
     }
 
+    // The form only exists while the sheet is up. Saving from the screen with
+    // the sheet dismissed re-opens it on the first missing answer.
+    final form = _formKey.currentState;
+    if (form == null) {
+      if (!_detailsComplete) {
+        await _openDetailsSheet(validateOnOpen: true);
+        return;
+      }
+    } else if (!form.validate()) {
+      return;
+    }
+
     // Never send an obviously broken point: 0,0 and out-of-range values are
     // a failed parse, not a place. The backend rejects these too; catching
     // them here just makes the feedback instant.
     if (_hasPoint && !isPlausibleCoordinate(_latitude, _longitude)) {
-      setState(
+      _update(
         () => _locationError =
             "That location doesn't look like a real place. Capture it again, "
             'drag the pin, or paste a Maps link.',
       );
+      _scrollSheetTo(_pointSummaryAnchor);
       return;
     }
 
@@ -390,10 +583,10 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     if (!_locationConfirmed && (_accuracyIsPoor || _isFarFromDevice)) {
       final confirmed = await _confirmLocation();
       if (!mounted || !confirmed) return;
-      setState(() => _locationConfirmed = true);
+      _update(() => _locationConfirmed = true);
     }
 
-    setState(() => _saving = true);
+    _update(() => _saving = true);
 
     final link = _mapsLinkCtl.text.trim();
     final notifier = ref.read(addressNotifierProvider.notifier);
@@ -418,33 +611,90 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
         : await notifier.add(address);
 
     if (!mounted) return;
-    setState(() => _saving = false);
+    _update(() => _saving = false);
 
     if (failure == null) {
+      _closeDetailsSheet();
       context.pop(true);
       return;
     }
 
     final linkMessage = _fieldMessage(failure, 'mapsLink');
-    // "Outside our delivery area", an implausible point, or any other
-    // location field the server rejects — including rules this build doesn't
-    // know about. Rendered on the location block so it reads as field
-    // feedback rather than a raw 400.
+    // "Outside our delivery area", a fix the server calls too loose, an
+    // implausible point, or any other location field it rejects — including
+    // rules this build doesn't know about. Rendered against the point the
+    // customer is naming, so it reads as feedback on that point rather than a
+    // raw 400.
     final locationMessage = _firstFieldMessage(failure, const [
       'latitude',
       'longitude',
       'location',
       'serviceArea',
       'locationAccuracyMetres',
+      'locationAccuracy',
+      'accuracy',
       'locationCapturedFrom',
+      'coordinates',
+      'point',
     ]);
-    setState(() {
+    final nameMessage = _firstFieldMessage(failure, const [
+      'receiverName',
+      'recipientName',
+      'name',
+    ]);
+    final phoneMessage = _firstFieldMessage(failure, const [
+      'receiverPhone',
+      'recipientPhone',
+      'phone',
+      'phoneNumber',
+    ]);
+    final labelMessage = _firstFieldMessage(failure, const [
+      'label',
+      'addressLabel',
+    ]);
+    final countryMessage = _firstFieldMessage(failure, const [
+      'country',
+      'countryCode',
+    ]);
+    final noteMessage = _firstFieldMessage(failure, const [
+      'locationNote',
+      'note',
+      'deliveryNote',
+      'instructions',
+    ]);
+
+    final named = [
+      linkMessage,
+      locationMessage,
+      nameMessage,
+      phoneMessage,
+      labelMessage,
+      countryMessage,
+      noteMessage,
+    ].any((m) => m != null);
+
+    _update(() {
       _mapsLinkError = linkMessage;
       _locationError = locationMessage;
-      _saveError = (linkMessage == null && locationMessage == null)
-          ? NetworkExceptions.getMessage(failure)
-          : null;
+      _receiverNameError = nameMessage;
+      _receiverPhoneError = phoneMessage;
+      _labelError = labelMessage;
+      _countryError = countryMessage;
+      _noteError = noteMessage;
+      // Nothing was pinned to a field: show what the server actually said —
+      // its `detail` sentence — never the bare problem title.
+      _saveError = named ? null : NetworkExceptions.getMessage(failure);
     });
+
+    // A rejection the customer cannot see is a rejection they cannot act on:
+    // bring the sheet back and scroll to whatever is wrong. Not awaited — the
+    // sheet's future only completes when it is dismissed.
+    final anchor = _firstServerErrorAnchor();
+    if (!_detailsSheetOpen && linkMessage == null) {
+      unawaited(_openDetailsSheet(scrollTo: anchor));
+    } else {
+      _scrollSheetTo(anchor);
+    }
   }
 
   /// Asks the customer to confirm a point that is loose or far away. Returns
@@ -591,150 +841,71 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       body: Column(
         children: [
           Expanded(
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(DesignTokens.s16),
-                children: [
-                  if (_needsLocationForLegacyEdit) ...[
-                    const _LegacyLocationBanner(),
-                    const SizedBox(height: DesignTokens.s16),
-                  ],
-                  _sectionTitle('Where is it?'),
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    'Pin the spot once and we can find it every time — no '
-                    'street names needed.',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.s12),
-                  _currentLocationButton(),
-                  if (_locationMessage != null) ...[
-                    const SizedBox(height: DesignTokens.s8),
-                    _LocationMessage(
-                      message: _locationMessage!,
-                      actionLabel: switch (_settingsAction) {
-                        _SettingsAction.appSettings => 'Open settings',
-                        _SettingsAction.locationSettings =>
-                          'Open location settings',
-                        _SettingsAction.none => null,
-                      },
-                      onAction: _settingsAction == _SettingsAction.none
-                          ? null
-                          : _openSettings,
-                    ),
-                  ],
-                  if (_locationError != null) ...[
-                    const SizedBox(height: DesignTokens.s8),
-                    Text(
-                      _locationError!,
-                      key: const Key('location_error'),
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.colorError,
-                      ),
-                    ),
-                  ],
-                  if (_hasPoint) ...[
-                    const SizedBox(height: DesignTokens.s12),
-                    _CapturedPointCard(
-                      latitude: _latitude!,
-                      longitude: _longitude!,
-                      accuracyMetres: _accuracyMetres,
-                      source: _capturedFrom,
-                      fromLink: _capturedFrom == null && _hasMapsLink,
-                      accuracyIsPoor: _accuracyIsPoor,
-                    ),
-                    const SizedBox(height: DesignTokens.s12),
-                    AddressPinMap(
-                      latitude: _latitude!,
-                      longitude: _longitude!,
-                      onPinMoved: _onPinMoved,
-                    ),
-                  ],
-                  const SizedBox(height: DesignTokens.s20),
-                  _mapsLinkField(),
-                  const SizedBox(height: DesignTokens.s24),
-                  _sectionTitle('How do we find it? (optional)'),
-                  const SizedBox(height: DesignTokens.s4),
-                  Text(
-                    'The pin gets the rider to the building. A line about the '
-                    'gate colour, the floor, a landmark or who to ask gets '
-                    'them to your door.',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: DesignTokens.s12),
-                  _noteField(),
-                  const SizedBox(height: DesignTokens.s24),
-                  _sectionTitle('Who is receiving it?'),
-                  const SizedBox(height: DesignTokens.s12),
-                  _field(
-                    'Receiver Name',
-                    _receiverNameCtl,
-                    fieldKey: const Key('receiver_name_field'),
-                    required: true,
-                    textInputAction: TextInputAction.next,
-                  ),
+            child: ListView(
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              children: [
+                if (_needsLocationForLegacyEdit) ...[
+                  const _LegacyLocationBanner(),
                   const SizedBox(height: DesignTokens.s16),
-                  _field(
-                    'Receiver Phone',
-                    _receiverPhoneCtl,
-                    fieldKey: const Key('receiver_phone_field'),
-                    keyboardType: TextInputType.phone,
-                    required: true,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _country,
-                    // The dropdown lays out every item to size itself, so
-                    // without isExpanded the widest country name overflows
-                    // the field on a 320dp screen at a large text scale.
-                    isExpanded: true,
-                    onChanged: (v) => setState(() => _country = v ?? 'NP'),
-                    style: DesignTokens.mediumRegular.copyWith(
-                      color: DesignTokens.inputFieldData,
-                    ),
-                    dropdownColor: DesignTokens.bgAppBodyLight,
-                    iconEnabledColor: DesignTokens.inputFieldDropdownIcon,
-                    decoration: DesignTokens.inputDecoration(
-                      labelText: 'Country',
-                    ),
-                    items: _countryMap.entries
-                        .map(
-                          (e) => DropdownMenuItem(
-                            value: e.value,
-                            child: Text(
-                              '${e.key} (${e.value})',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: DesignTokens.s16),
-                  _field(
-                    'Save Address As',
-                    _labelCtl,
-                    fieldKey: const Key('address_label_field'),
-                  ),
-                  if (_saveError != null) ...[
-                    const SizedBox(height: DesignTokens.s16),
-                    Text(
-                      _saveError!,
-                      key: const Key('address_save_error'),
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.colorError,
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+                _sectionTitle('Where is it?'),
+                const SizedBox(height: DesignTokens.s4),
+                Text(
+                  'Pin the spot once and we can find it every time — no '
+                  'street names needed.',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+                const SizedBox(height: DesignTokens.s12),
+                _currentLocationButton(),
+                if (_locationMessage != null) ...[
+                  const SizedBox(height: DesignTokens.s8),
+                  _LocationMessage(
+                    message: _locationMessage!,
+                    actionLabel: switch (_settingsAction) {
+                      _SettingsAction.appSettings => 'Open settings',
+                      _SettingsAction.locationSettings =>
+                        'Open location settings',
+                      _SettingsAction.none => null,
+                    },
+                    onAction: _settingsAction == _SettingsAction.none
+                        ? null
+                        : _openSettings,
+                  ),
+                ],
+                // While the sheet is up it owns these two messages, so they
+                // are never rendered twice or left behind the sheet.
+                if (_locationError != null && !_detailsSheetOpen) ...[
+                  const SizedBox(height: DesignTokens.s8),
+                  _ErrorText(_locationError!, keyName: 'location_error'),
+                ],
+                if (_hasPoint) ...[
+                  const SizedBox(height: DesignTokens.s12),
+                  _CapturedPointCard(
+                    latitude: _latitude!,
+                    longitude: _longitude!,
+                    accuracyMetres: _accuracyMetres,
+                    source: _capturedFrom,
+                    fromLink: _capturedFrom == null && _hasMapsLink,
+                    accuracyIsPoor: _accuracyIsPoor,
+                  ),
+                  const SizedBox(height: DesignTokens.s12),
+                  AddressPinMap(
+                    latitude: _latitude!,
+                    longitude: _longitude!,
+                    onPinMoved: _onPinMoved,
+                  ),
+                ],
+                const SizedBox(height: DesignTokens.s20),
+                _mapsLinkField(),
+                const SizedBox(height: DesignTokens.s24),
+                _detailsSummaryCard(),
+                if (_saveError != null && !_detailsSheetOpen) ...[
+                  const SizedBox(height: DesignTokens.s16),
+                  _ErrorText(_saveError!, keyName: 'address_save_error'),
+                ],
+              ],
             ),
           ),
           SafeArea(
@@ -749,7 +920,7 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   key: const Key('address_save_button'),
-                  onPressed: _saving ? null : _save,
+                  onPressed: _saving ? null : _onPrimaryPressed,
                   style: DesignTokens.primaryButtonStyle(),
                   child: _saving
                       ? const SizedBox(
@@ -761,7 +932,9 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
                           ),
                         )
                       : Text(
-                          isEdit
+                          _hasLocation && !_detailsComplete
+                              ? 'Add delivery details'
+                              : isEdit
                               ? 'Update Address Details'
                               : 'Add Address Details',
                           style: DesignTokens.mediumSemibold.copyWith(
@@ -919,30 +1092,36 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
   }
 
   Widget _noteField() {
-    return TextFormField(
-      key: const Key('location_note_field'),
-      controller: _noteCtl,
-      maxLength: _noteMaxLength,
-      maxLines: 5,
-      minLines: 3,
-            style: DesignTokens.mediumRegular.copyWith(
-        color: DesignTokens.inputFieldData,
+    return KeyedSubtree(
+      key: _noteAnchor,
+      child: TextFormField(
+        key: const Key('location_note_field'),
+        controller: _noteCtl,
+        maxLength: _noteMaxLength,
+        maxLines: 5,
+        minLines: 3,
+        style: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.inputFieldData,
+        ),
+        onChanged: _noteError == null
+            ? null
+            : (_) => _update(() => _noteError = null),
+        decoration: DesignTokens.inputDecoration(
+          hintText:
+              'e.g. Blue gate opposite the pharmacy, second floor, ring twice '
+              '— ask for Sita at the tea shop if the gate is shut.',
+        ).copyWith(errorText: _noteError, errorMaxLines: 4),
+        // Optional by design: when the pin is good, making someone write prose
+        // is a poor default. The box stays because it is what gets a rider
+        // through an unmarked gate — but it never blocks a save.
+        validator: (v) {
+          final text = (v ?? '').trim();
+          if (text.length > _noteMaxLength) {
+            return 'Keep it under $_noteMaxLength characters.';
+          }
+          return null;
+        },
       ),
-      decoration: DesignTokens.inputDecoration(
-        hintText:
-            'e.g. Blue gate opposite the pharmacy, second floor, ring twice '
-            '— ask for Sita at the tea shop if the gate is shut.',
-      ).copyWith(errorMaxLines: 3),
-      // Optional by design: when the pin is good, making someone write prose
-      // is a poor default. The box stays because it is what gets a rider
-      // through an unmarked gate — but it never blocks a save.
-      validator: (v) {
-        final text = (v ?? '').trim();
-        if (text.length > _noteMaxLength) {
-          return 'Keep it under $_noteMaxLength characters.';
-        }
-        return null;
-      },
     );
   }
 
@@ -950,11 +1129,14 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
     String label,
     TextEditingController controller, {
     Key? fieldKey,
+    GlobalKey? anchor,
     TextInputType keyboardType = TextInputType.text,
     TextInputAction? textInputAction,
     bool required = false,
+    String? serverError,
+    VoidCallback? clearServerError,
   }) {
-    return TextFormField(
+    final field = TextFormField(
       key: fieldKey,
       controller: controller,
       keyboardType: keyboardType,
@@ -962,12 +1144,426 @@ class _AddEditAddressScreenState extends ConsumerState<AddEditAddressScreen> {
       style: DesignTokens.mediumRegular.copyWith(
         color: DesignTokens.inputFieldData,
       ),
-      decoration: DesignTokens.inputDecoration(labelText: label),
+      onChanged: serverError == null ? null : (_) => clearServerError?.call(),
+      decoration: DesignTokens.inputDecoration(labelText: label).copyWith(
+        // The server's own sentence, on the field it named. It outranks the
+        // local "Required" because it is the more specific of the two.
+        errorText: serverError,
+        errorMaxLines: 4,
+      ),
       validator: required
           ? (v) => (v == null || v.trim().isEmpty) ? 'Required' : null
           : null,
     );
+    return anchor == null ? field : KeyedSubtree(key: anchor, child: field);
   }
+
+  // ── The details sheet's contents ──────────────────────────────────────────
+
+  /// Plain-language name for the point being saved, e.g. "Your current
+  /// location, accurate to about 12 m".
+  String get _pointHeadline {
+    final source = switch (_capturedFrom) {
+      LocationSource.manualPin => 'The pin you placed',
+      LocationSource.deviceGps => 'Your current location',
+      _ when _hasPoint && _hasMapsLink => 'The spot from your Maps link',
+      _ when _hasPoint => 'The location on this address',
+      _ => 'Your Maps link',
+    };
+    final accuracy = _accuracyMetres;
+    if (accuracy == null) return source;
+    return '$source, accurate to about ${accuracy.round()} m';
+  }
+
+  /// The always-available way back into the sheet, so dismissing it is never
+  /// a trap — and the place the screen says what is still missing.
+  Widget _detailsSummaryCard() {
+    final done = _detailsComplete;
+    final receiver = _receiverNameCtl.text.trim();
+    final phone = _receiverPhoneCtl.text.trim();
+    final label = _labelCtl.text.trim();
+    final summary = done
+        ? [receiver, phone, if (label.isNotEmpty) label].join(' · ')
+        : 'Who is receiving it, their phone, and what to call this address.';
+
+    return Container(
+      key: const Key('details_summary_card'),
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBodyLight,
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        border: Border.all(
+          color: done ? DesignTokens.borderDefault : DesignTokens.colorWarning,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                done ? Icons.check_circle_outline : Icons.edit_note,
+                color: done
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.colorWarning,
+                size: DesignTokens.iconMedium,
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      done
+                          ? 'Delivery details added'
+                          : 'Delivery details still needed',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.s4),
+                    Text(
+                      summary,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              key: const Key('open_details_button'),
+              onPressed: _openDetailsSheet,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                done ? 'Edit delivery details' : 'Fill in delivery details',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailsSheet(BuildContext sheetCtx) {
+    _sheetContext = sheetCtx;
+    final isEdit = widget.isEditing;
+
+    return Padding(
+      // Inset-aware: the keyboard lifts the sheet instead of covering the
+      // field being typed into.
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(sheetCtx).bottom,
+      ),
+      child: Column(
+        key: const Key('address_details_sheet'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: DesignTokens.s8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: DesignTokens.borderDefault,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s8,
+              DesignTokens.s8,
+              0,
+            ),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Almost there',
+                    key: Key('details_sheet_title'),
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('close_details_sheet_button'),
+                  tooltip: 'Close — your location is kept',
+                  icon: const Icon(Icons.close, color: DesignTokens.textMuted),
+                  onPressed: () => Navigator.pop(sheetCtx),
+                ),
+              ],
+            ),
+          ),
+          // Everything scrolls, so a small screen at a large text scale with
+          // the keyboard up still reaches every field.
+          Flexible(
+            child: SingleChildScrollView(
+              controller: _sheetScrollCtl,
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s8,
+                DesignTokens.s16,
+                DesignTokens.s16,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sheetPointSummary(sheetCtx),
+                    const SizedBox(height: DesignTokens.s16),
+                    _sectionTitle('Who is receiving it?'),
+                    const SizedBox(height: DesignTokens.s12),
+                    _field(
+                      'Receiver Name',
+                      _receiverNameCtl,
+                      fieldKey: const Key('receiver_name_field'),
+                      anchor: _receiverNameAnchor,
+                      required: true,
+                      textInputAction: TextInputAction.next,
+                      serverError: _receiverNameError,
+                      clearServerError: () =>
+                          _update(() => _receiverNameError = null),
+                    ),
+                    const SizedBox(height: DesignTokens.s16),
+                    _field(
+                      'Receiver Phone',
+                      _receiverPhoneCtl,
+                      fieldKey: const Key('receiver_phone_field'),
+                      anchor: _receiverPhoneAnchor,
+                      keyboardType: TextInputType.phone,
+                      required: true,
+                      textInputAction: TextInputAction.next,
+                      serverError: _receiverPhoneError,
+                      clearServerError: () =>
+                          _update(() => _receiverPhoneError = null),
+                    ),
+                    const SizedBox(height: DesignTokens.s16),
+                    _field(
+                      'Save Address As',
+                      _labelCtl,
+                      fieldKey: const Key('address_label_field'),
+                      anchor: _labelAnchor,
+                      serverError: _labelError,
+                      clearServerError: () => _update(() => _labelError = null),
+                    ),
+                    const SizedBox(height: DesignTokens.s16),
+                    _countryField(),
+                    const SizedBox(height: DesignTokens.s24),
+                    _sectionTitle('How do we find it? (optional)'),
+                    const SizedBox(height: DesignTokens.s4),
+                    Text(
+                      'The pin gets the rider to the building. A line about '
+                      'the gate colour, the floor, a landmark or who to ask '
+                      'gets them to your door.',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.s12),
+                    _noteField(),
+                    if (_saveError != null) ...[
+                      const SizedBox(height: DesignTokens.s16),
+                      KeyedSubtree(
+                        key: _saveErrorAnchor,
+                        child: _ErrorText(
+                          _saveError!,
+                          keyName: 'address_save_error',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: DesignTokens.borderDefault),
+              ),
+            ),
+            padding: const EdgeInsets.all(DesignTokens.s16),
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  key: const Key('details_sheet_save_button'),
+                  onPressed: _saving ? null : _save,
+                  style: DesignTokens.primaryButtonStyle(),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        )
+                      : Text(
+                          isEdit ? 'Save changes' : 'Save this address',
+                          style: DesignTokens.mediumSemibold.copyWith(
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Names the point at the top of the sheet, so the customer can see what
+  /// they are attaching these details to — and carries any rejection the
+  /// server made about that point.
+  Widget _sheetPointSummary(BuildContext sheetCtx) {
+    return KeyedSubtree(
+      key: _pointSummaryAnchor,
+      child: Container(
+        key: const Key('sheet_point_summary'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: DesignTokens.bgAppBodyLight,
+          borderRadius: BorderRadius.circular(DesignTokens.s8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.place_outlined,
+                  color: DesignTokens.primaryGreen,
+                  size: DesignTokens.iconMedium,
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Text(
+                    _pointHeadline,
+                    key: const Key('sheet_point_headline'),
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_accuracyIsPoor) ...[
+              const SizedBox(height: DesignTokens.s8),
+              Text(
+                'That could be any of several nearby buildings. Close this '
+                'and drag the pin if it is off.',
+                key: const Key('sheet_accuracy_warning'),
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.colorWarning,
+                ),
+              ),
+            ],
+            if (_locationError != null) ...[
+              const SizedBox(height: DesignTokens.s8),
+              _ErrorText(_locationError!, keyName: 'location_error'),
+            ],
+            if (_hasPoint) ...[
+              const SizedBox(height: DesignTokens.s4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  key: const Key('adjust_pin_button'),
+                  onPressed: () => Navigator.pop(sheetCtx),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Adjust the pin instead',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _countryField() {
+    return KeyedSubtree(
+      key: _countryAnchor,
+      child: DropdownButtonFormField<String>(
+        initialValue: _country,
+        // The dropdown lays out every item to size itself, so without
+        // isExpanded the widest country name overflows the field on a 320dp
+        // screen at a large text scale.
+        isExpanded: true,
+        onChanged: (v) => _update(() {
+          _country = v ?? 'NP';
+          _countryError = null;
+        }),
+        style: DesignTokens.mediumRegular.copyWith(
+          color: DesignTokens.inputFieldData,
+        ),
+        dropdownColor: DesignTokens.bgAppBodyLight,
+        iconEnabledColor: DesignTokens.inputFieldDropdownIcon,
+        decoration: DesignTokens.inputDecoration(labelText: 'Country').copyWith(
+          errorText: _countryError,
+          errorMaxLines: 4,
+        ),
+        items: _countryMap.entries
+            .map(
+              (e) => DropdownMenuItem(
+                value: e.value,
+                child: Text(
+                  '${e.key} (${e.value})',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(growable: false),
+        validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+      ),
+    );
+  }
+}
+
+/// A server or guard message, in the app's error colour, wrapping as far as
+/// it needs to — a rejection the customer cannot read is no better than none.
+class _ErrorText extends StatelessWidget {
+  const _ErrorText(this.message, {required this.keyName});
+
+  final String message;
+  final String keyName;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    message,
+    key: Key(keyName),
+    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.colorError),
+  );
 }
 
 enum _SettingsAction { none, appSettings, locationSettings }

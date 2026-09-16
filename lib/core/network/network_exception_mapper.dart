@@ -54,12 +54,12 @@ NetworkExceptions mapDioExceptionToNetworkException(dynamic exception) {
 /// so the snackbar can say exactly which field is wrong.
 NetworkExceptions _buildValidation(dynamic body, int statusCode) {
   final code = _extractErrorCode(body) ?? statusCode.toString();
-  final title = _extractTitle(body);
+  final message = _extractProblemMessage(body);
   final field = _extractField(body);
   final errors = _extractErrors(body);
   return NetworkExceptions.validation(
     code: code,
-    message: title,
+    message: message,
     field: field,
     errors: errors,
   );
@@ -67,11 +67,11 @@ NetworkExceptions _buildValidation(dynamic body, int statusCode) {
 
 NetworkExceptions _buildConflict(dynamic body) {
   final code = _extractErrorCode(body) ?? 'validation.conflict';
-  final title = _extractTitle(body);
+  final message = _extractProblemMessage(body);
   final field = _extractField(body);
   return NetworkExceptions.validation(
     code: code,
-    message: title,
+    message: message,
     field: field,
   );
 }
@@ -85,12 +85,23 @@ String? _extractErrorCode(dynamic data) {
   return null;
 }
 
-/// Reads the human-readable `title` from the RFC 7807 body. The backend puts
-/// the actual sentence here (e.g. "Images must be between 5 and 10.").
-String? _extractTitle(dynamic data) {
-  if (data is Map && data['title'] is String) {
-    final t = (data['title'] as String).trim();
-    return t.isEmpty ? null : t;
+/// The sentence a human should read, from an RFC 7807 body.
+///
+/// RFC 7807 splits the two on purpose: `title` describes the *problem type*
+/// and is deliberately generic and stable ("Validation error"), while `detail`
+/// explains *this* occurrence ("Your location is only accurate to about 140 m
+/// — we need 100 m or better."). Reading `title` alone is why a genuinely
+/// helpful rejection used to reach the customer as a bare "Validation error",
+/// so `detail` wins whenever the backend sent one and `title` is the fallback
+/// for the endpoints that only fill that.
+String? _extractProblemMessage(dynamic data) =>
+    _extractString(data, 'detail') ?? _extractString(data, 'title');
+
+/// Trimmed string value of [key], or null when absent/blank/not a string.
+String? _extractString(dynamic data, String key) {
+  if (data is Map && data[key] is String) {
+    final value = (data[key] as String).trim();
+    return value.isEmpty ? null : value;
   }
   return null;
 }

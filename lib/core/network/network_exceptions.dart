@@ -211,11 +211,40 @@ abstract class NetworkExceptions with _$NetworkExceptions {
     // FluentValidation form-field errors) benefits from a field prefix.
     final human = (message ?? '').trim();
     final fieldName = (field ?? '').trim();
-    if (human.isNotEmpty) return human;
+    if (human.isNotEmpty && !isGenericProblemTitle(human)) return human;
     if (fieldName.isNotEmpty) {
       return 'Field "$fieldName" is invalid (${_humanizeCode(code)}).';
     }
-    return 'Validation error: ${_humanizeCode(code)}';
+    // Only a generic problem-details `title` came back (no `detail`, no
+    // field): spell the code out rather than echoing "Validation error",
+    // which tells the customer nothing about what to change.
+    return 'That request was rejected: ${_humanizeCode(code)}.';
+  }
+
+  /// Problem-details titles that describe the *type* of problem and nothing a
+  /// customer can act on. RFC 7807 puts the actionable sentence in `detail`;
+  /// when that is missing, one of these is all that arrives, and showing it
+  /// raw is the "it just says validation error" bug.
+  static const _genericProblemTitles = <String>{
+    'validation error',
+    'validation errors',
+    'validation failed',
+    'one or more validation errors occurred',
+    'bad request',
+    'invalid request',
+    'invalid input',
+    'unprocessable entity',
+    'error',
+  };
+
+  /// True when [message] is one of the content-free problem titles above.
+  static bool isGenericProblemTitle(String message) {
+    final normalized = message
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z ]'), '')
+        .replaceAll(RegExp(' +'), ' ')
+        .trim();
+    return _genericProblemTitles.contains(normalized);
   }
 
   /// Turn `validation.out_of_range` / `validation.required` / `system.rate_limited`
