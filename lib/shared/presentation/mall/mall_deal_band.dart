@@ -60,15 +60,6 @@ class MallDealBand extends StatelessWidget {
     fontFeatures: mallTabularFigures,
   );
 
-  static const TextStyle _numeralCaptionStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 11,
-    fontWeight: FontWeight.w700,
-    height: 1.2,
-    letterSpacing: 1.2,
-    color: _inkMuted,
-  );
-
   static const TextStyle _subtitleStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
     fontSize: 13.5,
@@ -93,19 +84,26 @@ class MallDealBand extends StatelessWidget {
       children: [
         ClipPath(
           clipper: _CutCornerClipper(cut: cut, direction: direction),
-          child: ColoredBox(
-            color: DesignTokens.primaryGreen,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [Color(0xFF70E89D), DesignTokens.primaryGreen],
+              ),
+              boxShadow: DesignTokens.shadowLifted,
+            ),
             child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 22, 20, 26),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   MallEyebrow(eyebrow ?? strings.limitedTime, color: _inkMuted),
-                  const SizedBox(height: DesignTokens.s16),
+                  const SizedBox(height: DesignTokens.s12),
                   if (discount != null) ...[
                     _Numeral(percent: discount, strings: strings),
-                    const SizedBox(height: DesignTokens.s12),
+                    const SizedBox(height: 10),
                   ],
                   Semantics(
                     header: true,
@@ -114,8 +112,8 @@ class MallDealBand extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: DesignTokens.displaySection.copyWith(
-                        fontSize: 28,
-                        height: 32 / 28,
+                        fontSize: 32,
+                        height: 35 / 32,
                         color: _ink,
                       ),
                     ),
@@ -143,7 +141,7 @@ class MallDealBand extends StatelessWidget {
                     ),
                   ],
                   if (label != null && action != null) ...[
-                    const SizedBox(height: DesignTokens.s20),
+                    const SizedBox(height: DesignTokens.s16),
                     Align(
                       alignment: AlignmentDirectional.centerStart,
                       child: _DropCta(label: label, onPressed: action),
@@ -154,14 +152,15 @@ class MallDealBand extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: DesignTokens.s24),
+        const SizedBox(height: DesignTokens.s16),
         child,
       ],
     );
   }
 }
 
-/// The discount numeral, with its caption stacked beside it.
+/// The discount numeral, treated as a compact campaign stamp rather than a
+/// loose number on the green field.
 class _Numeral extends StatelessWidget {
   const _Numeral({required this.percent, required this.strings});
 
@@ -171,39 +170,71 @@ class _Numeral extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      // "40%" beside a stacked "UP TO / OFF" only reads as a discount when
-      // the three are announced as one node.
       container: true,
       label: strings.upToPercentOff(percent),
       excludeSemantics: true,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                '$percent%',
-                maxLines: 1,
-                style: MallDealBand._numeralStyle,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 190),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: MallDealBand._ink,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0x26FFFFFF)),
+              boxShadow: DesignTokens.shadowCard,
+            ),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 16, 11),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$percent%',
+                    maxLines: 1,
+                    style: MallDealBand._numeralStyle.copyWith(
+                      color: DesignTokens.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  const Padding(
+                    padding: EdgeInsetsDirectional.only(bottom: 7),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'UP TO',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                            letterSpacing: 1.2,
+                            color: Color(0xB3FFFFFF),
+                          ),
+                        ),
+                        Text(
+                          'OFF',
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                            letterSpacing: 1.2,
+                            color: Color(0xB3FFFFFF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(width: DesignTokens.s8),
-          const Padding(
-            padding: EdgeInsetsDirectional.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('UP TO', style: MallDealBand._numeralCaptionStyle),
-                Text('OFF', style: MallDealBand._numeralCaptionStyle),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
