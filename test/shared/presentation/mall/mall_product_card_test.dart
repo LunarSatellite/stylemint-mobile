@@ -226,6 +226,32 @@ void main() {
     expect(productTaps, 1);
     semantics.dispose();
   });
+  testWidgets('every product image keeps a centered play control', (
+    tester,
+  ) async {
+    var productTaps = 0;
+    var reelTaps = 0;
+    await pumpMall(
+      tester,
+      Center(
+        child: SizedBox(
+          width: MallProductCard.regularWidth,
+          child: MallProductCard(
+            product: plainProduct,
+            onTap: () => productTaps++,
+            onReelTap: (_) => reelTaps++,
+          ),
+        ),
+      ),
+    );
+
+    final play = find.byKey(MallProductCard.playKey);
+    expect(play, findsOneWidget);
+    expect(find.bySemanticsLabel('Open Canvas tote'), findsOneWidget);
+    await tester.tap(play);
+    expect(productTaps, 1);
+    expect(reelTaps, 0);
+  });
   testWidgets('saved state reads as remove-from-saved', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpMall(

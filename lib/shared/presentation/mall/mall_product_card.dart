@@ -105,9 +105,10 @@ class MallProductCard extends StatelessWidget {
       onChoose: onTap,
     );
     final reel = item.reel;
-    final playTap = reel == null || onReelTap == null
-        ? null
-        : () => onReelTap!(reel);
+    final reelTap = onReelTap;
+    final hasRealReel = reel != null && reelTap != null;
+    final VoidCallback? playTap = hasRealReel ? () => reelTap(reel) : onTap;
+    final playLabel = hasRealReel ? strings.watchReel : 'Open ${item.name}';
     final playSize = metrics.isCompact
         ? DesignTokens.minTouchTarget
         : DesignTokens.s48;
@@ -218,7 +219,7 @@ class MallProductCard extends StatelessWidget {
                       height: playSize,
                       child: Semantics(
                         button: true,
-                        label: strings.watchReel,
+                        label: playLabel,
                         child: Material(
                           type: MaterialType.transparency,
                           child: InkWell(
