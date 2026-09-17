@@ -236,7 +236,7 @@ void main() {
       expect(first.top, closeTo(second.top, 0.01));
       expect(second.top, closeTo(third.top, 0.01));
       expect(first.width, MallCategoryMosaic.tileWidth);
-      expect(first.height, lessThan(140));
+      expect(first.height, lessThanOrEqualTo(112));
     });
     testWidgets('an empty mosaic draws nothing', (tester) async {
       await pumpMall(

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// Compact category navigation kept to one horizontal row.
-///
-/// The home contract often carries no category artwork. Those destinations
-/// use a quiet category-aware icon; real imagery takes over automatically
-/// whenever the backend supplies it.
+/// Compact category shortcuts: useful navigation, never a competing content
+/// section. Each destination is a round image or category-aware icon with its
+/// real server label underneath, all kept to one horizontal row.
 class MallCategoryMosaic extends StatelessWidget {
   const MallCategoryMosaic({
     required this.categories,
@@ -24,20 +21,22 @@ class MallCategoryMosaic extends StatelessWidget {
 
   static const double gutter = DesignTokens.s16;
   static const double gap = DesignTokens.s8;
-  static const double tileWidth = 116;
+  static const double tileWidth = 76;
+  static const double imageSize = 54;
 
   static Key tileKey(MallCategoryVm category) =>
       ValueKey<String>('mall-category-${category.id}');
 
   static double tileHeightFor(BuildContext context) =>
-      (MallMetrics.textHeight(
+      (imageSize +
+              DesignTokens.s8 +
+              MallMetrics.textHeight(
                 MallMetrics.scalerOf(context),
-                fontSize: _CategoryTile.labelStyle.fontSize!,
-                lineHeight: _CategoryTile.labelStyle.height!,
+                fontSize: _CategoryShortcut.labelStyle.fontSize!,
+                lineHeight: _CategoryShortcut.labelStyle.height!,
                 lines: 2,
-              ) +
-              62)
-          .clamp(108, 136);
+              ))
+          .clamp(92, 112);
 
   @override
   Widget build(BuildContext context) {
@@ -52,13 +51,14 @@ class MallCategoryMosaic extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsetsDirectional.symmetric(horizontal: gutter),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final (index, category) in categories.indexed) ...[
                 if (index > 0) const SizedBox(width: gap),
                 SizedBox(
                   key: tileKey(category),
                   width: tileWidth,
-                  child: _CategoryTile(
+                  child: _CategoryShortcut(
                     category: category,
                     index: index,
                     onTap: onOpen == null ? null : () => onOpen!(category),
@@ -73,8 +73,8 @@ class MallCategoryMosaic extends StatelessWidget {
   }
 }
 
-class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({
+class _CategoryShortcut extends StatelessWidget {
+  const _CategoryShortcut({
     required this.category,
     required this.index,
     required this.onTap,
@@ -86,116 +86,80 @@ class _CategoryTile extends StatelessWidget {
 
   static const TextStyle labelStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: FontWeight.w600,
-    height: 1.18,
+    height: 1.16,
     color: DesignTokens.textWhite,
   );
 
   static const List<List<Color>> _palettes = [
-    [Color(0xFF25322A), Color(0xFF151B17)],
-    [Color(0xFF2C2932), Color(0xFF19171D)],
-    [Color(0xFF202D38), Color(0xFF121A21)],
-    [Color(0xFF352830), Color(0xFF1D161A)],
-    [Color(0xFF312E23), Color(0xFF1A180F)],
+    [Color(0xFF31453A), Color(0xFF1B2720)],
+    [Color(0xFF3A3542), Color(0xFF211E26)],
+    [Color(0xFF293C4A), Color(0xFF17232B)],
+    [Color(0xFF46343D), Color(0xFF291E24)],
+    [Color(0xFF423D2D), Color(0xFF252219)],
   ];
 
   @override
   Widget build(BuildContext context) {
     final image = category.imageUrl?.trim();
     final hasImage = image != null && image.isNotEmpty;
-    final radius = BorderRadius.circular(DesignTokens.cardRadius);
+    final enabled = onTap != null;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: DesignTokens.shadowCard,
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            ExcludeSemantics(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: AlignmentDirectional.topStart,
-                    end: AlignmentDirectional.bottomEnd,
-                    colors: _palettes[index % _palettes.length],
-                  ),
-                ),
-              ),
-            ),
-            if (hasImage) ...[
-              ExcludeSemantics(child: MallNetworkImage(url: image)),
-              const ExcludeSemantics(
-                child: DecoratedBox(
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: category.label,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x10000000), Color(0xD9000000)],
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x38FFFFFF)),
+                    boxShadow: DesignTokens.shadowCard,
+                  ),
+                  child: ClipOval(
+                    child: SizedBox.square(
+                      dimension: MallCategoryMosaic.imageSize,
+                      child: hasImage
+                          ? MallNetworkImage(url: image)
+                          : DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: AlignmentDirectional.topStart,
+                                  end: AlignmentDirectional.bottomEnd,
+                                  colors: _palettes[index % _palettes.length],
+                                ),
+                              ),
+                              child: Icon(
+                                _iconFor(category.label),
+                                size: 25,
+                                color: const Color(0xE6FFFFFF),
+                              ),
+                            ),
                     ),
                   ),
                 ),
-              ),
-            ] else
-              PositionedDirectional(
-                top: DesignTokens.s12,
-                end: DesignTokens.s12,
-                child: ExcludeSemantics(
-                  child: Icon(
-                    _iconFor(category.label),
-                    size: 38,
-                    color: const Color(0x38FFFFFF),
-                  ),
+                const SizedBox(height: DesignTokens.s8),
+                Text(
+                  category.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: labelStyle,
                 ),
-              ),
-            PositionedDirectional(
-              start: DesignTokens.s12,
-              end: DesignTokens.s8,
-              bottom: 10,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: ExcludeSemantics(
-                      child: Text(
-                        category.label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s4),
-                  const ExcludeSemantics(
-                    child: Icon(
-                      Icons.arrow_outward_rounded,
-                      size: 14,
-                      color: Color(0xCCFFFFFF),
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: radius,
-                    border: Border.all(color: const Color(0x24FFFFFF)),
-                  ),
-                ),
-              ),
-            ),
-            MallTapOverlay(
-              semanticLabel: category.label,
-              onTap: onTap,
-              borderRadius: radius,
-            ),
-          ],
+          ),
         ),
       ),
     );
