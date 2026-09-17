@@ -249,6 +249,24 @@ void main() {
     expect(find.text("You're offline"), findsOneWidget);
   });
 
+  testWidgets('hero collapses while browsing and returns at the top', (
+    tester,
+  ) async {
+    await pumpDiscover(tester);
+    await tester.pump();
+
+    final header = _key('discover-header-region');
+    final expandedHeight = tester.getSize(header).height;
+    expect(expandedHeight, greaterThan(100));
+
+    await tester.drag(_key('discover-feed'), const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(header).height, lessThan(1));
+
+    await tester.drag(_key('discover-feed'), const Offset(0, 1200));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(header).height, closeTo(expandedHeight, 1));
+  });
   testWidgets('no overflow at 320dp with text scale 1.3', (tester) async {
     await pumpDiscover(
       tester,

@@ -15,6 +15,10 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class DiscoverPage extends ConsumerStatefulWidget {
   const DiscoverPage({super.key});
 
+  static const ValueKey<String> headerRegionKey = ValueKey(
+    'discover-header-region',
+  );
+
   @override
   ConsumerState<DiscoverPage> createState() => _DiscoverPageState();
 }
@@ -23,6 +27,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _searching = false;
+  bool _headerCollapsed = false;
 
   @override
   void initState() {
@@ -91,6 +96,24 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     unawaited(context.push(location));
   }
 
+  bool _onFeedScroll(ScrollNotification notification) {
+    if (_searching ||
+        notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+
+    // Separate collapse and reveal thresholds prevent a small scroll wobble
+    // from repeatedly opening and closing the hero.
+    final nextCollapsed = _headerCollapsed
+        ? notification.metrics.pixels > 8
+        : notification.metrics.pixels > 48;
+    if (nextCollapsed != _headerCollapsed && mounted) {
+      setState(() => _headerCollapsed = nextCollapsed);
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Keeps suggestions (and the debounce) alive while the feed is showing.
@@ -112,9 +135,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (!_searching)
-                _Header(
-                  onMission: () =>
-                      unawaited(context.push(RouteNames.missionShopping)),
+                _CollapsibleHeader(
+                  collapsed: _headerCollapsed,
+                  child: _Header(
+                    onMission: () =>
+                        unawaited(context.push(RouteNames.missionShopping)),
+                  ),
                 ),
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(
@@ -160,7 +186,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       offstage: _searching,
                       child: TickerMode(
                         enabled: !_searching,
-                        child: const DiscoverFeedView(),
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: _onFeedScroll,
+                          child: const DiscoverFeedView(),
+                        ),
                       ),
                     ),
                     if (_searching)
@@ -175,6 +204,38 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CollapsibleHeader extends StatelessWidget {
+  const _CollapsibleHeader({required this.collapsed, required this.child});
+
+  final bool collapsed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return TweenAnimationBuilder<double>(
+      duration: reduceMotion ? Duration.zero : DesignTokens.motionMedium,
+      curve: DesignTokens.motionCurve,
+      tween: Tween(end: collapsed ? 0 : 1),
+      child: child,
+      builder: (context, progress, child) => ClipRect(
+        child: Align(
+          key: DiscoverPage.headerRegionKey,
+          alignment: Alignment.topCenter,
+          heightFactor: progress,
+          child: Opacity(
+            opacity: progress,
+            child: IgnorePointer(
+              ignoring: progress < 0.5,
+              child: child,
+            ),
           ),
         ),
       ),
