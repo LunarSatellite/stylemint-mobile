@@ -203,13 +203,8 @@ class _CreatorStorefrontScreenState
     final following = ref.watch(
       followNotifierProvider.select((ids) => ids.contains(_id)),
     );
-    final coverExtent = StorefrontCover.extentFor(
-      context,
-      ratio: 0.52,
-      min: 170,
-      max: 280,
-      topBarExtent: StorefrontScaffold.topBarExtentOf(context),
-    );
+    final viewport = MediaQuery.sizeOf(context);
+    final coverExtent = (viewport.height * 0.56).clamp(430.0, 600.0);
 
     return StorefrontScaffold(
       title: name,
