@@ -504,7 +504,7 @@ class _Hero extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: SizedBox(
-        height: compact ? 470 : 500,
+        height: compact ? 385 : 415,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -580,18 +580,18 @@ class _Hero extends StatelessWidget {
                       ],
                     ),
                   ),
-                  SizedBox(height: compact ? 24 : 30),
+                  SizedBox(height: compact ? 15 : 18),
                   Text(
                     'Your life,\nstyled.',
                     style: TextStyle(
                       fontFamily: DesignTokens.displayFontFamily,
                       color: DesignTokens.textWhite,
-                      fontSize: compact ? 48 : 56,
+                      fontSize: compact ? 42 : 48,
                       height: .88,
                       letterSpacing: -1.5,
                     ),
                   ),
-                  const SizedBox(height: 17),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: compact ? 200 : 225,
                     child: Text(
@@ -607,45 +607,16 @@ class _Hero extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.all(13),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xC9121513),
-                      borderRadius: BorderRadius.circular(18),
+                      color: const Color(0xD1121513),
+                      borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: const Color(0x404C5D53)),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x66000000),
-                          blurRadius: 24,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: 16,
-                              color: DesignTokens.primaryGreen,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'INTENTION → OUTFIT',
-                              style: TextStyle(
-                                color: DesignTokens.primaryGreen,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                        _Steps(),
-                      ],
-                    ),
+                    child: const _Steps(),
                   ),
                 ],
               ),
