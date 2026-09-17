@@ -128,7 +128,7 @@ class MallProductCard extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: radius,
-              boxShadow: DesignTokens.shadowCard,
+              boxShadow: DesignTokens.shadowLifted,
             ),
             child: ClipRRect(
               borderRadius: radius,
@@ -142,8 +142,31 @@ class MallProductCard extends StatelessWidget {
                         gradient: DesignTokens.imageScrim,
                       ),
                     ),
-                    Center(child: MallPlayMark(size: playSize, primed: true)),
+                    Center(
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [Color(0x66000000), Color(0x00000000)],
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: MallPlayMark(size: playSize),
+                        ),
+                      ),
+                    ),
                   ],
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: radius,
+                          border: Border.all(color: const Color(0x24FFFFFF)),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (badges.isNotEmpty)
                     PositionedDirectional(
                       top: DesignTokens.s8,
