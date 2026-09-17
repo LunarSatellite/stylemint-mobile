@@ -152,14 +152,31 @@ class CreatorStorefrontHero extends StatelessWidget {
                     ),
                   ],
                   if (tags.isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: DesignTokens.s8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          for (final tag in tags.take(4)) ...[
-                            _GlassTag(label: tag),
-                            const SizedBox(width: 6),
+                          for (final (index, tag) in tags.take(4).indexed) ...[
+                            if (index > 0)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  '·',
+                                  style: TextStyle(
+                                    color: DesignTokens.textMuted,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              tag,
+                              style: const TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: DesignTokens.textLight,
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -173,16 +190,6 @@ class CreatorStorefrontHero extends StatelessWidget {
                 const SizedBox(height: DesignTokens.s12),
                 Row(
                   children: [
-                    ExcludeSemantics(
-                      child: MallAvatar(
-                        name: displayName,
-                        imageUrl: creator?.avatarUrl ?? previewAvatarUrl,
-                        size: 46,
-                        ringColor: DesignTokens.textWhite,
-                        ringWidth: 2,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: loading
                           ? const SmSkeleton.box(
@@ -291,55 +298,17 @@ class _TalentLabel extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(99),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0x4209090B),
-          borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: DesignTokens.glassStroke),
-        ),
-        child: Text(
-          label.toUpperCase(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.25,
-            color: DesignTokens.textWhite,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _GlassTag extends StatelessWidget {
-  const _GlassTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: const Color(0x29FFFFFF),
-      borderRadius: BorderRadius.circular(99),
-      border: Border.all(color: const Color(0x3DFFFFFF)),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        fontFamily: DesignTokens.fontFamily,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: DesignTokens.textWhite,
-      ),
+  Widget build(BuildContext context) => Text(
+    label.toUpperCase(),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: const TextStyle(
+      fontFamily: DesignTokens.fontFamily,
+      fontSize: 10,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.6,
+      color: DesignTokens.primaryGreen,
+      shadows: [Shadow(color: Colors.black, blurRadius: 8)],
     ),
   );
 }
@@ -350,66 +319,60 @@ class _TalentStats extends StatelessWidget {
   final List<StorefrontStat> stats;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(16),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0x3809090B),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: DesignTokens.glassStroke),
-        ),
-        child: Row(
-          children: [
-            for (final (index, stat) in stats.indexed) ...[
-              if (index > 0)
-                Container(
-                  width: 1,
-                  height: 28,
-                  color: const Color(0x33FFFFFF),
-                ),
-              Expanded(
-                child: Semantics(
-                  label: '${stat.value} ${stat.label}',
-                  excludeSemantics: true,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        stat.value,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          height: 1.1,
-                          color: DesignTokens.textWhite,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        stat.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          height: 1.1,
-                          color: DesignTokens.textLight,
-                        ),
-                      ),
-                    ],
+  Widget build(BuildContext context) => Row(
+    children: [
+      for (final (index, stat) in stats.indexed) ...[
+        if (index > 0)
+          Container(
+            width: 1,
+            height: 24,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            color: const Color(0x45FFFFFF),
+          ),
+        Expanded(
+          child: Semantics(
+            label: '${stat.value} ${stat.label}',
+            excludeSemantics: true,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Flexible(
+                  child: Text(
+                    stat.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                      color: DesignTokens.textWhite,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ],
+                const SizedBox(width: 4),
+                Flexible(
+                  flex: 2,
+                  child: Text(
+                    stat.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      height: 1.1,
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    ),
+      ],
+    ],
   );
 }
