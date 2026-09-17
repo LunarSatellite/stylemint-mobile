@@ -328,11 +328,6 @@ class _DropBlock extends StatelessWidget {
       title: title.isEmpty ? strings.shopTheDrop : title,
       eyebrow: section.eyebrow,
       subtitle: section.reason ?? section.subtitle,
-      backgroundImageUrl: items
-          .map((product) => product.imageUrl?.trim())
-          .whereType<String>()
-          .where((url) => url.isNotEmpty)
-          .firstOrNull,
       topDiscountPercent: facts.topDiscountPercent,
       endsUtc: facts.endsUtc,
       ctaLabel: onCta == null ? null : strings.shopTheDrop,
@@ -343,6 +338,7 @@ class _DropBlock extends StatelessWidget {
         now: now,
         strings: strings,
         semanticLabel: title.isEmpty ? 'Deals' : title,
+        photoCards: true,
         onOpenProduct: onOpenProduct,
         onAddToBag: onAddToBag,
       ),
@@ -473,6 +469,7 @@ class _SignalRail extends StatelessWidget {
     required this.onOpenProduct,
     required this.onAddToBag,
     this.size = MallCardSize.regular,
+    this.photoCards = false,
   });
 
   final List<HomeProduct> items;
@@ -483,41 +480,69 @@ class _SignalRail extends StatelessWidget {
   final Future<bool> Function(HomeProduct product) onAddToBag;
   final MallCardSize size;
 
+  /// Uses product photography for the deal stage. Reel-backed items keep the
+  /// centered play action; older products without a reel remain honest photos.
+  final bool photoCards;
+
   @override
   Widget build(BuildContext context) {
     final width = size == MallCardSize.compact
-        ? MallProductTile.compactWidth
-        : MallProductTile.regularWidth;
+        ? MallProductCard.compactWidth
+        : MallProductCard.regularWidth;
     final withSignal = mallRailHasSignals(
       items,
       now: now,
       strings: strings,
     );
+    final cardHeight = photoCards
+        ? MallProductCard.heightFor(
+            context,
+            width: width,
+            size: size,
+            withSignal: withSignal,
+            withAction: true,
+          )
+        : MallProductTile.heightFor(
+            context,
+            width: width,
+            size: size,
+            withSignal: withSignal,
+            withAction: true,
+          );
     return MallRail<HomeProduct>(
       items: items,
       itemWidth: width,
-      height: MallRail.heightForStaggered(
-        MallProductTile.heightFor(
-          context,
-          width: width,
-          size: size,
-          withSignal: withSignal,
-          // Every tile on the Mall's product rails can be bought from, so
-          // the buy line is reserved for the whole rail rather than per tile.
-          withAction: true,
-        ),
-      ),
+      height: MallRail.heightForStaggered(cardHeight),
       stagger: MallRail.defaultStagger,
       semanticLabel: semanticLabel,
-      itemBuilder: (context, product, _) => SaveableMallProductTile(
-        product: product.toVm(),
-        size: size,
-        signal: mallProductSignal(product, now: now, strings: strings),
-        reserveSignal: withSignal,
-        onTap: () => onOpenProduct(product.id),
-        onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
-        onQuickAdd: () => onAddToBag(product),
-      ),
+      itemBuilder: (context, product, _) {
+        final card = product.toVm();
+        final signal = mallProductSignal(
+          product,
+          now: now,
+          strings: strings,
+        );
+        if (photoCards) {
+          return SaveableMallProductCard(
+            product: card,
+            size: size,
+            signal: signal,
+            reserveSignal: withSignal,
+            onTap: () => onOpenProduct(product.id),
+            onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
+            onQuickAdd: () => onAddToBag(product),
+          );
+        }
+        return SaveableMallProductTile(
+          product: card,
+          size: size,
+          signal: signal,
+          reserveSignal: withSignal,
+          onTap: () => onOpenProduct(product.id),
+          onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
+          onQuickAdd: () => onAddToBag(product),
+        );
+      },
     );
   }
 }

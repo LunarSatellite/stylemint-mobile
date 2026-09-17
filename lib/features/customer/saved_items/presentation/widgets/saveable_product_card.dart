@@ -57,6 +57,7 @@ class SaveableMallProductCard extends ConsumerWidget {
     this.size = MallCardSize.regular,
     this.onTap,
     this.onReelTap,
+    this.onQuickAdd,
     this.variantId,
     this.showRating = true,
     this.signal,
@@ -67,6 +68,7 @@ class SaveableMallProductCard extends ConsumerWidget {
   final MallCardSize size;
   final VoidCallback? onTap;
   final void Function(MallReelRef reel)? onReelTap;
+  final Future<bool> Function()? onQuickAdd;
 
   /// The SKU to save; the product's default variant when null.
   final String? variantId;
@@ -90,6 +92,7 @@ class SaveableMallProductCard extends ConsumerWidget {
       size: size,
       onTap: onTap,
       onReelTap: onReelTap,
+      onQuickAdd: onQuickAdd,
       showRating: showRating,
       signal: signal,
       reserveSignal: reserveSignal,

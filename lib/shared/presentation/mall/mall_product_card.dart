@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_metrics.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_quick_add.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_tile_text.dart';
@@ -11,11 +12,9 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Product card: a 4:5 photo with badges, rating and save heart, then brand,
 /// a two-line name and the price (with strikethrough original when on sale).
 ///
-/// **Not a Mall tile.** The Mall is video-first: its surfaces build
-/// `MallProductTile` (a reel tile, or the designed type tile) and never a
-/// product photo. This card is for the product details page and the
-/// surfaces that belong to it, which keep their photos (owner directive,
-/// 2026-09-16).
+/// Image-led Mall card used wherever product photography is the primary
+/// discovery cue. Reel-backed products keep the same image but add a real
+/// centered play action; products without reel metadata remain honest photos.
 ///
 /// Text sits on the page rather than in a boxed card — the photo carries the
 /// depth. Text slots have fixed heights, so prices align across a grid row
@@ -27,6 +26,7 @@ class MallProductCard extends StatelessWidget {
     this.size = MallCardSize.regular,
     this.onTap,
     this.onReelTap,
+    this.onQuickAdd,
     this.onSaveTap,
     this.showRating = true,
     this.signal,
@@ -39,6 +39,9 @@ class MallProductCard extends StatelessWidget {
 
   /// Plays the product's reel while the rest of the card opens the product.
   final void Function(MallReelRef reel)? onReelTap;
+
+  /// Adds immediately or opens product options, using the shared Mall control.
+  final Future<bool> Function()? onQuickAdd;
 
   /// Shows the save heart when non-null.
   final VoidCallback? onSaveTap;
@@ -71,11 +74,13 @@ class MallProductCard extends StatelessWidget {
     required double width,
     MallCardSize size = MallCardSize.regular,
     bool withSignal = false,
+    bool withAction = false,
   }) => MallTileMetrics.heightFor(
     context,
     width: width,
     size: size,
     withSignal: withSignal,
+    withAction: withAction,
   );
 
   @override
@@ -83,14 +88,22 @@ class MallProductCard extends StatelessWidget {
     final strings = MallStrings.of(context);
     final fact = signal;
     final showSignal = reserveSignal || fact != null;
+    final quickAdd = onQuickAdd;
     final metrics = MallTileMetrics.of(
       context,
       size: size,
       withSignal: showSignal,
+      withAction: quickAdd != null,
     );
     final item = product;
     final rating = showRating ? item.rating : null;
     final saveTap = onSaveTap;
+    final buy = MallQuickAdd.forProduct(
+      product: item,
+      strings: strings,
+      onAdd: quickAdd,
+      onChoose: onTap,
+    );
     final reel = item.reel;
     final playTap = reel == null || onReelTap == null
         ? null
@@ -168,6 +181,9 @@ class MallProductCard extends StatelessWidget {
           metrics: metrics,
           signal: fact,
           showSignal: showSignal,
+          action: buy == null
+              ? null
+              : const SizedBox(width: DesignTokens.minTouchTarget),
         ),
       ],
     );
@@ -217,6 +233,12 @@ class MallProductCard extends StatelessWidget {
                 );
               },
             ),
+          ),
+        if (buy != null)
+          PositionedDirectional(
+            end: 0,
+            bottom: metrics.bottomSlotOffset,
+            child: buy,
           ),
         if (saveTap != null)
           PositionedDirectional(
