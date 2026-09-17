@@ -18,6 +18,7 @@ class MallDealBand extends StatelessWidget {
     super.key,
     this.eyebrow,
     this.subtitle,
+    this.backgroundImageUrl,
     this.topDiscountPercent,
     this.endsUtc,
     this.ctaLabel,
@@ -32,6 +33,9 @@ class MallDealBand extends StatelessWidget {
   final Widget child;
   final String? eyebrow;
   final String? subtitle;
+
+  /// Real imagery from this deal block, used as its campaign banner.
+  final String? backgroundImageUrl;
 
   /// Largest real discount across the block, floored. Null draws no numeral.
   final int? topDiscountPercent;
@@ -77,6 +81,7 @@ class MallDealBand extends StatelessWidget {
     final label = ctaLabel;
     final action = onCta;
     final subtitleText = subtitle;
+    final banner = backgroundImageUrl?.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,15 +90,23 @@ class MallDealBand extends StatelessWidget {
         ClipPath(
           clipper: _CutCornerClipper(cut: cut, direction: direction),
           child: DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
                 begin: AlignmentDirectional.topStart,
                 end: AlignmentDirectional.bottomEnd,
-                colors: [
-                  Color(0xFF252A27),
-                  DesignTokens.bgAppBody,
-                ],
+                colors: [Color(0xFF171B18), DesignTokens.bgAppBody],
               ),
+              image: banner == null || banner.isEmpty
+                  ? null
+                  : DecorationImage(
+                      image: NetworkImage(banner),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.centerRight,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xA60B0E0C),
+                        BlendMode.darken,
+                      ),
+                    ),
               boxShadow: DesignTokens.shadowLifted,
             ),
             child: Padding(
