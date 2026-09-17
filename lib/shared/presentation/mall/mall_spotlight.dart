@@ -98,6 +98,7 @@ class MallSpotlight extends StatelessWidget {
         final panel = _Panel(
           product: product,
           onReelTap: onReelTap,
+          onProductTap: onTap,
           onSaveTap: onSaveTap,
           playSlotController: playSlotController,
           gradientFromStart: !stacked,
@@ -174,11 +175,13 @@ class MallSpotlight extends StatelessWidget {
 }
 
 /// The media: the product's reel poster where it has one, the designed tonal
-/// ground where it does not. Never a product photo.
+/// product photo when no reel poster exists, always with a centered play
+/// action.
 class _Panel extends StatelessWidget {
   const _Panel({
     required this.product,
     required this.onReelTap,
+    required this.onProductTap,
     required this.onSaveTap,
     required this.playSlotController,
     required this.gradientFromStart,
@@ -186,6 +189,7 @@ class _Panel extends StatelessWidget {
 
   final MallProductVm product;
   final void Function(MallReelRef reel)? onReelTap;
+  final VoidCallback? onProductTap;
   final VoidCallback? onSaveTap;
   final MallReelPlaySlotController? playSlotController;
 
@@ -198,7 +202,9 @@ class _Panel extends StatelessWidget {
     final strings = MallStrings.of(context);
     final reel = product.reel;
     final saveTap = onSaveTap;
-    final playTap = onReelTap;
+    final reelTap = onReelTap;
+    final hasRealReel = reel != null && reelTap != null;
+    final playTap = hasRealReel ? () => reelTap(reel) : onProductTap;
     final source = (product.brandName?.trim().isNotEmpty ?? false)
         ? product.brandName!.trim()
         : product.name.trim();
@@ -216,15 +222,13 @@ class _Panel extends StatelessWidget {
           child: MallKenBurns(
             amplitude: 1.06,
             period: const Duration(seconds: 20),
-            child: reel == null
-                ? MallTypeGround(seed: product.id, monogram: monogram)
-                : MallNetworkImage(
-                    url: reel.posterUrl,
-                    placeholder: MallTypeGround(
-                      seed: product.id,
-                      monogram: monogram,
-                    ),
-                  ),
+            child: MallNetworkImage(
+              url: reel?.posterUrl ?? product.imageUrl,
+              placeholder: MallTypeGround(
+                seed: product.id,
+                monogram: monogram,
+              ),
+            ),
           ),
         ),
         // One flat gradient, no blur: the seam between panel and copy.
@@ -264,28 +268,28 @@ class _Panel extends StatelessWidget {
               ],
             ),
           ),
-        if (reel != null && playTap != null)
+        if (playTap != null)
           Center(
             child: SizedBox.square(
               dimension: DesignTokens.s48,
               child: Semantics(
                 button: true,
-                label: strings.watchReel,
+                label: hasRealReel ? strings.watchReel : 'Open ${product.name}',
                 excludeSemantics: true,
                 child: Material(
                   type: MaterialType.transparency,
                   child: InkResponse(
                     key: MallSpotlightKeys.play,
-                    onTap: () => playTap(reel),
+                    onTap: playTap,
                     radius: DesignTokens.s48 / 2,
-                    child: MallReelPlaySlot(
-                      id: reel.reelId,
-                      controller: playSlotController,
-                      builder: (context, {required holdsSlot}) => MallPlayMark(
-                        primed: holdsSlot,
-                        size: DesignTokens.s48,
-                      ),
-                    ),
+                    child: hasRealReel
+                        ? MallReelPlaySlot(
+                            id: reel.reelId,
+                            controller: playSlotController,
+                            builder: (context, {required holdsSlot}) =>
+                                const MallPlayMark(size: DesignTokens.s48),
+                          )
+                        : const MallPlayMark(size: DesignTokens.s48),
                   ),
                 ),
               ),

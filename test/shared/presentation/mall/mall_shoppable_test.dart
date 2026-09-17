@@ -291,8 +291,9 @@ void main() {
       expect(find.text('Add to bag'), findsOneWidget);
       expect(find.text('View'), findsOneWidget);
       expect(find.textContaining('Ends in 4h'), findsOneWidget);
-      // Video first: the spotlight never builds a product photo.
-      expect(find.byType(Image), findsNothing);
+      // The featured product keeps its real image and a centered play action.
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byKey(MallSpotlightKeys.play), findsOneWidget);
       expectNoLayoutErrors(tester);
     });
 
@@ -324,6 +325,22 @@ void main() {
       expect(opened, 1);
     });
 
+    testWidgets('the image play action opens a product without a reel', (
+      tester,
+    ) async {
+      var opened = 0;
+      await pumpMall(
+        tester,
+        MallSpotlight(
+          product: _spotlightProduct,
+          onTap: () => opened++,
+        ),
+      );
+
+      await tester.tap(find.byKey(MallSpotlightKeys.play));
+      await tester.pump();
+      expect(opened, 1);
+    });
     testWidgets('the buy control buys without opening the product', (
       tester,
     ) async {

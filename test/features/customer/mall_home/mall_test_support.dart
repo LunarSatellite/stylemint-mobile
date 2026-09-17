@@ -127,6 +127,7 @@ HomeProduct homeProduct(
   double? rating,
   int reviewCount = 0,
   DateTime? saleEndsUtc,
+  String? imageUrl,
   bool isLowStock = false,
 }) => HomeProduct(
   id: id,
@@ -134,6 +135,7 @@ HomeProduct homeProduct(
   price: rs(1500),
   compareAtPrice: was,
   brandName: 'Kathmandu Atelier',
+  imageUrl: imageUrl,
   rating: rating,
   reviewCount: reviewCount,
   isOnSale: was != null,
@@ -220,6 +222,7 @@ MallHome sampleHome({String? firstName = 'Sumendra'}) => MallHome(
           name: 'Silk scarf',
           was: rs(2000),
           saleEndsUtc: mallTestSaleEnd(),
+          imageUrl: 'https://example.com/deal-promo.jpg',
         ),
         homeProduct('p-4', name: 'Wool wrap', was: rs(3000)),
       ],

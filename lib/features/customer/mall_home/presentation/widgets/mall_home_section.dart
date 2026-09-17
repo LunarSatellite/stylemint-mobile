@@ -324,10 +324,19 @@ class _DropBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = section.title ?? '';
+    String? promoImageUrl;
+    for (final product in items) {
+      final candidate = product.imageUrl?.trim();
+      if (candidate != null && candidate.isNotEmpty) {
+        promoImageUrl = candidate;
+        break;
+      }
+    }
     return MallDealBand(
       title: title.isEmpty ? strings.shopTheDrop : title,
       eyebrow: section.eyebrow,
       subtitle: section.reason ?? section.subtitle,
+      backgroundImageUrl: promoImageUrl,
       topDiscountPercent: facts.topDiscountPercent,
       endsUtc: facts.endsUtc,
       ctaLabel: onCta == null ? null : strings.shopTheDrop,
@@ -380,6 +389,7 @@ class _ShoppableProducts extends StatelessWidget {
         now: now,
         strings: strings,
         size: MallCardSize.compact,
+        photoCards: true,
         semanticLabel: semanticLabel,
         onOpenProduct: onOpenProduct,
         onAddToBag: onAddToBag,
@@ -407,6 +417,7 @@ class _ShoppableProducts extends StatelessWidget {
             now: now,
             strings: strings,
             size: MallCardSize.compact,
+            photoCards: true,
             semanticLabel: semanticLabel,
             onOpenProduct: onOpenProduct,
             onAddToBag: onAddToBag,

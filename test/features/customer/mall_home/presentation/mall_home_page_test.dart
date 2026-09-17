@@ -115,6 +115,15 @@ void main() {
       );
     });
 
+    testWidgets('keeps promo imagery and image-led play cards', (tester) async {
+      await _pump(tester, height: 6000);
+
+      final deal = tester.widget<MallDealBand>(find.byType(MallDealBand));
+      expect(deal.backgroundImageUrl, 'https://example.com/deal-promo.jpg');
+      expect(find.byType(MallProductCard), findsWidgets);
+      expect(find.byKey(MallProductCard.playKey), findsWidgets);
+      expect(find.byKey(MallSpotlightKeys.play), findsOneWidget);
+    });
     testWidgets('labels AI reels, and only AI reels', (tester) async {
       await _pump(tester, height: 6000);
       expect(find.text('AI-generated'), findsOneWidget);

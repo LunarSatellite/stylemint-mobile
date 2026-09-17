@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_image.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_signal.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_strings.dart';
@@ -90,84 +91,101 @@ class MallDealBand extends StatelessWidget {
         ClipPath(
           clipper: _CutCornerClipper(cut: cut, direction: direction),
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 begin: AlignmentDirectional.topStart,
                 end: AlignmentDirectional.bottomEnd,
                 colors: [Color(0xFF171B18), DesignTokens.bgAppBody],
               ),
-              image: banner == null || banner.isEmpty
-                  ? null
-                  : DecorationImage(
-                      image: NetworkImage(banner),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.centerRight,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xA60B0E0C),
-                        BlendMode.darken,
-                      ),
-                    ),
               boxShadow: DesignTokens.shadowLifted,
             ),
-            child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  MallEyebrow(
-                    eyebrow ?? strings.limitedTime,
-                    color: DesignTokens.primaryGreen,
+            child: Stack(
+              children: [
+                if (banner != null && banner.isNotEmpty)
+                  Positioned.fill(
+                    child: MallNetworkImage(
+                      url: banner,
+                      alignment: Alignment.centerRight,
+                    ),
                   ),
-                  const SizedBox(height: DesignTokens.s12),
-                  if (discount != null) ...[
-                    _Numeral(percent: discount, strings: strings),
-                    const SizedBox(height: 10),
-                  ],
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignTokens.displaySection.copyWith(
-                        fontSize: 32,
-                        height: 35 / 32,
-                        color: _ink,
+                if (banner != null && banner.isNotEmpty)
+                  const Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: AlignmentDirectional.centerStart,
+                          end: AlignmentDirectional.centerEnd,
+                          colors: [
+                            Color(0xEB171B18),
+                            Color(0xA6171B18),
+                            Color(0x260B0E0C),
+                          ],
+                          stops: [0, 0.52, 1],
+                        ),
                       ),
                     ),
                   ),
-                  if (subtitleText != null) ...[
-                    const SizedBox(height: DesignTokens.s6),
-                    Text(
-                      subtitleText,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: _subtitleStyle,
-                    ),
-                  ],
-                  if (deadline != null) ...[
-                    const SizedBox(height: DesignTokens.s16),
-                    MallCountdown(
-                      endsUtc: deadline,
-                      now: now,
-                      builder: (context, remaining) => remaining == null
-                          ? const SizedBox.shrink()
-                          : _CountdownChip(
-                              remaining: remaining,
-                              strings: strings,
-                            ),
-                    ),
-                  ],
-                  if (label != null && action != null) ...[
-                    const SizedBox(height: DesignTokens.s16),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: _DropCta(label: label, onPressed: action),
-                    ),
-                  ],
-                ],
-              ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      MallEyebrow(
+                        eyebrow ?? strings.limitedTime,
+                        color: DesignTokens.primaryGreen,
+                      ),
+                      const SizedBox(height: DesignTokens.s12),
+                      if (discount != null) ...[
+                        _Numeral(percent: discount, strings: strings),
+                        const SizedBox(height: 10),
+                      ],
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.displaySection.copyWith(
+                            fontSize: 32,
+                            height: 35 / 32,
+                            color: _ink,
+                          ),
+                        ),
+                      ),
+                      if (subtitleText != null) ...[
+                        const SizedBox(height: DesignTokens.s6),
+                        Text(
+                          subtitleText,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: _subtitleStyle,
+                        ),
+                      ],
+                      if (deadline != null) ...[
+                        const SizedBox(height: DesignTokens.s16),
+                        MallCountdown(
+                          endsUtc: deadline,
+                          now: now,
+                          builder: (context, remaining) => remaining == null
+                              ? const SizedBox.shrink()
+                              : _CountdownChip(
+                                  remaining: remaining,
+                                  strings: strings,
+                                ),
+                        ),
+                      ],
+                      if (label != null && action != null) ...[
+                        const SizedBox(height: DesignTokens.s16),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: _DropCta(label: label, onPressed: action),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
