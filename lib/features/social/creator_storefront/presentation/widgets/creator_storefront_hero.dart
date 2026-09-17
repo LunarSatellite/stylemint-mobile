@@ -260,21 +260,9 @@ class _CinematicPortrait extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: Transform.scale(
-              scale: 1.12,
-              child: MallNetworkImage(
-                url: imageUrl,
-                fit: BoxFit.cover,
-                placeholder: const MallImagePlaceholder(showMark: false),
-              ),
-            ),
-          ),
-          ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
           MallNetworkImage(
             url: imageUrl,
-            fit: BoxFit.contain,
+            fit: BoxFit.cover,
             alignment: Alignment.topCenter,
             placeholder: const MallImagePlaceholder(),
           ),
