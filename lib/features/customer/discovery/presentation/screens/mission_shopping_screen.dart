@@ -728,107 +728,203 @@ class _PreferenceStudio extends StatelessWidget {
   final ValueChanged<String> onPriority;
 
   @override
-  Widget build(BuildContext context) => _Card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _Heading(
-          Icons.tune_rounded,
-          'MAKE IT YOURS',
-          'Shape the recommendation',
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _EditorialLabel(
+        number: '02',
+        overline: 'SET THE DIRECTION',
+        title: 'What should this edit feel like?',
+      ),
+      const SizedBox(height: 16),
+      _PreferenceRow(
+        icon: Icons.calendar_today_outlined,
+        label: 'Occasion',
+        values: const ['Everyday', 'Work', 'Event', 'Travel'],
+        selected: occasion,
+        onSelected: onOccasion,
+      ),
+      const SizedBox(height: 10),
+      _PreferenceRow(
+        icon: Icons.style_outlined,
+        label: 'Aesthetic',
+        values: const ['Minimal', 'Classic', 'Street', 'Bold'],
+        selected: aesthetic,
+        onSelected: onAesthetic,
+      ),
+      const SizedBox(height: 10),
+      _PreferenceRow(
+        icon: Icons.favorite_border_rounded,
+        label: 'Priority',
+        values: const ['Comfort', 'Versatile', 'Premium', 'Best value'],
+        selected: priority,
+        onSelected: onPriority,
+      ),
+    ],
+  );
+}
+
+class _EditorialLabel extends StatelessWidget {
+  const _EditorialLabel({
+    required this.number,
+    required this.overline,
+    required this.title,
+  });
+
+  final String number;
+  final String overline;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        number,
+        style: const TextStyle(
+          fontFamily: DesignTokens.displayFontFamily,
+          color: DesignTokens.primaryGreen,
+          fontSize: 32,
+          height: .9,
         ),
-        const SizedBox(height: 8),
-        Text(
-          'A few signals help us choose pieces that belong together.',
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textMuted,
-          ),
+      ),
+      const SizedBox(width: 13),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              overline,
+              style: const TextStyle(
+                color: DesignTokens.textMuted,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: DesignTokens.displayFontFamily,
+                color: DesignTokens.textWhite,
+                fontSize: 27,
+                height: 1,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        _PreferenceRow(
-          label: 'Occasion',
-          values: const ['Everyday', 'Work', 'Event', 'Travel'],
-          selected: occasion,
-          onSelected: onOccasion,
-        ),
-        const SizedBox(height: 13),
-        _PreferenceRow(
-          label: 'Aesthetic',
-          values: const ['Minimal', 'Classic', 'Street', 'Bold'],
-          selected: aesthetic,
-          onSelected: onAesthetic,
-        ),
-        const SizedBox(height: 13),
-        _PreferenceRow(
-          label: 'Priority',
-          values: const ['Comfort', 'Versatile', 'Premium', 'Best value'],
-          selected: priority,
-          onSelected: onPriority,
-        ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
 class _PreferenceRow extends StatelessWidget {
   const _PreferenceRow({
+    required this.icon,
     required this.label,
     required this.values,
     required this.selected,
     required this.onSelected,
   });
 
+  final IconData icon;
   final String label;
   final List<String> values;
   final String? selected;
   final ValueChanged<String> onSelected;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          color: DesignTokens.textMuted,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1,
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
+    decoration: BoxDecoration(
+      color: const Color(0xFF121413),
+      border: Border(
+        left: BorderSide(
+          color: selected == null
+              ? const Color(0xFF343936)
+              : DesignTokens.primaryGreen,
+          width: 2,
         ),
+        bottom: const BorderSide(color: Color(0xFF292D2A)),
       ),
-      const SizedBox(height: 7),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final value in values) ...[
-              ChoiceChip(
-                key: ValueKey('mission-pref-$label-$value'),
-                selected: selected == value,
-                showCheckmark: false,
-                onSelected: (_) => onSelected(value),
-                label: Text(value),
-                selectedColor: DesignTokens.primaryGreenLight,
-                backgroundColor: const Color(0xFF242629),
-                side: BorderSide(
-                  color: selected == value
-                      ? DesignTokens.primaryGreen
-                      : DesignTokens.borderDefault,
-                ),
-                labelStyle: TextStyle(
-                  color: selected == value
-                      ? DesignTokens.primaryGreen
-                      : DesignTokens.textLight,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+    ),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 76,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 17, color: DesignTokens.primaryGreen),
+              const SizedBox(height: 7),
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  color: DesignTokens.textLight,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .8,
                 ),
               ),
-              const SizedBox(width: 7),
             ],
-          ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final value in values) ...[
+                  _PreferenceTile(
+                    key: ValueKey('mission-pref-$label-$value'),
+                    label: value,
+                    selected: selected == value,
+                    onTap: () => onSelected(value),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PreferenceTile extends StatelessWidget {
+  const _PreferenceTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: AnimatedContainer(
+      duration: DesignTokens.motionFast,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: selected ? DesignTokens.primaryGreen : const Color(0xFF202320),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? const Color(0xFF07170D) : DesignTokens.textLight,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
         ),
       ),
-    ],
+    ),
   );
 }
 
@@ -1101,20 +1197,20 @@ class _Item extends StatelessWidget {
     onTap: () => context.push(
       RouteNames.productDetail.replaceFirst(':productId', item.productId),
     ),
-    borderRadius: BorderRadius.circular(20),
+    borderRadius: BorderRadius.circular(6),
     child: Ink(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xF21A1C1D),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x4047474D)),
+        color: const Color(0xFF121413),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFF303531)),
       ),
       child: Row(
         children: [
           Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(3),
                 child: SizedBox(
                   width: 88,
                   height: 108,
@@ -1277,21 +1373,20 @@ class _Summary extends StatelessWidget {
 class _Card extends StatelessWidget {
   const _Card({required this.child});
   final Widget child;
+
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.fromLTRB(18, 19, 18, 18),
     decoration: BoxDecoration(
-      color: const Color(0xE61A1B1E),
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: const Color(0x3447474D)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x40000000),
-          blurRadius: 18,
-          offset: Offset(0, 8),
-        ),
-      ],
+      color: const Color(0xFF121413),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xFF2B302C)),
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF181B19), Color(0xFF101211)],
+      ),
     ),
     child: child,
   );
@@ -1302,19 +1397,19 @@ class _Heading extends StatelessWidget {
   final IconData icon;
   final String eyebrow;
   final String title;
+
   @override
   Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: const Color(0x182ECC71),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, size: 19, color: DesignTokens.primaryGreen),
+        width: 3,
+        height: 47,
+        color: DesignTokens.primaryGreen,
       ),
-      const SizedBox(width: 11),
+      const SizedBox(width: 12),
+      Icon(icon, size: 20, color: DesignTokens.primaryGreen),
+      const SizedBox(width: 10),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1322,18 +1417,20 @@ class _Heading extends StatelessWidget {
             Text(
               eyebrow,
               style: const TextStyle(
-                color: DesignTokens.primaryGreen,
+                color: DesignTokens.textMuted,
                 fontSize: 9,
-                letterSpacing: 1.2,
+                letterSpacing: 1.4,
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 3),
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontFamily: DesignTokens.displayFontFamily,
+                color: DesignTokens.textWhite,
+                fontSize: 23,
+                height: 1,
               ),
             ),
           ],
