@@ -20,15 +20,16 @@ class MallCategoryMosaic extends StatelessWidget {
   final void Function(MallCategoryVm category)? onOpen;
 
   static const double gutter = DesignTokens.s16;
-  static const double gap = DesignTokens.s8;
-  static const double tileWidth = 76;
+  static const double gap = 10;
+  static const double tileWidth = 80;
+  static const double orbSize = 60;
   static const double imageSize = 54;
 
   static Key tileKey(MallCategoryVm category) =>
       ValueKey<String>('mall-category-${category.id}');
 
   static double tileHeightFor(BuildContext context) =>
-      (imageSize +
+      (orbSize +
               DesignTokens.s8 +
               MallMetrics.textHeight(
                 MallMetrics.scalerOf(context),
@@ -86,9 +87,10 @@ class _CategoryShortcut extends StatelessWidget {
 
   static const TextStyle labelStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: FontWeight.w600,
     height: 1.16,
+    letterSpacing: 0.05,
     color: DesignTokens.textWhite,
   );
 
@@ -121,32 +123,104 @@ class _CategoryShortcut extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0x38FFFFFF)),
-                    boxShadow: DesignTokens.shadowCard,
-                  ),
-                  child: ClipOval(
-                    child: SizedBox.square(
-                      dimension: MallCategoryMosaic.imageSize,
-                      child: hasImage
-                          ? MallNetworkImage(url: image)
-                          : DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: AlignmentDirectional.topStart,
-                                  end: AlignmentDirectional.bottomEnd,
-                                  colors: _palettes[index % _palettes.length],
-                                ),
+                SizedBox.square(
+                  dimension: MallCategoryMosaic.orbSize,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: AlignmentDirectional.topStart,
+                              end: AlignmentDirectional.bottomEnd,
+                              colors: [
+                                Color(0x70FFFFFF),
+                                Color(0x6032D477),
+                                Color(0x24FFFFFF),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x5C000000),
+                                offset: Offset(0, 8),
+                                blurRadius: 18,
+                                spreadRadius: -5,
                               ),
-                              child: Icon(
-                                _iconFor(category.label),
-                                size: 25,
-                                color: const Color(0xE6FFFFFF),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(1.5),
+                            child: ClipOval(
+                              child: SizedBox.square(
+                                dimension: MallCategoryMosaic.imageSize,
+                                child: hasImage
+                                    ? Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          MallNetworkImage(url: image),
+                                          DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Color(0x00000000),
+                                                  Color(0x38000000),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin:
+                                                AlignmentDirectional.topStart,
+                                            end: AlignmentDirectional.bottomEnd,
+                                            colors:
+                                                _palettes[index %
+                                                    _palettes.length],
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          _iconFor(category.label),
+                                          size: 25,
+                                          color: const Color(0xF2FFFFFF),
+                                        ),
+                                      ),
                               ),
                             ),
-                    ),
+                          ),
+                        ),
+                      ),
+                      PositionedDirectional(
+                        end: -1,
+                        bottom: 1,
+                        child: DecoratedBox(
+                          decoration: const BoxDecoration(
+                            color: DesignTokens.primaryGreen,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x6632D477),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: SizedBox.square(
+                            dimension: 19,
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 11,
+                              color: DesignTokens.buttonPrimaryText,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: DesignTokens.s8),
