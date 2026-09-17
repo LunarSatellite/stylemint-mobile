@@ -29,9 +29,11 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 // ignore: specify_nonobvious_property_types
 final reelWindowReelProvider = FutureProvider.autoDispose.family<Reel?, String>(
   (ref, reelId) async {
-    final either = await ref.watch(reelsRepositoryProvider).getReelDetail(
-      reelId,
-    );
+    final either = await ref
+        .watch(reelsRepositoryProvider)
+        .getReelDetail(
+          reelId,
+        );
     return either.fold((_) => null, (reel) => reel);
   },
 );
@@ -99,7 +101,7 @@ class ReelWindow extends ConsumerStatefulWidget {
 
   /// Widest the player rectangle ever gets: a reel is a portrait video, and a
   /// window wider than this is all letterbox.
-  static const double maxPlayerWidth = 380;
+  static const double maxPlayerWidth = 420;
 
   /// Narrowest it gets before the box stops shrinking and letterboxes
   /// instead — a player the size of a stamp is not a window.
@@ -107,10 +109,10 @@ class ReelWindow extends ConsumerStatefulWidget {
 
   /// Share of the window's height the player rectangle may take. The rest is
   /// chrome, which is where every control has to live.
-  static const double playerHeightShare = 0.62;
+  static const double playerHeightShare = 0.70;
 
   /// Breathing room between the window's edge and its content.
-  static const double panelPadding = DesignTokens.s12;
+  static const double panelPadding = DesignTokens.s8;
 
   final String reelId;
 
@@ -217,7 +219,7 @@ class _ReelWindowState extends ConsumerState<ReelWindow> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.s16),
+        padding: const EdgeInsets.all(10),
         child: Center(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -230,7 +232,8 @@ class _ReelWindowState extends ConsumerState<ReelWindow> {
                 decoration: BoxDecoration(
                   color: DesignTokens.surfaceRaised,
                   borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-                  border: Border.all(color: DesignTokens.glassStroke),
+                  border: Border.all(color: const Color(0x33FFFFFF)),
+                  boxShadow: DesignTokens.shadowLifted,
                 ),
                 child: Stack(
                   children: [

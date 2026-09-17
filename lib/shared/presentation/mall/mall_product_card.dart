@@ -114,8 +114,8 @@ class MallProductCard extends StatelessWidget {
         : DesignTokens.s48;
     final radius = BorderRadius.circular(
       size == MallCardSize.compact
-          ? DesignTokens.radiusMedium
-          : DesignTokens.cardRadius,
+          ? DesignTokens.cardRadius
+          : DesignTokens.radiusLarge,
     );
     final badges = mallTileBadges(strings, item);
 
@@ -128,7 +128,20 @@ class MallProductCard extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: radius,
-              boxShadow: DesignTokens.shadowLifted,
+              border: Border.all(color: const Color(0x1FFFFFFF)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x73000000),
+                  offset: Offset(0, 18),
+                  blurRadius: 38,
+                  spreadRadius: -12,
+                ),
+                BoxShadow(
+                  color: Color(0x24000000),
+                  offset: Offset(0, 3),
+                  blurRadius: 8,
+                ),
+              ],
             ),
             child: ClipRRect(
               borderRadius: radius,
@@ -147,8 +160,20 @@ class MallProductCard extends StatelessWidget {
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
-                            colors: [Color(0x66000000), Color(0x00000000)],
+                            colors: [
+                              Color(0x80000000),
+                              Color(0x47000000),
+                              Color(0x00000000),
+                            ],
+                            stops: [0, 0.58, 1],
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x52000000),
+                              blurRadius: 20,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8),
@@ -162,7 +187,9 @@ class MallProductCard extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: radius,
-                          border: Border.all(color: const Color(0x24FFFFFF)),
+                          border: Border.all(
+                            color: const Color(0x33FFFFFF),
+                          ),
                         ),
                       ),
                     ),

@@ -486,6 +486,7 @@ void main() {
 
     test('is portrait wherever the height allows it', () {
       final size = ReelWindow.playerSize(334, 788);
+      expect(size.width, greaterThanOrEqualTo(300));
       expect(size.height, greaterThan(size.width));
       expect(size.width / size.height, closeTo(9 / 16, 0.01));
     });
