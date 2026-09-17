@@ -55,7 +55,7 @@ class CreatorStorefrontHero extends StatelessWidget {
           if (loading)
             const SmSkeleton.box(radius: 0)
           else
-            StorefrontCover(
+            _CinematicPortrait(
               imageUrl: creator.coverImageUrl,
               height: coverExtent,
             ),
@@ -233,6 +233,68 @@ class CreatorStorefrontHero extends StatelessWidget {
     final value = raw?.trim().replaceFirst(RegExp('^@+'), '') ?? '';
     return value.isEmpty ? null : value;
   }
+}
+
+class _CinematicPortrait extends StatelessWidget {
+  const _CinematicPortrait({required this.imageUrl, required this.height});
+
+  final String? imageUrl;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: DesignTokens.bgAppFoundation,
+    child: ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        stops: [0, 0.72, 0.9, 1],
+        colors: [
+          Colors.black,
+          Colors.black,
+          Color(0xB3000000),
+          Colors.transparent,
+        ],
+      ).createShader(bounds),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            child: Transform.scale(
+              scale: 1.12,
+              child: MallNetworkImage(
+                url: imageUrl,
+                fit: BoxFit.cover,
+                placeholder: const MallImagePlaceholder(showMark: false),
+              ),
+            ),
+          ),
+          ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
+          MallNetworkImage(
+            url: imageUrl,
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            placeholder: const MallImagePlaceholder(),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0x26000000),
+                  Colors.transparent,
+                  Color(0x26000000),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _TalentLabel extends StatelessWidget {
