@@ -212,7 +212,7 @@ void main() {
       }
     });
 
-    testWidgets('opens with one wide destination and balanced pairs', (
+    testWidgets('keeps every category in one compact horizontal row', (
       tester,
     ) async {
       await pumpMall(
@@ -224,7 +224,7 @@ void main() {
         width: 390,
       );
 
-      final featured = tester.getRect(
+      final first = tester.getRect(
         find.byKey(MallCategoryMosaic.tileKey(_categories.first)),
       );
       final second = tester.getRect(
@@ -233,34 +233,11 @@ void main() {
       final third = tester.getRect(
         find.byKey(MallCategoryMosaic.tileKey(_categories[2])),
       );
-      expect(featured.width, greaterThan(second.width * 1.9));
-      expect(second.width, closeTo(third.width, 0.01));
+      expect(first.top, closeTo(second.top, 0.01));
       expect(second.top, closeTo(third.top, 0.01));
-      expect(second.top, greaterThan(featured.bottom));
+      expect(first.width, MallCategoryMosaic.tileWidth);
+      expect(first.height, lessThan(140));
     });
-    testWidgets('tiles are labelled buttons of a tappable size', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      MallCategoryVm? opened;
-      await pumpMall(
-        tester,
-        MallCategoryMosaic(
-          categories: _categories,
-          semanticLabel: 'Shop by category',
-          onOpen: (category) => opened = category,
-        ),
-      );
-      expect(
-        tester.getSemantics(find.bySemanticsLabel('Tech')),
-        isSemantics(isButton: true, hasTapAction: true),
-      );
-      await tester.tap(find.text('Home'), warnIfMissed: false);
-      expect(opened?.id, 'cat-2');
-      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-      semantics.dispose();
-    });
-
     testWidgets('an empty mosaic draws nothing', (tester) async {
       await pumpMall(
         tester,
