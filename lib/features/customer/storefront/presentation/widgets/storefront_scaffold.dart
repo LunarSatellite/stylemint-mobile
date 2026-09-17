@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -277,56 +278,70 @@ class _TopBarDelegate extends SliverPersistentHeaderDelegate {
     final share = onShare;
     return ValueListenableBuilder<double>(
       valueListenable: solid,
-      builder: (context, t, _) => ColoredBox(
-        color: DesignTokens.bgAppFoundation.withValues(alpha: t),
-        child: Padding(
-          padding: EdgeInsetsDirectional.only(
-            top: topInset,
-            start: DesignTokens.s8,
-            end: DesignTokens.s8,
-          ),
-          child: SizedBox(
-            height: StorefrontScaffold.toolbarHeight,
-            child: Row(
-              children: [
-                _BarButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  tooltip: 'Back',
-                  solid: t,
-                  onPressed: context.popOrHome,
+      builder: (context, t, _) => ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18 * t, sigmaY: 18 * t),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppFoundation.withValues(
+                alpha: 0.08 + (0.88 * t),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: DesignTokens.glassStroke.withValues(alpha: 0.55 * t),
                 ),
-                const SizedBox(width: DesignTokens.s8),
-                Expanded(
-                  child: ExcludeSemantics(
-                    excluding: t < 0.5,
-                    child: Opacity(
-                      opacity: t,
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                          color: DesignTokens.textWhite,
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(
+                top: topInset,
+                start: DesignTokens.s8,
+                end: DesignTokens.s8,
+              ),
+              child: SizedBox(
+                height: StorefrontScaffold.toolbarHeight,
+                child: Row(
+                  children: [
+                    _BarButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      tooltip: 'Back',
+                      solid: t,
+                      onPressed: context.popOrHome,
+                    ),
+                    const SizedBox(width: DesignTokens.s8),
+                    Expanded(
+                      child: ExcludeSemantics(
+                        excluding: t < 0.5,
+                        child: Opacity(
+                          opacity: t,
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                              color: DesignTokens.textWhite,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: DesignTokens.s8),
+                    if (share != null)
+                      _BarButton(
+                        icon: Icons.ios_share_rounded,
+                        tooltip: shareLabel,
+                        solid: t,
+                        onPressed: share,
+                      )
+                    else
+                      const SizedBox(width: DesignTokens.minTouchTarget),
+                  ],
                 ),
-                const SizedBox(width: DesignTokens.s8),
-                if (share != null)
-                  _BarButton(
-                    icon: Icons.ios_share_rounded,
-                    tooltip: shareLabel,
-                    solid: t,
-                    onPressed: share,
-                  )
-                else
-                  const SizedBox(width: DesignTokens.minTouchTarget),
-              ],
+              ),
             ),
           ),
         ),
@@ -404,50 +419,63 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppFoundation,
-        boxShadow: overlapsContent ? DesignTokens.shadowCard : null,
-      ),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: TabBar(
-          controller: controller,
-          onTap: onTap,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: DesignTokens.s4,
+    return ColoredBox(
+      color: DesignTokens.bgAppFoundation,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 5, 12, 5),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: DesignTokens.surfaceRaised,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: DesignTokens.glassStroke),
+            boxShadow: overlapsContent ? DesignTokens.shadowCard : null,
           ),
-          labelPadding: const EdgeInsetsDirectional.symmetric(
-            horizontal: DesignTokens.s12,
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TabBar(
+              controller: controller,
+              onTap: onTap,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
+              labelPadding: const EdgeInsetsDirectional.symmetric(
+                horizontal: DesignTokens.s12,
+              ),
+              dividerColor: Colors.transparent,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                color: DesignTokens.textWhite,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              labelColor: DesignTokens.textDark,
+              unselectedLabelColor: DesignTokens.textMuted,
+              labelStyle: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+              overlayColor: const WidgetStatePropertyAll(Color(0x0FFFFFFF)),
+              splashFactory: NoSplash.splashFactory,
+              tabs: [
+                for (final label in labels)
+                  Tab(height: extent - 10 - _indicatorWeight, text: label),
+              ],
+            ),
           ),
-          dividerColor: Colors.transparent,
-          indicatorSize: TabBarIndicatorSize.label,
-          // White 2dp underline (the indicator's default side).
-          indicator: const UnderlineTabIndicator(
-            borderRadius: BorderRadius.all(Radius.circular(2)),
-          ),
-          labelColor: DesignTokens.textWhite,
-          unselectedLabelColor: DesignTokens.textMuted,
-          labelStyle: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            height: 1.4,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-          ),
-          overlayColor: const WidgetStatePropertyAll(Color(0x0FFFFFFF)),
-          splashFactory: NoSplash.splashFactory,
-          tabs: [
-            for (final label in labels)
-              Tab(height: extent - _indicatorWeight, text: label),
-          ],
         ),
       ),
     );

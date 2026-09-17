@@ -260,7 +260,8 @@ class _ProductBody extends StatelessWidget {
         CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 360,
+              expandedHeight: 410,
+              stretch: true,
               pinned: true,
               backgroundColor: DesignTokens.bgAppFoundation,
               elevation: 0,
@@ -285,7 +286,29 @@ class _ProductBody extends StatelessWidget {
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
-                background: ProductImageCarousel(images: product.images),
+                stretchModes: const [
+                  StretchMode.zoomBackground,
+                  StretchMode.fadeTitle,
+                ],
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ProductImageCarousel(images: product.images),
+                    const Align(
+                      alignment: Alignment.bottomCenter,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [Color(0x9909090B), Colors.transparent],
+                          ),
+                        ),
+                        child: SizedBox(height: 72, width: double.infinity),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -1601,11 +1624,11 @@ class _BottomBar extends StatelessWidget {
         DesignTokens.s16,
         DesignTokens.s12 + bottomPad,
       ),
-      decoration: const BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        border: Border(
-          top: BorderSide(color: DesignTokens.borderDefault, width: 0.5),
-        ),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody.withValues(alpha: 0.97),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: DesignTokens.glassStroke),
+        boxShadow: DesignTokens.shadowLifted,
       ),
       child: product.isInCart
           ? _InCartBar(

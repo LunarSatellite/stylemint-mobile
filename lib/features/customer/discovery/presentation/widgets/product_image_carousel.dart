@@ -39,8 +39,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
 
     return Stack(
       children: [
-        SizedBox(
-          height: 360,
+        Positioned.fill(
           child: PageView.builder(
             controller: _controller,
             onPageChanged: (i) => setState(() => _currentPage = i),
@@ -121,11 +120,12 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
                   width: isActive ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color:
-                        isActive
-                            ? DesignTokens.primaryGreen
-                            : DesignTokens.textWhite.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+                    color: isActive
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.textWhite.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.buttonRadius,
+                    ),
                   ),
                 );
               }),

@@ -158,22 +158,88 @@ class ProductListingScreen extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          headingFor(query, title),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.displayTitle,
-                        ),
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 2),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 142),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      20,
+                      20,
+                      18,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(color: DesignTokens.glassStroke),
+                      gradient: const LinearGradient(
+                        begin: AlignmentDirectional.topStart,
+                        end: AlignmentDirectional.bottomEnd,
+                        colors: [Color(0xFF26352E), Color(0xFF17181B)],
                       ),
-                      const SizedBox(height: DesignTokens.s4),
-                      Text(countText, style: DesignTokens.smallRegular),
-                    ],
+                      boxShadow: DesignTokens.shadowCard,
+                    ),
+                    child: Stack(
+                      children: [
+                        const PositionedDirectional(
+                          top: -28,
+                          end: -18,
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 112,
+                            color: Color(0x102ECC71),
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            const Text(
+                              'STYLEMINT EDIT',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.8,
+                                color: DesignTokens.primaryGreen,
+                              ),
+                            ),
+                            const SizedBox(height: DesignTokens.s8),
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                headingFor(query, title),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: DesignTokens.displayTitle,
+                              ),
+                            ),
+                            const SizedBox(height: DesignTokens.s8),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 24,
+                                  height: 1,
+                                  color: DesignTokens.textMuted,
+                                ),
+                                const SizedBox(width: DesignTokens.s8),
+                                Expanded(
+                                  child: Text(
+                                    countText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: DesignTokens.smallRegular,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.grid_view_rounded,
+                                  size: 16,
+                                  color: DesignTokens.textMuted,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
