@@ -166,6 +166,9 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
           ];
         }
         return [
+          SliverToBoxAdapter(
+            child: _DiscoveryContext(label: state.selected.label),
+          ),
           ...slivers,
           if (feed.hasMore || feed.loadMoreFailed)
             SliverToBoxAdapter(
@@ -517,6 +520,75 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
         aspectRatio: ratio,
         onTap: () => _push(MallRoutes.collection(collection.slug)),
       );
+}
+
+class _DiscoveryContext extends StatelessWidget {
+  const _DiscoveryContext({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < 360) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF181C19),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0x1FFFFFFF)),
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0x1F32D477),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  size: 18,
+                  color: DesignTokens.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'YOUR CURRENT EDIT',
+                      style: DesignTokens.eyebrow.copyWith(
+                        color: DesignTokens.primaryGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Exploring ${label.toLowerCase()} across products, reels and people',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 12.5,
+                        height: 1.35,
+                        color: DesignTokens.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Grid or list for product results.

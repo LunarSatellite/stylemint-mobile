@@ -47,12 +47,12 @@ class MallDealBand extends StatelessWidget {
   /// Depth of the angled cut at the plate's trailing bottom corner.
   static const double cut = 40;
 
-  static const Color _ink = DesignTokens.buttonPrimaryText;
-  static const Color _inkMuted = Color(0xB306190E);
+  static const Color _ink = DesignTokens.textWhite;
+  static const Color _inkMuted = DesignTokens.textLight;
 
   static const TextStyle _numeralStyle = TextStyle(
     fontFamily: DesignTokens.fontFamily,
-    fontSize: 52,
+    fontSize: 36,
     fontWeight: FontWeight.w700,
     height: 1,
     letterSpacing: -2,
@@ -89,7 +89,10 @@ class MallDealBand extends StatelessWidget {
               gradient: LinearGradient(
                 begin: AlignmentDirectional.topStart,
                 end: AlignmentDirectional.bottomEnd,
-                colors: [Color(0xFF70E89D), DesignTokens.primaryGreen],
+                colors: [
+                  Color(0xFF252A27),
+                  DesignTokens.bgAppBody,
+                ],
               ),
               boxShadow: DesignTokens.shadowLifted,
             ),
@@ -99,7 +102,10 @@ class MallDealBand extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  MallEyebrow(eyebrow ?? strings.limitedTime, color: _inkMuted),
+                  MallEyebrow(
+                    eyebrow ?? strings.limitedTime,
+                    color: DesignTokens.primaryGreen,
+                  ),
                   const SizedBox(height: DesignTokens.s12),
                   if (discount != null) ...[
                     _Numeral(percent: discount, strings: strings),
@@ -180,9 +186,9 @@ class _Numeral extends StatelessWidget {
           alignment: AlignmentDirectional.centerStart,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: MallDealBand._ink,
+              color: DesignTokens.primaryGreenLight,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x26FFFFFF)),
+              border: Border.all(color: const Color(0x5532D477)),
               boxShadow: DesignTokens.shadowCard,
             ),
             child: Padding(
@@ -310,8 +316,8 @@ class _DropCta extends StatelessWidget {
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: DesignTokens.buttonPrimaryText,
-        foregroundColor: DesignTokens.primaryGreen,
+        backgroundColor: DesignTokens.primaryGreen,
+        foregroundColor: DesignTokens.buttonPrimaryText,
         minimumSize: const Size(DesignTokens.minTouchTarget, 48),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: const StadiumBorder(),

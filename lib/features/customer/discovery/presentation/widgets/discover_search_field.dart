@@ -48,7 +48,7 @@ class DiscoverSearchField extends StatelessWidget {
           hintMaxLines: 1,
           hintStyle: _textStyle.copyWith(color: DesignTokens.textMuted),
           filled: true,
-          fillColor: DesignTokens.surfaceRaised,
+          fillColor: const Color(0xFF1A1E1B),
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: DesignTokens.s16,
@@ -69,7 +69,12 @@ class DiscoverSearchField extends StatelessWidget {
                 ),
           border: border,
           enabledBorder: border,
-          focusedBorder: border,
+          focusedBorder: border.copyWith(
+            borderSide: const BorderSide(
+              color: Color(0x9932D477),
+              width: 1.2,
+            ),
+          ),
         ),
       ),
     );

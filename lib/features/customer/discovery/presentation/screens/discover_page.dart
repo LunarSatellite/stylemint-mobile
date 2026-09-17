@@ -189,27 +189,95 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(
-        DesignTokens.s16,
-        DesignTokens.s12,
-        DesignTokens.s4,
-        DesignTokens.s4,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    return RepaintBoundary(
+      child: Container(
+        margin: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 4),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          compact ? 14 : 18,
+          compact ? 12 : 18,
+          compact ? 10 : 14,
+          compact ? 12 : 18,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0x2632D477)),
+          gradient: const LinearGradient(
+            begin: AlignmentDirectional.topStart,
+            end: AlignmentDirectional.bottomEnd,
+            colors: [Color(0xFF242A26), Color(0xFF111412)],
+          ),
+          boxShadow: DesignTokens.shadowCard,
+        ),
+        child: Stack(
+          children: [
+            const PositionedDirectional(
+              top: -42,
+              end: -28,
+              child: IgnorePointer(child: _DiscoveryOrb()),
+            ),
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'THE STYLEMINT MALL',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DesignTokens.eyebrow.copyWith(
-                    color: DesignTokens.textMuted,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'YOUR STYLE, IN MOTION',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.eyebrow.copyWith(
+                          color: DesignTokens.primaryGreen,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: 'Shop by mission',
+                      child: Material(
+                        color: const Color(0x1F32D477),
+                        borderRadius: BorderRadius.circular(999),
+                        child: InkWell(
+                          key: const ValueKey('discover-mission'),
+                          onTap: onMission,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Padding(
+                            padding: EdgeInsetsDirectional.fromSTEB(
+                              compact ? 10 : 12,
+                              9,
+                              compact ? 10 : 12,
+                              9,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 16,
+                                  color: DesignTokens.primaryGreen,
+                                ),
+                                if (!compact) ...[
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'Shop by mission',
+                                    style: TextStyle(
+                                      fontFamily: DesignTokens.fontFamily,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: DesignTokens.textWhite,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                SizedBox(height: compact ? 10 : 18),
                 Semantics(
                   header: true,
                   child: Text(
@@ -217,21 +285,49 @@ class _Header extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: DesignTokens.displaySection.copyWith(
+                      fontSize: compact ? 32 : 38,
+                      height: 1,
+                      letterSpacing: -1.4,
                       color: DesignTokens.textWhite,
                     ),
                   ),
                 ),
+                if (!compact) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Products, reels and creators shaped around you.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 14,
+                      height: 1.4,
+                      color: DesignTokens.textLight,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-          IconButton(
-            key: const ValueKey('discover-mission'),
-            tooltip: 'Shop by mission',
-            color: DesignTokens.textLight,
-            icon: const Icon(Icons.auto_awesome_outlined),
-            onPressed: onMission,
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscoveryOrb extends StatelessWidget {
+  const _DiscoveryOrb();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 126,
+      height: 126,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [Color(0x4032D477), Color(0x0032D477)],
+        ),
       ),
     );
   }
