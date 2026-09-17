@@ -212,6 +212,32 @@ void main() {
       }
     });
 
+    testWidgets('opens with one wide destination and balanced pairs', (
+      tester,
+    ) async {
+      await pumpMall(
+        tester,
+        const MallCategoryMosaic(
+          categories: _categories,
+          semanticLabel: 'Shop by category',
+        ),
+        width: 390,
+      );
+
+      final featured = tester.getRect(
+        find.byKey(MallCategoryMosaic.tileKey(_categories.first)),
+      );
+      final second = tester.getRect(
+        find.byKey(MallCategoryMosaic.tileKey(_categories[1])),
+      );
+      final third = tester.getRect(
+        find.byKey(MallCategoryMosaic.tileKey(_categories[2])),
+      );
+      expect(featured.width, greaterThan(second.width * 1.9));
+      expect(second.width, closeTo(third.width, 0.01));
+      expect(second.top, closeTo(third.top, 0.01));
+      expect(second.top, greaterThan(featured.bottom));
+    });
     testWidgets('tiles are labelled buttons of a tappable size', (
       tester,
     ) async {
