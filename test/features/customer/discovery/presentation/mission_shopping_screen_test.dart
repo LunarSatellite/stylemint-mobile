@@ -74,6 +74,17 @@ void main() {
       find.byKey(MissionShoppingScreen.fieldKey),
       'Build a relaxed dinner look',
     );
+    for (final key in [
+      'mission-pref-Occasion-Event',
+      'mission-pref-Aesthetic-Minimal',
+      'mission-pref-Priority-Comfort',
+    ]) {
+      final preference = find.byKey(ValueKey(key));
+      await tester.ensureVisible(preference);
+      await tester.pumpAndSettle();
+      await tester.tap(preference);
+      await tester.pump();
+    }
     await tester.ensureVisible(find.text('Rs 5k'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rs 5k'));
@@ -89,6 +100,22 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Within your budget'), findsOneWidget);
+    expect(find.text('Event  •  Minimal  •  Comfort'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('mission-add-complete-edit')),
+      findsOneWidget,
+    );
+    final missionText =
+        verify(
+              () => repository.getMissionShoppingPlan(
+                missionText: captureAny(named: 'missionText'),
+                budgetAmount: any(named: 'budgetAmount'),
+              ),
+            ).captured.single
+            as String;
+    expect(missionText, contains('Occasion: Event'));
+    expect(missionText, contains('Aesthetic: Minimal'));
+    expect(missionText, contains('Priority: Comfort'));
     expect(tester.takeException(), isNull);
   });
 

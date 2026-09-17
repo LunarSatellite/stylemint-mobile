@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -45,7 +48,12 @@ class _MissionShoppingScreenState extends ConsumerState<MissionShoppingScreen> {
   final budget = TextEditingController();
   final focus = FocusNode();
   double? selectedBudget;
+  String? occasion;
+  String? aesthetic;
+  String? priority;
   bool loading = false;
+  bool addingAll = false;
+  bool addedAll = false;
   String? error;
   MissionShoppingPlan? plan;
 
@@ -102,9 +110,18 @@ class _MissionShoppingScreenState extends ConsumerState<MissionShoppingScreen> {
       error = null;
       plan = null;
     });
+    final enrichedMission = [
+      text,
+      if (occasion != null) 'Occasion: $occasion',
+      if (aesthetic != null) 'Aesthetic: $aesthetic',
+      if (priority != null) 'Priority: $priority',
+    ].join('. ');
     final response = await ref
         .read(discoveryRepositoryProvider)
-        .getMissionShoppingPlan(missionText: text, budgetAmount: amount);
+        .getMissionShoppingPlan(
+          missionText: enrichedMission,
+          budgetAmount: amount,
+        );
     if (!mounted) return;
     response.fold(
       (_) => setState(() {
@@ -115,6 +132,43 @@ class _MissionShoppingScreenState extends ConsumerState<MissionShoppingScreen> {
         loading = false;
         plan = value;
       }),
+    );
+  }
+
+  Future<void> addCompleteEdit() async {
+    final currentPlan = plan;
+    if (currentPlan == null || addingAll) return;
+    setState(() => addingAll = true);
+    var added = 0;
+    for (final item in currentPlan.items) {
+      final result = await ref
+          .read(discoveryRepositoryProvider)
+          .addToCart(
+            productId: item.productId,
+            qty: 1,
+          );
+      if (result.isRight()) added++;
+    }
+    if (!mounted) return;
+    if (added > 0) {
+      unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
+    }
+    setState(() {
+      addingAll = false;
+      addedAll = added == currentPlan.items.length;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added == currentPlan.items.length
+              ? 'Complete edit added to your bag.'
+              : 'Added $added of ${currentPlan.items.length} pieces. '
+                    'Review the rest individually.',
+        ),
+        backgroundColor: added > 0
+            ? DesignTokens.primaryGreen
+            : DesignTokens.colorError,
+      ),
     );
   }
 
@@ -146,7 +200,16 @@ class _MissionShoppingScreenState extends ConsumerState<MissionShoppingScreen> {
                           : _Result(
                               key: MissionShoppingScreen.resultKey,
                               plan: plan!,
-                              onRefine: () => setState(() => plan = null),
+                              occasion: occasion,
+                              aesthetic: aesthetic,
+                              priority: priority,
+                              addingAll: addingAll,
+                              addedAll: addedAll,
+                              onAddAll: addCompleteEdit,
+                              onRefine: () => setState(() {
+                                plan = null;
+                                addedAll = false;
+                              }),
                             ),
                     ),
                   ),
@@ -231,6 +294,15 @@ class _MissionShoppingScreenState extends ConsumerState<MissionShoppingScreen> {
             ),
           ],
         ),
+      ),
+      const SizedBox(height: 14),
+      _PreferenceStudio(
+        occasion: occasion,
+        aesthetic: aesthetic,
+        priority: priority,
+        onOccasion: (value) => setState(() => occasion = value),
+        onAesthetic: (value) => setState(() => aesthetic = value),
+        onPriority: (value) => setState(() => priority = value),
       ),
       const SizedBox(height: 14),
       _Card(
@@ -540,9 +612,214 @@ class _Steps extends StatelessWidget {
   );
 }
 
+class _PreferenceStudio extends StatelessWidget {
+  const _PreferenceStudio({
+    required this.occasion,
+    required this.aesthetic,
+    required this.priority,
+    required this.onOccasion,
+    required this.onAesthetic,
+    required this.onPriority,
+  });
+
+  final String? occasion;
+  final String? aesthetic;
+  final String? priority;
+  final ValueChanged<String> onOccasion;
+  final ValueChanged<String> onAesthetic;
+  final ValueChanged<String> onPriority;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _Heading(
+          Icons.tune_rounded,
+          'MAKE IT YOURS',
+          'Shape the recommendation',
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'A few signals help us choose pieces that belong together.',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.textMuted,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _PreferenceRow(
+          label: 'Occasion',
+          values: const ['Everyday', 'Work', 'Event', 'Travel'],
+          selected: occasion,
+          onSelected: onOccasion,
+        ),
+        const SizedBox(height: 13),
+        _PreferenceRow(
+          label: 'Aesthetic',
+          values: const ['Minimal', 'Classic', 'Street', 'Bold'],
+          selected: aesthetic,
+          onSelected: onAesthetic,
+        ),
+        const SizedBox(height: 13),
+        _PreferenceRow(
+          label: 'Priority',
+          values: const ['Comfort', 'Versatile', 'Premium', 'Best value'],
+          selected: priority,
+          onSelected: onPriority,
+        ),
+      ],
+    ),
+  );
+}
+
+class _PreferenceRow extends StatelessWidget {
+  const _PreferenceRow({
+    required this.label,
+    required this.values,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final List<String> values;
+  final String? selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: DesignTokens.textMuted,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1,
+        ),
+      ),
+      const SizedBox(height: 7),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final value in values) ...[
+              ChoiceChip(
+                key: ValueKey('mission-pref-$label-$value'),
+                selected: selected == value,
+                showCheckmark: false,
+                onSelected: (_) => onSelected(value),
+                label: Text(value),
+                selectedColor: DesignTokens.primaryGreenLight,
+                backgroundColor: const Color(0xFF242629),
+                side: BorderSide(
+                  color: selected == value
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.borderDefault,
+                ),
+                labelStyle: TextStyle(
+                  color: selected == value
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.textLight,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 7),
+            ],
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+class _MissionBrief extends StatelessWidget {
+  const _MissionBrief({
+    required this.occasion,
+    required this.aesthetic,
+    required this.priority,
+  });
+
+  final String? occasion;
+  final String? aesthetic;
+  final String? priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final signals = [
+      occasion,
+      aesthetic,
+      priority,
+    ].whereType<String>().toList();
+    if (signals.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFF17191A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x3432D477)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.psychology_alt_outlined,
+            color: DesignTokens.primaryGreen,
+            size: 19,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'WHAT WE UNDERSTOOD',
+                  style: TextStyle(
+                    color: DesignTokens.primaryGreen,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  signals.join('  •  '),
+                  style: const TextStyle(
+                    color: DesignTokens.textLight,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Result extends StatelessWidget {
-  const _Result({required this.plan, required this.onRefine, super.key});
+  const _Result({
+    required this.plan,
+    required this.occasion,
+    required this.aesthetic,
+    required this.priority,
+    required this.addingAll,
+    required this.addedAll,
+    required this.onAddAll,
+    required this.onRefine,
+    super.key,
+  });
   final MissionShoppingPlan plan;
+  final String? occasion;
+  final String? aesthetic;
+  final String? priority;
+  final bool addingAll;
+  final bool addedAll;
+  final VoidCallback onAddAll;
   final VoidCallback onRefine;
 
   @override
@@ -609,6 +886,12 @@ class _Result extends StatelessWidget {
           ],
         ),
       ),
+      const SizedBox(height: 12),
+      _MissionBrief(
+        occasion: occasion,
+        aesthetic: aesthetic,
+        priority: priority,
+      ),
       const SizedBox(height: 20),
       if (plan.items.isEmpty)
         _Error(
@@ -649,6 +932,46 @@ class _Result extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         _Summary(plan),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            key: const ValueKey('mission-add-complete-edit'),
+            onPressed: addingAll || addedAll ? null : onAddAll,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DesignTokens.primaryGreen,
+              foregroundColor: const Color(0xFF07170D),
+              disabledBackgroundColor: addedAll
+                  ? DesignTokens.primaryGreenDark
+                  : const Color(0xFF26312B),
+              disabledForegroundColor: addedAll
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.textMuted,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(17),
+              ),
+            ),
+            icon: addingAll
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    addedAll
+                        ? Icons.check_rounded
+                        : Icons.shopping_bag_outlined,
+                  ),
+            label: Text(
+              addingAll
+                  ? 'Building your bag…'
+                  : addedAll
+                  ? 'Complete edit added'
+                  : 'Add complete edit to bag',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
       ],
       const SizedBox(height: 16),
       SizedBox(
