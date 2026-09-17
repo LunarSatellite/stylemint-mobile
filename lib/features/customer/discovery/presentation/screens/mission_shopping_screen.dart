@@ -497,66 +497,164 @@ class _TopBar extends StatelessWidget {
 
 class _Hero extends StatelessWidget {
   const _Hero();
+
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0x3832D477)),
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF1C2B22), Color(0xFF151718), Color(0xFF101112)],
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 350;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: SizedBox(
+        height: compact ? 470 : 500,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/images/mission-concierge-editorial.png',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0.28, 0),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  stops: [0, .54, 1],
+                  colors: [
+                    Color(0xF2080A09),
+                    Color(0x8F080A09),
+                    Color(0x15080A09),
+                  ],
+                ),
+              ),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0, .5, 1],
+                  colors: [
+                    Color(0x2A000000),
+                    Color(0x08000000),
+                    Color(0xEF080A09),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 18 : 22,
+                22,
+                compact ? 15 : 20,
+                20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xB20A0C0B),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: const Color(0x6632D477)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: DesignTokens.primaryGreen,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'THE PERSONAL EDIT',
+                          style: TextStyle(
+                            color: DesignTokens.textWhite,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: compact ? 24 : 30),
+                  Text(
+                    'Your life,\nstyled.',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.displayFontFamily,
+                      color: DesignTokens.textWhite,
+                      fontSize: compact ? 48 : 56,
+                      height: .88,
+                      letterSpacing: -1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 17),
+                  SizedBox(
+                    width: compact ? 200 : 225,
+                    child: Text(
+                      'One intention. A complete look. '
+                      'Curated from what is available now.',
+                      style: TextStyle(
+                        color: DesignTokens.textLight,
+                        fontSize: compact ? 12 : 13,
+                        height: 1.55,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: const Color(0xC9121513),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0x404C5D53)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x66000000),
+                          blurRadius: 24,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 16,
+                              color: DesignTokens.primaryGreen,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'INTENTION → OUTFIT',
+                              style: TextStyle(
+                                color: DesignTokens.primaryGreen,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        _Steps(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x2032D477),
-          blurRadius: 34,
-          offset: Offset(0, 14),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: DesignTokens.primaryGreen,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: Color(0xFF07170D),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Don’t search products.\nDescribe the outcome.',
-          style: TextStyle(
-            fontSize: 29,
-            height: 1.08,
-            letterSpacing: -.8,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Tell us the moment, your taste and your budget. We’ll build a '
-          'complete, compatible look from items available now.',
-          style: DesignTokens.mediumRegular.copyWith(
-            color: DesignTokens.textLight,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 18),
-        const _Steps(),
-      ],
-    ),
-  );
+    );
+  }
 }
 
 class _Steps extends StatelessWidget {

@@ -30,7 +30,7 @@ void main() {
     await _pump(tester, _Repository());
 
     expect(
-      find.text('Don’t search products.\nDescribe the outcome.'),
+      find.text('Your life,\nstyled.'),
       findsOneWidget,
     );
     expect(find.text('Wedding guest'), findsOneWidget);
