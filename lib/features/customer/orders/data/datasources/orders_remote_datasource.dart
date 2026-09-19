@@ -42,6 +42,22 @@ class OrdersRemoteDataSource {
         .toList(growable: false);
   }
 
+  /// GET `/v1/orders/by-tracking/{trackingNumber}` — which of the caller's
+  /// orders a parcel belongs to, in one call (Orders module
+  /// `OrderController.ResolveByTracking` → `OrderParcelRefDto`: `orderNumber`,
+  /// `subOrderId`, `packageId`, `trackingNumber`; only the order number is
+  /// useful to the client).
+  ///
+  /// Throws the underlying [DioException]: a 404 is the deliberately
+  /// ambiguous "no order for you under that number", a 429 is the 20/min
+  /// rate limit. Callers map both — see `orderNumberForTrackingProvider`.
+  Future<String> resolveOrderNumberByTracking(String trackingNumber) async {
+    final response = await apiClient.get(
+      '/v1/orders/by-tracking/${Uri.encodeComponent(trackingNumber)}',
+    );
+    return (response as Map<String, dynamic>)['orderNumber'] as String;
+  }
+
   /// GET `/v1/orders/{orderNumber}` — full order detail.
   Future<OrderDetailDto> getOrderDetail(String orderId) async {
     final response = await apiClient.get('/v1/orders/$orderId');

@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -8,13 +9,13 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasour
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracking_lookup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
@@ -125,56 +126,44 @@ final packageSealProvider = FutureProvider.autoDispose
       }
     });
 
-/// How many recent orders the tracking-number lookup reads detail for.
-/// A delivery that is at risk right now belongs to an order the customer
-/// placed recently, so a short scan finds it; the cap keeps a customer with
-/// a long order history from firing a call per order.
-const int _trackingLookupDetailBudget = 8;
-
-/// Resolves a delivery tracking number to the customer's own order number,
-/// or null when it is not theirs (or too old to still be in flight).
+/// Resolves a delivery tracking number to the customer's own order number in
+/// a single call — `GET /v1/orders/by-tracking/{trackingNumber}`.
 ///
-/// There is no backend lookup from a tracking number to an order: the
-/// Delivery module's package carries only a sub-order id
-/// (`GET /v1/deliveries/{trackingNumber}` → `PackageDto.subOrderId`) and no
-/// buyer endpoint maps a sub-order id back to an order number. So this
-/// scans the customer's own recent orders, which is also what makes another
-/// customer's tracking number unresolvable — `/v1/orders` is scoped to the
-/// caller, so a stranger's parcel simply never matches and the caller shows
-/// its not-found landing instead of leaking that the parcel exists.
+/// The backend answers the whole question and is scoped to the authenticated
+/// customer, so there is nothing to scan and nothing to cap: a tracking
+/// number from a months-old notification resolves as long as the parcel
+/// exists and is the caller's.
 ///
-/// Only orders that can still have a package in flight are read (Paid,
-/// Fulfilling, Completed — not Placed or Cancelled), newest first, capped
-/// at [_trackingLookupDetailBudget] detail reads.
+/// Its 404 is deliberately ambiguous — unknown, someone else's, or an
+/// unreadable order all return the identical response, so that a reply cannot
+/// confirm a stranger's guess named a real parcel. That collapses to one
+/// [TrackingLookupNotFound] here and the screen must keep it that way.
+/// The 20/min rate limit is a separate answer ([TrackingLookupRateLimited]):
+/// "ask again shortly", never "we couldn't find it". Any other failure is
+/// rethrown and lands on the same not-found surface as before.
 // The family type this returns is not exported under the imports this file
 // uses, and every other provider here is declared the same way.
 // ignore: specify_nonobvious_property_types
 final orderNumberForTrackingProvider = FutureProvider.autoDispose
-    .family<String?, String>((ref, trackingNumber) async {
+    .family<TrackingLookup, String>((ref, trackingNumber) async {
       final tracking = trackingNumber.trim();
-      if (tracking.isEmpty) return null;
+      // A blank tracking number is malformed input (the backend answers 400);
+      // there is nothing to ask about, so don't spend a call on it.
+      if (tracking.isEmpty) return const TrackingLookupNotFound();
 
       final dataSource = ref.watch(ordersRemoteDataSourceProvider);
-      final recent = await dataSource.getTrackedOrders(limit: 20);
-
-      final candidates = recent
-          .where((o) => o.state == 2 || o.state == 3 || o.state == 4)
-          .take(_trackingLookupDetailBudget);
-
-      for (final candidate in candidates) {
-        final OrderDetailDto detail;
-        try {
-          detail = await dataSource.getOrderDetail(candidate.orderNumber);
-        } on Object catch (_) {
-          // One unreadable order must not abort the whole lookup.
-          continue;
-        }
-        final matches = detail.subOrders.any(
-          (s) => s.trackingNumber?.trim() == tracking,
+      try {
+        return TrackingLookupResolved(
+          await dataSource.resolveOrderNumberByTracking(tracking),
         );
-        if (matches) return detail.orderNumber;
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        if (status == 429) return const TrackingLookupRateLimited();
+        if (status == 404 || status == 400) {
+          return const TrackingLookupNotFound();
+        }
+        rethrow;
       }
-      return null;
     });
 
 final ordersRepositoryProvider = Provider<OrdersRepository>(
