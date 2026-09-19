@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_recovery_offers_view.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/warranty_claim_sheet.dart';
@@ -245,6 +246,14 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               autoFocus: widget.focusDeliveryRecovery,
             ),
             _PackageSealCard(trackingNumber: trackingNumber),
+            // "Can't be there when it arrives?" — authorise, review and
+            // revoke a delegated handover for *this* parcel, where the
+            // customer already is. Offered while the parcel is still
+            // in flight; once it is delivered only the history renders.
+            HandoverDelegationCard(
+              trackingNumber: trackingNumber,
+              canDelegate: _parcelMayStillBeDelegated(order.status),
+            ),
             // Only once the parcel may have reached the buyer; the card
             // itself checks the package is out for delivery or delivered.
             if (_parcelMayHaveArrived(order.status))
@@ -1213,6 +1222,14 @@ class _OtherDetails extends StatelessWidget {
 /// reads "out for delivery" (Fulfilling maps to in transit), so in-transit
 /// orders are checked too; the card itself requires the package to be out
 /// for delivery or delivered.
+/// Whether a handover delegation can still be created for this parcel.
+/// Mirrors the backend rule (`PackageState.Delivered/Returning/Returned` is
+/// refused with `business_rule`) so the button is not offered into a
+/// guaranteed refusal. Existing delegations still render either way.
+bool _parcelMayStillBeDelegated(OrderTrackStatus status) =>
+    status != OrderTrackStatus.delivered &&
+    status != OrderTrackStatus.cancelled;
+
 bool _parcelMayHaveArrived(OrderTrackStatus status) =>
     status == OrderTrackStatus.inTransit ||
     status == OrderTrackStatus.outForDelivery ||

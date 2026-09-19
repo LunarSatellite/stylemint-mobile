@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/handover_delegation_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
@@ -24,6 +25,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/order_timeline_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_recovery_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/handover_delegation_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -375,4 +377,34 @@ final reorderSuggestionsNotifierProvider =
       ReorderSuggestionsState
     >(
       (ref) => ReorderSuggestionsNotifier(ref.watch(ordersRepositoryProvider)),
+    );
+
+// ── Delegated parcel handover ───────────────────────────────────────────────
+//
+// Deliberately only two providers, and neither can hold a verification code:
+// the data source is stateless, and [HandoverDelegationState] has no field for
+// one. Creation is driven from the sheet's own `State` so the code never
+// enters provider scope, which outlives the screen.
+
+/// Creates, lists and revokes handover delegations for one parcel.
+final handoverDelegationDataSourceProvider =
+    Provider<HandoverDelegationDataSource>(
+      (ref) => HandoverDelegationRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
+
+/// The delegations for one parcel, keyed by tracking number. Never holds a
+/// verification code — see [HandoverDelegationState].
+final StateNotifierProviderFamily<
+  HandoverDelegationNotifier,
+  HandoverDelegationState,
+  String
+>
+handoverDelegationNotifierProvider = StateNotifierProvider.autoDispose
+    .family<HandoverDelegationNotifier, HandoverDelegationState, String>(
+      (ref, trackingNumber) => HandoverDelegationNotifier(
+        dataSource: ref.watch(handoverDelegationDataSourceProvider),
+        trackingNumber: trackingNumber,
+      ),
     );
