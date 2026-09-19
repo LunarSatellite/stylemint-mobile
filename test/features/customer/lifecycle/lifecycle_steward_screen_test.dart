@@ -76,7 +76,7 @@ void main() {
 
     expect(find.text('Love it longer.'), findsOneWidget);
     expect(find.text('Oxford blue shirt'), findsOneWidget);
-    expect(find.text('KEEP & CARE · 700 DAYS EST.'), findsOneWidget);
+    expect(find.text('Keep & care · 700 days est.'), findsOneWidget);
     expect(find.text('Repair'), findsOneWidget);
     expect(find.text('Trade in'), findsOneWidget);
     expect(find.text('Resell'), findsOneWidget);
