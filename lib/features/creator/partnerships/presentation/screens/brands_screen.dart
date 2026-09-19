@@ -21,14 +21,16 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 
 /// Maps a real [BrandListItemDto] into the seed shape [BrandInfoScreen]
 /// expects. Only carries fields the catalog list endpoint actually
-/// returns; description / rating / success rate / category are fetched
-/// on mount via brandDetailProvider + brandTrustProvider.
+/// returns; description and category are fetched on mount via
+/// [brandDetailProvider], and the brand's partnership record via
+/// [brandPartnershipRecordProvider] once the detail resolves the vendor
+/// profile id.
 BrandInfoData _toBrandInfoData(Brand brand) => BrandInfoData(
   name: brand.businessName,
   logoUrl: brand.logoUrl,
   commissionMinPercent: brand.commissionRangeMinPercent,
   commissionMaxPercent: brand.commissionRangeMaxPercent,
-  vendorProfileId: brand.vendorAccountId,
+  vendorAccountId: brand.vendorAccountId,
 );
 
 /// The Brands filter sheet only uses fields already returned by the public

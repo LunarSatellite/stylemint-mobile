@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/partnership_apply_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/widgets/brand_partnership_record_panel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -10,16 +11,16 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 // ── Seed data (passed in from the catalog list) ──────────────────────────────
 
 /// Initial values populated from the brand catalog list
-/// (`GET /v1/brands`). Real description / rating / success rate /
-/// category values are fetched after mount via [brandDetailProvider]
-/// and [brandTrustProvider] and override these seeds once loaded.
+/// (`GET /v1/brands`). The real description, category and commission range
+/// are fetched after mount via [brandDetailProvider] and override these
+/// seeds once loaded.
 class BrandInfoData {
   const BrandInfoData({
     required this.name,
     required this.logoUrl,
     required this.commissionMinPercent,
     required this.commissionMaxPercent,
-    required this.vendorProfileId,
+    required this.vendorAccountId,
   });
 
   final String name;
@@ -27,10 +28,15 @@ class BrandInfoData {
   final double commissionMinPercent;
   final double commissionMaxPercent;
 
-  /// AccountId of the vendor profile — primary key used to fetch
-  /// detail/trust on mount. Empty means the screen was opened without
-  /// a known vendor (and the Apply button stays disabled).
-  final String vendorProfileId;
+  /// The vendor's **account** id — what `GET /v1/brands` returns as
+  /// `accountId` and what the brand detail endpoint is addressed by. It was
+  /// called `vendorProfileId` while holding this, which is how a request
+  /// keyed by profile id came to be sent an account id. The profile id
+  /// arrives with the brand detail, as its `id`.
+  ///
+  /// Empty means the screen was opened without a known vendor, and the
+  /// Apply button stays disabled.
+  final String vendorAccountId;
 
   String get seedCommissionLabel =>
       '${commissionMinPercent.toStringAsFixed(0)}-'
@@ -55,7 +61,7 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -114,6 +120,10 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
               fontWeight: FontWeight.w500,
             ),
             tabs: const [
+              // The record leads: it is the thing a creator is on this
+              // screen to weigh, and it is the only tab whose content is
+              // measured rather than illustrative.
+              Tab(text: 'Partnership Record'),
               Tab(text: 'Top Products'),
               Tab(text: 'Sample Campaigns'),
               Tab(text: 'Partnership Terms'),
@@ -123,10 +133,13 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                _TopProductsTab(),
-                _SampleCampaignsTab(),
-                _PartnershipTermsTab(),
+              children: [
+                BrandPartnershipRecordPanel(
+                  vendorAccountId: widget.data.vendorAccountId,
+                ),
+                const _TopProductsTab(),
+                const _SampleCampaignsTab(),
+                const _PartnershipTermsTab(),
               ],
             ),
           ),
@@ -136,7 +149,7 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
   }
 }
 
-// ── Header (logo + name + rating + commission + description + metrics) ───────
+// ── Header (logo + name + category + commission + description) ───────────────
 
 class _BrandHeader extends ConsumerWidget {
   const _BrandHeader({
@@ -151,7 +164,7 @@ class _BrandHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vendorId = seed.vendorProfileId;
+    final vendorId = seed.vendorAccountId;
 
     // Detail (description, business type, commission range) — fetches
     // when we have a vendor id; stays in loading state until then.
@@ -159,14 +172,7 @@ class _BrandHeader extends ConsumerWidget {
         ? const AsyncValue<BrandDetailDto>.data(_emptyDetail)
         : ref.watch(brandDetailProvider(vendorId));
 
-    // Trust (rating, success rate) — optional. Vendors without a trust
-    // row yet return 404, which we surface as "no rating yet".
-    final trustAsync = vendorId.isEmpty
-        ? const AsyncValue<BrandTrustDto>.data(_emptyTrust)
-        : ref.watch(brandTrustProvider(vendorId));
-
     final detail = detailAsync.asData?.value;
-    final trust = trustAsync.asData?.value;
 
     final name = detail?.businessName.isNotEmpty == true
         ? detail!.businessName
@@ -175,8 +181,6 @@ class _BrandHeader extends ConsumerWidget {
     final category = detail?.businessTypeLabel ?? '';
     final commissionLabel = detail?.commissionRangeLabel ?? seed.seedCommissionLabel;
     final description = detail?.description;
-    final rating = trust == null ? null : trust.score;
-    final successRate = trust == null ? null : trust.partnershipCompletionRatePercent;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -188,7 +192,7 @@ class _BrandHeader extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo + name + rating + commission
+          // Logo + name + category + commission
           Row(
             children: [
               SizedBox(width: 64, height: 64, child: _BrandLogo(name: name, logoUrl: logoUrl)),
@@ -206,40 +210,24 @@ class _BrandHeader extends ConsumerWidget {
                         color: DesignTokens.textWhite,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: DesignTokens.secondaryYellow,
+                    // No star rating. There was one, and it read 0.0 for
+                    // every brand on the platform — see
+                    // `brand_partnership_record_dto.dart`. Nothing on
+                    // StyleMint rates a brand, so nothing here draws a
+                    // rating; the Partnership Record tab carries what is
+                    // actually known.
+                    if (category.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        category,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 13,
+                          color: DesignTokens.textMuted,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          rating == null ? '--' : rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            fontFamily: DesignTokens.fontFamily,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: DesignTokens.textWhite,
-                          ),
-                        ),
-                        if (category.isNotEmpty) ...[
-                          const SizedBox(width: 5),
-                          Flexible(
-                            child: Text(
-                              '· $category',
-                              style: const TextStyle(
-                                fontFamily: DesignTokens.fontFamily,
-                                fontSize: 13,
-                                color: DesignTokens.textMuted,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     _CommissionChip(commissionLabel),
                   ],
@@ -260,6 +248,12 @@ class _BrandHeader extends ConsumerWidget {
             const SizedBox(height: DesignTokens.s12),
           ],
           // Metrics
+          //
+          // "Success Rate with Creators" stood below this and read 0% for
+          // every brand. It is gone, not defaulted: nothing on the platform
+          // records a "completed" partnership outcome, so there is no
+          // success rate to state. What is recorded lives on the
+          // Partnership Record tab, each figure with its denominator.
           _MetricRow(
             iconWidget: Image.asset(
               'assets/images/creatordash/material-symbols_package-2-outline.png',
@@ -269,15 +263,9 @@ class _BrandHeader extends ConsumerWidget {
             ),
             label: 'Avg Order Value',
             // No backend field today; honest placeholder until a brand-level
-            // AOV endpoint exists. The list endpoint, brand detail, and
-            // trust score all return no AOV — don't fabricate one.
+            // AOV endpoint exists. Neither the list endpoint nor brand
+            // detail returns an AOV — don't fabricate one.
             value: '--',
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          _MetricRow(
-            icon: Icons.handshake_outlined,
-            label: 'Success Rate with Creators',
-            value: successRate == null ? '--' : '${successRate.toStringAsFixed(0)}%',
           ),
           const SizedBox(height: DesignTokens.s4),
         ],
@@ -295,18 +283,6 @@ class _BrandHeader extends ConsumerWidget {
     businessType: 0,
     commissionRangeMinPercent: 0,
     commissionRangeMaxPercent: 0,
-  );
-  static const _emptyTrust = BrandTrustDto(
-    vendorAccountId: '',
-    score: 0,
-    tier: 0,
-    totalPartnerships: 0,
-    verifiedByCount: 0,
-    partnershipCompletionRatePercent: 0,
-    paymentReliabilityPercent: 0,
-    communicationResponseRatePercent: 0,
-    briefQualityPercent: 0,
-    creatorSatisfactionPercent: 0,
   );
 }
 
@@ -765,13 +741,27 @@ class _TermsCard extends StatelessWidget {
 
 // ── Apply for Partnership button ──────────────────────────────────────────────
 
-class _ApplyButton extends StatelessWidget {
+class _ApplyButton extends ConsumerWidget {
   const _ApplyButton({required this.seed});
   final BrandInfoData seed;
 
   @override
-  Widget build(BuildContext context) {
-    final canApply = seed.vendorProfileId.isNotEmpty;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountId = seed.vendorAccountId;
+
+    // `POST /v1/creator/partnerships/request` stores whatever id it is
+    // given as the partnership's VendorProfileId, with no lookup — so it
+    // has to be handed the profile id, which the brand detail response
+    // carries as its `id`. Until that lands we still have the account id
+    // the catalog supplied, which is what this screen has always sent.
+    final detail = accountId.isEmpty
+        ? null
+        : ref.watch(brandDetailProvider(accountId)).asData?.value;
+    final vendorProfileId = (detail != null && detail.id.isNotEmpty)
+        ? detail.id
+        : accountId;
+
+    final canApply = vendorProfileId.isNotEmpty;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -787,7 +777,7 @@ class _ApplyButton extends StatelessWidget {
                     RouteNames.partnershipApply
                         .replaceFirst(':partnershipId', _slugify(seed.name)),
                     extra: PartnershipApplyArgs(
-                      vendorProfileId: seed.vendorProfileId,
+                      vendorProfileId: vendorProfileId,
                       vendorName: seed.name,
                       vendorRating: null,
                       vendorCategory: null,
