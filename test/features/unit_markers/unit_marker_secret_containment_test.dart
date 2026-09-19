@@ -102,7 +102,11 @@ void main() {
   test('no marker value is ever logged or sent to a reporter', () {
     final logging = RegExp(
       r'\bprint\(|debugPrint\(|logger\.|Logger\(|Sentry\.|captureMessage'
-      r'|FirebaseCrashlytics|log\(',
+      // \b before log( matters: without it this also matches the tail of
+      // AlertDialog( / showDialog( / SimpleDialog(, and the next person to
+      // add a dialog here would hit a false positive and be tempted to
+      // weaken the whole guard rather than narrow one pattern.
+      r'|FirebaseCrashlytics|\blog\(',
     );
     final offenders = <String>[];
     for (final file in featureFiles) {
