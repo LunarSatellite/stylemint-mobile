@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,10 +10,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
-import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracking_lookup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_recovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
@@ -92,14 +92,15 @@ _MockOrdersRepository _repository() {
 /// `app_router.dart` wires them. The router there needs the whole auth stack
 /// to build, so the wiring itself is checked as text below.
 Widget _app({
-  required String? resolvedOrderNumber,
+  required TrackingLookup lookup,
   required bool atRisk,
 }) => ProviderScope(
   overrides: [
     ordersRepositoryProvider.overrideWithValue(_repository()),
     orderNumberForTrackingProvider.overrideWith(
-      (ref, trackingNumber) async =>
-          trackingNumber == _tracking ? resolvedOrderNumber : null,
+      (ref, trackingNumber) async => trackingNumber == _tracking
+          ? lookup
+          : const TrackingLookupNotFound(),
     ),
     deliveryRiskProvider.overrideWith(
       (ref, tracking) async =>
@@ -183,7 +184,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        _app(resolvedOrderNumber: _orderNumber, atRisk: true),
+        _app(lookup: const TrackingLookupResolved(_orderNumber), atRisk: true),
       );
       await tester.pumpAndSettle();
 
@@ -209,7 +210,9 @@ void main() {
     testWidgets('an unknown tracking number lands on a plain explanation', (
       tester,
     ) async {
-      await tester.pumpWidget(_app(resolvedOrderNumber: null, atRisk: true));
+      await tester.pumpWidget(
+        _app(lookup: const TrackingLookupNotFound(), atRisk: true),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(OrderDetailScreen), findsNothing);
@@ -221,11 +224,26 @@ void main() {
       expect(find.text('Track orders'), findsOneWidget);
     });
 
+    testWidgets('being rate limited is not the same as not found', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(lookup: const TrackingLookupRateLimited(), atRisk: true),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OrderDetailScreen), findsNothing);
+      // The customer is told to come back, not that the parcel is unknown.
+      expect(find.textContaining("couldn't find delivery"), findsNothing);
+      expect(find.textContaining('try again'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
+    });
+
     testWidgets('a delivery that recovered says so instead of going blank', (
       tester,
     ) async {
       await tester.pumpWidget(
-        _app(resolvedOrderNumber: _orderNumber, atRisk: false),
+        _app(lookup: const TrackingLookupResolved(_orderNumber), atRisk: false),
       );
       await tester.pumpAndSettle();
 
@@ -246,50 +264,113 @@ void main() {
       return container;
     }
 
-    _MockOrdersDataSource dataSourceWith({required String? tracking}) {
-      final dataSource = _MockOrdersDataSource();
-      when(() => dataSource.getTrackedOrders(limit: any(named: 'limit')))
-          .thenAnswer(
-            (_) async => [
-              TrackedOrderDto(
-                id: 'order-id',
-                orderNumber: _orderNumber,
-                placedUtc: DateTime.utc(2026, 9, 11),
-                state: 3,
-              ),
-            ],
-          );
-      when(() => dataSource.getOrderDetail(_orderNumber)).thenAnswer(
-        (_) async => OrderDetailDto(
-          id: 'order-id',
-          orderNumber: _orderNumber,
-          placedUtc: DateTime.utc(2026, 9, 11),
-          subOrders: [SubOrderDto(id: 'sub-1', trackingNumber: tracking)],
+    DioException statusError(int code) => DioException(
+      requestOptions: RequestOptions(path: '/v1/orders/by-tracking/$_tracking'),
+      response: Response<dynamic>(
+        requestOptions: RequestOptions(
+          path: '/v1/orders/by-tracking/$_tracking',
         ),
-      );
-      return dataSource;
-    }
+        statusCode: code,
+      ),
+    );
 
-    test('the customer own parcel resolves to its order number', () async {
-      final container = containerWith(dataSourceWith(tracking: _tracking));
+    test('one call answers it, and it is the only call made', () async {
+      final dataSource = _MockOrdersDataSource();
+      when(
+        () => dataSource.resolveOrderNumberByTracking(_tracking),
+      ).thenAnswer((_) async => _orderNumber);
+
+      final lookup = await containerWith(
+        dataSource,
+      ).read(orderNumberForTrackingProvider(_tracking).future);
+
+      expect(lookup, isA<TrackingLookupResolved>());
+      expect((lookup as TrackingLookupResolved).orderNumber, _orderNumber);
+      verify(
+        () => dataSource.resolveOrderNumberByTracking(_tracking),
+      ).called(1);
+      // No orders list, no order detail reads: the fan-out is gone.
+      verifyNoMoreInteractions(dataSource);
+    });
+
+    test('a 404 is the one not-found answer, whatever caused it', () async {
+      // Unknown, someone else's, unreadable: identical response, and the
+      // client must not try to tell them apart.
+      final dataSource = _MockOrdersDataSource();
+      when(
+        () => dataSource.resolveOrderNumberByTracking(_tracking),
+      ).thenThrow(statusError(404));
+
       expect(
-        await container.read(
-          orderNumberForTrackingProvider(_tracking).future,
-        ),
-        _orderNumber,
+        await containerWith(
+          dataSource,
+        ).read(orderNumberForTrackingProvider(_tracking).future),
+        isA<TrackingLookupNotFound>(),
+      );
+      verify(
+        () => dataSource.resolveOrderNumberByTracking(_tracking),
+      ).called(1);
+      verifyNoMoreInteractions(dataSource);
+    });
+
+    test('a 429 is its own answer, not a not-found', () async {
+      final dataSource = _MockOrdersDataSource();
+      when(
+        () => dataSource.resolveOrderNumberByTracking(_tracking),
+      ).thenThrow(statusError(429));
+
+      expect(
+        await containerWith(
+          dataSource,
+        ).read(orderNumberForTrackingProvider(_tracking).future),
+        isA<TrackingLookupRateLimited>(),
       );
     });
 
-    test("someone else's parcel resolves to nothing", () async {
-      // `/v1/orders` is scoped to the caller, so a stranger's tracking
-      // number never appears among their orders.
-      final container = containerWith(dataSourceWith(tracking: 'SM-D-999'));
+    test('a blank tracking number never spends a call', () async {
+      final dataSource = _MockOrdersDataSource();
       expect(
-        await container.read(
-          orderNumberForTrackingProvider(_tracking).future,
-        ),
-        isNull,
+        await containerWith(
+          dataSource,
+        ).read(orderNumberForTrackingProvider('   ').future),
+        isA<TrackingLookupNotFound>(),
       );
+      verifyNever(() => dataSource.resolveOrderNumberByTracking(any()));
+    });
+
+    test('nothing in the client caps how far back the lookup looks', () {
+      final providers = File(
+        'lib/features/customer/orders/shared/providers.dart',
+      ).readAsStringSync();
+
+      expect(
+        providers.contains('resolveOrderNumberByTracking'),
+        isTrue,
+        reason: 'the single-call lookup is what resolves the deep link',
+      );
+      for (final gone in const [
+        'getTrackedOrders',
+        'getOrderDetail',
+        '_trackingLookupDetailBudget',
+      ]) {
+        expect(
+          providers.contains(gone),
+          isFalse,
+          reason: '$gone is part of the deleted client-side scan',
+        );
+      }
+
+      // And it is gone from lib/ entirely, not just moved next door.
+      final strays = Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where(
+            (f) => f.readAsStringSync().contains('_trackingLookupDetailBudget'),
+          )
+          .map((f) => f.path)
+          .toList();
+      expect(strays, isEmpty);
     });
   });
 }
