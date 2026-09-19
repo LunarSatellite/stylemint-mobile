@@ -104,7 +104,7 @@ class DiscoverSuggestionsPanel extends ConsumerWidget {
       for (final product in suggestions.products)
         _SuggestionRow(
           key: ValueKey('suggest-product-${product.id}'),
-          leading: _Thumb(url: product.imageUrl),
+          leading: _Thumb(seed: product.id, monogram: product.name),
           title: product.name,
           subtitle: switch (product.price) {
             final price? => formatMoney(price, decimalDigits: 0),
@@ -351,21 +351,31 @@ class _SuggestionRow extends StatelessWidget {
   }
 }
 
+/// The mark beside a product suggestion.
+///
+/// It used to be the product's photo, which the Mall does not show outside
+/// product detail; it is the tile's own tonal ground now, seeded from the
+/// same product id, so a product wears the same face in the suggestion list
+/// as on the tile the list opens.
 class _Thumb extends StatelessWidget {
-  const _Thumb({required this.url});
+  const _Thumb({required this.seed, this.monogram});
 
-  final String? url;
+  final String seed;
+  final String? monogram;
 
   @override
   Widget build(BuildContext context) {
+    final letter = monogram?.trim();
     return ClipRRect(
       borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
       child: SizedBox(
         width: 40,
         height: 50,
-        child: MallNetworkImage(
-          url: url,
-          placeholder: const MallImagePlaceholder(showMark: false),
+        child: MallTypeGround(
+          seed: seed,
+          monogram: letter == null || letter.isEmpty
+              ? null
+              : letter[0].toUpperCase(),
         ),
       ),
     );

@@ -107,8 +107,12 @@ class MallProductCard extends StatelessWidget {
     final reel = item.reel;
     final reelTap = onReelTap;
     final hasRealReel = reel != null && reelTap != null;
-    final VoidCallback? playTap = hasRealReel ? () => reelTap(reel) : onTap;
-    final playLabel = hasRealReel ? strings.watchReel : 'Open ${item.name}';
+    // A play mark means a reel. It used to be drawn for any card with an
+    // `onTap`, so a product with no video wore a ▶ and, when the buyer
+    // pressed it, opened the product page — an affordance the card could
+    // not honour, and the reason a photo rail could still look video-first.
+    final VoidCallback? playTap = hasRealReel ? () => reelTap(reel) : null;
+    final playLabel = strings.watchReel;
     final playSize = metrics.isCompact
         ? DesignTokens.minTouchTarget
         : DesignTokens.s48;

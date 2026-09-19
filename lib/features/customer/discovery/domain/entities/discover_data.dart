@@ -30,6 +30,12 @@ class DiscoverCategory {
 }
 
 /// A product in the "Trending Now" list.
+///
+/// It used to carry `soldToday`, which no endpoint ever populated — it was
+/// always the DTO's default of 0 — while the card it fed rendered
+/// "N sold today" behind a flame whenever it was non-zero. The field is gone
+/// rather than left as a loaded gun; a units-sold figure comes back only
+/// when the contract really carries one.
 class TrendingProduct {
   const TrendingProduct({
     required this.id,
@@ -37,15 +43,16 @@ class TrendingProduct {
     required this.imageUrl,
     required this.price,
     required this.rating,
-    required this.soldToday,
   });
 
   final String id;
   final String name;
   final String imageUrl;
   final Money price;
+
+  /// 0 when the catalogue has no rating for this product. Surfaces must
+  /// check before drawing a star: 0 means "unknown", not "one star".
   final double rating;
-  final int soldToday;
 }
 
 /// A creator in the "Top Creators" list.

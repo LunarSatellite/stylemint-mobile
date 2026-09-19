@@ -15,7 +15,8 @@ class DiscoverCreatorCard extends ConsumerStatefulWidget {
   final DiscoverCreator creator;
 
   @override
-  ConsumerState<DiscoverCreatorCard> createState() => _DiscoverCreatorCardState();
+  ConsumerState<DiscoverCreatorCard> createState() =>
+      _DiscoverCreatorCardState();
 }
 
 class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
@@ -70,17 +71,15 @@ class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
               CircleAvatar(
                 radius: DesignTokens.avatarMedium / 2,
                 backgroundColor: DesignTokens.bgAppBodyLight,
-                backgroundImage:
-                    c.avatarUrl.isNotEmpty
-                        ? CachedNetworkImageProvider(c.avatarUrl)
-                        : null,
-                child:
-                    c.avatarUrl.isEmpty
-                        ? const Icon(
-                          Icons.person,
-                          color: DesignTokens.iconLight,
-                        )
-                        : null,
+                backgroundImage: c.avatarUrl.isNotEmpty
+                    ? CachedNetworkImageProvider(c.avatarUrl)
+                    : null,
+                child: c.avatarUrl.isEmpty
+                    ? const Icon(
+                        Icons.person,
+                        color: DesignTokens.iconLight,
+                      )
+                    : null,
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
@@ -128,19 +127,26 @@ class _DiscoverCreatorCardState extends ConsumerState<DiscoverCreatorCard> {
           const SizedBox(height: DesignTokens.s12),
           Row(
             children: [
-              const Icon(
-                Icons.star_rounded,
-                size: DesignTokens.iconSmall,
-                color: DesignTokens.secondaryYellow,
-              ),
-              const SizedBox(width: DesignTokens.s4),
-              Text(
-                '${c.rating.toStringAsFixed(1)} Stars',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textWhite,
+              // Neither Discover's top-creators call nor search returns a
+              // creator rating, so `rating` is 0 for everyone. Drawing it
+              // anyway put "0.0 Stars" under every creator on the page —
+              // the worst score on the screen, claimed about all of them.
+              // A rating appears only once the contract carries one.
+              if (c.rating > 0) ...[
+                const Icon(
+                  Icons.star_rounded,
+                  size: DesignTokens.iconSmall,
+                  color: DesignTokens.secondaryYellow,
                 ),
-              ),
-              const SizedBox(width: DesignTokens.s16),
+                const SizedBox(width: DesignTokens.s4),
+                Text(
+                  c.rating.toStringAsFixed(1),
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s16),
+              ],
               const Icon(
                 Icons.person_outline_rounded,
                 size: DesignTokens.iconSmall,
@@ -177,10 +183,9 @@ class _FollowButton extends StatelessWidget {
           vertical: DesignTokens.s6,
         ),
         decoration: BoxDecoration(
-          color:
-              isFollowing
-                  ? DesignTokens.textWhite
-                  : DesignTokens.bgAppBodyLight,
+          color: isFollowing
+              ? DesignTokens.textWhite
+              : DesignTokens.bgAppBodyLight,
           borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
         ),
         child: Text(

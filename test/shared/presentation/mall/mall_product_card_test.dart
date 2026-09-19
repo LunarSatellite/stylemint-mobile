@@ -226,7 +226,7 @@ void main() {
     expect(productTaps, 1);
     semantics.dispose();
   });
-  testWidgets('every product image keeps a centered play control', (
+  testWidgets('a product with no reel is given no play control', (
     tester,
   ) async {
     var productTaps = 0;
@@ -245,10 +245,14 @@ void main() {
       ),
     );
 
-    final play = find.byKey(MallProductCard.playKey);
-    expect(play, findsOneWidget);
-    expect(find.bySemanticsLabel('Open Canvas tote'), findsOneWidget);
-    await tester.tap(play);
+    // This used to draw the mark on every card and spell it "Open Canvas
+    // tote": a play triangle on a product with no video, which the card
+    // answered by opening the product page. A play mark now means a reel.
+    expect(find.byKey(MallProductCard.playKey), findsNothing);
+    expect(find.byType(MallPlayMark), findsNothing);
+    expect(find.bySemanticsLabel('Open Canvas tote'), findsNothing);
+
+    await tester.tap(find.byType(MallProductCard));
     expect(productTaps, 1);
     expect(reelTaps, 0);
   });

@@ -80,7 +80,6 @@ import 'package:stylemint_mobile_frontend/features/customer/missions/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/outcome_contracts/presentation/outcome_contracts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/lifecycle/presentation/lifecycle_steward_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/agent_negotiations/presentation/agent_negotiations_screen.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
@@ -726,8 +725,13 @@ GoRouter appRouter(Ref ref) {
       // Trending products
       GoRoute(
         path: RouteNames.searchTrending,
-        builder: (ctx, state) =>
-            const ProductListScreen(title: 'Trending Products'),
+        // One product listing serves the whole Mall. Trending is that
+        // listing sorted by the server's bestselling order — there is no
+        // second list screen with its own cards, empty state and signals.
+        builder: (ctx, state) => const ProductListingScreen(
+          query: ProductListingQuery(sort: ProductSort.bestselling),
+          title: 'Trending',
+        ),
       ),
 
       // Mission-Based Shopping — the one-shot public planner.
@@ -782,11 +786,16 @@ GoRouter appRouter(Ref ref) {
       // Category products
       GoRoute(
         path: RouteNames.searchCategory,
+        // Same listing again, filtered to the category, so a category page
+        // has the filter sheet, the sort chips, paging and the Mall's tiles
+        // instead of a private photo list.
         builder: (ctx, state) {
           final label = state.uri.queryParameters['label'] ?? 'Products';
-          return ProductListScreen(
-            title: '$label Products',
-            categoryId: state.pathParameters['categoryId']!,
+          return ProductListingScreen(
+            query: ProductListingQuery(
+              categoryId: state.pathParameters['categoryId']!,
+            ),
+            title: label,
           );
         },
       ),

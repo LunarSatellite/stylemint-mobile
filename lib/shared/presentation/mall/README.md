@@ -25,6 +25,7 @@ localise, wrap the page in a `MallStringsScope`.
 | `MallReelTile` | 4:5 reel poster with the play affordance, the reel's length, its hook and — whenever flagged — the **AI-generated** disclosure, which wraps and is never truncated. Brand, name and price sit underneath. Tapping opens the reel. Holds the screen's single play slot when it is the most visible reel, and its play mark then fills with brand green. | `MallProductVm`, `MallReelRef`, `onTap?`, `onSaveTap?` |
 | `MallTypeTile` | The no-photo tile for the majority of the catalogue: a tonal ground picked deterministically from the product id, the brand as a tracked eyebrow, the name set large in Instrument Serif, a hairline and the price. Same footprint as `MallReelTile`, so a row mixes the two. | `MallProductVm`, `onTap?`, `onSaveTap?` |
 | `MallReelPlaySlot` / `MallReelPlaySlotController` | Grants one tile on screen the single play slot — the most visible one, over half in view. Never grants one under `MediaQuery.disableAnimations`. Nothing plays inline in the Mall today (see below); the slot decides which tile is "the one on screen". | `id`, `builder(context, holdsSlot)` |
+| `MallResultRow` | **The Mall's product row.** The list-shaped sibling of `MallProductTile`, for the browse surfaces that answer in a column rather than a grid: search results, a ranked edit, a category list. Same directive — the tile's `MallTypeGround` seeded from the product id, the reel's play mark where there is a reel, never a photo. No fixed height: a row is read in a list, so it grows with the text scale instead of reserving slots. Optional `rank` for a ranked edit, `footer` for a caller's disclosure or note, `trailing` for a real control. | `MallProductVm`, `onTap?`, `rank?`, `signal?`, `footer?`, `trailing?`, `semanticExtras` |
 | `MallProductCard` | 4:5 **photo** with badges (discount, New, Low stock), rating and a save heart. Reel-backed products gain a centered play mark and an independent 44dp `Watch reel` action while the rest of the card still opens product details. For detail-adjacent and discovery surfaces; the Mall itself uses `MallProductTile`. | `MallProductVm`, `onTap?`, `onReelTap?`, `onSaveTap?` |
 | `MallProductGrid` / `MallSliverProductGrid` | Responsive grid: 2 columns under 600dp, 3 from 600dp, 4 from 900dp of available width. Box and sliver versions. | `List<MallProductVm>`, `onProductTap?`, `onSaveTap?`, `isLoading`, `emptyState?` |
 | `MallReelCard` | 9:16 poster with a play mark, creator, tagged-product count and like count. Always shows the **AI-generated** label when flagged; the label wraps and is never truncated. | `MallReelVm`, `onTap?`, `onTaggedProductsTap?` (makes the product pill its own 44dp button) |
@@ -101,6 +102,27 @@ surfaces inherit the same guarantees.
 The tone is deliberately quieter than the Mall home. Someone asking "where is my order" wants the
 answer in under a second: no hero, no Ken Burns, no countdown. One state, one promise, one figure.
 
+## Browse and discovery
+
+The kit's second pass over a journey, after post-purchase. It added one
+component — `MallResultRow` — because the journey answers in lists as often
+as in grids and four screens had each built that row privately, with their
+own photo, their own text styles and their own discount pill.
+
+Everything else the journey needed already existed and was simply not being
+used: `MallEmptyState` and `MallErrorState` on the search tabs,
+`MallCountdown` for a flash sale that used to be formatted once at build and
+then sat still, `MallTypeGround` wherever a product photo had leaked out of
+product detail.
+
+The honesty rules bit hardest here. A rating of `0` means *unknown*, not
+*one star*, and three surfaces were drawing it as a star anyway: the product
+details badge row, the discover creator card and the trending list. A figure
+is drawn only when a field the API populated says so — and, on this journey,
+only after checking that the endpoint behind that field measures anything at
+all. See the note on `_UrgencyBanner` in `product_detail_screen.dart` for the
+one that did not.
+
 ## Zones
 
 The Mall page is one system worn four ways. Zones differ in **density and dress, never in
@@ -154,6 +176,16 @@ The Mall shows reels, never product photos (owner directive, 2026-09-16). Every 
 home (all zones), the product listing and its filter results, the brand storefront including Shop
 All, and the creator storefront — builds `MallProductTile`. `MallProductCard` and its photo stay
 for the product details page and the rails that belong to it.
+
+The browse journey follows the same rule in list form. Search results, the
+Discover feed's list layout, a look's numbered pieces on a collection page
+and the products tagged on a reel are all `MallResultRow`; the search
+suggestion panel draws `MallTypeGround` beside a product instead of its
+photo. The Mall home's rails once took a `photoCards` flag that every call
+site set to true — the flag is gone, not defaulted, so the home cannot
+quietly become a photo grid again.
+`test/features/customer/discovery/product_photo_guard_test.dart` reads the
+tree and fails on a new photo anywhere in the journey.
 
 **One reel plays at a time, and today none plays inline.** Mall tiles are posters that open the
 reel on tap, because a rail tile is 148–184 dp wide and YouTube's Required Minimum Functionality

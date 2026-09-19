@@ -103,7 +103,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   Future<void> _startVisualSearch() async {
     final source = await showModalBottomSheet<_VisualSource>(
       context: context,
-      backgroundColor: const Color(0xFF181C19),
+      backgroundColor: DesignTokens.surfaceRaised,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -353,7 +353,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                               : _startVisualSearch,
                           style: IconButton.styleFrom(
                             minimumSize: const Size(48, 48),
-                            backgroundColor: const Color(0x2432D477),
+                            backgroundColor: DesignTokens.primaryGreen
+                                .withValues(alpha: 0.14),
                             foregroundColor: DesignTokens.primaryGreen,
                           ),
                           icon: _visualSearching
@@ -468,11 +469,16 @@ class _Header extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0x2632D477)),
+          border: Border.all(
+            color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
+          ),
           gradient: const LinearGradient(
             begin: AlignmentDirectional.topStart,
             end: AlignmentDirectional.bottomEnd,
-            colors: [Color(0xFF242A26), Color(0xFF111412)],
+            colors: [
+              DesignTokens.surfaceRaised,
+              DesignTokens.bgAppFoundation,
+            ],
           ),
           boxShadow: DesignTokens.shadowCard,
         ),
@@ -503,7 +509,9 @@ class _Header extends StatelessWidget {
                       button: true,
                       label: 'Shop by mission',
                       child: Material(
-                        color: const Color(0x1F32D477),
+                        color: DesignTokens.primaryGreen.withValues(
+                          alpha: 0.12,
+                        ),
                         borderRadius: BorderRadius.circular(999),
                         child: InkWell(
                           key: const ValueKey('discover-mission'),
@@ -590,10 +598,13 @@ class _DiscoveryOrb extends StatelessWidget {
     return Container(
       width: 126,
       height: 126,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [Color(0x4032D477), Color(0x0032D477)],
+          colors: [
+            DesignTokens.primaryGreen.withValues(alpha: 0.25),
+            DesignTokens.primaryGreen.withValues(alpha: 0),
+          ],
         ),
       ),
     );
@@ -612,7 +623,7 @@ class _PhotoSourceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: const Color(0x1832D477),
+    color: DesignTokens.primaryGreen.withValues(alpha: 0.09),
     borderRadius: BorderRadius.circular(18),
     child: InkWell(
       onTap: onTap,

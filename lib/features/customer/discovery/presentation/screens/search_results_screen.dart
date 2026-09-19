@@ -8,10 +8,17 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/sponsored_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
-// ─── SEARCH RESULTS SCREEN ────────────────────────────────────────────────────
+/// Results for one query, split by what was found.
+///
+/// The products tab is `MallResultRow`, so a product looks the same here as
+/// it does in a Mall rail: the typographic ground, never a photo. Empty and
+/// failed states are the kit's, so "nothing found" reads as a decision
+/// rather than as a page that failed to paint.
 class SearchResultsScreen extends ConsumerStatefulWidget {
   const SearchResultsScreen({
     super.key,
@@ -59,6 +66,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
             Icons.arrow_back_ios_new_rounded,
             color: DesignTokens.textWhite,
           ),
+          tooltip: 'Back',
           onPressed: () => context.popOrHome(),
         ),
         title: const Text(
@@ -69,13 +77,15 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
       ),
       body: async.when(
         loading: () => const SmPageLoader(),
-        error: (_, _) => Center(
-          child: Text(
-            'Could not load search results.',
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
+        error: (_, _) => MallErrorState(
+          icon: Icons.search_off_rounded,
+          title: "We couldn't run that search",
+          body: 'Check your connection and try again.',
+          onRetry: widget.initialResults == null
+              ? () => ref.invalidate(
+                  customerSearchResultsProvider(widget.query),
+                )
+              : null,
         ),
         data: (results) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,23 +169,23 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
 }
 
 // ─── EMPTY STATE ──────────────────────────────────────────────────────────────
-class _EmptyTabMessage extends StatelessWidget {
-  const _EmptyTabMessage(this.text);
-  final String text;
+
+/// One empty state for all four tabs, so "no reels" and "no brands" are the
+/// same object with a different word rather than four different messages.
+class _EmptyTab extends StatelessWidget {
+  const _EmptyTab({
+    required this.title,
+    required this.body,
+    required this.icon,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: DesignTokens.smallRegular.copyWith(
-          color: DesignTokens.textMuted,
-        ),
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      MallEmptyState(icon: icon, title: title, body: body);
 }
 
 // ─── PRODUCTS TAB ─────────────────────────────────────────────────────────────
@@ -185,11 +195,17 @@ class _ProductsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (products.isEmpty) return const _EmptyTabMessage('No products found.');
+    if (products.isEmpty) {
+      return const _EmptyTab(
+        icon: Icons.search_off_rounded,
+        title: 'No products found',
+        body: 'Try a shorter phrase, or search for a brand instead.',
+      );
+    }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: products.length,
-      separatorBuilder: (_, _i) => Divider(
+      separatorBuilder: (_, _i) => const Divider(
         height: 1,
         thickness: 1,
         color: DesignTokens.borderDefault,
@@ -199,126 +215,59 @@ class _ProductsTab extends StatelessWidget {
   }
 }
 
+/// A search hit, in the Mall's own row.
+///
+/// The rating is drawn only when the catalogue really carries one: a product
+/// with no reviews used to render "0.0 Stars", which reads as the worst
+/// rating on the page rather than as no rating at all.
 class _ProductResultTile extends StatelessWidget {
   const _ProductResultTile({required this.product});
 
   final SearchResultProduct product;
 
+  MallProductVm get _vm => MallProductVm(
+    id: product.productId,
+    name: product.name,
+    price: Money(amount: product.price, currency: product.currency),
+    rating: product.averageRating > 0 ? product.averageRating : null,
+  );
+
   @override
   Widget build(BuildContext context) {
     final disclosure = product.sponsoredDisclosure;
-    // One spoken label for the whole result, disclosure first. The visible
-    // texts are excluded so they aren't read twice; the badge's info control
-    // stays a separate button.
-    return Semantics(
+    final reason = product.matchReason;
+    return KeyedSubtree(
       key: ValueKey('search-product-${product.productId}'),
-      container: true,
-      button: true,
-      label: searchProductSemanticsLabel(product),
-      child: InkWell(
+      child: MallResultRow(
+        product: _vm,
         onTap: () => context.push(
           RouteNames.productDetail.replaceFirst(
             ':productId',
             product.productId,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: product.heroImageUrl.isNotEmpty
-                      ? Image.network(
-                          product.heroImageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const ColoredBox(
-                            color: DesignTokens.bgAppBodyLight,
-                            child: Icon(
-                              Icons.image_not_supported_outlined,
-                              color: DesignTokens.iconLight,
-                              size: 22,
-                            ),
-                          ),
-                        )
-                      : const ColoredBox(
-                          color: DesignTokens.bgAppBodyLight,
-                          child: Icon(
-                            Icons.image_not_supported_outlined,
-                            color: DesignTokens.iconLight,
-                            size: 22,
-                          ),
+        // The disclosure is spoken first, before the product: a buyer hears
+        // that a result is paid for before they hear what it sells.
+        semanticPrefix: disclosure,
+        semanticExtras: [?reason],
+        footer: (disclosure == null && reason == null)
+            ? null
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (reason != null)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 13,
+                          color: DesignTokens.primaryGreen,
                         ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ExcludeSemantics(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.mediumSemibold.copyWith(
-                              color: DesignTokens.textWhite,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                '${product.currency} '
-                                '${product.price.toStringAsFixed(0)}',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textLight,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              if (product.averageRating > 0) ...[
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.star_rounded,
-                                  size: 14,
-                                  color: DesignTokens.secondaryYellow,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${product.averageRating.toStringAsFixed(1)}'
-                                  ' Stars',
-                                  style: DesignTokens.smallRegular.copyWith(
-                                    color: DesignTokens.textMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (product.matchReason case final reason?) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 13,
-                            color: DesignTokens.primaryGreen,
-                          ),
-                          const SizedBox(width: 5),
-                          Expanded(
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: ExcludeSemantics(
                             child: Text(
                               reason,
                               maxLines: 2,
@@ -330,34 +279,20 @@ class _ProductResultTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                    if (disclosure != null) ...[
-                      const SizedBox(height: 2),
-                      SponsoredBadge(
-                        label: disclosure,
-                        onInfo: () => showSponsoredInfoSheet(
-                          context,
-                          label: disclosure,
-                          organicPosition: product.organicPosition,
                         ),
+                      ],
+                    ),
+                  if (disclosure != null)
+                    SponsoredBadge(
+                      label: disclosure,
+                      onInfo: () => showSponsoredInfoSheet(
+                        context,
+                        label: disclosure,
+                        organicPosition: product.organicPosition,
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                ],
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 8, top: 4),
-                child: Icon(
-                  Icons.shopping_cart_outlined,
-                  color: DesignTokens.textMuted,
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -381,7 +316,13 @@ class _CreatorsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (creators.isEmpty) return const _EmptyTabMessage('No creators found.');
+    if (creators.isEmpty) {
+      return const _EmptyTab(
+        icon: Icons.person_search_rounded,
+        title: 'No creators found',
+        body: 'Search a handle, or browse the creators on Discover.',
+      );
+    }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: creators.length,
@@ -396,6 +337,8 @@ class _CreatorsTab extends StatelessWidget {
             avatarUrl: c.avatarUrl ?? '',
             category: '',
             description: '',
+            // Search carries no creator rating. Zero here means "unknown",
+            // and the card draws nothing rather than "0.0 Stars".
             rating: 0,
             followers: c.followerCount,
             isFollowing: false,
@@ -413,7 +356,13 @@ class _ReelsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (reels.isEmpty) return const _EmptyTabMessage('No reels found.');
+    if (reels.isEmpty) {
+      return const _EmptyTab(
+        icon: Icons.videocam_off_rounded,
+        title: 'No reels found',
+        body: 'Try a different phrase, or watch what is trending on Reels.',
+      );
+    }
     return GridView.builder(
       padding: const EdgeInsets.all(2),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -435,45 +384,56 @@ class _ReelThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push(
-        RouteNames.reelDetail.replaceFirst(':reelId', reel.reelId),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          reel.thumbnailUrl.isNotEmpty
-              ? Image.network(
-                  reel.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _e, _s) =>
-                      const ColoredBox(color: DesignTokens.bgAppBodyLight),
-                )
-              : const ColoredBox(color: DesignTokens.bgAppBodyLight),
-          Positioned(
-            bottom: 8,
-            left: 8,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.remove_red_eye_outlined,
-                  size: 14,
-                  color: Colors.white70,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatCount(reel.viewCount),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                  ),
-                ),
-              ],
+    final views = reel.viewCount > 0 ? _formatCount(reel.viewCount) : null;
+    return Semantics(
+      button: true,
+      label: [
+        'Reel',
+        if (views != null) '$views views',
+      ].join(', '),
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () => context.push(
+          RouteNames.reelDetail.replaceFirst(':reelId', reel.reelId),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            reel.thumbnailUrl.isNotEmpty
+                ? MallNetworkImage(url: reel.thumbnailUrl)
+                : MallTypeGround(seed: reel.reelId),
+            const DecoratedBox(
+              decoration: BoxDecoration(gradient: DesignTokens.imageScrim),
             ),
-          ),
-        ],
+            const Center(child: MallPlayMark()),
+            // Views are drawn only when the search really returned a count.
+            if (views != null)
+              PositionedDirectional(
+                bottom: 8,
+                start: 8,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.remove_red_eye_outlined,
+                      size: 14,
+                      color: DesignTokens.textLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      views,
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: mallTabularFigures,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -492,11 +452,17 @@ class _BrandsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (brands.isEmpty) return const _EmptyTabMessage('No brands found.');
+    if (brands.isEmpty) {
+      return const _EmptyTab(
+        icon: Icons.storefront_outlined,
+        title: 'No brands found',
+        body: 'Search a brand name, or open a brand from a product page.',
+      );
+    }
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: brands.length,
-      separatorBuilder: (_, _i) => Divider(
+      separatorBuilder: (_, _i) => const Divider(
         height: 1,
         thickness: 1,
         color: DesignTokens.borderDefault,
@@ -516,81 +482,99 @@ class _BrandResultTile extends StatelessWidget {
     final initial = brand.name.trim().isEmpty
         ? '?'
         : brand.name.trim()[0].toUpperCase();
+    final rated = brand.averageRating > 0;
+    final products = brand.productCount > 0
+        ? (brand.productCount == 1
+              ? '1 product'
+              : '${brand.productCount} products')
+        : null;
+    final canOpen = brand.brandId.isNotEmpty;
+    final logo = brand.logoUrl;
     // Opens the brand's storefront (brandId is the vendor account id).
-    return InkWell(
-      onTap: brand.brandId.isEmpty
-          ? null
-          : () => context.push(
-              RouteNames.brandStorefront.replaceFirst(
-                ':vendorAccountId',
-                Uri.encodeComponent(brand.brandId),
+    return Semantics(
+      button: canOpen,
+      label: [
+        brand.name,
+        if (rated) 'Rated ${brand.averageRating.toStringAsFixed(1)} out of 5',
+        ?products,
+      ].join('. '),
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: canOpen
+            ? () => context.push(
+                RouteNames.brandStorefront.replaceFirst(
+                  ':vendorAccountId',
+                  Uri.encodeComponent(brand.brandId),
+                ),
+              )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            children: [
+              ClipOval(
+                child: SizedBox(
+                  width: 52,
+                  height: 52,
+                  child: logo != null && logo.isNotEmpty
+                      ? MallNetworkImage(url: logo)
+                      : _BrandInitial(initial),
+                ),
               ),
-            ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Row(
-          children: [
-            ClipOval(
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: (brand.logoUrl?.isNotEmpty ?? false)
-                    ? Image.network(
-                        brand.logoUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _e, _s) => _BrandInitial(initial),
-                      )
-                    : _BrandInitial(initial),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    brand.name,
-                    style: DesignTokens.mediumSemibold.copyWith(
-                      color: DesignTokens.textWhite,
-                      fontSize: 15,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      brand.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                        fontSize: 15,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  if (brand.averageRating > 0)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 14,
-                          color: DesignTokens.secondaryYellow,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${brand.averageRating.toStringAsFixed(1)} Stars',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                            fontSize: 12,
+                    const SizedBox(height: 3),
+                    if (rated)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 14,
+                            color: DesignTokens.secondaryYellow,
                           ),
+                          const SizedBox(width: 3),
+                          Text(
+                            brand.averageRating.toStringAsFixed(1),
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.textMuted,
+                              fontSize: 12,
+                              fontFeatures: mallTabularFigures,
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (products != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        products,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontSize: 12,
+                          fontFeatures: mallTabularFigures,
                         ),
-                      ],
-                    ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${brand.productCount} Products',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: const Color(0xFF4FC3F7),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: DesignTokens.iconLight,
-            ),
-          ],
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DesignTokens.iconLight,
+              ),
+            ],
+          ),
         ),
       ),
     );

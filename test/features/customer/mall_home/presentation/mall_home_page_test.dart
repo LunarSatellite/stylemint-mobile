@@ -115,13 +115,24 @@ void main() {
       );
     });
 
-    testWidgets('keeps promo imagery and image-led play cards', (tester) async {
+    testWidgets('keeps promo imagery, and the rails stay video-first', (
+      tester,
+    ) async {
       await _pump(tester, height: 6000);
 
+      // The deal plate's own promo artwork is the block's, not a product's.
       final deal = tester.widget<MallDealBand>(find.byType(MallDealBand));
       expect(deal.backgroundImageUrl, 'https://example.com/deal-promo.jpg');
-      expect(find.byType(MallProductCard), findsWidgets);
-      expect(find.byKey(MallProductCard.playKey), findsWidgets);
+      // Every rail builds the tile. This used to assert the opposite: a
+      // commit a day after the 2026-09-16 directive put `photoCards: true`
+      // on all three rails and this test was changed to match, which is how
+      // catalogue photos came back to the Mall home.
+      expect(find.byType(MallProductCard), findsNothing);
+      expect(find.byType(MallProductTile), findsWidgets);
+      // The home fixture's products carry no reel of their own, so every
+      // rail tile is the typographic one — which is the point: a product
+      // with no video gets a designed tile, not somebody's photograph.
+      expect(find.byType(MallTypeTile), findsWidgets);
       expect(find.byKey(MallSpotlightKeys.play), findsOneWidget);
     });
     testWidgets('labels AI reels, and only AI reels', (tester) async {

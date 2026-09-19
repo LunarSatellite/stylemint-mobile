@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_option_chooser.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_option_choosers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/delivery_estimate_line.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_badges_row.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
@@ -32,6 +33,7 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/features/customer/reviews/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -320,16 +322,18 @@ class _ProductBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: DesignTokens.s12),
-                    _BadgesRow(product: product),
+                    ProductBadgesRow(product: product),
                     const SizedBox(height: DesignTokens.s12),
                     _NamePriceRow(product: product),
                     DeliveryEstimateLine(
                       delivery: product.delivery,
                       padding: const EdgeInsets.only(top: DesignTokens.s8),
                     ),
-                    const SizedBox(height: DesignTokens.s12),
-                    _UrgencyBanner(productId: product.id),
-                    const SizedBox(height: DesignTokens.s12),
+                    // The urgency banner used to sit here. It is not drawn
+                    // any more, and this is not a styling decision — see the
+                    // note on `_UrgencyBanner` below. The block comes back
+                    // when the endpoint returns measurements instead of
+                    // random numbers.
                     GroupBuyBanner(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _ExpandableBlock(
@@ -426,160 +430,32 @@ void _shareProduct(ProductDetail product) {
   );
 }
 
-// ── Urgency banner ──────────────────────────────────────────────────────────
+// ── Urgency banner (not built — see below) ──────────────────────
 
-/// Shows a low-stock / high-activity nudge from the PDP urgency-signals
-/// endpoint. Renders nothing while loading, on error, or when neither
-/// signal is meaningfully urgent — this is a passive upsell, never a
-/// blocking or error-surfacing element.
-class _UrgencyBanner extends ConsumerWidget {
-  const _UrgencyBanner({required this.productId});
-
-  final String productId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final urgency = ref.watch(productUrgencyProvider(productId)).asData?.value;
-    if (urgency == null) return const SizedBox.shrink();
-
-    final parts = <String>[];
-    if (urgency.stockRemaining > 0 && urgency.stockRemaining <= 10) {
-      parts.add('Only ${urgency.stockRemaining} left');
-    }
-    if (urgency.cartAddsLast10Min >= 3) {
-      parts.add('${urgency.cartAddsLast10Min} people added to cart recently');
-    }
-    if (parts.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s12,
-        vertical: DesignTokens.s8,
-      ),
-      decoration: BoxDecoration(
-        color: DesignTokens.colorError.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(DesignTokens.s8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.local_fire_department,
-            size: 16,
-            color: DesignTokens.colorError,
-          ),
-          const SizedBox(width: DesignTokens.s8),
-          Flexible(
-            child: Text(
-              parts.join(' · '),
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.colorError,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Badges ────────────────────────────────────────────────────────────────────
-
-class _BadgesRow extends StatelessWidget {
-  const _BadgesRow({required this.product});
-
-  final ProductDetail product;
-
-  @override
-  Widget build(BuildContext context) {
-    final discountPct =
-        product.compareAtPrice != null && product.compareAtPrice!.amount > 0
-        ? ((1 - product.price.amount / product.compareAtPrice!.amount) * 100)
-              .round()
-        : null;
-
-    return Wrap(
-      spacing: DesignTokens.s8,
-      runSpacing: DesignTokens.s6,
-      children: [
-        _Badge(
-          icon: Icons.star_rounded,
-          iconColor: DesignTokens.secondaryYellow,
-          label: '${product.rating.toStringAsFixed(1)} Stars',
-        ),
-        // Only when an enabled delivery option really is free.
-        if (product.delivery?.hasFreeDelivery ?? false)
-          const _Badge(
-            icon: Icons.local_shipping_outlined,
-            iconColor: DesignTokens.primaryGreen,
-            label: 'Free Delivery',
-          ),
-        if (discountPct != null && discountPct > 0)
-          _Badge(
-            icon: Icons.sell_outlined,
-            iconColor: DesignTokens.primaryGreen,
-            label: '$discountPct% Off',
-          ),
-        if (product.flashSaleEndsAt != null)
-          _Badge(
-            icon: Icons.bolt_rounded,
-            iconColor: DesignTokens.colorError,
-            label:
-                'Flash Sale · ends ${_formatCountdown(product.flashSaleEndsAt!)}',
-          ),
-      ],
-    );
-  }
-
-  static String _formatCountdown(DateTime endsAt) {
-    final remaining = endsAt.difference(DateTime.now());
-    if (remaining.isNegative) return 'soon';
-    if (remaining.inHours >= 1) return 'in ${remaining.inHours}h';
-    if (remaining.inMinutes >= 1) return 'in ${remaining.inMinutes}m';
-    return 'now';
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s8,
-        vertical: DesignTokens.s4,
-      ),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
-        border: Border.all(color: DesignTokens.borderDefault),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: iconColor),
-          const SizedBox(width: DesignTokens.s4),
-          Text(
-            label,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// DO NOT RESTORE THIS BLOCK WITHOUT FIXING THE ENDPOINT FIRST.
+//
+// `_UrgencyBanner` drew "Only 7 left · 5 people added to cart recently"
+// from `GET /api/v1/customer/discover/products/{id}/urgency`. That endpoint
+// does not measure anything. In lead360,
+// StyleMint.Modules.Discovery/Service/SocialProofService/SocialProofService.cs
+// returns
+//
+//     var stockRemaining = _rng.Next(0, 100);
+//     var cartAdds10Min  = _rng.Next(0, 15);
+//
+// so the figure a buyer read as scarcity was a fresh random number on every
+// load, and it changed if they pulled to refresh. `viewersRightNow` is the
+// one real field (a Redis counter) and the banner never showed it.
+//
+// The same service backs `GetSocialProofAsync`, which invents purchases,
+// review counts and average ratings the same way — anything wired to it
+// needs the same check.
+//
+// A restyle cannot fix this, so the banner is removed rather than made
+// prettier. Bring it back as a `MallSignalLine` with `MallSignalTone.urgent`
+// once the endpoint reports a measured stock level; the product contract's
+// `isLowStock` boolean ("Only a few left", never a number) is the honest
+// stand-in until then.
 
 // ── Name + Price ──────────────────────────────────────────────────────────────
 
