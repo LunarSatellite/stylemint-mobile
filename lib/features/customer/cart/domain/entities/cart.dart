@@ -12,9 +12,15 @@ class BasketOptimization {
     required this.insights,
     this.savingsTip,
     this.findings = const [],
+    this.narrativeDisclosure,
   });
 
+  /// LLM-written observations. The one part of this type that can state
+  /// something no record supports, so it is never rendered on its own — see
+  /// [canRenderNarrative].
   final List<String> insights;
+
+  /// The LLM-written tip. Same provenance as [insights].
   final String? savingsTip;
 
   /// Evidence-backed findings, each carrying the records it rests on. Empty
@@ -22,8 +28,28 @@ class BasketOptimization {
   /// all, not an empty state.
   final List<BasketFinding> findings;
 
-  bool get hasContent =>
-      insights.isNotEmpty || (savingsTip?.isNotEmpty ?? false);
+  /// Fixed backend copy marking [insights]/[savingsTip] as not evidence.
+  ///
+  /// Non-null *only* when the narrative actually carries text; null in the
+  /// default configuration, where `CartCheckout:BasketNarrative:Enabled` is
+  /// off and there is no narrative to mark. Rendered verbatim — it is a fact
+  /// about the system, not text this client may reword.
+  final String? narrativeDisclosure;
+
+  /// Whether the LLM narrative carries any text at all.
+  bool get hasNarrativeText =>
+      insights.any((i) => i.trim().isNotEmpty) ||
+      (savingsTip?.trim().isNotEmpty ?? false);
+
+  /// Whether the narrative may be shown.
+  ///
+  /// Only when its disclosure came with it. Narrative text without a
+  /// disclosure is dropped: an unmarked ungrounded claim sitting beside
+  /// sourced findings is worse than a missing one.
+  bool get canRenderNarrative =>
+      hasNarrativeText && (narrativeDisclosure?.trim().isNotEmpty ?? false);
+
+  bool get hasContent => canRenderNarrative;
 }
 
 class CartItem {
