@@ -36,6 +36,22 @@ class MemoryVaultRemoteDataSource {
     headers: {'requiresToken': true, 'Idempotency-Key': const Uuid().v4()},
   );
 
+  /// Just the consent flag from `GET /me`, without pulling the memories.
+  ///
+  /// The Memory Vault's pause switch is the customer's one control over
+  /// being remembered, so anything that personalises what they are shown
+  /// reads it from here rather than inventing a second setting. No companion
+  /// yet (404) means nothing has been remembered and nothing is paused.
+  Future<bool> isMemoryPaused() async {
+    try {
+      final me = await apiClient.get('$_base/me') as Map<String, dynamic>;
+      return me['memoryPaused'] as bool? ?? false;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return false;
+      rethrow;
+    }
+  }
+
   Future<MemoryVault> load() async {
     final bool paused;
     try {

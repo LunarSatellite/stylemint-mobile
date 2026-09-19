@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/notifiers/reels_feed_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reels_pager.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
@@ -24,6 +26,17 @@ class ReelsFeedScreen extends ConsumerStatefulWidget {
 
 class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
   final ReelsPagerController _pager = ReelsPagerController();
+
+  /// Held rather than read on demand: the pager reports the last reel's
+  /// dwell while the screen is being disposed, and a provider cannot be
+  /// looked up from a deactivated element.
+  late final FeedSignalRecorder _signals;
+
+  @override
+  void initState() {
+    super.initState();
+    _signals = ref.read(feedSignalRecorderProvider);
+  }
 
   @override
   void dispose() {
@@ -63,6 +76,9 @@ class _ReelsFeedScreenState extends ConsumerState<ReelsFeedScreen> {
             onNearEnd: () => unawaited(
               ref.read(reelsFeedNotifierProvider.notifier).fetchNextPage(),
             ),
+            // One signal per reel the viewer leaves, and only when the dwell
+            // actually says something.
+            onReelDwell: (reel, dwell) => _signals.reelDwell(reel.id, dwell),
           );
         },
         loadFailure: (failure) {

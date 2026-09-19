@@ -96,6 +96,8 @@ class ReelsPager extends StatefulWidget {
     required this.controller,
     required this.reels,
     this.onNearEnd,
+    this.onReelDwell,
+    this.clock = DateTime.now,
     super.key,
   });
 
@@ -114,6 +116,15 @@ class ReelsPager extends StatefulWidget {
   /// dead-ends with nothing new to swipe to.
   final VoidCallback? onNearEnd;
 
+  /// How long the viewer stayed on a reel, reported once, when they leave it
+  /// (or when the pager goes away under them). This is the only thing the
+  /// pager says about attention: it fires per reel, not per frame, and the
+  /// caller decides what a given dwell means.
+  final void Function(Reel reel, Duration dwell)? onReelDwell;
+
+  /// The clock behind [onReelDwell]; tests pin it.
+  final DateTime Function() clock;
+
   @override
   State<ReelsPager> createState() => _ReelsPagerState();
 }
@@ -121,6 +132,10 @@ class ReelsPager extends StatefulWidget {
 class _ReelsPagerState extends State<ReelsPager> {
   List<Reel> _reels = const [];
   Map<String, int> _embedIndex = const {};
+
+  /// When the reel now on screen arrived.
+  DateTime? _dwellSince;
+  int _dwellIndex = 0;
 
   ReelsPagerController get _controller => widget.controller;
   EmbedPlayerPool get _embedPool => widget.controller.embedPool;
@@ -130,6 +145,8 @@ class _ReelsPagerState extends State<ReelsPager> {
     super.initState();
     _controller._pager = this;
     _adoptReels(widget.reels);
+    _dwellIndex = _controller._currentIndex;
+    _dwellSince = widget.clock();
   }
 
   @override
@@ -152,11 +169,31 @@ class _ReelsPagerState extends State<ReelsPager> {
 
   @override
   void dispose() {
+    // Leaving the feed ends the current reel's watch as surely as swiping
+    // does; without this, the reel someone actually sat through is the one
+    // that never counts.
+    _reportDwell(_dwellIndex);
     if (identical(_controller._pager, this)) _controller._pager = null;
     super.dispose();
   }
 
+  /// Reports how long [index] was on screen, then starts the next reel's
+  /// clock. Reporting twice for the same visit is not possible: the start
+  /// time is cleared as it is read.
+  void _reportDwell(int index, {int? next}) {
+    final since = _dwellSince;
+    _dwellSince = null;
+    if (since != null && index >= 0 && index < _reels.length) {
+      widget.onReelDwell?.call(_reels[index], widget.clock().difference(since));
+    }
+    if (next != null) {
+      _dwellIndex = next;
+      _dwellSince = widget.clock();
+    }
+  }
+
   void _backToStart() {
+    if (_dwellIndex != 0) _reportDwell(_dwellIndex, next: 0);
     if (_controller._currentIndex != 0 || _controller._settledIndex != 0) {
       setState(() {
         _controller
@@ -268,6 +305,9 @@ class _ReelsPagerState extends State<ReelsPager> {
               // view. (Inactive reels stay paused; only the active one plays.)
               allowImplicitScrolling: true,
               onPageChanged: (index) {
+                if (index != _dwellIndex) {
+                  _reportDwell(_dwellIndex, next: index);
+                }
                 setState(() => _controller._currentIndex = index);
                 // Page in more reels before the viewer actually hits the end —
                 // otherwise the pager dead-ends and further swipes have

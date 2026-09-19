@@ -4,20 +4,26 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/datasources/adaptive_storefront_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/datasources/mall_catalog_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/datasources/mall_home_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/repositories/adaptive_storefront_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/repositories/mall_catalog_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/data/repositories/mall_home_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/adaptive_storefront_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_catalog_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_home_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/home_mode.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/collection_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/mall_home_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/product_listing_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/reel_products_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/recently_viewed_recorder.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 
 final mallHomeRemoteDataSourceProvider = Provider<MallHomeRemoteDataSource>(
   (ref) => MallHomeRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
@@ -43,10 +49,43 @@ final mallCatalogRepositoryProvider = Provider<MallCatalogRepository>(
   ),
 );
 
+final adaptiveStorefrontRemoteDataSourceProvider =
+    Provider<AdaptiveStorefrontRemoteDataSource>(
+      (ref) => AdaptiveStorefrontRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
+
+final adaptiveStorefrontRepositoryProvider =
+    Provider<AdaptiveStorefrontRepository>(
+      (ref) => AdaptiveStorefrontRepositoryImpl(
+        remoteDataSource: ref.watch(adaptiveStorefrontRemoteDataSourceProvider),
+      ),
+    );
+
+/// Signed in, and not paused in the Memory Vault. Everything adaptive — the
+/// layout and the signals both — asks this first.
+final storefrontPersonalizerProvider = Provider<StorefrontPersonalizer>(
+  (ref) => StorefrontPersonalizer(
+    storefront: ref.watch(adaptiveStorefrontRepositoryProvider),
+    vault: ref.watch(memoryVaultRepositoryProvider),
+    isSignedIn: () => ref.read(mallViewerSignedInProvider),
+  ),
+);
+
+/// Sends the interaction signals the adaptive storefront is built from. Kept
+/// for the session so a signal is not re-sent every time a screen rebuilds.
+final feedSignalRecorderProvider = Provider<FeedSignalRecorder>(
+  (ref) => FeedSignalRecorder(ref.watch(storefrontPersonalizerProvider)),
+);
+
 /// The Mall home page; kept for the session so returning to Home is instant.
 final mallHomeNotifierProvider =
     StateNotifierProvider<MallHomeNotifier, MallHomeState>(
-      (ref) => MallHomeNotifier(ref.watch(mallHomeRepositoryProvider)),
+      (ref) => MallHomeNotifier(
+        ref.watch(mallHomeRepositoryProvider),
+        personalizer: ref.watch(storefrontPersonalizerProvider),
+      ),
     );
 
 /// `/products` — one listing per initial query, disposed with its screen.

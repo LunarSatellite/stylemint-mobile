@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_home_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/adaptive_layout.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
 
 part 'mall_home_notifier.freezed.dart';
 
@@ -24,12 +27,37 @@ abstract class MallHomeState with _$MallHomeState {
 
 /// The Mall home page. [refresh] keeps the current page on screen while it
 /// refetches; only a first load shows skeletons.
+///
+/// The page is always the one `GET api/v1/public/home` returned. When the
+/// adaptive storefront has something to say about this customer, its ranking
+/// is applied to that page before it is shown; when it does not — a guest,
+/// paused personalisation, a failed or empty response — the page is shown
+/// unchanged, which is the whole of the fallback. The two calls run together
+/// and the layout never delays the page: a slow or dead personalisation call
+/// costs the Mall nothing.
 class MallHomeNotifier extends StateNotifier<MallHomeState> {
-  MallHomeNotifier(this._repository) : super(const MallHomeState.initial()) {
+  MallHomeNotifier(this._repository, {StorefrontPersonalizer? personalizer})
+    : _personalizer = personalizer,
+      super(const MallHomeState.initial()) {
     unawaited(load());
   }
 
   final MallHomeRepository _repository;
+  final StorefrontPersonalizer? _personalizer;
+
+  /// Home, with the adaptive ranking applied when there is one.
+  Future<Either<NetworkExceptions, MallHome>> _adaptiveHome() async {
+    final personalizer = _personalizer;
+    if (personalizer == null) return _repository.getHome();
+    // Started together so personalisation adds no latency of its own.
+    final layoutFuture = personalizer.layout();
+    final homeResult = await _repository.getHome();
+    final layout = await layoutFuture;
+    return homeResult.map((home) => applyStorefrontLayout(home, layout));
+  }
+
+  /// The session changed, so the consent answer may have too.
+  void forgetConsent() => _personalizer?.forgetConsent();
 
   /// Only the newest request may settle the state.
   int _request = 0;
@@ -37,7 +65,7 @@ class MallHomeNotifier extends StateNotifier<MallHomeState> {
   Future<void> load() async {
     final request = ++_request;
     state = const MallHomeState.loadInProgress();
-    final result = await _repository.getHome();
+    final result = await _adaptiveHome();
     if (!mounted || request != _request) return;
     state = result.fold(MallHomeState.loadFailure, MallHomeState.loadSuccess);
   }
@@ -50,7 +78,7 @@ class MallHomeNotifier extends StateNotifier<MallHomeState> {
       return mounted && state.homeOrNull != null;
     }
     final request = ++_request;
-    final result = await _repository.getHome();
+    final result = await _adaptiveHome();
     if (!mounted || request != _request) return false;
     return result.fold((_) => false, (home) {
       state = MallHomeState.loadSuccess(home);
