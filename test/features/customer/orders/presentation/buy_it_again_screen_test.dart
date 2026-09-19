@@ -76,6 +76,12 @@ const _suggestions = [
   ),
 ];
 
+/// The same suggestions as they arrive once the backend drops the score.
+/// Nothing on the screen reads it, so every row must render identically.
+final List<ReorderSuggestionDto> _withoutConfidence = [
+  for (final s in _suggestions) s.copyWith(confidence: null),
+];
+
 /// Every run of digits in the fixture's *displayable* fields, plus the digits
 /// of each price as the app formats it. Confidence is deliberately left out:
 /// it is a model internal, and a screen that printed it would fail this.
@@ -244,6 +250,72 @@ void main() {
         find.bySemanticsLabel(RegExp('Restock estimate.*Aloe Face Wash')),
         findsOneWidget,
       );
+      expect(find.bySemanticsLabel('Back'), findsOneWidget);
+      handle.dispose();
+    });
+
+    for (final width in [320.0, 390.0]) {
+      for (final scale in [1.0, 1.3]) {
+        testWidgets('lays out at ${width}dp and text scale $scale', (
+          tester,
+        ) async {
+          setPhoneView(tester, width: width);
+          await tester.pumpWidget(_app(orders, cart, textScale: scale));
+          await tester.pumpAndSettle();
+          expectNoLayoutErrors(tester);
+        });
+      }
+    }
+  });
+
+  // The score is being retired from this payload. The backend can only drop
+  // it once a client with no confidence figure is in the field, so these run
+  // the whole screen against suggestions that never carried one.
+  group('a payload with no confidence at all', () {
+    setUp(() {
+      when(orders.getReorderSuggestions).thenAnswer(
+        (_) async => right(_withoutConfidence),
+      );
+    });
+
+    testWidgets('still renders every row, in the server words', (tester) async {
+      setPhoneView(tester);
+      await tester.pumpWidget(_app(orders, cart));
+      await tester.pumpAndSettle();
+
+      for (final suggestion in _withoutConfidence) {
+        expect(find.text(suggestion.productName), findsOneWidget);
+        expect(find.text(suggestion.reason), findsOneWidget);
+      }
+    });
+
+    testWidgets('substitutes no figure where the score used to be', (
+      tester,
+    ) async {
+      setPhoneView(tester);
+      await tester.pumpWidget(_app(orders, cart));
+      await tester.pumpAndSettle();
+
+      // An absent score stays absent. A zero, a dash or a "0%" here would be
+      // an invented figure standing in for one the server never sent.
+      expect(find.textContaining('%'), findsNothing);
+      for (final text in _renderedText(tester)) {
+        expect(
+          text.contains('onfidence'),
+          isFalse,
+          reason: 'confidence named on screen in "$text"',
+        );
+      }
+    });
+
+    testWidgets('every control still carries a screen-reader label', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      setPhoneView(tester);
+      await tester.pumpWidget(_app(orders, cart));
+      await tester.pumpAndSettle();
+
       expect(find.bySemanticsLabel('Back'), findsOneWidget);
       handle.dispose();
     });

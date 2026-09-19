@@ -7,12 +7,10 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
-import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_home_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/collection_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/mall_home_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/product_listing_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/notifiers/reel_products_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/recently_viewed_recorder.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/repositories/reels_repository.dart';
 
@@ -28,17 +26,6 @@ class _FakeReelsRepository implements ReelsRepository {
   @override
   Future<Either<NetworkExceptions, Reel>> getReelDetail(String reelId) async =>
       detail;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _ThrowingHomeRepository implements MallHomeRepository {
-  const _ThrowingHomeRepository();
-
-  @override
-  Future<Either<NetworkExceptions, Unit>> recordRecentlyViewed(String id) =>
-      Future.error(StateError('boom'));
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -259,19 +246,8 @@ void main() {
     });
   });
 
-  group('RecentlyViewedRecorder', () {
-    test('posts the product and ignores blanks', () async {
-      final repo = FakeMallHomeRepository([right(sampleHome())]);
-      RecentlyViewedRecorder(repo)
-        ..record('p-1')
-        ..record('  ');
-      await pumpEventQueue();
-      expect(repo.recorded, ['p-1']);
-    });
-
-    test('never surfaces an error', () async {
-      const RecentlyViewedRecorder(_ThrowingHomeRepository()).record('p-1');
-      await pumpEventQueue();
-    });
-  });
+  // RecentlyViewedRecorder is covered in recently_viewed_recorder_test.dart.
+  // It now takes a consent gate as well as a repository, and the cases that
+  // matter most are the ones where the write must not happen at all, so its
+  // tests live beside the other memory-purpose fakes.
 }

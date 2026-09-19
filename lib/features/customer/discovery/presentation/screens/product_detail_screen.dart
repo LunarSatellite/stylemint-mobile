@@ -71,8 +71,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     });
   }
 
-  /// Home's "Recently viewed" rail: one fire-and-forget post per open, for
-  /// signed-in viewers only. Never blocks the page or shows an error.
+  /// Home's "Recently viewed" rail and the adaptive feed: one fire-and-forget
+  /// post per open. Never blocks the page or shows an error.
+  ///
+  /// Both recorders gate themselves on the storefront-personalisation purpose
+  /// — the global pause, a refused or undecided decision and an unreadable
+  /// one all stop the write before the network is touched. The sign-in check
+  /// below is only a cheap short-circuit; it is not the consent gate.
   void _recordRecentlyViewed() {
     if (!mounted) return;
     try {
