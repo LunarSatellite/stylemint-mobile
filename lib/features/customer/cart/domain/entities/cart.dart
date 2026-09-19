@@ -1,14 +1,29 @@
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_finding.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// AI-generated, cart-grounded observations — backend
 /// `BasketOptimizationSummary`.
+///
+/// [findings] is additive: [insights] and [savingsTip] keep their existing
+/// meaning and shape, and a backend that sends no `findings` key simply yields
+/// an empty list.
 class BasketOptimization {
-  const BasketOptimization({required this.insights, this.savingsTip});
+  const BasketOptimization({
+    required this.insights,
+    this.savingsTip,
+    this.findings = const [],
+  });
 
   final List<String> insights;
   final String? savingsTip;
 
-  bool get hasContent => insights.isNotEmpty || (savingsTip?.isNotEmpty ?? false);
+  /// Evidence-backed findings, each carrying the records it rests on. Empty
+  /// when the basket genuinely has nothing to say — which renders nothing at
+  /// all, not an empty state.
+  final List<BasketFinding> findings;
+
+  bool get hasContent =>
+      insights.isNotEmpty || (savingsTip?.isNotEmpty ?? false);
 }
 
 class CartItem {
@@ -84,17 +99,17 @@ class CartItem {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        productId,
-        productName,
-        productImageUrl,
-        variantName,
-        quantity,
-        unitPrice,
-        isInStock,
-        creatorHandle,
-        commissionRate,
-      );
+    id,
+    productId,
+    productName,
+    productImageUrl,
+    variantName,
+    quantity,
+    unitPrice,
+    isInStock,
+    creatorHandle,
+    commissionRate,
+  );
 }
 
 class Cart {
@@ -166,15 +181,15 @@ class Cart {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        Object.hashAll(items),
-        subtotal,
-        shippingTotal,
-        taxTotal,
-        total,
-        discount,
-        supportedCreatorsCount,
-      );
+    id,
+    Object.hashAll(items),
+    subtotal,
+    shippingTotal,
+    taxTotal,
+    total,
+    discount,
+    supportedCreatorsCount,
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;
