@@ -270,12 +270,12 @@ class _ReplenishmentConsentCard extends StatelessWidget {
       DesignTokens.s16,
     ),
     child: DecoratedBox(
+      // The Mall separates layers with tone and shadow, not with a border
+      // and a bespoke two-stop green.
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF173326), Color(0xFF101D17)],
-        ),
-        border: Border.all(color: const Color(0xFF28543C)),
+        color: DesignTokens.primaryGreenDark,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        boxShadow: DesignTokens.shadowCard,
       ),
       child: Padding(
         padding: const EdgeInsets.all(DesignTokens.s16),

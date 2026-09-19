@@ -23,6 +23,10 @@ import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/cancelled_order_views.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_pill.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -302,18 +306,24 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _CancelledSummaryCard(order: order),
+          CancelledOrderSummary(order: order),
           const SizedBox(height: DesignTokens.s16),
-          _CancInfoCard(order: order),
+          CancellationDetailsCard(
+            order: order,
+            cancelledAt: order.placedAt.add(const Duration(days: 1)),
+          ),
           const SizedBox(height: DesignTokens.s16),
           OrderTrackingSection(
             orderNumber: order.orderNumber,
             fallback: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _CancelledTimeline3(),
+                const CancelledTrackingStepper(),
                 const SizedBox(height: DesignTokens.s16),
-                _OrderHistoryTimeline(order: order),
+                CancelledOrderHistory(
+                  order: order,
+                  cancelledAt: order.placedAt.add(const Duration(days: 1)),
+                ),
               ],
             ),
           ),
@@ -356,23 +366,37 @@ class _TrackSummaryCard extends StatelessWidget {
       order.estimatedDelivery,
     );
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        vertical: DesignTokens.s16,
-        horizontal: DesignTokens.s12,
-      ),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final delivered = order.status == OrderTrackStatus.delivered;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // The state first, in the display face. Everything the card used to
+        // lead with - the order number, the date, the total - is paperwork;
+        // it is still here, just below the answer to the question the buyer
+        // actually opened this screen with.
+        MallStatusSummary(
+          eyebrow: 'Order #${order.orderNumber}',
+          title: order.status.label,
+          tone: OrderStatusPill.mallToneFor(
+            OrderStatusBadge.toneFor(order.status),
+          ),
+          icon: OrderStatusBadge.iconFor(order.status),
+          detail: delivered
+              ? 'Delivered on $expected'
+              : 'Estimated delivery $expected',
+          footnote: 'Placed $placed',
+        ),
+        const SizedBox(height: DesignTokens.s12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(DesignTokens.s12),
+          decoration: DesignTokens.cardDecoration(),
+          child: Row(
             children: [
               SvgPicture.asset(
                 'assets/icons/OrderImage.svg',
-                width: 64,
-                height: 64,
+                width: 48,
+                height: 48,
               ),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
@@ -380,122 +404,61 @@ class _TrackSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Order #${order.orderNumber}',
+                      formatMoney(order.total),
                       style: DesignTokens.mediumSemibold.copyWith(
                         color: DesignTokens.textWhite,
+                        fontFeatures: mallTabularFigures,
                       ),
                     ),
-                    const SizedBox(height: DesignTokens.s4),
-                    Row(
-                      children: [
-                        // The price is short and fixed-width; give the date
-                        // (the longer, more important string) the flexible
-                        // slot instead of splitting the row 50/50, which
-                        // truncated it down to a few characters.
-                        Flexible(
-                          child: Text(
-                            'Placed on $placed',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.smallRegular.copyWith(
-                              color: DesignTokens.textLight,
-                            ),
-                          ),
+                    if (order.trackingNumber != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tracking ID ${order.trackingNumber}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                          fontFeatures: mallTabularFigures,
                         ),
-                        const _Dot(),
-                        Text(
-                          formatMoney(order.total),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textLight,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: onToggle,
-                behavior: HitTestBehavior.opaque,
-                child: Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.chevron_right_rounded,
-                  size: 16,
-                  color: DesignTokens.iconLight,
+              const SizedBox(width: DesignTokens.s8),
+              Semantics(
+                button: true,
+                label: expanded ? 'Hide order details' : 'Show order details',
+                child: GestureDetector(
+                  onTap: onToggle,
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox.square(
+                    dimension: DesignTokens.minTouchTarget,
+                    child: Icon(
+                      expanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.chevron_right_rounded,
+                      size: 20,
+                      color: DesignTokens.iconLight,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: DesignTokens.s12),
-          // Backend-provided estimated-delivery date.
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: DesignTokens.s8,
-              vertical: DesignTokens.s4,
-            ),
-            decoration: BoxDecoration(
-              color: DesignTokens.tagInfoFill,
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.local_shipping_outlined,
-                  size: 12,
-                  color: DesignTokens.tagInfoText,
-                ),
-                const SizedBox(width: DesignTokens.s4),
-                Text(
-                  'Estimated delivery: $expected',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: DesignTokens.tagInfoText,
-                    fontWeight: FontWeight.w600,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (order.trackingNumber != null) ...[
-            const SizedBox(height: DesignTokens.s8),
-            Text(
-              'Tracking ID: ${order.trackingNumber}',
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 1.5,
-                color: Color(0xFF00BCFF),
-              ),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _Dot extends StatelessWidget {
-  const _Dot();
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 3,
-    height: 3,
-    margin: const EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-    decoration: const BoxDecoration(
-      color: Color(0xFF71717B),
-      shape: BoxShape.circle,
-    ),
-  );
-}
+// ── Tracking timeline ──────────────────────────────────────
 
-// ── Tracking timeline ─────────────────────────────────────────────────────────
-enum _StageState { completed, ongoing, remaining }
-
+/// The derived four-stage view, shown only when the backend timeline is not
+/// available. It used to draw its own marks, its own dashed rule and its own
+/// two shades of green; it is now the kit's stepper, so a stage that has not
+/// happened is a hollow ring behind a dashed rail rather than a very slightly
+/// darker square - readable with the colour taken away.
 class _TrackingTimeline extends StatelessWidget {
   const _TrackingTimeline({required this.status});
 
@@ -503,8 +466,8 @@ class _TrackingTimeline extends StatelessWidget {
 
   static const _stages = [
     'Shipped',
-    'In Transit',
-    'Out for\nDelivery',
+    'In transit',
+    'Out for delivery',
     'Delivered',
   ];
 
@@ -522,45 +485,13 @@ class _TrackingTimeline extends StatelessWidget {
     OrderTrackStatus.cancelled => -1,
   };
 
-  _StageState _stateFor(int i) {
-    if (i < _current) return _StageState.completed;
-    if (i == _current) return _StageState.ongoing;
-    return _StageState.remaining;
-  }
-
-  static Widget _iconForStage(int index, Color color) {
-    switch (index) {
-      case 0:
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 20, color: color),
-            Positioned(
-              bottom: -5,
-              right: -7,
-              child: Icon(Icons.back_hand_outlined, size: 13, color: color),
-            ),
-          ],
-        );
-      case 1:
-        return Icon(Icons.local_shipping_outlined, size: 26, color: color);
-      case 2:
-        return Icon(Icons.airport_shuttle_rounded, size: 26, color: color);
-      case 3:
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.local_shipping_outlined, size: 20, color: color),
-            Positioned(
-              bottom: -5,
-              right: -7,
-              child: Icon(Icons.check_circle, size: 13, color: color),
-            ),
-          ],
-        );
-      default:
-        return Icon(Icons.circle_outlined, size: 26, color: color);
-    }
+  MallStepState _stateFor(int i) {
+    // A cancelled order is not merely "not there yet": say the stages will
+    // not happen rather than leaving four hopeful hollow rings on screen.
+    if (status == OrderTrackStatus.cancelled) return MallStepState.skipped;
+    if (i < _current) return MallStepState.done;
+    if (i == _current) return MallStepState.current;
+    return MallStepState.upcoming;
   }
 
   @override
@@ -574,30 +505,15 @@ class _TrackingTimeline extends StatelessWidget {
         children: [
           Text('Tracking Timeline', style: DesignTokens.sectionInnerTitle),
           const SizedBox(height: DesignTokens.s16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < _stages.length; i++) ...[
-                _StageIndicator(
-                  index: i,
+          MallStatusStepper(
+            semanticLabel: 'Tracking timeline',
+            steps: [
+              for (var i = 0; i < _stages.length; i++)
+                MallTimelineStep(
+                  title: _stages[i],
                   state: _stateFor(i),
-                  label: _stages[i],
+                  markKey: ValueKey('delivery-stage-icon-$i'),
                 ),
-                if (i < _stages.length - 1)
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: Center(
-                        child: LayoutBuilder(
-                          builder: (_, c) => CustomPaint(
-                            size: Size(c.maxWidth, 1.5),
-                            painter: _DottedLinePainter(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
             ],
           ),
         ],
@@ -892,8 +808,10 @@ class _DeliveryStoryTimeline extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF052E16),
-                      borderRadius: BorderRadius.circular(10),
+                      color: DesignTokens.primaryGreenDark,
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusMedium,
+                      ),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
@@ -952,20 +870,18 @@ class _DeliveryStoryLoading extends StatelessWidget {
     label: 'Loading live delivery tracking',
     child: Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s24),
+      padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
+      // A spinner says only "wait". The skeleton has the shape of the
+      // updates that are about to land, so the wait is legible.
       child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(
-              color: DesignTokens.primaryGreen,
-              strokeWidth: 3,
-            ),
-          ),
+          SmSkeleton.line(width: 160, height: 16),
+          SizedBox(height: DesignTokens.s16),
+          _StorySkeletonRow(),
           SizedBox(height: DesignTokens.s12),
-          Text('Loading live delivery tracking…'),
+          _StorySkeletonRow(),
         ],
       ),
     ),
@@ -983,778 +899,45 @@ class _DeliveryStoryError extends StatelessWidget {
     label: 'Live tracking is temporarily unavailable',
     child: Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s16),
       decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.cloud_off_outlined,
-            color: DesignTokens.textMuted,
-            size: 32,
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          Text(
-            'Live tracking is temporarily unavailable.',
-            textAlign: TextAlign.center,
-            style: DesignTokens.oneLinerSemibold,
-          ),
-          const SizedBox(height: DesignTokens.s4),
-          Text(
-            'Your order details are safe. Try loading the delivery journey again.',
-            textAlign: TextAlign.center,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s12),
-          SizedBox(
-            height: 48,
-            child: OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry live tracking'),
-            ),
-          ),
-        ],
+      child: MallErrorState(
+        title: 'Live tracking is paused',
+        body:
+            'Your order and its details are safe — we just could not reach '
+            'the courier feed.',
+        retryLabel: 'Retry live tracking',
+        onRetry: onRetry,
       ),
     ),
   );
 }
 
-class _StageIndicator extends StatelessWidget {
-  const _StageIndicator({
-    required this.index,
-    required this.state,
-    required this.label,
-  });
-
-  final int index;
-  final _StageState state;
-  final String label;
+/// The shape of one incoming delivery update.
+class _StorySkeletonRow extends StatelessWidget {
+  const _StorySkeletonRow();
 
   @override
-  Widget build(BuildContext context) {
-    final Color bg = switch (state) {
-      _StageState.completed => const Color(0xFF052E16),
-      _StageState.ongoing => const Color(0xFF052E16),
-      _StageState.remaining => DesignTokens.inputFieldFill,
-    };
-    return SizedBox(
-      width: 72,
-      child: Column(
-        children: [
-          Container(
-            key: ValueKey('delivery-stage-icon-$index'),
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: _TrackingTimeline._iconForStage(
-              index,
-              DesignTokens.primaryGreen,
-            ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 14,
-            child: state == _StageState.completed
-                ? const Icon(
-                    Icons.check_circle_rounded,
-                    size: 14,
-                    color: DesignTokens.primaryGreen,
-                  )
-                : null,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              height: 1.2,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) => const Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SmSkeleton.box(
+        width: 36,
+        height: 36,
+        radius: DesignTokens.radiusMedium,
       ),
-    );
-  }
-}
-
-class _DottedLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = DesignTokens.borderDefault
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    const dashWidth = 4.0;
-    const dashSpace = 4.0;
-    double x = 0;
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + dashWidth, 0), paint);
-      x += dashWidth + dashSpace;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// ── Cancelled: summary card ───────────────────────────────────────────────────
-class _CancelledSummaryCard extends StatelessWidget {
-  const _CancelledSummaryCard({required this.order});
-  final OrderDetail order;
-
-  @override
-  Widget build(BuildContext context) {
-    final placed =
-        'Placed on ${DateFormat('HH:mm MMM d, yyyy').format(order.placedAt)}';
-    final total = formatMoney(order.total);
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SvgPicture.asset(
-                'assets/icons/OrderImage.svg',
-                width: 64,
-                height: 64,
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Order #${order.orderNumber}',
-                      style: DesignTokens.mediumSemibold.copyWith(
-                        color: DesignTokens.textWhite,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$placed · $total',
-                      style: DesignTokens.smallRegular.copyWith(
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3D1111),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Text(
-                        'Cancelled',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFFF6B6B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (order.trackingNumber != null) ...[
-            const SizedBox(height: DesignTokens.s12),
-            Text(
-              'Tracking ID: ${order.trackingNumber}',
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                height: 1.5,
-                color: Color(0xFF00BCFF),
-              ),
-            ),
+      SizedBox(width: DesignTokens.s12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SmSkeleton.line(width: 180, height: 13),
+            SizedBox(height: DesignTokens.s6),
+            SmSkeleton.line(width: 120, height: 11),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-// ── Cancelled: cancellation details card ──────────────────────────────────────
-class _CancInfoCard extends StatelessWidget {
-  const _CancInfoCard({required this.order});
-  final OrderDetail order;
-
-  @override
-  Widget build(BuildContext context) {
-    final cancelledOn = DateFormat(
-      'HH:mm MMM d, yyyy',
-    ).format(order.placedAt.add(const Duration(days: 1)));
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s4,
-      ),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Cancellation Details', style: DesignTokens.mediumSemibold),
-          const SizedBox(height: DesignTokens.s12),
-          _CancInfoRow(
-            icon: Icons.calendar_today_outlined,
-            label: 'Canceled On',
-            value: cancelledOn,
-          ),
-          _CancInfoRow(
-            icon: Icons.credit_card_outlined,
-            label: 'Refund Method',
-            value: order.paymentMethod,
-          ),
-          _CancInfoRow(
-            icon: Icons.receipt_outlined,
-            label: 'Amount',
-            value: formatMoney(order.total),
-          ),
-          const _CancInfoRow(
-            icon: Icons.mail_outline,
-            label: 'Confirmation',
-            value: 'Check your email',
-          ),
-          const _CancInfoRow(
-            icon: Icons.label_outline,
-            label: 'Refund Status',
-            badge: 'Pending',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CancInfoRow extends StatelessWidget {
-  const _CancInfoRow({
-    required this.icon,
-    required this.label,
-    this.value,
-    this.badge,
-  });
-
-  final IconData icon;
-  final String label;
-  final String? value;
-  final String? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 14, color: DesignTokens.textMuted),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textMuted,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (value != null)
-            Text(
-              value!,
-              textAlign: TextAlign.end,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textLight,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          if (badge != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0A1F38),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                badge!,
-                style: const TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF4FC3F7),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Cancelled: 3-step horizontal timeline ────────────────────────────────────
-class _CancelledTimeline3 extends StatelessWidget {
-  const _CancelledTimeline3();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Tracking Timeline', style: DesignTokens.sectionInnerTitle),
-          const SizedBox(height: DesignTokens.s16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _CancelledStep3(
-                index: 0,
-                label: 'Shipped',
-                isCompleted: true,
-              ),
-              _dotConnector(),
-              const _CancelledStep3(
-                index: 1,
-                label: 'In Transit',
-                isCompleted: true,
-              ),
-              _dotConnector(),
-              const _CancelledStep3(
-                index: 2,
-                label: 'Order\nCancelled',
-                isCompleted: false,
-                isCancelled: true,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _dotConnector() => Expanded(
-    child: SizedBox(
-      height: 48,
-      child: Center(
-        child: LayoutBuilder(
-          builder: (_, c) => CustomPaint(
-            size: Size(c.maxWidth, 1.5),
-            painter: _CancelDotPainter(),
-          ),
         ),
       ),
-    ),
+    ],
   );
-}
-
-class _CancelledStep3 extends StatelessWidget {
-  const _CancelledStep3({
-    required this.index,
-    required this.label,
-    required this.isCompleted,
-    this.isCancelled = false,
-  });
-
-  final int index;
-  final String label;
-  final bool isCompleted;
-  final bool isCancelled;
-
-  static Widget _iconFor(int index, Color color) {
-    switch (index) {
-      case 0:
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 20, color: color),
-            Positioned(
-              bottom: -5,
-              right: -7,
-              child: Icon(Icons.back_hand_outlined, size: 13, color: color),
-            ),
-          ],
-        );
-      case 1:
-        return Icon(Icons.local_shipping_outlined, size: 26, color: color);
-      default:
-        return Icon(Icons.cancel_outlined, size: 26, color: color);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color bg = isCancelled
-        ? const Color(0xFF3D1111)
-        : const Color(0xFF052E16);
-    final Color fg = isCancelled
-        ? const Color(0xFFFF6B6B)
-        : DesignTokens.primaryGreen;
-    return SizedBox(
-      width: 72,
-      child: Column(
-        children: [
-          Container(
-            key: ValueKey('delivery-stage-icon-$index'),
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            alignment: Alignment.center,
-            child: _iconFor(index, fg),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 14,
-            child: isCompleted
-                ? const Icon(
-                    Icons.check_circle_rounded,
-                    size: 14,
-                    color: DesignTokens.primaryGreen,
-                  )
-                : null,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              height: 1.2,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Cancelled: vertical order history timeline ────────────────────────────────
-class _OrderHistoryTimeline extends StatelessWidget {
-  const _OrderHistoryTimeline({required this.order});
-  final OrderDetail order;
-
-  List<_OrderEvt> _buildEvents() {
-    final fmt = DateFormat('dd MMM, HH:mm');
-    final placed = order.placedAt;
-    return [
-      _OrderEvt(
-        icon: Icons.cancel_outlined,
-        iconBg: const Color(0xFF3D1111),
-        iconFg: const Color(0xFFFF6B6B),
-        title: 'Order Canceled',
-        isCompleted: false,
-        isCancelled: true,
-        subItems: [
-          _SubEvt(
-            text: 'The customer canceled the order',
-            time: fmt.format(placed.add(const Duration(days: 1, hours: 2))),
-          ),
-        ],
-      ),
-      _OrderEvt(
-        icon: Icons.local_shipping_outlined,
-        iconBg: const Color(0xFF052E16),
-        iconFg: DesignTokens.primaryGreen,
-        title: 'In Transit',
-        isCompleted: true,
-        isCancelled: false,
-        subItems: [
-          _SubEvt(
-            text:
-                'The package has crossed the transit and is on its way to be delivered',
-            time: fmt.format(
-              placed.add(const Duration(days: 1, hours: 2, minutes: 15)),
-            ),
-          ),
-          _SubEvt(
-            text: 'The package is being checked in the transit',
-            time: fmt.format(placed.add(const Duration(days: 1))),
-          ),
-        ],
-      ),
-      _OrderEvt(
-        icon: Icons.inventory_2_outlined,
-        iconBg: const Color(0xFF052E16),
-        iconFg: DesignTokens.primaryGreen,
-        title: 'Shipped',
-        isCompleted: true,
-        isCancelled: false,
-        subItems: [
-          _SubEvt(
-            text: 'The package has been shipped',
-            time: fmt.format(placed.add(const Duration(hours: 23, minutes: 5))),
-          ),
-          _SubEvt(
-            text: 'The package is in the shipping lane',
-            time: fmt.format(
-              placed.add(const Duration(hours: 22, minutes: 30)),
-            ),
-          ),
-          _SubEvt(
-            text:
-                'The package is being tagged with the shipping address details',
-            time: fmt.format(
-              placed.add(const Duration(hours: 22, minutes: 20)),
-            ),
-          ),
-          _SubEvt(
-            text: 'Order items are being gathered & packaged for shipping',
-            time: fmt.format(placed.add(const Duration(hours: 21))),
-          ),
-        ],
-      ),
-      _OrderEvt(
-        icon: Icons.assignment_turned_in_outlined,
-        iconBg: const Color(0xFF052E16),
-        iconFg: DesignTokens.primaryGreen,
-        title: 'Order Confirmed',
-        isCompleted: true,
-        isCancelled: false,
-        subItems: [
-          _SubEvt(
-            text: 'Order was confirmed',
-            time: fmt.format(placed.add(const Duration(minutes: 1))),
-          ),
-        ],
-      ),
-      _OrderEvt(
-        icon: Icons.shopping_bag_outlined,
-        iconBg: const Color(0xFF052E16),
-        iconFg: DesignTokens.primaryGreen,
-        title: 'Order Placed',
-        isCompleted: true,
-        isCancelled: false,
-        subItems: [
-          _SubEvt(text: 'Order was placed', time: fmt.format(placed)),
-        ],
-      ),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final events = _buildEvents();
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s16,
-        DesignTokens.s8,
-      ),
-      decoration: DesignTokens.cardDecoration(),
-      child: Column(
-        children: [
-          for (var i = 0; i < events.length; i++)
-            _HistSection(event: events[i], isLast: i == events.length - 1),
-          const SizedBox(height: DesignTokens.s4),
-          const Icon(
-            Icons.keyboard_arrow_up_rounded,
-            size: 22,
-            color: DesignTokens.textMuted,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistSection extends StatelessWidget {
-  const _HistSection({required this.event, required this.isLast});
-  final _OrderEvt event;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 36,
-            child: Column(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: event.iconBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(event.icon, size: 16, color: event.iconFg),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 3),
-                      width: 2,
-                      color: DesignTokens.borderDefault,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          event.title,
-                          style: DesignTokens.mediumSemibold.copyWith(
-                            color: DesignTokens.textWhite,
-                          ),
-                        ),
-                      ),
-                      if (event.isCompleted) ...[
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.check_circle_rounded,
-                          size: 14,
-                          color: DesignTokens.primaryGreen,
-                        ),
-                      ],
-                      if (event.isCancelled) ...[
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.error_rounded,
-                          size: 14,
-                          color: Color(0xFFFF6B6B),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  for (final item in event.subItems) _HistSubRow(item: item),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistSubRow extends StatelessWidget {
-  const _HistSubRow({required this.item});
-  final _SubEvt item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Container(
-              width: 5,
-              height: 5,
-              decoration: const BoxDecoration(
-                color: DesignTokens.dotSeparator,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              item.text,
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.textLight,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            item.time,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OrderEvt {
-  const _OrderEvt({
-    required this.icon,
-    required this.iconBg,
-    required this.iconFg,
-    required this.title,
-    required this.isCompleted,
-    required this.isCancelled,
-    required this.subItems,
-  });
-  final IconData icon;
-  final Color iconBg;
-  final Color iconFg;
-  final String title;
-  final bool isCompleted;
-  final bool isCancelled;
-  final List<_SubEvt> subItems;
-}
-
-class _SubEvt {
-  const _SubEvt({required this.text, required this.time});
-  final String text;
-  final String time;
-}
-
-class _CancelDotPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = DesignTokens.borderDefault
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    const dashWidth = 4.0;
-    const dashSpace = 4.0;
-    double x = 0;
-    while (x < size.width) {
-      canvas.drawLine(Offset(x, 0), Offset(x + dashWidth, 0), paint);
-      x += dashWidth + dashSpace;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _ViewOtherDetails extends StatelessWidget {
@@ -1777,11 +960,13 @@ class _ViewOtherDetails extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(
-              expanded ? 'Hide Other Details' : 'View Other Details',
-              style: DesignTokens.smallRegular.copyWith(
-                color: DesignTokens.primaryGreen,
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                expanded ? 'Hide other details' : 'View other details',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: DesignTokens.s4),
@@ -2661,6 +1846,7 @@ class _OrderItemTile extends StatelessWidget {
                       formatMoney(item.unitPrice),
                       style: DesignTokens.mediumSemibold.copyWith(
                         color: DesignTokens.primaryGreen,
+                        fontFeatures: mallTabularFigures,
                       ),
                     ),
                   ],
@@ -2748,30 +1934,11 @@ class _ShippingAddressSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0A2E16),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.home_outlined,
-                    size: 12,
-                    color: DesignTokens.primaryGreen,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Home',
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.primaryGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+            const MallStatusPill(
+              label: 'Home',
+              tone: MallStatusTone.progress,
+              icon: Icons.home_outlined,
+              dense: true,
             ),
             const SizedBox(height: 12),
             if (receiverName.isNotEmpty) ...[
@@ -2875,25 +2042,31 @@ class _OrderSummarySheet extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text('Bill Details', style: DesignTokens.mediumSemibold),
                     const SizedBox(height: 12),
-                    _BillRow(
-                      label: 'Subtotal',
-                      value: formatMoney(order.subtotal),
-                    ),
-                    const SizedBox(height: 8),
-                    _BillRow(
-                      label: 'Shipping',
-                      value: formatMoney(order.shipping),
-                    ),
-                    const SizedBox(height: 8),
-                    _BillRow(label: 'Tax', value: formatMoney(order.tax)),
-                    const Divider(
-                      color: DesignTokens.borderDefault,
-                      height: 24,
-                    ),
-                    _BillRow(
-                      label: 'Grand Total',
-                      value: formatMoney(order.total),
-                      bold: true,
+                    // The kit's ledger: one rhythm, tabular figures, the
+                    // hairline where the total starts, and the paid line
+                    // said in words rather than implied by weight.
+                    MallMoneyLedger(
+                      semanticLabel: 'Bill details',
+                      amounts: [
+                        MallAmount(
+                          label: 'Subtotal',
+                          value: formatMoney(order.subtotal),
+                        ),
+                        MallAmount(
+                          label: 'Shipping',
+                          value: formatMoney(order.shipping),
+                        ),
+                        MallAmount(
+                          label: 'Tax',
+                          value: formatMoney(order.tax),
+                        ),
+                        MallAmount(
+                          label: 'Paid',
+                          value: formatMoney(order.total),
+                          kind: MallAmountKind.total,
+                          note: order.paymentMethod,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -2966,50 +2139,11 @@ class _SummaryItemRow extends StatelessWidget {
             style: DesignTokens.mediumSemibold.copyWith(
               color: DesignTokens.primaryGreen,
               fontSize: 13,
+              fontFeatures: mallTabularFigures,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BillRow extends StatelessWidget {
-  const _BillRow({
-    required this.label,
-    required this.value,
-    this.bold = false,
-  });
-  final String label;
-  final String value;
-  final bool bold;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: bold
-              ? DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.textWhite,
-                )
-              : DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
-        ),
-        Text(
-          value,
-          style: bold
-              ? DesignTokens.mediumSemibold.copyWith(
-                  color: DesignTokens.primaryGreen,
-                )
-              : DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-        ),
-      ],
     );
   }
 }

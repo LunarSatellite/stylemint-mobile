@@ -2,6 +2,80 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_primitives.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// The designed failure state.
+///
+/// A raw exception string is not a message to a buyer, and a bare spinner that
+/// never resolves is not a state at all. This says what did not load, in the
+/// same voice as the rest of the page, and offers the one action that can fix
+/// it. The technical [detail] is optional and always secondary — it is there
+/// for a support conversation, not for the buyer to decode.
+class MallErrorState extends StatelessWidget {
+  const MallErrorState({
+    required this.title,
+    super.key,
+    this.body,
+    this.detail,
+    this.retryLabel = 'Try again',
+    this.onRetry,
+    this.icon = Icons.cloud_off_rounded,
+  });
+
+  /// Plain language, e.g. "We couldn't load this order".
+  final String title;
+
+  /// What the buyer can do about it.
+  final String? body;
+
+  /// Short technical hint, set small and muted. Never the only thing shown.
+  final String? detail;
+
+  final String retryLabel;
+  final VoidCallback? onRetry;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final detailText = detail;
+    final retry = onRetry;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.s24,
+            vertical: DesignTokens.s32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MallEmptyState(
+                title: title,
+                body: body,
+                icon: icon,
+                actionLabel: retry == null ? null : retryLabel,
+                onAction: retry,
+              ),
+              if (detailText != null) ...[
+                const SizedBox(height: DesignTokens.s16),
+                Text(
+                  detailText,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 11.5,
+                    height: 1.4,
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Polished, illustration-free empty state: an optional icon on a raised
 /// disc, a display-face title (it stands in for a section title), body copy
 /// and one primary action. Width is capped for tablets.

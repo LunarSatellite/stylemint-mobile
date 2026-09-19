@@ -1,57 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
-import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_pill.dart';
 
+/// The one place a [OrderTrackStatus] becomes a visible state.
+///
+/// It used to be a five-colour Material palette (amber / blue / orange /
+/// green / red) that existed nowhere else in the app, and Track Orders had
+/// grown its own private copy with a *third* set of colours. Both now resolve
+/// here, onto the kit's tones and glyphs, so a state looks the same wherever
+/// the buyer meets it — and is still readable with the colour taken away.
 class OrderStatusBadge extends StatelessWidget {
-  const OrderStatusBadge({required this.status, super.key});
+  const OrderStatusBadge({required this.status, super.key, this.dense = false});
 
   final OrderTrackStatus status;
 
-  Color get _backgroundColor {
-    switch (status) {
-      case OrderTrackStatus.preparingForShipping:
-        return const Color(0xFFFFC107); // amber
-      case OrderTrackStatus.inTransit:
-        return const Color(0xFF2196F3); // blue
-      case OrderTrackStatus.outForDelivery:
-        return const Color(0xFFFF9800); // orange
-      case OrderTrackStatus.delivered:
-        return const Color(0xFF4CAF50); // green
-      case OrderTrackStatus.cancelled:
-        return const Color(0xFFF44336); // red
-    }
-  }
+  /// Tighter padding, for list rows.
+  final bool dense;
 
-  Color get _textColor {
-    switch (status) {
-      case OrderTrackStatus.preparingForShipping:
-        return const Color(0xFF4E342E);
-      case OrderTrackStatus.inTransit:
-      case OrderTrackStatus.outForDelivery:
-      case OrderTrackStatus.delivered:
-      case OrderTrackStatus.cancelled:
-        return Colors.white;
-    }
-  }
+  static OrderPillTone toneFor(OrderTrackStatus status) => switch (status) {
+    OrderTrackStatus.preparingForShipping => OrderPillTone.info,
+    OrderTrackStatus.inTransit => OrderPillTone.progress,
+    OrderTrackStatus.outForDelivery => OrderPillTone.progress,
+    OrderTrackStatus.delivered => OrderPillTone.success,
+    OrderTrackStatus.cancelled => OrderPillTone.negative,
+  };
+
+  /// Each state owns a distinct mark. Out for delivery and In transit share a
+  /// tone but not a glyph, because to a buyer waiting at home they are the
+  /// difference between today and next week.
+  static IconData iconFor(OrderTrackStatus status) => switch (status) {
+    OrderTrackStatus.preparingForShipping => Icons.inventory_2_outlined,
+    OrderTrackStatus.inTransit => Icons.local_shipping_outlined,
+    OrderTrackStatus.outForDelivery => Icons.directions_run_rounded,
+    OrderTrackStatus.delivered => Icons.check_circle_outline_rounded,
+    OrderTrackStatus.cancelled => Icons.cancel_outlined,
+  };
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: DesignTokens.s12,
-        vertical: DesignTokens.s6,
-      ),
-      decoration: BoxDecoration(
-        color: _backgroundColor,
-        borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-      ),
-      child: Text(
-        status.label,
-        style: DesignTokens.smallRegular.copyWith(
-          color: _textColor,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => OrderStatusPill(
+    label: status.label,
+    tone: toneFor(status),
+    icon: iconFor(status),
+    dense: dense,
+  );
 }

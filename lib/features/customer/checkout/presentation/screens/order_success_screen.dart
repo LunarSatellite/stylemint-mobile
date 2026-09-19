@@ -1,13 +1,24 @@
-import 'dart:math' as math;
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// The one display moment in the post-purchase journey.
+///
+/// It used to fire a ten-colour confetti burst on a forever-repeating ticker,
+/// and it fired the same burst whether the money had actually moved or not.
+/// Both are gone. A confirmed order gets a single green bloom that plays once
+/// and settles; a payment that has not completed gets the caution tone, a
+/// clock, and copy that does not congratulate anyone. What follows is the same
+/// on both: the order number, and the four stages of what happens next, so the
+/// buyer leaves this screen oriented rather than merely pleased.
 class OrderSuccessScreen extends StatefulWidget {
   const OrderSuccessScreen({
-    super.key,
     required this.orderId,
+    super.key,
     this.paymentPending = false,
   });
 
@@ -28,16 +39,28 @@ class OrderSuccessScreen extends StatefulWidget {
 class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final List<_Piece> _pieces;
+  bool _started = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
-    )..repeat();
-    _pieces = List.generate(64, _Piece.new);
+      duration: DesignTokens.motionSlow * 2,
+      value: 1,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // The bloom plays once, and not at all when the platform says no motion.
+    if (!MallMetrics.reduceMotion(context)) {
+      _controller.value = 0;
+      unawaited(_controller.forward());
+    }
   }
 
   @override
@@ -46,125 +69,148 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     super.dispose();
   }
 
+  bool get _pending => widget.paymentPending;
+
+  MallStatusTone get _tone =>
+      _pending ? MallStatusTone.caution : MallStatusTone.success;
+
+  String get _title => _pending ? 'Almost there' : 'Thank you';
+
+  String get _lead => _pending
+      ? 'Your order is placed. Finish the payment to confirm it.'
+      : 'Your order is confirmed.';
+
+  String get _body => _pending
+      ? "We've sent you to your payment provider. Nothing has been charged "
+            'yet — once the payment clears, this order moves to Confirmed and '
+            'you can track it from Order History.'
+      : 'You can follow every stage from Order History, and we will tell you '
+            'when it is out for delivery.';
+
+  List<MallTimelineStep> get _nextSteps => [
+    MallTimelineStep(
+      title: _pending ? 'Placed' : 'Confirmed',
+      state: _pending ? MallStepState.current : MallStepState.done,
+    ),
+    MallTimelineStep(
+      title: 'Packed',
+      state: _pending ? MallStepState.upcoming : MallStepState.current,
+    ),
+    const MallTimelineStep(title: 'Shipped', state: MallStepState.upcoming),
+    const MallTimelineStep(title: 'Delivered', state: MallStepState.upcoming),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: DesignTokens.bgAppFoundation,
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 300,
-                    height: 300,
-                    child: AnimatedBuilder(
-                      animation: _controller,
-                      builder: (_, __) => CustomPaint(
-                        painter: _ConfettiPainter(
-                          pieces: _pieces,
-                          t: _controller.value,
-                        ),
-                        child: const _Circles(),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s24,
+                  vertical: DesignTokens.s32,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _SuccessMark(tone: _tone, progress: _controller),
+                    const SizedBox(height: DesignTokens.s32),
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        _title,
+                        textAlign: TextAlign.center,
+                        style: DesignTokens.displayTitle,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 36),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      widget.paymentPending
-                          ? 'Order placed! Finish your\npayment to confirm it.'
-                          : 'Thank you! Your purchase was\nsuccessful.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      widget.paymentPending
-                          ? "We've sent you to complete payment. Once it's confirmed, you'll see it update in Order History — no charge has been made yet."
-                          : 'You can track your order from the Order History section to see real-time updates and know exactly when it will be delivered.',
+                    const SizedBox(height: DesignTokens.s8),
+                    Text(
+                      _lead,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: DesignTokens.textLight,
-                        height: 1.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
+                        color: DesignTokens.textWhite,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: DesignTokens.s12),
+                    Text(
+                      _body,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 14,
+                        height: 1.55,
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: DesignTokens.s24),
+                    _OrderNumberPlate(orderNumber: widget.orderId),
+                    const SizedBox(height: DesignTokens.s28),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: MallStatusStepper(
+                        steps: _nextSteps,
+                        semanticLabel: 'What happens next',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s24,
+              ),
               decoration: const BoxDecoration(
-                color: Color(0xFF09090B),
-                border: Border(top: BorderSide(color: Color(0xFF27272A))),
+                color: DesignTokens.bgAppFoundation,
+                border: Border(
+                  top: BorderSide(color: DesignTokens.borderDefault),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: DesignTokens.primaryGreen,
-                        foregroundColor: const Color(0xFF06190E),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
-                        ),
-                      ),
+                    child: MallPrimaryCta(
+                      label: 'View order',
                       onPressed: () => context.pushReplacement(
-                        RouteNames.orderDetail
-                            .replaceAll(':orderId', widget.orderId),
-                      ),
-                      child: const Text(
-                        'View Order',
-                        style: TextStyle(
-                          fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                        RouteNames.orderDetail.replaceAll(
+                          ':orderId',
+                          widget.orderId,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: DesignTokens.s12),
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF27272A),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(26),
-                        ),
-                      ),
+                    child: TextButton(
                       onPressed: () => context.go(RouteNames.home),
-                      child: const Text(
-                        'Go To Home',
-                        style: TextStyle(
+                      style: TextButton.styleFrom(
+                        foregroundColor: DesignTokens.textLight,
+                        backgroundColor: DesignTokens.bgAppBodyLight,
+                        minimumSize: const Size(
+                          DesignTokens.minTouchTarget,
+                          48,
+                        ),
+                        shape: const StadiumBorder(),
+                        textStyle: const TextStyle(
                           fontFamily: DesignTokens.fontFamily,
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      child: const Text('Keep shopping'),
                     ),
                   ),
                 ],
@@ -177,41 +223,98 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
   }
 }
 
-// ─── CONCENTRIC CIRCLES ───────────────────────────────────────────────────────
-class _Circles extends StatelessWidget {
-  const _Circles();
+/// The order number, set once, large enough to read aloud down a phone line
+/// and in tabular figures so the digits do not dance.
+class _OrderNumberPlate extends StatelessWidget {
+  const _OrderNumberPlate({required this.orderNumber});
+
+  final String orderNumber;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Semantics(
+      label: 'Order number $orderNumber',
+      excludeSemantics: true,
       child: Container(
-        width: 240,
-        height: 240,
-        decoration: const BoxDecoration(
-          color: Color(0xFF14271A),
-          shape: BoxShape.circle,
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.s16,
+          vertical: DesignTokens.s12,
         ),
-        alignment: Alignment.center,
-        child: Container(
-          width: 184,
-          height: 184,
-          decoration: const BoxDecoration(
-            color: Color(0xFF1D4A2A),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: DesignTokens.surfaceRaised,
+          borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const MallEyebrow('Order number'),
+            const SizedBox(height: 2),
+            Text(
+              orderNumber,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: DesignTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+                letterSpacing: 0.4,
+                color: DesignTokens.textWhite,
+                fontFeatures: mallTabularFigures,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One mark, one accent. Concentric rings bloom outward once and settle; the
+/// glyph itself never moves, so the state is readable from the first frame
+/// whether or not animation ran.
+class _SuccessMark extends StatelessWidget {
+  const _SuccessMark({required this.tone, required this.progress});
+
+  final MallStatusTone tone;
+  final Animation<double> progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = mallStatusStyle(tone);
+    final glyph = tone == MallStatusTone.success
+        ? Icons.check_rounded
+        : Icons.hourglass_bottom_rounded;
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: 196,
+        child: AnimatedBuilder(
+          animation: progress,
+          builder: (context, child) {
+            final t = Curves.easeOutCubic.transform(
+              progress.value.clamp(0.0, 1.0),
+            );
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                _Ring(diameter: 196, scale: t, opacity: 0.14 * t, tone: tone),
+                _Ring(diameter: 148, scale: t, opacity: 0.26 * t, tone: tone),
+                child!,
+              ],
+            );
+          },
           child: Container(
-            width: 128,
-            height: 128,
-            decoration: const BoxDecoration(
-              color: DesignTokens.primaryGreen,
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              color: style.foreground,
               shape: BoxShape.circle,
             ),
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.check_rounded,
-              color: Colors.white,
-              size: 64,
+            child: Icon(
+              glyph,
+              size: 52,
+              color: tone == MallStatusTone.success
+                  ? DesignTokens.buttonPrimaryText
+                  : DesignTokens.bgAppFoundation,
             ),
           ),
         ),
@@ -220,88 +323,35 @@ class _Circles extends StatelessWidget {
   }
 }
 
-// ─── CONFETTI ─────────────────────────────────────────────────────────────────
-class _Piece {
-  _Piece(int seed) {
-    final rng = math.Random(seed * 17 + 3);
-    angle = rng.nextDouble() * math.pi * 2;
-    radius = 90 + rng.nextDouble() * 70;
-    size = 5 + rng.nextDouble() * 9;
-    colorIndex = rng.nextInt(_colors.length);
-    phaseOffset = rng.nextDouble();
-    isRect = rng.nextBool();
-    spin = rng.nextDouble() * math.pi;
-  }
+class _Ring extends StatelessWidget {
+  const _Ring({
+    required this.diameter,
+    required this.scale,
+    required this.opacity,
+    required this.tone,
+  });
 
-  late final double angle;
-  late final double radius;
-  late final double size;
-  late final int colorIndex;
-  late final double phaseOffset;
-  late final bool isRect;
-  late final double spin;
-
-  static const _colors = [
-    Color(0xFFFF6B6B),
-    Color(0xFF4ECDC4),
-    Color(0xFFFFE66D),
-    Color(0xFFA29BFE),
-    Color(0xFF55EFC4),
-    Color(0xFFFF7675),
-    Color(0xFF74B9FF),
-    Color(0xFFFD79A8),
-    Color(0xFF00B894),
-    Color(0xFFFFB347),
-  ];
-
-  Color get color => _colors[colorIndex];
-}
-
-class _ConfettiPainter extends CustomPainter {
-  const _ConfettiPainter({required this.pieces, required this.t});
-
-  final List<_Piece> pieces;
-  final double t;
+  final double diameter;
+  final double scale;
+  final double opacity;
+  final MallStatusTone tone;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    for (final p in pieces) {
-      final phase = (t + p.phaseOffset) % 1.0;
-      final r = p.radius * (0.88 + 0.12 * math.sin(phase * math.pi * 2));
-      final a = p.angle + phase * 0.6;
-      final x = cx + math.cos(a) * r;
-      final y = cy + math.sin(a) * r;
-      final opacity = 0.65 + 0.35 * math.sin(phase * math.pi * 2);
-
-      final paint = Paint()
-        ..color = p.color.withOpacity(opacity)
-        ..style = PaintingStyle.fill;
-
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(p.spin + phase * math.pi * 2);
-
-      if (p.isRect) {
-        canvas.drawRect(
-          Rect.fromCenter(
-              center: Offset.zero, width: p.size, height: p.size * 0.45),
-          paint,
-        );
-      } else {
-        canvas.drawOval(
-          Rect.fromCenter(
-              center: Offset.zero, width: p.size, height: p.size * 0.55),
-          paint,
-        );
-      }
-
-      canvas.restore();
-    }
+  Widget build(BuildContext context) {
+    // The accent itself at a low alpha, not the tonal fill: against the app
+    // foundation a dark fill would simply not be there.
+    final fill = mallStatusStyle(tone).foreground;
+    return Transform.scale(
+      scale: 0.7 + 0.3 * scale,
+      child: Opacity(
+        opacity: opacity.clamp(0.0, 1.0),
+        child: SizedBox.square(
+          dimension: diameter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
+          ),
+        ),
+      ),
+    );
   }
-
-  @override
-  bool shouldRepaint(_ConfettiPainter old) => old.t != t;
 }

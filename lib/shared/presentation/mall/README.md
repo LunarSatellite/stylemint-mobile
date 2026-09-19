@@ -43,6 +43,10 @@ localise, wrap the page in a `MallStringsScope`.
 | `SmSkeleton.box/line/circle` | Loading primitives on `SmShimmer`. The sweep follows text direction and is static under reduced motion. Hidden from semantics. | sizes |
 | `SmSkeletonProductCard` / `SmSkeletonReelCard` / `SmSkeletonRail` | Skeletons with the same footprint as the real cards and rail. | widths |
 | `MallEmptyState` | Illustration-free empty state: optional icon disc, eyebrow, display title, body and one primary action. | `title`, `body?`, `icon?`, `actionLabel?` + `onAction?` |
+| `MallErrorState` | **The designed failure state.** Plain-language title, what the buyer can do, an optional technical `detail` set small, and one retry. Never a raw exception string, never a spinner that resolves to nothing. | `title`, `body?`, `detail?`, `retryLabel`, `onRetry?`, `icon` |
+| `MallStatusPill` / `MallStatusSummary` | **The post-purchase state, said once.** The pill is glyph-then-label on a tonal ground; the summary is the whole answer to "where is my order" — disc, eyebrow, state in the display face, one supporting line, an optional footnote. `dense` for list rows. | `label`, `tone`, `icon?`, `dense` / `title`, `tone`, `eyebrow?`, `detail?`, `footnote?` |
+| `MallTimeline` / `MallStatusStepper` | **The order timeline and the stepper.** Vertical rail with copy beside it, or the same stages compressed to one band. Steps take `done` / `current` / `upcoming` / `failed` / `skipped`; a step can carry `trailing` evidence and a `markKey` a screen can scroll to. Draws only what it is given. | `List<MallTimelineStep>`, `semanticLabel?`, `compact` |
+| `MallMoneyLedger` / `MallAmountRow` | **The money ledger.** Labels left, tabular figures right, a hairline above the total. `MallAmountKind` decides the shape: `line`, `deduction` (leading minus), `total`, `refund` (leading plus and a glyph), `due` (caution tone and a glyph). Takes pre-formatted strings; the kit grows no second formatter. | `List<MallAmount>`, `semanticLabel?` |
 
 Supporting pieces:
 - `MallNetworkImage`: cached, decoded near display size, fades in over `MallImagePlaceholder` (a tonal gradient with the StyleMint mark).
@@ -85,6 +89,17 @@ MallRail<MallProductVm>(
   itemBuilder: (context, product, _) => MallProductCard(product: product, size: MallCardSize.compact, onTap: () => …),
 )
 ```
+
+## Post-purchase
+
+The kit was built for browsing, where nothing has a state. Everything after the buy does: an
+order, a return, a warranty claim, a vendor's fulfilment queue. `MallStatusPill`,
+`MallStatusSummary`, `MallTimeline`, `MallStatusStepper`, `MallMoneyLedger` and `MallErrorState`
+are that vocabulary, and they live here rather than in `features/customer/orders` so the vendor
+surfaces inherit the same guarantees.
+
+The tone is deliberately quieter than the Mall home. Someone asking "where is my order" wants the
+answer in under a second: no hero, no Ken Burns, no countdown. One state, one promise, one figure.
 
 ## Zones
 
@@ -172,6 +187,8 @@ drops out of the tree once its entrance finishes. All of it collapses to nothing
 
 ## Design rules
 
+- **State is never carried by colour alone.** Every `MallStatusTone` owns a glyph and `MallStatusPill` always draws it; every `MallStepState` owns a distinct mark (filled tick, ringed dot, hollow ring, cross, dash) and the rail behind it is solid only for history, dashed ahead of it. Screen readers get the state as a word (`MallTimelineStep.stateWord`), not as a colour. This holds for colour-blind buyers and for a phone in bright sun.
+- **Money is never ambiguous.** What was paid, what is coming back and what is still owed each get their own shape and sign in `MallMoneyLedger`, plus a glyph for the two a buyer must not misread. Numerals are tabular everywhere money and dates appear, so columns line up.
 - **Palette:** a refined neutral base (`bgAppFoundation`, `bgAppBody`, `surfaceRaised`) with **one controlled accent**, StyleMint green. Green is reserved for primary CTAs, discount pills, verified ticks, the saved heart and the active page indicator. The only other tones are semantic status (`warningFillDark` for Low stock). Don't add colours.
 - **Type:** Poppins for all UI text. **Instrument Serif** (`DesignTokens.displayHero` / `displayTitle` / `displaySection` / `displayAccent`) is for campaign-hero and section titles only; the empty-state title counts as a section title. Eyebrows use `DesignTokens.eyebrow`, set uppercase.
 - **Depth:** imagery first. Layered cards use tone plus `DesignTokens.shadowCard` (`shadowLifted` for floating layers) instead of borders. Put `DesignTokens.imageScrim` / `imageScrimTop` under any copy on photos.

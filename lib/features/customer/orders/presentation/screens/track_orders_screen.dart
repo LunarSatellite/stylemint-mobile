@@ -7,12 +7,13 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/a
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/buy_it_again_section.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 // ─── FILTER ENUM ──────────────────────────────────────────────────────────────
 enum _OrderFilter { all, ongoing, completed, cancelled }
@@ -128,9 +129,8 @@ class _TrackOrdersScreenState extends ConsumerState<TrackOrdersScreen> {
             Icons.arrow_back_ios_new_rounded,
             color: DesignTokens.textWhite,
           ),
-          onPressed: () => context.canPop()
-              ? context.pop()
-              : context.go(RouteNames.profile),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go(RouteNames.profile),
         ),
         title: _searchOpen
             ? TextField(
@@ -315,10 +315,11 @@ class _OrderCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: const EdgeInsets.all(DesignTokens.s12),
         decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(12),
+          color: DesignTokens.surfaceRaised,
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          boxShadow: DesignTokens.shadowCard,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -328,14 +329,14 @@ class _OrderCard extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: const Color(0xFF27272A),
-                borderRadius: BorderRadius.circular(10),
+                color: DesignTokens.bgAppBodyLight,
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
               ),
               alignment: Alignment.center,
               child: const Icon(
-                Icons.inventory_2,
-                color: Color(0xFFF1C40F),
-                size: 26,
+                Icons.inventory_2_outlined,
+                color: DesignTokens.textLight,
+                size: 24,
               ),
             ),
             const SizedBox(width: 12),
@@ -365,7 +366,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _StatusBadge(status: order.status),
+                  OrderStatusBadge(status: order.status, dense: true),
                 ],
               ),
             ),
@@ -376,48 +377,6 @@ class _OrderCard extends StatelessWidget {
               size: 20,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final OrderTrackStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (Color bg, Color fg) = switch (status) {
-      OrderTrackStatus.cancelled => (
-        const Color(0xFF3D1111),
-        const Color(0xFFFF6B6B),
-      ),
-      OrderTrackStatus.delivered => (
-        const Color(0xFF0A2E16),
-        const Color(0xFF4CAF50),
-      ),
-      _ => (
-        const Color(0xFF0A1F38),
-        const Color(0xFF4FC3F7),
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        status.label,
-        style: TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: fg,
         ),
       ),
     );

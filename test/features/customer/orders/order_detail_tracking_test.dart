@@ -10,18 +10,22 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_timeline.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
 import 'data/order_timeline_dto_test.dart' show contractTimelineJson;
 
 class _MockOrdersRepository extends Mock implements OrdersRepository {}
 
-OrderDetail _order() => OrderDetail(
+OrderDetail _order({
+  OrderTrackStatus status = OrderTrackStatus.inTransit,
+}) => OrderDetail(
   id: 'order-id',
   orderNumber: 'NK2026-00015',
-  status: OrderTrackStatus.inTransit,
+  status: status,
   placedAt: DateTime.utc(2026, 9, 11),
   estimatedDelivery: DateTime.utc(2026, 9, 14),
   items: const [],
@@ -36,7 +40,10 @@ OrderDetail _order() => OrderDetail(
   canReturn: false,
 );
 
-Widget _screen(_MockOrdersRepository repository) => ProviderScope(
+Widget _screen(
+  _MockOrdersRepository repository, {
+  double textScale = 1,
+}) => ProviderScope(
   overrides: [
     ordersRepositoryProvider.overrideWithValue(repository),
     deliveryStoryProvider.overrideWith(
@@ -51,8 +58,26 @@ Widget _screen(_MockOrdersRepository repository) => ProviderScope(
       ],
     ),
   ],
-  child: const MaterialApp(home: OrderDetailScreen(orderId: 'NK2026-00015')),
+  child: MaterialApp(
+    home: MediaQuery(
+      data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+      child: const OrderDetailScreen(orderId: 'NK2026-00015'),
+    ),
+  ),
 );
+
+/// Wires a repository that answers with [order] and has no backend timeline,
+/// so the screen falls back to its own derived stages.
+_MockOrdersRepository _repositoryFor(OrderDetail order) {
+  final repository = _MockOrdersRepository();
+  when(
+    () => repository.getOrderDetail('NK2026-00015'),
+  ).thenAnswer((_) async => right(order));
+  when(() => repository.getOrderTimeline('NK2026-00015')).thenAnswer(
+    (_) async => left(const NetworkExceptions.serverUnavailable()),
+  );
+  return repository;
+}
 
 void main() {
   testWidgets('delivery shortcut scrolls to the real StyleMint timeline', (
@@ -71,11 +96,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('View Other Details'),
+      find.text('View other details'),
       250,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('View Other Details'));
+    await tester.tap(find.text('View other details'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('View Delivery Tracking'),
@@ -136,5 +161,89 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Live Delivery Updates'), findsOneWidget);
+  });
+
+  testWidgets('the order state leads the page and is named in words', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _screen(_repositoryFor(_order(status: OrderTrackStatus.outForDelivery))),
+    );
+    await tester.pumpAndSettle();
+
+    // The state, not the paperwork, is the first thing on the page.
+    expect(find.byType(MallStatusSummary), findsOneWidget);
+    final summaryTop = tester.getTopLeft(find.byType(MallStatusSummary)).dy;
+    final numberTop = tester
+        .getTopLeft(find.textContaining('NK2026-00015').first)
+        .dy;
+    expect(summaryTop, lessThanOrEqualTo(numberTop));
+
+    // And it is carried by a glyph and a word, not only by a colour.
+    expect(
+      find.descendant(
+        of: find.byType(MallStatusSummary),
+        matching: find.byIcon(
+          OrderStatusBadge.iconFor(OrderTrackStatus.outForDelivery),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('Out for Delivery', caseSensitive: false)),
+      findsWidgets,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('a cancelled order says where the money went', (tester) async {
+    await tester.pumpWidget(
+      _screen(_repositoryFor(_order(status: OrderTrackStatus.cancelled))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancelled'), findsWidgets);
+    // The refund is signed and glyphed, never a bare number.
+    expect(find.text('+Rs 1,100.00'), findsOneWidget);
+    expect(find.byIcon(Icons.south_west_rounded), findsOneWidget);
+    // The stopped stage is a cross on the rail, not a green ring.
+    expect(find.byKey(const ValueKey('delivery-stage-icon-2')), findsOneWidget);
+  });
+
+  testWidgets('order detail does not overflow at 320dp with text ×1.3', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(320, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      _screen(
+        _repositoryFor(_order(status: OrderTrackStatus.outForDelivery)),
+        textScale: 1.3,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the cancelled view does not overflow at 320dp with text ×1.3', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(320, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      _screen(
+        _repositoryFor(_order(status: OrderTrackStatus.cancelled)),
+        textScale: 1.3,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

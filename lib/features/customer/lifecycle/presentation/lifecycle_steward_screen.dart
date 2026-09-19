@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 final FutureProvider<List<LifecycleAsset>> lifecycleAssetsProvider =
@@ -148,15 +149,11 @@ class _Hero extends StatelessWidget {
   const _Hero();
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
+    padding: const EdgeInsets.all(DesignTokens.s20),
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(28),
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF244F35), Color(0xFF111713)],
-      ),
-      border: Border.all(color: const Color(0x6632D477)),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      color: DesignTokens.primaryGreenDark,
+      boxShadow: DesignTokens.shadowCard,
     ),
     child: const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,11 +187,9 @@ class _AssetCard extends ConsumerWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF181B19),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: keep ? const Color(0x6632D477) : const Color(0xFF343934),
-        ),
+        color: DesignTokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        boxShadow: DesignTokens.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,29 +235,12 @@ class _AssetCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: keep
-                        ? const Color(0x2632D477)
-                        : const Color(0x26FFB84D),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    keep
-                        ? 'KEEP & CARE · ${asset.remainingDays} DAYS EST.'
-                        : 'ASSESS NEXT LIFE',
-                    style: TextStyle(
-                      color: keep
-                          ? DesignTokens.primaryGreen
-                          : const Color(0xFFFFC766),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 11,
-                    ),
-                  ),
+                MallStatusPill(
+                  label: keep
+                      ? 'Keep & care · ${asset.remainingDays} days est.'
+                      : 'Assess next life',
+                  tone: keep ? MallStatusTone.success : MallStatusTone.caution,
+                  icon: keep ? Icons.eco_outlined : Icons.autorenew_rounded,
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -302,7 +280,7 @@ class _AssetCard extends ConsumerWidget {
     final condition = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF181B19),
+      backgroundColor: DesignTokens.surfaceRaised,
       builder: (_) => _ConditionSheet(pathway),
     );
     if (condition == null || !context.mounted) return;
