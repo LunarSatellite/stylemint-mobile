@@ -219,28 +219,54 @@ class ProductProvenanceFact {
 
 /// Structured "which one should I buy" guidance — backend
 /// `ProductComparisonSummary`.
+///
+/// Every sentence here is optional, and that is the point. These fields used
+/// to be non-nullable server-side, so something always had to go in them, and
+/// what went in was filler: "A popular choice in its category." for a listing
+/// nobody had ever bought. Those claims rested on no recorded fact and have
+/// been deleted. Null now means the platform has nothing true to say, and the
+/// UI renders nothing at all — never a label with an empty value after it.
 class ProductComparison {
   const ProductComparison({
-    required this.bestForTag,
     required this.alternatives,
-    required this.recommendation,
+    this.bestForTag,
+    this.recommendation,
   });
 
-  final String bestForTag;
+  /// Who this listing suits, when that can be said from the listing itself.
+  /// Null when it cannot. Callers must not render a "Best for:" prefix
+  /// without a value behind it.
+  final String? bestForTag;
+
   final List<ProductComparisonPoint> alternatives;
-  final String recommendation;
+
+  /// Overall guidance, when there is some grounded guidance to give.
+  final String? recommendation;
+
+  /// True when the summary carries at least one genuine statement. An
+  /// alternative is itself a fact worth showing — its id and name are
+  /// recorded — so the card survives on those alone.
+  bool get hasContent =>
+      alternatives.isNotEmpty ||
+      (bestForTag?.isNotEmpty ?? false) ||
+      (recommendation?.isNotEmpty ?? false);
 }
 
 class ProductComparisonPoint {
   const ProductComparisonPoint({
     required this.productId,
     required this.productName,
-    required this.howItDiffers,
+    this.howItDiffers,
   });
 
   final String productId;
   final String productName;
-  final String howItDiffers;
+
+  /// How this alternative differs, when the difference is grounded in a
+  /// recorded attribute or a model sentence about one. Null otherwise — the
+  /// alternative still appears, because its name is a fact; only the
+  /// manufactured explanation is gone.
+  final String? howItDiffers;
 }
 
 /// A product-page FAQ entry — backend `ProductSeoContent.Faq`.

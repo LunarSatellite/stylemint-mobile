@@ -3,11 +3,13 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 
 /// What a screenshot search came back with.
 ///
-/// There are exactly three endings and none of them is "here are some
-/// products you might like anyway". A screenshot the server cannot place is
-/// a [ScreenshotNoMatch]; a server that cannot look at all is a
-/// [ScreenshotSearchUnavailable]. Neither is allowed to borrow the results
-/// shape and pass filler off as recognition.
+/// There are exactly four endings and none of them is "here are some
+/// products you might like anyway". The server now separates the two ways a
+/// search can come back empty, and so does this: a picture the Mall read and
+/// does not stock is a [ScreenshotNoMatch], a picture that gave vision
+/// nothing to search with is a [ScreenshotNotRecognized], and a server that
+/// cannot look at all is a [ScreenshotSearchUnavailable]. None of them is
+/// allowed to borrow the results shape and pass filler off as recognition.
 @immutable
 sealed class ScreenshotSearchOutcome {
   const ScreenshotSearchOutcome();
@@ -31,11 +33,33 @@ final class ScreenshotMatches extends ScreenshotSearchOutcome {
   final CustomerSearchResults results;
 }
 
-/// The image was read and understood as far as the server could, and nothing
-/// in the Mall corresponds to it.
+/// Vision read the picture and the Mall does not stock what it saw.
+///
+/// This is the informative empty result, and the reason it is worth keeping
+/// apart from [ScreenshotNotRecognized]: the platform can say *what* it saw.
+/// [recognizedFeatures] carries those words — "navy", "oxford shirt",
+/// "button-down collar" — so the dead end reads as "we looked for these and
+/// the Mall has none" rather than as a blank shrug.
+///
+/// It may be empty: the multimodal endpoint reports the outcome but not the
+/// features, so callers must render the generic wording when it is.
 @immutable
 final class ScreenshotNoMatch extends ScreenshotSearchOutcome {
-  const ScreenshotNoMatch();
+  const ScreenshotNoMatch({this.recognizedFeatures = const []});
+
+  /// What vision read out of the image. Possibly empty; never fabricated.
+  final List<String> recognizedFeatures;
+}
+
+/// Vision ran and could not read anything searchable out of the picture.
+///
+/// Distinct from [ScreenshotNoMatch] because the customer's next move is
+/// different. Nothing is known to be missing from the Mall here — the image
+/// simply did not yield a feature to search on, so the useful advice is
+/// about the picture, not about the catalogue.
+@immutable
+final class ScreenshotNotRecognized extends ScreenshotSearchOutcome {
+  const ScreenshotNotRecognized();
 }
 
 /// Visual search could not run: the provider is unconfigured, the network

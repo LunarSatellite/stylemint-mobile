@@ -196,7 +196,13 @@ class DiscoveryRemoteDataSource {
 
   /// GET `/v1/public/products/{id}/compare` — structured "which one should
   /// I buy" guidance against same-category alternatives.
-  Future<Map<String, dynamic>> getProductComparison(
+  ///
+  /// Returns `null` for `204 No Content`, which the endpoint now sends when
+  /// it has nothing truthful to say. That used to be filler — "A popular
+  /// choice in its category." — and silence is the correct replacement, so
+  /// it is a normal answer here rather than an error. Blindly casting the
+  /// empty body would have thrown and surfaced as a spurious failure.
+  Future<Map<String, dynamic>?> getProductComparison(
     String productId, {
     int maxAlternatives = 3,
   }) async {
@@ -204,7 +210,9 @@ class DiscoveryRemoteDataSource {
       '/v1/public/products/$productId/compare',
       queryParameters: {'maxAlternatives': maxAlternatives},
     );
-    return response as Map<String, dynamic>;
+    // Dio hands back null or an empty string for a bodyless 204 depending on
+    // the transformer, so the check is on the shape rather than the status.
+    return response is Map<String, dynamic> ? response : null;
   }
 
   /// GET `/v1/public/products/{id}/regret-check` — Voyager "Regret-Aware

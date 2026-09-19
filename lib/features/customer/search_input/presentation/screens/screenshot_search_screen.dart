@@ -56,7 +56,15 @@ class ScreenshotSearchScreen extends ConsumerStatefulWidget {
       _ScreenshotSearchScreenState();
 }
 
-enum _Stage { opening, confirm, searching, noMatch, blocked, unavailable }
+enum _Stage {
+  opening,
+  confirm,
+  searching,
+  noMatch,
+  notRecognized,
+  blocked,
+  unavailable,
+}
 
 class _ScreenshotSearchScreenState
     extends ConsumerState<ScreenshotSearchScreen> {
@@ -66,6 +74,10 @@ class _ScreenshotSearchScreenState
   String? _blockedDetail;
   String _unavailableMessage = '';
   String? _unavailableDetail;
+
+  /// What vision reported seeing on a recognised-but-unstocked screenshot.
+  /// Empty whenever the server did not report features.
+  List<String> _recognizedFeatures = const [];
 
   @override
   void initState() {
@@ -103,9 +115,11 @@ class _ScreenshotSearchScreenState
         // Backing out of the chooser means backing out of the search.
         if (mounted && context.canPop()) context.pop();
       case ScreenshotPickBlocked(:final status, :final detail):
-        ref.read(searchInputCapabilitiesProvider.notifier).reportScreenshot(
-          status,
-        );
+        ref
+            .read(searchInputCapabilitiesProvider.notifier)
+            .reportScreenshot(
+              status,
+            );
         if (!mounted) return;
         setState(() {
           _blockedStatus = status;
@@ -154,8 +168,13 @@ class _ScreenshotSearchScreenState
         // Back from the results means back to Discover, not to a confirm
         // screen whose picture is already gone.
         if (mounted && context.canPop()) context.pop();
-      case ScreenshotNoMatch():
-        setState(() => _stage = _Stage.noMatch);
+      case ScreenshotNoMatch(:final recognizedFeatures):
+        setState(() {
+          _recognizedFeatures = recognizedFeatures;
+          _stage = _Stage.noMatch;
+        });
+      case ScreenshotNotRecognized():
+        setState(() => _stage = _Stage.notRecognized);
       case ScreenshotSearchUnavailable(:final message, :final detail):
         setState(() {
           _unavailableMessage = message;
@@ -210,6 +229,11 @@ class _ScreenshotSearchScreenState
       onChooseAnother: _pick,
     ),
     _Stage.noMatch => ScreenshotNoMatchView(
+      recognizedFeatures: _recognizedFeatures,
+      onTryAnother: _pick,
+      onTypeInstead: _typeInstead,
+    ),
+    _Stage.notRecognized => ScreenshotNotRecognizedView(
       onTryAnother: _pick,
       onTypeInstead: _typeInstead,
     ),

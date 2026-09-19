@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/image_recognition_outcome.dart';
+
 /// Real search-result rows from `GET /api/v1/customer/search`.
 class SearchResultProduct {
   const SearchResultProduct({
@@ -92,6 +94,8 @@ class CustomerSearchResults {
     required this.creators,
     required this.totalHits,
     this.queryUnderstanding,
+    this.imageRecognition,
+    this.recognizedFeatures = const [],
   });
 
   static const empty = CustomerSearchResults(
@@ -108,4 +112,15 @@ class CustomerSearchResults {
   final List<SearchResultCreator> creators;
   final int totalHits;
   final String? queryUnderstanding;
+
+  /// What the image arm of the search achieved, or `null` when no image was
+  /// part of the request. When this is anything other than
+  /// [ImageRecognitionOutcome.matched], nothing in [products] may be
+  /// presented to the customer as recognised from their picture.
+  final ImageRecognitionOutcome? imageRecognition;
+
+  /// The features vision read out of the image, so a no-match can say what
+  /// was seen instead of shrugging. Empty when nothing was recognised or
+  /// when the endpoint does not report features.
+  final List<String> recognizedFeatures;
 }

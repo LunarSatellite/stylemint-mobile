@@ -42,7 +42,11 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
-  Future<Either<NetworkExceptions, ProductComparison>> getProductComparison(
+  /// Structured "which one should I buy" guidance, or `right(null)` when the
+  /// endpoint answers `204 No Content` — it has nothing grounded to say and
+  /// no longer invents filler to fill the shape. That is a success, not a
+  /// failure, and callers render no card for it.
+  Future<Either<NetworkExceptions, ProductComparison?>> getProductComparison(
     String productId,
   );
 
@@ -56,7 +60,8 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
-  Future<Either<NetworkExceptions, MissionShoppingPlan>> getMissionShoppingPlan({
+  Future<Either<NetworkExceptions, MissionShoppingPlan>>
+  getMissionShoppingPlan({
     required String missionText,
     double? budgetAmount,
     int maxItems,
