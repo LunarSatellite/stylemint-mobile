@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/brands_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/datasources/partnerships_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_partnership_record_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/brands_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
@@ -21,10 +22,14 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/presenta
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
     show
         BrandDetailDto,
-        BrandTrustDto,
         MoneyDto,
         PotentialEarningsDto,
         RecipeAttachmentInfoDto;
+export 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_partnership_record_dto.dart'
+    show
+        BrandPartnershipCountsDto,
+        BrandPartnershipRecordDto,
+        MeasuredRateDto;
 export 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart'
     show CreatorRateCard, RateTier;
 
@@ -176,16 +181,24 @@ final brandDetailProvider = FutureProvider.autoDispose
           .getBrand(vendorAccountId);
     });
 
-/// Creator §7B/C/D brand detail — trust score
-/// (`GET /v1/creator/brands/{vendorAccountId}/trust`). Powers the
-/// "rating" and "success rate" tiles on the brand detail header.
-/// Treated as optional by the screen — a 404 just hides those tiles
-/// instead of breaking the whole page.
-final brandTrustProvider = FutureProvider.autoDispose
-    .family<BrandTrustDto, String>((ref, vendorAccountId) {
+/// Creator §7B/C/D — a brand's recorded partnership conduct
+/// (`GET /v1/creator/brands/{vendorProfileId}/partnership-record`).
+///
+/// **Keyed by the vendor profile id**, not the account id the brand catalog
+/// hands around. The brand detail response carries it as `id`; resolve it
+/// there rather than passing a catalog id straight in. Its predecessor,
+/// `brandTrustProvider`, documented an account id while the screen passed
+/// something named `vendorProfileId` that held an account id — and the
+/// endpoint created a row for whichever it got, so neither side ever found
+/// out.
+///
+/// There is no 404 to handle: a brand with no partnership rows answers with
+/// zero counts and null rates, which the view shows as its empty state.
+final brandPartnershipRecordProvider = FutureProvider.autoDispose
+    .family<BrandPartnershipRecordDto, String>((ref, vendorProfileId) {
       return ref
           .watch(brandsRemoteDataSourceProvider)
-          .getBrandTrust(vendorAccountId);
+          .getBrandPartnershipRecord(vendorProfileId);
     });
 
 final rateCardProvider = FutureProvider.autoDispose<CreatorRateCard?>((

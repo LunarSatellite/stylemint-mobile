@@ -301,73 +301,29 @@ class BrandDetailDto {
   }
 }
 
-/// Brand trust score — backend `BrandTrustDto`
-/// (`GET /v1/creator/brands/{vendorId}/trust`). 0–100 score, tier label,
-/// and component sub-scores the brand detail header renders as the
-/// "rating" (Score) and "success rate" (PartnershipCompletionRate * 100).
-class BrandTrustDto {
-  const BrandTrustDto({
-    required this.vendorAccountId,
-    required this.score,
-    required this.tier,
-    required this.totalPartnerships,
-    required this.verifiedByCount,
-    required this.partnershipCompletionRatePercent,
-    required this.paymentReliabilityPercent,
-    required this.communicationResponseRatePercent,
-    required this.briefQualityPercent,
-    required this.creatorSatisfactionPercent,
-  });
-
-  final String vendorAccountId;
-
-  /// 0–100 overall trust score.
-  final double score;
-
-  /// Numeric value of `TrustTier`
-  /// (1=Untrusted, 2=New, 3=Established, 4=Trusted, 5=Premium).
-  final int tier;
-  final int totalPartnerships;
-  final int verifiedByCount;
-
-  /// 0–100 component sub-scores. Arrived as decimals in [0, 1] from the
-  /// backend and are multiplied by 100 here so widgets can render % labels.
-  final double partnershipCompletionRatePercent;
-  final double paymentReliabilityPercent;
-  final double communicationResponseRatePercent;
-  final double briefQualityPercent;
-  final double creatorSatisfactionPercent;
-
-  static const _tierLabels = <int, String>{
-    1: 'Untrusted',
-    2: 'New',
-    3: 'Established',
-    4: 'Trusted',
-    5: 'Premium',
-  };
-
-  String get tierLabel => _tierLabels[tier] ?? '';
-
-  factory BrandTrustDto.fromJson(Map<String, dynamic> json) {
-    final components = json['components'] as Map<String, dynamic>? ??
-        const <String, dynamic>{};
-    double pct(String key) =>
-        ((components[key] as num?)?.toDouble() ?? 0) * 100;
-    return BrandTrustDto(
-      vendorAccountId: (json['vendorAccountId'] as String?) ?? '',
-      score: (json['score'] as num?)?.toDouble() ?? 0,
-      tier: (json['tier'] as num?)?.toInt() ?? 0,
-      totalPartnerships: (json['totalPartnerships'] as num?)?.toInt() ?? 0,
-      verifiedByCount: (json['verifiedByCount'] as num?)?.toInt() ?? 0,
-      partnershipCompletionRatePercent: pct('partnershipCompletionRate'),
-      paymentReliabilityPercent: pct('paymentReliability'),
-      communicationResponseRatePercent:
-          pct('communicationResponseRate'),
-      briefQualityPercent: pct('briefQuality'),
-      creatorSatisfactionPercent: pct('creatorSatisfaction'),
-    );
-  }
-}
+// `BrandTrustDto` stood here: a 0–100 `score`, a five-band `tier`,
+// `totalCampaignValue`, `verifiedByCount` and five component sub-scores,
+// read from `GET /v1/creator/brands/{vendorId}/trust`. All of it is gone,
+// along with the endpoint. See
+// `data/models/brand_partnership_record_dto.dart` for what replaced it and
+// why. Two things are worth keeping in mind here rather than only there:
+//
+//  * The server built every brand's score from five hardcoded constants,
+//    and the recalculation that used them had no caller — so the row every
+//    brand served was `score: 0`, `tier: New`, components `0`. This app
+//    drew that as a 0.0 star rating and "Success Rate with Creators: 0%"
+//    for every brand on the platform. Nothing threw: `required` binds a
+//    Dart constructor, not the JSON, and `fromJson` filled every field with
+//    `?? 0`.
+//
+//  * Its `pct()` helper multiplied each component by 100 on the way in,
+//    documented as converting a [0, 1] fraction. The components were
+//    already 0–100, so the day anything had recalculated them this screen
+//    would have rendered "8500%". The bug never fired only because the
+//    numbers were all zero. There is no `* 100` on a rate anywhere in this
+//    feature now, and the replacement model does not parse a percent at
+//    all. (`commissionRangeMin`/`Max` above genuinely are fractions on the
+//    wire and keep their conversion.)
 
 extension TermsSectionMapper on TermsSection {
   PartnershipTermsSection toDomain() =>
