@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/code_links.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/qr_login/presentation/qr_login_approval.dart';
 import 'package:stylemint_mobile_frontend/features/scan/domain/style_mint_code.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -26,9 +28,16 @@ class StyleMintScanScreen extends ConsumerStatefulWidget {
   static const String title = 'Scan';
   static const String hint = 'Point at a StyleMint QR code';
   static const String kinds =
-      'Shelf and profile codes, products, reels, creators, drop parties and '
-      'web login';
+      'Shelf and profile codes, per-unit item tags, products, reels, '
+      'creators, drop parties and web login';
   static const String notStyleMint = "That isn't a StyleMint code";
+
+  /// A 404 from the tag scan: StyleMint never issued this code. Distinct
+  /// from a genuine tag nobody bound, which answers 200 and opens the
+  /// passport screen saying it is not bound to a sale.
+  static const String unknownTagLabel =
+      "StyleMint didn't issue this tag, so it can't tell you anything about "
+      'it.';
 
   @override
   ConsumerState<StyleMintScanScreen> createState() =>
@@ -61,7 +70,10 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
     if (_handling) return;
     final raw = capture.barcodes
         .map((b) => b.rawValue)
-        .firstWhere((v) => v != null && v.trim().isNotEmpty, orElse: () => null);
+        .firstWhere(
+          (v) => v != null && v.trim().isNotEmpty,
+          orElse: () => null,
+        );
     if (raw == null) return;
 
     final code = StyleMintCode.parse(raw);
@@ -102,6 +114,40 @@ class _StyleMintScanScreenState extends ConsumerState<StyleMintScanScreen> {
           ).pushReplacement(StyleMintCodeLinks.route(code, CodeScanVia.qr)),
         );
         return true;
+
+      // A per-unit tag. The code goes to the scan endpoint in a request
+      // body; only the opaque marker id it answers with reaches the route.
+      // The code itself is never navigated with, never stored and never
+      // logged.
+      case UnitMarkerTagCode(:final marker):
+        final result = await ref
+            .read(unitMarkersRepositoryProvider)
+            .scan(marker: marker, via: CodeScanVia.qr);
+        if (!mounted) return true;
+        return result.fold(
+          (failure) {
+            // 404 here is a marker StyleMint never issued — a different
+            // thing from a genuine tag nobody bound, which answers 200 with
+            // `isBoundToSale` false and opens the passport screen below.
+            SmSnackbar.error(
+              context,
+              failure.isNotFound
+                  ? StyleMintScanScreen.unknownTagLabel
+                  : NetworkExceptions.getMessage(failure),
+            );
+            return false;
+          },
+          (reading) {
+            context.pushReplacement(
+              RouteNames.unitTagPassport.replaceFirst(
+                ':unitMarkerId',
+                reading.unitMarkerId,
+              ),
+              extra: reading,
+            );
+            return true;
+          },
+        );
 
       case QrLoginCode(:final token):
         if (!await ensureAuth(context, ref, reason: AuthReason.general)) {

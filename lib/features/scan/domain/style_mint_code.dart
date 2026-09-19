@@ -2,15 +2,16 @@ import 'package:stylemint_mobile_frontend/core/navigation/in_app_link.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/code_links.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/style_mint_code_format.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/domain/unit_marker_format.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 
 /// What a scanned StyleMint QR code asks the app to do.
 ///
-/// Only four kinds are recognised: a web-login code, a drop party join code,
-/// a StyleMint code link (`/c/{code}`: a shelf tag, store or person) and a
-/// StyleMint link to something to browse. Anything else — including
-/// StyleMint links that would sign in, sign out or change settings — is not
-/// a StyleMint code, and the scanner opens nothing for it.
+/// Only five kinds are recognised: a web-login code, a drop party join code,
+/// a per-unit tag code, a StyleMint code link (`/c/{code}`: a shelf tag,
+/// store or person) and a StyleMint link to something to browse. Anything
+/// else — including StyleMint links that would sign in, sign out or change
+/// settings — is not a StyleMint code, and the scanner opens nothing for it.
 sealed class StyleMintCode {
   const StyleMintCode();
 
@@ -33,6 +34,12 @@ sealed class StyleMintCode {
     final value = raw?.trim() ?? '';
     if (value.isEmpty) return null;
     if (_joinCode.hasMatch(value)) return DropPartyInviteCode(value);
+    // A per-unit tag: 26 Crockford characters and nothing else. Checked
+    // before the URL parse because a bare code is not a URI, and kept out of
+    // any link form on purpose — a tag code is a credential, so it travels in
+    // a request body and never in a link somebody could paste or share.
+    final marker = UnitMarkerFormat.normalize(value);
+    if (marker != null) return UnitMarkerTagCode(marker);
 
     final uri = Uri.tryParse(value);
     if (uri == null) return null;
@@ -112,4 +119,20 @@ final class StyleMintLinkCode extends StyleMintCode {
 
   /// The in-app route, e.g. `/product/{id}`.
   final String route;
+}
+
+/// A per-unit tag's 26-character code, read straight off the item.
+///
+/// This is a **credential**, not an identifier. It never becomes a route, a
+/// query parameter or a deep link: the scanner hands it to
+/// `POST v1/public/unit-markers/scan` in the request body, and what comes
+/// back — an opaque marker id — is what the app navigates with.
+final class UnitMarkerTagCode extends StyleMintCode {
+  const UnitMarkerTagCode(this.marker);
+
+  final String marker;
+
+  /// Deliberately does not name the code.
+  @override
+  String toString() => 'UnitMarkerTagCode(<redacted>)';
 }
