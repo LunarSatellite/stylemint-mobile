@@ -3,29 +3,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/reel_earnings_projection.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/caption_editor.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/potential_earnings_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/reel_caption/reel_caption.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ReviewReelArgs {
   const ReviewReelArgs({
     required this.reel,
     required this.taggedProducts,
-    required this.potentialEarningsPerSale,
+    required this.earnings,
     this.publishedReelId,
     this.composedCaption,
   });
 
   final ImportableReel? reel;
   final List<TaggedProductForImport> taggedProducts;
-  final int potentialEarningsPerSale;
+
+  /// What the tagged basket earns per sale, and how much of the basket that
+  /// figure covers — see [ReelEarningsProjection].
+  ///
+  /// This used to be `int potentialEarningsPerSale`, a sum of
+  /// `price * 0.10` over the tagged products that this screen and the
+  /// Published screen multiplied by fifty and drew as "Est. Potential
+  /// Earnings". An `int` cannot say "unknown" and cannot say "this covers
+  /// two of your five products", so both screens were structurally incapable
+  /// of being honest about a mixed basket. Null means no projection was
+  /// computed at all; [ReelEarningsProjection.hasFigure] means there is a
+  /// figure to draw.
+  final ReelEarningsProjection? earnings;
 
   /// The backend-generated reel UUID from the import/publish call chain.
   /// Only populated once the reel has actually been submitted — this is
@@ -40,7 +55,7 @@ class ReviewReelArgs {
     return ReviewReelArgs(
       reel: reel,
       taggedProducts: taggedProducts,
-      potentialEarningsPerSale: potentialEarningsPerSale,
+      earnings: earnings,
       publishedReelId: publishedReelId ?? this.publishedReelId,
       composedCaption: composedCaption ?? this.composedCaption,
     );
@@ -107,15 +122,6 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  String _formatAmount(int amount) {
-    if (amount >= 1000) {
-      final t = amount ~/ 1000;
-      final r = (amount % 1000).toString().padLeft(3, '0');
-      return '$t,$r';
-    }
-    return amount.toString();
-  }
-
   void _showTaggedSheet() {
     showModalBottomSheet<void>(
       context: context,
@@ -148,7 +154,10 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
     final elapsed = (totalDuration * 0.78).toInt();
     final platform = reel?.platform ?? SocialPlatform.instagram;
     const projectedSales = 50;
-    final projectedEarnings = widget.args.potentialEarningsPerSale * projectedSales;
+    // Null whenever no tagged product supplied a per-sale figure — the row is
+    // then omitted entirely rather than drawn as a zero or an estimate.
+    final earnings = widget.args.earnings;
+    final projectedEarnings = earnings?.projectedOver(projectedSales);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -220,10 +229,15 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
                               ),
                             ),
                             const SizedBox(width: DesignTokens.s8),
-                            Text(
-                              'Imported from ${platform.displayName}',
-                              style: DesignTokens.smallRegular.copyWith(
-                                color: DesignTokens.textMuted,
+                            // Flexible: this row already overflowed at narrow
+                            // widths and large text before the earnings line
+                            // below it existed.
+                            Flexible(
+                              child: Text(
+                                'Imported from ${platform.displayName}',
+                                style: DesignTokens.smallRegular.copyWith(
+                                  color: DesignTokens.textMuted,
+                                ),
                               ),
                             ),
                           ],
@@ -246,16 +260,34 @@ class _ReviewReelScreenState extends ConsumerState<ReviewReelScreen> {
                             labelUnderlined: true,
                           ),
                         ),
-                        const SizedBox(height: DesignTokens.s12),
-                        _StatRow(
-                          iconWidget: Image.asset(
-                            'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-                            width: 18,
-                            height: 18,
+                        // Drawn only when the commission behind it is known.
+                        // An unknown basket draws no row at all: no zero, no
+                        // dash, no "(est.)" over an invented rate.
+                        if (projectedEarnings != null) ...[
+                          const SizedBox(height: DesignTokens.s12),
+                          _StatRow(
+                            iconWidget: Image.asset(
+                              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+                              width: 18,
+                              height: 18,
+                            ),
+                            label: 'Potential Earnings',
+                            value:
+                                '${formatMoney(projectedEarnings)} '
+                                'with $projectedSales sales',
                           ),
-                          label: 'Est. Potential Earnings',
-                          value: '~Rs ${_formatAmount(projectedEarnings)} with $projectedSales sales',
-                        ),
+                          // A total over part of the basket says so.
+                          if (earnings!.isPartial) ...[
+                            const SizedBox(height: DesignTokens.s4),
+                            Text(
+                              partialEarningsCoverage(earnings),
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
                       ],
                     ),
                   ),
@@ -430,13 +462,19 @@ class _StatRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: DesignTokens.textWhite,
+        // Flexible, not fixed: "Rs 22,500.00 with 50 sales" is longer than
+        // the "~Rs 22,500" it replaced and has to wrap at 320dp rather than
+        // overflow.
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: DesignTokens.textWhite,
+            ),
           ),
         ),
       ],

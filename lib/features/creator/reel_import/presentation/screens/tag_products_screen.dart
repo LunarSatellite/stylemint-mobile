@@ -6,14 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/reel_earnings_projection.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/tag_product_commission.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/potential_earnings_card.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// What a product card says about commission.
 ///
@@ -161,29 +163,20 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
     });
   }
 
-  // NOT the real rate. This projection — and `_BreakdownRow`, and the
-  // `potentialEarningsPerSale` it hands to the Review and Published screens
-  // — still derives a per-sale figure from a hardcoded ten percent, the same
-  // invention that was just removed from the product chips above. The real
-  // per-sale money is now available (`TagProductCommission.commissionPerSale`
-  // from `GET /v1/creator/tag-products/commission`), but replacing it here
-  // means making `ReviewReelArgs.potentialEarningsPerSale` nullable and
-  // teaching two downstream screens to draw nothing when it is unknown,
-  // which is a change of its own. Tracked separately; a creator can see a
-  // real rate on a card and a ten-percent projection in the same screen
-  // until it lands.
-  int get _potentialEarnings => _taggedProducts.values
-      .map((p) => (p.price.amount * 0.10).toInt())
-      .fold(0, (a, b) => a + b);
-
-  String _formatAmount(int amount) {
-    if (amount >= 1000) {
-      final thousands = amount ~/ 1000;
-      final remainder = amount % 1000;
-      return '$thousands,${remainder.toString().padLeft(3, '0')}';
-    }
-    return amount.toString();
-  }
+  /// The projection over the tagged basket, built from the **real** per-sale
+  /// commission the server returned for each product.
+  ///
+  /// This used to be `sum(product.price.amount * 0.10)` — a rate nobody had
+  /// agreed to, summed into a headline and handed downstream as
+  /// `potentialEarningsPerSale`. It sat directly above product cards already
+  /// showing the real partnership rate. The fold now takes the same answers
+  /// those cards draw, and carries its own coverage so that a basket with
+  /// unanswered products cannot be presented as a complete total.
+  ReelEarningsProjection _projection(
+    Map<String, TagProductCommission>? commissions,
+  ) => ReelEarningsProjection.fold(
+    _taggedProducts.keys.map((id) => commissions?[id]),
+  );
 
   Future<void> _showSearchSheet() async {
     await Navigator.of(context).push(
@@ -252,13 +245,13 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
     );
   }
 
-  void _handleContinue() {
+  void _handleContinue(ReelEarningsProjection projection) {
     context.push(
       RouteNames.reelImportReview,
       extra: ReviewReelArgs(
         reel: _reel,
         taggedProducts: _taggedProducts.values.toList(growable: false),
-        potentialEarningsPerSale: _potentialEarnings,
+        earnings: projection,
       ),
     );
   }
@@ -267,6 +260,18 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
   Widget build(BuildContext context) {
     final suggestedState = ref.watch(suggestedProductsNotifierProvider);
     final taggedList = _taggedProducts.values.toList();
+    // One batched lookup for the tagged basket, the same call the product
+    // cards use. `asData` keeps in-flight and failed lookups as "no answer"
+    // rather than as a zero.
+    final taggedCommissions = ref
+        .watch(
+          tagProductCommissionsProvider(
+            tagProductCommissionKey(_taggedProducts.keys),
+          ),
+        )
+        .asData
+        ?.value;
+    final projection = _projection(taggedCommissions);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -299,16 +304,19 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
                     ),
                     const SizedBox(height: DesignTokens.s12),
                   ],
-                  // Potential earnings (shown when any product is tagged)
-                  if (_taggedProducts.isNotEmpty) ...[
-                    _PotentialEarningsCard(
-                      amount: _formatAmount(_potentialEarnings),
+                  // Potential earnings. Drawn only once at least one tagged
+                  // product has an answer — a basket nothing is known about
+                  // gets no card at all, rather than a card reading Rs 0.
+                  if (!projection.isSilent) ...[
+                    PotentialEarningsCard(
+                      projection: projection,
                       isExpanded: _potentialEarningsExpanded,
                       onToggle: () => setState(
                         () => _potentialEarningsExpanded =
                             !_potentialEarningsExpanded,
                       ),
                       taggedProducts: _taggedProducts.values.toList(),
+                      commissions: taggedCommissions,
                     ),
                     const SizedBox(height: DesignTokens.s12),
                   ],
@@ -416,7 +424,7 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
                 width: double.infinity,
                 height: DesignTokens.buttonHeight,
                 child: ElevatedButton(
-                  onPressed: _handleContinue,
+                  onPressed: () => _handleContinue(projection),
                   style: DesignTokens.primaryButtonStyle(),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -432,142 +440,6 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Potential earnings card ───────────────────────────────────────────────────
-
-class _PotentialEarningsCard extends StatelessWidget {
-  const _PotentialEarningsCard({
-    required this.amount,
-    required this.isExpanded,
-    required this.onToggle,
-    required this.taggedProducts,
-  });
-
-  final String amount;
-  final bool isExpanded;
-  final VoidCallback onToggle;
-  final List<TaggedProductForImport> taggedProducts;
-
-  static const _projectedSales = 50;
-
-  String _fmt(int n) {
-    if (n >= 1000)
-      return '${n ~/ 1000},${(n % 1000).toString().padLeft(3, '0')}';
-    return n.toString();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final n = taggedProducts.length;
-    final salesPerProduct = n > 0 ? _projectedSales ~/ n : 0;
-    final remainder = n > 0 ? _projectedSales % n : 0;
-
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: DesignTokens.s16,
-          vertical: DesignTokens.s12,
-        ),
-        decoration: BoxDecoration(
-          color: DesignTokens.bgAppBody,
-          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-          border: Border.all(color: DesignTokens.borderDefault),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Est. Potential Earnings: ~Rs $amount',
-                    style: const TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: DesignTokens.textWhite,
-                    ),
-                  ),
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: DesignTokens.textMuted,
-                  size: 22,
-                ),
-              ],
-            ),
-            if (isExpanded) ...[
-              const SizedBox(height: DesignTokens.s12),
-              Text(
-                'If this reel generates $_projectedSales sales:',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-              const SizedBox(height: DesignTokens.s8),
-              for (int i = 0; i < taggedProducts.length; i++) ...[
-                _BreakdownRow(
-                  product: taggedProducts[i],
-                  qty: salesPerProduct + (i < remainder ? 1 : 0),
-                  fmt: _fmt,
-                ),
-                if (i < taggedProducts.length - 1)
-                  const SizedBox(height: DesignTokens.s8),
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BreakdownRow extends StatelessWidget {
-  const _BreakdownRow({
-    required this.product,
-    required this.qty,
-    required this.fmt,
-  });
-
-  final TaggedProductForImport product;
-  final int qty;
-  final String Function(int) fmt;
-
-  @override
-  Widget build(BuildContext context) {
-    // Estimate only — real commission is a partnership term confirmed
-    // server-side when the tag is submitted, not known at search time.
-    final commission = (product.price.amount * 0.10).toInt();
-    final total = qty * commission;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            product.productName,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-        ),
-        const SizedBox(width: DesignTokens.s8),
-        Text(
-          '$qty * ~Rs ${fmt(commission)} = ~Rs ${fmt(total)} (est.)',
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textLight,
-          ),
-        ),
-      ],
     );
   }
 }

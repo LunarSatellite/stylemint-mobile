@@ -1,26 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/tag_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/widgets/potential_earnings_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
-import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_caption_text.dart';
+import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class ReelPublishedScreen extends StatelessWidget {
   const ReelPublishedScreen({super.key, required this.args});
 
   final ReviewReelArgs args;
-
-  String _formatAmount(int amount) {
-    if (amount >= 1000) {
-      final t = amount ~/ 1000;
-      final r = (amount % 1000).toString().padLeft(3, '0');
-      return '$t,$r';
-    }
-    return amount.toString();
-  }
 
   static String _svgAsset(SocialPlatform p) {
     switch (p) {
@@ -136,7 +129,12 @@ class ReelPublishedScreen extends StatelessWidget {
     // back to the platform caption for reels that skipped the editor.
     final caption = args.composedCaption ?? reel?.caption;
     const projectedSales = 50;
-    final projectedEarnings = args.potentialEarningsPerSale * projectedSales;
+    // Null whenever no tagged product supplied a per-sale figure. The
+    // Reel Summary then carries no earnings line at all — a reel that
+    // published fine but whose commission nobody has stated says nothing
+    // about money, rather than congratulating the creator with a zero.
+    final earnings = args.earnings;
+    final projectedEarnings = earnings?.projectedOver(projectedSales);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -230,13 +228,19 @@ class ReelPublishedScreen extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Imported from ${platform.displayName}',
-                                        style: DesignTokens.smallRegular
-                                            .copyWith(
-                                              color: DesignTokens.textMuted,
-                                              fontSize: 11,
-                                            ),
+                                      // Flexible: this row already overflowed
+                                      // at narrow widths and large text before
+                                      // the earnings line below it existed.
+                                      Flexible(
+                                        child: Text(
+                                          'Imported from '
+                                          '${platform.displayName}',
+                                          style: DesignTokens.smallRegular
+                                              .copyWith(
+                                                color: DesignTokens.textMuted,
+                                                fontSize: 11,
+                                              ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -262,17 +266,31 @@ class ReelPublishedScreen extends StatelessWidget {
                             labelUnderlined: true,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        _StatRow(
-                          iconWidget: Image.asset(
-                            'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-                            width: 18,
-                            height: 18,
+                        if (projectedEarnings != null) ...[
+                          const SizedBox(height: 12),
+                          _StatRow(
+                            iconWidget: Image.asset(
+                              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
+                              width: 18,
+                              height: 18,
+                            ),
+                            label: 'Potential Earnings',
+                            value:
+                                '${formatMoney(projectedEarnings)} '
+                                'with $projectedSales sales',
                           ),
-                          label: 'Potential Earnings',
-                          value:
-                              'Rs ${_formatAmount(projectedEarnings)} with $projectedSales sales',
-                        ),
+                          // A total over part of the basket says so.
+                          if (earnings!.isPartial) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              partialEarningsCoverage(earnings),
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
                       ],
                     ),
                   ),
@@ -570,13 +588,19 @@ class _StatRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: DesignTokens.textWhite,
+        // Flexible, not fixed: "Rs 22,500.00 with 50 sales" is longer than
+        // the "Rs 22,500" it replaced and has to wrap at 320dp rather than
+        // overflow.
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: DesignTokens.textWhite,
+            ),
           ),
         ),
       ],
