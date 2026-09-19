@@ -308,10 +308,10 @@ HomeSection _withModuleReason(HomeSection section, StorefrontModule module) {
 /// has.
 ///
 /// Returns null — and the module is dropped in silence — when this build has
-/// nowhere to send the shopper. `Refill` is that case today: "Buy It Again"
-/// has a repository and a notifier but no screen, and a card promising items
-/// due with nothing behind it is the broken block the fallback exists to
-/// prevent.
+/// nowhere to send the shopper: a card promising items due with nothing
+/// behind it is the broken block the fallback exists to prevent. `Refill`
+/// was that case until "Buy It Again" got a screen; a kind a newer server
+/// sends that this build cannot draw still is.
 HomePromptSection? _promptFor(StorefrontModule module) {
   final target = module.target;
   if (target == null) return null;
@@ -323,10 +323,13 @@ HomePromptSection? _promptFor(StorefrontModule module) {
       'Pick up where you left off',
       'Open mission',
     ),
+    // A prediction, phrased as one. The server stands behind an estimate of
+    // timing; it does not know what the customer still has at home, so the
+    // card may not say they have run out.
     StorefrontModuleKind.refill => (
       'storefront-refill',
-      'Running low',
-      'Time to restock',
+      'Restock estimate',
+      'You may be due a restock',
       'Buy it again',
     ),
     _ => ('', '', '', ''),
@@ -356,8 +359,8 @@ String? _factFor(StorefrontModule module) {
         ? '1 item still on your list'
         : '$n items still on your list',
     StorefrontModuleKind.refill => n == 1
-        ? '1 item you buy regularly is due'
-        : '$n items you buy regularly are due',
+        ? '1 item you buy regularly may be due'
+        : '$n items you buy regularly may be due',
     _ => null,
   };
 }

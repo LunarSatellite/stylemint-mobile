@@ -183,6 +183,13 @@ const HomeSeeAll _missionTarget = HomeSeeAll(
 
 const HomeSeeAll _reorderTarget = HomeSeeAll(target: HomeSeeAllTarget.reorder);
 
+/// A target this build still has no screen for. Refill used to be one; now
+/// that "Buy it again" exists, the "nowhere to go" cases need a target that
+/// genuinely leads nowhere.
+const HomeSeeAll _noDestinationTarget = HomeSeeAll(
+  target: HomeSeeAllTarget.brands,
+);
+
 void main() {
   group('storefront-layout contract', () {
     test('reads the camelCased record the controller returns', () {
@@ -367,8 +374,8 @@ void main() {
         _products('plain'),
         const HomeTrustSection(id: 'trust'),
       ]);
-      // Refill's target has no destination in this build, and an unknown
-      // kind from a newer server has no drawing at all.
+      // A refill pointed at a brands list has no destination in this build,
+      // and an unknown kind from a newer server has no drawing at all.
       final adapted = applyStorefrontLayout(
         home,
         _modules([
@@ -377,7 +384,7 @@ void main() {
             rank: 0,
             signal: StorefrontSignal.replenishmentDue,
             evidence: 4,
-            target: _reorderTarget,
+            target: _noDestinationTarget,
           ),
           _module(
             StorefrontModuleKind.unknown,
@@ -454,7 +461,7 @@ void main() {
             rank: 0,
             signal: StorefrontSignal.replenishmentDue,
             evidence: 4,
-            target: _reorderTarget,
+            target: _noDestinationTarget,
           ),
           _module(
             StorefrontModuleKind.unknown,
@@ -1205,6 +1212,33 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('the Refill module renders now that Buy It Again has a '
+        'screen, in the words of a prediction', (tester) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: _modules([
+          _module(
+            StorefrontModuleKind.refill,
+            rank: 0,
+            signal: StorefrontSignal.replenishmentDue,
+            evidence: 4,
+            target: _reorderTarget,
+          ),
+        ]),
+      );
+      expect(page.order(), contains('storefront-refill'));
+      // The server's count, said as a count, and hedged: the predictor
+      // stands behind an estimate of timing, not behind an empty shelf.
+      expect(find.text('4 items you buy regularly may be due'), findsOneWidget);
+      expect(find.text('You may be due a restock'), findsOneWidget);
+      // Never the certainty the platform has no way to know.
+      expect(find.textContaining('are due'), findsNothing);
+      expect(find.textContaining('run out'), findsNothing);
+      expect(find.textContaining("you've run out"), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('a module with nowhere to go leaves no trace on the page', (
       tester,
     ) async {
@@ -1217,7 +1251,7 @@ void main() {
             rank: 0,
             signal: StorefrontSignal.replenishmentDue,
             evidence: 4,
-            target: _reorderTarget,
+            target: _noDestinationTarget,
           ),
           _module(
             StorefrontModuleKind.unknown,

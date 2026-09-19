@@ -93,6 +93,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/product_listing_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/buy_it_again_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_recovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/fedex_tracking_screen.dart';
@@ -646,6 +647,14 @@ GoRouter appRouter(Ref ref) {
             ),
           ),
         ],
+      ),
+
+      // "Buy it again" — the Orders module's replenishment estimates. Keep
+      // above Order Detail, or `/orders/:orderId` reads "buy-it-again" as an
+      // order number.
+      GoRoute(
+        path: RouteNames.buyItAgain,
+        builder: (ctx, state) => const BuyItAgainScreen(),
       ),
 
       // Order Detail

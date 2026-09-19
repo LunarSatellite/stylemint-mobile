@@ -112,6 +112,11 @@ abstract class RouteNames {
   /// `returns` is never read as an order number.
   static const myReturns = '/orders/returns';
   static const returnDetail = '/orders/returns/:returnId';
+
+  /// "Buy it again" — the replenishment estimates the Orders module already
+  /// computed. Registered before [orderDetail] so `buy-it-again` is never
+  /// read as an order number.
+  static const buyItAgain = '/orders/buy-it-again';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';

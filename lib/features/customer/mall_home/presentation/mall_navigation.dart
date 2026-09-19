@@ -176,11 +176,11 @@ MallDestination? destinationForSeeAll(HomeSection section) {
     case HomeSeeAllTarget.mission:
       final id = param(const ['missionId', 'id']);
       return id == null ? null : MallPush(MallRoutes.mission(id));
-    // "Buy It Again" has a repository and a notifier but no screen yet, so
-    // there is nowhere honest to send a shopper. Null here is the whole
-    // reason a Refill module is skipped rather than drawn dead; the day that
-    // screen lands, this one line turns it on.
+    // "Buy It Again" now has a screen, so a Refill module has somewhere
+    // honest to go and is drawn rather than skipped. The screen carries the
+    // consent gate and the "these are estimates" framing; this only routes.
     case HomeSeeAllTarget.reorder:
+      return const MallPush(RouteNames.buyItAgain);
     case HomeSeeAllTarget.brands:
     case HomeSeeAllTarget.collections:
     case HomeSeeAllTarget.unknown:
