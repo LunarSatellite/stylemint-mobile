@@ -382,6 +382,14 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
       );
 
   @override
+  Future<Either<NetworkExceptions, VendorOrder>> markCollected(
+    String orderId,
+  ) => _stepThenRefetch(
+    orderId,
+    () => remoteDataSource.markCollected(orderId, _uuid.v4()),
+  );
+
+  @override
   Future<Either<NetworkExceptions, VendorOrder>> handOver(
     String orderId, {
     String? carrier,

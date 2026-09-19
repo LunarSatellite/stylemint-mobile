@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// The next-step buttons for a vendor sub-order's current backend state:
@@ -8,7 +9,15 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// - Packed: Hand over, or the existing Mark as Shipped (ready-to-ship)
 /// - HandedOver / Shipped / InTransit / OutForDelivery: Mark as Delivered
 ///
-/// Renders nothing for states with no vendor step.
+/// On a **collection** sub-order the courier steps are gone — there is no
+/// rider to hand to and the backend refuses "delivered" — and the counter
+/// handover takes their place.
+///
+/// Renders nothing for states with no vendor step, with one exception:
+/// when [showCollectionRefusal] is set and the counter handover is not
+/// available, the button is still drawn, disabled, with the reason under
+/// it. A seller who expected to hand something over is owed the reason;
+/// a control that silently is not there reads as a bug, not as a rule.
 class VendorOrderActionBar extends StatelessWidget {
   const VendorOrderActionBar({
     required this.stateCode,
@@ -16,10 +25,20 @@ class VendorOrderActionBar extends StatelessWidget {
     super.key,
     this.pendingAction,
     this.busy = false,
+    this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
+    this.showCollectionRefusal = false,
   });
 
   final int stateCode;
   final ValueChanged<VendorOrderAction> onAction;
+
+  /// Which path this sub-order is on. Defaults to delivery, so every
+  /// existing caller renders exactly the bar it rendered before.
+  final OrderFulfillmentChannel fulfillmentChannel;
+
+  /// Draw the disabled counter-handover control, with its reason, when the
+  /// action is not available on this sub-order.
+  final bool showCollectionRefusal;
 
   /// The action whose request is in flight; its button shows a spinner.
   final VendorOrderAction? pendingAction;
@@ -34,20 +53,42 @@ class VendorOrderActionBar extends StatelessWidget {
     VendorOrderAction.handOver => 'Hand over',
     VendorOrderAction.readyToShip => 'Mark as Shipped',
     VendorOrderAction.markDelivered => 'Mark as Delivered',
+    VendorOrderAction.markCollected => 'Hand over at counter',
   };
+
+  /// On the collection path "ready to ship" is the seller saying the goods
+  /// are waiting at the counter. Same transition, different truth.
+  static String labelForChannel(
+    VendorOrderAction action,
+    OrderFulfillmentChannel channel,
+  ) =>
+      channel.isCollection && action == VendorOrderAction.readyToShip
+      ? 'Ready for collection'
+      : labelFor(action);
+
+  static const Key refusalKey = ValueKey('vendor-action-collected-refusal');
 
   static Key keyFor(VendorOrderAction action) =>
       ValueKey('vendor-action-${action.name}');
 
   @override
   Widget build(BuildContext context) {
-    final actions = vendorActionsForState(stateCode);
-    if (actions.isEmpty) return const SizedBox.shrink();
+    final actions = vendorActionsForState(
+      stateCode,
+      channel: fulfillmentChannel,
+    );
+    final refusal = showCollectionRefusal
+        ? collectionHandoverRefusal(
+            state: stateCode,
+            channel: fulfillmentChannel,
+          )
+        : null;
+    if (actions.isEmpty && refusal == null) return const SizedBox.shrink();
 
     Widget button(VendorOrderAction action, _Emphasis emphasis) =>
         _ActionButton(
           key: keyFor(action),
-          label: labelFor(action),
+          label: labelForChannel(action, fulfillmentChannel),
           emphasis: emphasis,
           loading: pendingAction == action,
           onPressed: busy ? null : () => onAction(action),
@@ -70,7 +111,54 @@ class VendorOrderActionBar extends StatelessWidget {
           if (i > 0) const SizedBox(height: 10),
           button(actions[i], i == 0 ? _Emphasis.primary : _Emphasis.secondary),
         ],
+        if (refusal != null) ...[
+          if (actions.isNotEmpty) const SizedBox(height: 10),
+          _RefusedAction(
+            label: labelFor(VendorOrderAction.markCollected),
+            reason: refusal,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// The counter handover, drawn and unavailable, with the reason it is
+/// unavailable directly under it. The reason is the point; the disabled
+/// button is only there so the reason has something to be about.
+class _RefusedAction extends StatelessWidget {
+  const _RefusedAction({required this.label, required this.reason});
+
+  final String label;
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: '$label, unavailable. $reason',
+      child: ExcludeSemantics(
+        child: Column(
+          key: VendorOrderActionBar.refusalKey,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ActionButton(
+              label: label,
+              emphasis: _Emphasis.secondary,
+              loading: false,
+              onPressed: null,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              reason,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

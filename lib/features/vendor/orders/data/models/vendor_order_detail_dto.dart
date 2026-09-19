@@ -1,6 +1,7 @@
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 
 /// Maps the backend VendorSubOrderDetailDto (Orders module,
 /// GET /v1/vendor/sub-orders/{subOrderId}). Unlike the list row this carries
@@ -22,6 +23,7 @@ class VendorOrderDetailDto {
     final lines = (json['lines'] as List<dynamic>? ?? const <dynamic>[])
         .cast<Map<String, dynamic>>();
     final state = (json['state'] as num?)?.toInt() ?? 1;
+    final channel = OrderFulfillmentChannel.fromWire(json['fulfillmentChannel']);
 
     return VendorOrder(
       id: json['id'] as String? ?? '',
@@ -39,8 +41,14 @@ class VendorOrderDetailDto {
       shippedAt: _parseDate(json['shippedUtc']),
       deliveredAt: _parseDate(json['deliveredUtc']),
       customerName: shipTo?['receiverName'] as String?,
-      shippingAddress: _formatAddress(shipTo),
+      // A collection order's shipTo is an empty snapshot, because checkout
+      // recorded no address for it. Formatting that empty snapshot produced
+      // "Location saved" — a destination nobody chose, printed as fact on
+      // the seller's screen. Absent renders as absent.
+      shippingAddress: channel.isCollection ? null : _formatAddress(shipTo),
       items: lines.map(_lineToItem).toList(growable: false),
+      fulfillmentChannel: channel,
+      collectedAt: _parseDate(json['collectedUtc']),
     );
   }
 

@@ -163,6 +163,20 @@ class VendorOrdersRemoteDataSource {
     );
   }
 
+  /// POST /v1/vendor/sub-orders/{id}/collected — counter handover on a
+  /// collection sub-order -> Delivered. No body; the backend records the
+  /// calling credential as the accountable party.
+  ///
+  /// 422 on a delivery sub-order ("Only a collection sub-order can be handed
+  /// over at a counter"). That refusal is carried to the seller as the
+  /// backend worded it rather than flattened into a generic failure.
+  Future<void> markCollected(String orderId, String idempotencyKey) async {
+    await apiClient.post(
+      '/v1/vendor/sub-orders/$orderId/collected',
+      options: _idempotent(idempotencyKey),
+    );
+  }
+
   /// POST /v1/vendor/sub-orders/{id}/handover — Packed -> HandedOver.
   /// `carrier` and `trackingNumber` travel together or not at all; the body
   /// may be empty.

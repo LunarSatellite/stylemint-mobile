@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/wi
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -62,12 +63,69 @@ class _VendorOrderDetailScreenState
         run = notifier.markReadyToShip;
       case VendorOrderAction.markDelivered:
         run = notifier.markDelivered;
+      case VendorOrderAction.markCollected:
+        // A state change the buyer relies on: it ends the order, starts the
+        // return window and releases the seller's earnings. It is asked
+        // before it is done, and named for what it actually is.
+        final confirmed = await _confirmCounterHandover();
+        if (confirmed != true) return;
+        run = notifier.markCollected;
     }
     if (!mounted) return;
     setState(() => _pendingAction = action);
     await run();
     if (mounted) setState(() => _pendingAction = null);
   }
+
+  /// Whether the counter handover's refusal is worth putting on screen.
+  ///
+  /// It is, on a delivery sub-order that is still in a pre-shipment state —
+  /// that is where a seller might reasonably reach for it and needs to be
+  /// told why it is not theirs to take. Once a parcel is with a courier the
+  /// question no longer arises, and a disabled button would be noise.
+  static bool _handoverRefusalIsWorthSaying(VendorOrder order) =>
+      !order.isCollection &&
+      const {
+        SubOrderStateCode.paid,
+        SubOrderStateCode.awaitingFulfillment,
+        SubOrderStateCode.accepted,
+        SubOrderStateCode.packed,
+        SubOrderStateCode.readyToShip,
+        SubOrderStateCode.awaitingTracking,
+      }.contains(order.stateCode);
+
+  /// Asks before recording the handover. Not a formality: once recorded the
+  /// order is Delivered, the buyer's return window opens and settlement
+  /// runs, and there is no seller-side undo. The question names the
+  /// irreversible part rather than asking "are you sure?".
+  Future<bool?> _confirmCounterHandover() => showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      key: const ValueKey('vendor-collected-confirm'),
+      backgroundColor: DesignTokens.surfaceRaised,
+      icon: const Icon(
+        Icons.storefront_outlined,
+        color: DesignTokens.primaryGreen,
+      ),
+      title: const Text('Has the buyer taken this order?'),
+      content: const Text(
+        'Record it only once the goods are across the counter. This '
+        'completes the order, starts the buyer’s return window and '
+        'releases your earnings — it cannot be undone from here.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Not yet'),
+        ),
+        FilledButton(
+          key: const ValueKey('vendor-collected-confirm-yes'),
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('Yes, handed over'),
+        ),
+      ],
+    ),
+  );
 
   @override
   void initState() {
@@ -119,8 +177,17 @@ class _VendorOrderDetailScreenState
             orElse: () => false,
           );
           if (wasInProgress == true) {
+            // The outcome has to be visible, and "Order updated" is not an
+            // outcome — it is a shrug. A handover says what now holds.
+            final collected = _pendingAction == VendorOrderAction.markCollected;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Order updated.')),
+              SnackBar(
+                content: Text(
+                  collected
+                      ? 'Handed over. This order is complete.'
+                      : 'Order updated.',
+                ),
+              ),
             );
             // The list screens bucket by status; refetch so the row moves.
             ref.invalidate(vendorOrdersNotifierProvider);
@@ -185,7 +252,14 @@ class _VendorOrderDetailScreenState
                 const SizedBox(height: 12),
                 _CustomerCard(order: order),
                 const SizedBox(height: 12),
-                _ShippingCard(order: order),
+                // A collection order has no shipping address — checkout
+                // recorded an empty one because there is none — so the
+                // shipping card is replaced rather than filled with a
+                // stand-in. Grouped here as one swap.
+                if (order.isCollection)
+                  _CollectionCard(order: order)
+                else
+                  _ShippingCard(order: order),
                 const SizedBox(height: 12),
                 _OrderItemsCard(
                   order: order,
@@ -229,11 +303,20 @@ class _VendorOrderDetailScreenState
               // there, the vendor's earnings ledger.
               VendorOrderActionBar(
                 stateCode: order.stateCode,
+                fulfillmentChannel: order.fulfillmentChannel,
+                // On a delivery sub-order the counter handover is refused,
+                // and the refusal is shown rather than the control being
+                // quietly absent — but only where a seller could plausibly
+                // be standing at a counter waiting to use it.
+                showCollectionRefusal: _handoverRefusalIsWorthSaying(order),
                 busy: actionInProgress,
                 pendingAction: actionInProgress ? _pendingAction : null,
                 onAction: _onAction,
               ),
-              if (vendorActionsForState(order.stateCode).isNotEmpty)
+              if (vendorActionsForState(
+                order.stateCode,
+                channel: order.fulfillmentChannel,
+              ).isNotEmpty)
                 const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
@@ -552,6 +635,75 @@ class _CustomerCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Shipping Address card
 // ---------------------------------------------------------------------------
+
+/// What a collection order has instead of a shipping address: how it
+/// reaches the buyer, and when it did.
+///
+/// Every line here is either recorded or omitted. There is no "Address not
+/// available" placeholder, because there is no address to be unavailable —
+/// the buyer is coming to the counter.
+class _CollectionCard extends StatelessWidget {
+  const _CollectionCard({required this.order});
+
+  final VendorOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final collectedAt = order.collectedAt;
+    return _Card(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.storefront_outlined,
+            size: 28,
+            color: DesignTokens.primaryGreen,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Collection at your counter',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: DesignTokens.textWhite,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  collectedAt == null
+                      ? 'The buyer is collecting this order in person. '
+                            'No courier is involved.'
+                      : 'Handed over ${_formatCollectedAt(collectedAt)}.',
+                  style: const TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 12,
+                    color: Color(0xFF9F9FA9),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatCollectedAt(DateTime utc) {
+    final local = utc.toLocal();
+    final d = local.day.toString().padLeft(2, '0');
+    final m = local.month.toString().padLeft(2, '0');
+    final h = local.hour.toString().padLeft(2, '0');
+    final min = local.minute.toString().padLeft(2, '0');
+    return '$d/$m/${local.year} at $h:$min';
+  }
+}
 
 class _ShippingCard extends StatelessWidget {
   const _ShippingCard({required this.order});

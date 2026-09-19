@@ -78,6 +78,10 @@ abstract interface class VendorOrdersRepository {
   /// Accepted -> Packed.
   Future<Either<NetworkExceptions, VendorOrder>> markPacked(String orderId);
 
+  /// Counter handover on a collection sub-order -> Delivered. Refused (422)
+  /// on a delivery sub-order; the refusal reaches the caller unchanged.
+  Future<Either<NetworkExceptions, VendorOrder>> markCollected(String orderId);
+
   /// Packed -> HandedOver; [carrier] and [trackingNumber] both or neither.
   Future<Either<NetworkExceptions, VendorOrder>> handOver(
     String orderId, {

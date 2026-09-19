@@ -218,6 +218,10 @@ class VendorOrderDetailNotifier extends StateNotifier<OrderDetailState> {
   Future<void> markPacked() =>
       _runAction((order) => _repository.markPacked(order.id));
 
+  /// Counter handover on a collection sub-order -> Delivered.
+  Future<void> markCollected() =>
+      _runAction((order) => _repository.markCollected(order.id));
+
   /// Packed -> HandedOver.
   Future<void> handOver({
     String? carrier,
