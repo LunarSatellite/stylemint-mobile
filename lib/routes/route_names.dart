@@ -35,6 +35,14 @@ abstract class RouteNames {
   static const home = '/home';
   static const search = '/search';
   static const searchResults = '/search-results';
+
+  /// Speak a search, correct the transcript, then search. Pops the
+  /// confirmed query back to whoever opened it.
+  static const searchVoice = '/search/voice';
+
+  /// Scan a product barcode. Navigates to the product on a match; pops
+  /// the scanned digits back as a text query when the buyer asks for it.
+  static const searchBarcode = '/search/barcode';
   static const searchTrending = '/trending-products';
   static const searchCategory = '/browse-category/:categoryId';
   static const missionShopping = '/mission-shopping';
