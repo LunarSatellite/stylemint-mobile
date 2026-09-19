@@ -342,4 +342,18 @@ abstract class RouteNames {
       '/creator/analytics/reel-detail/:reelId';
   static const creatorFullAnalyticsReport = '/creator/analytics/full-report';
   static const creatorSearch = '/creator/search';
+
+  // ─── Clienteling (v1/clienteling/*) ───────────────────────────────────────
+
+  /// A store associate's client book. Not a role in this app: the backend
+  /// gates it on an active vendor team membership plus a live per-customer
+  /// assignment, so an account with neither sees an empty book.
+  static const associateClientBook = '/associate/clients';
+
+  /// One permitted customer's workspace: `/associate/clients/:customerAccountId`.
+  static const associateClientBrief = '/associate/clients/:customerAccountId';
+
+  /// The shopper's own record of who served them, and the confirm/reject
+  /// control that is the only path to an associate's credit.
+  static const myClienteling = '/settings/in-store-assistance';
 }
