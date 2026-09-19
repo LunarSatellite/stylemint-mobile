@@ -6,6 +6,10 @@ import 'package:stylemint_mobile_frontend/features/settings/domain/entities/comp
 abstract interface class MemoryVaultRepository {
   Future<Either<NetworkExceptions, MemoryVault>> load();
 
+  /// Whether the customer has paused being remembered. Read by anything that
+  /// personalises what they see, so one switch governs all of it.
+  Future<Either<NetworkExceptions, bool>> isPaused();
+
   Future<Either<NetworkExceptions, CompanionMemory>> correct(
     String memoryId,
     String content,

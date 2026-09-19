@@ -20,6 +20,10 @@ class MemoryVaultRepositoryImpl implements MemoryVaultRepository {
       _call(remoteDataSource.load);
 
   @override
+  Future<Either<NetworkExceptions, bool>> isPaused() =>
+      _call(remoteDataSource.isMemoryPaused);
+
+  @override
   Future<Either<NetworkExceptions, CompanionMemory>> correct(
     String memoryId,
     String content,

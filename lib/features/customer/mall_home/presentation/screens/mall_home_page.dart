@@ -154,8 +154,12 @@ class _MallHomePageState extends ConsumerState<MallHomePage> {
     ref
       ..listen<int>(mallHomeReselectedProvider, (_, _) => _onReselected())
       ..listen<bool>(mallViewerSignedInProvider, (previous, next) {
-        // Signing in or out changes what the page is personalised for.
-        if (previous != next) unawaited(_notifier.refresh());
+        // Signing in or out changes what the page is personalised for — and
+        // whose consent answer applies to it.
+        if (previous != next) {
+          _notifier.forgetConsent();
+          unawaited(_notifier.refresh());
+        }
       });
 
     final state = ref.watch(mallHomeNotifierProvider);

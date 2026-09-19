@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/services/private_twin_crypto.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/memory_vault_notifier.dart';
@@ -98,7 +99,12 @@ class _VaultBody extends ConsumerWidget {
             value: !vault.paused,
             onChanged: busy
                 ? null
-                : (remember) => notifier.setPaused(paused: !remember),
+                : (remember) {
+                    unawaited(notifier.setPaused(paused: !remember));
+                    // The Mall's personalisation reads this same switch and
+                    // caches the answer; tell it to ask again.
+                    ref.read(storefrontPersonalizerProvider).forgetConsent();
+                  },
             activeTrackColor: DesignTokens.primaryGreen,
             title: Text(
               'Remember new things',

@@ -10,10 +10,17 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/collection_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/feed_signal.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/product_listing_query.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/storefront_layout.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/adaptive_storefront_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_catalog_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_home_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
+import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/app_theme.dart';
 
@@ -58,6 +65,55 @@ class FakeMallHomeRepository implements MallHomeRepository {
     recorded.add(productId);
     return right(unit);
   }
+}
+
+/// The adaptive storefront, switched off. Every Mall test gets this unless
+/// it overrides the provider itself, so a page under test never reaches for
+/// a real layout — and a test that says nothing about personalisation is
+/// testing the fixed home, which is exactly what it means to.
+class InertStorefrontRepository implements AdaptiveStorefrontRepository {
+  @override
+  Future<StorefrontLayout> getLayout() async => StorefrontLayout.none;
+
+  @override
+  Future<void> trackInteraction(FeedSignal signal) async {}
+}
+
+/// A Memory Vault that answers "not paused" and never reaches the network.
+class InertMemoryVaultRepository implements MemoryVaultRepository {
+  @override
+  Future<Either<NetworkExceptions, bool>> isPaused() async => right(false);
+
+  @override
+  Future<Either<NetworkExceptions, MemoryVault>> load() async =>
+      right(const MemoryVault(paused: false, memories: []));
+
+  @override
+  Future<Either<NetworkExceptions, CompanionMemory>> correct(
+    String memoryId,
+    String content,
+  ) => throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> forget(String memoryId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> forgetAll() =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> setPaused({required bool paused}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, String>> export() =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, int>> importPortableTwin(
+    String bundleJson,
+  ) => throw UnimplementedError();
 }
 
 typedef ProductsCall = ({ProductListingQuery query, String? cursor});
@@ -297,6 +353,8 @@ Future<void> pumpMallApp(
   required String location,
   required List<GoRoute> routes,
   List<Object> overrides = const [],
+  AdaptiveStorefrontRepository? storefront,
+  MemoryVaultRepository? vault,
   double width = 390,
   double? height,
   double textScale = 1,
@@ -337,7 +395,19 @@ Future<void> pumpMallApp(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides.cast(),
+      // Riverpod refuses a provider overridden twice, so the adaptive
+      // storefront is given here and nowhere else: [storefront] and [vault]
+      // for a test that has something to say about personalisation, and the
+      // inert pair — which is the fixed home — for every other Mall test.
+      overrides: <Object>[
+        adaptiveStorefrontRepositoryProvider.overrideWithValue(
+          storefront ?? InertStorefrontRepository(),
+        ),
+        memoryVaultRepositoryProvider.overrideWithValue(
+          vault ?? InertMemoryVaultRepository(),
+        ),
+        ...overrides,
+      ].cast(),
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,

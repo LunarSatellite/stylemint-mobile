@@ -72,6 +72,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     try {
       if (!ref.read(sessionControllerProvider).isAuthenticated) return;
       ref.read(recentlyViewedRecorderProvider).record(widget.productId);
+      // Opening a product page is the clearest statement of intent the app
+      // has, and the one the feed reads as "researching".
+      ref.read(feedSignalRecorderProvider).productViewed(widget.productId);
     } on Object catch (_) {
       // Best effort only.
     }
