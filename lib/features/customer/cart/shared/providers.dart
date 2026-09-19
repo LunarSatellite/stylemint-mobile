@@ -40,6 +40,13 @@ class CartItemCountNotifier extends Notifier<int> {
     return _settledCount(ref.read(cartNotifierProvider)) ?? 0;
   }
 
+  /// Adopts a count an API told us authoritatively — the shopping
+  /// assistant's `cart-additions` returns the new total, and the badge should
+  /// move the moment it lands rather than after the cart round-trips.
+  void observeExternalCount(int count) {
+    if (count >= 0) state = count;
+  }
+
   static int? _settledCount(CartState state) => state.maybeWhen(
     initial: () => 0,
     loadSuccess: (cart) =>

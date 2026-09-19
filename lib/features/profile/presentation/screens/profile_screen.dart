@@ -186,6 +186,25 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
         ProfileStatsRow(summary: widget.summary),
         const SizedBox(height: DesignTokens.s12),
 
+        // Minty and missions sit at the top of this section: both are
+        // optional helpers a shopper comes back to, never a step between
+        // them and ordinary browsing or checkout.
+        ProfileMenuSection(
+          items: [
+            ProfileMenuItem(
+              icon: Icons.auto_awesome_outlined,
+              label: 'Minty, your shopping assistant',
+              onTap: () => context.push(RouteNames.assistant),
+            ),
+            ProfileMenuItem(
+              icon: Icons.flag_outlined,
+              label: 'Shopping missions',
+              onTap: () => context.push(RouteNames.missions),
+            ),
+          ],
+        ),
+        const SizedBox(height: DesignTokens.s20),
+
         // Returns sit directly under My Orders.
         ProfileMenuSection(
           items: [
