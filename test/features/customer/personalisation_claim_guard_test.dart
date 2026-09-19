@@ -150,8 +150,6 @@ const Map<String, String> _exemptions = {
       'Discloses that the suggestion is NOT based on the basket.',
   'lib/features/creator/reel_studio/presentation/widgets/studio_insights_section.dart':
       "Creator-scoped studio endpoints keyed to this creator's own reels.",
-  'lib/features/settings/presentation/screens/notification_prefs_screen.dart':
-      'Describes what a notification preference toggle controls.',
   'lib/features/profile/presentation/screens/edit_profile_screen.dart':
       'Describes what a profile field and a marketing consent toggle are for.',
   // Onboarding copy promising a real feature, not labelling content. The

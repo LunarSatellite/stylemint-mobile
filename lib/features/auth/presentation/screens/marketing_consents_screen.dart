@@ -122,18 +122,59 @@ class _MarketingConsentsScreenState extends ConsumerState<MarketingConsentsScree
                                   color: DesignTokens.textLight),
                               const SizedBox(width: DesignTokens.s16),
                               Expanded(
-                                child: Text(
-                                  _categoryLabel(c.category),
-                                  style: DesignTokens.oneLinerSemibold,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _categoryLabel(c.category),
+                                      style: DesignTokens.oneLinerSemibold,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    // Consent state is spelled out and
+                                    // given a glyph — never carried by the
+                                    // switch's colour alone.
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          c.consented
+                                              ? Icons.check_circle_outline
+                                              : Icons
+                                                    .do_not_disturb_on_outlined,
+                                          size: 13,
+                                          color: c.consented
+                                              ? DesignTokens.primaryGreen
+                                              : DesignTokens.textMuted,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          c.consented
+                                              ? 'Agreed'
+                                              : 'Not agreed',
+                                          style: DesignTokens.smallRegular
+                                              .copyWith(
+                                                color: c.consented
+                                                    ? DesignTokens.primaryGreen
+                                                    : DesignTokens.textMuted,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Switch(
-                                value: c.consented,
-                                onChanged: (_) =>
-                                    _toggle(c.category, c.consented),
-                                activeColor: DesignTokens.primaryGreen,
-                                activeTrackColor:
-                                    DesignTokens.primaryGreenDark,
+                              Semantics(
+                                label: _categoryLabel(c.category),
+                                toggled: c.consented,
+                                child: Switch(
+                                  value: c.consented,
+                                  onChanged: (_) =>
+                                      _toggle(c.category, c.consented),
+                                  activeThumbColor: DesignTokens.primaryGreen,
+                                  activeTrackColor:
+                                      DesignTokens.primaryGreenDark,
+                                ),
                               ),
                             ],
                           ),

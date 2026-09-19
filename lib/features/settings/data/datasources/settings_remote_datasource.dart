@@ -40,6 +40,36 @@ class SettingsRemoteDataSource {
     return NotificationPreferencesDto.fromJson(response as Map<String, dynamic>);
   }
 
+  /// PATCH `/v1/accounts/{accountId}/notification-preferences/quiet-hours`
+  /// (`UpdateQuietHoursVm`).
+  ///
+  /// Quiet Hours lives on its own endpoint — the `toggles` VM has no
+  /// quiet-hours field, so the Pause Notifications switch reached nothing at
+  /// all until this call existed. `startLocal`/`endLocal` are backend
+  /// `TimeOnly`, serialised as "HH:mm:ss".
+  Future<NotificationPreferencesDto> updateQuietHours({
+    required bool enabled,
+    required String startHhMm,
+    required String endHhMm,
+  }) async {
+    final accountId = await _accountId();
+    final response = await apiClient.patch(
+      '/v1/accounts/$accountId/notification-preferences/quiet-hours',
+      data: {
+        'enabled': enabled,
+        'startLocal': NotificationPreferencesDto.hhmmss(startHhMm),
+        'endLocal': NotificationPreferencesDto.hhmmss(endHhMm),
+      },
+      options: Options(headers: {
+        'requiresToken': true,
+        'Idempotency-Key': const Uuid().v4(),
+      }),
+    );
+    return NotificationPreferencesDto.fromJson(
+      response as Map<String, dynamic>,
+    );
+  }
+
   // No dedicated language endpoint exists — locale lives on the account
   // record (`GET/PATCH /v1/accounts/{id}`), the same one profile edits use.
   Future<String> getCurrentLanguage() async {

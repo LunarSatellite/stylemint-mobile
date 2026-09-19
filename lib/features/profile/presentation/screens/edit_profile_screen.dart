@@ -46,11 +46,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   File? _localAvatarFile;
   bool _avatarUploading = false;
 
-  // Preference toggles — UI only (no backend field yet).
-  bool _sendPersonalized = false;
-  bool _shareActivity = false;
-  bool _includeBeta = false;
-  bool _preferencesLoaded = false;
+  // The former "Preferences" block lived here: three checkboxes, two of which
+  // ("Share my activity with creators I follow", "Include me in beta testing
+  // programs") were never written anywhere, never read back, and reset to
+  // false on every open — the first of those is a consent control, so a
+  // customer could refuse activity sharing and nothing at all would happen.
+  // No endpoint exists for either. The third duplicated the marketing switch
+  // that Settings → Notifications owns. All three are gone.
   bool _socialLinksLoaded = false;
 
   @override
@@ -97,23 +99,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     final isCreator = ref.read(isCreatorProvider).asData?.value ?? false;
-    final notificationPrefs = ref
-        .read(settingsNotifierProvider)
-        .maybeWhen(
-          loadSuccess: (prefs) => prefs,
-          orElse: () => null,
-        );
-    if (notificationPrefs != null) {
-      unawaited(
-        ref
-            .read(settingsNotifierProvider.notifier)
-            .savePrefs(
-              notificationPrefs.copyWith(
-                personalizedOffers: _sendPersonalized,
-              ),
-            ),
-      );
-    }
     unawaited(
       ref
           .read(editProfileNotifierProvider.notifier)
@@ -239,18 +224,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(editProfileNotifierProvider);
-    final notificationPrefsState = ref.watch(settingsNotifierProvider);
     final socialLinksState = ref.watch(creatorSocialLinksProvider);
     final deletionState = ref.watch(pendingDeletionNotifierProvider);
     final pendingRequest = deletionState.whenOrNull(found: (r) => r);
 
-    notificationPrefsState.whenOrNull(
-      loadSuccess: (prefs) {
-        if (_preferencesLoaded) return;
-        _preferencesLoaded = true;
-        _sendPersonalized = prefs.personalizedOffers;
-      },
-    );
     socialLinksState.whenData((links) {
       if (_socialLinksLoaded || links == null) return;
       _socialLinksLoaded = true;
@@ -502,26 +479,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 const SizedBox(height: DesignTokens.s24),
               ],
 
-              // ── Preferences ──────────────────────────────────────────────────
-              const _SectionHeader('Preferences'),
-              const SizedBox(height: DesignTokens.s12),
-              _CheckboxItem(
-                value: _sendPersonalized,
-                label: 'Send me personalized product recommendations',
-                onChanged: (v) =>
-                    setState(() => _sendPersonalized = v ?? false),
-              ),
-              _CheckboxItem(
-                value: _shareActivity,
-                label: 'Share my activity with creators I follow',
-                onChanged: (v) => setState(() => _shareActivity = v ?? false),
-              ),
-              _CheckboxItem(
-                value: _includeBeta,
-                label: 'Include me in beta testing programs',
-                onChanged: (v) => setState(() => _includeBeta = v ?? false),
-              ),
-              const SizedBox(height: DesignTokens.s24),
+              // The "Preferences" checkbox block that stood here is gone; see
+              // the field-declaration comment above. Notification and
+              // marketing choices live in Settings → Notifications, where
+              // each switch maps to a column the backend stores and reads.
+              const SizedBox(height: DesignTokens.s8),
 
               // ── Delete Account row ───────────────────────────────────────────
               _DeleteAccountRow(
@@ -1172,64 +1134,6 @@ class _SocialField extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CHECKBOX ITEM
-// ─────────────────────────────────────────────────────────────────────────────
-class _CheckboxItem extends StatelessWidget {
-  const _CheckboxItem({
-    required this.value,
-    required this.label,
-    required this.onChanged,
-  });
-
-  final bool value;
-  final String label;
-  final ValueChanged<bool?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Checkbox(
-              value: value,
-              onChanged: onChanged,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-              checkColor: DesignTokens.buttonPrimaryText,
-              activeColor: DesignTokens.primaryGreen,
-              side: const BorderSide(
-                color: DesignTokens.inputFieldBorder,
-                width: 1.5,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          const SizedBox(width: DesignTokens.s12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(!value),
-              child: Text(
-                label,
-                style: DesignTokens.mediumRegular.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

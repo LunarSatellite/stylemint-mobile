@@ -10,6 +10,14 @@ abstract interface class SettingsRepository {
     NotificationPreferences prefs,
   );
 
+  /// Quiet Hours is stored by the same record but written through its own
+  /// endpoint — the toggles payload has no quiet-hours field.
+  Future<Either<NetworkExceptions, NotificationPreferences>> updateQuietHours({
+    required bool enabled,
+    required String startHhMm,
+    required String endHhMm,
+  });
+
   Future<Either<NetworkExceptions, String>> getCurrentLanguage();
 
   Future<Either<NetworkExceptions, Unit>> setLanguage(String languageCode);
