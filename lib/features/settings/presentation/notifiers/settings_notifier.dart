@@ -21,7 +21,10 @@ abstract class NotificationPrefsState with _$NotificationPrefsState {
   ) = _NpLoadSuccess;
   const factory NotificationPrefsState.loadFailure(NetworkExceptions failure) =
       _NpLoadFailure;
-  const factory NotificationPrefsState.saveSuccess() = _NpSaveSuccess;
+  // There is no `saveSuccess` state: a successful save re-emits
+  // [loadSuccess] with the saved value. One used to be declared here, nothing
+  // ever emitted it, and the screen rendered a "Preferences saved" snackbar
+  // from it that no customer has ever seen.
   const factory NotificationPrefsState.saveFailure(NetworkExceptions failure) =
       _NpSaveFailure;
 }
@@ -50,6 +53,20 @@ class SettingsNotifier extends StateNotifier<NotificationPrefsState> {
       NotificationPrefsState.saveFailure,
       // Use the prefs we already have (which the user interacted with) rather
       // than round-tripping through toDomain() which would reset pushEnabled.
+      (_) => NotificationPrefsState.loadSuccess(prefs),
+    );
+  }
+
+  /// Quiet Hours has its own endpoint; the toggles payload cannot carry it.
+  Future<void> saveQuietHours(NotificationPreferences prefs) async {
+    state = NotificationPrefsState.loadSuccess(prefs);
+    final either = await _repository.updateQuietHours(
+      enabled: prefs.quietHoursEnabled,
+      startHhMm: prefs.quietHoursStart ?? '22:00',
+      endHhMm: prefs.quietHoursEnd ?? '08:00',
+    );
+    state = either.fold(
+      NotificationPrefsState.saveFailure,
       (_) => NotificationPrefsState.loadSuccess(prefs),
     );
   }

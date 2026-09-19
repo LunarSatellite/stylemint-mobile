@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/notification_prefs.dart';
@@ -5,6 +7,25 @@ import 'package:stylemint_mobile_frontend/features/settings/presentation/notifie
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
+/// Notification settings.
+///
+/// Every switch on this screen maps to exactly one column the backend stores
+/// and reads. Controls that could not do that were removed rather than left
+/// on screen lying:
+///
+///   * **Login Alerts / Password Changes** — `UpdateNotificationTogglesVm` has
+///     no Security field, and `IsEmailEnabled`/`IsPushEnabled` return `true`
+///     for `NotificationCategory.Security` before consulting any column.
+///     Security alerts are transactional and cannot be silenced; the section
+///     now says so instead of offering a switch that does nothing.
+///   * **Price Drops / Back in Stock / Flash Sales / New Arrivals /
+///     Product Recommendations / Personalized Offers** — six switches over one
+///     `PushMarketing` column, OR-ed on save. Any one turned off was undone by
+///     its siblings and read back on as soon as the screen reloaded. They are
+///     now the single "Deals and offers" switch that column can actually back.
+///   * **Return Status** — wrote the Messages rollup, which gates partnership
+///     invites. Refund and return notifications are `OrderRefunded`, which
+///     rolls up to OrderUpdates and is already governed by Order Updates.
 class NotificationPrefsScreen extends ConsumerStatefulWidget {
   const NotificationPrefsScreen({super.key});
 
@@ -15,135 +36,94 @@ class NotificationPrefsScreen extends ConsumerStatefulWidget {
 
 class _NotificationPrefsScreenState
     extends ConsumerState<NotificationPrefsScreen> {
-  // Push
-  bool _pushEnabled = true;
-  // Order Updates
-  bool _orderStatusChanges = true;
-  bool _deliveryUpdates = true;
-  bool _returnStatus = true;
-  // Shopping & Deals
-  bool _priceDrops = true;
-  bool _backInStock = true;
-  bool _flashSales = true;
-  bool _newArrivals = false;
-  // Creator Activity
-  bool _newReelsFromCreators = false;
-  bool _creatorRecommendations = false;
-  // Account & Security
-  bool _loginAlerts = true;
-  bool _passwordChanges = true;
-  bool _paymentUpdates = true;
-  // Marketing & Promotions
-  bool _personalizedOffers = true;
-  bool _productRecommendations = false;
-  bool _newsletter = false;
-  // Email & SMS
-  bool _emailNotifications = false;
-  bool _smsNotifications = false;
-  // Quiet Hours
-  bool _quietHoursEnabled = true;
-  String _quietStart = '22:00';
-  String _quietEnd = '08:00';
+  NotificationPreferences _prefs = const NotificationPreferences();
+  bool _loaded = false;
 
-  NotificationPreferences _original = const NotificationPreferences();
+  @override
+  void initState() {
+    super.initState();
+    // Whatever the server holds wins over the entity defaults, on this load
+    // and on every later one — a reinstall must not show a local default
+    // dressed up as the customer's own choice.
+    _adopt(ref.read(settingsNotifierProvider));
+  }
 
-  void _saveAll() {
-    ref.read(settingsNotifierProvider.notifier).savePrefs(
-      _original.copyWith(
-        pushEnabled: _pushEnabled,
-        orderStatusChanges: _orderStatusChanges,
-        deliveryUpdates: _deliveryUpdates,
-        returnStatus: _returnStatus,
-        priceDrops: _priceDrops,
-        backInStock: _backInStock,
-        flashSales: _flashSales,
-        newArrivals: _newArrivals,
-        newReelsFromCreators: _newReelsFromCreators,
-        creatorRecommendations: _creatorRecommendations,
-        loginAlerts: _loginAlerts,
-        passwordChanges: _passwordChanges,
-        paymentUpdates: _paymentUpdates,
-        personalizedOffers: _personalizedOffers,
-        productRecommendations: _productRecommendations,
-        newsletter: _newsletter,
-        emailNotifications: _emailNotifications,
-        smsNotifications: _smsNotifications,
-        quietHoursEnabled: _quietHoursEnabled,
-        quietHoursStart: _quietStart,
-        quietHoursEnd: _quietEnd,
-      ),
+  void _adopt(NotificationPrefsState state) {
+    state.whenOrNull(
+      loadSuccess: (prefs) {
+        _loaded = true;
+        _prefs = prefs;
+      },
     );
   }
 
+  /// Moves the switch, saves, and puts it back if the save did not land.
+  ///
+  /// A switch left showing the value the customer chose after the write
+  /// failed is the same lie in a smaller window: the screen says off, the
+  /// server still says on, and the next notification proves it.
+  Future<void> _apply(NotificationPreferences next) async {
+    final previous = _prefs;
+    setState(() => _prefs = next);
+    await ref.read(settingsNotifierProvider.notifier).savePrefs(next);
+    _revertIfSaveFailed(previous);
+  }
+
+  Future<void> _applyQuietHours(NotificationPreferences next) async {
+    final previous = _prefs;
+    setState(() => _prefs = next);
+    await ref.read(settingsNotifierProvider.notifier).saveQuietHours(next);
+    _revertIfSaveFailed(previous);
+  }
+
+  void _revertIfSaveFailed(NotificationPreferences previous) {
+    if (!mounted) return;
+    final failed = ref
+        .read(settingsNotifierProvider)
+        .maybeWhen(saveFailure: (_) => true, orElse: () => false);
+    if (failed) setState(() => _prefs = previous);
+  }
+
   void _turnOnAll() {
-    setState(() {
-      _pushEnabled = true;
-      _orderStatusChanges = true;
-      _deliveryUpdates = true;
-      _returnStatus = true;
-      _priceDrops = true;
-      _backInStock = true;
-      _flashSales = true;
-      _newArrivals = true;
-      _newReelsFromCreators = true;
-      _creatorRecommendations = true;
-      _loginAlerts = true;
-      _passwordChanges = true;
-      _paymentUpdates = true;
-      _personalizedOffers = true;
-      _productRecommendations = true;
-      _newsletter = true;
-      _emailNotifications = true;
-      _smsNotifications = true;
-      // Quiet Hours is a suppression switch (pauses notifications 10PM-8AM
-      // when ON) — turning it ON here would silently mute the very
-      // notifications this button promises to enable. Disable it instead.
-      _quietHoursEnabled = false;
-    });
-    _saveAll();
+    // Quiet Hours is a suppression switch (it pauses notifications inside the
+    // window when ON) — turning it on here would silently mute the very
+    // notifications this button promises to enable.
+    final next = _prefs.copyWith(
+      pushEnabled: true,
+      emailNotifications: true,
+      smsNotifications: true,
+      orderStatusChanges: true,
+      deliveryUpdates: true,
+      newReelsFromCreators: true,
+      newFollowers: true,
+      paymentUpdates: true,
+      marketingPush: true,
+      newsletter: true,
+      quietHoursEnabled: false,
+    );
+    final previous = _prefs;
+    setState(() => _prefs = next);
+    final notifier = ref.read(settingsNotifierProvider.notifier);
+    unawaited(
+      notifier
+          .savePrefs(next)
+          .then((_) => notifier.saveQuietHours(next))
+          .then((_) => _revertIfSaveFailed(previous)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(settingsNotifierProvider);
-
-    // Sync local state from provider when prefs are loaded from backend
-    state.maybeWhen(
-      loadSuccess: (prefs) {
-        _original = prefs;
-        setState(() {
-          _pushEnabled = prefs.pushEnabled;
-          _orderStatusChanges = prefs.orderStatusChanges;
-          _deliveryUpdates = prefs.deliveryUpdates;
-          _returnStatus = prefs.returnStatus;
-          _priceDrops = prefs.priceDrops;
-          _backInStock = prefs.backInStock;
-          _flashSales = prefs.flashSales;
-          _newArrivals = prefs.newArrivals;
-          _newReelsFromCreators = prefs.newReelsFromCreators;
-          _creatorRecommendations = prefs.creatorRecommendations;
-          _loginAlerts = prefs.loginAlerts;
-          _passwordChanges = prefs.passwordChanges;
-          _paymentUpdates = prefs.paymentUpdates;
-          _personalizedOffers = prefs.personalizedOffers;
-          _productRecommendations = prefs.productRecommendations;
-          _newsletter = prefs.newsletter;
-          _emailNotifications = prefs.emailNotifications;
-          _smsNotifications = prefs.smsNotifications;
-          _quietHoursEnabled = prefs.quietHoursEnabled;
-          if (prefs.quietHoursStart != null) _quietStart = prefs.quietHoursStart!;
-          if (prefs.quietHoursEnd != null) _quietEnd = prefs.quietHoursEnd!;
-        });
-      },
-      orElse: () {},
-    );
-
     ref.listen<NotificationPrefsState>(settingsNotifierProvider, (_, next) {
       next.whenOrNull(
-        saveSuccess: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Preferences saved')),
-        ),
-        saveFailure: (f) => ScaffoldMessenger.of(context).showSnackBar(
+        loadSuccess: (prefs) {
+          if (_loaded && prefs == _prefs) return;
+          setState(() {
+            _loaded = true;
+            _prefs = prefs;
+          });
+        },
+        saveFailure: (_) => ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to save preferences. Please try again.'),
           ),
@@ -156,7 +136,10 @@ class _NotificationPrefsScreenState
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: const BackButton(color: DesignTokens.textWhite),
-        title: const Text('Notification Settings', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Notification Settings',
+          style: DesignTokens.sectionInnerTitle,
+        ),
       ),
       body: Column(
         children: [
@@ -164,231 +147,175 @@ class _NotificationPrefsScreenState
             child: ListView(
               padding: const EdgeInsets.all(DesignTokens.s16),
               children: [
-                // ── Push Notifications ─────────────────────────────────
-                _SectionLabel('Push Notifications'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Enable Push Notifications',
-                    subtitle: 'Allow StyleMint to send you push notifications',
-                    value: _pushEnabled,
-                    onChanged: (v) {
-                      setState(() => _pushEnabled = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Push Notifications'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.notifications_active_outlined,
+                      title: 'Enable Push Notifications',
+                      subtitle:
+                          'Allow StyleMint to send you push notifications',
+                      value: _prefs.pushEnabled,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(pushEnabled: v)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Order Updates ──────────────────────────────────────
-                _SectionLabel('Order Updates'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Order Status Changes',
-                    subtitle: 'Order shipped, Delivered & Delays',
-                    value: _orderStatusChanges,
-                    onChanged: (v) {
-                      setState(() => _orderStatusChanges = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Delivery Updates',
-                    subtitle: 'Out for delivery, Delivery attempts',
-                    value: _deliveryUpdates,
-                    onChanged: (v) {
-                      setState(() => _deliveryUpdates = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Return Status',
-                    subtitle: 'Return approved, Refund processed',
-                    value: _returnStatus,
-                    onChanged: (v) {
-                      setState(() => _returnStatus = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Order Updates'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'Order Updates',
+                      subtitle:
+                          'Order placed, cancelled and refunded, including '
+                          'return refunds',
+                      value: _prefs.orderStatusChanges,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(orderStatusChanges: v)),
+                    ),
+                    _ToggleItem(
+                      icon: Icons.local_shipping_outlined,
+                      title: 'Delivery Updates',
+                      subtitle: 'Shipped and delivered',
+                      value: _prefs.deliveryUpdates,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(deliveryUpdates: v)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Shopping & Deals ───────────────────────────────────
-                _SectionLabel('Shopping & Deals'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Price Drops',
-                    subtitle: 'When saved items go on sale',
-                    value: _priceDrops,
-                    onChanged: (v) {
-                      setState(() => _priceDrops = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Back in Stock',
-                    subtitle: 'Products you want are available',
-                    value: _backInStock,
-                    onChanged: (v) {
-                      setState(() => _backInStock = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Flash Sales',
-                    subtitle: 'Limited-time deals and promotions',
-                    value: _flashSales,
-                    onChanged: (v) {
-                      setState(() => _flashSales = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'New Arrivals',
-                    subtitle: 'Latest products in categories you follow',
-                    value: _newArrivals,
-                    onChanged: (v) {
-                      setState(() => _newArrivals = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Creator Activity'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.play_circle_outline,
+                      title: 'Reel Activity',
+                      subtitle:
+                          'New reels from creators you follow, and replies to '
+                          'your comments',
+                      value: _prefs.newReelsFromCreators,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(newReelsFromCreators: v)),
+                    ),
+                    _ToggleItem(
+                      icon: Icons.person_add_alt_outlined,
+                      title: 'New Followers',
+                      subtitle: 'When someone follows you',
+                      value: _prefs.newFollowers,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(newFollowers: v)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Creator Activity ───────────────────────────────────
-                _SectionLabel('Creator Activity'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'New Reels from Creators',
-                    subtitle: 'When creators you follow post new reels',
-                    value: _newReelsFromCreators,
-                    onChanged: (v) {
-                      setState(() => _newReelsFromCreators = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Creator Recommendations',
-                    subtitle: 'Suggested creators to follow',
-                    value: _creatorRecommendations,
-                    onChanged: (v) {
-                      setState(() => _creatorRecommendations = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Account & Security'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.campaign_outlined,
+                      title: 'Account Announcements',
+                      subtitle:
+                          'Payments and payouts, support replies and service '
+                          'notices',
+                      value: _prefs.paymentUpdates,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(paymentUpdates: v)),
+                    ),
+                  ],
+                ),
+                const _FootNote(
+                  icon: Icons.lock_outline,
+                  text:
+                      'Security alerts — new sign-ins and password changes — '
+                      'are always sent and cannot be turned off.',
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Account & Security ─────────────────────────────────
-                _SectionLabel('Account & Security'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Login Alerts',
-                    subtitle: 'New device or unusual  activity',
-                    value: _loginAlerts,
-                    onChanged: (v) {
-                      setState(() => _loginAlerts = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Password Changes',
-                    subtitle: 'Account security updates',
-                    value: _passwordChanges,
-                    onChanged: (v) {
-                      setState(() => _passwordChanges = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Payment Updates',
-                    subtitle: 'Payment method changes, receipts',
-                    value: _paymentUpdates,
-                    onChanged: (v) {
-                      setState(() => _paymentUpdates = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Deals & Marketing'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.local_offer_outlined,
+                      title: 'Deals and offers',
+                      subtitle:
+                          'Price drops, back in stock, sales and reminders, '
+                          'as push notifications',
+                      value: _prefs.marketingPush,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(marketingPush: v)),
+                    ),
+                    _ToggleItem(
+                      icon: Icons.mark_email_unread_outlined,
+                      title: 'Marketing email',
+                      subtitle: 'Deals, new products and tips, by email',
+                      value: _prefs.newsletter,
+                      onChanged: (v) => _apply(_prefs.copyWith(newsletter: v)),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Marketing & Promotions ─────────────────────────────
-                _SectionLabel('Marketing & Promotions'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Personalized Offers',
-                    subtitle: 'Special deals based on your interests',
-                    value: _personalizedOffers,
-                    onChanged: (v) {
-                      setState(() => _personalizedOffers = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Product Recommendations',
-                    subtitle: 'Suggested products you might like',
-                    value: _productRecommendations,
-                    onChanged: (v) {
-                      setState(() => _productRecommendations = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'Newsletter',
-                    subtitle: 'Weekly email with new products and tips',
-                    value: _newsletter,
-                    onChanged: (v) {
-                      setState(() => _newsletter = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Email & SMS'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.email_outlined,
+                      title: 'Email Notifications',
+                      subtitle: 'Notifications & Alerts to your email',
+                      value: _prefs.emailNotifications,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(emailNotifications: v)),
+                    ),
+                    _ToggleItem(
+                      icon: Icons.sms_outlined,
+                      title: 'SMS Notifications',
+                      subtitle:
+                          "Notifications & Alerts to your phone's sms",
+                      value: _prefs.smsNotifications,
+                      onChanged: (v) =>
+                          _apply(_prefs.copyWith(smsNotifications: v)),
+                    ),
+                  ],
+                ),
+                const _FootNote(
+                  icon: Icons.info_outline,
+                  text:
+                      'SMS is used for security codes only today, so this '
+                      'switch will not change what you receive yet.',
+                ),
                 const SizedBox(height: DesignTokens.s16),
 
-                // ── Email & SMS ────────────────────────────────────────
-                _SectionLabel('Email & SMS'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Email Notifications',
-                    subtitle: 'Notifications & Alerts to your email',
-                    value: _emailNotifications,
-                    onChanged: (v) {
-                      setState(() => _emailNotifications = v);
-                      _saveAll();
-                    },
-                  ),
-                  _ToggleItem(
-                    title: 'SMS Notifications',
-                    subtitle: "Notifications & Alerts to your phone's sms",
-                    value: _smsNotifications,
-                    onChanged: (v) {
-                      setState(() => _smsNotifications = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
-                const SizedBox(height: DesignTokens.s16),
-
-                // ── Quiet Hours ────────────────────────────────────────
-                _SectionLabel('Quiet Hours'),
-                _SectionCard(items: [
-                  _ToggleItem(
-                    title: 'Pause Notifications',
-                    subtitle:
-                        'Pause notifications from ${_formatTime(_quietStart)} – ${_formatTime(_quietEnd)}',
-                    value: _quietHoursEnabled,
-                    onChanged: (v) {
-                      setState(() => _quietHoursEnabled = v);
-                      _saveAll();
-                    },
-                  ),
-                ]),
+                const _SectionLabel('Quiet Hours'),
+                _SectionCard(
+                  items: [
+                    _ToggleItem(
+                      icon: Icons.bedtime_outlined,
+                      title: 'Pause Notifications',
+                      subtitle:
+                          'Pause notifications from '
+                          '${_formatTime(_prefs.quietHoursStart ?? '22:00')} – '
+                          '${_formatTime(_prefs.quietHoursEnd ?? '08:00')}',
+                      value: _prefs.quietHoursEnabled,
+                      onChanged: (v) => _applyQuietHours(
+                        _prefs.copyWith(quietHoursEnabled: v),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: DesignTokens.s16),
               ],
             ),
           ),
-
-          // ── Pinned button ────────────────────────────────────────────
-          const Divider(height: 1, thickness: 1, color: DesignTokens.borderDefault),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: DesignTokens.borderDefault,
+          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -404,6 +331,7 @@ class _NotificationPrefsScreenState
                   style: DesignTokens.primaryButtonStyle(),
                   child: Text(
                     'Turn On All Notifications',
+                    textAlign: TextAlign.center,
                     style: DesignTokens.mediumSemibold.copyWith(
                       color: DesignTokens.buttonPrimaryText,
                     ),
@@ -445,6 +373,42 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
+// ── Explanatory note (not a control) ─────────────────────────────────────────
+
+class _FootNote extends StatelessWidget {
+  const _FootNote({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s4,
+        DesignTokens.s8,
+        DesignTokens.s4,
+        0,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: DesignTokens.textMuted),
+          const SizedBox(width: DesignTokens.s6),
+          Expanded(
+            child: Text(
+              text,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Section card ─────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
@@ -476,16 +440,21 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Toggle item ───────────────────────────────────────────────────────────────
+// ── Toggle item ──────────────────────────────────────────────────────────────
 
+/// A settings switch. Its state is carried by the glyph and the word "On"/
+/// "Off" as well as the switch position, never by colour alone, and the whole
+/// row wraps rather than clipping at 320dp with large text.
 class _ToggleItem extends StatelessWidget {
   const _ToggleItem({
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.value,
     required this.onChanged,
   });
 
+  final IconData icon;
   final String title;
   final String subtitle;
   final bool value;
@@ -493,29 +462,91 @@ class _ToggleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      contentPadding: const EdgeInsets.symmetric(
+    return Semantics(
+      container: true,
+      label: title,
+      hint: subtitle,
+      toggled: value,
+      child: _row(),
+    );
+  }
+
+  Widget _row() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: DesignTokens.s16,
-        vertical: DesignTokens.s4,
+        vertical: DesignTokens.s12,
       ),
-      title: Text(
-        title,
-        style: DesignTokens.mediumSemibold.copyWith(color: DesignTokens.textWhite),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              icon,
+              size: 18,
+              color: value ? DesignTokens.primaryGreen : DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      value
+                          ? Icons.check_circle_outline
+                          : Icons.do_not_disturb_on_outlined,
+                      size: 13,
+                      color: value
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
+                    ),
+                    const SizedBox(width: DesignTokens.s4),
+                    Text(
+                      value ? 'On' : 'Off',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: value
+                            ? DesignTokens.primaryGreen
+                            : DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s8),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: DesignTokens.primaryGreen,
+            trackColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return DesignTokens.primaryGreen.withValues(alpha: 0.3);
+              }
+              return DesignTokens.bgAppBodyLight;
+            }),
+          ),
+        ],
       ),
-      subtitle: Text(
-        subtitle,
-        style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-      ),
-      value: value,
-      activeColor: DesignTokens.primaryGreen,
-      trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) {
-          return DesignTokens.primaryGreen.withValues(alpha: 0.3);
-        }
-        return DesignTokens.bgAppBodyLight;
-      }),
-      onChanged: onChanged,
     );
   }
 }
-

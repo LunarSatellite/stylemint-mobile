@@ -1,126 +1,109 @@
+/// The notification preferences the customer can actually change.
+///
+/// Every field here maps **one-to-one** onto a column the backend stores and
+/// a gate the backend reads. That is deliberate: this entity previously
+/// carried a dozen finer-grained flags (priceDrops, backInStock, flashSales,
+/// newArrivals, productRecommendations, personalizedOffers, ...) that were all
+/// OR-ed into the single `PushMarketing` column on the way out and all read
+/// back from that same column on the way in. Turning one of them off changed
+/// nothing while any sibling was on, and the switch flipped itself back on at
+/// the next load. Fields that cannot be independently stored are not modelled
+/// here, so no screen can offer a control the backend cannot honour.
+///
+/// Also absent: security alerts. `IsEmailEnabled`/`IsPushEnabled` in the
+/// Identity module return `true` for `NotificationCategory.Security`
+/// unconditionally, and `UpdateNotificationTogglesVm` has no Security field at
+/// all, so a login/password-alert preference can neither be sent nor honoured.
 class NotificationPreferences {
   const NotificationPreferences({
-    // Push
+    // Channel masters
     this.pushEnabled = true,
-    // Order Updates
-    this.orderStatusChanges = true,
-    this.deliveryUpdates = true,
-    this.returnStatus = true,
-    // Shopping & Deals
-    this.priceDrops = true,
-    this.backInStock = true,
-    this.flashSales = true,
-    this.newArrivals = false,
-    // Creator Activity
-    this.newReelsFromCreators = false,
-    this.creatorRecommendations = false,
-    // Account & Security
-    this.loginAlerts = true,
-    this.passwordChanges = true,
-    this.paymentUpdates = true,
-    // Marketing & Promotions
-    this.personalizedOffers = true,
-    this.productRecommendations = false,
-    this.newsletter = false,
-    // Email & SMS
     this.emailNotifications = false,
     this.smsNotifications = false,
-    // Quiet Hours
+    // Per-category (Identity rollups)
+    this.orderStatusChanges = true,
+    this.deliveryUpdates = true,
+    this.newReelsFromCreators = false,
+    this.newFollowers = false,
+    this.paymentUpdates = true,
+    this.marketingPush = true,
+    this.newsletter = false,
+    // Quiet Hours — saved through its own endpoint.
     this.quietHoursEnabled = true,
     this.quietHoursStart = '22:00',
     this.quietHoursEnd = '08:00',
-    // Backend toggles with no dedicated UI control on this screen — kept so
-    // saving never resets them to a default; always round-tripped from the
-    // last loaded value via copyWith.
-    this.commentReplies = true,
-    this.newOrderForVendor = true,
-    this.partnershipEvents = true,
-    this.ticketUpdates = true,
-    this.ordersDelivered = true,
   });
 
+  /// `pushEnabledMaster` — gates every non-Security push.
   final bool pushEnabled;
-  final bool orderStatusChanges;
-  final bool deliveryUpdates;
-  final bool returnStatus;
-  final bool priceDrops;
-  final bool backInStock;
-  final bool flashSales;
-  final bool newArrivals;
-  final bool newReelsFromCreators;
-  final bool creatorRecommendations;
-  final bool loginAlerts;
-  final bool passwordChanges;
-  final bool paymentUpdates;
-  final bool personalizedOffers;
-  final bool productRecommendations;
-  final bool newsletter;
+
+  /// `emailEnabledMaster` — gates every non-Security email.
   final bool emailNotifications;
+
+  /// `smsEnabledMaster`.
+  ///
+  /// Stored by the backend but, today, read by nothing that can change a
+  /// dispatch outcome: `IsSmsEnabled` returns `SmsSecurity` for Security
+  /// (ignoring this master) and `false` for every other category whether the
+  /// master is on or off. See the screen's note and the audit report.
   final bool smsNotifications;
+
+  /// `push/emailOrderUpdates` — OrderPlaced, OrderCancelled, OrderRefunded.
+  final bool orderStatusChanges;
+
+  /// `push/emailDeliveryUpdates` — OrderShipped, OrderDelivered.
+  final bool deliveryUpdates;
+
+  /// `push/emailReelActivity` — NewReelFromFollowed, CommentReply.
+  final bool newReelsFromCreators;
+
+  /// `push/emailFriendActivity` — NewFollower.
+  final bool newFollowers;
+
+  /// `push/emailSystemAnnouncements` — payouts, support replies, and the
+  /// default rollup for newer categories.
+  final bool paymentUpdates;
+
+  /// `pushMarketing` — PriceDrop, StockBack, CheckoutAbandonedReminder and
+  /// every other promotional push. One column, one switch.
+  final bool marketingPush;
+
+  /// `emailMarketing` — the marketing email channel.
+  final bool newsletter;
+
   final bool quietHoursEnabled;
   final String? quietHoursStart;
   final String? quietHoursEnd;
-  final bool commentReplies;
-  final bool newOrderForVendor;
-  final bool partnershipEvents;
-  final bool ticketUpdates;
-  final bool ordersDelivered;
 
   NotificationPreferences copyWith({
     bool? pushEnabled,
-    bool? orderStatusChanges,
-    bool? deliveryUpdates,
-    bool? returnStatus,
-    bool? priceDrops,
-    bool? backInStock,
-    bool? flashSales,
-    bool? newArrivals,
-    bool? newReelsFromCreators,
-    bool? creatorRecommendations,
-    bool? loginAlerts,
-    bool? passwordChanges,
-    bool? paymentUpdates,
-    bool? personalizedOffers,
-    bool? productRecommendations,
-    bool? newsletter,
     bool? emailNotifications,
     bool? smsNotifications,
+    bool? orderStatusChanges,
+    bool? deliveryUpdates,
+    bool? newReelsFromCreators,
+    bool? newFollowers,
+    bool? paymentUpdates,
+    bool? marketingPush,
+    bool? newsletter,
     bool? quietHoursEnabled,
     String? quietHoursStart,
     String? quietHoursEnd,
-    bool? commentReplies,
-    bool? newOrderForVendor,
-    bool? partnershipEvents,
-    bool? ticketUpdates,
-    bool? ordersDelivered,
   }) {
     return NotificationPreferences(
       pushEnabled: pushEnabled ?? this.pushEnabled,
-      orderStatusChanges: orderStatusChanges ?? this.orderStatusChanges,
-      deliveryUpdates: deliveryUpdates ?? this.deliveryUpdates,
-      returnStatus: returnStatus ?? this.returnStatus,
-      priceDrops: priceDrops ?? this.priceDrops,
-      backInStock: backInStock ?? this.backInStock,
-      flashSales: flashSales ?? this.flashSales,
-      newArrivals: newArrivals ?? this.newArrivals,
-      newReelsFromCreators: newReelsFromCreators ?? this.newReelsFromCreators,
-      creatorRecommendations: creatorRecommendations ?? this.creatorRecommendations,
-      loginAlerts: loginAlerts ?? this.loginAlerts,
-      passwordChanges: passwordChanges ?? this.passwordChanges,
-      paymentUpdates: paymentUpdates ?? this.paymentUpdates,
-      personalizedOffers: personalizedOffers ?? this.personalizedOffers,
-      productRecommendations: productRecommendations ?? this.productRecommendations,
-      newsletter: newsletter ?? this.newsletter,
       emailNotifications: emailNotifications ?? this.emailNotifications,
       smsNotifications: smsNotifications ?? this.smsNotifications,
+      orderStatusChanges: orderStatusChanges ?? this.orderStatusChanges,
+      deliveryUpdates: deliveryUpdates ?? this.deliveryUpdates,
+      newReelsFromCreators: newReelsFromCreators ?? this.newReelsFromCreators,
+      newFollowers: newFollowers ?? this.newFollowers,
+      paymentUpdates: paymentUpdates ?? this.paymentUpdates,
+      marketingPush: marketingPush ?? this.marketingPush,
+      newsletter: newsletter ?? this.newsletter,
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       quietHoursStart: quietHoursStart ?? this.quietHoursStart,
       quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
-      commentReplies: commentReplies ?? this.commentReplies,
-      newOrderForVendor: newOrderForVendor ?? this.newOrderForVendor,
-      partnershipEvents: partnershipEvents ?? this.partnershipEvents,
-      ticketUpdates: ticketUpdates ?? this.ticketUpdates,
-      ordersDelivered: ordersDelivered ?? this.ordersDelivered,
     );
   }
 }

@@ -61,6 +61,31 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, NotificationPreferences>> updateQuietHours({
+    required bool enabled,
+    required String startHhMm,
+    required String endHhMm,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final result = await remoteDataSource.updateQuietHours(
+        enabled: enabled,
+        startHhMm: startHhMm,
+        endHhMm: endHhMm,
+      );
+      return right(result.toDomain());
+    } on DioException catch (e) {
+      return left(NetworkExceptions.server(e.message.toString()));
+    } on NetworkExceptions catch (e) {
+      return left(e);
+    } on Object catch (_) {
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, String>> getCurrentLanguage() async {
     if (await networkInfo.isConnected) {
       try {
