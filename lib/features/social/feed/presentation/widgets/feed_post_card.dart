@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/domain/entities/feed_post.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/post_action_bar.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -203,18 +204,14 @@ class _TaggedProductChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Video-first: the tagged product's typographic ground, never its
+            // photograph (owner directive, 2026-09-16). No monogram at 24dp.
             ClipRRect(
               borderRadius: BorderRadius.circular(DesignTokens.s4),
               child: SizedBox(
                 width: 24,
                 height: 24,
-                child: CachedNetworkImage(
-                  imageUrl: product.imageUrl,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => const ColoredBox(
-                    color: DesignTokens.bgAppBody,
-                  ),
-                ),
+                child: MallTypeGround(seed: product.productId),
               ),
             ),
             const SizedBox(width: DesignTokens.s4),

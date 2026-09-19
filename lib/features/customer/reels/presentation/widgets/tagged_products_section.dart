@@ -1,6 +1,5 @@
 import 'dart:ui' show ImageFilter;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,12 +8,14 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 /// Horizontal strip of products tagged on a reel. Each tile shows the
-/// product image, name, price and an "Add to Cart" button gated through the
-/// shared [ensureAuth].
+/// product's typographic ground — never its photograph, which belongs to
+/// product detail — plus the name, the price and an "Add to Cart" button
+/// gated through the shared [ensureAuth].
 class TaggedProductsSection extends ConsumerWidget {
   const TaggedProductsSection({required this.products, super.key});
 
@@ -149,27 +150,19 @@ class _ProductTile extends ConsumerWidget {
                     onTap: () => _openProduct(context),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
+                      // Video-first: the reel already is this product's
+                      // moving image. The tile beneath it carries the
+                      // product's typographic ground, never its photograph
+                      // (owner directive, 2026-09-16).
                       child: SizedBox(
                         width: 72,
                         height: 72,
-                        child: product.imageUrl.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: product.imageUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (_, _) => const ColoredBox(
-                                  color: DesignTokens.bgAppBodyLight,
-                                ),
-                                errorWidget: (_, _, _) => const ColoredBox(
-                                  color: DesignTokens.bgAppBodyLight,
-                                  child: Icon(
-                                    Icons.image_not_supported_outlined,
-                                    color: DesignTokens.iconLight,
-                                  ),
-                                ),
-                              )
-                            : const ColoredBox(
-                                color: DesignTokens.bgAppBodyLight,
-                              ),
+                        child: MallTypeGround(
+                          seed: product.id,
+                          monogram: product.name.trim().isEmpty
+                              ? null
+                              : product.name.trim()[0].toUpperCase(),
+                        ),
                       ),
                     ),
                   ),

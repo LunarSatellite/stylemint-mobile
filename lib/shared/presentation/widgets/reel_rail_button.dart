@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/platform_avatar_carousel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_rail_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -565,9 +565,10 @@ class _HitTarget extends StatelessWidget {
 /// screen).
 class ReelRailProductTile extends StatefulWidget {
   const ReelRailProductTile({
-    required this.imageUrl,
+    required this.productId,
     required this.priceLabel,
     required this.label,
+    this.monogram,
     this.inCart = false,
     this.cartCount,
     this.onTap,
@@ -575,7 +576,17 @@ class ReelRailProductTile extends StatefulWidget {
     super.key,
   });
 
-  final String imageUrl;
+  /// Seeds the tile's typographic ground, so the product wears the same face
+  /// here as it does everywhere else in the Mall.
+  ///
+  /// This used to be an `imageUrl` and drew the product's photograph over the
+  /// reel. The Mall is video-first and a product photograph belongs to
+  /// product detail (owner directive, 2026-09-16); the reel playing behind
+  /// this tile already is the product's moving image.
+  final String productId;
+
+  /// First letter of the brand, or of the product name. Optional.
+  final String? monogram;
 
   /// Compact price, e.g. "Rs 1.8K" ([formatMoneyCompact]).
   final String priceLabel;
@@ -687,17 +698,16 @@ class _ReelRailProductTileState extends State<ReelRailProductTile>
   @override
   Widget build(BuildContext context) {
     final inCart = widget.inCart;
-    final imageUrl = widget.imageUrl;
-    final image = imageUrl.isEmpty
+    final productId = widget.productId;
+    final image = productId.isEmpty
         ? ReelRailProductTile._placeholder
-        : CachedNetworkImage(
-            imageUrl: imageUrl,
+        : SizedBox(
             width: ReelRailProductTile.size,
             height: ReelRailProductTile.size,
-            fit: BoxFit.cover,
-            placeholder: (_, _) =>
-                const ColoredBox(color: DesignTokens.bgAppBodyLight),
-            errorWidget: (_, _, _) => ReelRailProductTile._placeholder,
+            child: MallTypeGround(
+              seed: productId,
+              monogram: widget.monogram,
+            ),
           );
     return ReelRailPressable(
       label: inCart ? '${widget.label}, in cart' : widget.label,

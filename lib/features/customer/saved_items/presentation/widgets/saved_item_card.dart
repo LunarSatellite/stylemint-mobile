@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/entities/saved_item.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class SavedItemCard extends StatelessWidget {
@@ -28,17 +29,17 @@ class SavedItemCard extends StatelessWidget {
           children: [
             Stack(
               children: [
+                // Video-first: a saved product keeps the same typographic
+                // face it wears in the Mall, seeded on its product id. The
+                // photograph belongs to product detail (owner directive,
+                // 2026-09-16).
                 AspectRatio(
                   aspectRatio: 1,
-                  child: Image.network(
-                    item.productImageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: DesignTokens.bgAppBodyLight,
-                      child: const Center(
-                        child: Icon(Icons.image, size: 40, color: DesignTokens.textMuted),
-                      ),
-                    ),
+                  child: MallTypeGround(
+                    seed: item.productId,
+                    monogram: item.productName.trim().isEmpty
+                        ? null
+                        : item.productName.trim()[0].toUpperCase(),
                   ),
                 ),
                 Positioned(

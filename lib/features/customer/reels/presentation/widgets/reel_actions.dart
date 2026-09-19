@@ -362,7 +362,10 @@ class _ReelActionsState extends ConsumerState<ReelActions> {
                 ReelRailProductTile(
                   // A different product is a fresh tile, never a celebration.
                   key: ValueKey('rail-product-${product.id}'),
-                  imageUrl: product.imageUrl,
+                  productId: product.id,
+                  monogram: productName.trim().isEmpty
+                      ? null
+                      : productName.trim()[0].toUpperCase(),
                   priceLabel: formatMoneyCompact(product.price),
                   label:
                       'Shop $productName, '

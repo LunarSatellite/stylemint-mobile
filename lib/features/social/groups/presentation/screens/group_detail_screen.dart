@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/groups/domain/entities/group.dart';
 import 'package:stylemint_mobile_frontend/features/social/groups/presentation/notifiers/groups_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/groups/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -210,20 +211,29 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Video-first: the group's top products
+                                    // wear the kit's typographic ground, not
+                                    // a photograph (owner directive,
+                                    // 2026-09-16).
                                     ClipRRect(
                                       borderRadius: const BorderRadius.vertical(
                                         top: Radius.circular(
                                           DesignTokens.cardRadius,
                                         ),
                                       ),
-                                      child: Image.network(
-                                        product.imageUrl,
+                                      child: SizedBox(
                                         height: 100,
                                         width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          height: 100,
-                                          color: DesignTokens.bgAppBodyLight,
+                                        child: MallTypeGround(
+                                          seed: product.productId,
+                                          monogram:
+                                              product.productName
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : product.productName
+                                                    .trim()[0]
+                                                    .toUpperCase(),
                                         ),
                                       ),
                                     ),
