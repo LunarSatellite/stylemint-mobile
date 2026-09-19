@@ -23,8 +23,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_signals_section.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/regret_check_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/return_record_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/group_buy/presentation/widgets/group_buy_banner.dart';
@@ -372,7 +372,7 @@ class _ProductBody extends StatelessWidget {
                     const SizedBox(height: DesignTokens.s12),
                     ProductComparisonCard(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
-                    RegretCheckCard(productId: product.id),
+                    ReturnRecordCard(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),

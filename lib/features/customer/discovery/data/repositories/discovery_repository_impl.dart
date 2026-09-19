@@ -10,7 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/data/model
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_return_record.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
@@ -309,19 +309,20 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, RegretCheck>> getRegretCheck(
+  Future<Either<NetworkExceptions, ProductReturnRecord>> getReturnRecord(
     String productId,
   ) async {
     if (!await networkInfo.isConnected) {
       return left(const NetworkExceptions.noInternetConnection());
     }
     try {
-      final dto = await remoteDataSource.getRegretCheck(productId);
+      final dto = await remoteDataSource.getReturnRecord(productId);
       return right(dto.toDomain());
     } on NetworkExceptions catch (e) {
       return left(e);
     } on Object catch (e) {
-      // 404 -> notFound, 5xx -> serverUnavailable, bad payload -> unexpected.
+      // 404 -> notFound, 5xx -> serverUnavailable, malformed payload ->
+      // unexpected.
       return left(mapDioExceptionToNetworkException(e));
     }
   }

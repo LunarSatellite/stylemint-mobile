@@ -3,8 +3,8 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/discover_data_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_return_record_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_review_summary_dto.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/regret_check_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_review_summary.dart';
 import 'package:stylemint_mobile_frontend/shared/data/product_reel_ref_json.dart';
 import 'package:uuid/uuid.dart';
@@ -215,18 +215,20 @@ class DiscoveryRemoteDataSource {
     return response is Map<String, dynamic> ? response : null;
   }
 
-  /// GET `/v1/public/products/{id}/regret-check` — Voyager "Regret-Aware
-  /// Product Reranker": this product and same-category alternatives, best
-  /// first, with the facts behind each position. Anonymous.
-  Future<RegretCheckDto> getRegretCheck(
+  /// GET `/v1/public/products/{id}/return-record` — capability 10
+  /// "Regret-aware ranking": this product and its same-category
+  /// alternatives with the return counts behind each position. Reports
+  /// within-category facts only; there is no score, level or verdict in the
+  /// payload and none is derived from it here. Anonymous.
+  Future<ProductReturnRecordDto> getReturnRecord(
     String productId, {
     int maxAlternatives = 4,
   }) async {
     final response = await apiClient.get(
-      '/v1/public/products/$productId/regret-check',
+      '/v1/public/products/$productId/return-record',
       queryParameters: {'maxAlternatives': maxAlternatives},
     );
-    return RegretCheckDto.fromJson(response as Map<String, dynamic>);
+    return ProductReturnRecordDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// POST `/v1/public/mission-shopping/plan` — Voyager "Mission-Based

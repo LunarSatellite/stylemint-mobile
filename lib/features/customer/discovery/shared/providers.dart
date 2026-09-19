@@ -6,11 +6,11 @@ import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/customer_search_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/data/repositories/discovery_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_return_record.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
@@ -110,17 +110,18 @@ final productComparisonProvider = FutureProvider.autoDispose
       return result.fold((_) => null, (comparison) => comparison);
     });
 
-/// Best-effort "Check before you buy" card. Null (card hidden) on any
-/// failure, or when the viewed product has no alternatives to weigh against.
-final regretCheckProvider = FutureProvider.autoDispose
-    .family<RegretCheck?, String>((ref, productId) async {
+/// Best-effort "Return record" card. Null — and so no card — on any
+/// failure, and equally when no option carries a rate with the counts behind
+/// it: the card draws nothing rather than a column of blanks.
+final productReturnRecordProvider = FutureProvider.autoDispose
+    .family<ProductReturnRecord?, String>((ref, productId) async {
       try {
         final result = await ref
             .watch(discoveryRepositoryProvider)
-            .getRegretCheck(productId);
+            .getReturnRecord(productId);
         return result.fold(
           (_) => null,
-          (check) => check.hasAlternatives ? check : null,
+          (record) => record.hasQuotableOptions ? record : null,
         );
       } on Object catch (_) {
         return null;
