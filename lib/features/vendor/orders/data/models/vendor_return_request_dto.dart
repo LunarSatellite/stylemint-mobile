@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
+import 'package:stylemint_mobile_frontend/shared/data/models/return_evidence_dto.dart';
 
 /// Wire shape for `GET /v1/vendor/returns` rows and the accept/reject
 /// response body (both return `ReturnRequestDto`/`VendorReturnRequestListItemDto`
@@ -19,6 +20,7 @@ class VendorReturnRequestDto {
     this.thumbnailUrlSnapshot,
     this.resolvedUtc,
     this.rejectionNote,
+    this.evidence,
   });
 
   factory VendorReturnRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -39,6 +41,7 @@ class VendorReturnRequestDto {
             ? DateTime.parse(json['resolvedUtc'] as String)
             : null,
         rejectionNote: json['rejectionNote'] as String?,
+        evidence: ReturnEvidenceDto.maybeFromJson(json['evidence']),
       );
 
   final String id;
@@ -55,6 +58,9 @@ class VendorReturnRequestDto {
   final DateTime submittedUtc;
   final DateTime? resolvedUtc;
   final String? rejectionNote;
+
+  /// The same snapshot the buyer sees, parsed by the same code.
+  final ReturnEvidenceDto? evidence;
 
   /// Backend `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3, Completed=4.
   static VendorReturnRequestState _stateFromCode(int code) => switch (code) {
@@ -79,5 +85,6 @@ class VendorReturnRequestDto {
     submittedUtc: submittedUtc,
     resolvedUtc: resolvedUtc,
     rejectionNote: rejectionNote,
+    evidence: evidence?.toDomain(),
   );
 }

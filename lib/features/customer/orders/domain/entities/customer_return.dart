@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/return_evidence.dart';
 
 /// Backend `ReturnRequestState`: 1 Submitted, 2 Approved, 3 Rejected,
 /// 4 Completed. [unknown] keeps a newer backend value from crashing.
@@ -98,6 +99,7 @@ class CustomerReturn {
     this.replacementPriceDifferenceAmount,
     this.replacementState = CustomerReplacementState.none,
     this.replacementPaymentStatus,
+    this.evidence,
   });
 
   final String id;
@@ -123,4 +125,8 @@ class CustomerReturn {
   final double? replacementPriceDifferenceAmount;
   final CustomerReplacementState replacementState;
   final String? replacementPaymentStatus;
+
+  /// What the platform already knew at submission. Null on older returns;
+  /// the UI then renders nothing at all.
+  final ReturnEvidence? evidence;
 }
