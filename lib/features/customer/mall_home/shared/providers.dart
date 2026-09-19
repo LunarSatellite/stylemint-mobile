@@ -63,8 +63,9 @@ final adaptiveStorefrontRepositoryProvider =
       ),
     );
 
-/// Signed in, and not paused in the Memory Vault. Everything adaptive — the
-/// layout and the signals both — asks this first.
+/// Signed in, not paused in the Memory Vault, and holding a live
+/// `StorefrontPersonalisation` decision. Everything adaptive — the layout
+/// and the signals both — asks this first.
 final storefrontPersonalizerProvider = Provider<StorefrontPersonalizer>(
   (ref) => StorefrontPersonalizer(
     storefront: ref.watch(adaptiveStorefrontRepositoryProvider),
@@ -73,12 +74,15 @@ final storefrontPersonalizerProvider = Provider<StorefrontPersonalizer>(
   ),
 );
 
-/// Whether this customer may be personalised right now — the same Memory
-/// Vault pause the adaptive storefront honours, asked by surfaces outside it.
+/// Whether this customer may be personalised right now — the same gate the
+/// adaptive storefront passes, asked by surfaces outside it.
 ///
 /// Replenishment prediction is personalisation: a customer who paused being
-/// remembered sees no estimates on "Buy it again" either, and no entry point
-/// leading to a screen that would only tell them it is off.
+/// remembered, or who refused the storefront purpose, sees no estimates on
+/// "Buy it again" either, and no entry point leading to a screen that would
+/// only tell them it is off. Riding the storefront decision rather than the
+/// pause alone errs towards showing less, which is the safe direction: the
+/// alternative is acting on a purpose the customer declined.
 // The provider's own type says nothing the right side doesn't.
 // ignore: specify_nonobvious_property_types
 final personalizationAllowedProvider = FutureProvider.autoDispose<bool>(

@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/settings/data/datasources/memory_vault_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
@@ -58,13 +59,31 @@ class _ExplodingLayout extends StorefrontLayout {
       throw StateError('a shape this build cannot read');
 }
 
-/// Only [isPaused] is ever reached from the storefront.
+/// Only [isPaused] and [loadConsents] are ever reached from the storefront.
 class _FakeVaultRepository implements MemoryVaultRepository {
-  _FakeVaultRepository({this.paused = false, this.fails = false});
+  /// [consents] defaults to the storefront purpose explicitly allowed, so a
+  /// test that says nothing about consent behaves as one always did. Pass an
+  /// empty list for "the backend reported nothing", or
+  /// [consentsUnreadable] for a decision that cannot be read at all.
+  _FakeVaultRepository({
+    this.paused = false,
+    this.fails = false,
+    List<MemoryConsent>? consents,
+    bool consentsUnreadable = false,
+  }) : consents = consentsUnreadable ? null : (consents ?? _allowStorefront());
+
+  static List<MemoryConsent> _allowStorefront() => [
+    MemoryConsent.grantedFor(MemoryPurpose.storefrontPersonalisation),
+  ];
 
   bool paused;
   bool fails;
   int pausedCalls = 0;
+
+  /// What `GET /memories/consents` reports. `null` means the call fails —
+  /// an unreadable decision, which is not an answer.
+  List<MemoryConsent>? consents;
+  int consentCalls = 0;
 
   @override
   Future<Either<NetworkExceptions, bool>> isPaused() async {
@@ -72,6 +91,15 @@ class _FakeVaultRepository implements MemoryVaultRepository {
     return fails
         ? left(const NetworkExceptions.serverUnavailable())
         : right(paused);
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() async {
+    consentCalls++;
+    final rows = consents;
+    return rows == null
+        ? left(const NetworkExceptions.serverUnavailable())
+        : right(rows);
   }
 
   @override
@@ -106,10 +134,6 @@ class _FakeVaultRepository implements MemoryVaultRepository {
   ) => throw UnimplementedError();
 
   @override
-  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() =>
-      throw UnimplementedError();
-
-  @override
   Future<Either<NetworkExceptions, Unit>> grantConsent({
     required MemoryPurpose purpose,
     required String explanation,
@@ -121,6 +145,24 @@ class _FakeVaultRepository implements MemoryVaultRepository {
 }
 
 // ── Builders ───────────────────────────────────────────────────────────────
+
+/// A decision shaped as the backend reports it, for the cases the named
+/// constructors do not cover: a lapsed grant, the legacy global-pause basis,
+/// a state the backend could not read.
+MemoryConsent _consent(
+  MemoryPurpose purpose, {
+  required bool permitted,
+  required String reason,
+  ConsentBasis basis = ConsentBasis.none,
+  bool needsDecision = false,
+}) => MemoryConsent(
+  purpose: purpose,
+  purposeCode: purpose.wireValue,
+  permitted: permitted,
+  basis: basis,
+  reason: reason,
+  needsDecision: needsDecision,
+);
 
 HomeSeeAll _categorySeeAll(String id) => HomeSeeAll(
   target: HomeSeeAllTarget.category,
@@ -944,6 +986,272 @@ void main() {
       expect(vault.pausedCalls, 2);
     });
 
+    // ── The storefront purpose itself ────────────────────────────────────
+    //
+    // The consent screen names this purpose, says what refusing costs, and
+    // records the words it showed. Until the gate consulted the decision,
+    // refusing recorded the refusal and personalisation carried on.
+
+    test(
+      'refusing the storefront purpose stops the using and the collecting',
+      () async {
+        final storefront = _FakeStorefrontRepository(
+          layout: _layout([('cat-1', 'Shoes')]),
+        );
+        final personalizer = build(
+          storefront: storefront,
+          vault: _FakeVaultRepository(
+            consents: [
+              MemoryConsent.refusedFor(
+                MemoryPurpose.storefrontPersonalisation.wireValue,
+              ),
+            ],
+          ),
+        );
+
+        expect((await personalizer.layout()).hasRanking, isFalse);
+        await personalizer.track(
+          FeedSignal.forEntity(
+            entityId: 'r-1',
+            entity: FeedSignalEntity.reel,
+            action: FeedSignalAction.watched,
+          ),
+        );
+
+        // Not personalised, and nothing harvested either: a refusal that
+        // stopped the output but kept the collecting is the same defect.
+        expect(storefront.layoutCalls, 0);
+        expect(storefront.tracked, isEmpty);
+      },
+    );
+
+    test('an undecided purpose behaves exactly like a refusal', () async {
+      for (final rows in <List<MemoryConsent>>[
+        // The backend reported it, and nobody has answered.
+        [MemoryConsent.undecidedFor(MemoryPurpose.storefrontPersonalisation)],
+        // The backend did not report it at all. Absence is not consent.
+        [],
+        // It reported the other three and said nothing about this one.
+        [
+          MemoryConsent.grantedFor(MemoryPurpose.companionRecall),
+          MemoryConsent.grantedFor(MemoryPurpose.recommendations),
+          MemoryConsent.grantedFor(MemoryPurpose.proactiveOutreach),
+        ],
+      ]) {
+        final storefront = _FakeStorefrontRepository(
+          layout: _layout([('cat-1', 'Shoes')]),
+        );
+        final personalizer = build(
+          storefront: storefront,
+          vault: _FakeVaultRepository(consents: rows),
+        );
+
+        expect(await personalizer.allowed(), isFalse, reason: '$rows');
+        expect((await personalizer.layout()).hasRanking, isFalse);
+        expect(storefront.layoutCalls, 0);
+      }
+    });
+
+    test('a lapsed grant is not a grant', () async {
+      final personalizer = build(
+        storefront: _FakeStorefrontRepository(),
+        vault: _FakeVaultRepository(
+          consents: [
+            _consent(
+              MemoryPurpose.storefrontPersonalisation,
+              permitted: false,
+              reason: 'consent.expired',
+            ),
+          ],
+        ),
+      );
+      expect(await personalizer.allowed(), isFalse);
+    });
+
+    test('an unreadable decision fails closed, and is not cached', () async {
+      final storefront = _FakeStorefrontRepository(
+        layout: _layout([('cat-1', 'Shoes')]),
+      );
+      final vault = _FakeVaultRepository(consentsUnreadable: true);
+      final personalizer = build(storefront: storefront, vault: vault);
+
+      expect(await personalizer.allowed(), isFalse);
+      expect(await personalizer.allowed(), isFalse);
+      // Asked again rather than muted for the session.
+      expect(vault.consentCalls, 2);
+      expect((await personalizer.layout()).hasRanking, isFalse);
+      expect(storefront.layoutCalls, 0);
+    });
+
+    test('a decision this build cannot read is never a yes', () async {
+      final personalizer = build(
+        storefront: _FakeStorefrontRepository(),
+        vault: _FakeVaultRepository(
+          consents: [
+            _consent(
+              MemoryPurpose.storefrontPersonalisation,
+              // Permitted on the wire, but the reason says the backend
+              // could not read the state. Doubt is not permission.
+              permitted: true,
+              reason: 'consent.unreadable',
+            ),
+          ],
+        ),
+      );
+      expect(await personalizer.allowed(), isFalse);
+    });
+
+    test('the global pause overrides a granted purpose', () async {
+      final storefront = _FakeStorefrontRepository(
+        layout: _layout([('cat-1', 'Shoes')]),
+      );
+      final vault = _FakeVaultRepository(paused: true);
+      final personalizer = build(storefront: storefront, vault: vault);
+
+      expect(await personalizer.allowed(), isFalse);
+      expect((await personalizer.layout()).hasRanking, isFalse);
+      expect(storefront.layoutCalls, 0);
+      // The blunt instrument settles it on its own: while paused the
+      // backend reports `consent.paused` for all four, so there is nothing
+      // to learn from asking.
+      expect(vault.consentCalls, 0);
+    });
+
+    test('a granted purpose with no pause personalises as before', () async {
+      final storefront = _FakeStorefrontRepository(
+        layout: _layout([('cat-1', 'Shoes')]),
+      );
+      final personalizer = build(
+        storefront: storefront,
+        vault: _FakeVaultRepository(
+          consents: [
+            MemoryConsent.grantedFor(
+              MemoryPurpose.storefrontPersonalisation,
+            ),
+          ],
+        ),
+      );
+
+      expect((await personalizer.layout()).hasRanking, isTrue);
+      await personalizer.track(
+        FeedSignal.forEntity(
+          entityId: 'r-1',
+          entity: FeedSignalEntity.reel,
+          action: FeedSignalAction.watched,
+        ),
+      );
+      expect(storefront.tracked.single.entityId, 'r-1');
+    });
+
+    test('the legacy basis keeps working until the customer answers', () async {
+      // Nobody has been asked yet, so the backend reports this purpose as
+      // permitted on the old global switch. That switch is off, so today's
+      // behaviour continues — it is not a refusal.
+      final personalizer = build(
+        storefront: _FakeStorefrontRepository(),
+        vault: _FakeVaultRepository(
+          consents: [
+            _consent(
+              MemoryPurpose.storefrontPersonalisation,
+              permitted: true,
+              reason: 'consent.legacy_pause_basis',
+              basis: ConsentBasis.legacyGlobalPause,
+              needsDecision: true,
+            ),
+          ],
+        ),
+      );
+      expect(await personalizer.allowed(), isTrue);
+    });
+
+    test('refusing another purpose leaves the storefront alone', () async {
+      final personalizer = build(
+        storefront: _FakeStorefrontRepository(),
+        vault: _FakeVaultRepository(
+          consents: [
+            MemoryConsent.refusedFor(MemoryPurpose.recommendations.wireValue),
+            MemoryConsent.refusedFor(MemoryPurpose.proactiveOutreach.wireValue),
+            MemoryConsent.grantedFor(
+              MemoryPurpose.storefrontPersonalisation,
+            ),
+          ],
+        ),
+      );
+      expect(await personalizer.allowed(), isTrue);
+    });
+
+    test('the decision is cached, and dropped when the customer '
+        'changes it', () async {
+      final vault = _FakeVaultRepository();
+      final personalizer = build(
+        storefront: _FakeStorefrontRepository(),
+        vault: vault,
+      );
+
+      expect(await personalizer.allowed(), isTrue);
+      expect(await personalizer.allowed(), isTrue);
+      expect(vault.consentCalls, 1);
+
+      // The customer refuses on the vault screen, which tells the Mall to
+      // forget. The next load must see the refusal, not the cache.
+      vault.consents = [
+        MemoryConsent.refusedFor(
+          MemoryPurpose.storefrontPersonalisation.wireValue,
+        ),
+      ];
+      personalizer.forgetConsent();
+
+      expect(await personalizer.allowed(), isFalse);
+      expect(vault.consentCalls, 2);
+    });
+
+    test('a signed-out customer forgets whatever was cached', () async {
+      var signedIn = true;
+      final vault = _FakeVaultRepository();
+      final personalizer = StorefrontPersonalizer(
+        storefront: _FakeStorefrontRepository(),
+        vault: vault,
+        isSignedIn: () => signedIn,
+      );
+
+      expect(await personalizer.allowed(), isTrue);
+      signedIn = false;
+      expect(await personalizer.allowed(), isFalse);
+
+      // Back in as somebody else: the previous answer must not carry over.
+      signedIn = true;
+      vault.consents = [
+        MemoryConsent.refusedFor(
+          MemoryPurpose.storefrontPersonalisation.wireValue,
+        ),
+      ];
+      expect(await personalizer.allowed(), isFalse);
+      expect(vault.consentCalls, 2);
+    });
+
+    test('the decision is read from either wire form of the enum', () async {
+      // Enums serialise as integers — no `JsonStringEnumConverter` is
+      // registered — but a name must not break the gate either.
+      for (final raw in <Object>[2, 'StorefrontPersonalisation']) {
+        final vault = _FakeVaultRepository(
+          consents: [
+            memoryConsentFromJson({
+              'purpose': raw,
+              'permitted': false,
+              'basis': 0,
+              'reason': 'consent.revoked',
+              'needsDecision': false,
+            }),
+          ],
+        );
+        final personalizer = build(
+          storefront: _FakeStorefrontRepository(),
+          vault: vault,
+        );
+        expect(await personalizer.allowed(), isFalse, reason: '$raw');
+      }
+    });
+
     test('a failed consent read is not cached', () async {
       final vault = _FakeVaultRepository(fails: true);
       final personalizer = build(
@@ -1084,6 +1392,8 @@ void main() {
       required bool signedIn,
       StorefrontLayout layout = StorefrontLayout.none,
       bool paused = false,
+      List<MemoryConsent>? consents,
+      bool consentsUnreadable = false,
       double width = 390,
       double textScale = 1,
     }) async {
@@ -1101,7 +1411,11 @@ void main() {
           reelsRepositoryProvider.overrideWithValue(FakeReelsRepository()),
         ],
         storefront: storefront,
-        vault: _FakeVaultRepository(paused: paused),
+        vault: _FakeVaultRepository(
+          paused: paused,
+          consents: consents,
+          consentsUnreadable: consentsUnreadable,
+        ),
         width: width,
         textScale: textScale,
       );
@@ -1355,6 +1669,108 @@ void main() {
         textScale: 1.3,
       );
       expect(page.order()[1], 'deals');
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    /// What the customer who refuses the storefront purpose must see: the
+    /// same Mall as everyone else. No error, no empty state, and above all
+    /// no invitation to turn it back on — that nudge is the dark pattern
+    /// the per-purpose consent screen was written to avoid.
+    Future<void> expectOrdinaryMall(
+      WidgetTester tester,
+      ({_FakeStorefrontRepository storefront, List<String> Function() order})
+      page,
+    ) async {
+      expect(page.storefront.layoutCalls, 0);
+      expect(page.storefront.tracked, isEmpty);
+      expect(page.order(), serverOrder);
+      expect(find.byType(MallCinematicHero), findsOneWidget);
+      expect(find.text('Pick up where you left off'), findsNothing);
+      for (final nudge in const [
+        'personalis',
+        'personaliz',
+        'Turn on',
+        'Turn this on',
+        'better experience',
+        'Enable',
+        'consent',
+        'Memory Vault',
+      ]) {
+        expect(find.textContaining(nudge), findsNothing, reason: nudge);
+      }
+      expect(tester.takeException(), isNull);
+    }
+
+    /// A layout the server would happily send; the point of each test below
+    /// is that the client never asks for it.
+    StorefrontLayout personalLayout() => _modules([
+      _module(
+        StorefrontModuleKind.continueMission,
+        rank: 0,
+        signal: StorefrontSignal.activeMission,
+        evidence: 3,
+        target: _missionTarget,
+      ),
+    ]);
+
+    testWidgets('a refused storefront purpose gets the ordinary Mall, and '
+        'never a nudge to re-enable', (tester) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: personalLayout(),
+        consents: [
+          MemoryConsent.refusedFor(
+            MemoryPurpose.storefrontPersonalisation.wireValue,
+          ),
+        ],
+      );
+      await expectOrdinaryMall(tester, page);
+    });
+
+    testWidgets('an undecided purpose looks the same as a refusal', (
+      tester,
+    ) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: personalLayout(),
+        consents: const [],
+      );
+      await expectOrdinaryMall(tester, page);
+    });
+
+    testWidgets('an unreadable decision falls back invisibly too', (
+      tester,
+    ) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: personalLayout(),
+        consentsUnreadable: true,
+      );
+      await expectOrdinaryMall(tester, page);
+    });
+
+    testWidgets('a refusal does not overflow at 320dp and text scale 1.3', (
+      tester,
+    ) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: personalLayout(),
+        consents: [
+          MemoryConsent.refusedFor(
+            MemoryPurpose.storefrontPersonalisation.wireValue,
+          ),
+        ],
+        width: 320,
+        textScale: 1.3,
+      );
+      expect(page.order(), serverOrder);
       expect(tester.takeException(), isNull);
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
       await tester.pumpAndSettle();
