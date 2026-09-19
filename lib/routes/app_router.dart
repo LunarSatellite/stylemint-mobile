@@ -101,6 +101,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/my_returns_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_invoice_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/refill_plan_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/replenishment_rules_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/return_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/track_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/payment/domain/entities/payment_method.dart';
@@ -657,6 +659,19 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.buyItAgain,
         builder: (ctx, state) => const BuyItAgainScreen(),
+      ),
+
+      // The Prepare stage: the verified, assembled refill basket, and the
+      // rules the customer sets over it. Both keep above Order Detail for the
+      // same reason "buy-it-again" does. The rules path is registered first so
+      // `/orders/refill-plan/rules` is never read as the plan screen.
+      GoRoute(
+        path: RouteNames.replenishmentRules,
+        builder: (ctx, state) => const ReplenishmentRulesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.refillPlan,
+        builder: (ctx, state) => const RefillPlanScreen(),
       ),
 
       // Order Detail

@@ -121,6 +121,11 @@ abstract class RouteNames {
   /// computed. Registered before [orderDetail] so `buy-it-again` is never
   /// read as an order number.
   static const buyItAgain = '/orders/buy-it-again';
+
+  /// The prepared refill basket and the rules that govern it. Registered
+  /// before [orderDetail] so `refill-plan` is never read as an order number.
+  static const refillPlan = '/orders/refill-plan';
+  static const replenishmentRules = '/orders/refill-plan/rules';
   static const productReviews = '/product/:productId/reviews';
   static const savedItems = '/saved-items';
   static const shippingAddresses = '/shipping';
