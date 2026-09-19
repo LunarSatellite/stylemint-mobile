@@ -41,9 +41,14 @@ import 'package:flutter_test/flutter_test.dart';
 /// / `poster` all read as "not a product" and are not exempted anywhere —
 /// they simply never match.
 ///
-/// A wardrobe item the buyer already owns (`asset.image` on the lifecycle
-/// steward) is deliberately not a product either: it is the buyer's own
-/// garment, not a catalogue offer.
+/// A wardrobe item the buyer already owns was once argued to be not a product
+/// either — the buyer's own garment, not a catalogue offer — and the lifecycle
+/// steward drew one through `asset.image`, which this guard's receiver test
+/// never matched. That field is gone: the steward now carries no photograph at
+/// all, because the directive reads more plainly than the carve-out did and a
+/// 170px hero cost the card the room its facts needed at large text sizes. The
+/// receiver rule below is unchanged; there is simply nothing left on that
+/// screen for it to have an opinion about.
 
 /// The two photo-bearing widgets are `MallProductCard` and its saved-list
 /// wrapper `SaveableMallProductCard`. They may be built only on product
