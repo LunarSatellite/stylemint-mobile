@@ -57,6 +57,7 @@ dependencies:
   # ── Storage ──────────────────────────────────────────────────────────────
   flutter_secure_storage: ^10.0.0
   shared_preferences: ^2.3.5
+  cryptography: ^2.7.0
 
   # ── Device identity ───────────────────────────────────────────────────────
   # Stable per-device id that survives reinstall, as far as each OS permits:
@@ -127,7 +128,8 @@ dependencies:
   uuid: ^4.5.0
   collection: ^1.19.0
   device_info_plus: ^12.4.0
-
+  speech_to_text: ^7.5.0
+  flutter_video_thumbnail_plus: ^1.0.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

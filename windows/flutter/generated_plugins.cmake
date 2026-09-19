@@ -9,12 +9,14 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   flutter_inappwebview_windows
   flutter_secure_storage_windows
+  flutter_video_thumbnail_plus
   geolocator_windows
   local_auth_windows
   passkeys_windows
   printing
   sentry_flutter
   share_plus
+  speech_to_text_windows
   url_launcher_windows
 )
 

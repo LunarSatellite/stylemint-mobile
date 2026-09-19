@@ -95,3 +95,7 @@ logs/
 .tmp_fix.py
 
 
+
+# Device screen dumps and screenshots captured while designing. Local only.
+.device-*.xml
+stylemint-*.png
