@@ -1,14 +1,35 @@
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
+
 /// "AI Delivery Guardian" risk assessment — backend `DeliveryRiskAssessment`.
 class DeliveryRiskAssessment {
   const DeliveryRiskAssessment({
     required this.atRisk,
     required this.customerMessage,
     this.recommendedAction,
+    this.riskReasonCode,
+    this.remedies = const <DeliveryRecoveryOffer>[],
   });
+
+  factory DeliveryRiskAssessment.fromJson(Map<String, dynamic> json) =>
+      DeliveryRiskAssessment(
+        atRisk: json['atRisk'] as bool? ?? false,
+        customerMessage: json['customerMessage'] as String? ?? '',
+        recommendedAction: json['recommendedAction'] as String?,
+        riskReasonCode: json['riskReasonCode'] as String?,
+        remedies: (json['remedies'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .map(DeliveryRecoveryOffer.fromJson)
+            .toList(growable: false),
+      );
 
   final bool atRisk;
   final String customerMessage;
   final String? recommendedAction;
+  final String? riskReasonCode;
+
+  /// The remedies attached to this assessment. Always empty when the
+  /// delivery is on track — the recovery surface renders nothing then.
+  final List<DeliveryRecoveryOffer> remedies;
 }
 
 /// Voyager "Tamper/Seal Proof" — the vendor's pack-time tamper-evident

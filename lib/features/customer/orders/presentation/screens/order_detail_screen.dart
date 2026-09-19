@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_recovery_offers_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/warranty_claim_sheet.dart';
@@ -542,37 +543,45 @@ class _DeliveryRiskBanner extends ConsumerWidget {
         color: DesignTokens.warning500.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(DesignTokens.s8),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            size: 18,
-            color: DesignTokens.warning500,
-          ),
-          const SizedBox(width: DesignTokens.s8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  risk.customerMessage,
-                  style: DesignTokens.smallRegular.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (risk.recommendedAction != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    risk.recommendedAction!,
-                    style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                size: 18,
+                color: DesignTokens.warning500,
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      risk.customerMessage,
+                      style: DesignTokens.smallRegular.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    if (risk.recommendedAction != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        risk.recommendedAction!,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
+          // The remedies belong with the worry, not on a screen the customer
+          // has to go and find. Renders nothing when there is none to offer.
+          DeliveryRecoveryOffersView(trackingNumber: trackingNumber),
         ],
       ),
     );
