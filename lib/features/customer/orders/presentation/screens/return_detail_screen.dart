@@ -16,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/returns/return_evidence_section.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -173,6 +174,11 @@ class ReturnDetailScreen extends ConsumerWidget {
                     label: 'Photos',
                     child: _PhotoStrip(urls: r.photoUrls),
                   ),
+                ],
+                if (r.evidence != null) ...[
+                  const SizedBox(height: DesignTokens.s12),
+                  // Identical widget, identical wording on the vendor's side.
+                  ReturnEvidenceSection(evidence: r.evidence),
                 ],
                 const SizedBox(height: DesignTokens.s12),
                 _Section(

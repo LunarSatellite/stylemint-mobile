@@ -1,3 +1,5 @@
+import 'package:stylemint_mobile_frontend/shared/domain/entities/return_evidence.dart';
+
 enum VendorReturnRequestState { submitted, approved, rejected, completed }
 
 /// Vendor §8.1 — a customer return request awaiting (or past) the
@@ -18,6 +20,7 @@ class VendorReturnRequest {
     this.thumbnailUrlSnapshot,
     this.resolvedUtc,
     this.rejectionNote,
+    this.evidence,
   });
 
   final String id;
@@ -34,6 +37,10 @@ class VendorReturnRequest {
   final DateTime submittedUtc;
   final DateTime? resolvedUtc;
   final String? rejectionNote;
+
+  /// What the platform already knew at submission — byte-for-byte the same
+  /// snapshot the buyer is shown. Null on older returns.
+  final ReturnEvidence? evidence;
 
   bool get isPending => state == VendorReturnRequestState.submitted;
 }

@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/shared/data/models/return_evidence_dto.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'customer_return_dto.freezed.dart';
@@ -80,6 +81,10 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     double? replacementPriceDifferenceAmount,
     @Default(0) int replacementState,
     String? replacementPaymentStatus,
+
+    /// Evidence snapshot. Absent or null on every return opened before the
+    /// snapshot existed — the ordinary case, never an error.
+    ReturnEvidenceDto? evidence,
   }) = _CustomerReturnDto;
 
   const CustomerReturnDto._();
@@ -117,6 +122,7 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     replacementPriceDifferenceAmount: replacementPriceDifferenceAmount,
     replacementState: CustomerReplacementState.fromCode(replacementState),
     replacementPaymentStatus: replacementPaymentStatus,
+    evidence: evidence?.toDomain(),
   );
 }
 
