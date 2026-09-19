@@ -145,6 +145,8 @@ import 'package:stylemint_mobile_frontend/features/social/creator_profile/presen
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/screens/barcode_scan_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/screens/voice_search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/scan/presentation/screens/style_mint_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_room_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_sessions_screen.dart';
@@ -687,6 +689,18 @@ GoRouter appRouter(Ref ref) {
               ? state.extra! as CustomerSearchResults
               : null,
         ),
+      ),
+
+      // Multimodal search inputs (voice, barcode). Both sit beside the
+      // photo search on Discover and hand their result back to it.
+      GoRoute(
+        path: RouteNames.searchVoice,
+        builder: (ctx, state) =>
+            VoiceSearchScreen(initialQuery: state.extra as String?),
+      ),
+      GoRoute(
+        path: RouteNames.searchBarcode,
+        builder: (ctx, state) => const BarcodeScanScreen(),
       ),
 
       // Trending products

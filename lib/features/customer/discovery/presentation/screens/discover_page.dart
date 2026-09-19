@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_suggestions_panel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/discover_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/widgets/search_input_actions.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:video_player/video_player.dart';
@@ -327,6 +328,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                         onSubmitted: _submit,
                         onClear: _clear,
                       ),
+                    ),
+                    SearchInputActions(
+                      currentQuery: () => _controller.text,
+                      // Voice and barcode land on the same submit path as
+                      // typing: recent searches, suggestions, results route.
+                      onQuery: _submit,
                     ),
                     if (visualSearchAvailable) const SizedBox(width: 8),
                     if (visualSearchAvailable)
