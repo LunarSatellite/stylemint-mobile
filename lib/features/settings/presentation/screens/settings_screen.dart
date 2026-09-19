@@ -94,6 +94,11 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Your StyleMint Memory',
             onTap: () => context.push(RouteNames.settingsMemory),
           ),
+          _MenuTile(
+            icon: Icons.smart_toy_outlined,
+            label: 'Connected assistants',
+            onTap: () => context.push(RouteNames.settingsConnectedAssistants),
+          ),
 
           const SizedBox(height: DesignTokens.s16),
           _SectionHeader(label: 'About'),

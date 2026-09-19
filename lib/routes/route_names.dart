@@ -304,6 +304,13 @@ abstract class RouteNames {
   static const settingsTerms = '/settings/terms';
   static const settingsAbout = '/settings/about';
   static const settingsMemory = '/settings/memory';
+
+  /// Outside AI shopping assistants: issue, read and revoke their mandates,
+  /// confirm the baskets they prepare, and read what they did.
+  ///
+  /// The route carries nothing. The mandate credential is shown once inside a
+  /// modal sheet and never becomes navigator state, a path or a query string.
+  static const settingsConnectedAssistants = '/settings/connected-assistants';
   static const settingsChangePassword = '/settings/change-password';
   static const accountSettings = '/account';
   static const sessions = '/account/sessions';
