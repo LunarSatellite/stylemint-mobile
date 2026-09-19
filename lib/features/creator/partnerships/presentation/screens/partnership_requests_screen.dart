@@ -39,7 +39,23 @@ class _Request {
   final String vendorProfileId;
   final String? vendorAccountId;
   final String brandName;
-  final double rating;
+
+  /// The brand's rating, or **null** when it has none.
+  ///
+  /// This was a non-nullable `double` fed by `vendorRating ?? 0` on the
+  /// invite path and by a literal `0` on the active path, and three cards
+  /// drew it as "★ 0.0 Stars". Every brand without a rating — and every
+  /// active partnership, unconditionally — was therefore published as a
+  /// zero-star business. That is the same defect the brand trust score was
+  /// retired for, on a different screen in the same feature: a null read as
+  /// a zero.
+  ///
+  /// `vendorRating` is real where it is non-null (Catalog's weighted
+  /// product-review rollup, joined onto the partnership DTO by
+  /// `CatalogVendorRatingProvider`), so the figure stays — it just no
+  /// longer has a stand-in. Null now means null, and [_BrandMeta] draws no
+  /// star at all.
+  final double? rating;
   final String timeAgo;
   final String message;
   final String commission;
@@ -67,7 +83,7 @@ _Request _fromInvite(PartnershipInvite i) => _Request(
   vendorProfileId: i.vendorProfileId,
   vendorAccountId: i.vendorAccountId,
   brandName: i.vendorName,
-  rating: i.vendorRating ?? 0,
+  rating: i.vendorRating,
   timeAgo: _timeAgo(i.expiresAt),
   message: i.campaignBrief,
   commission: _commissionLabel(i.commissionRate, i.commissionRate),
@@ -84,7 +100,9 @@ _Request _fromActive(ActivePartnership a) => _Request(
   vendorProfileId: a.vendorProfileId,
   vendorAccountId: a.vendorAccountId,
   brandName: a.vendorName,
-  rating: 0,
+  // `ActivePartnership` carries no rating at all — `toActiveDomain()` never
+  // set one — so there is nothing to show, not a zero to show.
+  rating: null,
   timeAgo: _timeAgo(a.startedAt),
   message: '',
   commission: _commissionLabel(a.commissionRate, a.commissionRate),
@@ -405,43 +423,7 @@ class _RequestCardState extends State<_RequestCard> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 13,
-                          color: DesignTokens.secondaryYellow,
-                        ),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '· ${req.timeAgo}',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+                    _BrandMeta(rating: req.rating, trailing: req.timeAgo),
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: () {
@@ -455,7 +437,6 @@ class _RequestCardState extends State<_RequestCard> {
                             builder: (_) => BrandMessagingScreen(
                               args: BrandMessagingArgs(
                                 brandName: req.brandName,
-                                rating: req.rating,
                                 category: req.category,
                                 otherParticipantId: accountId,
                                 profileId: accountId == null
@@ -598,18 +579,111 @@ class _RequestCardState extends State<_RequestCard> {
   }
 }
 
+// ── Brand meta line (rating · trailing) ──────────────────────────────────────
+
+/// The line under a brand's name on a request card.
+///
+/// Draws the star and the figure **only** when [rating] is non-null. It used
+/// to be an inline `Row` repeated on three cards, each calling
+/// `req.rating.toStringAsFixed(1)` on a non-nullable double that was `0`
+/// whenever the brand had no rating — so all three published "★ 0.0 Stars"
+/// about businesses nothing had ever rated. Absence is drawn as absence.
+class _BrandMeta extends StatelessWidget {
+  const _BrandMeta({required this.rating, required this.trailing});
+
+  final double? rating;
+  final String trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = rating;
+    final hasTrailing = trailing.isNotEmpty;
+    if (r == null && !hasTrailing) return const SizedBox.shrink();
+
+    final label = [
+      if (r != null) '${r.toStringAsFixed(1)} Stars',
+      if (hasTrailing) trailing,
+    ].join(', ');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Semantics(
+        label: label,
+        excludeSemantics: true,
+        child: Row(
+          children: [
+            if (r != null) ...[
+              const Icon(
+                Icons.star_rounded,
+                size: 13,
+                color: DesignTokens.secondaryYellow,
+              ),
+              const SizedBox(width: 3),
+              Flexible(
+                child: RichText(
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: r.toStringAsFixed(1),
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      TextSpan(
+                        text: ' Stars',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (hasTrailing) ...[
+              if (r != null) const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  r != null ? '· $trailing' : trailing,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Brand logo circle ─────────────────────────────────────────────────────────
 
+/// The brand's initial in a white circle.
+///
+/// This used to special-case two names: a brand whose name contained
+/// "nike" was drawn as a bold '✓' and one containing "sephora" as a bold
+/// 'S' — the app forging a brand mark for two companies StyleMint has no
+/// relationship with, and substring-matched, so a Nepali vendor called
+/// "Nikesh Traders" would have been given one too. There is no list of
+/// brand marks to draw from and no business drawing one; every brand now
+/// gets its initial.
+///
+/// Still open, deliberately not done here: `PartnershipInvite` and
+/// `ActivePartnership` both carry a real `vendorLogoUrl` that `_Request`
+/// does not pass along, so a brand with a real logo still shows a letter.
+/// Wiring it is additive and belongs in its own change.
 class _BrandLogo extends StatelessWidget {
   const _BrandLogo({required this.name});
   final String name;
 
   @override
   Widget build(BuildContext context) {
-    final lower = name.toLowerCase();
-    final isNike = lower.contains('nike');
-    final isSephora = lower.contains('sephora');
-
     return Container(
       width: 44,
       height: 44,
@@ -618,33 +692,15 @@ class _BrandLogo extends StatelessWidget {
         color: Colors.white,
       ),
       alignment: Alignment.center,
-      child: isNike
-          ? const Text(
-              '✓',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-              ),
-            )
-          : isSephora
-          ? const Text(
-              'S',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.black,
-              ),
-            )
-          : Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
+      child: Text(
+        name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?',
+        style: const TextStyle(
+          fontFamily: DesignTokens.fontFamily,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Colors.black,
+        ),
+      ),
     );
   }
 }
@@ -872,43 +928,7 @@ class _DeclineSheetState extends State<_DeclineSheet> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 13,
-                          color: DesignTokens.secondaryYellow,
-                        ),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· ${req.category}',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+                    _BrandMeta(rating: req.rating, trailing: req.category),
                     const SizedBox(height: DesignTokens.s8),
                     _CommissionChip(req.commission),
                   ],
@@ -1140,43 +1160,7 @@ class _AcceptSheetState extends State<_AcceptSheet> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 13,
-                          color: DesignTokens.secondaryYellow,
-                        ),
-                        const SizedBox(width: 3),
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: req.rating.toStringAsFixed(1),
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextSpan(
-                                text: ' Stars',
-                                style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textWhite,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· ${req.category}',
-                          style: DesignTokens.smallRegular.copyWith(
-                            color: DesignTokens.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+                    _BrandMeta(rating: req.rating, trailing: req.category),
                     const SizedBox(height: DesignTokens.s8),
                     _CommissionChip(req.commission),
                   ],

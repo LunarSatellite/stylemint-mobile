@@ -10,7 +10,6 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 class BrandMessagingArgs {
   const BrandMessagingArgs({
     required this.brandName,
-    required this.rating,
     required this.category,
     this.threadId,
     this.otherParticipantId,
@@ -18,7 +17,16 @@ class BrandMessagingArgs {
   });
 
   final String brandName;
-  final double rating;
+
+  // A `required double rating` stood here and appeared in the header
+  // subtitle as `rating.toStringAsFixed(1)`. All three callers passed
+  // `category: ''`, and the subtitle only used the rating when the category
+  // was non-empty, so the figure could never render — but two of those
+  // callers passed a literal `rating: 0` and the third passed a `?? 0`, so
+  // the day anyone gave this screen a category it would have opened a chat
+  // headed "0.0 • …" for every brand. That is the retired trust score's
+  // exact failure mode, primed and waiting. The field is gone rather than
+  // made nullable: nothing read it.
   final String category;
 
   /// When set, the screen opens the existing thread directly.
@@ -41,9 +49,7 @@ class BrandMessagingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = args.category.isEmpty
-        ? 'Brand partner'
-        : '${args.rating.toStringAsFixed(1)} • ${args.category}';
+    final subtitle = args.category.isEmpty ? 'Brand partner' : args.category;
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
       appBar: _AppBar(args: args, subtitle: subtitle),

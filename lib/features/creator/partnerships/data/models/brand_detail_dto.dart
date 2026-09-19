@@ -14,8 +14,6 @@ class PartnershipDetailDto {
     this.vendorLogoUrl,
     this.vendorCategory,
     this.description,
-    this.avgOrderValue,
-    this.successRatePercent,
   });
 
   final String id;
@@ -29,8 +27,31 @@ class PartnershipDetailDto {
   final String? vendorLogoUrl;
   final String? vendorCategory;
   final String? description;
-  final double? avgOrderValue;
-  final double? successRatePercent;
+
+  // `avgOrderValue` and `successRatePercent` were parsed here and drawn by
+  // `brand_detail_screen.dart` as "Avg Order Value" and "Success Rate with
+  // Creators: N%". The backend's `PartnershipDto`
+  // (`Entity/Partnership/Dtos/PartnershipDto.cs`) has no such properties —
+  // it carries ids, state, the commission range, the brief snapshot, the
+  // joined vendor/creator display fields and `VendorRating`, and nothing
+  // else — so `GET /v1/partnerships/{id}` never sent either one and both
+  // read null on every response. The UI's null guards meant nothing ever
+  // drew, which is why this sat unnoticed.
+  //
+  // They are deleted rather than kept against a future endpoint.
+  // "Success Rate with Creators" is precisely the figure that rendered
+  // "0%" for every brand on the sibling screen, and it got there because a
+  // field was parsed before anything measured it. A field with no source
+  // is a rendering waiting to happen.
+  //
+  // `vendorRating` above is different and stays: it is a real property of
+  // the backend DTO, joined at read time by `CatalogVendorRatingProvider`
+  // from Catalog's weighted product-review rollup for that vendor
+  // (registered over `NoopVendorRatingProvider` in `StyleMintPlatform.cs`),
+  // and three screens read it —
+  // `brand_detail_screen.dart`, `partnership_apply_screen.dart` and
+  // `partnership_requests_screen.dart`. It is null until the vendor has
+  // rated products, and every reader hides the chip when it is null.
 
   static const _states = {
     1: 'Invited',
@@ -55,8 +76,6 @@ class PartnershipDetailDto {
       vendorLogoUrl: json['vendorLogoUrl'] as String?,
       vendorCategory: json['vendorCategory'] as String?,
       description: json['description'] as String?,
-      avgOrderValue: (json['avgOrderValue'] as num?)?.toDouble(),
-      successRatePercent: (json['successRatePercent'] as num?)?.toDouble(),
     );
   }
 }
@@ -205,32 +224,13 @@ class RecipeAttachmentInfoDto {
       );
 }
 
-/// A single sample campaign — backend `GET /v1/partnerships/{id}/campaigns`.
-class SampleCampaignDto {
-  const SampleCampaignDto({
-    required this.id,
-    required this.title,
-    this.imageUrl,
-    required this.reelCount,
-    required this.creatorCollabCount,
-  });
-
-  final String id;
-  final String title;
-  final String? imageUrl;
-  final int reelCount;
-  final int creatorCollabCount;
-
-  factory SampleCampaignDto.fromJson(Map<String, dynamic> json) {
-    return SampleCampaignDto(
-      id: (json['id'] as String?) ?? '',
-      title: (json['title'] as String?) ?? '',
-      imageUrl: json['imageUrl'] as String?,
-      reelCount: (json['reelCount'] as num?)?.toInt() ?? 0,
-      creatorCollabCount: (json['creatorCollabCount'] as num?)?.toInt() ?? 0,
-    );
-  }
-}
+// `SampleCampaignDto` stood here — `id`, `title`, `imageUrl`, `reelCount`,
+// `creatorCollabCount` — documented as coming from
+// `GET /v1/partnerships/{id}/campaigns`. There is no such route in
+// lead360; see the note at the top of `brand_detail_screen.dart` for the
+// full list of what `CreatorPartnershipsController` actually serves. The
+// doc comment was the only thing that made the tab look sourced, and the
+// tab it fed is gone.
 
 /// Brand catalog detail — backend `VendorProfileDto`
 /// (`GET /v1/brands/{vendorAccountId}`). Real approved-vendor profile
