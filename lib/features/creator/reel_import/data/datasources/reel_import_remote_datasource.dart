@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show DioException, Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/imported_reel_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/data/models/tag_product_commission_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/content_freshness.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
@@ -428,5 +429,43 @@ class ReelImportRemoteDataSource {
       platform: platformName,
       platformPostId: m['externalId'] as String? ?? '',
     );
+  }
+
+  /// The most product ids `GET /v1/creator/tag-products/commission` accepts
+  /// in one call. The server rejects a longer list rather than truncating
+  /// it, so longer lists are chunked here instead of being cut short — a
+  /// silently dropped id would show a creator no rate on a product that has
+  /// one.
+  static const int maxCommissionIdsPerCall = 50;
+
+  /// Real commission terms for a batch of products.
+  ///
+  /// One call per 50 ids, never one per product: the endpoint was shaped to
+  /// kill that N+1 and a per-card call would put it straight back.
+  ///
+  /// The creator comes from the bearer token. No partnership id is sent —
+  /// membership is not something the client gets to assert.
+  Future<List<TagProductCommissionDto>> getTagProductCommissions(
+    List<String> productIds,
+  ) async {
+    if (productIds.isEmpty) return const <TagProductCommissionDto>[];
+    final out = <TagProductCommissionDto>[];
+    for (var i = 0; i < productIds.length; i += maxCommissionIdsPerCall) {
+      final end = i + maxCommissionIdsPerCall;
+      final batch = productIds.sublist(
+        i,
+        end < productIds.length ? end : productIds.length,
+      );
+      final response = await apiClient.get(
+        '/v1/creator/tag-products/commission',
+        queryParameters: <String, dynamic>{'productIds': batch},
+      );
+      out.addAll(
+        TagProductCommissionListDto.fromJson(
+          response as Map<String, dynamic>,
+        ).items,
+      );
+    }
+    return List<TagProductCommissionDto>.unmodifiable(out);
   }
 }

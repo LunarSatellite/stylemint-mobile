@@ -9,12 +9,15 @@ import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/dat
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_partnership_record_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/brands_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnership_figures_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/repositories/partnerships_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/brand.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_figures.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/brands_repository.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnership_figures_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/repositories/partnerships_repository.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 
@@ -200,6 +203,51 @@ final brandPartnershipRecordProvider = FutureProvider.autoDispose
           .watch(brandsRemoteDataSourceProvider)
           .getBrandPartnershipRecord(vendorProfileId);
     });
+
+// ── Per-partnership recorded figures ────────────────────────────────────────
+
+final partnershipFiguresRepositoryProvider =
+    Provider<PartnershipFiguresRepository>(
+      (ref) => PartnershipFiguresRepositoryImpl(
+        remoteDataSource: ref.watch(partnershipsRemoteDataSourceProvider),
+        networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
+      ),
+    );
+
+/// Affiliate earnings recorded against one partnership.
+///
+/// `AffiliateAttribution.unknown` is a **successful** read, not an error: the
+/// server is telling the client that no link carries this partnership, so no
+/// total exists to state. It is returned as data so the card can render the
+/// not-tracked state deliberately.
+///
+/// A genuine failure surfaces as `AsyncValue.error`, and the card renders the
+/// same not-tracked state for it. That is not a fallback value — no figure is
+/// invented and no zero is drawn. An unanswered request is exactly as
+/// unattributable as an `Unknown` answer, and both say the same true thing:
+/// this card has no attributed earnings to show you, your money is on
+/// Earnings.
+// ignore: specify_nonobvious_property_types
+final partnershipAffiliateEarningsProvider = FutureProvider.autoDispose
+    .family<PartnershipAffiliateEarnings, String>(
+      (ref, partnershipId) async => _orThrow(
+        await ref
+            .watch(partnershipFiguresRepositoryProvider)
+            .getAffiliateEarnings(partnershipId),
+      ),
+    );
+
+/// Products this creator tagged under one partnership. Recorded for every
+/// partnership, so a zero here is a real zero and is rendered as one.
+// ignore: specify_nonobvious_property_types
+final partnershipTagCountsProvider = FutureProvider.autoDispose
+    .family<PartnershipTagCounts, String>(
+      (ref, partnershipId) async => _orThrow(
+        await ref
+            .watch(partnershipFiguresRepositoryProvider)
+            .getTagCounts(partnershipId),
+      ),
+    );
 
 final rateCardProvider = FutureProvider.autoDispose<CreatorRateCard?>((
   ref,
