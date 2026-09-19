@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/pro
 import 'package:stylemint_mobile_frontend/features/settings/data/services/private_twin_crypto.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/memory_vault_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/widgets/memory_consent_section.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/widgets/twin_password_dialog.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -114,14 +115,18 @@ class _VaultBody extends ConsumerWidget {
             ),
             subtitle: Text(
               vault.paused
-                  ? 'Paused. Nothing new is kept.'
-                  : 'New purchases, views and likes are remembered.',
+                  ? 'Paused. Nothing new is kept, and none of the four uses '
+                        'below run.'
+                  : 'New purchases, views and likes are remembered. Each use '
+                        'below is a separate decision.',
               style: DesignTokens.smallRegular.copyWith(
                 color: DesignTokens.textMuted,
               ),
             ),
           ),
         ),
+        const SizedBox(height: DesignTokens.s24),
+        MemoryConsentSection(vault: vault, busy: busy),
         const SizedBox(height: DesignTokens.s12),
         Container(
           padding: const EdgeInsets.all(DesignTokens.s16),

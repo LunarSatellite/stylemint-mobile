@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
 
 sealed class MemoryVaultState {
@@ -67,6 +69,78 @@ class MemoryVaultNotifier extends StateNotifier<MemoryVaultState> {
         message: "Couldn't update your memory setting. Please try again.",
       ),
       (_) => MemoryVaultLoaded(vault.copyWith(paused: paused)),
+    );
+    // While paused the backend reports `consent.paused` for every purpose,
+    // so it can tell us nothing about the underlying answers. Resuming is
+    // the moment to go and read the real ones back.
+    if (!paused && result.isRight()) await refreshConsents();
+  }
+
+  /// Re-reads the per-purpose decisions without blanking the screen. A
+  /// failure leaves the decisions already on screen alone: replacing them
+  /// with "undecided" would claim nobody had ever answered.
+  Future<void> refreshConsents() async {
+    final vault = _vault;
+    if (vault == null) return;
+    final result = await _repository.loadConsents();
+    if (!mounted) return;
+    final fresh = result.toNullable();
+    if (fresh == null) return;
+    final current = _vault;
+    if (current == null) return;
+    state = MemoryVaultLoaded(current.copyWith(consents: fresh));
+  }
+
+  /// The customer agrees to one purpose, against [explanation] — the exact
+  /// text the screen showed them. It is passed straight through so the
+  /// record the backend stores is the words they actually read.
+  Future<void> grantPurpose(
+    MemoryPurpose purpose,
+    String explanation,
+  ) async {
+    await _decide(
+      purposeCode: purpose.wireValue,
+      optimistic: MemoryConsent.grantedFor(purpose),
+      save: () => _repository.grantConsent(
+        purpose: purpose,
+        explanation: explanation,
+      ),
+      failure: "Couldn't save your answer. It is unchanged.",
+    );
+  }
+
+  /// The customer withdraws, or refuses, one purpose. One step, and the
+  /// backend records a refusal even where nothing was ever granted.
+  Future<void> revokePurpose(int purposeCode) async {
+    await _decide(
+      purposeCode: purposeCode,
+      optimistic: MemoryConsent.refusedFor(purposeCode),
+      save: () => _repository.revokeConsent(purposeCode),
+      failure: "Couldn't withdraw that. It is unchanged.",
+    );
+  }
+
+  /// Shows [optimistic] at once, then puts the previous decision back if the
+  /// save fails — the screen must never sit on a choice the server refused.
+  Future<void> _decide({
+    required int purposeCode,
+    required MemoryConsent optimistic,
+    required Future<Either<NetworkExceptions, Unit>> Function() save,
+    required String failure,
+  }) async {
+    final before = _vault;
+    if (before == null) return;
+    state = MemoryVaultLoaded(
+      before.copyWith(consents: before.withConsent(purposeCode, optimistic)),
+      busy: true,
+    );
+    final result = await save();
+    if (!mounted) return;
+    state = result.fold(
+      (_) => MemoryVaultLoaded(before, message: failure),
+      (_) => MemoryVaultLoaded(
+        before.copyWith(consents: before.withConsent(purposeCode, optimistic)),
+      ),
     );
   }
 

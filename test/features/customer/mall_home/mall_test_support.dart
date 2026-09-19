@@ -19,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/rep
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/mall_home_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -114,6 +115,20 @@ class InertMemoryVaultRepository implements MemoryVaultRepository {
   Future<Either<NetworkExceptions, int>> importPortableTwin(
     String bundleJson,
   ) => throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> grantConsent({
+    required MemoryPurpose purpose,
+    required String explanation,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> revokeConsent(int purposeCode) =>
+      throw UnimplementedError();
 }
 
 typedef ProductsCall = ({ProductListingQuery query, String? cursor});

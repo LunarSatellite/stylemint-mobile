@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/settings/data/datasources/memory_vault_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
 
 class MemoryVaultRepositoryImpl implements MemoryVaultRepository {
@@ -46,6 +47,29 @@ class MemoryVaultRepositoryImpl implements MemoryVaultRepository {
   Future<Either<NetworkExceptions, Unit>> setPaused({required bool paused}) =>
       _call(() async {
         await remoteDataSource.setPaused(paused: paused);
+        return unit;
+      });
+
+  @override
+  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() =>
+      _call(remoteDataSource.loadConsents);
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> grantConsent({
+    required MemoryPurpose purpose,
+    required String explanation,
+  }) => _call(() async {
+    await remoteDataSource.grantConsent(
+      purpose: purpose,
+      explanation: explanation,
+    );
+    return unit;
+  });
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> revokeConsent(int purposeCode) =>
+      _call(() async {
+        await remoteDataSource.revokeConsent(purposeCode);
         return unit;
       });
 

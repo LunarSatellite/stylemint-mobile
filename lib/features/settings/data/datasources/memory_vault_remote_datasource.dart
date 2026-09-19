@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:uuid/uuid.dart';
 
 /// Maps a backend `CompanionMemoryDto`.
@@ -23,6 +24,26 @@ String? _categoryLabel(Object? value) => switch (value) {
   2 => 'Browsed',
   _ => null,
 };
+
+/// Maps a backend `MemoryPurposeDecision`.
+///
+/// A decision this build cannot name is kept rather than dropped: the
+/// customer can still see that something is claiming their vault, and still
+/// refuse it. Only [MemoryConsent.permitted] is read as permission, and it
+/// defaults to false, so a malformed row is off rather than on.
+MemoryConsent memoryConsentFromJson(Map<String, dynamic> json) {
+  final rawPurpose = json['purpose'];
+  final purpose = MemoryPurpose.fromWire(rawPurpose);
+  return MemoryConsent(
+    purpose: purpose,
+    purposeCode: purpose?.wireValue ?? (rawPurpose is int ? rawPurpose : 0),
+    permitted: json['permitted'] as bool? ?? false,
+    basis: ConsentBasis.fromWire(json['basis']),
+    reason: json['reason'] as String? ?? '',
+    needsDecision: json['needsDecision'] as bool? ?? false,
+    expiresUtc: DateTime.tryParse(json['expiresUtc'] as String? ?? ''),
+  );
+}
 
 /// Memory Vault endpoints under `/v1/customer/companion`.
 class MemoryVaultRemoteDataSource {
@@ -76,6 +97,55 @@ class MemoryVaultRemoteDataSource {
           .whereType<Map<String, dynamic>>()
           .map(companionMemoryFromJson)
           .toList(),
+      consents: await loadConsents(),
+    );
+  }
+
+  /// The current decision for every purpose the backend knows about.
+  ///
+  /// An absent list is not an answer. It comes back empty and the screen
+  /// shows every purpose as undecided, which is exactly what it is.
+  Future<List<MemoryConsent>> loadConsents() async {
+    try {
+      final list =
+          await apiClient.get('$_base/memories/consents') as List<dynamic>;
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(memoryConsentFromJson)
+          .toList();
+    } on DioException catch (e) {
+      // No companion yet: nothing has been decided.
+      if (e.response?.statusCode == 404) return const [];
+      rethrow;
+    }
+  }
+
+  /// Agrees to one purpose against [explanation] — the text the customer was
+  /// shown. The backend stores it as the thing they agreed to, so callers
+  /// pass the displayed string itself and never a paraphrase of it.
+  Future<void> grantConsent({
+    required MemoryPurpose purpose,
+    required String explanation,
+    DateTime? expiresUtc,
+  }) async {
+    final expiry = expiresUtc?.toUtc().toIso8601String();
+    await apiClient.post(
+      '$_base/memories/consents',
+      data: {
+        'purpose': purpose.wireValue,
+        'explanation': explanation,
+        'expiresUtc': ?expiry,
+      },
+      options: _mutation(),
+    );
+  }
+
+  /// Withdraws one purpose. Takes the wire code rather than the enum so a
+  /// purpose this build cannot name can still be refused.
+  Future<void> revokeConsent(int purposeCode) async {
+    await apiClient.authDelete(
+      '$_base/memories/consents/$purposeCode',
+      options: _mutation(),
     );
   }
 
