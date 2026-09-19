@@ -3,6 +3,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_timeline.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
@@ -46,6 +47,12 @@ abstract interface class OrdersRepository {
 
   Future<Either<NetworkExceptions, List<ReplacementOption>>>
   getReplacementOptions(String originalVariantId);
+
+  /// What actually happened to one order — the recorded events, plus the
+  /// health of each source behind them (404 -> notFound).
+  Future<Either<NetworkExceptions, OrderEventHistory>> getOrderEventHistory(
+    String orderNumber,
+  );
 
   /// Buyer tracking timeline, one entry per sub-order (404 -> notFound).
   Future<Either<NetworkExceptions, OrderTimeline>> getOrderTimeline(

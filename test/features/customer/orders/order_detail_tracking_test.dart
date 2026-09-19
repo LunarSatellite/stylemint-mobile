@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_timeline_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
@@ -75,6 +76,36 @@ _MockOrdersRepository _repositoryFor(OrderDetail order) {
   ).thenAnswer((_) async => right(order));
   when(() => repository.getOrderTimeline('NK2026-00015')).thenAnswer(
     (_) async => left(const NetworkExceptions.serverUnavailable()),
+  );
+  // The recorded history: placed, then cancelled. Nothing in between, because
+  // nothing in between was ever recorded.
+  when(() => repository.getOrderEventHistory('NK2026-00015')).thenAnswer(
+    (_) async => right(
+      OrderEventHistory(
+        orderNumber: 'NK2026-00015',
+        orderState: 5,
+        placedUtc: DateTime.utc(2026, 9, 11, 9, 15),
+        events: [
+          OrderEvent(
+            sequence: 1,
+            code: 'order_placed',
+            statement: 'You placed this order.',
+            occurredUtc: DateTime.utc(2026, 9, 11, 9, 15),
+            source: 'order',
+          ),
+          OrderEvent(
+            sequence: 2,
+            code: 'cancelled',
+            statement: 'This order was cancelled.',
+            occurredUtc: DateTime.utc(2026, 9, 12, 14, 30),
+            source: 'cancellation_request',
+          ),
+        ],
+        sources: const [
+          OrderEventSource(name: 'order', status: OrderEventSourceStatus.ok),
+        ],
+      ),
+    ),
   );
   return repository;
 }
@@ -207,8 +238,11 @@ void main() {
     // The refund is signed and glyphed, never a bare number.
     expect(find.text('+Rs 1,100.00'), findsOneWidget);
     expect(find.byIcon(Icons.south_west_rounded), findsOneWidget);
-    // The stopped stage is a cross on the rail, not a green ring.
-    expect(find.byKey(const ValueKey('delivery-stage-icon-2')), findsOneWidget);
+    // Two rungs, because two things were recorded. There is no third stage
+    // standing in for a shipment that never happened.
+    expect(find.byKey(const ValueKey('delivery-stage-icon-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('delivery-stage-icon-2')), findsNothing);
+    expect(find.text('This order was cancelled.'), findsOneWidget);
   });
 
   testWidgets('order detail does not overflow at 320dp with text ×1.3', (
