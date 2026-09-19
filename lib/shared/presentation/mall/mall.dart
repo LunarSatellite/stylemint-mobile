@@ -25,6 +25,7 @@ export 'mall_rail.dart';
 export 'mall_reel_card.dart';
 export 'mall_reel_play_slot.dart';
 export 'mall_reel_tile.dart';
+export 'mall_result_row.dart';
 export 'mall_section_header.dart';
 export 'mall_signal.dart';
 export 'mall_spotlight.dart';

@@ -54,7 +54,6 @@ abstract class TrendingProductDto with _$TrendingProductDto {
     @Default('NPR') String currency,
     @Default('') String imageUrl,
     @Default(0) double rating,
-    @Default(0) int soldToday,
   }) = _TrendingProductDto;
 
   const TrendingProductDto._();
@@ -68,7 +67,6 @@ abstract class TrendingProductDto with _$TrendingProductDto {
     imageUrl: imageUrl,
     price: Money(amount: amount, currency: currency),
     rating: rating,
-    soldToday: soldToday,
   );
 }
 

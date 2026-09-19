@@ -12,7 +12,6 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/widgets/saveable_product_card.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/money_text.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -391,6 +390,12 @@ class _LookMarker extends StatelessWidget {
 }
 
 /// A piece of a look, numbered to match its marker on the cover.
+///
+/// This was a privately built row — its own number, its own 72×90 product
+/// photo, its own four text styles — that drifted from every other product
+/// row in the app and put a catalogue photo on a page that is not product
+/// detail. It is `MallResultRow` now: same rank, same ground, same price
+/// rhythm as a search hit, and the stylist's note rides in the footer.
 class _LookItemRow extends StatelessWidget {
   const _LookItemRow({
     required this.number,
@@ -402,135 +407,24 @@ class _LookItemRow extends StatelessWidget {
   final CollectionItem item;
   final VoidCallback onTap;
 
-  static const TextStyle _numberStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: DesignTokens.textMuted,
-  );
-
-  static const TextStyle _nameStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    height: 1.35,
-    color: DesignTokens.textWhite,
-  );
-
-  static const TextStyle _priceStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: DesignTokens.textWhite,
-  );
-
-  static const TextStyle _wasStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    height: 1.3,
-    color: DesignTokens.textMuted,
-    decoration: TextDecoration.lineThrough,
-  );
-
   @override
   Widget build(BuildContext context) {
-    final product = item.product;
-    final brand = product.vendorDisplayName;
     final note = item.note;
-    final was = product.compareAtPrice;
-    final radius = BorderRadius.circular(DesignTokens.radiusMedium);
-    return MergeSemantics(
-      child: Semantics(
-        button: true,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: radius,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.symmetric(vertical: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 28,
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.only(top: 2),
-                      child: Text('$number', style: _numberStyle),
-                    ),
-                  ),
-                  ClipRRect(
-                    borderRadius: radius,
-                    child: SizedBox(
-                      width: 72,
-                      height: 90,
-                      child: ExcludeSemantics(
-                        child: MallNetworkImage(url: product.imageUrl),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.s12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (brand != null) ...[
-                          Text(
-                            brand.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.eyebrow,
-                          ),
-                          const SizedBox(height: 2),
-                        ],
-                        Text(
-                          product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: _nameStyle,
-                        ),
-                        const SizedBox(height: DesignTokens.s6),
-                        Wrap(
-                          spacing: DesignTokens.s8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            MoneyText(
-                              product.price,
-                              decimalDigits: MallMetrics.priceDigits(
-                                product.price,
-                              ),
-                              style: _priceStyle,
-                            ),
-                            if (was != null)
-                              MoneyText(
-                                was,
-                                decimalDigits: MallMetrics.priceDigits(was),
-                                style: _wasStyle,
-                              ),
-                          ],
-                        ),
-                        if (note != null) ...[
-                          const SizedBox(height: DesignTokens.s6),
-                          Text(
-                            note,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: DesignTokens.smallDescription,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+    return MallResultRow(
+      product: item.product.toVm(),
+      rank: number,
+      onTap: onTap,
+      semanticExtras: [?note],
+      footer: note == null
+          ? null
+          : ExcludeSemantics(
+              child: Text(
+                note,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: DesignTokens.smallDescription,
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

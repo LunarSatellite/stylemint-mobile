@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
-import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feed.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_feedback.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/discover_feed_notifier.dart';
@@ -456,7 +455,11 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
     itemLabel: product.name,
     onMore: () =>
         _openActions(NotInterestedKind.product, product.id, product.name),
-    child: MallProductCard(
+    // Discover is a Mall surface, so it gets the Mall's tile: a reel poster
+    // where the product has a reel, the typographic tile where it does not.
+    // It used to build `MallProductCard`, which is the photo card that
+    // belongs to product detail and its rails.
+    child: MallProductTile(
       product: product.toVm(),
       onTap: () => _push(MallRoutes.product(product.id)),
       onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
@@ -537,9 +540,9 @@ class _DiscoveryContext extends StatelessWidget {
       padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 0),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFF181C19),
+          color: DesignTokens.surfaceRaised,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0x1FFFFFFF)),
+          border: Border.all(color: DesignTokens.borderDefault),
         ),
         child: Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
@@ -550,7 +553,7 @@ class _DiscoveryContext extends StatelessWidget {
                 height: 36,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0x1F32D477),
+                  color: DesignTokens.primaryGreenLight,
                 ),
                 child: const Icon(
                   Icons.tune_rounded,
@@ -637,7 +640,13 @@ class _LayoutToggle extends ConsumerWidget {
   }
 }
 
-/// A product row for the list layout: photo, brand, name and price.
+/// A product row for the list layout.
+///
+/// It was a private row with a 96 dp product photo, its own three text
+/// styles and its own discount pill — a third spelling of the same object,
+/// next to the grid card above it and the Mall's tiles everywhere else. It
+/// is `MallResultRow` now, which also takes the photo off a surface that is
+/// not product detail.
 class _ProductListTile extends StatelessWidget {
   const _ProductListTile({
     required this.product,
@@ -650,131 +659,27 @@ class _ProductListTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onMore;
 
-  static const TextStyle _brandStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 12,
-    height: 1.3,
-    color: DesignTokens.textMuted,
-  );
-  static const TextStyle _nameStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    height: 1.3,
-    color: DesignTokens.textWhite,
-  );
-  static const TextStyle _priceStyle = TextStyle(
-    fontFamily: DesignTokens.fontFamily,
-    fontSize: 15,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: DesignTokens.textWhite,
-  );
-
   @override
   Widget build(BuildContext context) {
-    final vm = product.toVm();
-    final discount = vm.discountPercent;
-    final compareAt = discount == null ? null : vm.compareAtPrice;
-    final price = formatMoney(product.price, decimalDigits: 0);
-    final was = compareAt == null
-        ? null
-        : formatMoney(compareAt, decimalDigits: 0);
-    final brand = product.brandName;
-    final label = [
-      ?brand,
-      product.name,
-      price,
-      if (was != null) 'was $was',
-      if (discount != null) '$discount% off',
-    ].join(', ');
-
     return Material(
       color: DesignTokens.surfaceRaised,
       borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
       clipBehavior: Clip.antiAlias,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Semantics(
-              button: true,
-              label: label,
-              excludeSemantics: true,
-              child: InkWell(
-                onTap: onTap,
-                onLongPress: onMore,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 96,
-                      child: AspectRatio(
-                        aspectRatio: MallProductCard.imageAspectRatio,
-                        child: MallNetworkImage(url: product.imageUrl),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                          DesignTokens.s12,
-                          DesignTokens.s12,
-                          0,
-                          DesignTokens.s12,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (brand != null)
-                              Text(
-                                brand,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: _brandStyle,
-                              ),
-                            Text(
-                              product.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: _nameStyle,
-                            ),
-                            const SizedBox(height: DesignTokens.s8),
-                            Wrap(
-                              spacing: DesignTokens.s8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(price, style: _priceStyle),
-                                if (was != null)
-                                  Text(
-                                    was,
-                                    style: _brandStyle.copyWith(
-                                      decoration: TextDecoration.lineThrough,
-                                    ),
-                                  ),
-                                if (discount != null)
-                                  Text(
-                                    '-$discount%',
-                                    style: _brandStyle.copyWith(
-                                      color: DesignTokens.primaryGreen,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: DesignTokens.s12,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: MallResultRow(product: product.toVm(), onTap: onTap),
             ),
-          ),
-          DiscoverMoreButton(
-            label: 'More options for ${product.name}',
-            onTap: onMore,
-          ),
-        ],
+            DiscoverMoreButton(
+              label: 'More options for ${product.name}',
+              onTap: onMore,
+            ),
+          ],
+        ),
       ),
     );
   }

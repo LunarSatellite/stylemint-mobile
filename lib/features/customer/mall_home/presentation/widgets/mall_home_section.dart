@@ -347,7 +347,6 @@ class _DropBlock extends StatelessWidget {
         now: now,
         strings: strings,
         semanticLabel: title.isEmpty ? 'Deals' : title,
-        photoCards: true,
         onOpenProduct: onOpenProduct,
         onAddToBag: onAddToBag,
       ),
@@ -389,7 +388,6 @@ class _ShoppableProducts extends StatelessWidget {
         now: now,
         strings: strings,
         size: MallCardSize.compact,
-        photoCards: true,
         semanticLabel: semanticLabel,
         onOpenProduct: onOpenProduct,
         onAddToBag: onAddToBag,
@@ -417,7 +415,6 @@ class _ShoppableProducts extends StatelessWidget {
             now: now,
             strings: strings,
             size: MallCardSize.compact,
-            photoCards: true,
             semanticLabel: semanticLabel,
             onOpenProduct: onOpenProduct,
             onAddToBag: onAddToBag,
@@ -480,7 +477,6 @@ class _SignalRail extends StatelessWidget {
     required this.onOpenProduct,
     required this.onAddToBag,
     this.size = MallCardSize.regular,
-    this.photoCards = false,
   });
 
   final List<HomeProduct> items;
@@ -491,35 +487,29 @@ class _SignalRail extends StatelessWidget {
   final Future<bool> Function(HomeProduct product) onAddToBag;
   final MallCardSize size;
 
-  /// Uses product photography for the deal stage. Reel-backed items keep the
-  /// centered play action; older products without a reel remain honest photos.
-  final bool photoCards;
-
   @override
   Widget build(BuildContext context) {
     final width = size == MallCardSize.compact
-        ? MallProductCard.compactWidth
-        : MallProductCard.regularWidth;
+        ? MallProductTile.compactWidth
+        : MallProductTile.regularWidth;
     final withSignal = mallRailHasSignals(
       items,
       now: now,
       strings: strings,
     );
-    final cardHeight = photoCards
-        ? MallProductCard.heightFor(
-            context,
-            width: width,
-            size: size,
-            withSignal: withSignal,
-            withAction: true,
-          )
-        : MallProductTile.heightFor(
-            context,
-            width: width,
-            size: size,
-            withSignal: withSignal,
-            withAction: true,
-          );
+    // One tile for every Mall rail. The rail used to take a photo-card
+    // flag and every call site passed true, so the drop plate and both
+    // discovery rails were `MallProductCard` — catalogue photos on the Mall
+    // home, which the owner directive of 2026-09-16 and this kit's README
+    // both rule out. The flag is gone rather than defaulted, so the Mall
+    // cannot quietly become a photo grid again.
+    final cardHeight = MallProductTile.heightFor(
+      context,
+      width: width,
+      size: size,
+      withSignal: withSignal,
+      withAction: true,
+    );
     return MallRail<HomeProduct>(
       items: items,
       itemWidth: width,
@@ -533,17 +523,6 @@ class _SignalRail extends StatelessWidget {
           now: now,
           strings: strings,
         );
-        if (photoCards) {
-          return SaveableMallProductCard(
-            product: card,
-            size: size,
-            signal: signal,
-            reserveSignal: withSignal,
-            onTap: () => onOpenProduct(product.id),
-            onReelTap: (reel) => unawaited(openMallReelWindow(context, reel)),
-            onQuickAdd: () => onAddToBag(product),
-          );
-        }
         return SaveableMallProductTile(
           product: card,
           size: size,

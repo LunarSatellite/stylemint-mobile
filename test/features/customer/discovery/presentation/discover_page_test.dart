@@ -142,11 +142,15 @@ void main() {
     await _selectChip(tester, 'trending');
     expect(find.text('Bestselling right now'), findsOneWidget);
     expect(_key('discover-product-t-1'), findsOneWidget);
-    expect(find.byType(MallProductCard), findsNWidgets(2));
+    // Discover is a Mall surface: the grid builds the Mall's tile, not the
+    // photo card that belongs to product detail.
+    expect(find.byType(MallProductTile), findsNWidgets(2));
+    expect(find.byType(MallProductCard), findsNothing);
 
     await tester.tap(_key('discover-layout-list'));
     await tester.pump();
-    expect(find.byType(MallProductCard), findsNothing);
+    expect(find.byType(MallProductTile), findsNothing);
+    expect(find.byType(MallResultRow), findsNWidgets(2));
     expect(find.text('Product t-1'), findsOneWidget);
   });
 

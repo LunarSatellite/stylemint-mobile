@@ -175,19 +175,26 @@ class ProductListingScreen extends ConsumerWidget {
                       gradient: const LinearGradient(
                         begin: AlignmentDirectional.topStart,
                         end: AlignmentDirectional.bottomEnd,
-                        colors: [Color(0xFF26352E), Color(0xFF17181B)],
+                        // The edit plate's green cast. Both stops are the
+                        // palette's own tones, not a third green.
+                        colors: [
+                          DesignTokens.primaryGreenDark,
+                          DesignTokens.bgAppBody,
+                        ],
                       ),
                       boxShadow: DesignTokens.shadowCard,
                     ),
                     child: Stack(
                       children: [
-                        const PositionedDirectional(
+                        PositionedDirectional(
                           top: -28,
                           end: -18,
                           child: Icon(
                             Icons.auto_awesome_rounded,
                             size: 112,
-                            color: Color(0x102ECC71),
+                            color: DesignTokens.primaryGreen.withValues(
+                              alpha: 0.06,
+                            ),
                           ),
                         ),
                         Column(

@@ -85,11 +85,14 @@ void main() {
         .getSemantics(find.byKey(ValueKey('search-product-$productId')))
         .label;
 
+    // The disclosure comes first, before the product is named — the
+    // requirement. The rest of the sentence is now the Mall row's, so the
+    // money and rating read the same here as on any other product row.
     expect(
       tileLabel('p-sponsored'),
-      'Sponsored. Linen shirt. NPR 1200. Rated 4.5 stars',
+      'Sponsored. Linen shirt, Rs 1,200, Rated 4.5 out of 5',
     );
-    expect(tileLabel('p-organic'), 'Cotton shirt. NPR 900');
+    expect(tileLabel('p-organic'), 'Cotton shirt, Rs 900');
     expect(find.bySemanticsLabel('Why am I seeing this?'), findsOneWidget);
 
     // Disposed in the body: the leak check runs before tear-downs.

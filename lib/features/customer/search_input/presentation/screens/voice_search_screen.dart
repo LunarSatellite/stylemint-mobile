@@ -294,7 +294,7 @@ class _VoiceSearchScreenState extends ConsumerState<VoiceSearchScreen> {
                   color: DesignTokens.textMuted,
                 ),
                 filled: true,
-                fillColor: const Color(0xFF1A1E1B),
+                fillColor: DesignTokens.surfaceRaised,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(
                     DesignTokens.cardRadius,

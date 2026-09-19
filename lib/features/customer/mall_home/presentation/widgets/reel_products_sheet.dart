@@ -228,8 +228,13 @@ class _SheetHeader extends StatelessWidget {
   }
 }
 
-/// A tagged product: image, name and price (opens the product) and add to
-/// cart, which becomes a quantity stepper once the product is in the cart.
+/// A tagged product: name and price (opens the product) and add to cart,
+/// which becomes a quantity stepper once the product is in the cart.
+///
+/// The leading block used to be the product's photograph. This sheet sits
+/// over a reel, which is as far from product detail as a surface gets, so it
+/// is the tile's own `MallTypeGround` now — same seed, same face as the
+/// tile that tagged it.
 class ReelProductRow extends ConsumerWidget {
   const ReelProductRow({
     required this.product,
@@ -276,12 +281,11 @@ class ReelProductRow extends ConsumerWidget {
                       child: SizedBox(
                         width: 64,
                         height: 80,
-                        child: ExcludeSemantics(
-                          child: MallNetworkImage(
-                            url: product.imageUrl.isEmpty
-                                ? null
-                                : product.imageUrl,
-                          ),
+                        child: MallTypeGround(
+                          seed: product.id,
+                          monogram: product.name.trim().isEmpty
+                              ? null
+                              : product.name.trim()[0].toUpperCase(),
                         ),
                       ),
                     ),

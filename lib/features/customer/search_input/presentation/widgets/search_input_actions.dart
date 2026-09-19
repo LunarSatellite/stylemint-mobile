@@ -95,7 +95,7 @@ class _SearchInputButton extends StatelessWidget {
       onPressed: onPressed,
       style: IconButton.styleFrom(
         minimumSize: const Size(48, 48),
-        backgroundColor: const Color(0x2432D477),
+        backgroundColor: DesignTokens.primaryGreen.withValues(alpha: 0.14),
         foregroundColor: DesignTokens.primaryGreen,
       ),
       icon: Icon(icon),
