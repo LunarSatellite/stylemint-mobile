@@ -117,6 +117,8 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
         pickupNote: delivery.pickupNote,
         deliveryPreference: delivery.preferences,
         deliveryConsolidation: delivery.consolidation,
+        pickupLocations: delivery.pickupLocations,
+        pickupLocationsNote: delivery.pickupLocationsNote,
       ),
     );
   }
@@ -136,6 +138,43 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
             .toList(growable: false);
         state = CheckoutState.loadSuccess(
           summary.copyWith(deliveryChoices: updated),
+        );
+      },
+    );
+  }
+
+  /// Records the counter the shopper tapped.
+  ///
+  /// Called only from that tap. Nothing here preselects a counter, not even
+  /// when the seller has exactly one: the order stores this as the counter the
+  /// shopper chose, and a value nobody chose would be a fabricated one. A
+  /// seller with no counter never reaches this path at all, and their
+  /// collection order is placed with no counter, exactly as before.
+  Future<void> selectPickupLocation(PickupLocation location) async {
+    final summary = state.maybeWhen(
+      loadSuccess: (s, _) => s,
+      orElse: () => null,
+    );
+    if (summary == null || location.selected) return;
+
+    final sellerId = summary.selectedDeliveryChoice?.sellerAccountId;
+    if (sellerId == null || sellerId.isEmpty) return;
+
+    final result = await _repository.selectPickupLocation(
+      sellerId: sellerId,
+      locationId: location.id,
+    );
+    result.fold(
+      // The tap failed to reach the server, so the counter is not recorded and
+      // the picker keeps showing nothing selected. Claiming otherwise would
+      // show a counter on an order that has none.
+      (_) {},
+      (_) {
+        final updated = summary.pickupLocations
+            .map((item) => item.copyWith(selected: item.id == location.id))
+            .toList(growable: false);
+        state = CheckoutState.loadSuccess(
+          summary.copyWith(pickupLocations: updated),
         );
       },
     );

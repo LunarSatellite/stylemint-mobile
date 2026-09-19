@@ -64,7 +64,56 @@ class CheckoutRemoteDataSource {
       pickupNote: data['pickupNote'] as String?,
       preferences: _parseDeliveryPreference(data['preferences']),
       consolidation: _parseConsolidationPlan(data['consolidation']),
+      pickupLocations: _parsePickupLocations(data['pickupLocations']),
+      pickupLocationsNote: data['pickupLocationsNote'] as String?,
     );
+  }
+
+  /// The server sends `pickupLocations: null` whenever collection is not on
+  /// offer, and that is exactly what every response carried before counters
+  /// existed — so a null list is an empty list here, never an error.
+  static List<PickupLocation> _parsePickupLocations(Object? raw) {
+    if (raw is! List) return const [];
+    final locations = <PickupLocation>[];
+    for (final entry in raw) {
+      if (entry is! Map<String, dynamic>) continue;
+      final id = entry['locationId'] as String?;
+      // A counter with no id cannot be chosen, so it is not offered.
+      if (id == null || id.isEmpty) continue;
+      locations.add(
+        PickupLocation(
+          id: id,
+          name: _blankToNull(entry['name']),
+          addressLine: _blankToNull(entry['addressLine']),
+          city: _blankToNull(entry['city']),
+          openingHours: _blankToNull(entry['openingHours']),
+          confirmation: _parseConfirmation(entry['confirmation']),
+          confirmationNote: _blankToNull(entry['confirmationNote']),
+          selected: entry['selected'] as bool? ?? false,
+        ),
+      );
+    }
+    return List.unmodifiable(locations);
+  }
+
+  /// An unrecorded field and a field recorded as whitespace are the same thing
+  /// to a reader, and both must render as absent rather than as a blank line.
+  static String? _blankToNull(Object? raw) {
+    if (raw is! String) return null;
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static PickupLocationConfirmation _parseConfirmation(Object? raw) {
+    final token = raw?.toString().toLowerCase();
+    return switch (token) {
+      'confirmed' || '2' => PickupLocationConfirmation.confirmed,
+      'stale' || '3' => PickupLocationConfirmation.stale,
+      // Anything unrecognised is not evidence of freshness. Fall to the reading
+      // that tells the shopper to check before travelling — the same direction
+      // the server's own mapper fails in.
+      _ => PickupLocationConfirmation.neverConfirmed,
+    };
   }
 
   Future<DeliveryPreference> updateDeliveryPreference(
@@ -142,6 +191,39 @@ class CheckoutRemoteDataSource {
         ),
       );
     }
+  }
+
+  /// Names which of the seller's counters the shopper will collect from.
+  ///
+  /// This is the same `/pickup` call [selectDeliveryChoice] already makes, with
+  /// `pickupLocationId` added — the endpoint has accepted that field all along.
+  /// It sets no price, reserves no stock and moves no money; it records a
+  /// choice.
+  ///
+  /// The idempotency key deliberately includes [locationId]. The pickup key
+  /// without it is already spent by [selectDeliveryChoice] for this session and
+  /// seller, so reusing it would have the server replay that earlier response
+  /// and quietly drop the counter — the choice would look accepted and never be
+  /// recorded.
+  Future<void> selectPickupLocation({
+    required String sellerId,
+    required String locationId,
+  }) async {
+    final sessionId = _sessionId ?? await _createSession();
+    await apiClient.post(
+      '/v1/checkout/sessions/$sessionId/pickup',
+      data: {
+        'pickupVendorAccountId': sellerId,
+        'pickupLocationId': locationId,
+      },
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key':
+              'checkout-pickup-$sessionId-$sellerId-$locationId',
+        },
+      ),
+    );
   }
 
   Future<List<ShippingAddressDto>> getShippingAddresses() async {

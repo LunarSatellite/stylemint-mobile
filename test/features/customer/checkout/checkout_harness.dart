@@ -98,6 +98,12 @@ void stubCheckout(
   when(
     () => repository.selectDeliveryChoice(any()),
   ).thenAnswer((_) async => right(unit));
+  when(
+    () => repository.selectPickupLocation(
+      sellerId: any(named: 'sellerId'),
+      locationId: any(named: 'locationId'),
+    ),
+  ).thenAnswer((_) async => right(unit));
   when(() => repository.updateDeliveryPreference(any())).thenAnswer(
     (invocation) async =>
         right(invocation.positionalArguments.first as DeliveryPreference),
@@ -290,6 +296,104 @@ const List<DeliveryChoice> longDeliveryChoiceList = [
 
 const DeliveryChoices longDeliveryChoices = DeliveryChoices(
   choices: longDeliveryChoiceList,
+  emissionsNote: longEmissionsNote,
+  pickupNote: longPickupNote,
+);
+
+// ── Pickup counters ─────────────────────────────────────────────────────────
+//
+// Real registry rows, including the ragged ones. `codes.vendor_stores` records
+// what a seller typed and nothing more, so a counter genuinely can have no
+// name, no hours, or nothing at all beyond its id.
+
+/// The same delivery choices with collection already selected — the only state
+/// in which the counter picker is on screen.
+const List<DeliveryChoice> pickupSelectedChoiceList = [
+  DeliveryChoice(
+    kind: DeliveryChoiceKind.homeDelivery,
+    title: 'Home delivery in one consolidated package',
+    detail: 'Everything arrives together, two days after dispatch.',
+    deliveries: 1,
+    readyInDays: 2,
+    selected: false,
+  ),
+  DeliveryChoice(
+    kind: DeliveryChoiceKind.pickupFromSeller,
+    title: 'Pick up from $longVendorName',
+    detail: 'Ready to collect in Patan tomorrow afternoon.',
+    deliveries: 0,
+    readyInDays: 1,
+    sellerAccountId: 'seller-1',
+    sellerName: longVendorName,
+    selected: true,
+  ),
+];
+
+/// A fully filled row: everything the registry can hold.
+const PickupLocation fullCounter = PickupLocation(
+  id: 'loc-1',
+  name: 'Patan Durbar Square flagship counter',
+  addressLine: 'Mangal Bazaar Road, opposite the Patan Museum ticket window',
+  city: 'Lalitpur',
+  openingHours: 'Sun–Fri 10:30–19:00, Sat closed',
+  confirmation: PickupLocationConfirmation.confirmed,
+  confirmationNote: 'The seller confirmed these details this month.',
+);
+
+/// A second counter, with no hours recorded — the common half-filled row.
+const PickupLocation counterWithoutHours = PickupLocation(
+  id: 'loc-2',
+  name: 'Thamel pickup desk',
+  addressLine: 'Chaksibari Marg, first floor above the bookshop',
+  city: 'Kathmandu',
+  confirmation: PickupLocationConfirmation.stale,
+  confirmationNote: 'Nobody has confirmed these details in over a year.',
+);
+
+/// A counter the seller never named. It must never render as "Store".
+const PickupLocation unnamedCounter = PickupLocation(
+  id: 'loc-3',
+  addressLine: 'Jawalakhel chowk, beside the fountain',
+  city: 'Lalitpur',
+  confirmationNote: 'Nobody has ever confirmed these details.',
+);
+
+/// A row with nothing recorded but its id.
+const PickupLocation bareCounter = PickupLocation(id: 'loc-4');
+
+const String pickupLocationsNote =
+    'These are the seller’s recorded counters, not where your order is now.';
+
+/// Collection selected, with counters to choose from and none chosen yet.
+const DeliveryChoices countersAvailableChoices = DeliveryChoices(
+  choices: pickupSelectedChoiceList,
+  emissionsNote: longEmissionsNote,
+  pickupNote: longPickupNote,
+  pickupLocations: [fullCounter, counterWithoutHours],
+  pickupLocationsNote: pickupLocationsNote,
+);
+
+/// Collection selected by a seller who has registered no counter at all. This
+/// is the pre-existing behaviour and must stay exactly as it was.
+const DeliveryChoices noCounterChoices = DeliveryChoices(
+  choices: pickupSelectedChoiceList,
+  emissionsNote: longEmissionsNote,
+  pickupNote: longPickupNote,
+);
+
+/// The basket with collection selected, for counter-picker tests.
+const CheckoutSummary pickupCheckoutSummary = CheckoutSummary(
+  shippingAddress: defaultAddress,
+  paymentMethod: codMethod,
+  items: longCheckoutItems,
+  subtotal: Money(amount: 112750, currency: npr),
+  shipping: Money(amount: 2500, currency: npr),
+  tax: Money(amount: 14657.5, currency: npr),
+  discount: Money(amount: 5057.5, currency: npr),
+  total: largeTotal,
+  availableAddresses: [defaultAddress, secondAddress],
+  availablePaymentMethods: [codMethod, cardMethod],
+  deliveryChoices: pickupSelectedChoiceList,
   emissionsNote: longEmissionsNote,
   pickupNote: longPickupNote,
 );

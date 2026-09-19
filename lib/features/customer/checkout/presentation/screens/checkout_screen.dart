@@ -156,6 +156,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           .selectDeliveryChoice(choice),
                     ),
                     const SizedBox(height: DesignTokens.s16),
+                    // Only when this seller has registered counters. A seller
+                    // with none shows no picker at all and their collection
+                    // order is placed without one, exactly as before.
+                    if (isPickup && summary.pickupLocations.isNotEmpty) ...[
+                      _PickupCounterPicker(
+                        locations: summary.pickupLocations,
+                        note: summary.pickupLocationsNote,
+                        onSelect: (location) => ref
+                            .read(checkoutNotifierProvider.notifier)
+                            .selectPickupLocation(location),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
+                    ],
                     if (!isPickup) ...[
                       _ShippingAddressCard(
                         address: effectiveAddress,
@@ -1186,6 +1199,226 @@ class _DeliveryChoiceCard extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+// ─── PICKUP COUNTER PICKER ───────────────────────────────────────────────────
+//
+// Which counter the shopper will collect from. Until this existed, checkout
+// said which seller but never which counter, so every collection order recorded
+// no location and the counter name was legitimately absent everywhere.
+//
+// What this shows is exactly what `codes.vendor_stores` records: a name, an
+// address, a city, free-text opening hours and when a human last confirmed the
+// record. What it deliberately does not show:
+//
+//   • Open / closed now. The hours are free text with no timezone, holiday or
+//     break model behind them, so they can be repeated but never interpreted.
+//   • Stock at a counter. The platform records none; the server reports every
+//     counter as "unknown", which is not a quantity and is not zero.
+//   • Distance or a map. That would need the shopper's coordinates, which this
+//     screen never asks for — no location permission is requested here, because
+//     nothing shown depends on where the shopper is.
+//
+// Nothing here is preselected, including when the seller has exactly one
+// counter. See [_PickupCounterPicker.build].
+class _PickupCounterPicker extends StatelessWidget {
+  const _PickupCounterPicker({
+    required this.locations,
+    required this.note,
+    required this.onSelect,
+  });
+
+  final List<PickupLocation> locations;
+  final String? note;
+  final ValueChanged<PickupLocation> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (locations.isEmpty) return const SizedBox.shrink();
+
+    // One counter is not preselected. The order records this as the counter the
+    // shopper chose, so filling it in for them would write a choice nobody
+    // made — and a lone counter is not automatically convenient, confirmed or
+    // still open. The tap is one gesture; inventing it is a fabricated fact.
+    final chosen = locations.where((l) => l.selected).isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Where you’ll collect',
+            style: DesignTokens.sectionInnerTitle,
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            chosen
+                ? 'You’ll collect from the counter below.'
+                : 'Pick a counter, or place the order without one.',
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          for (final location in locations) ...[
+            _PickupCounterTile(
+              location: location,
+              onTap: () => onSelect(location),
+            ),
+            const SizedBox(height: DesignTokens.s8),
+          ],
+          if (note != null && note!.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s4),
+            Text(
+              note!,
+              style: const TextStyle(
+                color: DesignTokens.textMuted,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PickupCounterTile extends StatelessWidget {
+  const _PickupCounterTile({required this.location, required this.onTap});
+
+  final PickupLocation location;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = location.selected;
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: selected
+              ? DesignTokens.primaryGreen.withValues(alpha: 0.10)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? DesignTokens.primaryGreen
+                : DesignTokens.borderDefault,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              selected
+                  ? Icons.check_circle_rounded
+                  : Icons.circle_outlined,
+              size: 20,
+              color: selected
+                  ? DesignTokens.primaryGreen
+                  : DesignTokens.textMuted,
+            ),
+            const SizedBox(width: DesignTokens.s12),
+            // Expanded, so a long counter name wraps instead of overflowing at
+            // 320dp with text scaled to 1.3.
+            Expanded(child: _details()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _details() {
+    final name = location.name;
+    final address = location.addressLine;
+    final city = location.city;
+    final hours = location.openingHours;
+    final confirmationNote = location.confirmationNote;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // An unnamed counter is not "Store" and not the seller's name. When the
+        // registry holds no name, no name is rendered and the address leads.
+        if (name != null)
+          Text(
+            name,
+            style: const TextStyle(
+              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        // When the registry holds nothing at all to identify this counter by,
+        // say that, rather than render a blank tappable row that looks like a
+        // rendering bug.
+        if (location.hasNoRecordedDetails)
+          const Text(
+            'This counter’s details aren’t recorded',
+            style: TextStyle(
+              color: DesignTokens.textMuted,
+              fontStyle: FontStyle.italic,
+              fontSize: 13,
+            ),
+          ),
+        // A missing address is no line at all — never an empty one.
+        if (address != null) ...[
+          if (name != null) const SizedBox(height: DesignTokens.s4),
+          Text(
+            address,
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 13,
+            ),
+          ),
+        ],
+        if (city != null) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            city,
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 13,
+            ),
+          ),
+        ],
+        // Repeated exactly as the seller typed it. "As listed" is doing real
+        // work: these hours are not checked against a clock and this line never
+        // claims the counter is open now.
+        if (hours != null) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            'Hours as listed by the seller: $hours',
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 12,
+            ),
+          ),
+        ],
+        // The server's own sentence about how fresh this record is, carried
+        // through unedited.
+        if (confirmationNote != null) ...[
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            confirmationNote,
+            style: const TextStyle(
+              color: DesignTokens.textMuted,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

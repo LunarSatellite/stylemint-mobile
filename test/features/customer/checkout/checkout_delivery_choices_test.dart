@@ -24,6 +24,13 @@ void main() {
       summary.selectedDeliveryChoice?.kind,
       DeliveryChoiceKind.pickupFromSeller,
     );
+
+    // This seller has registered no counter, and switching to collection must
+    // not invent one. The order goes out recording no location, exactly as it
+    // did before counters could be chosen at all.
+    expect(summary.pickupLocations, isEmpty);
+    expect(summary.selectedPickupLocation, isNull);
+    expect(repository.selectedPickupLocation, isNull);
   });
 
   test(
@@ -140,6 +147,19 @@ class _FakeCheckoutRepository implements CheckoutRepository {
     DeliveryChoice choice,
   ) async {
     selected = choice;
+    return right(unit);
+  }
+
+  /// Recorded, not acted on — this fake exists to prove the delivery-choice
+  /// path still behaves exactly as it did, and it must stay null here.
+  ({String sellerId, String locationId})? selectedPickupLocation;
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> selectPickupLocation({
+    required String sellerId,
+    required String locationId,
+  }) async {
+    selectedPickupLocation = (sellerId: sellerId, locationId: locationId);
     return right(unit);
   }
 
