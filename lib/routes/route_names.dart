@@ -316,6 +316,13 @@ abstract class RouteNames {
   /// The route carries nothing. The mandate credential is shown once inside a
   /// modal sheet and never becomes navigator state, a path or a query string.
   static const settingsConnectedAssistants = '/settings/connected-assistants';
+
+  /// Shopping plans: a stated intent compiled into steps, and the shopper's
+  /// go-ahead for them. It sits beside [settingsConnectedAssistants] because
+  /// it is the same kind of surface — StyleMint proposes, the shopper
+  /// decides, and nothing on either screen buys, holds or pays.
+  static const settingsShoppingPlans = '/settings/shopping-plans';
+  static const settingsShoppingPlan = '/settings/shopping-plans/:planId';
   static const settingsChangePassword = '/settings/change-password';
   static const accountSettings = '/account';
   static const sessions = '/account/sessions';

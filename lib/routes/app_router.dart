@@ -87,6 +87,8 @@ import 'package:stylemint_mobile_frontend/features/customer/agent_commerce/prese
 import 'package:stylemint_mobile_frontend/features/customer/agent_negotiations/presentation/agent_negotiations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/execution_plans/presentation/screens/shopping_plan_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/execution_plans/presentation/screens/shopping_plans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_product_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/screens/in_store_store_screen.dart';
@@ -1701,6 +1703,24 @@ GoRouter appRouter(Ref ref) {
               RouteNames.settingsConnectedAssistants,
             ),
             builder: (ctx, state) => const ConnectedAssistantsScreen(),
+          ),
+          GoRoute(
+            path: _subPath(
+              RouteNames.settings,
+              RouteNames.settingsShoppingPlans,
+            ),
+            builder: (ctx, state) => const ShoppingPlansScreen(),
+            routes: [
+              GoRoute(
+                path: _subPath(
+                  RouteNames.settingsShoppingPlans,
+                  RouteNames.settingsShoppingPlan,
+                ),
+                builder: (ctx, state) => ShoppingPlanDetailScreen(
+                  planId: state.pathParameters['planId']!,
+                ),
+              ),
+            ],
           ),
         ],
       ),

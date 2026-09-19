@@ -13,6 +13,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/widgets/endless_aisle_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/widgets/product_reels_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
@@ -155,6 +156,7 @@ class _InStoreProductScreenState extends ConsumerState<InStoreProductScreen> {
         backgroundColor: DesignTokens.bgAppFoundation,
         body: _InStoreProductBody(
           product: product,
+          code: widget.code,
           bannerText: InStoreProductScreen.storeBannerText(
             storeName: widget.storeName,
             storeCity: widget.storeCity,
@@ -205,12 +207,17 @@ class _Frame extends StatelessWidget {
 class _InStoreProductBody extends StatelessWidget {
   const _InStoreProductBody({
     required this.product,
+    required this.code,
     required this.bannerText,
     required this.onAddToCart,
     required this.onToggleSave,
   });
 
   final ProductDetail product;
+
+  /// The scanned code, when opened from one. It is what the endless aisle is
+  /// asked about.
+  final String? code;
   final String bannerText;
   final VoidCallback onAddToCart;
   final VoidCallback onToggleSave;
@@ -219,6 +226,10 @@ class _InStoreProductBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final compareAt = product.compareAtPrice;
+    final trimmedCode = code?.trim();
+    final scannedCode = trimmedCode == null || trimmedCode.isEmpty
+        ? null
+        : trimmedCode;
     return Stack(
       children: [
         CustomScrollView(
@@ -276,6 +287,12 @@ class _InStoreProductBody extends StatelessWidget {
                       ],
                     ],
                   ),
+                  // The endless aisle sits directly under the price, where a
+                  // shopper who has just found the shelf empty is looking.
+                  if (scannedCode != null) ...[
+                    const SizedBox(height: DesignTokens.s16),
+                    EndlessAisleSection(code: scannedCode),
+                  ],
                   const SizedBox(height: DesignTokens.s24),
                   ProductReelsSection(productId: product.id),
                   const SizedBox(height: DesignTokens.s24),
