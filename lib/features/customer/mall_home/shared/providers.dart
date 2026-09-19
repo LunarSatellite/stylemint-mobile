@@ -154,5 +154,8 @@ final mallViewerSignedInProvider = Provider<bool>(
 final mallClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 final recentlyViewedRecorderProvider = Provider<RecentlyViewedRecorder>(
-  (ref) => RecentlyViewedRecorder(ref.watch(mallHomeRepositoryProvider)),
+  (ref) => RecentlyViewedRecorder(
+    ref.watch(mallHomeRepositoryProvider),
+    ref.watch(storefrontPersonalizerProvider),
+  ),
 );
