@@ -179,6 +179,10 @@ class ProductReviewPreview {
 }
 
 /// Listing-level provenance record — backend `ProductPassport`.
+///
+/// Schema 2 added [subject], [claims] and [coverage]. Every one of them is
+/// nullable or empty-by-default so a v1 payload still maps, and the app draws
+/// only what actually arrived.
 class ProductPassport {
   const ProductPassport({
     required this.vendorBusinessName,
@@ -189,6 +193,9 @@ class ProductPassport {
     this.revision = '',
     this.generatedAt,
     this.provenance = const <ProductProvenanceFact>[],
+    this.subject,
+    this.claims = const <PassportClaim>[],
+    this.coverage,
   });
 
   final String vendorBusinessName;
@@ -199,6 +206,163 @@ class ProductPassport {
   final String revision;
   final DateTime? generatedAt;
   final List<ProductProvenanceFact> provenance;
+
+  /// What this passport is a passport *of*. Null on a v1 payload.
+  final PassportSubject? subject;
+
+  /// Every recorded claim, including the ones a check found against. The UI
+  /// separates them; the model does not hide them.
+  final List<PassportClaim> claims;
+
+  /// What is recorded and what is not. Null on a v1 payload.
+  final PassportCoverage? coverage;
+
+  /// Claims the reader may be shown as claims — everything a check did not
+  /// find against. A [PassportAssurance.verificationFailed] row is treated by
+  /// the backend as withdrawn, so it is not one of these.
+  List<PassportClaim> get standingClaims => claims
+      .where((claim) => claim.assurance != PassportAssurance.verificationFailed)
+      .toList(growable: false);
+
+  /// Rows a check found against. Shown as withdrawn, never re-attributed to
+  /// the issuer as though the claim still stood.
+  List<PassportClaim> get withdrawnClaims => claims
+      .where((claim) => claim.assurance == PassportAssurance.verificationFailed)
+      .toList(growable: false);
+}
+
+/// How far one passport claim may be relied on — backend `PassportAssurance`.
+///
+/// [verified] and [couldNotVerify] are deliberately far apart: "we checked and
+/// it held" and "we tried to check and could not" are different facts, and so
+/// is [recorded], which means nobody ever looked.
+///
+/// [unrecognised] is what an assurance from a newer server becomes. It is
+/// never treated as [verified]: an unknown value degrading into the
+/// platform's own endorsement is the one failure mode that can mislead a
+/// buyer, so the fallback always lands on the unverified side.
+enum PassportAssurance {
+  recorded(1, 'Recorded'),
+  verified(2, 'Verified'),
+  verificationFailed(3, 'VerificationFailed'),
+  couldNotVerify(4, 'CouldNotVerify'),
+  unrecognised(0, '');
+
+  const PassportAssurance(this.code, this.wire);
+
+  final int code;
+  final String wire;
+
+  /// The wire carries an int today and could carry the name tomorrow, so both
+  /// are accepted and anything else lands on [unrecognised].
+  static PassportAssurance fromJson(Object? raw) {
+    if (raw is num) {
+      for (final value in values) {
+        if (value != unrecognised && value.code == raw.toInt()) return value;
+      }
+      return unrecognised;
+    }
+    if (raw is String && raw.isNotEmpty) {
+      final needle = raw.toLowerCase();
+      for (final value in values) {
+        if (value != unrecognised && value.wire.toLowerCase() == needle) {
+          return value;
+        }
+      }
+    }
+    return unrecognised;
+  }
+}
+
+/// What the passport identifies, said out loud rather than inferred from a
+/// missing field — backend `PassportSubject`.
+class PassportSubject {
+  const PassportSubject({
+    required this.scope,
+    required this.scopeExplanation,
+    required this.identifiesPhysicalUnit,
+    this.serialOrBatchNumber,
+  });
+
+  /// `listing`, `batch` or `unit` as the server named it. Kept as the raw
+  /// string because the app branches on [identifiesPhysicalUnit], which is the
+  /// field that actually answers the question a buyer has.
+  final String scope;
+
+  /// Plain language about what this scope can and cannot establish. Rendered
+  /// verbatim.
+  final String scopeExplanation;
+
+  /// True when this passport can identify one physical item. Always false
+  /// today — nothing on this platform binds a marker to an item and an order
+  /// line. The UI says so where it matters instead of letting listing data
+  /// read as unit data.
+  final bool identifiesPhysicalUnit;
+
+  /// Null means *not known*. It is never a placeholder.
+  final String? serialOrBatchNumber;
+}
+
+/// One recorded claim with its assurance carried alongside it — backend
+/// `PassportClaim`.
+class PassportClaim {
+  const PassportClaim({
+    required this.claimId,
+    required this.kindLabel,
+    required this.statement,
+    required this.assurance,
+    required this.assuranceLabel,
+    required this.presentAsFact,
+    required this.issuerName,
+    required this.isInEffect,
+    this.issuerReference,
+    this.verificationMethod,
+    this.verificationNote,
+    this.verifiedAt,
+    this.recordedAt,
+  });
+
+  final String claimId;
+  final String kindLabel;
+  final String statement;
+  final PassportAssurance assurance;
+
+  /// Deterministic wording from the server — "Recorded by the seller. Nobody
+  /// has checked it." Rendered verbatim beside the claim, never summarised.
+  final String assuranceLabel;
+
+  /// The single boolean a renderer needs. False means the platform has not
+  /// established this and it must not be shown as though it had.
+  final bool presentAsFact;
+
+  final String issuerName;
+  final bool isInEffect;
+  final String? issuerReference;
+  final String? verificationMethod;
+  final String? verificationNote;
+  final DateTime? verifiedAt;
+  final DateTime? recordedAt;
+}
+
+/// What the passport does and does not cover, counted rather than asserted —
+/// backend `PassportCoverage`.
+class PassportCoverage {
+  const PassportCoverage({
+    this.knownKinds = const <String>[],
+    this.unknownKinds = const <String>[],
+    this.summary = '',
+  });
+
+  /// Kinds with at least one record on this listing.
+  final List<String> knownKinds;
+
+  /// Kinds with nothing recorded. An absent warranty means the platform has
+  /// no warranty record — not that the item has no warranty.
+  final List<String> unknownKinds;
+
+  /// One sentence the server built from its own counts, so the summary and
+  /// the numbers cannot drift apart. Rendered verbatim.
+  final String summary;
 }
 
 class ProductProvenanceFact {

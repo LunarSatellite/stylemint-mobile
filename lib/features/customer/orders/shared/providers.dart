@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/condition_assurance_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/custody_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/handover_delegation_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/condition_assurance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/custody_chain.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
@@ -134,6 +136,28 @@ final packageSealProvider = FutureProvider.autoDispose
 final custodyDataSourceProvider = Provider<CustodyDataSource>(
   (ref) => CustodyRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
 );
+
+/// Reads the condition and tamper record for one parcel.
+final conditionAssuranceDataSourceProvider =
+    Provider<ConditionAssuranceDataSource>(
+      (ref) => ConditionAssuranceRemoteDataSource(
+        apiClient: ref.watch(apiClientProvider),
+      ),
+    );
+
+/// "Condition and tamper assurance": what was recorded about the state of
+/// this parcel, in the server's own words, identical to what the seller sees.
+///
+/// Null when there is nothing to show — no controls, no findings, or the
+/// endpoint is unavailable — and the card then renders nothing at all. An
+/// absent card is deliberately *not* the same as `notRecorded`: the app says
+/// nothing rather than asserting an absence of evidence it never read.
+final FutureProviderFamily<ConditionAssurance?, String>
+conditionAssuranceProvider = FutureProvider.autoDispose
+    .family<ConditionAssurance?, String>(
+      (ref, trackingNumber) =>
+          ref.watch(conditionAssuranceDataSourceProvider).fetch(trackingNumber),
+    );
 
 /// "Permissioned Chain-of-Custody Proof": the signed, hash-chained log of
 /// every handover of this parcel, plus the backend's own integrity verdict.

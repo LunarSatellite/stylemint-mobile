@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligenc
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_option_chooser.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/passport_claims_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_option_choosers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/delivery_estimate_line.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_badges_row.dart';
@@ -766,7 +767,14 @@ class _PassportSection extends ConsumerWidget {
         .watch(productPassportProvider(productId))
         .asData
         ?.value;
-    if (passport == null || passport.authenticityStatement.isEmpty) {
+    // Schema 2 can carry claims and coverage on a listing whose authenticity
+    // statement is empty, and that payload is worth drawing: "nothing has
+    // been recorded against this listing's passport" is an answer.
+    if (passport == null ||
+        (passport.authenticityStatement.isEmpty &&
+            passport.subject == null &&
+            passport.claims.isEmpty &&
+            passport.coverage == null)) {
       return const SizedBox.shrink();
     }
 
@@ -807,13 +815,18 @@ class _PassportSection extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: DesignTokens.s8),
-          Text(
-            passport.authenticityStatement,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textMuted,
+          if (passport.authenticityStatement.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              passport.authenticityStatement,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
-          ),
+          ],
+          // Schema 2: what the passport identifies, the claims recorded
+          // against the listing, and what is not recorded at all.
+          PassportClaimsSection(passport: passport),
           if (passport.provenance.isNotEmpty) ...[
             const SizedBox(height: DesignTokens.s8),
             ...passport.provenance.map(
