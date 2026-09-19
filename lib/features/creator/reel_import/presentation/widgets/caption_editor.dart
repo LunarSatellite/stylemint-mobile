@@ -103,7 +103,14 @@ class _CaptionEditorState extends State<CaptionEditor> {
         children: [
           Row(
             children: [
-              const Text(CaptionEditor.title, style: DesignTokens.mediumSemibold),
+              // Flexible: the title, the info button and the counter together
+              // overflow this row at 320dp with a 1.3 text scale.
+              const Flexible(
+                child: Text(
+                  CaptionEditor.title,
+                  style: DesignTokens.mediumSemibold,
+                ),
+              ),
               const SizedBox(width: DesignTokens.s4),
               IconButton(
                 key: CaptionEditor.infoButtonKey,
