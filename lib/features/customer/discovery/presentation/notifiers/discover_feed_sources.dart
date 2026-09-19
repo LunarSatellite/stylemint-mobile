@@ -269,8 +269,30 @@ List<HomeBrand> homeBrands(MallHome home) => _unique([
 ///
 /// then pages further product blocks of 6 from the bestselling listing, with
 /// the next featured collection after every second block. Products come from
-/// the home page's product rails (personalised ones first) and then the
-/// listing, each product at most once across the whole feed.
+/// the home page's product rails (those carrying a server `reason` line
+/// first) and then the listing, each product at most once across the whole
+/// feed.
+///
+/// ## This feed is not personalised, and its own copy must not say it is
+///
+/// Every product here arrives from one of two sources, and neither one knows
+/// who is reading:
+///
+/// * `GET /api/v1/public/home` — a **public**, merchandised page. Its
+///   sections carry no `slotKind`, no score and no rank. The only
+///   per-customer signals on the wire are a coarse response-level
+///   `personalized` flag and a free-text `reason` on a section, and neither
+///   is per product.
+/// * The bestselling product listing — identical for every customer.
+///
+/// Blocks are cut from a single pool that mixes both, so no block can honestly
+/// claim a relationship to this reader. The hardcoded block titles therefore
+/// use the `FeedSlotKind.unknown` vocabulary — "From the Mall" — which names
+/// the source and claims nothing about the person. A server-sent section title
+/// is content, not a client claim, and always wins over the fallback.
+///
+/// If the home contract later stamps sections with a real `slotKind`, this is
+/// the place to start saying "From your interests" — and only then.
 class ForYouFeedSource implements DiscoverFeedSource {
   ForYouFeedSource(
     this._loadHome,
@@ -335,9 +357,13 @@ class ForYouFeedSource implements DiscoverFeedSource {
     }
 
     final blocks = <DiscoverBlock>[];
+    // A server-sent title is content and wins. The fallback is the app's own
+    // sentence, so it may only say what the app can defend: these products
+    // come from the public Mall home rails and the bestselling listing, and
+    // nothing here was picked for this reader. See the class doc.
     _addProductBlock(
       blocks,
-      title: lead?.title?.trim() ?? 'Picked for you',
+      title: lead?.title?.trim() ?? 'From the Mall',
       subtitle: lead?.reason,
     );
     if (reels.isNotEmpty) {
@@ -360,7 +386,7 @@ class ForYouFeedSource implements DiscoverFeedSource {
         ),
       );
     }
-    _addProductBlock(blocks, title: 'More picks for you');
+    _addProductBlock(blocks, title: 'More from the Mall');
     _addCollectionBlock(blocks);
     if (brands.isNotEmpty) {
       blocks.add(
