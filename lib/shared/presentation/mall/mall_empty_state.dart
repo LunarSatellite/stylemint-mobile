@@ -114,7 +114,7 @@ class MallEmptyState extends StatelessWidget {
     final bodyText = body;
     final label = actionLabel;
     final action = onAction;
-    return Center(
+    final content = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: Padding(
@@ -169,6 +169,38 @@ class MallEmptyState extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    // At 320dp with a large text scale the column is taller than the box a
+    // bounded parent (an `Expanded`, a `SliverFillRemaining`) hands it, and
+    // centred content clips instead of scrolling. Own that here so no caller
+    // has to wrap this in its own `SingleChildScrollView`.
+    //
+    // Only when the height is actually bounded: given unbounded height (a
+    // plain `Column`, or a caller that is already scrolling) a scroll view
+    // has no viewport to size against, so the content goes through as-is and
+    // nothing nests two scrollables.
+    //
+    // A caller must not ask this widget for an intrinsic height — put it in
+    // a `SliverFillRemaining` scroll body rather than one with
+    // `hasScrollBody: false`, and not under an `IntrinsicHeight`.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!constraints.hasBoundedHeight) return content;
+        return SingleChildScrollView(
+          // Carrying the incoming `minHeight` through keeps both normal
+          // cases pixel-identical. Under a tight parent (an `Expanded`)
+          // min == max, so the content still fills and centres within the
+          // full height, and only grows past it — and scrolls — when it
+          // genuinely does not fit. Under a loose parent (a `Flexible`, a
+          // sheet) min is 0, so it still shrink-wraps to its content
+          // instead of stretching to fill.
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.minHeight),
+            child: content,
+          ),
+        );
+      },
     );
   }
 }

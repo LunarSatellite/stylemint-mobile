@@ -341,7 +341,7 @@ void main() {
 
       expect((await personalizer.layout()).hasRanking, isFalse);
       await personalizer.track(
-        const FeedSignal(
+        FeedSignal.forEntity(
           entityId: 'r-1',
           entity: FeedSignalEntity.reel,
           action: FeedSignalAction.watched,
@@ -367,7 +367,7 @@ void main() {
 
         expect((await personalizer.layout()).hasRanking, isFalse);
         await personalizer.track(
-          const FeedSignal(
+          FeedSignal.forEntity(
             entityId: 'r-1',
             entity: FeedSignalEntity.reel,
             action: FeedSignalAction.watched,
@@ -402,7 +402,7 @@ void main() {
 
       expect((await personalizer.layout()).hasRanking, isTrue);
       await personalizer.track(
-        const FeedSignal(
+        FeedSignal.forEntity(
           entityId: 'r-1',
           entity: FeedSignalEntity.reel,
           action: FeedSignalAction.watched,
@@ -685,6 +685,114 @@ void main() {
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the searched signal', () {
+    StorefrontPersonalizer personalizerWith(
+      _FakeStorefrontRepository storefront, {
+      bool paused = false,
+      bool signedIn = true,
+    }) => StorefrontPersonalizer(
+      storefront: storefront,
+      vault: _FakeVaultRepository(paused: paused),
+      isSignedIn: () => signedIn,
+    );
+
+    test('a free-text search carries the query and no id', () {
+      final signal = FeedSignal.searchedQuery('  red cotton saree  ');
+
+      expect(signal.entityId, isNull);
+      expect(signal.query, 'red cotton saree');
+      expect(signal.isQueryShaped, isTrue);
+      expect(signal.toJson(), {
+        'entityType': 'search',
+        'action': 'searched',
+        'query': 'red cotton saree',
+      });
+      expect(signal.toJson().containsKey('entityId'), isFalse);
+    });
+
+    test('an id-shaped signal still needs a real id', () {
+      expect(
+        () => FeedSignal.forEntity(
+          entityId: '   ',
+          entity: FeedSignalEntity.reel,
+          action: FeedSignalAction.watched,
+        ),
+        throwsArgumentError,
+      );
+      // The zero GUID is the placeholder the backend rejects, in every
+      // spelling a client might reach for.
+      for (final zero in [
+        '00000000-0000-0000-0000-000000000000',
+        '00000000000000000000000000000000',
+        '{00000000-0000-0000-0000-000000000000}',
+      ]) {
+        expect(
+          () => FeedSignal.forEntity(
+            entityId: zero,
+            entity: FeedSignalEntity.search,
+            action: FeedSignalAction.searched,
+          ),
+          throwsArgumentError,
+          reason: zero,
+        );
+      }
+    });
+
+    test('no invalid combination can be constructed', () {
+      // An id-shaped signal never carries a query...
+      final idShaped = FeedSignal.forEntity(
+        entityId: 'cat-1',
+        entity: FeedSignalEntity.search,
+        action: FeedSignalAction.searched,
+      );
+      expect(idShaped.query, isNull);
+      expect(idShaped.toJson().containsKey('query'), isFalse);
+
+      // ...and a query-shaped one is always the searched action, never with
+      // an id, and never with nothing to say.
+      final queryShaped = FeedSignal.searchedQuery('boots');
+      expect(queryShaped.action, FeedSignalAction.searched);
+      expect(queryShaped.entity, FeedSignalEntity.search);
+      expect(() => FeedSignal.searchedQuery('   '), throwsArgumentError);
+    });
+
+    test('the recorder sends one query-shaped signal per query', () async {
+      final storefront = _FakeStorefrontRepository();
+      FeedSignalRecorder(personalizerWith(storefront))
+        ..searchedQuery('red saree')
+        ..searchedQuery('RED SAREE')
+        ..searchedQuery('  ')
+        ..searchedQuery('boots');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(storefront.tracked.map((s) => s.query), [
+        'red saree',
+        'boots',
+      ]);
+      expect(storefront.tracked.every((s) => s.entityId == null), isTrue);
+    });
+
+    test('a paused customer sends no search signal at all', () async {
+      final storefront = _FakeStorefrontRepository();
+      FeedSignalRecorder(
+        personalizerWith(storefront, paused: true),
+      ).searchedQuery('red saree');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(storefront.tracked, isEmpty);
+    });
+
+    test('a guest sends no search signal at all', () async {
+      final storefront = _FakeStorefrontRepository();
+      FeedSignalRecorder(
+        personalizerWith(storefront, signedIn: false),
+      ).searchedQuery('red saree');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(storefront.tracked, isEmpty);
     });
   });
 }

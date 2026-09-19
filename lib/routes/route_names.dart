@@ -91,6 +91,18 @@ abstract class RouteNames {
   static const orderInvoice = '/orders/:orderId/invoice';
   static const orderFedEx = '/orders/:orderId/fedex';
 
+  /// Where the "your delivery is at risk" push notification lands
+  /// (`stylemint://delivery/{trackingNumber}/recovery`). Resolves the
+  /// tracking number to the customer's own order and forwards to
+  /// [orderDetail] with [orderDetailFocusRecovery] set, so the AI Delivery
+  /// Guardian banner and its recovery offers are scrolled into view.
+  /// Signed-in only — the offers are the customer's own.
+  static const deliveryRecovery = '/delivery/:trackingNumber/recovery';
+
+  /// `?focus=delivery-recovery` on [orderDetail]: scroll to the delivery
+  /// recovery offers on open instead of starting at the top of the order.
+  static const orderDetailFocusRecovery = 'delivery-recovery';
+
   /// The buyer's returns and one return. Registered before [orderDetail] so
   /// `returns` is never read as an order number.
   static const myReturns = '/orders/returns';

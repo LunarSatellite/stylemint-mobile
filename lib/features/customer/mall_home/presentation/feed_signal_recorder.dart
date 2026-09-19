@@ -55,20 +55,37 @@ class FeedSignalRecorder {
   void searched(String categoryId) =>
       _send(categoryId, FeedSignalEntity.search, FeedSignalAction.searched);
 
+  /// A free-text search was submitted — no category, so no id: the signal
+  /// carries the query text instead. Sent once per distinct query per
+  /// recorder, so re-running the same search does not count twice.
+  void searchedQuery(String query) {
+    final text = query.trim();
+    if (text.isEmpty) return;
+    if (!_sent.add('search:searched:query:${text.toLowerCase()}')) return;
+    _track(FeedSignal.searchedQuery(text));
+  }
+
   /// An order was placed for a product.
   void bought(String productId) =>
       _send(productId, FeedSignalEntity.product, FeedSignalAction.bought);
 
   void _send(String id, FeedSignalEntity entity, FeedSignalAction action) {
     final entityId = id.trim();
-    if (entityId.isEmpty) return;
+    // No id means no id-shaped signal. The backend refuses a blank or zero
+    // GUID, and a search with nothing to point at belongs in
+    // [searchedQuery], so drop it here rather than invent one.
+    if (entityId.isEmpty || isEmptyGuid(entityId)) return;
     if (!_sent.add('${entity.wire}:${action.wire}:$entityId')) return;
+    _track(
+      FeedSignal.forEntity(entityId: entityId, entity: entity, action: action),
+    );
+  }
+
+  void _track(FeedSignal signal) {
     try {
       unawaited(
         _personalizer
-            .track(
-              FeedSignal(entityId: entityId, entity: entity, action: action),
-            )
+            .track(signal)
             .then<void>((_) {}, onError: (Object _, StackTrace _) {}),
       );
     } on Object catch (_) {
