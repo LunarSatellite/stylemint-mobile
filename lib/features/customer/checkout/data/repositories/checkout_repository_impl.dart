@@ -90,6 +90,26 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, Unit>> selectPickupLocation({
+    required String sellerId,
+    required String locationId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      await remoteDataSource.selectPickupLocation(
+        sellerId: sellerId,
+        locationId: locationId,
+      );
+      return right(unit);
+    } on Object catch (e) {
+      if (e is DioException) return left(mapDioExceptionToNetworkException(e));
+      return left(const NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, DeliveryPreference>>
   updateDeliveryPreference(DeliveryPreference preference) async {
     if (!await networkInfo.isConnected) {

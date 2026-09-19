@@ -358,6 +358,12 @@ class _MockCheckoutRepository implements CheckoutRepository {
   ) async => right(unit);
 
   @override
+  Future<Either<NetworkExceptions, Unit>> selectPickupLocation({
+    required String sellerId,
+    required String locationId,
+  }) async => right(unit);
+
+  @override
   Future<Either<NetworkExceptions, DeliveryPreference>>
   updateDeliveryPreference(DeliveryPreference preference) async =>
       right(preference);

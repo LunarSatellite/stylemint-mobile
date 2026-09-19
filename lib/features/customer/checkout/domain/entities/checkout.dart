@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show immutable;
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 /// A shipping address as checkout sees it.
@@ -249,6 +250,100 @@ class DeliveryConsolidationPlan {
   final String explanation;
 }
 
+/// How much weight to give a counter's recorded details, as the registry
+/// classifies it. Mirrors the server's `PickupLocationConfirmation`.
+enum PickupLocationConfirmation { neverConfirmed, confirmed, stale }
+
+/// One collection counter a seller has recorded, exactly as
+/// `codes.vendor_stores` holds it.
+///
+/// Every text field here is nullable-or-blank on purpose. The registry records
+/// what a seller typed and nothing more, so a counter can genuinely have no
+/// name, no address or no opening hours — and the picker renders each of
+/// those absences as an absence rather than substituting a plausible-looking
+/// stand-in.
+/// There is no "open now" here and there cannot be: [openingHours] is free text
+/// with no timezone, holiday or break model behind it, so it can be shown
+/// verbatim but never interpreted.
+///
+/// There is deliberately no distance and no stock field. The server reports
+/// stock as `Unknown` for every counter (no per-location inventory exists), and
+/// distance would need the shopper's coordinates, which are not collected.
+@immutable
+class PickupLocation {
+  const PickupLocation({
+    required this.id,
+    this.name,
+    this.addressLine,
+    this.city,
+    this.openingHours,
+    this.confirmation = PickupLocationConfirmation.neverConfirmed,
+    this.confirmationNote,
+    this.selected = false,
+  });
+
+  final String id;
+
+  /// What the seller named this counter, or null when they named it nothing.
+  final String? name;
+  final String? addressLine;
+  final String? city;
+
+  /// Free text, exactly as typed; null when no hours were recorded. Never
+  /// parsed into an open/closed state.
+  final String? openingHours;
+
+  final PickupLocationConfirmation confirmation;
+
+  /// The server's own sentence about [confirmation]; never composed here.
+  final String? confirmationNote;
+
+  /// Whether the session is already set to collect from this counter.
+  final bool selected;
+
+  /// True when the registry holds nothing a shopper could identify this counter
+  /// by. The picker says so plainly instead of rendering a blank row.
+  bool get hasNoRecordedDetails =>
+      (name == null || name!.trim().isEmpty) &&
+      (addressLine == null || addressLine!.trim().isEmpty) &&
+      (city == null || city!.trim().isEmpty);
+
+  PickupLocation copyWith({bool? selected}) => PickupLocation(
+    id: id,
+    name: name,
+    addressLine: addressLine,
+    city: city,
+    openingHours: openingHours,
+    confirmation: confirmation,
+    confirmationNote: confirmationNote,
+    selected: selected ?? this.selected,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is PickupLocation &&
+      other.id == id &&
+      other.name == name &&
+      other.addressLine == addressLine &&
+      other.city == city &&
+      other.openingHours == openingHours &&
+      other.confirmation == confirmation &&
+      other.confirmationNote == confirmationNote &&
+      other.selected == selected;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    addressLine,
+    city,
+    openingHours,
+    confirmation,
+    confirmationNote,
+    selected,
+  );
+}
+
 class DeliveryChoices {
   const DeliveryChoices({
     required this.choices,
@@ -256,12 +351,23 @@ class DeliveryChoices {
     this.pickupNote,
     this.preferences = const DeliveryPreference(),
     this.consolidation,
+    this.pickupLocations = const [],
+    this.pickupLocationsNote,
   });
   final List<DeliveryChoice> choices;
   final String emissionsNote;
   final String? pickupNote;
   final DeliveryPreference preferences;
   final DeliveryConsolidationPlan? consolidation;
+
+  /// The seller's recorded counters, when collection is on offer and the
+  /// server carried any. Empty means "we know of none" — which is the normal,
+  /// supported case for a seller who has registered no counter, and collection
+  /// still works without one.
+  final List<PickupLocation> pickupLocations;
+
+  /// The server's sentence about what the list above does and does not mean.
+  final String? pickupLocationsNote;
 }
 
 class PaymentMethod {
@@ -423,6 +529,8 @@ class CheckoutSummary {
     this.pickupNote,
     this.deliveryPreference = const DeliveryPreference(),
     this.deliveryConsolidation,
+    this.pickupLocations = const [],
+    this.pickupLocationsNote,
   });
 
   final ShippingAddress shippingAddress;
@@ -444,6 +552,21 @@ class CheckoutSummary {
   final String? pickupNote;
   final DeliveryPreference deliveryPreference;
   final DeliveryConsolidationPlan? deliveryConsolidation;
+
+  /// The counters the selected seller has recorded. Empty is the ordinary case
+  /// for a seller with no registered counter, and nothing downstream requires
+  /// an entry here.
+  final List<PickupLocation> pickupLocations;
+  final String? pickupLocationsNote;
+
+  /// The counter this session is set to collect from, or null when none has
+  /// been chosen. Null is a valid, final state — the order records no counter.
+  PickupLocation? get selectedPickupLocation {
+    for (final location in pickupLocations) {
+      if (location.selected) return location;
+    }
+    return null;
+  }
 
   DeliveryChoice? get selectedDeliveryChoice {
     for (final choice in deliveryChoices) {
@@ -468,6 +591,8 @@ class CheckoutSummary {
     String? pickupNote,
     DeliveryPreference? deliveryPreference,
     DeliveryConsolidationPlan? deliveryConsolidation,
+    List<PickupLocation>? pickupLocations,
+    String? pickupLocationsNote,
   }) {
     return CheckoutSummary(
       shippingAddress: shippingAddress ?? this.shippingAddress,
@@ -487,6 +612,8 @@ class CheckoutSummary {
       deliveryPreference: deliveryPreference ?? this.deliveryPreference,
       deliveryConsolidation:
           deliveryConsolidation ?? this.deliveryConsolidation,
+      pickupLocations: pickupLocations ?? this.pickupLocations,
+      pickupLocationsNote: pickupLocationsNote ?? this.pickupLocationsNote,
     );
   }
 
