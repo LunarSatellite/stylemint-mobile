@@ -101,6 +101,25 @@ class SettingsScreen extends ConsumerWidget {
           ),
 
           const SizedBox(height: DesignTokens.s16),
+          const _SectionHeader(label: 'In store'),
+          // Your own record: who served you, and the only control that turns
+          // an associate's claim into credit.
+          _MenuTile(
+            icon: Icons.storefront_outlined,
+            label: 'In-store assistance',
+            onTap: () => context.push(RouteNames.myClienteling),
+          ),
+          // The associate's side. This app has no associate role — the
+          // backend gates the client book on vendor team membership plus a
+          // live per-customer assignment — so the entry is open to any signed
+          // in account and an unassigned one honestly sees an empty book.
+          _MenuTile(
+            icon: Icons.badge_outlined,
+            label: 'Client book (store associates)',
+            onTap: () => context.push(RouteNames.associateClientBook),
+          ),
+
+          const SizedBox(height: DesignTokens.s16),
           _SectionHeader(label: 'About'),
           _MenuTile(
             icon: Icons.shield_outlined,

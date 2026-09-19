@@ -23,6 +23,9 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pau
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sessions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart';
+import 'package:stylemint_mobile_frontend/features/clienteling/presentation/screens/client_book_screen.dart';
+import 'package:stylemint_mobile_frontend/features/clienteling/presentation/screens/client_brief_screen.dart';
+import 'package:stylemint_mobile_frontend/features/clienteling/presentation/screens/my_clienteling_screen.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/codes/presentation/screens/code_resolve_screen.dart';
 import 'package:stylemint_mobile_frontend/features/codes/presentation/screens/my_style_mint_code_screen.dart';
@@ -1812,6 +1815,22 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.customerRecentActivity,
         builder: (ctx, state) =>
             const notifications_activity.RecentActivityScreen(),
+      ),
+
+      // Clienteling — v1/clienteling/*
+      GoRoute(
+        path: RouteNames.associateClientBook,
+        builder: (ctx, state) => const ClientBookScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.associateClientBrief,
+        builder: (ctx, state) => ClientBriefScreen(
+          customerAccountId: state.pathParameters['customerAccountId']!,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.myClienteling,
+        builder: (ctx, state) => const MyClientelingScreen(),
       ),
     ],
   );
