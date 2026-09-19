@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart' show FutureProviderFamily;
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/customer_search_remote_datasource.dart';
@@ -53,15 +54,28 @@ final productDetailNotifierProvider =
           ProductDetailNotifier(ref.watch(discoveryRepositoryProvider)),
     );
 
-/// Best-effort PDP urgency banner data ("X left", "Y viewing now"). A
-/// failure here should never block the product screen — callers read this
-/// via `.asData?.value`, not by surfacing the error state.
+/// Best-effort PDP stock / flash-sale / viewer signals. A failure here
+/// should never block the product screen — callers read this via
+/// `.asData?.value`, not by surfacing the error state. Every field on the
+/// result is nullable and a null one draws nothing.
 final productUrgencyProvider = FutureProvider.autoDispose
     .family<ProductUrgency?, String>((ref, productId) async {
       final result = await ref
           .watch(discoveryRepositoryProvider)
           .getProductUrgency(productId);
       return result.fold((_) => null, (urgency) => urgency);
+    });
+
+/// Best-effort measured social proof for one product (units sold in the last
+/// 30 days, reviews, live viewers). Null when the call failed or the backend
+/// recorded nothing for the product — either way, nothing is drawn.
+final FutureProviderFamily<ProductSocialProof?, String>
+productSocialProofProvider = FutureProvider.autoDispose
+    .family<ProductSocialProof?, String>((ref, productId) async {
+      final result = await ref
+          .watch(discoveryRepositoryProvider)
+          .getSocialProof([productId]);
+      return result.fold((_) => null, (proof) => proof[productId]);
     });
 
 /// Best-effort product FAQ ("Frequently Asked Questions" section). A

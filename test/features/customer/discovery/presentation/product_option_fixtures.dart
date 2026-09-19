@@ -19,7 +19,6 @@ ProductDetail baseProduct({
   compareAtPrice: compareAtPrice,
   rating: 4.5,
   reviewCount: 8,
-  soldCount: 0,
   vendorId: 'v-1',
   vendorName: 'Kathmandu Atelier',
   vendorAvatarUrl: '',

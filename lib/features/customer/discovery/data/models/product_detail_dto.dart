@@ -78,7 +78,6 @@ abstract class ProductDetailDto with _$ProductDetailDto {
       flashSaleEndsAt: sale?.endsUtc,
       rating: averageRating,
       reviewCount: reviewCount,
-      soldCount: 0,
       vendorId: vendorAccountId,
       vendorName: vendorDisplayName ?? '',
       vendorAvatarUrl: vendorAvatarUrl ?? '',

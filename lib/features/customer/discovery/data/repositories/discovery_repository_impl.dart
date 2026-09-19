@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 class DiscoveryRepositoryImpl implements DiscoveryRepository {
@@ -103,11 +104,23 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductUrgency(productId);
+        // Nothing is defaulted at the parse boundary. An absent field stays
+        // absent all the way to the widget, because `?? 0` here is exactly
+        // how a "not measured" becomes a "zero bought" on screen.
+        final saleAmount = (json['flashSalePrice'] as num?)?.toDouble();
+        final saleCurrency = json['flashSaleCurrency'] as String?;
+        final endsAt = json['flashSaleEndsAt'] as String?;
         return right(
           ProductUrgency(
-            stockRemaining: json['stockRemaining'] as int? ?? 0,
-            viewersRightNow: json['viewersRightNow'] as int? ?? 0,
-            cartAddsLast10Min: json['cartAddsLast10Min'] as int? ?? 0,
+            isInStock: json['isInStock'] as bool?,
+            isLowStock: json['isLowStock'] as bool?,
+            viewersRightNow: json['viewersRightNow'] as int?,
+            flashSaleEndsAt: endsAt == null ? null : DateTime.tryParse(endsAt),
+            // Both halves or neither: a bare amount has no currency to be
+            // formatted in, and guessing one is how a price starts lying.
+            flashSalePrice: saleAmount != null && saleCurrency != null
+                ? Money(amount: saleAmount, currency: saleCurrency)
+                : null,
           ),
         );
       } catch (e) {
@@ -121,6 +134,38 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       }
     } else {
       return left(NetworkExceptions.noInternetConnection());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Map<String, ProductSocialProof>>>
+  getSocialProof(List<String> productIds) async {
+    if (productIds.isEmpty) {
+      return right(const <String, ProductSocialProof>{});
+    }
+    if (await networkInfo.isConnected) {
+      try {
+        final json = await remoteDataSource.getSocialProof(productIds);
+        return right({
+          for (final entry in json.entries)
+            if (entry.value case final Map<String, dynamic> proof)
+              entry.key: ProductSocialProof(
+                reviewCount: proof['reviewCount'] as int? ?? 0,
+                // No `?? 0` on any of these three. Absent stays absent.
+                unitsSoldLast30Days: proof['unitsSoldLast30Days'] as int?,
+                viewersRightNow: proof['viewersRightNow'] as int?,
+                averageRating: (proof['averageRating'] as num?)?.toDouble(),
+              ),
+        });
+      } on DioException catch (e) {
+        return left(NetworkExceptions.server(e.message.toString()));
+      } on NetworkExceptions catch (e) {
+        return left(e);
+      } on Object {
+        return left(const NetworkExceptions.unexpectedError());
+      }
+    } else {
+      return left(const NetworkExceptions.noInternetConnection());
     }
   }
 
