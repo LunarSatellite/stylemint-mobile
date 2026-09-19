@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/widgets/inbound_share_listener.dart';
 import 'core/busy/busy_overlay.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
@@ -48,7 +49,11 @@ class StyleMintApp extends ConsumerWidget {
                 ? Brightness.light
                 : Brightness.dark,
           ),
-          child: BusyOverlay(child: child ?? const SizedBox.shrink()),
+          // Above the router, because a screenshot is shared to StyleMint
+          // from another app rather than from a screen inside it.
+          child: InboundShareListener(
+            child: BusyOverlay(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
       localizationsDelegates: const [

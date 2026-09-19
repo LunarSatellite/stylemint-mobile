@@ -15,6 +15,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/pro
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/domain/search_input_status.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/shared/providers.dart';
 
 import '../mall_home/mall_test_support.dart';
 
@@ -183,6 +185,15 @@ Future<void> pumpDiscover(
     ),
     visualSearchCapabilityProvider.overrideWith(
       (ref) async => visualSearchAvailable,
+    ),
+    // The screenshot entry point asks the server whether visual search is
+    // configured. Answer it from the same flag rather than letting a test
+    // reach the network for it.
+    visualSearchProbeProvider.overrideWith(
+      (ref) =>
+          () async => visualSearchAvailable
+              ? SearchInputStatus.ready
+              : SearchInputStatus.unsupported,
     ),
     mallViewerSignedInProvider.overrideWithValue(signedIn),
     discoverAuthGateProvider.overrideWithValue((_, _) async => signedIn),

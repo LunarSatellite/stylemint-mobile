@@ -6,10 +6,17 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// Which input a recovery screen is speaking about.
 enum SearchInputKind {
   voice,
-  barcode;
+  barcode,
+  screenshot;
 
-  String get hardware =>
-      this == SearchInputKind.voice ? 'microphone' : 'camera';
+  /// What the "Allow …" button is asking for. A screenshot search asks for
+  /// the photo library rather than a piece of hardware, so the word is not
+  /// the name of a sensor.
+  String get hardware => switch (this) {
+    SearchInputKind.voice => 'microphone',
+    SearchInputKind.barcode => 'camera',
+    SearchInputKind.screenshot => 'photos',
+  };
 }
 
 /// The one screen a blocked voice or barcode search lands on.
@@ -100,6 +107,37 @@ class SearchInputRecovery extends StatelessWidget {
           'StyleMint could not find a camera it can use. Typing works '
           'everywhere.',
       icon: Icons.no_photography_rounded,
+    ),
+    (SearchInputKind.screenshot, SearchInputStatus.denied) => (
+      title: 'StyleMint needs to open your photos',
+      body:
+          'You pick the one screenshot yourself, and you see it before '
+          'anything is sent. StyleMint never browses your gallery.',
+      icon: Icons.image_not_supported_outlined,
+    ),
+    (SearchInputKind.screenshot, SearchInputStatus.deniedForever) => (
+      title: 'Photo access is switched off for StyleMint',
+      body:
+          'Your device will not ask again. Turn photo access back on in '
+          'settings, then come back to this screen. Sharing a screenshot to '
+          'StyleMint from another app still works without it.',
+      icon: Icons.image_not_supported_outlined,
+    ),
+    (SearchInputKind.screenshot, SearchInputStatus.restricted) => (
+      title: 'Photo access is restricted on this device',
+      body:
+          'A device policy or a parental control is blocking it. Whoever '
+          'manages this device can allow it for StyleMint in settings.',
+      icon: Icons.lock_outline_rounded,
+    ),
+    (SearchInputKind.screenshot, _) => (
+      // The server, not the handset: visual search is bound only where a
+      // vision provider is configured.
+      title: "Screenshot search isn't available yet",
+      body:
+          'The Mall cannot read pictures in this region yet. Typing and '
+          'scanning a barcode both work.',
+      icon: Icons.image_not_supported_outlined,
     ),
   };
 
