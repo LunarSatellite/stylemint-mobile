@@ -151,6 +151,7 @@ import 'package:stylemint_mobile_frontend/features/social/drop_party/presentatio
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/drop_party_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/screens/barcode_scan_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/screens/screenshot_search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/screens/voice_search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/scan/presentation/screens/style_mint_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/live_commerce/presentation/screens/live_room_screen.dart';
@@ -721,6 +722,14 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.searchBarcode,
         builder: (ctx, state) => const BarcodeScanScreen(),
+      ),
+      // Screenshot search. `extra` is the raw bytes when another app shared
+      // a picture in; null when the buyer came from Discover and will pick
+      // one. Both land on the same confirm step.
+      GoRoute(
+        path: RouteNames.searchScreenshot,
+        builder: (ctx, state) =>
+            ScreenshotSearchScreen(sharedBytes: state.extra as Uint8List?),
       ),
 
       // Trending products

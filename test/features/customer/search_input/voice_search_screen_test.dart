@@ -36,6 +36,12 @@ Future<void> _pumpVoice(
         (ref) =>
             () async => false,
       ),
+      // The capabilities notifier probes the server for visual search on
+      // build; a voice test must not reach the network to do it.
+      visualSearchProbeProvider.overrideWith(
+        (ref) =>
+            () async => SearchInputStatus.unsupported,
+      ),
       if (launcher != null)
         appSettingsLauncherProvider.overrideWith((ref) => launcher.call),
     ],
@@ -115,6 +121,10 @@ void main() {
         cameraProbeProvider.overrideWith(
           (ref) =>
               () async => false,
+        ),
+        visualSearchProbeProvider.overrideWith(
+          (ref) =>
+              () async => SearchInputStatus.unsupported,
         ),
       ],
     );

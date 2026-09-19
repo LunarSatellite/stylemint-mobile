@@ -51,6 +51,17 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Screenshot search: StyleMint appears in the system share sheet
+                 whenever an image is shared, which is how a buyer sends over a
+                 product page, a post or a chat they saw in another app.
+                 MainActivity reads the content URI into memory and passes the
+                 bytes to Dart; nothing is copied into StyleMint's storage, and
+                 the screenshot search screen still asks before uploading. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+            </intent-filter>
             <!-- stylemint:// deep links — OAuth callback (auth/oauth/callback),
                  magic-link consumer, and in-app share targets (reel/product/
                  order/drop/group-cart/friend/reco). See routes/deep_links.dart. -->

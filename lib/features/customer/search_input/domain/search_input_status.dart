@@ -57,17 +57,27 @@ class SearchInputCapabilities {
   const SearchInputCapabilities({
     this.voice = SearchInputStatus.unprobed,
     this.barcode = SearchInputStatus.unprobed,
+    this.screenshot = SearchInputStatus.unprobed,
   });
 
   final SearchInputStatus voice;
   final SearchInputStatus barcode;
 
+  /// Searching with a screenshot. Unlike voice and barcode this one is not
+  /// limited by hardware — every handset can open its gallery and receive a
+  /// share. It is limited by the *server*: visual search binds only where a
+  /// vision provider is configured, so `unsupported` here means the Mall
+  /// cannot look at pictures, not that the device cannot take them.
+  final SearchInputStatus screenshot;
+
   SearchInputCapabilities copyWith({
     SearchInputStatus? voice,
     SearchInputStatus? barcode,
+    SearchInputStatus? screenshot,
   }) => SearchInputCapabilities(
     voice: voice ?? this.voice,
     barcode: barcode ?? this.barcode,
+    screenshot: screenshot ?? this.screenshot,
   );
 
   @override
@@ -75,8 +85,9 @@ class SearchInputCapabilities {
       identical(this, other) ||
       other is SearchInputCapabilities &&
           other.voice == voice &&
-          other.barcode == barcode;
+          other.barcode == barcode &&
+          other.screenshot == screenshot;
 
   @override
-  int get hashCode => Object.hash(voice, barcode);
+  int get hashCode => Object.hash(voice, barcode, screenshot);
 }

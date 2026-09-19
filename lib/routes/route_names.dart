@@ -43,6 +43,10 @@ abstract class RouteNames {
   /// Scan a product barcode. Navigates to the product on a match; pops
   /// the scanned digits back as a text query when the buyer asks for it.
   static const searchBarcode = '/search/barcode';
+
+  /// Search with a screenshot of another app. Reached from Discover, and
+  /// from the system share sheet with the shared bytes as `extra`.
+  static const searchScreenshot = '/search/screenshot';
   static const searchTrending = '/trending-products';
   static const searchCategory = '/browse-category/:categoryId';
   static const missionShopping = '/mission-shopping';

@@ -45,6 +45,11 @@ Future<List<String>> _pumpActions(
         path: RouteNames.searchBarcode,
         builder: (_, _) => const Scaffold(body: Center(child: Text('scan'))),
       ),
+      GoRoute(
+        path: RouteNames.searchScreenshot,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('screenshot'))),
+      ),
     ],
     overrides: [
       searchInputCapabilitiesProvider.overrideWith(
@@ -160,6 +165,73 @@ void main() {
       capabilities: const SearchInputCapabilities(
         voice: SearchInputStatus.ready,
         barcode: SearchInputStatus.ready,
+      ),
+      width: 320,
+      textScale: 1.3,
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('offers a screenshot button while the server can look at '
+      'pictures', (tester) async {
+    await _pumpActions(
+      tester,
+      capabilities: const SearchInputCapabilities(
+        voice: SearchInputStatus.unsupported,
+        barcode: SearchInputStatus.unsupported,
+        screenshot: SearchInputStatus.ready,
+      ),
+    );
+
+    expect(_key('discover-screenshot-search'), findsOneWidget);
+    await tester.tap(_key('discover-screenshot-search'));
+    await settleTransition(tester);
+    expect(find.text('screenshot'), findsOneWidget);
+  });
+
+  testWidgets('hides the screenshot button where visual search is not '
+      'configured', (tester) async {
+    // Cross-cutting finding A: visual search binds only when a vision
+    // provider is present. Where it is absent the entry point goes away
+    // rather than failing on tap.
+    await _pumpActions(
+      tester,
+      capabilities: const SearchInputCapabilities(
+        voice: SearchInputStatus.ready,
+        barcode: SearchInputStatus.ready,
+        screenshot: SearchInputStatus.unsupported,
+      ),
+    );
+
+    expect(_key('discover-screenshot-search'), findsNothing);
+    expect(_key('discover-voice-search'), findsOneWidget);
+  });
+
+  testWidgets('a screenshot button carries an accessible name', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pumpActions(
+      tester,
+      capabilities: const SearchInputCapabilities(
+        screenshot: SearchInputStatus.ready,
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Search with a screenshot'), findsOneWidget);
+    handle.dispose();
+  });
+
+  testWidgets('no overflow at 320dp with all three inputs offered', (
+    tester,
+  ) async {
+    await _pumpActions(
+      tester,
+      capabilities: const SearchInputCapabilities(
+        voice: SearchInputStatus.ready,
+        barcode: SearchInputStatus.ready,
+        screenshot: SearchInputStatus.ready,
       ),
       width: 320,
       textScale: 1.3,

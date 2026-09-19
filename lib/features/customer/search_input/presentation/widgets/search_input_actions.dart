@@ -41,6 +41,11 @@ class SearchInputActions extends ConsumerWidget {
     if (query != null && query.trim().isNotEmpty) onQuery(query.trim());
   }
 
+  /// No `extra`: the screen picks from the gallery. The share sheet reaches
+  /// the same route with the shared bytes instead.
+  Future<void> _openScreenshot(BuildContext context) =>
+      context.push(RouteNames.searchScreenshot);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final capabilities = ref.watch(searchInputCapabilitiesProvider);
@@ -63,6 +68,15 @@ class SearchInputActions extends ConsumerWidget {
             icon: Icons.qr_code_scanner_rounded,
             label: 'Scan a product barcode',
             onPressed: () => unawaited(_openBarcode(context)),
+          ),
+        ],
+        if (capabilities.screenshot.isOffered) ...[
+          const SizedBox(width: DesignTokens.s8),
+          _SearchInputButton(
+            buttonKey: const ValueKey('discover-screenshot-search'),
+            icon: Icons.screenshot_monitor_rounded,
+            label: 'Search with a screenshot',
+            onPressed: () => unawaited(_openScreenshot(context)),
           ),
         ],
       ],
