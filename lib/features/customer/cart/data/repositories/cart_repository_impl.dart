@@ -69,6 +69,12 @@ class CartRepositoryImpl implements CartRepository {
           // Additive: an older backend sends no `findings` key and the list
           // stays empty, which renders nothing.
           findings: BasketFinding.listFromJson(json['findings']),
+          // Non-null only when the narrative carries text. A backend that
+          // does not send it leaves this null, and the narrative is then not
+          // rendered at all rather than rendered unmarked.
+          narrativeDisclosure: json['narrativeDisclosure'] is String
+              ? json['narrativeDisclosure'] as String
+              : null,
         ),
       );
     } catch (e) {
