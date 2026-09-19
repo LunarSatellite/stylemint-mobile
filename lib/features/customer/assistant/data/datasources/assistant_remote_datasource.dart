@@ -77,6 +77,17 @@ class AssistantRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// GET `/recommendations` — what Minty suggests outside a conversation.
+  ///
+  /// Answers a bare JSON array. Each entry carries a `basis` and a `reason`
+  /// and **no score**: the record's `Score` was removed server-side rather
+  /// than nulled, because nothing on this path ranks anything.
+  Future<Object?> getRecommendations({int limit = 10, String? context}) =>
+      apiClient.get(
+        '$base/recommendations',
+        queryParameters: {'limit': limit, 'context': ?context},
+      );
+
   /// GET `/v1/public/products/{id}` — used only to resolve a suggested id to
   /// a real product. A product that cannot be resolved is dropped by the
   /// repository rather than drawn as a placeholder.

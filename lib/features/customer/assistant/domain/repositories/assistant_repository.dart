@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_turn.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
 
@@ -20,6 +21,15 @@ abstract class AssistantRepository {
     required String message,
     String? conversationId,
   });
+
+  /// What Minty suggests outside a conversation.
+  ///
+  /// Each recommendation carries the basis it really came from and the
+  /// server's own true sentence about it. None of them carries a score, and
+  /// none of them may be presented as a preference match unless its basis
+  /// says so.
+  Future<Either<NetworkExceptions, List<CompanionRecommendation>>>
+  getRecommendations({int limit});
 
   /// Adds one product **that [turn] suggested** to the caller's own cart.
   ///

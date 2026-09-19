@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/media_urls.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/data/models/reel_like_response_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel_like_result.dart';
@@ -15,8 +16,11 @@ class ReelsRemoteDataSource {
 
   final ApiClient apiClient;
 
-  /// GET `/api/v1/customer/feed` — the customer "For You" reel feed
-  /// (Discovery). Returns `{ items: [{ kind, reel: {...}, ... }], nextCursor }`;
+  /// GET `/api/v1/customer/feed` — the customer's Discovery reel feed. Not
+  /// uniformly personal: a cold-start page is trending or newest-published
+  /// content, labelled as such by each item's `slotKind`.
+  ///
+  /// Returns `{ items: [{ kind, slotKind, score, reel: {...} }], nextCursor }`;
   /// we keep the reel-bearing items and map each card to a [Reel].
   /// `nextCursor` is surfaced so the feed screen can page in more reels as the
   /// user nears the end instead of dead-ending at [limit].
@@ -33,13 +37,26 @@ class ReelsRemoteDataSource {
     );
 
     final data = response as Map<String, dynamic>;
-    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[]);
-    final reels = items
+    final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
-        .map((e) => e['reel'])
-        .whereType<Map<String, dynamic>>()
-        .map(_cardJsonToReel)
+        .where((item) => item['reel'] is Map<String, dynamic>)
         .toList(growable: false);
+
+    // `slotKind` and `score` live on the feed item envelope, not on the reel
+    // card. The envelope was being discarded, which is how a trending reel
+    // could be shown under a personalised frame: the client never knew the
+    // difference. Ranks are assigned across the page so that an item the
+    // server did not score gets no rank rather than the last one.
+    final provenance = FeedProvenance.rankAll([
+      for (final item in items) FeedProvenance.fromJson(item),
+    ]);
+
+    final reels = [
+      for (var i = 0; i < items.length; i++)
+        _cardJsonToReel(
+          items[i]['reel']! as Map<String, dynamic>,
+        ).copyWith(provenance: provenance[i]),
+    ];
     return ReelsFeedPage(
       reels: reels,
       nextCursor: data['nextCursor'] as String?,

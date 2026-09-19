@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/datasources/assistant_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/repositories/assistant_repository_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_turn.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/repositories/assistant_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/notifiers/assistant_thread_notifier.dart';
@@ -32,6 +33,18 @@ final assistantConversationsProvider =
         Future<ConversationList>.error,
         (list) => list,
       );
+    });
+
+/// What Minty suggests outside a conversation, each with the basis it really
+/// came from. An error yields an empty list rather than a failed screen: the
+/// shelf is a garnish on the conversations list, not its subject.
+// ignore: specify_nonobvious_property_types — Riverpod's own inferred type.
+final companionRecommendationsProvider =
+    FutureProvider.autoDispose<List<CompanionRecommendation>>((ref) async {
+      final result = await ref
+          .watch(assistantRepositoryProvider)
+          .getRecommendations(limit: 10);
+      return result.getOrElse((_) => const []);
     });
 
 /// What a successful cart addition does to the rest of the app.

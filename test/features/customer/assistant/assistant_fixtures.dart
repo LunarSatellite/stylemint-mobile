@@ -1,6 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/models/companion_turn_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_turn.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/repositories/assistant_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -72,12 +73,21 @@ class FakeAssistantRepository implements AssistantRepository {
   /// Appended by [sendMessage]; override to shape a reply.
   CompanionTurn Function(String message)? replyBuilder;
 
+  /// What [getRecommendations] answers. Empty by default, so a screen test
+  /// that does not care about the shelf gets no shelf.
+  List<CompanionRecommendation> recommendations = const [];
+
   @override
   Future<Either<NetworkExceptions, ConversationList>> listConversations({
     String? cursor,
   }) async => right(
     const ConversationList(items: <ConversationSummary>[]),
   );
+
+  @override
+  Future<Either<NetworkExceptions, List<CompanionRecommendation>>>
+  getRecommendations({int limit = 10}) async =>
+      right(recommendations.take(limit).toList());
 
   @override
   Future<Either<NetworkExceptions, ConversationPage>> getConversation(

@@ -3,8 +3,10 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/datasources/assistant_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/data/models/companion_recommendation_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/models/companion_turn_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/data/models/suggested_product_json.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_turn.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/repositories/assistant_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall_view_models.dart';
@@ -52,6 +54,14 @@ class AssistantRepositoryImpl implements AssistantRepository {
         idempotencyKey: _uuid.v4(),
       ),
     ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, List<CompanionRecommendation>>>
+  getRecommendations({int limit = 10}) => _call(
+    () async => CompanionRecommendationListDto.fromJson(
+      await remoteDataSource.getRecommendations(limit: limit),
+    ).toDomain(),
   );
 
   @override

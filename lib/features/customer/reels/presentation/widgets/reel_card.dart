@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/feed_provenance_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/domain/entities/reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/creator_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/presentation/widgets/reel_actions.dart';
@@ -169,6 +170,16 @@ class _ReelCardState extends State<ReelCard> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Why this reel is here, said plainly. Absent when the
+                    // feed did not tell us, rather than guessed at.
+                    if (widget.reel.provenance case final provenance?)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          right: 72,
+                          bottom: DesignTokens.s8,
+                        ),
+                        child: FeedProvenanceBadge(provenance: provenance),
+                      ),
                     Padding(
                       padding: const EdgeInsets.only(right: 72),
                       // The rail carries follow; this row keeps name + track.
