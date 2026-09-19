@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/repositories/adaptive_storefront_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/adaptive_layout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/feed_signal_recorder.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/mall_navigation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/home_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/storefront_personalizer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
@@ -39,6 +40,21 @@ class _FakeStorefrontRepository implements AdaptiveStorefrontRepository {
 
   @override
   Future<void> trackInteraction(FeedSignal signal) async => tracked.add(signal);
+}
+
+/// A layout that blows up the moment the page tries to organise around it:
+/// stands in for a shape from a newer server this build mishandles. The
+/// customer must still get the ordinary page.
+class _ExplodingLayout extends StorefrontLayout {
+  const _ExplodingLayout()
+    : super(rankedCategories: const [], isPersonalized: false);
+
+  @override
+  bool get hasModules => true;
+
+  @override
+  List<StorefrontModule> get modules =>
+      throw StateError('a shape this build cannot read');
 }
 
 /// Only [isPaused] is ever reached from the storefront.
@@ -125,6 +141,47 @@ StorefrontLayout _layout(List<(String, String)> ranked) => StorefrontLayout(
 List<String> _ids(MallHome home) => [
   for (final section in home.sections) section.id,
 ];
+
+/// A module, in the shape the server sends one.
+StorefrontModule _module(
+  StorefrontModuleKind kind, {
+  required int rank,
+  required int evidence,
+  StorefrontSignal signal = StorefrontSignal.recentOrders,
+  List<String> categoryIds = const [],
+  HomeSeeAll? target,
+}) => StorefrontModule(
+  kind: kind,
+  rank: rank,
+  signal: signal,
+  evidence: evidence,
+  categoryIds: categoryIds,
+  target: target,
+);
+
+/// A layout that carries modules and nothing else — the mission-only
+/// customer, who has no purchase ranking at all.
+StorefrontLayout _modules(List<StorefrontModule> modules) => StorefrontLayout(
+  rankedCategories: const [],
+  isPersonalized: false,
+  status: StorefrontLayoutStatus.noHistory,
+  modules: modules,
+);
+
+HomeReelsSection _reels(String id, {Map<String, String> params = const {}}) =>
+    HomeReelsSection(
+      id: id,
+      title: id,
+      items: const [],
+      seeAll: HomeSeeAll(target: HomeSeeAllTarget.reels, params: params),
+    );
+
+const HomeSeeAll _missionTarget = HomeSeeAll(
+  target: HomeSeeAllTarget.mission,
+  params: {'missionId': 'mis-1'},
+);
+
+const HomeSeeAll _reorderTarget = HomeSeeAll(target: HomeSeeAllTarget.reorder);
 
 void main() {
   group('storefront-layout contract', () {
@@ -304,6 +361,37 @@ void main() {
       }
     });
 
+    test('a module the page cannot draw never makes it a broken block', () {
+      final home = _home([
+        const HomeCampaignsSection(id: 'hero', items: []),
+        _products('plain'),
+        const HomeTrustSection(id: 'trust'),
+      ]);
+      // Refill's target has no destination in this build, and an unknown
+      // kind from a newer server has no drawing at all.
+      final adapted = applyStorefrontLayout(
+        home,
+        _modules([
+          _module(
+            StorefrontModuleKind.refill,
+            rank: 0,
+            signal: StorefrontSignal.replenishmentDue,
+            evidence: 4,
+            target: _reorderTarget,
+          ),
+          _module(
+            StorefrontModuleKind.unknown,
+            rank: 1,
+            evidence: 9,
+            signal: StorefrontSignal.unknown,
+            target: const HomeSeeAll(target: HomeSeeAllTarget.unknown),
+          ),
+        ]),
+      );
+      expect(adapted.sections, orderedEquals(home.sections));
+      expect(_ids(adapted), ['hero', 'plain', 'trust']);
+    });
+
     test('drops nothing and invents nothing', () {
       final home = _home([
         const HomeCampaignsSection(id: 'hero', items: []),
@@ -314,6 +402,412 @@ void main() {
       ]);
       final adapted = applyStorefrontLayout(home, _layout([('cat-1', 'S')]));
       expect(_ids(adapted)..sort(), _ids(home)..sort());
+    });
+  });
+
+  group('modules', () {
+    MallHome page() => _home([
+      const HomeCampaignsSection(id: 'hero', items: []),
+      _products('editorial'),
+      _products('shoes', categoryId: 'cat-1'),
+      _reels('watch'),
+      const HomeTrustSection(id: 'trust'),
+    ]);
+
+    test('matched sections lead the page in the server rank order', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.becauseYouWatched,
+            rank: 0,
+            signal: StorefrontSignal.watchedReels,
+            evidence: 2,
+            categoryIds: const ['cat-9'],
+            target: const HomeSeeAll(
+              target: HomeSeeAllTarget.reels,
+              params: {'categoryId': 'cat-9'},
+            ),
+          ),
+          _module(
+            StorefrontModuleKind.boughtBefore,
+            rank: 1,
+            evidence: 6,
+            categoryIds: const ['cat-1'],
+            target: const HomeSeeAll(
+              target: HomeSeeAllTarget.category,
+              params: {'categoryId': 'cat-1'},
+            ),
+          ),
+        ]),
+      );
+      // Hero keeps the top, trust keeps the bottom, modules lead the band.
+      expect(_ids(adapted), ['hero', 'watch', 'shoes', 'editorial', 'trust']);
+    });
+
+    test('a module the client cannot draw is skipped and the rest render', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.refill,
+            rank: 0,
+            signal: StorefrontSignal.replenishmentDue,
+            evidence: 4,
+            target: _reorderTarget,
+          ),
+          _module(
+            StorefrontModuleKind.unknown,
+            rank: 1,
+            evidence: 9,
+            signal: StorefrontSignal.unknown,
+          ),
+          _module(
+            StorefrontModuleKind.becauseYouWatched,
+            rank: 2,
+            signal: StorefrontSignal.watchedReels,
+            evidence: 2,
+            target: const HomeSeeAll(target: HomeSeeAllTarget.reels),
+          ),
+        ]),
+      );
+      expect(_ids(adapted), ['hero', 'watch', 'editorial', 'shoes', 'trust']);
+      expect(
+        adapted.sections.whereType<HomePromptSection>(),
+        isEmpty,
+        reason: 'nothing may be drawn for a module with nowhere to go',
+      );
+    });
+
+    test('an open mission becomes a typographic prompt', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 3,
+            target: _missionTarget,
+          ),
+        ]),
+      );
+      final prompt = adapted.sections.whereType<HomePromptSection>().single;
+      expect(_ids(adapted).first, 'hero');
+      expect(_ids(adapted)[1], prompt.id);
+      // The recorded count, phrased as the count it is.
+      expect(prompt.fact, '3 items still on your list');
+      expect(prompt.action, isNotEmpty);
+      // And it opens a screen the app already has.
+      final destination = destinationForSeeAll(prompt);
+      expect(destination, isA<MallPush>());
+      expect((destination! as MallPush).location, contains('mis-1'));
+    });
+
+    test('one item reads as one item', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 1,
+            target: _missionTarget,
+          ),
+        ]),
+      );
+      expect(
+        adapted.sections.whereType<HomePromptSection>().single.fact,
+        '1 item still on your list',
+      );
+    });
+
+    test('a count the server did not send is never drawn', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 0,
+            target: _missionTarget,
+          ),
+        ]),
+      );
+      expect(
+        adapted.sections.whereType<HomePromptSection>().single.fact,
+        isNull,
+      );
+    });
+
+    test('a mission with no target is skipped rather than guessed at', () {
+      final home = page();
+      final adapted = applyStorefrontLayout(
+        home,
+        _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 3,
+          ),
+        ]),
+      );
+      expect(adapted.sections, orderedEquals(home.sections));
+    });
+
+    test('a module never lands on a section about something else', () {
+      final home = _home([
+        _products('shoes', categoryId: 'cat-1'),
+        _products('plain'),
+      ]);
+      final adapted = applyStorefrontLayout(
+        home,
+        _modules([
+          _module(
+            StorefrontModuleKind.boughtBefore,
+            rank: 0,
+            evidence: 2,
+            target: const HomeSeeAll(
+              target: HomeSeeAllTarget.category,
+              params: {'categoryId': 'cat-77'},
+            ),
+          ),
+        ]),
+      );
+      expect(adapted.sections, orderedEquals(home.sections));
+    });
+
+    test('the category ids still match when the target does not', () {
+      final adapted = applyStorefrontLayout(
+        page(),
+        _modules([
+          _module(
+            StorefrontModuleKind.boughtBefore,
+            rank: 0,
+            evidence: 2,
+            categoryIds: const ['CAT-1'],
+            target: const HomeSeeAll(target: HomeSeeAllTarget.unknown),
+          ),
+        ]),
+      );
+      expect(_ids(adapted)[1], 'shoes');
+    });
+
+    test('modules and the ranked categories both act on one page', () {
+      final layout = StorefrontLayout(
+        isPersonalized: true,
+        rankedCategories: const [
+          StorefrontCategoryRank(
+            categoryId: 'cat-1',
+            label: 'Shoes',
+            recentPurchaseCount: 4,
+          ),
+        ],
+        modules: [
+          _module(
+            StorefrontModuleKind.becauseYouWatched,
+            rank: 0,
+            signal: StorefrontSignal.watchedReels,
+            evidence: 2,
+            target: const HomeSeeAll(target: HomeSeeAllTarget.reels),
+          ),
+        ],
+      );
+      final adapted = applyStorefrontLayout(page(), layout);
+      // The module leads; the ranked rail keeps the promotion it earned.
+      expect(_ids(adapted), ['hero', 'watch', 'shoes', 'editorial', 'trust']);
+      final shoes = adapted.sections.firstWhere((s) => s.id == 'shoes');
+      expect(shoes.reason, "Because you've been buying Shoes");
+      // The reels rail says what it rests on, and claims nothing more.
+      final watch = adapted.sections.firstWhere((s) => s.id == 'watch');
+      expect(watch.reason, 'From reels you have been watching');
+    });
+
+    test("a module never overwrites the server's own reason", () {
+      final home = MallHome(
+        sections: [
+          const HomeReelsSection(
+            id: 'watch',
+            title: 'watch',
+            items: [],
+            reason: 'Hand-picked for the season',
+            seeAll: HomeSeeAll(target: HomeSeeAllTarget.reels),
+          ),
+          _products('plain'),
+        ],
+      );
+      final adapted = applyStorefrontLayout(
+        home,
+        _modules([
+          _module(
+            StorefrontModuleKind.becauseYouWatched,
+            rank: 0,
+            signal: StorefrontSignal.watchedReels,
+            evidence: 2,
+            target: const HomeSeeAll(target: HomeSeeAllTarget.reels),
+          ),
+        ]),
+      );
+      expect(adapted.sections.first.reason, 'Hand-picked for the season');
+    });
+  });
+
+  group('the modules contract', () {
+    test('reads modules and context, camelCased', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': <dynamic>[],
+        'isPersonalized': false,
+        'status': 'NoHistory',
+        'modules': [
+          {
+            'kind': 'ContinueMission',
+            'rank': 0,
+            'signal': 'ActiveMission',
+            'evidence': 3,
+            'categoryIds': <dynamic>[],
+            'target': {
+              'target': 'mission',
+              'params': {'missionId': 'mis-1'},
+            },
+          },
+        ],
+        'context': {
+          'sessionIntent': 'hunting',
+          'signalsUsed': ['ActiveMission'],
+          'signalsUnavailable': ['WatchedReels'],
+        },
+      });
+      // No ranking at all, and still plenty to organise around.
+      expect(layout.hasRanking, isFalse);
+      expect(layout.hasModules, isTrue);
+      expect(layout.status, StorefrontLayoutStatus.noHistory);
+      final module = layout.modules.single;
+      expect(module.kind, StorefrontModuleKind.continueMission);
+      expect(module.signal, StorefrontSignal.activeMission);
+      expect(module.evidence, 3);
+      expect(module.target!.target, HomeSeeAllTarget.mission);
+      expect(module.target!.params['missionId'], 'mis-1');
+      expect(layout.context.sessionIntent, 'hunting');
+      expect(layout.context.signalsUsed, [StorefrontSignal.activeMission]);
+      expect(layout.context.signalsUnavailable, [
+        StorefrontSignal.watchedReels,
+      ]);
+    });
+
+    test('reads the PascalCased shape of the same fields', () {
+      final layout = storefrontLayoutFromJson({
+        'RankedCategories': <dynamic>[],
+        'IsPersonalized': false,
+        'Status': 'NoHistory',
+        'Modules': [
+          {
+            'Kind': 'Refill',
+            'Rank': 0,
+            'Signal': 'ReplenishmentDue',
+            'Evidence': 4,
+            'CategoryIds': <dynamic>[],
+            'Target': {'Target': 'reorder', 'Params': <String, String>{}},
+          },
+        ],
+        'Context': {'SessionIntent': 'Researching'},
+      });
+      expect(layout.modules.single.kind, StorefrontModuleKind.refill);
+      expect(layout.modules.single.evidence, 4);
+      expect(layout.modules.single.target!.target, HomeSeeAllTarget.reorder);
+      expect(layout.context.sessionIntent, 'researching');
+    });
+
+    test('modules arrive in rank order however the list was sent', () {
+      final layout = storefrontLayoutFromJson({
+        'isPersonalized': false,
+        'modules': [
+          {'kind': 'BoughtBefore', 'rank': 1, 'evidence': 2},
+          {'kind': 'BecauseYouWatched', 'rank': 0, 'evidence': 2},
+        ],
+      });
+      expect(layout.modules.map((m) => m.rank), [0, 1]);
+      expect(layout.modules.first.kind, StorefrontModuleKind.becauseYouWatched);
+    });
+
+    test('a kind this build does not know parses, and is dropped later', () {
+      final layout = storefrontLayoutFromJson({
+        'isPersonalized': false,
+        'modules': [
+          {'kind': 'SomethingNewNextQuarter', 'rank': 0, 'evidence': 9},
+        ],
+      });
+      expect(layout.modules.single.kind, StorefrontModuleKind.unknown);
+    });
+
+    test('an unknown status is read as unknown and changes nothing', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': [
+          {'categoryId': 'cat-1', 'label': 'Shoes', 'recentPurchaseCount': 2},
+        ],
+        'isPersonalized': true,
+        'status': 'SomeFutureStatus',
+      });
+      expect(layout.status, StorefrontLayoutStatus.unknown);
+      // Unknown is not a failure: the ranking it came with is still real.
+      expect(layout.hasRanking, isTrue);
+    });
+
+    test('a paused customer gets nothing to apply, and it is not an error', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': <dynamic>[],
+        'isPersonalized': false,
+        'status': 'PersonalizationPaused',
+        'modules': <dynamic>[],
+      });
+      expect(layout.status, StorefrontLayoutStatus.personalizationPaused);
+      expect(layout.isEmpty, isTrue);
+      expect(layout.hasModules, isFalse);
+    });
+
+    test('a paused status wins over anything else in the body', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': [
+          {'categoryId': 'cat-1', 'label': 'Shoes', 'recentPurchaseCount': 2},
+        ],
+        'isPersonalized': true,
+        'status': 'PersonalizationPaused',
+        'modules': [
+          {'kind': 'BoughtBefore', 'rank': 0, 'evidence': 2},
+        ],
+      });
+      expect(layout.isEmpty, isTrue);
+      expect(layout.rankedCategories, isEmpty);
+      expect(layout.modules, isEmpty);
+    });
+
+    test('the old body, with no new fields at all, still reads as before', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': [
+          {'categoryId': 'cat-1', 'label': 'Shoes', 'recentPurchaseCount': 2},
+        ],
+        'isPersonalized': true,
+      });
+      expect(layout.hasRanking, isTrue);
+      expect(layout.status, StorefrontLayoutStatus.personalized);
+      expect(layout.modules, isEmpty);
+      expect(layout.context.sessionIntent, 'browsing');
+    });
+
+    test('a malformed module list is no reason to lose the page', () {
+      final layout = storefrontLayoutFromJson({
+        'rankedCategories': [
+          {'categoryId': 'cat-1', 'label': 'Shoes', 'recentPurchaseCount': 2},
+        ],
+        'isPersonalized': true,
+        'modules': 'not a list',
+        'context': 42,
+      });
+      expect(layout.hasRanking, isTrue);
+      expect(layout.modules, isEmpty);
+      expect(layout.context.sessionIntent, 'browsing');
     });
   });
 
@@ -669,6 +1163,137 @@ void main() {
       );
       expect(page.storefront.layoutCalls, 0);
       expect(page.order(), serverOrder);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('modules organise the page the shopper actually sees', (
+      tester,
+    ) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 3,
+            target: _missionTarget,
+          ),
+          _module(
+            StorefrontModuleKind.boughtBefore,
+            rank: 1,
+            evidence: 5,
+            categoryIds: const ['cat-3'],
+            target: const HomeSeeAll(
+              target: HomeSeeAllTarget.category,
+              params: {'categoryId': 'cat-3'},
+            ),
+          ),
+        ]),
+      );
+      final order = page.order();
+      expect(order.first, 'hero');
+      expect(order[1], 'storefront-mission');
+      expect(order[2], 'deals');
+      expect(order.last, 'trust');
+      // The count the server recorded, on the page, phrased as a count.
+      expect(find.text('3 items still on your list'), findsOneWidget);
+      expect(find.text('Pick up where you left off'), findsOneWidget);
+      // Still the Mall's own kit.
+      expect(find.byType(MallCinematicHero), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a module with nowhere to go leaves no trace on the page', (
+      tester,
+    ) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: _modules([
+          _module(
+            StorefrontModuleKind.refill,
+            rank: 0,
+            signal: StorefrontSignal.replenishmentDue,
+            evidence: 4,
+            target: _reorderTarget,
+          ),
+          _module(
+            StorefrontModuleKind.unknown,
+            rank: 1,
+            evidence: 9,
+            signal: StorefrontSignal.unknown,
+          ),
+        ]),
+      );
+      expect(page.order(), serverOrder);
+      expect(find.textContaining('restock'), findsNothing);
+      expect(find.textContaining('4 items'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a client-side failure falls back invisibly', (tester) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        layout: const _ExplodingLayout(),
+      );
+      expect(page.order(), serverOrder);
+      expect(find.byType(MallCinematicHero), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a paused customer is not personalised, not collected from, '
+        'and never nudged', (tester) async {
+      final page = await pump(
+        tester,
+        signedIn: true,
+        paused: true,
+        layout: _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 3,
+            target: _missionTarget,
+          ),
+        ]),
+      );
+      // Not asked for, and nothing recorded either.
+      expect(page.storefront.layoutCalls, 0);
+      expect(page.storefront.tracked, isEmpty);
+      expect(page.order(), serverOrder);
+      // No module, no error, and no invitation to switch it back on.
+      expect(find.text('Pick up where you left off'), findsNothing);
+      expect(find.textContaining('personalis'), findsNothing);
+      expect(find.textContaining('personaliz'), findsNothing);
+      expect(find.textContaining('Turn on'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a prompt does not overflow at 320dp and text scale 1.3', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        signedIn: true,
+        layout: _modules([
+          _module(
+            StorefrontModuleKind.continueMission,
+            rank: 0,
+            signal: StorefrontSignal.activeMission,
+            evidence: 12,
+            target: _missionTarget,
+          ),
+        ]),
+        width: 320,
+        textScale: 1.3,
+      );
+      expect(find.text('12 items still on your list'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
 

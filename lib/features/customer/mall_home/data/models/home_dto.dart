@@ -70,16 +70,7 @@ abstract class HomeSeeAllDto with _$HomeSeeAllDto {
       _$HomeSeeAllDtoFromJson(json);
 
   HomeSeeAll toDomain() => HomeSeeAll(
-    target: switch (target.toLowerCase()) {
-      'productlist' => HomeSeeAllTarget.productList,
-      'reels' => HomeSeeAllTarget.reels,
-      'creators' => HomeSeeAllTarget.creators,
-      'brands' => HomeSeeAllTarget.brands,
-      'collections' => HomeSeeAllTarget.collections,
-      'category' => HomeSeeAllTarget.category,
-      'collection' => HomeSeeAllTarget.collection,
-      _ => HomeSeeAllTarget.unknown,
-    },
+    target: homeSeeAllTargetFromWire(target),
     params: params,
   );
 }

@@ -191,6 +191,18 @@ class MallHomeSectionView extends ConsumerWidget {
         ),
       ),
 
+      // ── The customer's own business ────────────────────────────────────
+      // No items, no imagery: a fact and the way into it. The header carries
+      // the recorded count as its one meta fact, so the control stands alone
+      // rather than repeating a "see all" beside it.
+      HomePromptSection(:final action) => _Titled(
+        section: section,
+        index: index,
+        meta: mallSectionMeta(section, strings),
+        onSeeAll: null,
+        child: _PromptBlock(label: action, onTap: onSeeAll),
+      ),
+
       // ── The page's closing reassurance ─────────────────────────────────
       HomeTrustSection() => const _TrustBlock(),
     };
@@ -533,6 +545,27 @@ class _SignalRail extends StatelessWidget {
           onQuickAdd: () => onAddToBag(product),
         );
       },
+    );
+  }
+}
+
+/// A typographic prompt block: one control under the header, and nothing
+/// else. It draws no imagery of any kind, which is what keeps the Mall
+/// video-first even when the thing being prompted is a shopping list.
+class _PromptBlock extends StatelessWidget {
+  const _PromptBlock({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, DesignTokens.s8),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: MallPrimaryCta(label: label, onPressed: onTap),
+      ),
     );
   }
 }

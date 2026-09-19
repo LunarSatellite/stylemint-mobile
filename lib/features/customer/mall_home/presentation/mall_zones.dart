@@ -43,6 +43,8 @@ MallZone? zoneFor(HomeSection section) => switch (section) {
   HomeCreatorsSection() => MallZone.discovery,
   HomeProductsSection(:final items) =>
     isDropBlock(items) ? MallZone.retail : MallZone.discovery,
+  // Typography and one control: the editorial plate, not a retail one.
+  HomePromptSection() => MallZone.editorial,
   HomeTrustSection() => null,
 };
 
@@ -323,6 +325,7 @@ List<String> mallTickerWords(List<HomeSection> sections, {int max = 16}) {
           HomeProductsSection() ||
           HomeReelsSection() ||
           HomeCreatorsSection() ||
+          HomePromptSection() ||
           HomeTrustSection():
         break;
     }
@@ -390,6 +393,11 @@ List<MallSignal> mallSectionMeta(HomeSection section, MallStrings strings) =>
         strings,
       ),
       HomeCollectionsSection(:final items) => _collectionMeta(items, strings),
+      // The recorded count the server sent, phrased as the count it is and
+      // placed where the kit puts one scannable fact.
+      HomePromptSection(:final fact) => fact == null
+          ? const []
+          : [MallSignal(label: fact)],
       HomeCampaignsSection() ||
       HomeCategoriesSection() ||
       HomeTrustSection() => const [],

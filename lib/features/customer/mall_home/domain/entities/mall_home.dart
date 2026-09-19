@@ -20,6 +20,11 @@ class MallHome {
 }
 
 /// Where a section's "See all" leads.
+///
+/// This is also the routing vocabulary the adaptive storefront speaks: a
+/// `StorefrontModule` names its destination with the same `(target, params)`
+/// pair, so a module can be lined up with a section the page already renders
+/// instead of being guessed at from titles.
 enum HomeSeeAllTarget {
   productList,
   reels,
@@ -28,8 +33,32 @@ enum HomeSeeAllTarget {
   collections,
   category,
   collection,
+
+  /// One of the customer's own shopping missions — `params['missionId']`.
+  mission,
+
+  /// The replenishment ("Buy It Again") list. No destination screen exists
+  /// yet, so this resolves to no route; see [HomeSeeAll].
+  reorder,
+
   unknown,
 }
+
+/// Reads a wire `target` name. One parser, so the home page and the adaptive
+/// storefront cannot drift apart on what a target is called.
+HomeSeeAllTarget homeSeeAllTargetFromWire(String raw) =>
+    switch (raw.trim().toLowerCase()) {
+      'productlist' => HomeSeeAllTarget.productList,
+      'reels' => HomeSeeAllTarget.reels,
+      'creators' => HomeSeeAllTarget.creators,
+      'brands' => HomeSeeAllTarget.brands,
+      'collections' => HomeSeeAllTarget.collections,
+      'category' => HomeSeeAllTarget.category,
+      'collection' => HomeSeeAllTarget.collection,
+      'mission' => HomeSeeAllTarget.mission,
+      'reorder' => HomeSeeAllTarget.reorder,
+      _ => HomeSeeAllTarget.unknown,
+    };
 
 class HomeSeeAll {
   const HomeSeeAll({required this.target, this.params = const {}});
@@ -171,6 +200,33 @@ final class HomeTrustSection extends HomeSection {
     super.reason,
     super.seeAll,
   });
+}
+
+/// A typographic prompt: a line of the customer's own business — an open
+/// mission, essentials coming due — and one way into it.
+///
+/// The home API never sends one. It is synthesised by the adaptive storefront
+/// for a module the page has no section for, which is why it carries no items
+/// and no imagery: it says a fact and opens a screen that already exists.
+/// [fact] is a recorded count phrased as a count; the layer that builds it
+/// refuses to draw a number the server did not send.
+final class HomePromptSection extends HomeSection {
+  const HomePromptSection({
+    required super.id,
+    required this.action,
+    this.fact,
+    super.eyebrow,
+    super.title,
+    super.subtitle,
+    super.reason,
+    super.seeAll,
+  });
+
+  /// The label on the block's single control. Where it leads is [seeAll].
+  final String action;
+
+  /// The evidence line, already phrased, or null when there is none to show.
+  final String? fact;
 }
 
 // ── Cards ──────────────────────────────────────────────────────────────────
