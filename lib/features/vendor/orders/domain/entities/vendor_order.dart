@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 
 enum VendorOrderStatus {
   pending('Pending'),
@@ -65,26 +66,96 @@ enum VendorOrderAction {
   handOver,
   readyToShip,
   markDelivered,
+
+  /// Counter handover on a collection sub-order: the buyer walked in and
+  /// took the goods. Terminates at Delivered, exactly as a courier delivery
+  /// does, so the return window and review eligibility start the same way.
+  markCollected,
 }
 
 /// The next actions allowed from a backend state (Orders contract §1,
 /// "Allowed transitions"), primary action first.
-List<VendorOrderAction> vendorActionsForState(int state) => switch (state) {
-  SubOrderStateCode.paid || SubOrderStateCode.awaitingFulfillment => const [
-    VendorOrderAction.accept,
-    VendorOrderAction.reject,
-  ],
-  SubOrderStateCode.accepted => const [VendorOrderAction.markPacked],
-  SubOrderStateCode.packed => const [
-    VendorOrderAction.handOver,
-    VendorOrderAction.readyToShip,
-  ],
-  SubOrderStateCode.handedOver ||
-  SubOrderStateCode.shipped ||
-  SubOrderStateCode.inTransit ||
-  SubOrderStateCode.outForDelivery => const [VendorOrderAction.markDelivered],
-  _ => const [],
-};
+///
+/// [channel] defaults to delivery, so every existing caller keeps the
+/// delivery path it already had. On a collection sub-order the courier
+/// steps are gone — there is no handover to a rider and no "mark as
+/// delivered", because the backend refuses both — and the counter handover
+/// takes their place.
+List<VendorOrderAction> vendorActionsForState(
+  int state, {
+  OrderFulfillmentChannel channel = OrderFulfillmentChannel.delivery,
+}) {
+  if (channel.isCollection) return _collectionActionsForState(state);
+  return switch (state) {
+    SubOrderStateCode.paid || SubOrderStateCode.awaitingFulfillment => const [
+      VendorOrderAction.accept,
+      VendorOrderAction.reject,
+    ],
+    SubOrderStateCode.accepted => const [VendorOrderAction.markPacked],
+    SubOrderStateCode.packed => const [
+      VendorOrderAction.handOver,
+      VendorOrderAction.readyToShip,
+    ],
+    SubOrderStateCode.handedOver ||
+    SubOrderStateCode.shipped ||
+    SubOrderStateCode.inTransit ||
+    SubOrderStateCode.outForDelivery => const [VendorOrderAction.markDelivered],
+    _ => const [],
+  };
+}
+
+/// The collection path. `SubOrder.MarkCollected` is legal from Paid,
+/// AwaitingFulfillment, Accepted, Packed, ReadyToShip and AwaitingTracking,
+/// so the counter handover is offered from each of them — a buyer who walks
+/// in early is still a buyer holding the goods, and the seller should not
+/// have to walk the order forward first to record that.
+///
+/// `readyToShip` keeps its transition but reads as "ready for collection"
+/// here: it is the seller telling the buyer the goods are waiting.
+List<VendorOrderAction> _collectionActionsForState(int state) =>
+    switch (state) {
+      SubOrderStateCode.paid || SubOrderStateCode.awaitingFulfillment => const [
+        VendorOrderAction.accept,
+        VendorOrderAction.reject,
+      ],
+      SubOrderStateCode.accepted => const [
+        VendorOrderAction.markPacked,
+      ],
+      SubOrderStateCode.packed => const [
+        VendorOrderAction.readyToShip,
+        VendorOrderAction.markCollected,
+      ],
+      SubOrderStateCode.readyToShip ||
+      SubOrderStateCode.awaitingTracking => const [
+        VendorOrderAction.markCollected,
+      ],
+      _ => const [],
+    };
+
+/// Why the counter handover cannot be taken on this sub-order, or null when
+/// it can.
+///
+/// The control is not simply hidden on a delivery order. A seller who was
+/// expecting to hand something across a counter is owed the reason, and
+/// "the button is not there" is not a reason — it reads as a bug. The same
+/// sentence is what the backend refuses with (422), so the screen and the
+/// server tell one story.
+String? collectionHandoverRefusal({
+  required int state,
+  required OrderFulfillmentChannel channel,
+}) {
+  if (!channel.isCollection) {
+    return 'This order is being delivered by courier. '
+        'Handing over at the counter applies only to collection orders.';
+  }
+  if (state == SubOrderStateCode.delivered) return null;
+  if (_collectionActionsForState(state).contains(
+    VendorOrderAction.markCollected,
+  )) {
+    return null;
+  }
+  return 'This order cannot be handed over from its current status.';
+}
 
 /// Backend `VendorRejectionReason` (contract §2, reject).
 enum VendorRejectionReason {
@@ -239,6 +310,8 @@ class VendorOrder {
     this.customerName,
     this.shippingAddress,
     this.items = const [],
+    this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
+    this.collectedAt,
   });
 
   final String id;
@@ -271,8 +344,22 @@ class VendorOrder {
 
   /// Backend list `receiverName`, denormalized for the vendor order row.
   final String? customerName;
+
+  /// Null on a collection order, and deliberately so: checkout records an
+  /// empty address for one because there is no address. Rendering anything
+  /// here would be inventing a destination.
   final String? shippingAddress;
   final List<VendorOrderItem> items;
+
+  /// How this order reaches the buyer (backend `fulfillmentChannel`).
+  /// Decides which seller steps exist at all.
+  final OrderFulfillmentChannel fulfillmentChannel;
+
+  /// When the buyer took the goods at the counter (backend `collectedUtc`).
+  /// Null on a delivery, and null on a collection nobody has handed over yet.
+  final DateTime? collectedAt;
+
+  bool get isCollection => fulfillmentChannel.isCollection;
 
   VendorOrder copyWith({
     String? id,
@@ -289,6 +376,8 @@ class VendorOrder {
     String? customerName,
     String? shippingAddress,
     List<VendorOrderItem>? items,
+    OrderFulfillmentChannel? fulfillmentChannel,
+    DateTime? collectedAt,
   }) {
     return VendorOrder(
       id: id ?? this.id,
@@ -305,6 +394,8 @@ class VendorOrder {
       customerName: customerName ?? this.customerName,
       shippingAddress: shippingAddress ?? this.shippingAddress,
       items: items ?? this.items,
+      fulfillmentChannel: fulfillmentChannel ?? this.fulfillmentChannel,
+      collectedAt: collectedAt ?? this.collectedAt,
     );
   }
 
@@ -324,7 +415,9 @@ class VendorOrder {
       other.shippedAt == shippedAt &&
       other.deliveredAt == deliveredAt &&
       other.customerName == customerName &&
-      other.shippingAddress == shippingAddress;
+      other.shippingAddress == shippingAddress &&
+      other.fulfillmentChannel == fulfillmentChannel &&
+      other.collectedAt == collectedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -342,6 +435,8 @@ class VendorOrder {
     deliveredAt,
     customerName,
     shippingAddress,
+    fulfillmentChannel,
+    collectedAt,
   );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {

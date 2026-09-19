@@ -19,6 +19,8 @@ abstract final class BuyerStepCopy {
     BuyerTimelineStep.delivered => 'Delivered',
     BuyerTimelineStep.cancelled => 'Cancelled',
     BuyerTimelineStep.returned => 'Returned',
+    BuyerTimelineStep.readyForCollection => 'Ready to collect',
+    BuyerTimelineStep.collected => 'Collected',
     BuyerTimelineStep.unknown => 'Update',
   };
 
@@ -33,6 +35,8 @@ abstract final class BuyerStepCopy {
     BuyerTimelineStep.delivered => 'Delivered',
     BuyerTimelineStep.cancelled => 'Cancelled',
     BuyerTimelineStep.returned => 'Returned',
+    BuyerTimelineStep.readyForCollection => 'Waiting at the counter',
+    BuyerTimelineStep.collected => 'Collected',
     BuyerTimelineStep.unknown => 'Tracking update',
   };
 
@@ -47,6 +51,8 @@ abstract final class BuyerStepCopy {
     BuyerTimelineStep.delivered => 'Delivered',
     BuyerTimelineStep.cancelled => 'Order cancelled',
     BuyerTimelineStep.returned => 'Returned',
+    BuyerTimelineStep.readyForCollection => 'Ready for collection',
+    BuyerTimelineStep.collected => 'Collected in store',
     BuyerTimelineStep.unknown => _humanise(step.key),
   };
 
@@ -58,6 +64,8 @@ abstract final class BuyerStepCopy {
     BuyerTimelineStep.pickedUp => 'Your parcel is with the courier.',
     BuyerTimelineStep.inTransit => 'Moving through the delivery network.',
     BuyerTimelineStep.outForDelivery => 'A rider is bringing it to you today.',
+    BuyerTimelineStep.readyForCollection =>
+      'Your order is waiting at the counter.',
     _ => null,
   };
 
@@ -67,8 +75,10 @@ abstract final class BuyerStepCopy {
     BuyerTimelineStep.preparing => OrderPillTone.info,
     BuyerTimelineStep.pickedUp ||
     BuyerTimelineStep.inTransit ||
-    BuyerTimelineStep.outForDelivery => OrderPillTone.progress,
-    BuyerTimelineStep.delivered => OrderPillTone.success,
+    BuyerTimelineStep.outForDelivery ||
+    BuyerTimelineStep.readyForCollection => OrderPillTone.progress,
+    BuyerTimelineStep.delivered ||
+    BuyerTimelineStep.collected => OrderPillTone.success,
     BuyerTimelineStep.cancelled => OrderPillTone.negative,
     BuyerTimelineStep.returned => OrderPillTone.caution,
     BuyerTimelineStep.unknown => OrderPillTone.neutral,
@@ -122,10 +132,28 @@ class OrderTrackingTimeline extends StatelessWidget {
       ),
   ];
 
+  /// "Collected on 17 Sep at 14:20 · Durbar Marg Flagship", or the same
+  /// line without the counter when the backend could not name one.
+  ///
+  /// Null when nothing was collected. The store name is appended only when
+  /// it resolved — a counter nobody named is left out of the sentence
+  /// rather than filled with a generic word.
+  static String? collectedLine(SubOrderTimeline timeline) {
+    final at = timeline.collectedUtc;
+    if (!timeline.isCollection || at == null) return null;
+    final where = timeline.collectionLocationName?.trim() ?? '';
+    final when = 'Collected ${formatNptDateTime(at)}';
+    return where.isEmpty ? when : '$when · $where';
+  }
+
   @override
   Widget build(BuildContext context) {
     final eta = timeline.estimatedDeliveryUtc;
-    final showEta = eta != null && !timeline.isTerminal;
+    // No courier, no arrival estimate. An ETA on a collection order would be
+    // a delivery promise for a delivery that is not happening.
+    final showEta =
+        eta != null && !timeline.isTerminal && !timeline.isCollection;
+    final collected = collectedLine(timeline);
     final carrierLine = [
       if (timeline.carrier?.trim().isNotEmpty ?? false)
         timeline.carrier!.trim(),
@@ -194,7 +222,31 @@ class OrderTrackingTimeline extends StatelessWidget {
                 ],
               ),
             ],
-            if (carrierLine.isNotEmpty) ...[
+            if (collected != null) ...[
+              const SizedBox(height: DesignTokens.s12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.storefront_outlined,
+                    size: 18,
+                    color: DesignTokens.primaryGreen,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  Expanded(
+                    child: Text(
+                      collected,
+                      key: const ValueKey('timeline-collected-at'),
+                      style: DesignTokens.mediumSemibold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            // A collection order has no carrier and no tracking number.
+            // Should one ever arrive on the wire, it is not shown here:
+            // there is no parcel for it to describe.
+            if (carrierLine.isNotEmpty && !timeline.isCollection) ...[
               const SizedBox(height: DesignTokens.s4),
               Text(carrierLine, style: DesignTokens.smallRegular),
             ],
