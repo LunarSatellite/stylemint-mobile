@@ -5,7 +5,6 @@ import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership_terms.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
-import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
@@ -146,13 +145,10 @@ class _ActiveTab extends StatelessWidget {
                   name: active[i].vendorName.isNotEmpty
                       ? active[i].vendorName
                       : 'Brand',
-                  productsTagged: active[i].productsCount,
-                  commissionPct: active[i].commissionRate.round(),
+                  commissionPct: active[i].commissionPercent.round(),
                   startDate: DateFormat('d MMM, yyyy').format(
                     active[i].startedAt,
                   ),
-                  totalEarnings: formatMoney(active[i].totalEarned),
-                  activeCampaigns: 0,
                 ),
               ),
             ),
@@ -366,7 +362,7 @@ class _EndedPartnershipCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${partnership.commissionRate.round()}% commission',
+                      '${partnership.commissionPercent.round()}% commission',
                       style: const TextStyle(
                         fontFamily: DesignTokens.fontFamily,
                         fontSize: 12,
@@ -413,17 +409,9 @@ class _EndedPartnershipCard extends StatelessWidget {
             label: 'Ended On',
             trailingText: DateFormat('d MMM, yyyy').format(partnership.endedAt),
           ),
-          const SizedBox(height: 10),
-          _InfoRow(
-            iconWidget: Image.asset(
-              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-              width: 15,
-              height: 15,
-              color: DesignTokens.textMuted,
-            ),
-            label: 'Total Earnings',
-            trailing: _EarningsChip(formatMoney(partnership.totalEarned)),
-          ),
+          // "Total Earnings: Rs 0" stood here too, on a partnership that had
+          // run its course — telling a creator the whole thing came to
+          // nothing. Removed for the reason the active card's was.
           if (partnership.endReason != null) ...[
             const SizedBox(height: 10),
             _InfoRow(
@@ -454,14 +442,17 @@ class _FilterSortRow extends StatelessWidget {
         DesignTokens.s16,
         DesignTokens.s4,
       ),
-      child: Row(
+      // Wrap, not Row: at 320dp with a 1.3 text scale the two pills are
+      // wider than the screen and a Row overflowed them by 43px.
+      child: Wrap(
+        spacing: DesignTokens.s8,
+        runSpacing: DesignTokens.s8,
         children: [
           _PillButton(
             icon: Icons.tune_rounded,
             label: 'Filter',
             onTap: onFilter,
           ),
-          const SizedBox(width: DesignTokens.s8),
           _PillButton(
             icon: Icons.keyboard_arrow_down_rounded,
             label: 'Sort By',
@@ -733,6 +724,36 @@ class _PillButton extends StatelessWidget {
 
 // ── Partnership card ──────────────────────────────────────────────────────────
 
+/// The two inline actions on a partnership card.
+const TextStyle _linkStyle = TextStyle(
+  fontFamily: DesignTokens.fontFamily,
+  fontSize: 13,
+  fontWeight: FontWeight.w600,
+  color: DesignTokens.primaryGreen,
+  decoration: TextDecoration.underline,
+  decorationColor: DesignTokens.primaryGreen,
+);
+
+/// One active partnership.
+///
+/// ## What this card no longer claims
+///
+/// It used to show, for every partnership without exception, **"Rs 0"**
+/// total earnings, **"0 Products tagged"** and **"Active Campaigns: 0"** —
+/// none of which came from anywhere. The first two were constants written
+/// into `PartnershipDto.toActiveDomain()`; the third was the literal `0`
+/// typed at this widget's call site. A creator who had earned money was
+/// told, on the screen about that brand, that they had earned nothing.
+///
+/// Those three rows are gone, and so is the fourth figure the ended card
+/// carried. In their place is one sentence that says plainly that the
+/// platform does not record earnings per brand, and sends the creator to
+/// Earnings, which reads the real ledger. An absent figure draws **nothing**
+/// here — not a zero, not a dash, not a greyed "Rs --" that a reader would
+/// take for a result.
+///
+/// What is left is measured: the brand, the commission rate agreed in this
+/// partnership, and the date it started.
 class _PartnershipCard extends StatelessWidget {
   const _PartnershipCard({
     required this.partnershipId,
@@ -740,11 +761,8 @@ class _PartnershipCard extends StatelessWidget {
     this.vendorAccountId,
     required this.logo,
     required this.name,
-    required this.productsTagged,
     required this.commissionPct,
     required this.startDate,
-    required this.totalEarnings,
-    required this.activeCampaigns,
   });
 
   final String partnershipId;
@@ -752,11 +770,11 @@ class _PartnershipCard extends StatelessWidget {
   final String? vendorAccountId;
   final Widget logo;
   final String name;
-  final int productsTagged;
+
+  /// Whole percent, already scaled from the wire's fraction by
+  /// `ActivePartnership.commissionPercent`.
   final int commissionPct;
   final String startDate;
-  final String totalEarnings;
-  final int activeCampaigns;
 
   @override
   Widget build(BuildContext context) {
@@ -788,38 +806,24 @@ class _PartnershipCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/creatordash/material-symbols_package-2-outline.png',
-                          width: 13,
-                          height: 13,
-                          color: DesignTokens.textMuted,
+                    // "N Products tagged" used to lead this line and was
+                    // always "0". The count exists on the server
+                    // (Reels.TaggedProduct.PartnershipIdSnapshot) but no
+                    // endpoint returns it, so it is not drawn at all.
+                    // The commission rate is real and stays.
+                    Semantics(
+                      label: '$commissionPct percent commission '
+                          'on this partnership',
+                      excludeSemantics: true,
+                      child: Text(
+                        '$commissionPct% commission',
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: DesignTokens.textWhite,
                         ),
-                        const SizedBox(width: 4),
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 12,
-                              color: DesignTokens.textMuted,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: '$productsTagged',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: DesignTokens.textWhite,
-                                ),
-                              ),
-                              const TextSpan(text: ' Products tagged'),
-                              TextSpan(
-                                text: ' • $commissionPct% commissions',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -833,7 +837,14 @@ class _PartnershipCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DesignTokens.s8),
-          Row(
+          // Wrap, not Row: at 320dp with a 1.3 text scale "Message · View
+          // Terms" is wider than the card and a Row overflowed it by 69px.
+          // The separator goes with it — two links on their own lines do not
+          // need a dot between them, and a Wrap would strand it at the end
+          // of the first line.
+          Wrap(
+            spacing: DesignTokens.s16,
+            runSpacing: DesignTokens.s4,
             children: [
               GestureDetector(
                 onTap: () {
@@ -858,39 +869,23 @@ class _PartnershipCard extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text(
-                  'Message',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.primaryGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
-                  ),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: DesignTokens.s8),
-                child: Text(
-                  '·',
-                  style: TextStyle(
-                    color: DesignTokens.textMuted,
-                    fontSize: 13,
+                child: Semantics(
+                  button: true,
+                  label: 'Message $name',
+                  child: const Text(
+                    'Message',
+                    style: _linkStyle,
                   ),
                 ),
               ),
               GestureDetector(
                 onTap: () => _showTermsSheet(context, partnershipId),
-                child: const Text(
-                  'View Terms',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.primaryGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: DesignTokens.primaryGreen,
+                child: Semantics(
+                  button: true,
+                  label: 'View the terms of the $name partnership',
+                  child: const Text(
+                    'View Terms',
+                    style: _linkStyle,
                   ),
                 ),
               ),
@@ -904,28 +899,13 @@ class _PartnershipCard extends StatelessWidget {
             label: 'Start Date',
             trailingText: startDate,
           ),
-          const SizedBox(height: 10),
-          _InfoRow(
-            iconWidget: Image.asset(
-              'assets/images/creatordash/material-symbols_money-bag-outline-rounded.png',
-              width: 15,
-              height: 15,
-              color: DesignTokens.textMuted,
-            ),
-            label: 'Total Earnings',
-            trailing: _EarningsChip(totalEarnings),
-          ),
-          const SizedBox(height: 10),
-          _InfoRow(
-            iconWidget: Image.asset(
-              'assets/images/creatordash/material-symbols_package-2-outline.png',
-              width: 15,
-              height: 15,
-              color: DesignTokens.textMuted,
-            ),
-            label: 'Active Campaigns',
-            trailingText: '$activeCampaigns',
-          ),
+          // "Total Earnings" and "Active Campaigns" stood here, reading
+          // "Rs 0" and "0" on every card. Neither figure exists per
+          // partnership anywhere on the platform, so neither is drawn —
+          // and the creator is told where their real earnings are instead
+          // of being shown a zero standing in for a number nobody has.
+          const SizedBox(height: DesignTokens.s12),
+          const _EarningsNotRecordedNote(),
           const SizedBox(height: DesignTokens.s16),
           _ActionButton(
             label: 'View Analytics',
@@ -1224,72 +1204,139 @@ class _TermsSection extends StatelessWidget {
   }
 }
 
+/// A label and its value. Every remaining row is a date or a reason — the
+/// `iconWidget` and `trailing` slots existed for the money-bag glyph and the
+/// green earnings chip, both of which went with the figures they decorated.
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.label,
     this.icon,
-    this.iconWidget,
     this.trailingText,
-    this.trailing,
   });
 
   final String label;
   final IconData? icon;
-  final Widget? iconWidget;
   final String? trailingText;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        iconWidget ??
-            Icon(icon ?? Icons.circle, size: 15, color: DesignTokens.textMuted),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: 13,
-            color: DesignTokens.textLight,
+    final value = trailingText;
+    return Semantics(
+      label: value == null ? label : '$label: $value',
+      excludeSemantics: true,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              icon ?? Icons.circle,
+              size: 15,
+              color: DesignTokens.textMuted,
+            ),
           ),
-        ),
-        const Spacer(),
-        if (trailingText != null)
+          const SizedBox(width: 6),
           Text(
-            trailingText!,
+            label,
             style: const TextStyle(
               fontFamily: DesignTokens.fontFamily,
               fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: DesignTokens.textWhite,
+              color: DesignTokens.textLight,
             ),
           ),
-        ?trailing,
-      ],
+          const SizedBox(width: DesignTokens.s12),
+          // Expanded rather than Spacer + Text: at 320dp with a 1.3 text
+          // scale an end reason is wider than the room left beside its
+          // label, and an unbounded Text there overflows the row.
+          Expanded(
+            child: value == null
+                ? const SizedBox.shrink()
+                : Text(
+                    value,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: DesignTokens.textWhite,
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _EarningsChip extends StatelessWidget {
-  const _EarningsChip(this.amount);
-  final String amount;
+/// Stands where "Total Earnings: Rs 0" used to.
+///
+/// This is deliberately a sentence and not a figure. There is no styled
+/// dash, no muted "Rs --" and no empty chip, because each of those still
+/// occupies the slot a number belongs in and a reader takes the slot for a
+/// result. The card says what is true — the platform does not break earnings
+/// down by brand — and points at the screen that does hold the creator's
+/// money.
+///
+/// It is also what distinguishes **"you earned nothing here"** from **"we
+/// did not look"**. A creator who genuinely earned nothing from a brand
+/// would see Rs 0 *on the Earnings screen*, against a real ledger that was
+/// queried. This card cannot say either way, so it says neither.
+class _EarningsNotRecordedNote extends StatelessWidget {
+  const _EarningsNotRecordedNote();
+
+  static const _message =
+      'StyleMint records your earnings across all your brands together, not '
+      'per partnership. See Earnings for what you have actually made.';
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: DesignTokens.primaryGreenLight,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        amount,
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: DesignTokens.primaryGreen,
+    return Semantics(
+      label: 'Earnings are not recorded per partnership. $_message',
+      button: true,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () => context.push(RouteNames.earnings),
+        borderRadius: BorderRadius.circular(DesignTokens.s8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: RichText(
+                  text: const TextSpan(
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 12,
+                      height: 1.4,
+                      color: DesignTokens.textMuted,
+                    ),
+                    children: [
+                      TextSpan(text: _message),
+                      TextSpan(
+                        text: '  Open Earnings',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: DesignTokens.primaryGreen,
+                          decoration: TextDecoration.underline,
+                          decorationColor: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
