@@ -14,9 +14,11 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 //
 // _Request is a display-only view-model adapted from the real
 // PartnershipInvite/ActivePartnership domain entities (via
-// partnershipsNotifierProvider) — no hardcoded brands/messages. category and
-// products aren't returned by the partnerships API, so those fields are left
-// blank and the info rows that show them are skipped rather than fabricated.
+// partnershipsNotifierProvider) — no hardcoded brands/messages. category
+// isn't returned by the partnerships API, so that field is left blank and
+// the info row that shows it is skipped rather than fabricated. A products
+// count is not returned either; it used to be carried as a hardcoded 0 and
+// is now simply not modelled.
 
 enum _Status { pending, accepted, declined }
 
@@ -31,7 +33,7 @@ class _Request {
     required this.message,
     required this.commission,
     required this.category,
-    required this.products,
+    required this.logoUrl,
     required this.status,
   });
 
@@ -60,7 +62,12 @@ class _Request {
   final String message;
   final String commission;
   final String category;
-  final String products;
+
+  /// The brand's real logo, or empty when it has none. Both
+  /// [PartnershipInvite] and [ActivePartnership] carry this from the server;
+  /// this record used to drop it, so every brand fell back to a letter mark
+  /// even when a logo existed.
+  final String logoUrl;
   final _Status status;
 }
 
@@ -72,6 +79,12 @@ String _timeAgo(DateTime dt) {
   return 'just now';
 }
 
+/// Formats a commission for display.
+///
+/// [min] and [max] are **percents**, already scaled from the wire's fraction
+/// by `commissionPercent` on the domain entity. This function used to be
+/// handed the raw fraction: `0.15.toStringAsFixed(0)` is `"0"`, so a
+/// partnership paying fifteen percent advertised itself as "0%".
 String _commissionLabel(double min, double max) {
   final minStr = min.toStringAsFixed(min.truncateToDouble() == min ? 0 : 1);
   final maxStr = max.toStringAsFixed(max.truncateToDouble() == max ? 0 : 1);
@@ -86,9 +99,9 @@ _Request _fromInvite(PartnershipInvite i) => _Request(
   rating: i.vendorRating,
   timeAgo: _timeAgo(i.expiresAt),
   message: i.campaignBrief,
-  commission: _commissionLabel(i.commissionRate, i.commissionRate),
+  commission: _commissionLabel(i.commissionPercent, i.commissionPercent),
   category: '',
-  products: '',
+  logoUrl: i.vendorLogoUrl,
   status: switch (i.status) {
     PartnershipStatus.declined => _Status.declined,
     _ => _Status.pending,
@@ -105,9 +118,9 @@ _Request _fromActive(ActivePartnership a) => _Request(
   rating: null,
   timeAgo: _timeAgo(a.startedAt),
   message: '',
-  commission: _commissionLabel(a.commissionRate, a.commissionRate),
+  commission: _commissionLabel(a.commissionPercent, a.commissionPercent),
   category: '',
-  products: a.productsCount > 0 ? '${a.productsCount} available' : '',
+  logoUrl: a.vendorLogoUrl,
   status: _Status.accepted,
 );
 
@@ -410,7 +423,7 @@ class _RequestCardState extends State<_RequestCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _BrandLogo(name: req.brandName),
+              _BrandLogo(name: req.brandName, logoUrl: req.logoUrl),
               const SizedBox(width: DesignTokens.s12),
               Expanded(
                 child: Column(
@@ -537,18 +550,12 @@ class _RequestCardState extends State<_RequestCard> {
               trailingText: req.category,
             ),
           ],
-          if (req.products.isNotEmpty) ...[
-            const SizedBox(height: DesignTokens.s8),
-            _InfoRow(
-              label: 'Products',
-              icon: Image.asset(
-                'assets/images/creatordash/video-camera-front-outline-rounded.png',
-                width: 16,
-                height: 16,
-              ),
-              trailingText: req.products,
-            ),
-          ],
+          // A "Products" row stood here, fed by `ActivePartnership.productsCount`
+          // — a hardcoded 0, so the row's `isNotEmpty` guard meant it never
+          // actually drew. The count is recorded on the server
+          // (Reels.TaggedProduct.PartnershipIdSnapshot) but no endpoint
+          // returns it, so the field is gone rather than kept as a
+          // permanent zero.
 
           // Action buttons (pending only)
           if (widget.isPending) ...[
@@ -664,26 +671,52 @@ class _BrandMeta extends StatelessWidget {
 
 // ── Brand logo circle ─────────────────────────────────────────────────────────
 
-/// The brand's initial in a white circle.
+/// The brand's own logo, falling back to its initial in a white circle.
 ///
 /// This used to special-case two names: a brand whose name contained
 /// "nike" was drawn as a bold '✓' and one containing "sephora" as a bold
 /// 'S' — the app forging a brand mark for two companies StyleMint has no
 /// relationship with, and substring-matched, so a Nepali vendor called
 /// "Nikesh Traders" would have been given one too. There is no list of
-/// brand marks to draw from and no business drawing one; every brand now
-/// gets its initial.
+/// brand marks to draw from and no business drawing one.
 ///
-/// Still open, deliberately not done here: `PartnershipInvite` and
-/// `ActivePartnership` both carry a real `vendorLogoUrl` that `_Request`
-/// does not pass along, so a brand with a real logo still shows a letter.
-/// Wiring it is additive and belongs in its own change.
+/// The real logo is now wired: both `PartnershipInvite` and
+/// `ActivePartnership` carry `vendorLogoUrl` from the server, and `_Request`
+/// passes it along. The letter is what a brand *without* a logo gets, and
+/// what a logo that fails to load falls back to — never a mark this app
+/// invented. A brand logo is not a product photo, so the photo guard has no
+/// opinion here.
 class _BrandLogo extends StatelessWidget {
-  const _BrandLogo({required this.name});
+  const _BrandLogo({required this.name, this.logoUrl = ''});
+
   final String name;
+  final String logoUrl;
 
   @override
   Widget build(BuildContext context) {
+    return Semantics(
+      label: name.trim().isNotEmpty ? '$name logo' : 'Brand logo',
+      image: true,
+      excludeSemantics: true,
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: logoUrl.trim().isEmpty
+            ? _initial()
+            : ClipOval(
+                child: Image.network(
+                  logoUrl,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _initial(),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _initial() {
     return Container(
       width: 44,
       height: 44,
@@ -723,27 +756,42 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (icon != null) ...[
           icon!,
           const SizedBox(width: 6),
         ],
-        Text(
-          label,
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textMuted,
-          ),
-        ),
-        const Spacer(),
-        if (trailing != null) trailing!,
-        if (trailingText != null)
-          Text(
-            trailingText!,
+        Flexible(
+          child: Text(
+            label,
             style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textWhite,
-              fontWeight: FontWeight.w500,
+              color: DesignTokens.textMuted,
             ),
           ),
+        ),
+        const SizedBox(width: DesignTokens.s8),
+        // `Spacer` plus an unbounded trailing overflowed this row by 133px
+        // as soon as the commission chip held a real rate rather than the
+        // "0%" it used to: a Spacer takes every remaining pixel first and
+        // leaves the chip nothing to lay out in. Flexible on both sides
+        // lets the label give way instead.
+        Flexible(
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: trailing ??
+                (trailingText == null
+                    ? const SizedBox.shrink()
+                    : Text(
+                        trailingText!,
+                        textAlign: TextAlign.end,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )),
+          ),
+        ),
       ],
     );
   }
@@ -916,7 +964,7 @@ class _DeclineSheetState extends State<_DeclineSheet> {
             ),
             child: Row(
               children: [
-                _BrandLogo(name: req.brandName),
+                _BrandLogo(name: req.brandName, logoUrl: req.logoUrl),
                 const SizedBox(width: DesignTokens.s12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1148,7 +1196,7 @@ class _AcceptSheetState extends State<_AcceptSheet> {
             ),
             child: Row(
               children: [
-                _BrandLogo(name: req.brandName),
+                _BrandLogo(name: req.brandName, logoUrl: req.logoUrl),
                 const SizedBox(width: DesignTokens.s12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

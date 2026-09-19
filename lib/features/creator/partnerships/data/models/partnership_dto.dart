@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
-import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
 part 'partnership_dto.freezed.dart';
 part 'partnership_dto.g.dart';
@@ -56,6 +55,14 @@ abstract class PartnershipDto with _$PartnershipDto {
     );
   }
 
+  /// Maps only the fields `GET /v1/partnerships` actually returns.
+  ///
+  /// This used to also set `totalEarned: Money(0)`, `totalSales: 0` and
+  /// `productsCount: 0` — constants, not data, which the card then rendered
+  /// as "Rs 0" to every creator on the platform. Those fields no longer
+  /// exist on [ActivePartnership]; see the doc on
+  /// `domain/entities/partnership.dart` for what the backend does and does
+  /// not record, and why nothing here can be filled in.
   ActivePartnership toActiveDomain() => ActivePartnership(
     id: id,
     vendorProfileId: vendorProfileId,
@@ -63,22 +70,18 @@ abstract class PartnershipDto with _$PartnershipDto {
     vendorName: vendorName ?? '',
     vendorLogoUrl: vendorLogoUrl ?? '',
     commissionRate: commissionMinPercent,
-    totalEarned: const Money(amount: 0, currency: 'NPR'),
-    totalSales: 0,
     startedAt: respondedUtc ?? invitedUtc,
-    productsCount: 0,
   );
 
+  /// As [toActiveDomain], plus the close. Carried the same two hardcoded
+  /// zeros and lost them for the same reason.
   EndedPartnership toEndedDomain() => EndedPartnership(
     id: id,
     vendorName: vendorName ?? '',
     vendorLogoUrl: vendorLogoUrl ?? '',
     commissionRate: commissionMinPercent,
-    totalEarned: const Money(amount: 0, currency: 'NPR'),
-    totalSales: 0,
     startedAt: respondedUtc ?? invitedUtc,
     endedAt: endedUtc ?? updatedUtc,
-    productsCount: 0,
     endReason: endReason,
   );
 }
