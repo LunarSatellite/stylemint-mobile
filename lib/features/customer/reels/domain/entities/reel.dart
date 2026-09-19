@@ -1,4 +1,5 @@
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/feed_provenance.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/shared/playback/platform_video_id.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/reel_media.dart';
@@ -40,9 +41,17 @@ class Reel implements ReelMedia {
     this.creatorAvatarUrls = const <String>[],
     this.isSavedByMe,
     this.saveCount = 0,
+    this.provenance,
   });
 
   final String id;
+
+  /// Why the feed served this reel, and whether anything ranked it.
+  ///
+  /// Null everywhere the reel did not come from the Discovery feed — reel
+  /// detail, related reels, a shared link. Null means "we were not told", and
+  /// the card draws no label at all rather than guessing one.
+  final FeedProvenance? provenance;
 
   /// The platform's own post/video id (YouTube videoId, TikTok item id,
   /// Instagram media id, Facebook video id) as stored by the backend.
@@ -112,6 +121,7 @@ class Reel implements ReelMedia {
     bool? isCreatorFollowed,
     bool? isSavedByMe,
     int? saveCount,
+    FeedProvenance? provenance,
   }) {
     return Reel(
       id: id ?? this.id,
@@ -137,6 +147,7 @@ class Reel implements ReelMedia {
       externalId: externalId ?? this.externalId,
       isSavedByMe: isSavedByMe ?? this.isSavedByMe,
       saveCount: saveCount ?? this.saveCount,
+      provenance: provenance ?? this.provenance,
     );
   }
 

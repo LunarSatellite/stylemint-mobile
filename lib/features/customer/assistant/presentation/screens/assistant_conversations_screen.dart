@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/domain/entities/companion_turn.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/widgets/companion_recommendations_shelf.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
@@ -38,44 +39,54 @@ class AssistantConversationsScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: conversations.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => MallErrorState(
-            title: "We couldn't load your conversations",
-            body: 'Check your connection and try again.',
-            onRetry: () => ref.invalidate(assistantConversationsProvider),
-          ),
-          data: (list) => list.items.isEmpty
-              ? MallEmptyState(
-                  icon: Icons.auto_awesome_outlined,
-                  eyebrow: 'Personal shopping',
-                  title: 'Minty is your shopping assistant',
-                  body:
-                      'Describe an occasion, a budget or a gap in your '
-                      'wardrobe. Minty suggests — you decide what goes in '
-                      'your bag.',
-                  actionLabel: 'Start a conversation',
-                  onAction: () =>
-                      context.push(RouteNames.assistantNewConversation),
-                )
-              : ListView.separated(
-                  key: listKey,
-                  padding: const EdgeInsets.fromLTRB(
-                    DesignTokens.s16,
-                    DesignTokens.s12,
-                    DesignTokens.s16,
-                    DesignTokens.s48 + DesignTokens.s32,
-                  ),
-                  itemCount: list.items.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: DesignTokens.s8),
-                  itemBuilder: (context, index) =>
-                      _ConversationRow(summary: list.items[index]),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const CompanionRecommendationsShelf(),
+            Expanded(child: _body(context, ref, conversations)),
+          ],
         ),
       ),
     );
   }
+
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<ConversationList> conversations,
+  ) => conversations.when(
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (_, _) => MallErrorState(
+      title: "We couldn't load your conversations",
+      body: 'Check your connection and try again.',
+      onRetry: () => ref.invalidate(assistantConversationsProvider),
+    ),
+    data: (list) => list.items.isEmpty
+        ? MallEmptyState(
+            icon: Icons.auto_awesome_outlined,
+            eyebrow: 'Personal shopping',
+            title: 'Minty is your shopping assistant',
+            body:
+                'Describe an occasion, a budget or a gap in your '
+                'wardrobe. Minty suggests — you decide what goes in '
+                'your bag.',
+            actionLabel: 'Start a conversation',
+            onAction: () => context.push(RouteNames.assistantNewConversation),
+          )
+        : ListView.separated(
+            key: listKey,
+            padding: const EdgeInsets.fromLTRB(
+              DesignTokens.s16,
+              DesignTokens.s12,
+              DesignTokens.s16,
+              DesignTokens.s48 + DesignTokens.s32,
+            ),
+            itemCount: list.items.length,
+            separatorBuilder: (_, _) => const SizedBox(height: DesignTokens.s8),
+            itemBuilder: (context, index) =>
+                _ConversationRow(summary: list.items[index]),
+          ),
+  );
 }
 
 class _ConversationRow extends StatelessWidget {
