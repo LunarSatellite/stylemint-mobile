@@ -1,14 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_video_thumbnail_plus/flutter_video_thumbnail_plus.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_feed_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_search_field.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_suggestions_panel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/discover_providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:video_player/video_player.dart';
 
 /// The Discover tab: a search box with live suggestions over a chip-driven,
 /// curated feed. Submitting opens `/search-results`.
@@ -28,6 +34,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   final FocusNode _focusNode = FocusNode();
   bool _searching = false;
   bool _headerCollapsed = false;
+  bool _visualSearching = false;
 
   @override
   void initState() {
@@ -87,6 +94,164 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     );
   }
 
+  Future<void> _startVisualSearch() async {
+    final source = await showModalBottomSheet<_VisualSource>(
+      context: context,
+      backgroundColor: const Color(0xFF181C19),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Search what you see',
+                style: DesignTokens.sectionInnerTitle,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Use a photo or a short video. StyleMint samples the video '
+                'and finds matching products.',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _PhotoSourceButton(
+                      icon: Icons.photo_camera_rounded,
+                      label: 'Take photo',
+                      onTap: () => Navigator.pop(
+                        sheetContext,
+                        _VisualSource.camera,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _PhotoSourceButton(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Choose photo',
+                      onTap: () => Navigator.pop(
+                        sheetContext,
+                        _VisualSource.gallery,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _PhotoSourceButton(
+                icon: Icons.video_library_rounded,
+                label: 'Understand a video',
+                onTap: () => Navigator.pop(sheetContext, _VisualSource.video),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    setState(() => _visualSearching = true);
+    try {
+      final dataUris = source == _VisualSource.video
+          ? await _pickVideoFrames()
+          : await _pickPhoto(source);
+      if (dataUris.isEmpty || !mounted) return;
+      final results = await ref
+          .read(customerSearchRemoteDataSourceProvider)
+          .searchMultimodal(
+            dataUris,
+            query: _controller.text.trim(),
+          );
+      if (!mounted) return;
+      await context.push(
+        '${RouteNames.searchResults}?visual=1',
+        extra: results,
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      final message = error is FormatException
+          ? error.message
+          : 'Visual search is unavailable right now. Please try again.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _visualSearching = false);
+    }
+  }
+
+  Future<List<String>> _pickPhoto(_VisualSource source) async {
+    final photo = await ImagePicker().pickImage(
+      source: source == _VisualSource.camera
+          ? ImageSource.camera
+          : ImageSource.gallery,
+      imageQuality: 72,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (photo == null) return const [];
+    final bytes = await photo.readAsBytes();
+    if (bytes.length > 5 * 1024 * 1024) {
+      throw const FormatException('Please choose an image smaller than 5 MB.');
+    }
+    final extension = photo.name.toLowerCase().split('.').last;
+    final mime = extension == 'png'
+        ? 'image/png'
+        : extension == 'webp'
+        ? 'image/webp'
+        : 'image/jpeg';
+    return ['data:$mime;base64,${base64Encode(bytes)}'];
+  }
+
+  Future<List<String>> _pickVideoFrames() async {
+    final video = await ImagePicker().pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(seconds: 30),
+    );
+    if (video == null) return const [];
+    final controller = VideoPlayerController.file(File(video.path));
+    try {
+      await controller.initialize();
+      final durationMs = controller.value.duration.inMilliseconds;
+      if (durationMs <= 0) {
+        throw const FormatException('This video could not be read.');
+      }
+      final moments = <int>{
+        0,
+        durationMs ~/ 2,
+        (durationMs * 0.9).round(),
+      };
+      final frames = <String>[];
+      for (final timeMs in moments) {
+        final bytes = await FlutterVideoThumbnailPlus.thumbnailData(
+          video: video.path,
+          imageFormat: ImageFormat.jpeg,
+          maxWidth: 1280,
+          quality: 70,
+          timeMs: timeMs,
+        );
+        if (bytes != null && bytes.isNotEmpty) {
+          frames.add('data:image/jpeg;base64,${base64Encode(bytes)}');
+        }
+      }
+      if (frames.isEmpty) {
+        throw const FormatException(
+          'No readable frames were found in this video.',
+        );
+      }
+      return frames;
+    } finally {
+      await controller.dispose();
+    }
+  }
+
   void _open(String location) {
     final typed = _controller.text.trim();
     if (typed.isNotEmpty) {
@@ -121,6 +286,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       ..listen(searchSuggestNotifierProvider, (_, _) {})
       // Reads saved searches up front so they're ready on first focus.
       ..listen(recentSearchesProvider, (_, _) {});
+
+    final visualSearchAvailable =
+        ref.watch(visualSearchCapabilityProvider).asData?.value ?? false;
 
     return PopScope(
       canPop: !_searching,
@@ -160,6 +328,32 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                         onClear: _clear,
                       ),
                     ),
+                    if (visualSearchAvailable) const SizedBox(width: 8),
+                    if (visualSearchAvailable)
+                      Semantics(
+                        button: true,
+                        label: 'Search with a photo',
+                        child: IconButton.filledTonal(
+                          key: const ValueKey('discover-visual-search'),
+                          tooltip: 'Search with a photo',
+                          onPressed: _visualSearching
+                              ? null
+                              : _startVisualSearch,
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                            backgroundColor: const Color(0x2432D477),
+                            foregroundColor: DesignTokens.primaryGreen,
+                          ),
+                          icon: _visualSearching
+                              ? const SizedBox.square(
+                                  dimension: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.center_focus_strong_rounded),
+                        ),
+                      ),
                     if (_searching)
                       TextButton(
                         key: const ValueKey('discover-search-cancel'),
@@ -393,3 +587,42 @@ class _DiscoveryOrb extends StatelessWidget {
     );
   }
 }
+
+class _PhotoSourceButton extends StatelessWidget {
+  const _PhotoSourceButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: const Color(0x1832D477),
+    borderRadius: BorderRadius.circular(18),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        child: Column(
+          children: [
+            Icon(icon, color: DesignTokens.primaryGreen, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textWhite,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+enum _VisualSource { camera, gallery, video }

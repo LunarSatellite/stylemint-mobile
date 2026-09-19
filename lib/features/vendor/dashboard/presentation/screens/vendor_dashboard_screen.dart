@@ -6,6 +6,8 @@ import 'package:stylemint_mobile_frontend/core/utils/format_date.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/activity/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/vendor_dashboard.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/domain/entities/store_digital_twin.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/digital_twin_scenario_button.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/presentation/widgets/vendor_more_menu_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/dashboard/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
@@ -92,6 +94,7 @@ class _VendorDashboardScreenState extends ConsumerState<VendorDashboardScreen> {
                 ref.read(vendorDashboardNotifierProvider.notifier).load();
                 ref.read(vendorPendingActionsNotifierProvider.notifier).load();
                 ref.invalidate(storeActionCountProvider);
+                ref.invalidate(storeDigitalTwinProvider);
               },
             ),
             loadFailure: (_) => SmErrorView(
@@ -156,6 +159,8 @@ class _DashboardContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: DesignTokens.s12),
+            _buildStorePulse(),
+            const SizedBox(height: DesignTokens.s16),
             _buildRevenueCard(),
             const SizedBox(height: DesignTokens.s16),
             _buildAlertCards(context),
@@ -170,6 +175,18 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
+  Widget _buildStorePulse() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final twin = ref.watch(storeDigitalTwinProvider);
+        return twin.when(
+          loading: () => const _StorePulseSkeleton(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (snapshot) => _StorePulseCard(snapshot: snapshot),
+        );
+      },
+    );
+  }
   // ── Revenue card ────────────────────────────────────────────────────────────
 
   static String? _formatDelta(double? pct) {
@@ -885,6 +902,263 @@ class _ActivityTile extends StatelessWidget {
   }
 }
 
+class _StorePulseCard extends StatelessWidget {
+  const _StorePulseCard({required this.snapshot});
+
+  final StoreDigitalTwin snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final needsAttention =
+        snapshot.outOfStockProductCount + snapshot.lowStockVariantCount;
+    final healthy = needsAttention == 0;
+    final updated = snapshot.generatedUtc.millisecondsSinceEpoch == 0
+        ? 'Live now'
+        : 'Updated ${DateFormat.jm().format(snapshot.generatedUtc.toLocal())}';
+
+    return Semantics(
+      container: true,
+      label:
+          'Live store pulse. ${snapshot.activeProductCount} active products, '
+          '${snapshot.totalUnitsOnHand} units on hand, '
+          '${snapshot.unitsSoldLast7Days} units sold in seven days, '
+          '$needsAttention inventory alerts.',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(DesignTokens.s16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF14261F), Color(0xFF10201D), Color(0xFF171A22)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+          border: Border.all(color: const Color(0x3547D7A1)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2600C781),
+              blurRadius: 24,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0x1F47D7A1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.monitor_heart_outlined,
+                    color: DesignTokens.primaryGreen,
+                    size: 21,
+                  ),
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'STORE PULSE',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.primaryGreen,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        healthy
+                            ? 'Everything is moving smoothly'
+                            : '$needsAttention items need your attention',
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: healthy
+                        ? const Color(0x1F47D7A1)
+                        : const Color(0x24FFB547),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    updated,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: healthy
+                          ? DesignTokens.primaryGreen
+                          : const Color(0xFFFFC56E),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            Row(
+              children: [
+                Expanded(
+                  child: _PulseMetric(
+                    value: snapshot.totalUnitsOnHand,
+                    label: 'Units on hand',
+                  ),
+                ),
+                const _PulseDivider(),
+                Expanded(
+                  child: _PulseMetric(
+                    value: snapshot.unitsSoldLast7Days,
+                    label: 'Sold · 7 days',
+                  ),
+                ),
+                const _PulseDivider(),
+                Expanded(
+                  child: _PulseMetric(
+                    value: snapshot.activeProductCount,
+                    label: 'Live products',
+                  ),
+                ),
+              ],
+            ),
+            if (snapshot.activeFlashSaleCount > 0 || needsAttention > 0) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (snapshot.activeFlashSaleCount > 0)
+                    _PulseSignal(
+                      icon: Icons.bolt_rounded,
+                      text:
+                          '${snapshot.activeFlashSaleCount} flash sale${snapshot.activeFlashSaleCount == 1 ? '' : 's'} live',
+                      color: const Color(0xFFFFC56E),
+                    ),
+                  if (snapshot.lowStockVariantCount > 0)
+                    _PulseSignal(
+                      icon: Icons.trending_down_rounded,
+                      text: '${snapshot.lowStockVariantCount} low stock',
+                      color: const Color(0xFFFFC56E),
+                    ),
+                  if (snapshot.outOfStockProductCount > 0)
+                    _PulseSignal(
+                      icon: Icons.error_outline_rounded,
+                      text: '${snapshot.outOfStockProductCount} out of stock',
+                      color: const Color(0xFFFF7B7B),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 14),
+            const DigitalTwinScenarioButton(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PulseMetric extends StatelessWidget {
+  const _PulseMetric({required this.value, required this.label});
+  final int value;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(
+        value.toString(),
+        style: DesignTokens.mediumSemibold.copyWith(fontSize: 21),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        label,
+        textAlign: TextAlign.center,
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textMuted,
+          fontSize: 10,
+        ),
+      ),
+    ],
+  );
+}
+
+class _PulseDivider extends StatelessWidget {
+  const _PulseDivider();
+  @override
+  Widget build(BuildContext context) =>
+      Container(width: 1, height: 34, color: const Color(0x22FFFFFF));
+}
+
+class _PulseSignal extends StatelessWidget {
+  const _PulseSignal({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+  final IconData icon;
+  final String text;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .10),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: DesignTokens.smallRegular.copyWith(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _StorePulseSkeleton extends StatelessWidget {
+  const _StorePulseSkeleton();
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 138,
+    decoration: BoxDecoration(
+      color: const Color(0xFF171A22),
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+      border: Border.all(color: const Color(0x18FFFFFF)),
+    ),
+    alignment: Alignment.center,
+    child: const SizedBox(
+      width: 22,
+      height: 22,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: DesignTokens.primaryGreen,
+      ),
+    ),
+  );
+}
 // ── Data models ───────────────────────────────────────────────────────────────
 
 class _Alert {

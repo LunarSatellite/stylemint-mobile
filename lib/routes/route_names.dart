@@ -38,6 +38,9 @@ abstract class RouteNames {
   static const searchTrending = '/trending-products';
   static const searchCategory = '/browse-category/:categoryId';
   static const missionShopping = '/mission-shopping';
+  static const outcomeContracts = '/outcome-promises';
+  static const lifecycleSteward = '/wardrobe-life';
+  static const agentNegotiations = '/agent-negotiations';
   static const reelsFeed = '/reels';
   static const reelDetail = '/reels/:reelId';
   static const reelComments = '/reels/:reelId/comments';
@@ -193,6 +196,7 @@ abstract class RouteNames {
   static const vendorCampaignBriefs = '/vendor/briefs';
   static const vendorCreateCampaign = '/vendor/briefs/new';
   static const vendorCampaignBriefDetail = '/vendor/briefs/:briefId';
+  static const vendorCampaignWorkspace = '/vendor/briefs/:briefId/workspace';
   static const vendorMatchmaking = '/vendor/matchmaking';
   static const vendorEarnings = '/vendor/earnings';
   static const vendorEarningsPayout = '/vendor/earnings/payout';
@@ -276,7 +280,8 @@ abstract class RouteNames {
   static const creatorSupportContact = '/creator/support/contact';
   static const creatorActivity = '/creator/activity';
   static const creatorAnalytics = '/creator/analytics';
-  static const creatorReelAnalyticsDetail = '/creator/analytics/reel-detail/:reelId';
+  static const creatorReelAnalyticsDetail =
+      '/creator/analytics/reel-detail/:reelId';
   static const creatorFullAnalyticsReport = '/creator/analytics/full-report';
   static const creatorSearch = '/creator/search';
 }

@@ -11,6 +11,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/widgets/product_reels_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/domain/entities/review.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/notifiers/reviews_notifier.dart';
@@ -32,6 +34,7 @@ class InStoreProductScreen extends ConsumerStatefulWidget {
     required this.productId,
     this.storeId,
     this.code,
+    this.via = CodeScanVia.qr,
     this.storeName,
     this.storeCity,
     super.key,
@@ -42,6 +45,7 @@ class InStoreProductScreen extends ConsumerStatefulWidget {
 
   /// The code that was scanned, when opened from one.
   final String? code;
+  final CodeScanVia via;
   final String? storeName;
   final String? storeCity;
 
@@ -99,17 +103,19 @@ class _InStoreProductScreenState extends ConsumerState<InStoreProductScreen> {
     }
     if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!mounted) return;
-    if (!await ensureProfile(context, ref, [ProfileField.shippingAddress])) {
-      return;
-    }
-    if (!mounted) return;
-    final added = await ref
-        .read(productDetailNotifierProvider(widget.productId).notifier)
-        .addToCart(
-          productId: product.id,
-          qty: 1,
-          variantId: _variantFor(product),
-        );
+    final code = widget.code?.trim();
+    final added = code != null && code.isNotEmpty
+        ? (await ref
+                  .read(inStoreRepositoryProvider)
+                  .addScannedProductToCart(code, widget.via))
+              .isRight()
+        : await ref
+              .read(productDetailNotifierProvider(widget.productId).notifier)
+              .addToCart(
+                productId: product.id,
+                qty: 1,
+                variantId: _variantFor(product),
+              );
     if (!mounted) return;
     if (!added) {
       SmSnackbar.error(context, "Couldn't add this item. Please try again.");
@@ -117,7 +123,12 @@ class _InStoreProductScreenState extends ConsumerState<InStoreProductScreen> {
     }
     // The cart keeps its own copy; refresh it, as the product page does.
     unawaited(ref.read(cartNotifierProvider.notifier).fetchCart());
-    SmSnackbar.success(context, 'Added to cart');
+    SmSnackbar.success(
+      context,
+      'Added to your shared cart',
+      actionLabel: 'View cart',
+      onAction: () => context.push(RouteNames.cart),
+    );
   }
 
   Future<void> _toggleSave(ProductDetail product) async {

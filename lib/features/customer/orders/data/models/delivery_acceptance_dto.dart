@@ -15,6 +15,9 @@ class DeliveryAcceptanceDto {
     this.sealIntact,
     this.issueNote,
     this.recordedUtc,
+    this.itemsVerified = false,
+    this.trackingCodeScanned = false,
+    this.receivedItems = const <DeliveryReceivedItemCheck>[],
   });
 
   factory DeliveryAcceptanceDto.fromJson(Map<String, dynamic> json) =>
@@ -31,6 +34,9 @@ class DeliveryAcceptanceDto {
         recordedUtc: json['recordedUtc'] is String
             ? DateTime.tryParse(json['recordedUtc'] as String)
             : null,
+        itemsVerified: json['itemsVerified'] == true,
+        trackingCodeScanned: json['trackingCodeScanned'] == true,
+        receivedItems: _receivedItems(json['receivedItems']),
       );
 
   final String id;
@@ -41,6 +47,9 @@ class DeliveryAcceptanceDto {
   final String? issueNote;
   final List<String> photoUrls;
   final DateTime? recordedUtc;
+  final bool itemsVerified;
+  final bool trackingCodeScanned;
+  final List<DeliveryReceivedItemCheck> receivedItems;
 
   DeliveryAcceptance toDomain() => DeliveryAcceptance(
     id: id,
@@ -51,6 +60,9 @@ class DeliveryAcceptanceDto {
     issueNote: issueNote,
     photoUrls: photoUrls,
     recordedUtc: recordedUtc,
+    itemsVerified: itemsVerified,
+    trackingCodeScanned: trackingCodeScanned,
+    receivedItems: receivedItems,
   );
 }
 
@@ -83,12 +95,21 @@ Map<String, dynamic> recordDeliveryAcceptanceBody({
   required DeliveryAcceptanceOutcome outcome,
   bool? sealIntact,
   String? issueNote,
+  List<DeliveryReceivedItemInput> receivedItems =
+      const <DeliveryReceivedItemInput>[],
+  String? scannedTrackingCode,
 }) {
   final note = issueNote?.trim() ?? '';
   return <String, dynamic>{
     'outcome': outcome.value,
     'sealIntact': ?sealIntact,
     if (note.isNotEmpty) 'issueNote': note,
+    if (receivedItems.isNotEmpty)
+      'receivedItems': receivedItems
+          .map((e) => e.toJson())
+          .toList(growable: false),
+    if (scannedTrackingCode?.trim().isNotEmpty ?? false)
+      'scannedTrackingCode': scannedTrackingCode!.trim(),
   };
 }
 
@@ -130,6 +151,27 @@ Object? _normalizeEnum(Object? raw) {
         trimmed.toLowerCase().replaceAll(RegExp(r'[\s_\-]'), '');
   }
   return null;
+}
+
+List<DeliveryReceivedItemCheck> _receivedItems(Object? raw) {
+  if (raw is! List) return const <DeliveryReceivedItemCheck>[];
+  return raw
+      .whereType<Map<Object?, Object?>>()
+      .map((entry) {
+        final json = Map<String, dynamic>.from(entry);
+        return DeliveryReceivedItemCheck(
+          subOrderLineId: _string(json['subOrderLineId']),
+          productTitle: _string(json['productTitle']),
+          expectedQuantity: (json['expectedQuantity'] as num?)?.toInt() ?? 0,
+          receivedQuantity: (json['receivedQuantity'] as num?)?.toInt() ?? 0,
+          condition: _string(json['condition']),
+          batchOrLotCode: _blankToNull(json['batchOrLotCode']),
+          expiryDate: json['expiryDate'] is String
+              ? DateTime.tryParse(json['expiryDate'] as String)
+              : null,
+        );
+      })
+      .toList(growable: false);
 }
 
 String _string(Object? raw) => raw is String ? raw.trim() : '';

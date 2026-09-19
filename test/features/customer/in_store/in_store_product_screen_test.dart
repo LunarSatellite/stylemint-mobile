@@ -46,6 +46,9 @@ class _FakeInStoreRepository implements InStoreRepository {
     String vendorAccountId, {
     String? cursor,
   }) async => right((products: const <StoreProduct>[], nextCursor: null));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 const _product = ProductDetail(

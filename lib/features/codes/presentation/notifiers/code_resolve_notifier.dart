@@ -70,7 +70,7 @@ class CodeResolveNotifier extends StateNotifier<CodeResolveState> {
           ? const CodeNotActive()
           : CodeResolveFailed(failure),
       (resolved) {
-        final target = codeTargetFor(resolved);
+        final target = codeTargetFor(resolved, via: _via);
         return target == null
             ? const CodeNotActive()
             : CodeResolved(resolved, target);

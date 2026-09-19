@@ -95,7 +95,20 @@ class MemoryVaultRemoteDataSource {
 
   /// The export document, pretty-printed for sharing.
   Future<String> export() async {
-    final json = await apiClient.get('$_base/memories/export');
+    final json = await apiClient.get('$_base/memories/portable-twin');
     return const JsonEncoder.withIndent('  ').convert(json);
+  }
+
+  Future<Map<String, dynamic>> importPortableTwin(String bundleJson) async {
+    final decoded = jsonDecode(bundleJson);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('The private twin payload is invalid.');
+    }
+    return await apiClient.post(
+          '$_base/memories/portable-twin/import',
+          data: decoded,
+          options: _mutation(),
+        )
+        as Map<String, dynamic>;
   }
 }

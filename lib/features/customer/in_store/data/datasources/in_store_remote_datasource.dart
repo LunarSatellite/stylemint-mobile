@@ -1,5 +1,7 @@
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
+import 'package:dio/dio.dart' show Options;
 import 'package:stylemint_mobile_frontend/core/network/json_read.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/models/product_reel_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/models/store_product_dto.dart';
 
@@ -27,6 +29,23 @@ class InStoreRemoteDataSource {
       queryParameters: <String, dynamic>{'pageSize': pageSize},
     );
     return ProductReelDto.listFromPage(response);
+  }
+
+  Future<void> addScannedProductToCart({
+    required String code,
+    required CodeScanVia via,
+    required String idempotencyKey,
+  }) async {
+    await apiClient.post(
+      '/v1/omnichannel/codes/${Uri.encodeComponent(code)}/cart',
+      data: <String, dynamic>{'via': via.wireName, 'quantity': 1},
+      options: Options(
+        headers: <String, dynamic>{
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
+    );
   }
 
   /// `GET /v1/public/vendors/{vendorAccountId}/products?cursor=&pageSize=` —

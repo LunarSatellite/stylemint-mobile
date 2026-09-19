@@ -81,6 +81,28 @@ void main() {
       expect(r.timeline[1].occurredUtc, isNull);
     });
 
+    test('higher-price replacement exposes verified payment status', () {
+      final r = CustomerReturnDto.fromJson({
+        'id': 'exchange-1',
+        'submittedUtc': '2026-09-17T10:00:00Z',
+        'state': 4,
+        'resolution': 2,
+        'replacementUnitPriceAmount': 1600,
+        'replacementUnitPriceCurrency': 'NPR',
+        'replacementPriceDifferenceAmount': 400,
+        'replacementState': 7,
+        'replacementPaymentStatus': 'Failed',
+      }).toDomain();
+
+      expect(r.resolution, CustomerReturnResolution.replacement);
+      expect(
+        r.replacementState,
+        CustomerReplacementState.awaitingBalancePayment,
+      );
+      expect(r.replacementPaymentStatus, 'Failed');
+      expect(r.replacementPriceDifferenceAmount, 400);
+    });
+
     test('unknown return state ints never throw', () {
       final r = CustomerReturnDto.fromJson({
         'id': 'x',

@@ -73,6 +73,13 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     String? rejectionNote,
     @Default(<ReturnTimelineEntryDto>[]) List<ReturnTimelineEntryDto> timeline,
     String? refundStatus,
+    @Default(1) int resolution,
+    String? replacementVariantId,
+    double? replacementUnitPriceAmount,
+    String? replacementUnitPriceCurrency,
+    double? replacementPriceDifferenceAmount,
+    @Default(0) int replacementState,
+    String? replacementPaymentStatus,
   }) = _CustomerReturnDto;
 
   const CustomerReturnDto._();
@@ -99,6 +106,17 @@ abstract class CustomerReturnDto with _$CustomerReturnDto {
     rejectionNote: rejectionNote,
     timeline: timeline.map((e) => e.toDomain()).toList(growable: false),
     refundStatus: refundStatus,
+    resolution: CustomerReturnResolution.fromCode(resolution),
+    replacementVariantId: replacementVariantId,
+    replacementUnitPrice: replacementUnitPriceAmount == null
+        ? null
+        : Money(
+            amount: replacementUnitPriceAmount!,
+            currency: replacementUnitPriceCurrency ?? 'NPR',
+          ),
+    replacementPriceDifferenceAmount: replacementPriceDifferenceAmount,
+    replacementState: CustomerReplacementState.fromCode(replacementState),
+    replacementPaymentStatus: replacementPaymentStatus,
   );
 }
 

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart' show Either;
+import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_return_request.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_warranty_workspace.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/shared/widgets/vendor_bottom_nav.dart';
@@ -95,7 +99,7 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -225,6 +229,8 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
               Tab(text: 'In Transit(${inTransit.length})'),
               Tab(text: 'Shipped(${shipped.length})'),
               Tab(text: 'Completed(${completed.length})'),
+              const Tab(text: 'Returns'),
+              const Tab(text: 'Warranty'),
             ],
           ),
         ),
@@ -266,6 +272,8 @@ class _VendorOrdersScreenState extends ConsumerState<VendorOrdersScreen>
               _OrderList(orders: inTransit),
               _OrderList(orders: shipped),
               _OrderList(orders: completed),
+              const _VendorReturnsWorkspace(),
+              const VendorWarrantyWorkspace(),
             ],
           ),
         ),
@@ -1112,6 +1120,346 @@ class _DotSep extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFF71717B),
         shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _VendorReturnsWorkspace extends ConsumerStatefulWidget {
+  const _VendorReturnsWorkspace();
+
+  @override
+  ConsumerState<_VendorReturnsWorkspace> createState() =>
+      _VendorReturnsWorkspaceState();
+}
+
+class _VendorReturnsWorkspaceState
+    extends ConsumerState<_VendorReturnsWorkspace> {
+  String? _busyId;
+
+  Future<void> _approve(VendorReturnRequest request) async {
+    await _mutate(
+      request,
+      () => ref.read(vendorOrdersRepositoryProvider).acceptReturn(request.id),
+      'Return approved. Ask the customer to send the item back.',
+    );
+  }
+
+  Future<void> _reject(VendorReturnRequest request) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignTokens.surfaceRaised,
+        title: const Text('Why can’t this return be accepted?'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 500,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Give the customer a clear reason',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isNotEmpty) Navigator.pop(context, value);
+            },
+            child: const Text('Reject return'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (reason == null || !mounted) return;
+    await _mutate(
+      request,
+      () => ref
+          .read(vendorOrdersRepositoryProvider)
+          .rejectReturn(request.id, reason),
+      'Return rejected with the reason shared to the customer.',
+    );
+  }
+
+  Future<void> _complete(VendorReturnRequest request) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignTokens.surfaceRaised,
+        icon: const Icon(
+          Icons.inventory_2_outlined,
+          color: DesignTokens.primaryGreen,
+        ),
+        title: const Text('Item received and checked?'),
+        content: const Text(
+          'Confirm only after the returned item is physically received. '
+          'This completes the return and starts the customer’s exact refund.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Not yet'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm & refund'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _mutate(
+      request,
+      () => ref.read(vendorOrdersRepositoryProvider).completeReturn(request.id),
+      'Return completed. The refund has been started.',
+    );
+  }
+
+  Future<void> _mutate(
+    VendorReturnRequest request,
+    Future<Either<NetworkExceptions, VendorReturnRequest>> Function() operation,
+    String successMessage,
+  ) async {
+    if (_busyId != null) return;
+    setState(() => _busyId = request.id);
+    final result = await operation();
+    if (!mounted) return;
+    var message = successMessage;
+    result.fold(
+      (_) => message = 'Could not update this return. Please try again.',
+      (_) => ref.invalidate(vendorReturnsProvider),
+    );
+    setState(() => _busyId = null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final returns = ref.watch(vendorReturnsProvider);
+    return RefreshIndicator(
+      color: DesignTokens.primaryGreen,
+      onRefresh: () async {
+        ref.invalidate(vendorReturnsProvider);
+        await ref.read(vendorReturnsProvider.future);
+      },
+      child: returns.when(
+        loading: () => ListView(
+          physics: AlwaysScrollableScrollPhysics(),
+          children: [SizedBox(height: 300, child: SmPageLoader())],
+        ),
+        error: (_, _) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(32),
+          children: [
+            const Icon(Icons.error_outline, color: DesignTokens.textMuted),
+            const SizedBox(height: 12),
+            const Text(
+              'Could not load returns.',
+              textAlign: TextAlign.center,
+            ),
+            TextButton(
+              onPressed: () => ref.invalidate(vendorReturnsProvider),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+        data: (result) => result.fold(
+          (_) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(32),
+            children: const [
+              Text('Could not load returns.', textAlign: TextAlign.center),
+            ],
+          ),
+          (page) {
+            if (page.items.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(32),
+                children: const [
+                  Icon(
+                    Icons.assignment_turned_in_outlined,
+                    size: 52,
+                    color: DesignTokens.primaryGreen,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No returns need attention',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            }
+            return ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(DesignTokens.s16),
+              itemCount: page.items.length + 1,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: DesignTokens.s12),
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${page.totalCount} return${page.totalCount == 1 ? '' : 's'} · '
+                      'review evidence, then confirm only after receipt.',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  );
+                }
+                final request = page.items[index - 1];
+                return _VendorReturnCard(
+                  request: request,
+                  busy: _busyId == request.id,
+                  onApprove: () => _approve(request),
+                  onReject: () => _reject(request),
+                  onComplete: () => _complete(request),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _VendorReturnCard extends StatelessWidget {
+  const _VendorReturnCard({
+    required this.request,
+    required this.busy,
+    required this.onApprove,
+    required this.onReject,
+    required this.onComplete,
+  });
+
+  final VendorReturnRequest request;
+  final bool busy;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  final VoidCallback onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (request.state) {
+      VendorReturnRequestState.submitted => (
+        'Needs review',
+        DesignTokens.warning500,
+      ),
+      VendorReturnRequestState.approved => (
+        'Awaiting return',
+        DesignTokens.primaryGreen,
+      ),
+      VendorReturnRequestState.rejected => (
+        'Rejected',
+        DesignTokens.colorError,
+      ),
+      VendorReturnRequestState.completed => (
+        'Refund started',
+        DesignTokens.primaryGreen,
+      ),
+    };
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: DesignTokens.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  request.productTitleSnapshot,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: DesignTokens.mediumSemibold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  label,
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${request.orderNumber} · Qty ${request.quantity}'
+            '${request.variantLabelSnapshot == null ? '' : ' · ${request.variantLabelSnapshot}'}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(request.reason, style: DesignTokens.smallRegular),
+          if (request.rejectionNote != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              request.rejectionNote!,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.colorError,
+              ),
+            ),
+          ],
+          if (request.state == VendorReturnRequestState.submitted) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : onReject,
+                    child: const Text('Reject'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: busy ? null : onApprove,
+                    child: Text(busy ? 'Working…' : 'Approve'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (request.state == VendorReturnRequestState.approved) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: busy ? null : onComplete,
+                icon: busy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.verified_outlined),
+                label: const Text('Received · complete & refund'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

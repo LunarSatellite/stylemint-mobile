@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
-import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/entities/checkout.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/notifiers/checkout_notifier.dart';
@@ -70,12 +69,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           // provider's webhook (not this client) is what actually marks
           // the order paid, so this is a best-effort hand-off, not a wait
           // for confirmation.
-          final placed = ref.read(checkoutNotifierProvider.notifier).lastPlaceOrderResult;
+          final placed = ref
+              .read(checkoutNotifierProvider.notifier)
+              .lastPlaceOrderResult;
           final redirectUrl = placed?.paymentRedirectUrl;
           final paymentPending = placed?.requiresPaymentAction == true;
           if (paymentPending && redirectUrl != null && redirectUrl.isNotEmpty) {
             try {
-              await launchUrl(Uri.parse(redirectUrl), mode: LaunchMode.inAppBrowserView);
+              await launchUrl(
+                Uri.parse(redirectUrl),
+                mode: LaunchMode.inAppBrowserView,
+              );
             } catch (_) {
               // No browser available / malformed URL — fall through to the
               // order screen anyway; the order exists and is visible in
@@ -106,8 +110,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       appBar: AppBar(
         backgroundColor: DesignTokens.bgAppFoundation,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
         title: const Text('Checkout', style: DesignTokens.sectionInnerTitle),
@@ -126,6 +132,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             orElse: () => false,
           );
           final selectedPayment = _selectedPayment ?? summary.paymentMethod;
+          final deliveryChoice = summary.selectedDeliveryChoice;
+          final isPickup =
+              deliveryChoice?.kind == DeliveryChoiceKind.pickupFromSeller;
 
           return Column(
             children: [
@@ -133,16 +142,30 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(DesignTokens.s16),
                   children: [
-                    // ── Shipping address ───────────────────────────────
-                    _ShippingAddressCard(
-                      address: effectiveAddress,
-                      hasAddress: hasAddress,
-                      onAddAddress: () => unawaited(_openAddAddress(context)),
-                      onChangeAddress: () =>
-                          _showPickAddressSheet(context, summary),
+                    _DeliveryChoiceCard(
+                      choices: summary.deliveryChoices,
+                      selected: deliveryChoice,
+                      pickupNote: summary.pickupNote,
+                      preferences: summary.deliveryPreference,
+                      consolidation: summary.deliveryConsolidation,
+                      onPreferenceChanged: (preference) => ref
+                          .read(checkoutNotifierProvider.notifier)
+                          .updateDeliveryPreference(preference),
+                      onSelect: (choice) => ref
+                          .read(checkoutNotifierProvider.notifier)
+                          .selectDeliveryChoice(choice),
                     ),
                     const SizedBox(height: DesignTokens.s16),
-
+                    if (!isPickup) ...[
+                      _ShippingAddressCard(
+                        address: effectiveAddress,
+                        hasAddress: hasAddress || isPickup,
+                        onAddAddress: () => unawaited(_openAddAddress(context)),
+                        onChangeAddress: () =>
+                            _showPickAddressSheet(context, summary),
+                      ),
+                      const SizedBox(height: DesignTokens.s16),
+                    ],
                     // ── Bill details ticket card ───────────────────────
                     _BillTicketCard(
                       summary: summary,
@@ -152,8 +175,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     const SizedBox(height: DesignTokens.s24),
 
                     // ── Payment method list ────────────────────────────
-                    Text('Payment Method',
-                        style: DesignTokens.sectionInnerTitle),
+                    Text(
+                      'Payment Method',
+                      style: DesignTokens.sectionInnerTitle,
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _PaymentMethodList(
                       availableMethods: _buildPaymentMethods(summary),
@@ -166,15 +191,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
               _BottomBar(
-                hasAddress: hasAddress,
+                hasAddress: hasAddress || isPickup,
                 isProcessing: isProcessing,
                 onAddAddress: () => unawaited(_openAddAddress(context)),
                 onPlaceOrder: () {
-                  ref.read(checkoutNotifierProvider.notifier).placeOrder(
-                    addressId: effectiveAddress.id,
-                    paymentMethod: selectedPayment.type,
-                    idempotencyKey: _uuid.v4(),
-                  );
+                  ref
+                      .read(checkoutNotifierProvider.notifier)
+                      .placeOrder(
+                        addressId: isPickup ? null : effectiveAddress.id,
+                        paymentMethod: selectedPayment.type,
+                        idempotencyKey: _uuid.v4(),
+                      );
                 },
               ),
             ],
@@ -267,8 +294,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: DesignTokens.s16),
             Text(
               'Placing your order...',
-              style: DesignTokens.mediumRegular
-                  .copyWith(color: DesignTokens.textMuted),
+              style: DesignTokens.mediumRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
             ),
           ],
         ],
@@ -317,8 +345,10 @@ class _ShippingAddressCard extends StatelessWidget {
                 color: DesignTokens.primaryGreenLight,
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
               ),
-              child: const Icon(Icons.location_on_outlined,
-                  color: DesignTokens.primaryGreen),
+              child: const Icon(
+                Icons.location_on_outlined,
+                color: DesignTokens.primaryGreen,
+              ),
             ),
             const SizedBox(width: DesignTokens.s12),
             Expanded(
@@ -329,23 +359,28 @@ class _ShippingAddressCard extends StatelessWidget {
                     children: [
                       Text(
                         address.label,
-                        style: DesignTokens.oneLinerSemibold
-                            .copyWith(color: DesignTokens.textWhite),
+                        style: DesignTokens.oneLinerSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                       if (address.isDefault) ...[
                         const SizedBox(width: DesignTokens.s8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: DesignTokens.s8, vertical: 2),
+                            horizontal: DesignTokens.s8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: DesignTokens.primaryGreenLight,
                             borderRadius: BorderRadius.circular(
-                                DesignTokens.buttonRadius),
+                              DesignTokens.buttonRadius,
+                            ),
                           ),
                           child: Text(
                             'Default',
-                            style: DesignTokens.tiny
-                                .copyWith(color: DesignTokens.primaryGreen),
+                            style: DesignTokens.tiny.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
                           ),
                         ),
                       ],
@@ -354,14 +389,17 @@ class _ShippingAddressCard extends StatelessWidget {
                   const SizedBox(height: DesignTokens.s4),
                   Text(
                     addressLine.toString(),
-                    style: DesignTokens.smallRegular
-                        .copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: DesignTokens.iconLight),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: DesignTokens.iconLight,
+            ),
           ],
         ),
       ),
@@ -378,7 +416,9 @@ class _NoAddressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-          vertical: DesignTokens.s12, horizontal: DesignTokens.s16),
+        vertical: DesignTokens.s12,
+        horizontal: DesignTokens.s16,
+      ),
       decoration: BoxDecoration(
         color: DesignTokens.bgAppBody,
         borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
@@ -392,8 +432,11 @@ class _NoAddressCard extends StatelessWidget {
               color: const Color(0xFF3A2F03),
               borderRadius: BorderRadius.circular(DesignTokens.s8),
             ),
-            child: const Icon(Icons.local_shipping_outlined,
-                size: 28, color: DesignTokens.secondaryYellow),
+            child: const Icon(
+              Icons.local_shipping_outlined,
+              size: 28,
+              color: DesignTokens.secondaryYellow,
+            ),
           ),
           const SizedBox(width: DesignTokens.s12),
           Expanded(
@@ -432,8 +475,11 @@ class _NoAddressCard extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.add_rounded,
-                  size: 20, color: DesignTokens.textWhite),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 20,
+                color: DesignTokens.textWhite,
+              ),
             ),
           ),
         ],
@@ -586,8 +632,11 @@ class _BillTicketCard extends StatelessWidget {
                     color: const Color(0xFFE53935),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.favorite,
-                      size: 22, color: Colors.white),
+                  child: const Icon(
+                    Icons.favorite,
+                    size: 22,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -652,16 +701,16 @@ class _BillRow extends StatelessWidget {
             label,
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textWhite,
-              decoration:
-              labelUnderline ? TextDecoration.underline : TextDecoration.none,
+              decoration: labelUnderline
+                  ? TextDecoration.underline
+                  : TextDecoration.none,
               decorationColor: DesignTokens.textWhite,
             ),
           ),
         ),
         if (valueBadge != null)
           Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: DesignTokens.tagInfoFill,
               borderRadius: BorderRadius.circular(999),
@@ -799,12 +848,12 @@ class _PaymentMethodList extends StatelessWidget {
             children: [
               InkWell(
                 onTap: () => onSelect(method),
-                borderRadius:
-                BorderRadius.circular(DesignTokens.cardRadius),
+                borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.s16,
-                      vertical: DesignTokens.s12),
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s12,
+                  ),
                   child: Row(
                     children: [
                       _PaymentIcon(type: method.type),
@@ -815,13 +864,15 @@ class _PaymentMethodList extends StatelessWidget {
                           children: [
                             Text(
                               method.label,
-                              style: DesignTokens.oneLinerSemibold
-                                  .copyWith(color: DesignTokens.textWhite),
+                              style: DesignTokens.oneLinerSemibold.copyWith(
+                                color: DesignTokens.textWhite,
+                              ),
                             ),
                             Text(
                               _subtitleFor(method),
                               style: DesignTokens.smallRegular.copyWith(
-                                  color: DesignTokens.textMuted),
+                                color: DesignTokens.textMuted,
+                              ),
                             ),
                           ],
                         ),
@@ -859,6 +910,264 @@ class _PaymentMethodList extends StatelessWidget {
   }
 }
 
+class _DeliveryChoiceCard extends StatelessWidget {
+  const _DeliveryChoiceCard({
+    required this.choices,
+    required this.selected,
+    required this.pickupNote,
+    required this.preferences,
+    required this.consolidation,
+    required this.onPreferenceChanged,
+    required this.onSelect,
+  });
+  final List<DeliveryChoice> choices;
+  final DeliveryChoice? selected;
+  final String? pickupNote;
+  final DeliveryPreference preferences;
+  final DeliveryConsolidationPlan? consolidation;
+  final ValueChanged<DeliveryPreference> onPreferenceChanged;
+  final ValueChanged<DeliveryChoice> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (choices.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      decoration: BoxDecoration(
+        color: DesignTokens.bgAppBody,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: DesignTokens.borderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'How you’ll get it',
+            style: DesignTokens.sectionInnerTitle,
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          const Text(
+            'Choose the handoff that fits this basket.',
+            style: TextStyle(color: DesignTokens.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          for (final choice in choices) ...[
+            InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => onSelect(choice),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.all(DesignTokens.s12),
+                decoration: BoxDecoration(
+                  color: choice.selected
+                      ? DesignTokens.primaryGreen.withValues(alpha: 0.10)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: choice.selected
+                        ? DesignTokens.primaryGreen
+                        : DesignTokens.borderDefault,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      choice.kind == DeliveryChoiceKind.pickupFromSeller
+                          ? Icons.storefront_rounded
+                          : Icons.local_shipping_outlined,
+                      color: choice.selected
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
+                    ),
+                    const SizedBox(width: DesignTokens.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  choice.title,
+                                  style: const TextStyle(
+                                    color: DesignTokens.textWhite,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              if (choice.recommended)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: DesignTokens.primaryGreen.withValues(
+                                      alpha: 0.16,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    'Recommended',
+                                    style: TextStyle(
+                                      color: DesignTokens.primaryGreen,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            choice.detail,
+                            style: const TextStyle(
+                              color: DesignTokens.textMuted,
+                              fontSize: 12,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      choice.selected
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_off_rounded,
+                      color: choice.selected
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s8),
+          ],
+          if (consolidation != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(DesignTokens.s12),
+              decoration: BoxDecoration(
+                color: DesignTokens.textWhite.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.inventory_2_outlined,
+                    color: DesignTokens.primaryGreen,
+                    size: 20,
+                  ),
+                  const SizedBox(width: DesignTokens.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${consolidation!.sellerPackages} seller '
+                          '${consolidation!.sellerPackages == 1 ? 'package' : 'packages'}',
+                          style: const TextStyle(
+                            color: DesignTokens.textWhite,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          consolidation!.explanation,
+                          style: const TextStyle(
+                            color: DesignTokens.textMuted,
+                            fontSize: 11,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: DesignTokens.s4),
+          ],
+          const Divider(height: 24, color: DesignTokens.borderDefault),
+          const Text(
+            'Delivery preferences',
+            style: TextStyle(
+              color: DesignTokens.textWhite,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Prefer fewer deliveries',
+              style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+            ),
+            subtitle: const Text(
+              'Group items from the same seller when possible',
+              style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+            ),
+            value: preferences.preferFewerDeliveries,
+            activeTrackColor: DesignTokens.primaryGreen,
+            onChanged: (value) => onPreferenceChanged(
+              preferences.copyWith(preferFewerDeliveries: value),
+            ),
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Prefer pickup',
+              style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+            ),
+            subtitle: const Text(
+              'Recommend seller pickup when it is available',
+              style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+            ),
+            value: preferences.preferPickup,
+            activeTrackColor: DesignTokens.primaryGreen,
+            onChanged: (value) => onPreferenceChanged(
+              preferences.copyWith(preferPickup: value),
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s4),
+          const Text(
+            'Extra wait allowed for grouping',
+            style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          Wrap(
+            spacing: DesignTokens.s8,
+            children: [0, 2, 5, 7, 14]
+                .map(
+                  (days) => ChoiceChip(
+                    label: Text(days == 0 ? 'None' : '$days days'),
+                    selected: preferences.maximumExtraWaitDays == days,
+                    onSelected: (_) => onPreferenceChanged(
+                      preferences.copyWith(maximumExtraWaitDays: days),
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          if (pickupNote != null && pickupNote!.isNotEmpty)
+            Text(
+              pickupNote!,
+              style: const TextStyle(
+                color: DesignTokens.textMuted,
+                fontSize: 11,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── BOTTOM BAR ───────────────────────────────────────────────────────────────
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
@@ -876,12 +1185,17 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(DesignTokens.s16,
-          DesignTokens.s12, DesignTokens.s16, DesignTokens.s16),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        DesignTokens.s16,
+      ),
       decoration: const BoxDecoration(
         color: DesignTokens.bgAppBody,
         border: Border(
-            top: BorderSide(color: DesignTokens.borderDefault, width: 1)),
+          top: BorderSide(color: DesignTokens.borderDefault, width: 1),
+        ),
       ),
       child: SafeArea(
         child: hasAddress ? _placeOrderRow() : _addAddressButton(),
@@ -899,7 +1213,8 @@ class _BottomBar extends StatelessWidget {
           foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26)),
+            borderRadius: BorderRadius.circular(26),
+          ),
         ),
         onPressed: onAddAddress,
         child: const Row(
@@ -915,7 +1230,11 @@ class _BottomBar extends StatelessWidget {
               ),
             ),
             SizedBox(width: 6),
-            Icon(Icons.add_rounded, size: 20, color: DesignTokens.buttonPrimaryText),
+            Icon(
+              Icons.add_rounded,
+              size: 20,
+              color: DesignTokens.buttonPrimaryText,
+            ),
           ],
         ),
       ),
@@ -968,53 +1287,55 @@ class _CartItemsSheet extends StatelessWidget {
       maxChildSize: 0.92,
       builder: (_, controller) => SafeArea(
         child: Column(
-        children: [
-          // Handle bar
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DesignTokens.borderDefault,
-                borderRadius: BorderRadius.circular(2),
+          children: [
+            // Handle bar
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: DesignTokens.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Your Cart Items(${summary.items.length})',
-                  style: DesignTokens.sectionInnerTitle,
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close,
-                      color: DesignTokens.textWhite, size: 22),
-                ),
-              ],
-            ),
-          ),
-          // Item list
-          Expanded(
-            child: ListView.separated(
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              itemCount: summary.items.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                thickness: 1,
-                color: DesignTokens.borderDefault,
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Your Cart Items(${summary.items.length})',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.close,
+                      color: DesignTokens.textWhite,
+                      size: 22,
+                    ),
+                  ),
+                ],
               ),
-              itemBuilder: (_, i) =>
-                  _CartItemRow(item: summary.items[i]),
             ),
-          ),
-        ],
+            // Item list
+            Expanded(
+              child: ListView.separated(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                itemCount: summary.items.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: DesignTokens.borderDefault,
+                ),
+                itemBuilder: (_, i) => _CartItemRow(item: summary.items[i]),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1045,8 +1366,11 @@ class _CartItemRow extends StatelessWidget {
                 width: 64,
                 height: 64,
                 color: DesignTokens.bgAppBodyLight,
-                child: const Icon(Icons.image_not_supported_outlined,
-                    color: DesignTokens.iconLight, size: 22),
+                child: const Icon(
+                  Icons.image_not_supported_outlined,
+                  color: DesignTokens.iconLight,
+                  size: 22,
+                ),
               ),
             ),
           ),
@@ -1070,7 +1394,9 @@ class _CartItemRow extends StatelessWidget {
                 Text(
                   item.variantName,
                   style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted, fontSize: 12),
+                    color: DesignTokens.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 // "From: @handle (commission%)" — derived from variantName
@@ -1078,7 +1404,9 @@ class _CartItemRow extends StatelessWidget {
                 Text(
                   'From: ${item.variantName}',
                   style: DesignTokens.smallRegular.copyWith(
-                      color: DesignTokens.textMuted, fontSize: 11),
+                    color: DesignTokens.textMuted,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -1092,7 +1420,9 @@ class _CartItemRow extends StatelessWidget {
               // Qty pill badge
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 4),
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A3A5C),
                   borderRadius: BorderRadius.circular(999),
@@ -1142,68 +1472,80 @@ class _PickAddressSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Choose a Shipping Address',
-                  style: DesignTokens.sectionInnerTitle),
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.close,
-                    color: DesignTokens.textWhite, size: 22),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Choose a Shipping Address',
+                  style: DesignTokens.sectionInnerTitle,
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(
+                    Icons.close,
+                    color: DesignTokens.textWhite,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
 
-          // All saved addresses — tapping one selects it and closes the sheet
-          ...addresses.map((addr) => Padding(
+            // All saved addresses — tapping one selects it and closes the sheet
+            ...addresses.map(
+              (addr) => Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: _AddressPickerRow(
                   address: addr,
                   isSelected: addr.id == selectedAddress.id,
                   onTap: () => onSelect(addr),
                 ),
-              )),
-
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            height: DesignTokens.buttonHeight,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DesignTokens.primaryGreen,
-                foregroundColor: Colors.black,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26)),
-              ),
-              onPressed: onAddNew,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Add New Shipping Address',
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.buttonPrimaryText,
-                    ),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.add_rounded, size: 20, color: DesignTokens.buttonPrimaryText),
-                ],
               ),
             ),
-          ),
-        ],
-      ),
+
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: DesignTokens.buttonHeight,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DesignTokens.primaryGreen,
+                  foregroundColor: Colors.black,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                ),
+                onPressed: onAddNew,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Add New Shipping Address',
+                      style: TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: DesignTokens.buttonPrimaryText,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(
+                      Icons.add_rounded,
+                      size: 20,
+                      color: DesignTokens.buttonPrimaryText,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1237,8 +1579,11 @@ class _AddressPickerRow extends StatelessWidget {
               color: DesignTokens.bgAppBodyLight,
               borderRadius: BorderRadius.circular(DesignTokens.s8),
             ),
-            child: const Icon(Icons.location_on_outlined,
-                color: DesignTokens.textMuted, size: 20),
+            child: const Icon(
+              Icons.location_on_outlined,
+              color: DesignTokens.textMuted,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1249,14 +1594,17 @@ class _AddressPickerRow extends StatelessWidget {
                   children: [
                     Text(
                       address.label,
-                      style: DesignTokens.oneLinerSemibold
-                          .copyWith(color: DesignTokens.textWhite),
+                      style: DesignTokens.oneLinerSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
                     ),
                     if (isSelected) ...[
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1A3A5C),
                           borderRadius: BorderRadius.circular(999),
@@ -1326,10 +1674,14 @@ class _ScallopPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, radius),
-        Paint()..color = topColor);
-    canvas.drawRect(Rect.fromLTWH(0, radius, size.width, radius),
-        Paint()..color = stubColor);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, radius),
+      Paint()..color = topColor,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, radius, size.width, radius),
+      Paint()..color = stubColor,
+    );
     final holePaint = Paint()
       ..color = holeColor
       ..style = PaintingStyle.fill;
@@ -1343,7 +1695,7 @@ class _ScallopPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ScallopPainter old) =>
       old.topColor != topColor ||
-          old.stubColor != stubColor ||
-          old.holeColor != holeColor ||
-          old.radius != radius;
+      old.stubColor != stubColor ||
+      old.holeColor != holeColor ||
+      old.radius != radius;
 }

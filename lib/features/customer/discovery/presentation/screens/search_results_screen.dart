@@ -13,12 +13,18 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_l
 
 // ─── SEARCH RESULTS SCREEN ────────────────────────────────────────────────────
 class SearchResultsScreen extends ConsumerStatefulWidget {
-  const SearchResultsScreen({super.key, required this.query});
+  const SearchResultsScreen({
+    super.key,
+    required this.query,
+    this.initialResults,
+  });
 
   final String query;
+  final CustomerSearchResults? initialResults;
 
   @override
-  ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
+  ConsumerState<SearchResultsScreen> createState() =>
+      _SearchResultsScreenState();
 }
 
 class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
@@ -39,7 +45,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(customerSearchResultsProvider(widget.query));
+    final async = widget.initialResults == null
+        ? ref.watch(customerSearchResultsProvider(widget.query))
+        : AsyncValue<CustomerSearchResults>.data(widget.initialResults!);
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -47,11 +55,16 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: DesignTokens.textWhite),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: DesignTokens.textWhite,
+          ),
           onPressed: () => context.popOrHome(),
         ),
-        title: const Text('Search Results', style: DesignTokens.sectionInnerTitle),
+        title: const Text(
+          'Search Results',
+          style: DesignTokens.sectionInnerTitle,
+        ),
         centerTitle: false,
       ),
       body: async.when(
@@ -59,7 +72,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
         error: (_, _) => Center(
           child: Text(
             'Could not load search results.',
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
           ),
         ),
         data: (results) => Column(
@@ -68,13 +83,41 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Text(
-                'Showing ${results.totalHits} results for "${widget.query}"',
+                widget.initialResults == null
+                    ? 'Showing ${results.totalHits} results for "${widget.query}"'
+                    : '${results.totalHits} visual matches from your photo',
                 style: DesignTokens.smallRegular.copyWith(
                   color: DesignTokens.textMuted,
                   fontSize: 13,
                 ),
               ),
             ),
+            if (results.queryUnderstanding case final understanding?)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 16,
+                      color: DesignTokens.primaryGreen,
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        'Understood as: $understanding',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             TabBar(
               controller: _tabController,
               isScrollable: false,
@@ -87,7 +130,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen>
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
-              unselectedLabelStyle: DesignTokens.smallRegular.copyWith(fontSize: 14),
+              unselectedLabelStyle: DesignTokens.smallRegular.copyWith(
+                fontSize: 14,
+              ),
               tabs: const [
                 Tab(text: 'Products'),
                 Tab(text: 'Creators'),
@@ -120,15 +165,17 @@ class _EmptyTabMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
-          ),
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: DesignTokens.smallRegular.copyWith(
+          color: DesignTokens.textMuted,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 // ─── PRODUCTS TAB ─────────────────────────────────────────────────────────────
@@ -260,6 +307,32 @@ class _ProductResultTile extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (product.matchReason case final reason?) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: 13,
+                            color: DesignTokens.primaryGreen,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              reason,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: DesignTokens.smallRegular.copyWith(
+                                color: DesignTokens.textMuted,
+                                fontSize: 11,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (disclosure != null) ...[
                       const SizedBox(height: 2),
                       SponsoredBadge(
@@ -298,6 +371,7 @@ String searchProductSemanticsLabel(SearchResultProduct product) => [
   '${product.currency} ${product.price.toStringAsFixed(0)}',
   if (product.averageRating > 0)
     'Rated ${product.averageRating.toStringAsFixed(1)} stars',
+  ?product.matchReason,
 ].join('. ');
 
 // ─── CREATORS TAB ─────────────────────────────────────────────────────────────
@@ -381,8 +455,11 @@ class _ReelThumbnail extends StatelessWidget {
             left: 8,
             child: Row(
               children: [
-                const Icon(Icons.remove_red_eye_outlined,
-                    size: 14, color: Colors.white70),
+                const Icon(
+                  Icons.remove_red_eye_outlined,
+                  size: 14,
+                  color: Colors.white70,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _formatCount(reel.viewCount),
@@ -436,7 +513,9 @@ class _BrandResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = brand.name.trim().isEmpty ? '?' : brand.name.trim()[0].toUpperCase();
+    final initial = brand.name.trim().isEmpty
+        ? '?'
+        : brand.name.trim()[0].toUpperCase();
     // Opens the brand's storefront (brandId is the vendor account id).
     return InkWell(
       onTap: brand.brandId.isEmpty
@@ -448,62 +527,71 @@ class _BrandResultTile extends StatelessWidget {
               ),
             ),
       child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Row(
-        children: [
-          ClipOval(
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: (brand.logoUrl?.isNotEmpty ?? false)
-                  ? Image.network(brand.logoUrl!, fit: BoxFit.cover,
-                      errorBuilder: (_, _e, _s) => _BrandInitial(initial))
-                  : _BrandInitial(initial),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            ClipOval(
+              child: SizedBox(
+                width: 52,
+                height: 52,
+                child: (brand.logoUrl?.isNotEmpty ?? false)
+                    ? Image.network(
+                        brand.logoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _e, _s) => _BrandInitial(initial),
+                      )
+                    : _BrandInitial(initial),
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  brand.name,
-                  style: DesignTokens.mediumSemibold.copyWith(
-                    color: DesignTokens.textWhite,
-                    fontSize: 15,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    brand.name,
+                    style: DesignTokens.mediumSemibold.copyWith(
+                      color: DesignTokens.textWhite,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                if (brand.averageRating > 0)
-                  Row(
-                    children: [
-                      const Icon(Icons.star_rounded,
-                          size: 14, color: DesignTokens.secondaryYellow),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${brand.averageRating.toStringAsFixed(1)} Stars',
-                        style: DesignTokens.smallRegular.copyWith(
-                          color: DesignTokens.textMuted,
-                          fontSize: 12,
+                  const SizedBox(height: 3),
+                  if (brand.averageRating > 0)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: DesignTokens.secondaryYellow,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 3),
+                        Text(
+                          '${brand.averageRating.toStringAsFixed(1)} Stars',
+                          style: DesignTokens.smallRegular.copyWith(
+                            color: DesignTokens.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${brand.productCount} Products',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: const Color(0xFF4FC3F7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                const SizedBox(height: 3),
-                Text(
-                  '${brand.productCount} Products',
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: const Color(0xFF4FC3F7),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: DesignTokens.iconLight),
-        ],
-      ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: DesignTokens.iconLight,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -515,16 +603,16 @@ class _BrandInitial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-        color: DesignTokens.bgAppBodyLight,
-        child: Center(
-          child: Text(
-            initial,
-            style: const TextStyle(
-              color: DesignTokens.textWhite,
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-            ),
-          ),
+    color: DesignTokens.bgAppBodyLight,
+    child: Center(
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: DesignTokens.textWhite,
+          fontWeight: FontWeight.w900,
+          fontSize: 20,
         ),
-      );
+      ),
+    ),
+  );
 }

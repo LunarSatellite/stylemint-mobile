@@ -34,6 +34,9 @@ class _FakeInStoreRepository implements InStoreRepository {
   Future<Either<NetworkExceptions, List<ProductReel>>> getProductReels(
     String productId,
   ) async => right(const []);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 List<StoreProduct> _products(int from, int count) => [

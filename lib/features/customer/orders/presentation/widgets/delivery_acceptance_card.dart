@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/parcel_code_scan_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -15,9 +17,14 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 /// answer read-only. Renders nothing while checking, before the parcel is
 /// out for delivery, or when a check fails.
 class DeliveryAcceptanceCard extends ConsumerStatefulWidget {
-  const DeliveryAcceptanceCard({required this.trackingNumber, super.key});
+  const DeliveryAcceptanceCard({
+    required this.trackingNumber,
+    this.items = const <OrderDetailItem>[],
+    super.key,
+  });
 
   final String trackingNumber;
+  final List<OrderDetailItem> items;
 
   @override
   ConsumerState<DeliveryAcceptanceCard> createState() =>
@@ -29,6 +36,24 @@ class _DeliveryAcceptanceCardState
   final _note = TextEditingController();
   DeliveryAcceptanceOutcome? _outcome;
   bool? _sealIntact;
+  late List<DeliveryReceivedItemInput> _items;
+  String? _scannedTrackingCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = widget.items
+        .where((item) => item.id.trim().isNotEmpty)
+        .map(
+          (item) => DeliveryReceivedItemInput(
+            subOrderLineId: item.id,
+            productTitle: item.productName,
+            expectedQuantity: item.qty,
+            receivedQuantity: item.qty,
+          ),
+        )
+        .toList(growable: false);
+  }
 
   @override
   void dispose() {
@@ -72,12 +97,20 @@ class _DeliveryAcceptanceCardState
     final sending = asking.sending;
     final sealBroken = asking.hasSeal && _sealIntact == false;
     final outcome = _outcome;
-    final problem = deliveryAcceptanceProblem(
+    final acceptanceProblem = deliveryAcceptanceProblem(
       outcome: outcome,
       hasSeal: asking.hasSeal,
       sealIntact: _sealIntact,
       issueNote: _note.text,
+      receivedItems: _items,
     );
+    final scanMismatch =
+        _scannedTrackingCode != null &&
+        _scannedTrackingCode!.toLowerCase() !=
+            widget.trackingNumber.toLowerCase();
+    final problem = scanMismatch
+        ? 'That label belongs to another parcel. Scan this parcel again.'
+        : acceptanceProblem;
 
     void choose(DeliveryAcceptanceOutcome value) =>
         setState(() => _outcome = value);
@@ -103,6 +136,73 @@ class _DeliveryAcceptanceCardState
             color: DesignTokens.textMuted,
           ),
         ),
+        const SizedBox(height: DesignTokens.s16),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: DesignTokens.primaryGreen.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(DesignTokens.s12),
+            border: Border.all(
+              color: (_scannedTrackingCode == null || scanMismatch)
+                  ? DesignTokens.borderDefault
+                  : DesignTokens.primaryGreen.withValues(alpha: .55),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(DesignTokens.s12),
+            child: Row(
+              children: [
+                Icon(
+                  _scannedTrackingCode == null
+                      ? Icons.qr_code_scanner_rounded
+                      : scanMismatch
+                      ? Icons.error_outline_rounded
+                      : Icons.verified_rounded,
+                  color: scanMismatch
+                      ? DesignTokens.colorError
+                      : DesignTokens.primaryGreen,
+                ),
+                const SizedBox(width: DesignTokens.s12),
+                Expanded(
+                  child: Text(
+                    _scannedTrackingCode == null
+                        ? 'Scan the parcel label to verify this handover.'
+                        : scanMismatch
+                        ? 'This code does not match your parcel.'
+                        : 'Parcel label verified',
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textLight,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: sending ? null : _scanParcel,
+                  child: Text(_scannedTrackingCode == null ? 'Scan' : 'Rescan'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_items.isNotEmpty) ...[
+          const SizedBox(height: DesignTokens.s16),
+          Text('Check what arrived', style: _labelStyle),
+          const SizedBox(height: DesignTokens.s4),
+          Text(
+            'Confirm quantity and condition for every order item.',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          for (var index = 0; index < _items.length; index++)
+            _ReceivedItemEditor(
+              key: ValueKey(_items[index].subOrderLineId),
+              item: _items[index],
+              enabled: !sending,
+              onChanged: (value) => setState(() => _items[index] = value),
+              onDetails: () => _editItemDetails(index),
+            ),
+        ],
         if (asking.hasSeal) ...[
           const SizedBox(height: DesignTokens.s16),
           Text('Was the seal intact?', style: _labelStyle),
@@ -214,6 +314,8 @@ class _DeliveryAcceptanceCardState
                       outcome: outcome,
                       sealIntact: _sealIntact,
                       issueNote: _note.text,
+                      receivedItems: _items,
+                      scannedTrackingCode: _scannedTrackingCode,
                     )
                   : null,
               style: DesignTokens.primaryButtonStyle(),
@@ -224,9 +326,194 @@ class _DeliveryAcceptanceCardState
     );
   }
 
+  Future<void> _scanParcel() async {
+    final code = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => ParcelCodeScanScreen(
+          expectedTrackingNumber: widget.trackingNumber,
+        ),
+      ),
+    );
+    if (mounted && code != null) setState(() => _scannedTrackingCode = code);
+  }
+
+  Future<void> _editItemDetails(int index) async {
+    final item = _items[index];
+    final batch = TextEditingController(text: item.batchOrLotCode ?? '');
+    var expiry = item.expiryDate;
+    final saved = await showDialog<DeliveryReceivedItemInput>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(item.productTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: batch,
+                maxLength: 80,
+                decoration: const InputDecoration(
+                  labelText: 'Batch or lot code (optional)',
+                ),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Expiry date (optional)'),
+                subtitle: Text(
+                  expiry == null
+                      ? 'Not recorded'
+                      : DateFormat('MMM d, yyyy').format(expiry!),
+                ),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate:
+                        expiry ?? DateTime.now().add(const Duration(days: 30)),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (picked != null) setDialogState(() => expiry = picked);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                item.copyWith(
+                  batchOrLotCode: batch.text.trim(),
+                  clearBatch: batch.text.trim().isEmpty,
+                  expiryDate: expiry,
+                  clearExpiry: expiry == null,
+                ),
+              ),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    batch.dispose();
+    if (mounted && saved != null) setState(() => _items[index] = saved);
+  }
+
   static final TextStyle _labelStyle = DesignTokens.mediumSemibold.copyWith(
     color: DesignTokens.textWhite,
     fontSize: 14,
+  );
+}
+
+class _ReceivedItemEditor extends StatelessWidget {
+  const _ReceivedItemEditor({
+    required this.item,
+    required this.enabled,
+    required this.onChanged,
+    required this.onDetails,
+    super.key,
+  });
+
+  final DeliveryReceivedItemInput item;
+  final bool enabled;
+  final ValueChanged<DeliveryReceivedItemInput> onChanged;
+  final VoidCallback onDetails;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: DesignTokens.s8),
+    padding: const EdgeInsets.all(DesignTokens.s12),
+    decoration: BoxDecoration(
+      color: DesignTokens.surfaceRaised,
+      borderRadius: BorderRadius.circular(DesignTokens.s12),
+      border: Border.all(color: DesignTokens.borderDefault),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.productTitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: DesignTokens.mediumSemibold.copyWith(
+            color: DesignTokens.textWhite,
+          ),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        Row(
+          children: [
+            Text(
+              'Received',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+            const SizedBox(width: DesignTokens.s8),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: enabled && item.receivedQuantity > 0
+                  ? () => onChanged(
+                      item.copyWith(
+                        receivedQuantity: item.receivedQuantity - 1,
+                      ),
+                    )
+                  : null,
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+            Text(
+              '${item.receivedQuantity} / ${item.expectedQuantity}',
+              style: DesignTokens.mediumSemibold,
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              onPressed: enabled
+                  ? () => onChanged(
+                      item.copyWith(
+                        receivedQuantity: item.receivedQuantity + 1,
+                      ),
+                    )
+                  : null,
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+            const Spacer(),
+            PopupMenuButton<String>(
+              enabled: enabled,
+              initialValue: item.condition,
+              onSelected: (condition) =>
+                  onChanged(item.copyWith(condition: condition)),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'Good', child: Text('Good')),
+                PopupMenuItem(value: 'Damaged', child: Text('Damaged')),
+                PopupMenuItem(value: 'WrongItem', child: Text('Wrong item')),
+                PopupMenuItem(value: 'Missing', child: Text('Missing')),
+                PopupMenuItem(value: 'Expired', child: Text('Expired')),
+              ],
+              child: Chip(
+                label: Text(
+                  item.condition == 'WrongItem' ? 'Wrong item' : item.condition,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: enabled ? onDetails : null,
+            icon: const Icon(Icons.fact_check_outlined, size: 17),
+            label: Text(
+              item.batchOrLotCode == null && item.expiryDate == null
+                  ? 'Add batch / expiry'
+                  : 'Batch / expiry added',
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -394,6 +681,27 @@ class _RecordedAnswer extends StatelessWidget {
             ),
           ],
         ),
+        if (acceptance.trackingCodeScanned || acceptance.itemsVerified) ...[
+          const SizedBox(height: DesignTokens.s8),
+          Wrap(
+            spacing: DesignTokens.s8,
+            runSpacing: DesignTokens.s8,
+            children: [
+              if (acceptance.trackingCodeScanned)
+                const Chip(
+                  avatar: Icon(Icons.qr_code_2_rounded, size: 17),
+                  label: Text('Label scanned'),
+                ),
+              if (acceptance.itemsVerified)
+                Chip(
+                  avatar: const Icon(Icons.fact_check_outlined, size: 17),
+                  label: Text(
+                    '${acceptance.receivedItems.length} items checked',
+                  ),
+                ),
+            ],
+          ),
+        ],
         if (acceptance.sealIntact != null) ...[
           const SizedBox(height: DesignTokens.s4),
           Text(

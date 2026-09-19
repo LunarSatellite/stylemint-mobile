@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/domain/entities/creator_performance.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/creator_performance/presentation/widgets/growth_quality_panel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -71,6 +71,7 @@ class _CreatorPerformanceScreenState
       body: Column(
         children: [
           _buildFilterChips(),
+          GrowthQualityPanel(days: _windowApiMap[_metric] ?? 30),
           Expanded(
             child: state.when(
               initial: _loader,

@@ -54,6 +54,11 @@ class CareItemDto {
     this.returnWindowClosesUtc,
     this.daysLeftToReturn,
     this.trackingNumber,
+    this.warrantyEligible = false,
+    this.hasOpenWarrantyClaim = false,
+    this.warrantyCoverageDays,
+    this.warrantyEndsUtc,
+    this.warrantyTerms,
   });
 
   factory CareItemDto.fromJson(Map<String, dynamic> json) => CareItemDto(
@@ -68,6 +73,11 @@ class CareItemDto {
     returnWindowClosesUtc: _parseDate(json['returnWindowClosesUtc']),
     daysLeftToReturn: _parseInt(json['daysLeftToReturn']),
     trackingNumber: _nonEmpty(json['trackingNumber']),
+    warrantyEligible: json['warrantyEligible'] == true,
+    hasOpenWarrantyClaim: json['hasOpenWarrantyClaim'] == true,
+    warrantyCoverageDays: _parseInt(json['warrantyCoverageDays']),
+    warrantyEndsUtc: _parseDate(json['warrantyEndsUtc']),
+    warrantyTerms: _nonEmpty(json['warrantyTerms']),
     actions: parseCareActions(json['actions']),
     guidance: json['guidance']?.toString() ?? '',
   );
@@ -83,6 +93,11 @@ class CareItemDto {
   final DateTime? returnWindowClosesUtc;
   final int? daysLeftToReturn;
   final String? trackingNumber;
+  final bool warrantyEligible;
+  final bool hasOpenWarrantyClaim;
+  final int? warrantyCoverageDays;
+  final DateTime? warrantyEndsUtc;
+  final String? warrantyTerms;
   final List<CareAction> actions;
   final String guidance;
 
@@ -98,6 +113,11 @@ class CareItemDto {
     returnWindowClosesUtc: returnWindowClosesUtc,
     daysLeftToReturn: daysLeftToReturn,
     trackingNumber: trackingNumber,
+    warrantyEligible: warrantyEligible,
+    hasOpenWarrantyClaim: hasOpenWarrantyClaim,
+    warrantyCoverageDays: warrantyCoverageDays,
+    warrantyEndsUtc: warrantyEndsUtc,
+    warrantyTerms: warrantyTerms,
     actions: actions,
     guidance: guidance,
   );
@@ -128,6 +148,8 @@ const _actionsByWireName = <String, CareAction>{
   'review': CareAction.review,
   'reorder': CareAction.reorder,
   'gethelp': CareAction.getHelp,
+  'warrantyclaim': CareAction.warrantyClaim,
+  'warrantystatus': CareAction.warrantyStatus,
 };
 
 /// `CareStage` from its int value (`2`, `"2"`) or its name in any casing

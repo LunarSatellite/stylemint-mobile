@@ -136,3 +136,10 @@ final customerSearchResultsProvider = FutureProvider.autoDispose
     .family<CustomerSearchResults, String>((ref, query) {
       return ref.watch(customerSearchRemoteDataSourceProvider).search(query);
     });
+
+/// Hides the photo entry point unless the server has a genuine vision adapter.
+final visualSearchCapabilityProvider = FutureProvider.autoDispose<bool>((ref) {
+  return ref
+      .watch(customerSearchRemoteDataSourceProvider)
+      .isVisualSearchAvailable();
+});

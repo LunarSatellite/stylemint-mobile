@@ -1,9 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/customer_returns_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/kathmandu_time.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/orders_load_error_view.dart';
@@ -13,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/shared/provid
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Copy shown while a return has no refund linked (contract §4: always null
 /// today).
@@ -103,6 +108,11 @@ class ReturnDetailScreen extends ConsumerWidget {
     final provider = returnDetailNotifierProvider(returnId);
     final state = ref.watch(provider);
     final notifier = ref.read(provider.notifier);
+    final pickup = ref.watch(returnPickupProvider(returnId)).asData?.value;
+    final replacementShipment = ref
+        .watch(replacementShipmentProvider(returnId))
+        .asData
+        ?.value;
 
     return Scaffold(
       backgroundColor: DesignTokens.bgAppFoundation,
@@ -169,11 +179,27 @@ class ReturnDetailScreen extends ConsumerWidget {
                   label: 'Progress',
                   child: TrackingStepList(steps: stepsFor(r)),
                 ),
+                if (pickup != null) ...[
+                  const SizedBox(height: DesignTokens.s12),
+                  _Section(
+                    label: 'Return pickup',
+                    child: _ReturnPickupCard(pickup: pickup),
+                  ),
+                ],
                 const SizedBox(height: DesignTokens.s12),
-                _Section(
-                  label: 'Refund',
-                  child: _RefundStatus(refundStatus: r.refundStatus),
-                ),
+                if (r.resolution == CustomerReturnResolution.replacement)
+                  _Section(
+                    label: 'Replacement',
+                    child: _ReplacementStatus(
+                      customerReturn: r,
+                      shipment: replacementShipment,
+                    ),
+                  )
+                else
+                  _Section(
+                    label: 'Refund',
+                    child: _RefundStatus(refundStatus: r.refundStatus),
+                  ),
               ],
             ),
           ),
@@ -366,6 +392,77 @@ class _PhotoStrip extends StatelessWidget {
   }
 }
 
+class _ReturnPickupCard extends StatelessWidget {
+  const _ReturnPickupCard({required this.pickup});
+
+  final ReturnPickup pickup;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = pickup.status == ReturnPickupStatus.receivedByVendor;
+    return Semantics(
+      label:
+          'Return pickup ${pickup.status.label}, tracking ${pickup.trackingNumber}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color:
+                      (complete
+                              ? DesignTokens.primaryGreen
+                              : DesignTokens.warning500)
+                          .withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  complete
+                      ? Icons.inventory_2_outlined
+                      : Icons.local_shipping_outlined,
+                  color: complete
+                      ? DesignTokens.primaryGreen
+                      : DesignTokens.warning500,
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pickup.status.label,
+                      style: DesignTokens.mediumSemibold,
+                    ),
+                    Text(
+                      pickup.trackingNumber,
+                      style: DesignTokens.smallDescription.copyWith(
+                        color: DesignTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s12),
+          Text(
+            complete
+                ? 'Your item reached the seller. Refund settlement is shown below.'
+                : 'Pickup from ${pickup.originAddressLine} · returning to ${pickup.destinationAddressLine}',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RefundStatus extends StatelessWidget {
   const _RefundStatus({required this.refundStatus});
 
@@ -395,6 +492,277 @@ class _RefundStatus extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ReplacementStatus extends ConsumerWidget {
+  const _ReplacementStatus({required this.customerReturn, this.shipment});
+
+  final CustomerReturn customerReturn;
+  final ReplacementShipment? shipment;
+
+  Future<void> _payBalance(BuildContext context, WidgetRef ref) async {
+    final method = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: Text('Secure payment', style: DesignTokens.sectionInnerTitle),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dialogContext, 3),
+            child: const ListTile(
+              leading: Icon(Icons.account_balance_wallet_outlined),
+              title: Text('eSewa'),
+              subtitle: Text('Pay the exact replacement balance'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dialogContext, 2),
+            child: const ListTile(
+              leading: Icon(Icons.public_rounded),
+              title: Text('PayPal'),
+              subtitle: Text('Continue securely with PayPal'),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (method == null || !context.mounted) return;
+
+    try {
+      final response = await ref
+          .read(apiClientProvider)
+          .post(
+            '/v1/orders/returns/' + customerReturn.id + '/replacement-payment',
+            data: {'method': method},
+            options: Options(
+              headers: {
+                'requiresToken': true,
+                'Idempotency-Key':
+                    'replacement-' +
+                    customerReturn.id +
+                    '-' +
+                    DateTime.now().millisecondsSinceEpoch.toString(),
+              },
+            ),
+          );
+      final data = response as Map<String, dynamic>;
+      final redirect = data['redirectUrl'] as String?;
+      if (redirect != null && redirect.isNotEmpty) {
+        await launchUrl(
+          Uri.parse(redirect),
+          mode: LaunchMode.inAppBrowserView,
+        );
+      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Payment started. Shipment unlocks only after verified payment.',
+          ),
+        ),
+      );
+      await ref
+          .read(returnDetailNotifierProvider(customerReturn.id).notifier)
+          .refresh();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not start payment. Please try again.'),
+        ),
+      );
+    }
+  }
+
+  String get _stateLabel =>
+      shipment?.status.label ??
+      switch (customerReturn.replacementState) {
+        CustomerReplacementState.inventoryHeld => 'Replacement reserved',
+        CustomerReplacementState.awaitingReturnedItem =>
+          'Waiting for your return',
+        CustomerReplacementState.readyToShip => 'Ready to ship',
+        CustomerReplacementState.shipped => 'Replacement on the way',
+        CustomerReplacementState.delivered => 'Replacement delivered',
+        CustomerReplacementState.cancelled => 'Replacement cancelled',
+        CustomerReplacementState.awaitingBalancePayment =>
+          'Balance payment needed',
+        CustomerReplacementState.none => 'Replacement requested',
+      };
+
+  int get _activeStep {
+    final outbound = shipment?.status;
+    if (outbound == ReplacementShipmentStatus.readyToShip) return 2;
+    if (outbound == ReplacementShipmentStatus.shipped) return 3;
+    if (outbound == ReplacementShipmentStatus.delivered) return 4;
+    if (outbound == ReplacementShipmentStatus.cancelled) return -1;
+    return switch (customerReturn.replacementState) {
+      CustomerReplacementState.none => 0,
+      CustomerReplacementState.inventoryHeld => 0,
+      CustomerReplacementState.awaitingReturnedItem => 1,
+      CustomerReplacementState.readyToShip => 2,
+      CustomerReplacementState.shipped => 3,
+      CustomerReplacementState.delivered => 4,
+      CustomerReplacementState.cancelled => -1,
+      CustomerReplacementState.awaitingBalancePayment => 2,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final difference = customerReturn.replacementPriceDifferenceAmount ?? 0;
+    final differenceRefund = difference < 0 ? difference.abs() : 0.0;
+    final balanceDue = difference > 0 ? difference : 0.0;
+    final currency =
+        customerReturn.replacementUnitPrice?.currency ??
+        customerReturn.product.unitPrice.currency;
+    const labels = ['Reserved', 'Return', 'Ready', 'Shipped', 'Delivered'];
+    final cancelled =
+        customerReturn.replacementState == CustomerReplacementState.cancelled ||
+        shipment?.status == ReplacementShipmentStatus.cancelled;
+
+    return Semantics(
+      label: 'Replacement status $_stateLabel',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color:
+                      (cancelled
+                              ? DesignTokens.colorError
+                              : DesignTokens.primaryGreen)
+                          .withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  cancelled ? Icons.cancel_outlined : Icons.autorenew_rounded,
+                  color: cancelled
+                      ? DesignTokens.colorError
+                      : DesignTokens.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_stateLabel, style: DesignTokens.mediumSemibold),
+                    if (shipment != null)
+                      Text(
+                        shipment!.trackingNumber,
+                        style: DesignTokens.smallDescription.copyWith(
+                          color: DesignTokens.primaryGreen,
+                        ),
+                      ),
+                    if (customerReturn.replacementUnitPrice != null)
+                      Text(
+                        'New item · ' +
+                            formatMoney(customerReturn.replacementUnitPrice!),
+                        style: DesignTokens.smallDescription.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!cancelled) ...[
+            const SizedBox(height: DesignTokens.s16),
+            Row(
+              children: [
+                for (var i = 0; i < labels.length; i++) ...[
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: i <= _activeStep
+                                ? DesignTokens.primaryGreen
+                                : DesignTokens.bgAppBodyLight,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          labels[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignTokens.tiny.copyWith(
+                            color: i <= _activeStep
+                                ? DesignTokens.textWhite
+                                : DesignTokens.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (i < labels.length - 1)
+                    Container(
+                      width: 8,
+                      height: 2,
+                      color: i < _activeStep
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.bgAppBodyLight,
+                    ),
+                ],
+              ],
+            ),
+          ],
+          const SizedBox(height: DesignTokens.s12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(DesignTokens.s12),
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppFoundation,
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
+            ),
+            child: Text(
+              differenceRefund > 0
+                  ? 'You will receive ' +
+                        currency +
+                        ' ' +
+                        differenceRefund.toStringAsFixed(2) +
+                        ' back for the price difference.'
+                  : balanceDue > 0
+                  ? 'Pay only ' +
+                        currency +
+                        ' ' +
+                        balanceDue.toStringAsFixed(2) +
+                        ' before your replacement ships.'
+                  : 'Even exchange · no additional payment or refund needed.',
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
+          ),
+          if (balanceDue > 0 &&
+              customerReturn.replacementPaymentStatus != 'Completed') ...[
+            const SizedBox(height: DesignTokens.s12),
+            FilledButton.icon(
+              onPressed: () => _payBalance(context, ref),
+              icon: const Icon(Icons.lock_outline_rounded),
+              label: Text(
+                customerReturn.replacementPaymentStatus == 'Pending'
+                    ? 'Continue secure payment'
+                    : 'Pay replacement balance',
+              ),
+            ),
+          ],
+          if (differenceRefund > 0) ...[
+            const SizedBox(height: DesignTokens.s12),
+            _RefundStatus(refundStatus: customerReturn.refundStatus),
+          ],
+        ],
+      ),
     );
   }
 }

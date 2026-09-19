@@ -273,6 +273,18 @@ class VendorOrdersRemoteDataSource {
     return response as Map<String, dynamic>;
   }
 
+  /// POST /v1/vendor/returns/{id}/complete — Approved -> Completed and refund.
+  Future<Map<String, dynamic>> completeReturn(
+    String returnRequestId,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.post(
+      '/v1/vendor/returns/$returnRequestId/complete',
+      options: _idempotent(idempotencyKey),
+    );
+    return response as Map<String, dynamic>;
+  }
+
   /// POST /v1/vendor/returns/{id}/reject — Submitted -> Rejected (terminal).
   Future<Map<String, dynamic>> rejectReturn(
     String returnRequestId,

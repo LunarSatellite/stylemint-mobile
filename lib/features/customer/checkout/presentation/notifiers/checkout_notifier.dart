@@ -19,7 +19,8 @@ abstract class PlaceOrderState with _$PlaceOrderState {
   // "NK2026-00001") — every order route is keyed by that, not the internal
   // orderId GUID. See CheckoutRemoteDataSource.placeOrder's doc comment.
   const factory PlaceOrderState.success(String orderId) = _OrderSuccess;
-  const factory PlaceOrderState.failure(NetworkExceptions failure) = _OrderFailure;
+  const factory PlaceOrderState.failure(NetworkExceptions failure) =
+      _OrderFailure;
 }
 
 @freezed
@@ -62,7 +63,9 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
         (summary) => _loadWithSummary(summary),
       );
     } catch (_) {
-      state = const CheckoutState.loadFailure(NetworkExceptions.unexpectedError());
+      state = const CheckoutState.loadFailure(
+        NetworkExceptions.unexpectedError(),
+      );
     }
   }
 
@@ -70,18 +73,30 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
     // Non-fatal — fall back to empty lists on failure.
     final addressesEither = await _repository.getShippingAddresses();
     final methodsEither = await _repository.getPaymentMethods();
+    final deliveryEither = await _repository.getDeliveryChoices();
 
-    final addresses =
-        addressesEither.fold((_) => <ShippingAddress>[], (list) => list);
-    final methods =
-        methodsEither.fold((_) => <PaymentMethod>[], (list) => list);
+    final addresses = addressesEither.fold(
+      (_) => <ShippingAddress>[],
+      (list) => list,
+    );
+    final methods = methodsEither.fold(
+      (_) => <PaymentMethod>[],
+      (list) => list,
+    );
+    final delivery = deliveryEither.fold(
+      (_) => const DeliveryChoices(choices: [], emissionsNote: ''),
+      (value) => value,
+    );
 
     // A fresh checkout session carries no address/payment of its own (see
     // CheckoutSummaryDto.toDomain) — default to the account's default saved
     // one, falling back to the sentinel "none selected" from the session.
     final defaultAddress = addresses.isEmpty
         ? summary.shippingAddress
-        : addresses.firstWhere((a) => a.isDefault, orElse: () => addresses.first);
+        : addresses.firstWhere(
+            (a) => a.isDefault,
+            orElse: () => addresses.first,
+          );
     final defaultMethod = methods.isEmpty
         ? const PaymentMethod(
             id: 'cod',
@@ -97,12 +112,64 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
         paymentMethod: defaultMethod,
         availableAddresses: addresses,
         availablePaymentMethods: methods,
+        deliveryChoices: delivery.choices,
+        emissionsNote: delivery.emissionsNote,
+        pickupNote: delivery.pickupNote,
+        deliveryPreference: delivery.preferences,
+        deliveryConsolidation: delivery.consolidation,
       ),
     );
   }
 
+  Future<void> selectDeliveryChoice(DeliveryChoice choice) async {
+    final summary = state.maybeWhen(
+      loadSuccess: (s, _) => s,
+      orElse: () => null,
+    );
+    if (summary == null || choice.selected) return;
+    final result = await _repository.selectDeliveryChoice(choice);
+    result.fold(
+      (_) {},
+      (_) {
+        final updated = summary.deliveryChoices
+            .map((item) => item.copyWith(selected: identical(item, choice)))
+            .toList(growable: false);
+        state = CheckoutState.loadSuccess(
+          summary.copyWith(deliveryChoices: updated),
+        );
+      },
+    );
+  }
+
+  Future<void> updateDeliveryPreference(DeliveryPreference preference) async {
+    final summary = state.maybeWhen(
+      loadSuccess: (value, _) => value,
+      orElse: () => null,
+    );
+    if (summary == null) return;
+
+    final result = await _repository.updateDeliveryPreference(preference);
+    await result.fold((_) async {}, (saved) async {
+      final refreshed = await _repository.getDeliveryChoices();
+      refreshed.fold(
+        (_) => state = CheckoutState.loadSuccess(
+          summary.copyWith(deliveryPreference: saved),
+        ),
+        (delivery) => state = CheckoutState.loadSuccess(
+          summary.copyWith(
+            deliveryPreference: delivery.preferences,
+            deliveryConsolidation: delivery.consolidation,
+            deliveryChoices: delivery.choices,
+            emissionsNote: delivery.emissionsNote,
+            pickupNote: delivery.pickupNote,
+          ),
+        ),
+      );
+    });
+  }
+
   Future<void> placeOrder({
-    required String addressId,
+    required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {

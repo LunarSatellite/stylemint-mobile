@@ -42,6 +42,10 @@ abstract interface class VendorOrdersRepository {
     String reason,
   );
 
+  Future<Either<NetworkExceptions, VendorReturnRequest>> completeReturn(
+    String returnRequestId,
+  );
+
   /// Vendor §3B single-id "Mark as Shipped".
   Future<Either<NetworkExceptions, VendorOrder>> markReadyToShip(
     String orderId,

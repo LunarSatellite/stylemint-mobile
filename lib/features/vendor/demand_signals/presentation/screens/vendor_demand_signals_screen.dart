@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/domain/entities/demand_signals.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/demand_signals/presentation/widgets/intent_decision_board_panel.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -71,7 +71,7 @@ class VendorDemandSignalsScreen extends ConsumerWidget {
                             ? () => notifier.load(days: windows.last)
                             : null,
                       )
-                    : _SignalsBody(signals: signals),
+                    : _SignalsBody(signals: signals, days: days),
                 loadFailure: (_) => SmErrorView(
                   message: 'Could not load what shoppers searched for.',
                   onRetry: notifier.load,
@@ -141,9 +141,10 @@ class _WindowToggle extends StatelessWidget {
 }
 
 class _SignalsBody extends StatelessWidget {
-  const _SignalsBody({required this.signals});
+  const _SignalsBody({required this.signals, required this.days});
 
   final DemandSignals signals;
+  final int days;
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +185,8 @@ class _SignalsBody extends StatelessWidget {
             queries: signals.topSearches,
             accent: DesignTokens.primaryGreen,
           ),
+        const SizedBox(height: DesignTokens.s24),
+        IntentDecisionBoardPanel(days: days),
         const SizedBox(height: DesignTokens.s16),
         Text(
           'Counts are totals across all shoppers. No personal details are '

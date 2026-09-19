@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain/entities/social_account.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/datasources/in_store_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/models/product_reel_dto.dart';
@@ -95,6 +96,24 @@ void main() {
     expect(reels.map((r) => r.id), ['r-1', 'r-2']);
   });
 
+  test(
+    'scan-to-cart sends authenticated idempotent channel evidence',
+    () async {
+      final api = RecordingApiClient((_) => <String, dynamic>{});
+
+      await InStoreRemoteDataSource(apiClient: api).addScannedProductToCart(
+        code: 'SM-P-01',
+        via: CodeScanVia.nfc,
+        idempotencyKey: 'handoff-1',
+      );
+
+      expect(api.last.method, 'POST');
+      expect(api.last.uri, '/v1/omnichannel/codes/SM-P-01/cart');
+      expect(api.last.data, <String, dynamic>{'via': 'Nfc', 'quantity': 1});
+      expect(api.last.header('requiresToken'), isTrue);
+      expect(api.last.header('Idempotency-Key'), 'handoff-1');
+    },
+  );
   group('InStoreRepositoryImpl', () {
     late _MockRemote remote;
 

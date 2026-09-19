@@ -9,7 +9,9 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 
 abstract interface class OrdersRepository {
   Future<Either<NetworkExceptions, List<TrackedOrder>>> getTrackedOrders({
@@ -38,7 +40,12 @@ abstract interface class OrdersRepository {
     required int quantity,
     required String reason,
     required List<String> photoUrls,
+    ReturnResolutionChoice resolution,
+    String? replacementVariantId,
   });
+
+  Future<Either<NetworkExceptions, List<ReplacementOption>>>
+  getReplacementOptions(String originalVariantId);
 
   /// Buyer tracking timeline, one entry per sub-order (404 -> notFound).
   Future<Either<NetworkExceptions, OrderTimeline>> getOrderTimeline(
@@ -58,8 +65,14 @@ abstract interface class OrdersRepository {
     String filePath,
   );
 
+  Future<Either<NetworkExceptions, bool>> getReplenishmentPreference();
+
+  Future<Either<NetworkExceptions, bool>> setReplenishmentPreference(
+    bool enabled,
+  );
+
   Future<Either<NetworkExceptions, List<ReorderSuggestionDto>>>
-      getReorderSuggestions();
+  getReorderSuggestions();
 
   Future<Either<NetworkExceptions, Unit>> dismissReorderSuggestion(
     String productId,
@@ -72,6 +85,16 @@ abstract interface class OrdersRepository {
   Future<Either<NetworkExceptions, OrderCarePlan>> getOrderCarePlan(
     String orderNumber,
   );
+
+  Future<Either<NetworkExceptions, WarrantyClaim>> submitWarrantyClaim({
+    required String orderNumber,
+    required String subOrderLineId,
+    required WarrantyIssueKind issueKind,
+    required String description,
+    List<String> evidenceUrls = const [],
+  });
+
+  Future<Either<NetworkExceptions, List<WarrantyClaim>>> getWarrantyClaims();
 
   /// State and seal of a StyleMint package (404 -> notFound).
   Future<Either<NetworkExceptions, DeliveryPackageStatus>>
@@ -91,5 +114,8 @@ abstract interface class OrdersRepository {
     required DeliveryAcceptanceOutcome outcome,
     bool? sealIntact,
     String? issueNote,
+    List<DeliveryReceivedItemInput> receivedItems =
+        const <DeliveryReceivedItemInput>[],
+    String? scannedTrackingCode,
   });
 }

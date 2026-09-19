@@ -8,6 +8,9 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/d
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/cancel_order_controller.dart';
@@ -40,7 +43,8 @@ final deliveryRiskProvider = FutureProvider.autoDispose
       try {
         final api = ref.watch(apiClientProvider);
         final response =
-            await api.get('/v1/deliveries/$trackingNumber/risk') as Map<String, dynamic>;
+            await api.get('/v1/deliveries/$trackingNumber/risk')
+                as Map<String, dynamic>;
         return DeliveryRiskAssessment(
           atRisk: response['atRisk'] as bool? ?? false,
           customerMessage: response['customerMessage'] as String? ?? '',
@@ -61,7 +65,8 @@ final packageSealProvider = FutureProvider.autoDispose
       try {
         final api = ref.watch(apiClientProvider);
         final response =
-            await api.get('/v1/deliveries/$trackingNumber') as Map<String, dynamic>;
+            await api.get('/v1/deliveries/$trackingNumber')
+                as Map<String, dynamic>;
         final sealPhotoUrl = response['sealPhotoUrl'] as String?;
         final sealId = response['sealId'] as String?;
         if (sealPhotoUrl == null || sealId == null) return null;
@@ -70,7 +75,9 @@ final packageSealProvider = FutureProvider.autoDispose
         return PackageSeal(
           sealPhotoUrl: sealPhotoUrl,
           sealId: sealId,
-          sealedUtc: sealedUtcRaw != null ? DateTime.tryParse(sealedUtcRaw) : null,
+          sealedUtc: sealedUtcRaw != null
+              ? DateTime.tryParse(sealedUtcRaw)
+              : null,
         );
       } catch (_) {
         return null;
@@ -122,6 +129,13 @@ final orderCarePlanProvider = FutureProvider.autoDispose
         return null;
       }
     });
+
+final warrantyClaimsProvider = FutureProvider.autoDispose<List<WarrantyClaim>>((
+  ref,
+) async {
+  final result = await ref.watch(ordersRepositoryProvider).getWarrantyClaims();
+  return result.fold((_) => const <WarrantyClaim>[], (claims) => claims);
+});
 
 /// Voyager "Verified Scan-to-Receive Handover" — asks the buyer what arrived
 /// once a StyleMint parcel is out for delivery or delivered, then shows the
@@ -217,7 +231,47 @@ returnDetailNotifierProvider = StateNotifierProvider.autoDispose
       ),
     );
 
-final reorderSuggestionsNotifierProvider = StateNotifierProvider.autoDispose<
-    ReorderSuggestionsNotifier, ReorderSuggestionsState>(
-  (ref) => ReorderSuggestionsNotifier(ref.watch(ordersRepositoryProvider)),
-);
+/// Best-effort reverse-logistics tracking for an approved return. Older
+/// backends and not-yet-approved returns return null so this supplementary
+/// card never blocks the core return details.
+final returnPickupProvider = FutureProvider.autoDispose
+    .family<ReturnPickup?, String>((ref, returnRequestId) async {
+      try {
+        final response = await ref
+            .watch(apiClientProvider)
+            .get('/v1/deliveries/returns/$returnRequestId');
+        return ReturnPickup.fromJson(response as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
+    });
+
+/// Best-effort outbound tracking created after a replacement is approved and
+/// the returned item has reached the seller.
+final replacementShipmentProvider = FutureProvider.autoDispose
+    .family<ReplacementShipment?, String>((ref, returnRequestId) async {
+      try {
+        final response = await ref
+            .watch(apiClientProvider)
+            .get('/v1/deliveries/replacements/$returnRequestId');
+        return ReplacementShipment.fromJson(response as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
+    });
+
+final replenishmentPreferenceNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      ReplenishmentPreferenceNotifier,
+      ReplenishmentPreferenceState
+    >(
+      (ref) =>
+          ReplenishmentPreferenceNotifier(ref.watch(ordersRepositoryProvider)),
+    );
+final reorderSuggestionsNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      ReorderSuggestionsNotifier,
+      ReorderSuggestionsState
+    >(
+      (ref) => ReorderSuggestionsNotifier(ref.watch(ordersRepositoryProvider)),
+    );

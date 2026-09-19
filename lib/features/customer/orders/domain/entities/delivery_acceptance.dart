@@ -12,6 +12,9 @@ class DeliveryAcceptance {
     this.issueNote,
     this.photoUrls = const <String>[],
     this.recordedUtc,
+    this.itemsVerified = false,
+    this.trackingCodeScanned = false,
+    this.receivedItems = const <DeliveryReceivedItemCheck>[],
   });
 
   final String id;
@@ -25,6 +28,79 @@ class DeliveryAcceptance {
   final String? issueNote;
   final List<String> photoUrls;
   final DateTime? recordedUtc;
+  final bool itemsVerified;
+  final bool trackingCodeScanned;
+  final List<DeliveryReceivedItemCheck> receivedItems;
+}
+
+class DeliveryReceivedItemInput {
+  const DeliveryReceivedItemInput({
+    required this.subOrderLineId,
+    required this.productTitle,
+    required this.expectedQuantity,
+    required this.receivedQuantity,
+    this.condition = 'Good',
+    this.batchOrLotCode,
+    this.expiryDate,
+  });
+
+  final String subOrderLineId;
+  final String productTitle;
+  final int expectedQuantity;
+  final int receivedQuantity;
+  final String condition;
+  final String? batchOrLotCode;
+  final DateTime? expiryDate;
+
+  DeliveryReceivedItemInput copyWith({
+    int? receivedQuantity,
+    String? condition,
+    String? batchOrLotCode,
+    DateTime? expiryDate,
+    bool clearBatch = false,
+    bool clearExpiry = false,
+  }) => DeliveryReceivedItemInput(
+    subOrderLineId: subOrderLineId,
+    productTitle: productTitle,
+    expectedQuantity: expectedQuantity,
+    receivedQuantity: receivedQuantity ?? this.receivedQuantity,
+    condition: condition ?? this.condition,
+    batchOrLotCode: clearBatch ? null : batchOrLotCode ?? this.batchOrLotCode,
+    expiryDate: clearExpiry ? null : expiryDate ?? this.expiryDate,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'subOrderLineId': subOrderLineId,
+    'receivedQuantity': receivedQuantity,
+    'condition': condition,
+    if (batchOrLotCode?.trim().isNotEmpty ?? false)
+      'batchOrLotCode': batchOrLotCode!.trim(),
+    if (expiryDate != null)
+      'expiryDate':
+          '${expiryDate!.year.toString().padLeft(4, '0')}-'
+          '${expiryDate!.month.toString().padLeft(2, '0')}-'
+          '${expiryDate!.day.toString().padLeft(2, '0')}',
+  };
+}
+
+class DeliveryReceivedItemCheck {
+  const DeliveryReceivedItemCheck({
+    required this.subOrderLineId,
+    required this.productTitle,
+    required this.expectedQuantity,
+    required this.receivedQuantity,
+    required this.condition,
+    this.batchOrLotCode,
+    this.expiryDate,
+  });
+
+  final String subOrderLineId;
+  final String productTitle;
+  final int expectedQuantity;
+  final int receivedQuantity;
+  final String condition;
+  final String? batchOrLotCode;
+  final DateTime? expiryDate;
 }
 
 /// What the buyer recorded. Backend `DeliveryAcceptanceOutcome`.
@@ -87,6 +163,8 @@ String? deliveryAcceptanceProblem({
   required bool hasSeal,
   bool? sealIntact,
   String? issueNote,
+  List<DeliveryReceivedItemInput> receivedItems =
+      const <DeliveryReceivedItemInput>[],
 }) {
   if (hasSeal && sealIntact == null) {
     return 'Tell us whether the seal was intact.';
@@ -99,6 +177,17 @@ String? deliveryAcceptanceProblem({
       outcome == DeliveryAcceptanceOutcome.accepted) {
     return "A parcel with a broken seal can't be marked as all good. "
         "Choose Something's wrong or Refuse it.";
+  }
+  if (outcome == DeliveryAcceptanceOutcome.accepted &&
+      receivedItems.isNotEmpty &&
+      receivedItems.any(
+        (item) =>
+            item.receivedQuantity != item.expectedQuantity ||
+            item.condition != 'Good' ||
+            (item.expiryDate != null &&
+                !item.expiryDate!.isAfter(DateTime.now())),
+      )) {
+    return 'Mark every item present, in good condition, and not expired before choosing All good.';
   }
   if (outcome.needsNote) {
     final note = issueNote?.trim() ?? '';

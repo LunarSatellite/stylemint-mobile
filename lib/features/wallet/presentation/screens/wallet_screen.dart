@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/domain/entities/wallet_balance.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/domain/entities/wallet_transaction.dart';
+import 'package:stylemint_mobile_frontend/features/wallet/domain/entities/loyalty_wallet.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/presentation/notifiers/wallet_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/wallet/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -80,8 +80,7 @@ class _LoadedBody extends ConsumerWidget {
     return RefreshIndicator(
       color: DesignTokens.primaryGreen,
       backgroundColor: DesignTokens.bgAppBody,
-      onRefresh: () async =>
-          ref.read(walletNotifierProvider.notifier).load(),
+      onRefresh: () async => ref.read(walletNotifierProvider.notifier).load(),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -98,6 +97,25 @@ class _LoadedBody extends ConsumerWidget {
             ),
           ),
 
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.s16,
+                DesignTokens.s16,
+                DesignTokens.s16,
+                0,
+              ),
+              child: ref
+                  .watch(loyaltyWalletProvider)
+                  .when(
+                    data: (wallet) => _LoyaltyCard(wallet: wallet),
+                    loading: () => const _LoyaltyLoadingCard(),
+                    error: (_, __) => _LoyaltyErrorCard(
+                      onRetry: () => ref.invalidate(loyaltyWalletProvider),
+                    ),
+                  ),
+            ),
+          ),
           // ── Status banners ────────────────────────────────────────────────
           if (balance.status == 'Frozen')
             SliverToBoxAdapter(
@@ -207,44 +225,44 @@ class _LoadedBody extends ConsumerWidget {
                         ),
                       )
                     : hasMore
-                        ? SizedBox(
-                            width: double.infinity,
-                            height: DesignTokens.buttonHeight,
-                            child: OutlinedButton.icon(
-                              onPressed: () => ref
-                                  .read(walletNotifierProvider.notifier)
-                                  .loadMore(),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: DesignTokens.textLight,
-                                side: const BorderSide(
-                                  color: DesignTokens.borderDefault,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    DesignTokens.cardRadius,
-                                  ),
-                                ),
-                              ),
-                              icon: const Icon(
-                                Icons.expand_more_rounded,
-                                size: 18,
-                              ),
-                              label: const Text(
-                                'Load more',
-                                style: TextStyle(
-                                  fontFamily: DesignTokens.fontFamily,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                    ? SizedBox(
+                        width: double.infinity,
+                        height: DesignTokens.buttonHeight,
+                        child: OutlinedButton.icon(
+                          onPressed: () => ref
+                              .read(walletNotifierProvider.notifier)
+                              .loadMore(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: DesignTokens.textLight,
+                            side: const BorderSide(
+                              color: DesignTokens.borderDefault,
                             ),
-                          )
-                        : Center(
-                            child: Text(
-                              'You\'ve reached the end',
-                              style: DesignTokens.smallRegular,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.cardRadius,
+                              ),
                             ),
                           ),
+                          icon: const Icon(
+                            Icons.expand_more_rounded,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Load more',
+                            style: TextStyle(
+                              fontFamily: DesignTokens.fontFamily,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          'You\'ve reached the end',
+                          style: DesignTokens.smallRegular,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -332,7 +350,9 @@ class _BalanceCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: DesignTokens.primaryGreen.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(DesignTokens.chipRadius),
+                    borderRadius: BorderRadius.circular(
+                      DesignTokens.chipRadius,
+                    ),
                     border: Border.all(
                       color: DesignTokens.primaryGreen.withValues(alpha: 0.3),
                     ),
@@ -462,7 +482,11 @@ class _StatusChip extends StatelessWidget {
     final (color, label, icon) = switch (status) {
       'Frozen' => (DesignTokens.colorInfo, 'Frozen', Icons.ac_unit_rounded),
       'Closed' => (DesignTokens.colorError, 'Closed', Icons.block_rounded),
-      _ => (DesignTokens.primaryGreen, 'Active', Icons.check_circle_outline_rounded),
+      _ => (
+        DesignTokens.primaryGreen,
+        'Active',
+        Icons.check_circle_outline_rounded,
+      ),
     };
 
     return Row(
@@ -482,6 +506,332 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
+class _LoyaltyCard extends ConsumerStatefulWidget {
+  const _LoyaltyCard({required this.wallet});
+  final LoyaltyWallet wallet;
+
+  @override
+  ConsumerState<_LoyaltyCard> createState() => _LoyaltyCardState();
+}
+
+class _LoyaltyCardState extends ConsumerState<_LoyaltyCard> {
+  bool _redeeming = false;
+
+  Future<void> _redeem() async {
+    final controller = TextEditingController(text: '100');
+    final points = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: DesignTokens.bgAppBody,
+        title: const Text('Turn points into credit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Every 10 points becomes Rs 1 checkout credit. Minimum 100 points.',
+              style: DesignTokens.smallRegular,
+            ),
+            const SizedBox(height: DesignTokens.s16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Points',
+                hintText: '100',
+                suffixText: 'points',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              if (value == null ||
+                  value < 100 ||
+                  value > 10000 ||
+                  value % 10 != 0 ||
+                  value > widget.wallet.summary.balancePoints) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Enter 100–10,000 points, in multiples of 10, within your balance.',
+                    ),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, value);
+            },
+            child: const Text('Create credit'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (points == null || !mounted) return;
+    setState(() => _redeeming = true);
+    try {
+      final result = await ref
+          .read(loyaltyRemoteDataSourceProvider)
+          .redeem(points);
+      ref.invalidate(loyaltyWalletProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.explanation)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not create checkout credit. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _redeeming = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.wallet.summary;
+    final target = s.pointsToNextTier;
+    final earnedInTier = target == null
+        ? 1.0
+        : (s.lifetimeEarnedPoints / (s.lifetimeEarnedPoints + target)).clamp(
+            0.0,
+            1.0,
+          );
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF271A48), Color(0xFF102C25)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+        border: Border.all(color: const Color(0xFF665A8E)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(DesignTokens.s20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFFD7C7FF),
+                ),
+              ),
+              const SizedBox(width: DesignTokens.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'StyleMint Rewards',
+                      style: DesignTokens.sectionInnerTitle,
+                    ),
+                    Text(
+                      '${s.tier} tier',
+                      style: DesignTokens.smallRegular.copyWith(
+                        color: const Color(0xFFD7C7FF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: DesignTokens.primaryGreen.withValues(alpha: .16),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  '${s.balancePoints} pts',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.primaryGreen,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s20),
+          Text(
+            _npr(s.redeemableValueAmount + s.checkoutCreditAmount),
+            style: const TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            'Rs ${_nprFmt.format(s.checkoutCreditAmount)} ready credit + Rs ${_nprFmt.format(s.redeemableValueAmount)} point value',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textLight,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: earnedInTier,
+              minHeight: 7,
+              backgroundColor: Colors.white12,
+              color: const Color(0xFFD7C7FF),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            target == null
+                ? 'You reached our highest tier'
+                : '$target points to your next tier',
+            style: DesignTokens.tiny.copyWith(color: DesignTokens.textLight),
+          ),
+          if (s.pointsExpiringNext30Days > 0) ...[
+            const SizedBox(height: DesignTokens.s12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: DesignTokens.secondaryYellow,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${s.pointsExpiringNext30Days} points expire within 30 days',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.secondaryYellow,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: DesignTokens.s16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _redeeming || s.balancePoints < 100 ? null : _redeem,
+              icon: _redeeming
+                  ? const SizedBox.square(
+                      dimension: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.redeem_rounded),
+              label: Text(
+                _redeeming ? 'Creating credit…' : 'Redeem for checkout',
+              ),
+            ),
+          ),
+          if (widget.wallet.transactions.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s16),
+            const Divider(color: Colors.white12),
+            const SizedBox(height: DesignTokens.s8),
+            for (final tx in widget.wallet.transactions.take(3))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      tx.pointsDelta >= 0
+                          ? Icons.add_circle_outline
+                          : Icons.remove_circle_outline,
+                      size: 18,
+                      color: tx.pointsDelta >= 0
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textLight,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tx.description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DesignTokens.smallRegular.copyWith(
+                          color: DesignTokens.textLight,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${tx.pointsDelta > 0 ? '+' : ''}${tx.pointsDelta}',
+                      style: DesignTokens.smallRegular.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: tx.pointsDelta >= 0
+                            ? DesignTokens.primaryGreen
+                            : Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LoyaltyLoadingCard extends StatelessWidget {
+  const _LoyaltyLoadingCard();
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 160,
+    decoration: BoxDecoration(
+      color: DesignTokens.bgAppBody,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+    ),
+    child: const Center(
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: DesignTokens.primaryGreen,
+      ),
+    ),
+  );
+}
+
+class _LoyaltyErrorCard extends StatelessWidget {
+  const _LoyaltyErrorCard({required this.onRetry});
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(DesignTokens.s16),
+    decoration: BoxDecoration(
+      color: DesignTokens.bgAppBody,
+      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.stars_outlined, color: DesignTokens.textMuted),
+        const SizedBox(width: 10),
+        const Expanded(child: Text('Rewards are unavailable right now.')),
+        TextButton(onPressed: onRetry, child: const Text('Retry')),
+      ],
+    ),
+  );
+}
 // ── Status banner ─────────────────────────────────────────────────────────────
 
 class _StatusBanner extends StatelessWidget {
@@ -584,30 +934,32 @@ class _TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isReversal = tx.type == 'Reversal';
     final isDebit = tx.type == 'Debit';
-    final isPending =
-        tx.type == 'PendingCredit' || tx.type == 'PendingClear';
+    final isPending = tx.type == 'PendingCredit' || tx.type == 'PendingClear';
 
     final amountColor = isReversal
         ? DesignTokens.textMuted
         : isPending
-            ? DesignTokens.secondaryYellow
-            : isDebit
-                ? DesignTokens.colorError
-                : DesignTokens.primaryGreen;
+        ? DesignTokens.secondaryYellow
+        : isDebit
+        ? DesignTokens.colorError
+        : DesignTokens.primaryGreen;
 
     final amountPrefix = isDebit ? '− ' : '+ ';
-    final amountStr =
-        isReversal ? _npr(tx.amount) : '$amountPrefix${_npr(tx.amount)}';
+    final amountStr = isReversal
+        ? _npr(tx.amount)
+        : '$amountPrefix${_npr(tx.amount)}';
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.only(
         topLeft: const Radius.circular(0),
         topRight: const Radius.circular(0),
-        bottomLeft:
-            isLast ? const Radius.circular(DesignTokens.cardRadius) : Radius.zero,
-        bottomRight:
-            isLast ? const Radius.circular(DesignTokens.cardRadius) : Radius.zero,
+        bottomLeft: isLast
+            ? const Radius.circular(DesignTokens.cardRadius)
+            : Radius.zero,
+        bottomRight: isLast
+            ? const Radius.circular(DesignTokens.cardRadius)
+            : Radius.zero,
       ),
       child: Container(
         margin: EdgeInsets.only(bottom: isLast ? 0 : 1),
@@ -656,8 +1008,9 @@ class _TransactionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    DateFormat('MMM d · h:mm a')
-                        .format(tx.occurredUtc.toLocal()),
+                    DateFormat(
+                      'MMM d · h:mm a',
+                    ).format(tx.occurredUtc.toLocal()),
                     style: DesignTokens.smallRegular,
                   ),
                 ],
@@ -699,17 +1052,17 @@ class _TransactionTile extends StatelessWidget {
   }
 
   static String _label(WalletTransaction tx) => switch (tx.type) {
-        'Credit' => switch (tx.source) {
-            'Refund' => 'Refund',
-            'AdminAdjustment' => 'Credit Added',
-            _ => 'Credit',
-          },
-        'Debit' => 'Withdrawn',
-        'PendingCredit' => 'Refund Processing',
-        'PendingClear' => 'Credit Cleared',
-        'Reversal' => 'Reversed',
-        _ => tx.type,
-      };
+    'Credit' => switch (tx.source) {
+      'Refund' => 'Refund',
+      'AdminAdjustment' => 'Credit Added',
+      _ => 'Credit',
+    },
+    'Debit' => 'Withdrawn',
+    'PendingCredit' => 'Refund Processing',
+    'PendingClear' => 'Credit Cleared',
+    'Reversal' => 'Reversed',
+    _ => tx.type,
+  };
 }
 
 class _TxIcon extends StatelessWidget {
@@ -721,35 +1074,35 @@ class _TxIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, bg, fg) = switch (type) {
       'Credit' => (
-          Icons.arrow_downward_rounded,
-          DesignTokens.primaryGreenDark,
-          DesignTokens.primaryGreen,
-        ),
+        Icons.arrow_downward_rounded,
+        DesignTokens.primaryGreenDark,
+        DesignTokens.primaryGreen,
+      ),
       'PendingCredit' => (
-          Icons.hourglass_top_rounded,
-          const Color(0xFF3A2F03),
-          DesignTokens.secondaryYellow,
-        ),
+        Icons.hourglass_top_rounded,
+        const Color(0xFF3A2F03),
+        DesignTokens.secondaryYellow,
+      ),
       'PendingClear' => (
-          Icons.check_circle_outline_rounded,
-          const Color(0xFF3A2F03),
-          DesignTokens.secondaryYellow,
-        ),
+        Icons.check_circle_outline_rounded,
+        const Color(0xFF3A2F03),
+        DesignTokens.secondaryYellow,
+      ),
       'Debit' => (
-          Icons.arrow_upward_rounded,
-          const Color(0xFF2D0A0A),
-          DesignTokens.colorError,
-        ),
+        Icons.arrow_upward_rounded,
+        const Color(0xFF2D0A0A),
+        DesignTokens.colorError,
+      ),
       'Reversal' => (
-          Icons.undo_rounded,
-          DesignTokens.bgAppBodyLight,
-          DesignTokens.textMuted,
-        ),
+        Icons.undo_rounded,
+        DesignTokens.bgAppBodyLight,
+        DesignTokens.textMuted,
+      ),
       _ => (
-          Icons.swap_horiz_rounded,
-          DesignTokens.bgAppBodyLight,
-          DesignTokens.textMuted,
-        ),
+        Icons.swap_horiz_rounded,
+        DesignTokens.bgAppBodyLight,
+        DesignTokens.textMuted,
+      ),
     };
 
     return Container(
@@ -778,8 +1131,8 @@ class _TransactionDetail extends StatelessWidget {
     final amountColor = isReversal
         ? DesignTokens.textMuted
         : isDebit
-            ? DesignTokens.colorError
-            : DesignTokens.primaryGreen;
+        ? DesignTokens.colorError
+        : DesignTokens.primaryGreen;
 
     return SafeArea(
       child: Padding(
@@ -849,13 +1202,13 @@ class _TransactionDetail extends StatelessWidget {
                   ),
                   _DetailRow(
                     label: 'Date',
-                    value: DateFormat('MMM d, yyyy · h:mm a')
-                        .format(tx.occurredUtc.toLocal()),
-                    isLast: tx.reversalOf == null &&
-                        tx.correlationType != 'Order',
+                    value: DateFormat(
+                      'MMM d, yyyy · h:mm a',
+                    ).format(tx.occurredUtc.toLocal()),
+                    isLast:
+                        tx.reversalOf == null && tx.correlationType != 'Order',
                   ),
-                  if (tx.correlationType == 'Order' &&
-                      tx.description != null)
+                  if (tx.correlationType == 'Order' && tx.description != null)
                     _DetailRow(
                       label: 'Order',
                       value: tx.description!,

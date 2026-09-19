@@ -31,7 +31,8 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   );
 
   @override
-  Future<Either<NetworkExceptions, CheckoutSummary>> getCheckoutSummary() async {
+  Future<Either<NetworkExceptions, CheckoutSummary>>
+  getCheckoutSummary() async {
     if (await networkInfo.isConnected) {
       try {
         final dto = await remoteDataSource.getCheckoutSummary();
@@ -45,7 +46,8 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
           if (e.response?.statusCode == 400) {
             final data = e.response?.data;
             final code = data is Map ? data['errorCode'] as String? : null;
-            if (code != null) return left(NetworkExceptions.validation(code: code));
+            if (code != null)
+              return left(NetworkExceptions.validation(code: code));
           }
           return left(NetworkExceptions.server(e.message.toString()));
         } else if (e is NetworkExceptions) {
@@ -60,7 +62,50 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<ShippingAddress>>> getShippingAddresses() async {
+  Future<Either<NetworkExceptions, DeliveryChoices>>
+  getDeliveryChoices() async {
+    if (!await networkInfo.isConnected)
+      return left(NetworkExceptions.noInternetConnection());
+    try {
+      return right(await remoteDataSource.getDeliveryChoices());
+    } catch (e) {
+      if (e is DioException) return left(mapDioExceptionToNetworkException(e));
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> selectDeliveryChoice(
+    DeliveryChoice choice,
+  ) async {
+    if (!await networkInfo.isConnected)
+      return left(NetworkExceptions.noInternetConnection());
+    try {
+      await remoteDataSource.selectDeliveryChoice(choice);
+      return right(unit);
+    } catch (e) {
+      if (e is DioException) return left(mapDioExceptionToNetworkException(e));
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryPreference>>
+  updateDeliveryPreference(DeliveryPreference preference) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await remoteDataSource.updateDeliveryPreference(preference));
+    } catch (e) {
+      if (e is DioException) return left(mapDioExceptionToNetworkException(e));
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, List<ShippingAddress>>>
+  getShippingAddresses() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getShippingAddresses();
@@ -80,7 +125,8 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods() async {
+  Future<Either<NetworkExceptions, List<PaymentMethod>>>
+  getPaymentMethods() async {
     if (await networkInfo.isConnected) {
       try {
         final dtos = await remoteDataSource.getPaymentMethods();
@@ -101,7 +147,7 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
 
   @override
   Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
-    required String addressId,
+    required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {

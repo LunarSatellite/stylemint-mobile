@@ -5,11 +5,14 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/c
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_timeline_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_acceptance_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_care_plan_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_invoice_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/tracked_order_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/warranty_claim_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/shared/data/option_label.dart';
 
 /// Remote datasource for customer orders. Throws on failure; the repository
@@ -61,6 +64,55 @@ class OrdersRemoteDataSource {
     return OrderCarePlanDto.fromJson(response as Map<String, dynamic>);
   }
 
+  Future<WarrantyClaimDto> submitWarrantyClaim({
+    required String orderNumber,
+    required String subOrderLineId,
+    required WarrantyIssueKind issueKind,
+    required String description,
+    required List<String> evidenceUrls,
+    required String idempotencyKey,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/warranties/claims',
+      data: <String, dynamic>{
+        'orderNumber': orderNumber,
+        'subOrderLineId': subOrderLineId,
+        'issueKind': issueKind.wireValue,
+        'description': description,
+        'evidenceUrls': evidenceUrls,
+      },
+      options: _idempotent(idempotencyKey),
+    );
+    return WarrantyClaimDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<List<WarrantyClaimDto>> getWarrantyClaims() async {
+    final response = await apiClient.get('/v1/warranties/mine');
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(WarrantyClaimDto.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<bool> getReplenishmentPreference() async {
+    final response = await apiClient.get(
+      '/v1/customer/reorder-suggestions/preference',
+    );
+    return (response as Map<String, dynamic>)['enabled'] == true;
+  }
+
+  Future<bool> setReplenishmentPreference(
+    bool enabled,
+    String idempotencyKey,
+  ) async {
+    final response = await apiClient.put(
+      '/v1/customer/reorder-suggestions/preference',
+      data: <String, dynamic>{'enabled': enabled},
+      options: _idempotent(idempotencyKey),
+    );
+    return (response as Map<String, dynamic>)['enabled'] == true;
+  }
+
   /// GET `/v1/customer/reorder-suggestions` — "Buy It Again" predictions.
   /// Returns a raw JSON array (the controller returns
   /// `OkObjectResult(result.Value)` for the list, not an `{items:}` wrapper).
@@ -109,6 +161,9 @@ class OrdersRemoteDataSource {
     required DeliveryAcceptanceOutcome outcome,
     bool? sealIntact,
     String? issueNote,
+    List<DeliveryReceivedItemInput> receivedItems =
+        const <DeliveryReceivedItemInput>[],
+    String? scannedTrackingCode,
   }) async {
     final response = await apiClient.post(
       '/v1/deliveries/$trackingNumber/acceptance',
@@ -116,6 +171,8 @@ class OrdersRemoteDataSource {
         outcome: outcome,
         sealIntact: sealIntact,
         issueNote: issueNote,
+        receivedItems: receivedItems,
+        scannedTrackingCode: scannedTrackingCode,
       ),
       options: _idempotent(idempotencyKey),
     );
@@ -177,6 +234,19 @@ class OrdersRemoteDataSource {
     return CustomerReturnDto.fromJson(response as Map<String, dynamic>);
   }
 
+  Future<List<ReplacementOption>> getReplacementOptions(
+    String originalVariantId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/orders/replacement-options/$originalVariantId',
+    );
+    return (response as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(ReplacementOption.fromJson)
+        .where((option) => option.variantId.isNotEmpty)
+        .toList(growable: false);
+  }
+
   /// POST `/v1/orders/{orderNumber}/returns` — request a return.
   /// Backend `SubmitReturnVm` requires subOrderId/subOrderLineId/quantity/
   /// reason/photoUrls (skill §5 + §13.7) — a bare reason always 400s.
@@ -188,6 +258,8 @@ class OrdersRemoteDataSource {
     int quantity,
     String reason,
     List<String> photoUrls,
+    int resolution,
+    String? replacementVariantId,
     String idempotencyKey,
   ) async {
     final response = await apiClient.post(
@@ -198,6 +270,9 @@ class OrdersRemoteDataSource {
         'quantity': quantity,
         'reason': reason,
         'photoUrls': photoUrls,
+        'resolution': resolution,
+        if (replacementVariantId != null)
+          'replacementVariantId': replacementVariantId,
       },
       options: _idempotent(idempotencyKey),
     );

@@ -35,6 +35,41 @@ Future<void> _selectChip(WidgetTester tester, String key) async {
 }
 
 void main() {
+  testWidgets('search keeps typed controls and exposes voice input', (
+    tester,
+  ) async {
+    await pumpDiscover(tester);
+
+    expect(find.byKey(const ValueKey('discover-voice-search')), findsOneWidget);
+    expect(find.byKey(const ValueKey('discover-search-clear')), findsNothing);
+
+    await tester.enterText(find.byKey(_field), 'linen');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('discover-search-clear')), findsOneWidget);
+    expect(find.byKey(const ValueKey('discover-voice-search')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('discover-search-clear')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('discover-search-clear')), findsNothing);
+    expect(find.byKey(const ValueKey('discover-voice-search')), findsOneWidget);
+  });
+  testWidgets('photo search appears only when real vision is available', (
+    tester,
+  ) async {
+    await pumpDiscover(
+      tester,
+      visualSearchAvailable: true,
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('discover-visual-search')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search what you see'), findsOneWidget);
+    expect(find.text('Take photo'), findsOneWidget);
+    expect(find.text('Choose photo'), findsOneWidget);
+    expect(find.text('Understand a video'), findsOneWidget);
+  });
   testWidgets('typing shows grouped suggestions that open their pages', (
     tester,
   ) async {

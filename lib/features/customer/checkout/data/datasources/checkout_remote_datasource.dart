@@ -29,6 +29,121 @@ class CheckoutRemoteDataSource {
     return CheckoutSummaryDto.fromJson(withOptionLabels(data));
   }
 
+  Future<DeliveryChoices> getDeliveryChoices() async {
+    final sessionId = _sessionId ?? await _createSession();
+    final response = await apiClient.get(
+      '/v1/checkout/sessions/$sessionId/delivery-options',
+      options: Options(headers: {'requiresToken': true}),
+    );
+    final data = response as Map<String, dynamic>;
+    final rawChoices = data['choices'] as List<dynamic>? ?? const [];
+    return DeliveryChoices(
+      choices: rawChoices
+          .map((raw) {
+            final item = raw as Map<String, dynamic>;
+            final rawKind = item['kind'];
+            final isPickup =
+                rawKind == 2 ||
+                rawKind?.toString().toLowerCase() == 'pickupfromseller';
+            return DeliveryChoice(
+              kind: isPickup
+                  ? DeliveryChoiceKind.pickupFromSeller
+                  : DeliveryChoiceKind.homeDelivery,
+              title: item['title'] as String? ?? '',
+              detail: item['detail'] as String? ?? '',
+              deliveries: item['deliveries'] as int? ?? 0,
+              readyInDays: item['readyInDays'] as int? ?? 0,
+              sellerAccountId: item['sellerAccountId'] as String?,
+              sellerName: item['sellerName'] as String?,
+              selected: item['selected'] as bool? ?? false,
+              recommended: item['recommended'] as bool? ?? false,
+            );
+          })
+          .toList(growable: false),
+      emissionsNote: data['emissionsNote'] as String? ?? '',
+      pickupNote: data['pickupNote'] as String?,
+      preferences: _parseDeliveryPreference(data['preferences']),
+      consolidation: _parseConsolidationPlan(data['consolidation']),
+    );
+  }
+
+  Future<DeliveryPreference> updateDeliveryPreference(
+    DeliveryPreference preference,
+  ) async {
+    final response = await apiClient.put(
+      '/v1/checkout/delivery-preferences',
+      data: {
+        'preferFewerDeliveries': preference.preferFewerDeliveries,
+        'preferPickup': preference.preferPickup,
+        'maximumExtraWaitDays': preference.maximumExtraWaitDays,
+      },
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key':
+              'delivery-preference-'
+              '${preference.preferFewerDeliveries}-'
+              '${preference.preferPickup}-'
+              '${preference.maximumExtraWaitDays}',
+        },
+      ),
+    );
+    return _parseDeliveryPreference(response);
+  }
+
+  static DeliveryConsolidationPlan? _parseConsolidationPlan(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    return DeliveryConsolidationPlan(
+      itemUnits: raw['itemUnits'] as int? ?? 0,
+      sellerPackages: raw['sellerPackages'] as int? ?? 0,
+      packagesAvoidedBySellerGrouping:
+          raw['packagesAvoidedBySellerGrouping'] as int? ?? 0,
+      readyInDays: raw['readyInDays'] as int? ?? 0,
+      crossSellerConsolidationAvailable:
+          raw['crossSellerConsolidationAvailable'] as bool? ?? false,
+      explanation: raw['explanation'] as String? ?? '',
+    );
+  }
+
+  static DeliveryPreference _parseDeliveryPreference(Object? raw) {
+    if (raw is! Map<String, dynamic>) return const DeliveryPreference();
+    return DeliveryPreference(
+      preferFewerDeliveries: raw['preferFewerDeliveries'] as bool? ?? false,
+      preferPickup: raw['preferPickup'] as bool? ?? false,
+      maximumExtraWaitDays: raw['maximumExtraWaitDays'] as int? ?? 0,
+    );
+  }
+
+  Future<void> selectDeliveryChoice(DeliveryChoice choice) async {
+    final sessionId = _sessionId ?? await _createSession();
+    if (choice.kind == DeliveryChoiceKind.pickupFromSeller) {
+      final sellerId = choice.sellerAccountId;
+      if (sellerId == null || sellerId.isEmpty) {
+        throw StateError('Pickup choice has no seller account.');
+      }
+      await apiClient.post(
+        '/v1/checkout/sessions/$sessionId/pickup',
+        data: {'pickupVendorAccountId': sellerId},
+        options: Options(
+          headers: {
+            'requiresToken': true,
+            'Idempotency-Key': 'checkout-pickup-$sessionId-$sellerId',
+          },
+        ),
+      );
+    } else {
+      await apiClient.post(
+        '/v1/checkout/sessions/$sessionId/delivery',
+        options: Options(
+          headers: {
+            'requiresToken': true,
+            'Idempotency-Key': 'checkout-delivery-$sessionId',
+          },
+        ),
+      );
+    }
+  }
+
   Future<List<ShippingAddressDto>> getShippingAddresses() async {
     final response = await apiClient.get(
       '/v1/addresses',
@@ -79,17 +194,19 @@ class CheckoutRemoteDataSource {
   //      the post-purchase "View Order" button to 404 while the exact same
   //      order loaded fine from the Track Order list moments later.
   Future<PlaceOrderResult> placeOrder({
-    required String addressId,
+    required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   }) async {
     final sessionId = _sessionId ?? await _createSession();
 
-    await apiClient.post(
-      '/v1/checkout/sessions/$sessionId/address',
-      data: {'addressId': addressId},
-      options: Options(headers: {'requiresToken': true}),
-    );
+    if (addressId != null && addressId.isNotEmpty) {
+      await apiClient.post(
+        '/v1/checkout/sessions/$sessionId/address',
+        data: {'addressId': addressId},
+        options: Options(headers: {'requiresToken': true}),
+      );
+    }
 
     // Backend wants which payment TYPE was chosen (a closed enum), not a
     // saved payment-instrument id — SetCheckoutPaymentMethodVm.PaymentMethod.
@@ -101,10 +218,12 @@ class CheckoutRemoteDataSource {
 
     final response = await apiClient.post(
       '/v1/checkout/sessions/$sessionId/place',
-      options: Options(headers: {
-        'requiresToken': true,
-        'Idempotency-Key': idempotencyKey,
-      }),
+      options: Options(
+        headers: {
+          'requiresToken': true,
+          'Idempotency-Key': idempotencyKey,
+        },
+      ),
     );
 
     _sessionId = null; // clear after successful placement
@@ -128,7 +247,8 @@ class CheckoutRemoteDataSource {
     );
     final data = response as Map<String, dynamic>;
     final id = data['id'] as String?;
-    if (id == null) throw Exception('Checkout session creation returned no sessionId');
+    if (id == null)
+      throw Exception('Checkout session creation returned no sessionId');
     _sessionId = id;
     return id;
   }

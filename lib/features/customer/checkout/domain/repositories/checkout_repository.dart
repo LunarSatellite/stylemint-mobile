@@ -5,12 +5,22 @@ import 'package:stylemint_mobile_frontend/features/customer/checkout/domain/enti
 abstract interface class CheckoutRepository {
   Future<Either<NetworkExceptions, CheckoutSummary>> getCheckoutSummary();
 
-  Future<Either<NetworkExceptions, List<ShippingAddress>>> getShippingAddresses();
+  Future<Either<NetworkExceptions, List<ShippingAddress>>>
+  getShippingAddresses();
+
+  Future<Either<NetworkExceptions, DeliveryChoices>> getDeliveryChoices();
+
+  Future<Either<NetworkExceptions, Unit>> selectDeliveryChoice(
+    DeliveryChoice choice,
+  );
+
+  Future<Either<NetworkExceptions, DeliveryPreference>>
+  updateDeliveryPreference(DeliveryPreference preference);
 
   Future<Either<NetworkExceptions, List<PaymentMethod>>> getPaymentMethods();
 
   Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
-    required String addressId,
+    required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
   });

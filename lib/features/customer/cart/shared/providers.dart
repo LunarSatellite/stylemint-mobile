@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasource
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/repositories/cart_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/basket_scenarios_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 
@@ -49,9 +50,20 @@ class CartItemCountNotifier extends Notifier<int> {
 
 /// Best-effort basket insights card. A failure here should never block
 /// the cart screen — watch via `.asData?.value`.
-final basketOptimizationProvider = FutureProvider.autoDispose<BasketOptimization?>((ref) async {
-  final result = await ref.watch(cartRepositoryProvider).getBasketOptimization();
-  return result.fold((_) => null, (opt) => opt);
+final basketOptimizationProvider =
+    FutureProvider.autoDispose<BasketOptimization?>((ref) async {
+      final result = await ref
+          .watch(cartRepositoryProvider)
+          .getBasketOptimization();
+      return result.fold((_) => null, (opt) => opt);
+    });
+
+/// Transparent, policy-governed value choices for the current cart.
+final cartOfferAdviceProvider = FutureProvider.autoDispose<CartOfferAdvice?>((
+  ref,
+) async {
+  final result = await ref.watch(cartRepositoryProvider).getOfferAdvice();
+  return result.fold((_) => null, (advice) => advice);
 });
 
 /// "Try other baskets" — autoDispose so reopening the screen builds fresh

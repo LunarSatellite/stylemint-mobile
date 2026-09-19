@@ -49,6 +49,14 @@ class MemoryVaultRepositoryImpl implements MemoryVaultRepository {
   Future<Either<NetworkExceptions, String>> export() =>
       _call(remoteDataSource.export);
 
+  @override
+  Future<Either<NetworkExceptions, int>> importPortableTwin(
+    String bundleJson,
+  ) => _call(() async {
+    final result = await remoteDataSource.importPortableTwin(bundleJson);
+    return result['imported'] as int? ?? 0;
+  });
+
   Future<Either<NetworkExceptions, T>> _call<T>(
     Future<T> Function() body,
   ) async {

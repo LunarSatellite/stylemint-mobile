@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 
@@ -40,6 +41,60 @@ class TrackOrdersNotifier extends StateNotifier<TrackOrdersState> {
     state = either.fold(
       TrackOrdersState.loadFailure,
       TrackOrdersState.loadSuccess,
+    );
+  }
+}
+
+sealed class ReplenishmentPreferenceState {
+  const ReplenishmentPreferenceState();
+}
+
+final class ReplenishmentPreferenceLoading
+    extends ReplenishmentPreferenceState {
+  const ReplenishmentPreferenceLoading();
+}
+
+final class ReplenishmentPreferenceLoaded extends ReplenishmentPreferenceState {
+  const ReplenishmentPreferenceLoaded(this.enabled, {this.saving = false});
+
+  final bool enabled;
+  final bool saving;
+}
+
+final class ReplenishmentPreferenceFailed extends ReplenishmentPreferenceState {
+  const ReplenishmentPreferenceFailed();
+}
+
+class ReplenishmentPreferenceNotifier
+    extends StateNotifier<ReplenishmentPreferenceState> {
+  ReplenishmentPreferenceNotifier(this._repository)
+    : super(const ReplenishmentPreferenceLoading()) {
+    unawaited(load());
+  }
+
+  final OrdersRepository _repository;
+
+  Future<void> load() async {
+    final result = await _repository.getReplenishmentPreference();
+    state = result.fold(
+      (_) => const ReplenishmentPreferenceFailed(),
+      ReplenishmentPreferenceLoaded.new,
+    );
+  }
+
+  Future<bool> setEnabled(bool enabled) async {
+    final previous = state;
+    state = ReplenishmentPreferenceLoaded(enabled, saving: true);
+    final result = await _repository.setReplenishmentPreference(enabled);
+    return result.fold(
+      (_) {
+        state = previous;
+        return false;
+      },
+      (saved) {
+        state = ReplenishmentPreferenceLoaded(saved);
+        return true;
+      },
     );
   }
 }
@@ -158,6 +213,8 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
     required int quantity,
     required String reason,
     required List<String> photoUrls,
+    ReturnResolutionChoice resolution = ReturnResolutionChoice.refund,
+    String? replacementVariantId,
   }) async {
     await state.maybeWhen(
       loadSuccess: (order) async {
@@ -169,6 +226,8 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
           quantity: quantity,
           reason: reason,
           photoUrls: photoUrls,
+          resolution: resolution,
+          replacementVariantId: replacementVariantId,
         );
         state = either.fold(
           (failure) {
@@ -188,6 +247,10 @@ class OrderDetailNotifier extends StateNotifier<OrderDetailState> {
       orElse: () async {},
     );
   }
+
+  Future<Either<NetworkExceptions, List<ReplacementOption>>>
+  getReplacementOptions(String originalVariantId) =>
+      _repository.getReplacementOptions(originalVariantId);
 
   Future<Either<NetworkExceptions, String>> uploadReturnPhoto(
     String filePath,

@@ -11,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discover_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/discover_providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/catalog_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
@@ -136,6 +137,7 @@ Future<void> pumpDiscover(
   FakeDiscoverRepository? discover,
   MemoryRecentSearchesStore? recents,
   bool signedIn = true,
+  bool visualSearchAvailable = false,
   double width = 390,
   double? height,
   double textScale = 1,
@@ -178,6 +180,9 @@ Future<void> pumpDiscover(
     ),
     recentSearchesStoreProvider.overrideWithValue(
       recents ?? MemoryRecentSearchesStore(),
+    ),
+    visualSearchCapabilityProvider.overrideWith(
+      (ref) async => visualSearchAvailable,
     ),
     mallViewerSignedInProvider.overrideWithValue(signedIn),
     discoverAuthGateProvider.overrideWithValue((_, _) async => signedIn),

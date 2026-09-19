@@ -194,6 +194,21 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'My returns',
               onTap: () => context.push(RouteNames.myReturns),
             ),
+            ProfileMenuItem(
+              icon: Icons.workspace_premium_outlined,
+              label: 'Outcome promises',
+              onTap: () => context.push(RouteNames.outcomeContracts),
+            ),
+            ProfileMenuItem(
+              icon: Icons.eco_outlined,
+              label: 'My wardrobe life',
+              onTap: () => context.push(RouteNames.lifecycleSteward),
+            ),
+            ProfileMenuItem(
+              icon: Icons.handshake_outlined,
+              label: 'Agent negotiations',
+              onTap: () => context.push(RouteNames.agentNegotiations),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s20),

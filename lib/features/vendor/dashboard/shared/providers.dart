@@ -36,11 +36,20 @@ final vendorDashboardNotifierProvider =
       ),
     );
 
+/// Live store health. Supplementary by design: an older API can fail this
+/// request without taking down the vendor dashboard.
+final storeDigitalTwinProvider = FutureProvider.autoDispose((ref) async {
+  return ref.watch(vendorDashboardRemoteDataSourceProvider).getDigitalTwin();
+});
+
 /// Live counts for the "Pending Actions" tiles — composes the orders,
 /// inquiries, and partnerships repositories rather than the dashboard's own
 /// (analytics-only) data source.
 final vendorPendingActionsNotifierProvider =
-    StateNotifierProvider<VendorPendingActionsNotifier, VendorPendingActionCounts>(
+    StateNotifierProvider<
+      VendorPendingActionsNotifier,
+      VendorPendingActionCounts
+    >(
       (ref) => VendorPendingActionsNotifier(
         ref.watch(vendorOrdersRepositoryProvider),
         ref.watch(inquiriesRepositoryProvider),

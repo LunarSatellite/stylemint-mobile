@@ -18,6 +18,37 @@ enum ReturnRequestStatus {
       .firstWhere((s) => s.value == value, orElse: () => unknown);
 }
 
+enum CustomerReturnResolution {
+  refund,
+  replacement;
+
+  static CustomerReturnResolution fromCode(int code) => code == 2
+      ? CustomerReturnResolution.replacement
+      : CustomerReturnResolution.refund;
+}
+
+enum CustomerReplacementState {
+  none,
+  inventoryHeld,
+  awaitingReturnedItem,
+  readyToShip,
+  shipped,
+  delivered,
+  cancelled,
+  awaitingBalancePayment;
+
+  static CustomerReplacementState fromCode(int code) => switch (code) {
+    1 => CustomerReplacementState.inventoryHeld,
+    2 => CustomerReplacementState.awaitingReturnedItem,
+    3 => CustomerReplacementState.readyToShip,
+    4 => CustomerReplacementState.shipped,
+    5 => CustomerReplacementState.delivered,
+    6 => CustomerReplacementState.cancelled,
+    7 => CustomerReplacementState.awaitingBalancePayment,
+    _ => CustomerReplacementState.none,
+  };
+}
+
 /// Frozen line snapshot captured at order placement.
 class ReturnProductSnapshot {
   const ReturnProductSnapshot({
@@ -61,6 +92,12 @@ class CustomerReturn {
     this.resolvedUtc,
     this.rejectionNote,
     this.refundStatus,
+    this.resolution = CustomerReturnResolution.refund,
+    this.replacementVariantId,
+    this.replacementUnitPrice,
+    this.replacementPriceDifferenceAmount,
+    this.replacementState = CustomerReplacementState.none,
+    this.replacementPaymentStatus,
   });
 
   final String id;
@@ -80,4 +117,10 @@ class CustomerReturn {
 
   /// Always null today (contract §4); the UI shows a placeholder.
   final String? refundStatus;
+  final CustomerReturnResolution resolution;
+  final String? replacementVariantId;
+  final Money? replacementUnitPrice;
+  final double? replacementPriceDifferenceAmount;
+  final CustomerReplacementState replacementState;
+  final String? replacementPaymentStatus;
 }

@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasources/cart_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/repositories/cart_repository.dart';
 import 'package:uuid/uuid.dart';
 
@@ -42,16 +43,30 @@ class CartRepositoryImpl implements CartRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, BasketOptimization>> getBasketOptimization() async {
+  Future<Either<NetworkExceptions, CartOfferAdvice>> getOfferAdvice() async {
+    try {
+      return right(
+        CartOfferAdvice.fromJson(await remoteDataSource.getOfferAdvice()),
+      );
+    } catch (e) {
+      return left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, BasketOptimization>>
+  getBasketOptimization() async {
     try {
       final json = await remoteDataSource.getBasketOptimization();
       final insights = (json['insights'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .toList(growable: false);
-      return right(BasketOptimization(
-        insights: insights,
-        savingsTip: json['savingsTip'] as String?,
-      ));
+      return right(
+        BasketOptimization(
+          insights: insights,
+          savingsTip: json['savingsTip'] as String?,
+        ),
+      );
     } catch (e) {
       return left(_mapError(e));
     }

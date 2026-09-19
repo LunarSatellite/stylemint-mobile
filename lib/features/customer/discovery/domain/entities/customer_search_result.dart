@@ -10,6 +10,7 @@ class SearchResultProduct {
     this.isSponsored = false,
     this.sponsoredLabel,
     this.organicPosition,
+    this.matchReason,
   });
 
   final String productId;
@@ -29,6 +30,9 @@ class SearchResultProduct {
   /// Where this product ranked organically for the search (1-based); null
   /// for organic results or when unknown.
   final int? organicPosition;
+
+  /// A short explanation supplied by the AI ranker when available.
+  final String? matchReason;
 
   /// The disclosure a sponsored result must show, falling back to
   /// "Sponsored" if the label is missing; null for organic results.
@@ -87,6 +91,7 @@ class CustomerSearchResults {
     required this.reels,
     required this.creators,
     required this.totalHits,
+    this.queryUnderstanding,
   });
 
   static const empty = CustomerSearchResults(
@@ -102,4 +107,5 @@ class CustomerSearchResults {
   final List<SearchResultReel> reels;
   final List<SearchResultCreator> creators;
   final int totalHits;
+  final String? queryUnderstanding;
 }

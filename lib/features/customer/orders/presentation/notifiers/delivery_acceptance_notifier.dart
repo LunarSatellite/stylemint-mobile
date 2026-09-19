@@ -78,6 +78,9 @@ class DeliveryAcceptanceNotifier
     required DeliveryAcceptanceOutcome outcome,
     bool? sealIntact,
     String? issueNote,
+    List<DeliveryReceivedItemInput> receivedItems =
+        const <DeliveryReceivedItemInput>[],
+    String? scannedTrackingCode,
   }) async {
     final asking = state;
     if (asking is! DeliveryAcceptanceAsking || asking.sending) return;
@@ -88,6 +91,7 @@ class DeliveryAcceptanceNotifier
       hasSeal: hasSeal,
       sealIntact: sealIntact,
       issueNote: issueNote,
+      receivedItems: receivedItems,
     );
     if (problem != null) {
       state = DeliveryAcceptanceAsking(hasSeal: hasSeal, errorMessage: problem);
@@ -103,6 +107,8 @@ class DeliveryAcceptanceNotifier
         // An unsealed package has no seal to report on.
         sealIntact: hasSeal ? sealIntact : null,
         issueNote: outcome.needsNote ? issueNote?.trim() : null,
+        receivedItems: receivedItems,
+        scannedTrackingCode: scannedTrackingCode,
       );
     } on Object catch (_) {
       result = left(const NetworkExceptions.unexpectedError());

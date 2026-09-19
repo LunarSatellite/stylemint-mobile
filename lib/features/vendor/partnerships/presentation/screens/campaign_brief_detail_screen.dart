@@ -140,7 +140,10 @@ class _Body extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Boost budget', style: DesignTokens.smallRegular),
-                  MoneyText(brief.boostBudget, style: DesignTokens.mediumSemibold),
+                  MoneyText(
+                    brief.boostBudget,
+                    style: DesignTokens.mediumSemibold,
+                  ),
                 ],
               ),
             ],
@@ -148,6 +151,56 @@ class _Body extends ConsumerWidget {
         ),
         const SizedBox(height: DesignTokens.s16),
         _RoiCard(roi: brief.roiProjection),
+        const SizedBox(height: DesignTokens.s16),
+        Container(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF163B35), Color(0xFF19263D)],
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: Color(0xFF67F5C7)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Campaign Studio',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Creative, approval, Reach and measured lift',
+                      style: TextStyle(
+                        color: DesignTokens.textLight,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => context.push(
+                  RouteNames.vendorCampaignWorkspace.replaceFirst(
+                    ':briefId',
+                    brief.id,
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: DesignTokens.s24),
         _Actions(brief: brief, isBusy: isBusy, notifier: notifier),
       ],
@@ -228,7 +281,9 @@ class _RoiRow extends StatelessWidget {
         Text(label, style: DesignTokens.smallRegular),
         Text(
           '$low – $high',
-          style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+          style: DesignTokens.smallRegular.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

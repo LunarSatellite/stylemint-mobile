@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/role_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
-import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart' show roleNotifierProvider;
+import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart'
+    show roleNotifierProvider;
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/blocked_users_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/devices_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/email_login_screen.dart';
@@ -66,9 +67,13 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/sc
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/mission_shopping_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/outcome_contracts/presentation/outcome_contracts_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/lifecycle/presentation/lifecycle_steward_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/agent_negotiations/presentation/agent_negotiations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_list_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
@@ -198,6 +203,7 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/sc
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/screens/vendor_orders_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/adjust_commission_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_brief_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_workspace_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/campaign_briefs_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/create_campaign_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/partnerships/presentation/screens/creator_partnership_requests_screen.dart';
@@ -675,6 +681,9 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.searchResults,
         builder: (ctx, state) => SearchResultsScreen(
           query: state.uri.queryParameters['q'] ?? '',
+          initialResults: state.extra is CustomerSearchResults
+              ? state.extra! as CustomerSearchResults
+              : null,
         ),
       ),
 
@@ -689,6 +698,21 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.missionShopping,
         builder: (ctx, state) => const MissionShoppingScreen(),
+      ),
+
+      GoRoute(
+        path: RouteNames.outcomeContracts,
+        builder: (ctx, state) => const OutcomeContractsScreen(),
+      ),
+
+      GoRoute(
+        path: RouteNames.lifecycleSteward,
+        builder: (ctx, state) => const LifecycleStewardScreen(),
+      ),
+
+      GoRoute(
+        path: RouteNames.agentNegotiations,
+        builder: (ctx, state) => const AgentNegotiationsScreen(),
       ),
 
       // Category products
@@ -736,6 +760,7 @@ GoRouter appRouter(Ref ref) {
             productId: state.pathParameters['productId']!,
             storeId: query[InStoreQuery.storeId],
             code: query[InStoreQuery.code],
+            via: CodeScanVia.parse(query[InStoreQuery.via]),
             storeName: query[InStoreQuery.store],
             storeCity: query[InStoreQuery.city],
           );
@@ -1295,6 +1320,12 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.vendorCampaignBriefDetail,
         builder: (ctx, state) => CampaignBriefDetailScreen(
+          briefId: state.pathParameters['briefId']!,
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorCampaignWorkspace,
+        builder: (ctx, state) => CampaignWorkspaceScreen(
           briefId: state.pathParameters['briefId']!,
         ),
       ),

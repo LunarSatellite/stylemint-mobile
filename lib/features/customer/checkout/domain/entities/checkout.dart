@@ -32,20 +32,20 @@ class ShippingAddress {
   /// at all, so the old "blank line1 means no address" test would have hidden
   /// every new address from checkout.
   const ShippingAddress.empty()
-      : id = '',
-        label = '',
-        countryCode = '',
-        isDefault = false,
-        locationNote = '',
-        mapsLink = null,
-        latitude = null,
-        longitude = null,
-        line1 = null,
-        line2 = null,
-        city = null,
-        stateProvince = null,
-        postalCode = null,
-        rowVersion = '';
+    : id = '',
+      label = '',
+      countryCode = '',
+      isDefault = false,
+      locationNote = '',
+      mapsLink = null,
+      latitude = null,
+      longitude = null,
+      line1 = null,
+      line2 = null,
+      city = null,
+      stateProvince = null,
+      postalCode = null,
+      rowVersion = '';
 
   final String id;
   final String label;
@@ -81,12 +81,12 @@ class ShippingAddress {
 
   /// Legacy postal text as one line, with every null/blank part dropped.
   String get legacyPostalLine => [
-        line1,
-        line2,
-        city,
-        stateProvince,
-        postalCode,
-      ].map((p) => p?.trim() ?? '').where((p) => p.isNotEmpty).join(', ');
+    line1,
+    line2,
+    city,
+    stateProvince,
+    postalCode,
+  ].map((p) => p?.trim() ?? '').where((p) => p.isNotEmpty).join(', ');
 
   String get pointLabel => hasPoint
       ? '${latitude!.toStringAsFixed(5)}, ${longitude!.toStringAsFixed(5)}'
@@ -157,23 +157,112 @@ class ShippingAddress {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        label,
-        locationNote,
-        mapsLink,
-        latitude,
-        longitude,
-        line1,
-        line2,
-        city,
-        stateProvince,
-        postalCode,
-        countryCode,
-        isDefault,
-      );
+    id,
+    label,
+    locationNote,
+    mapsLink,
+    latitude,
+    longitude,
+    line1,
+    line2,
+    city,
+    stateProvince,
+    postalCode,
+    countryCode,
+    isDefault,
+  );
 }
 
 enum PaymentMethodType { card, eSewa, cod, paypal }
+
+enum DeliveryChoiceKind { homeDelivery, pickupFromSeller }
+
+class DeliveryChoice {
+  const DeliveryChoice({
+    required this.kind,
+    required this.title,
+    required this.detail,
+    required this.deliveries,
+    required this.readyInDays,
+    required this.selected,
+    this.recommended = false,
+    this.sellerAccountId,
+    this.sellerName,
+  });
+  final DeliveryChoiceKind kind;
+  final String title;
+  final String detail;
+  final int deliveries;
+  final int readyInDays;
+  final String? sellerAccountId;
+  final String? sellerName;
+  final bool selected;
+  final bool recommended;
+  DeliveryChoice copyWith({bool? selected}) => DeliveryChoice(
+    kind: kind,
+    title: title,
+    detail: detail,
+    deliveries: deliveries,
+    readyInDays: readyInDays,
+    sellerAccountId: sellerAccountId,
+    sellerName: sellerName,
+    selected: selected ?? this.selected,
+    recommended: recommended,
+  );
+}
+
+class DeliveryPreference {
+  const DeliveryPreference({
+    this.preferFewerDeliveries = false,
+    this.preferPickup = false,
+    this.maximumExtraWaitDays = 0,
+  });
+  final bool preferFewerDeliveries;
+  final bool preferPickup;
+  final int maximumExtraWaitDays;
+
+  DeliveryPreference copyWith({
+    bool? preferFewerDeliveries,
+    bool? preferPickup,
+    int? maximumExtraWaitDays,
+  }) => DeliveryPreference(
+    preferFewerDeliveries: preferFewerDeliveries ?? this.preferFewerDeliveries,
+    preferPickup: preferPickup ?? this.preferPickup,
+    maximumExtraWaitDays: maximumExtraWaitDays ?? this.maximumExtraWaitDays,
+  );
+}
+
+class DeliveryConsolidationPlan {
+  const DeliveryConsolidationPlan({
+    required this.itemUnits,
+    required this.sellerPackages,
+    required this.packagesAvoidedBySellerGrouping,
+    required this.readyInDays,
+    required this.crossSellerConsolidationAvailable,
+    required this.explanation,
+  });
+  final int itemUnits;
+  final int sellerPackages;
+  final int packagesAvoidedBySellerGrouping;
+  final int readyInDays;
+  final bool crossSellerConsolidationAvailable;
+  final String explanation;
+}
+
+class DeliveryChoices {
+  const DeliveryChoices({
+    required this.choices,
+    required this.emissionsNote,
+    this.pickupNote,
+    this.preferences = const DeliveryPreference(),
+    this.consolidation,
+  });
+  final List<DeliveryChoice> choices;
+  final String emissionsNote;
+  final String? pickupNote;
+  final DeliveryPreference preferences;
+  final DeliveryConsolidationPlan? consolidation;
+}
 
 class PaymentMethod {
   const PaymentMethod({
@@ -192,11 +281,11 @@ class PaymentMethod {
 
   /// Sentinel "nothing selected yet" payment method — see [ShippingAddress.empty].
   const PaymentMethod.empty()
-      : id = '',
-        type = PaymentMethodType.cod,
-        label = '',
-        lastFour = null,
-        isDefault = false;
+    : id = '',
+      type = PaymentMethodType.cod,
+      label = '',
+      lastFour = null,
+      isDefault = false;
 
   PaymentMethod copyWith({
     String? id,
@@ -308,13 +397,13 @@ class CheckoutItem {
 
   @override
   int get hashCode => Object.hash(
-        productId,
-        productName,
-        imageUrl,
-        variantName,
-        quantity,
-        unitPrice,
-      );
+    productId,
+    productName,
+    imageUrl,
+    variantName,
+    quantity,
+    unitPrice,
+  );
 }
 
 class CheckoutSummary {
@@ -329,6 +418,11 @@ class CheckoutSummary {
     required this.total,
     this.availableAddresses = const [],
     this.availablePaymentMethods = const [],
+    this.deliveryChoices = const [],
+    this.emissionsNote = '',
+    this.pickupNote,
+    this.deliveryPreference = const DeliveryPreference(),
+    this.deliveryConsolidation,
   });
 
   final ShippingAddress shippingAddress;
@@ -339,10 +433,24 @@ class CheckoutSummary {
   final Money tax;
   final Money discount;
   final Money total;
+
   /// Saved addresses from the addresses API. First entry is always [shippingAddress].
   final List<ShippingAddress> availableAddresses;
+
   /// Saved payment methods from the payment-methods API. First entry is always [paymentMethod].
   final List<PaymentMethod> availablePaymentMethods;
+  final List<DeliveryChoice> deliveryChoices;
+  final String emissionsNote;
+  final String? pickupNote;
+  final DeliveryPreference deliveryPreference;
+  final DeliveryConsolidationPlan? deliveryConsolidation;
+
+  DeliveryChoice? get selectedDeliveryChoice {
+    for (final choice in deliveryChoices) {
+      if (choice.selected) return choice;
+    }
+    return deliveryChoices.isEmpty ? null : deliveryChoices.first;
+  }
 
   CheckoutSummary copyWith({
     ShippingAddress? shippingAddress,
@@ -355,6 +463,11 @@ class CheckoutSummary {
     Money? total,
     List<ShippingAddress>? availableAddresses,
     List<PaymentMethod>? availablePaymentMethods,
+    List<DeliveryChoice>? deliveryChoices,
+    String? emissionsNote,
+    String? pickupNote,
+    DeliveryPreference? deliveryPreference,
+    DeliveryConsolidationPlan? deliveryConsolidation,
   }) {
     return CheckoutSummary(
       shippingAddress: shippingAddress ?? this.shippingAddress,
@@ -368,6 +481,12 @@ class CheckoutSummary {
       availableAddresses: availableAddresses ?? this.availableAddresses,
       availablePaymentMethods:
           availablePaymentMethods ?? this.availablePaymentMethods,
+      deliveryChoices: deliveryChoices ?? this.deliveryChoices,
+      emissionsNote: emissionsNote ?? this.emissionsNote,
+      pickupNote: pickupNote ?? this.pickupNote,
+      deliveryPreference: deliveryPreference ?? this.deliveryPreference,
+      deliveryConsolidation:
+          deliveryConsolidation ?? this.deliveryConsolidation,
     );
   }
 
@@ -387,17 +506,17 @@ class CheckoutSummary {
 
   @override
   int get hashCode => Object.hash(
-        shippingAddress,
-        paymentMethod,
-        Object.hashAll(items),
-        subtotal,
-        shipping,
-        tax,
-        discount,
-        total,
-        Object.hashAll(availableAddresses),
-        Object.hashAll(availablePaymentMethods),
-      );
+    shippingAddress,
+    paymentMethod,
+    Object.hashAll(items),
+    subtotal,
+    shipping,
+    tax,
+    discount,
+    total,
+    Object.hashAll(availableAddresses),
+    Object.hashAll(availablePaymentMethods),
+  );
 
   static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;

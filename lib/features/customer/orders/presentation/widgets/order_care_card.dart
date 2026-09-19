@@ -158,6 +158,13 @@ class _CareItemRow extends StatelessWidget {
                   ),
                 ),
               ],
+              if (item.warrantyEndsUtc case final warrantyEnds?) ...[
+                const SizedBox(height: DesignTokens.s8),
+                _WarrantyChip(
+                  ends: warrantyEnds,
+                  inProgress: item.hasOpenWarrantyClaim,
+                ),
+              ],
               if (item.isReturnWindowOpen && daysLeft != null) ...[
                 const SizedBox(height: DesignTokens.s8),
                 _DaysLeftChip(days: daysLeft),
@@ -176,6 +183,45 @@ class _CareItemRow extends StatelessWidget {
       ],
     );
   }
+}
+
+class _WarrantyChip extends StatelessWidget {
+  const _WarrantyChip({required this.ends, required this.inProgress});
+
+  final DateTime ends;
+  final bool inProgress;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: DesignTokens.s8,
+      vertical: DesignTokens.s4,
+    ),
+    decoration: BoxDecoration(
+      color: DesignTokens.primaryGreen.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.shield_outlined,
+          size: 14,
+          color: DesignTokens.primaryGreen,
+        ),
+        const SizedBox(width: DesignTokens.s4),
+        Text(
+          inProgress
+              ? 'Warranty claim in progress'
+              : 'Warranty to ${DateFormat('MMM d, y').format(ends.toLocal())}',
+          style: DesignTokens.smallRegular.copyWith(
+            color: DesignTokens.primaryGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _DaysLeftChip extends StatelessWidget {
@@ -229,4 +275,6 @@ String careActionLabel(CareAction action) => switch (action) {
   CareAction.review => 'Write a review',
   CareAction.reorder => 'Buy again',
   CareAction.getHelp => 'Get help',
+  CareAction.warrantyClaim => 'Use warranty',
+  CareAction.warrantyStatus => 'View warranty claim',
 };

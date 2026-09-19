@@ -92,6 +92,9 @@ class _PagedRepository implements InStoreRepository {
   Future<Either<NetworkExceptions, List<ProductReel>>> getProductReels(
     String productId,
   ) async => right(const []);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

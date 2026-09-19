@@ -213,6 +213,26 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
                 : null,
             authenticityStatement:
                 json['authenticityStatement'] as String? ?? '',
+            schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 1,
+            revision: json['revision'] as String? ?? '',
+            generatedAt: DateTime.tryParse(
+              json['generatedUtc'] as String? ?? '',
+            ),
+            provenance: (json['provenance'] as List<dynamic>? ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .map(
+                  (fact) => ProductProvenanceFact(
+                    key: fact['key'] as String? ?? '',
+                    label: fact['label'] as String? ?? '',
+                    value: fact['value'] as String? ?? '',
+                    verified: fact['verified'] as bool? ?? false,
+                    observedAt: DateTime.tryParse(
+                      fact['observedUtc'] as String? ?? '',
+                    ),
+                  ),
+                )
+                .where((fact) => fact.label.isNotEmpty && fact.value.isNotEmpty)
+                .toList(growable: false),
           ),
         );
       } catch (e) {

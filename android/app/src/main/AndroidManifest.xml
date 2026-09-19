@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- User-triggered voice search; typed search remains available when denied. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- StyleMint Codes: vendors write shelf-code links to NFC tags. NFC isn't
          required, so phones without it can still install the app. -->
     <uses-permission android:name="android.permission.NFC"/>
@@ -110,6 +112,9 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

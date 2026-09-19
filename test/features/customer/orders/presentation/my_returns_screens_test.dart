@@ -67,7 +67,11 @@ Widget _app(
   Widget screen, {
   double textScale = 1,
 }) => ProviderScope(
-  overrides: [ordersRepositoryProvider.overrideWithValue(repository)],
+  overrides: [
+    ordersRepositoryProvider.overrideWithValue(repository),
+    returnPickupProvider.overrideWith((ref, returnId) async => null),
+    replacementShipmentProvider.overrideWith((ref, returnId) async => null),
+  ],
   child: ordersTestApp(screen, textScale: textScale, wrapInScaffold: false),
 );
 

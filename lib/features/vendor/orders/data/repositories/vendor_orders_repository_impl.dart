@@ -237,6 +237,28 @@ class VendorOrdersRepositoryImpl implements VendorOrdersRepository {
     }
   }
 
+  @override
+  Future<Either<NetworkExceptions, VendorReturnRequest>> completeReturn(
+    String returnRequestId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(NetworkExceptions.noInternetConnection());
+    }
+    try {
+      final data = await remoteDataSource.completeReturn(
+        returnRequestId,
+        _uuid.v4(),
+      );
+      return right(VendorReturnRequestDto.fromJson(data).toDomain());
+    } catch (error) {
+      if (error is DioException) {
+        return left(mapDioExceptionToNetworkException(error));
+      }
+      if (error is NetworkExceptions) return left(error);
+      return left(NetworkExceptions.unexpectedError());
+    }
+  }
+
   /// Inverse of [VendorReturnRequestDto._stateFromCode] — backend
   /// `ReturnRequestState`: Submitted=1, Approved=2, Rejected=3, Completed=4.
   static int _stateToCode(VendorReturnRequestState state) => switch (state) {

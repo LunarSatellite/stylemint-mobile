@@ -70,6 +70,8 @@ void main() {
       // ETA in Kathmandu: 12:00 UTC on 17 Sep 2026 is a Thursday.
       expect(find.text('Arriving by Thu 17 Sep'), findsOneWidget);
       expect(find.text('StyleMint Delivery · SM-D-00012847'), findsOneWidget);
+      expect(find.text('Verified delivery history'), findsOneWidget);
+      expect(find.byIcon(Icons.verified_user_outlined), findsOneWidget);
       // Current step: pill, headline, hint and handover note.
       expect(find.text('Picked up'), findsOneWidget);
       expect(find.text('With the courier'), findsOneWidget);

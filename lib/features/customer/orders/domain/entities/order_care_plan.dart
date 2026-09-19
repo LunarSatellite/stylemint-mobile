@@ -29,7 +29,15 @@ enum CareStage {
 
 /// What the customer can do for an item right now. Wire values are
 /// `track`, `return`, `review`, `reorder` and `get_help`.
-enum CareAction { track, returnItem, review, reorder, getHelp }
+enum CareAction {
+  track,
+  returnItem,
+  review,
+  reorder,
+  getHelp,
+  warrantyClaim,
+  warrantyStatus,
+}
 
 class CareItem {
   const CareItem({
@@ -46,6 +54,11 @@ class CareItem {
     this.returnWindowClosesUtc,
     this.daysLeftToReturn,
     this.trackingNumber,
+    this.warrantyEligible = false,
+    this.hasOpenWarrantyClaim = false,
+    this.warrantyCoverageDays,
+    this.warrantyEndsUtc,
+    this.warrantyTerms,
   });
 
   final String subOrderId;
@@ -63,6 +76,11 @@ class CareItem {
   /// Whole days left to request a return; set only while the window is open.
   final int? daysLeftToReturn;
   final String? trackingNumber;
+  final bool warrantyEligible;
+  final bool hasOpenWarrantyClaim;
+  final int? warrantyCoverageDays;
+  final DateTime? warrantyEndsUtc;
+  final String? warrantyTerms;
   final List<CareAction> actions;
 
   /// One plain sentence telling the customer what matters next.

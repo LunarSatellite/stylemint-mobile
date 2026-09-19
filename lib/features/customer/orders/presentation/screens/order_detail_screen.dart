@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
@@ -15,6 +16,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_care_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_return_link.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/warranty_claim_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_tracking_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reviews/presentation/widgets/rate_review_sheet.dart';
@@ -182,6 +184,15 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         return (_) => context.push('/product/${line.productId}');
       case CareAction.getHelp:
         return (_) => context.push(RouteNames.supportContact);
+      case CareAction.warrantyClaim:
+        return (_) => showWarrantyClaimSheet(
+          context,
+          ref,
+          orderNumber: order.orderNumber,
+          item: care,
+        );
+      case CareAction.warrantyStatus:
+        return (_) => showWarrantyStatusSheet(context, ref);
     }
   }
 
@@ -214,7 +225,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
             // Only once the parcel may have reached the buyer; the card
             // itself checks the package is out for delivery or delivered.
             if (_parcelMayHaveArrived(order.status))
-              DeliveryAcceptanceCard(trackingNumber: trackingNumber),
+              DeliveryAcceptanceCard(
+                trackingNumber: trackingNumber,
+                items: order.items,
+              ),
             const CarbonImpactCard(),
           ],
           OrderCareCard(
@@ -615,7 +629,11 @@ class _DeliveryRiskBanner extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded, size: 18, color: DesignTokens.warning500),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 18,
+            color: DesignTokens.warning500,
+          ),
           const SizedBox(width: DesignTokens.s8),
           Expanded(
             child: Column(
@@ -623,13 +641,17 @@ class _DeliveryRiskBanner extends ConsumerWidget {
               children: [
                 Text(
                   risk.customerMessage,
-                  style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+                  style: DesignTokens.smallRegular.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (risk.recommendedAction != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     risk.recommendedAction!,
-                    style: DesignTokens.smallRegular.copyWith(color: DesignTokens.textMuted),
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                    ),
                   ),
                 ],
               ],
@@ -1942,6 +1964,8 @@ void _startReturnRequest(
         quantity: result.quantity,
         reason: result.reason,
         photoUrls: result.photoUrls,
+        resolution: result.resolution,
+        replacementVariantId: result.replacementVariantId,
       );
     }
   });
@@ -2038,12 +2062,16 @@ class _ReturnRequestResult {
     required this.quantity,
     required this.reason,
     required this.photoUrls,
+    required this.resolution,
+    this.replacementVariantId,
   });
 
   final OrderDetailItem item;
   final int quantity;
   final String reason;
   final List<String> photoUrls;
+  final ReturnResolutionChoice resolution;
+  final String? replacementVariantId;
 }
 
 /// Collects everything the backend's `SubmitReturnVm` requires: which line
@@ -2073,6 +2101,10 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
   final List<String> _photoUrls = [];
   bool _uploading = false;
   String? _error;
+  ReturnResolutionChoice _resolution = ReturnResolutionChoice.refund;
+  List<ReplacementOption> _replacementOptions = const [];
+  ReplacementOption? _selectedReplacement;
+  bool _loadingReplacements = false;
 
   @override
   void initState() {
@@ -2112,6 +2144,44 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
     );
   }
 
+  Future<void> _setResolution(ReturnResolutionChoice choice) async {
+    setState(() {
+      _resolution = choice;
+      _error = null;
+      _selectedReplacement = null;
+      _replacementOptions = const [];
+      _loadingReplacements = choice == ReturnResolutionChoice.replacement;
+    });
+    if (choice == ReturnResolutionChoice.refund) return;
+
+    final result = await widget.notifier.getReplacementOptions(
+      _selectedItem.productId,
+    );
+    if (!mounted) return;
+    result.fold(
+      (_) => setState(() {
+        _loadingReplacements = false;
+        _error = 'Could not load replacement options. Try again.';
+      }),
+      (options) {
+        final eligible = options
+            .where(
+              (option) =>
+                  option.price.currency == _selectedItem.unitPrice.currency,
+            )
+            .toList(growable: false);
+        setState(() {
+          _loadingReplacements = false;
+          _replacementOptions = eligible;
+          _selectedReplacement = eligible.isEmpty ? null : eligible.first;
+          if (eligible.isEmpty) {
+            _error = 'No replacement variant is currently in stock.';
+          }
+        });
+      },
+    );
+  }
+
   void _submit() {
     if (_controller.text.trim().isEmpty) {
       setState(() => _error = 'Please enter a reason for the return.');
@@ -2121,6 +2191,11 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
       setState(() => _error = 'Please add at least one photo.');
       return;
     }
+    if (_resolution == ReturnResolutionChoice.replacement &&
+        _selectedReplacement == null) {
+      setState(() => _error = 'Choose an available replacement variant.');
+      return;
+    }
     Navigator.pop(
       context,
       _ReturnRequestResult(
@@ -2128,6 +2203,8 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
         quantity: _quantity,
         reason: _controller.text.trim(),
         photoUrls: _photoUrls,
+        resolution: _resolution,
+        replacementVariantId: _selectedReplacement?.variantId,
       ),
     );
   }
@@ -2168,6 +2245,60 @@ class _ReturnRequestDialogState extends State<_ReturnRequestDialog> {
               ),
               const SizedBox(height: DesignTokens.s12),
             ],
+            Text(
+              'How should we resolve it?',
+              style: DesignTokens.smallDescription,
+            ),
+            const SizedBox(height: DesignTokens.s8),
+            SegmentedButton<ReturnResolutionChoice>(
+              segments: const [
+                ButtonSegment(
+                  value: ReturnResolutionChoice.refund,
+                  icon: Icon(Icons.currency_rupee_rounded),
+                  label: Text('Refund'),
+                ),
+                ButtonSegment(
+                  value: ReturnResolutionChoice.replacement,
+                  icon: Icon(Icons.swap_horiz_rounded),
+                  label: Text('Replace'),
+                ),
+              ],
+              selected: {_resolution},
+              onSelectionChanged: (values) => _setResolution(values.first),
+            ),
+            if (_loadingReplacements) ...[
+              const SizedBox(height: DesignTokens.s12),
+              const LinearProgressIndicator(),
+            ] else if (_resolution == ReturnResolutionChoice.replacement &&
+                _replacementOptions.isNotEmpty) ...[
+              const SizedBox(height: DesignTokens.s12),
+              DropdownButtonFormField<ReplacementOption>(
+                initialValue: _selectedReplacement,
+                decoration: DesignTokens.inputDecoration(
+                  hintText: 'Replacement variant',
+                ),
+                dropdownColor: DesignTokens.bgAppBody,
+                items: _replacementOptions
+                    .map(
+                      (option) => DropdownMenuItem(
+                        value: option,
+                        child: Text(
+                          '${option.label} · ${formatMoney(option.price)}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (option) =>
+                    setState(() => _selectedReplacement = option),
+              ),
+              const SizedBox(height: DesignTokens.s4),
+              Text(
+                'Stock is held for 24 hours. Cheaper options refund the difference; higher-priced options collect only the balance.',
+                style: DesignTokens.smallDescription,
+              ),
+            ],
+            const SizedBox(height: DesignTokens.s12),
             Row(
               children: [
                 Text('Quantity', style: DesignTokens.smallDescription),

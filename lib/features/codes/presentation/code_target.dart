@@ -15,7 +15,7 @@ class CodeTarget {
 
 /// The screen [code] opens, or null when it points at nothing this app can
 /// show (a missing id, or a kind this version doesn't know).
-CodeTarget? codeTargetFor(ResolvedCode code) {
+CodeTarget? codeTargetFor(ResolvedCode code, {CodeScanVia? via}) {
   switch (code.kind) {
     case CodeKind.productTag:
       final productId = code.productId;
@@ -25,6 +25,7 @@ CodeTarget? codeTargetFor(ResolvedCode code) {
           productId: productId,
           storeId: code.storeId,
           code: code.code,
+          via: via?.wireName,
           storeName: code.storeName,
           storeCity: code.storeCity,
         ),

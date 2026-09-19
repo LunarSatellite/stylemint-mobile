@@ -19,6 +19,7 @@ import 'features/messaging/shared/providers.dart';
 import 'features/creator/social_connect/shared/providers.dart';
 import 'features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'features/customer/cart/domain/entities/cart.dart';
+import 'features/customer/cart/domain/entities/cart_offer.dart';
 import 'features/customer/cart/domain/repositories/cart_repository.dart';
 import 'features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'features/customer/cart/presentation/screens/cart_screen.dart';
@@ -80,8 +81,19 @@ class _MockCartRepository implements CartRepository {
 
   @override
   Future<Either<NetworkExceptions, BasketOptimization>>
-  getBasketOptimization() async => right(const BasketOptimization(insights: []));
+  getBasketOptimization() async =>
+      right(const BasketOptimization(insights: []));
 
+  @override
+  Future<Either<NetworkExceptions, CartOfferAdvice>> getOfferAdvice() async =>
+      right(
+        const CartOfferAdvice(
+          inControlGroup: false,
+          headline: '',
+          offers: [],
+          fairnessNote: '',
+        ),
+      );
   @override
   Future<Either<NetworkExceptions, BasketScenarios>> getScenarios({
     double? budget,
@@ -312,14 +324,55 @@ class _MockCheckoutRepository implements CheckoutRepository {
   ]);
 
   @override
+  Future<Either<NetworkExceptions, DeliveryChoices>>
+  getDeliveryChoices() async => right(
+    const DeliveryChoices(
+      choices: [
+        DeliveryChoice(
+          kind: DeliveryChoiceKind.homeDelivery,
+          title: 'Home delivery',
+          detail: 'Delivered to your selected address.',
+          deliveries: 1,
+          readyInDays: 2,
+          selected: true,
+        ),
+        DeliveryChoice(
+          kind: DeliveryChoiceKind.pickupFromSeller,
+          title: 'Pick up from StyleMint',
+          detail: 'Collect your order when it is ready.',
+          deliveries: 0,
+          readyInDays: 1,
+          sellerAccountId: 'seller-1',
+          sellerName: 'StyleMint',
+          selected: false,
+        ),
+      ],
+      emissionsNote: 'Consolidated delivery reduces unnecessary trips.',
+      pickupNote: 'Bring your order confirmation when collecting.',
+    ),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> selectDeliveryChoice(
+    DeliveryChoice choice,
+  ) async => right(unit);
+
+  @override
+  Future<Either<NetworkExceptions, DeliveryPreference>>
+  updateDeliveryPreference(DeliveryPreference preference) async =>
+      right(preference);
+
+  @override
   Future<Either<NetworkExceptions, PlaceOrderResult>> placeOrder({
-    required String addressId,
+    required String? addressId,
     required PaymentMethodType paymentMethod,
     required String idempotencyKey,
-  }) async => right(const PlaceOrderResult(
-    orderNumber: 'mock-order-001',
-    requiresPaymentAction: false,
-  ));
+  }) async => right(
+    const PlaceOrderResult(
+      orderNumber: 'mock-order-001',
+      requiresPaymentAction: false,
+    ),
+  );
 }
 
 // GoRouter for the single-screen preview (cart → checkout flow only).
@@ -407,9 +460,9 @@ class _SessionScopeState extends State<_SessionScope> {
 
   @override
   Widget build(BuildContext context) => ProviderScope(
-        key: ValueKey(_generation),
-        child: _AppWithDeepLinks(onSignedOut: _restart),
-      );
+    key: ValueKey(_generation),
+    child: _AppWithDeepLinks(onSignedOut: _restart),
+  );
 }
 
 /// Wraps [StyleMintApp] and listens for incoming deep links so that magic-link
@@ -474,8 +527,10 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
       final wasSignedIn =
           prev?.maybeWhen(authenticated: (_) => true, orElse: () => false) ??
           false;
-      final signedOut =
-          next.maybeWhen(unauthenticated: () => true, orElse: () => false);
+      final signedOut = next.maybeWhen(
+        unauthenticated: () => true,
+        orElse: () => false,
+      );
       if (wasSignedIn && signedOut) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => widget.onSignedOut(),
@@ -539,7 +594,9 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
   void _handleUri(Uri uri) {
     // ignore: avoid_print
     // Never log the query: OAuth returns carry a one-time code and state.
-    print('[OAUTH-DEBUG] _handleUri: scheme=${uri.scheme} host=${uri.host} path=${uri.path} queryKeys=${uri.queryParameters.keys.toList()}');
+    print(
+      '[OAUTH-DEBUG] _handleUri: scheme=${uri.scheme} host=${uri.host} path=${uri.path} queryKeys=${uri.queryParameters.keys.toList()}',
+    );
     // Backend API URLs (e.g. the OAuth callback
     // /v1/social/connect/*/callback) are NOT app routes. They must be handled
     // server-side; if one reaches us (App Links can over-match on the shared
@@ -612,7 +669,9 @@ class _AppWithDeepLinksState extends ConsumerState<_AppWithDeepLinks> {
         ? ''
         : '?${uri.queryParameters.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}';
     // ignore: avoid_print
-    print('[OAUTH-DEBUG] _navigate: router.go(\'$path\') queryKeys=${uri.queryParameters.keys.toList()}');
+    print(
+      '[OAUTH-DEBUG] _navigate: router.go(\'$path\') queryKeys=${uri.queryParameters.keys.toList()}',
+    );
     router.go('$path$query');
   }
 

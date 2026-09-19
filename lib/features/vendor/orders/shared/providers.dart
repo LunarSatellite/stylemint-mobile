@@ -10,9 +10,9 @@ import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/no
 
 final vendorOrdersRemoteDataSourceProvider =
     Provider<VendorOrdersRemoteDataSource>(
-  (ref) =>
-      VendorOrdersRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
-);
+      (ref) =>
+          VendorOrdersRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+    );
 
 final vendorOrdersRepositoryProvider = Provider<VendorOrdersRepository>(
   (ref) => VendorOrdersRepositoryImpl(
@@ -23,11 +23,15 @@ final vendorOrdersRepositoryProvider = Provider<VendorOrdersRepository>(
 
 final vendorOrdersNotifierProvider =
     StateNotifierProvider<VendorOrdersNotifier, OrdersState>(
-  (ref) => VendorOrdersNotifier(ref.watch(vendorOrdersRepositoryProvider)),
-);
+      (ref) => VendorOrdersNotifier(ref.watch(vendorOrdersRepositoryProvider)),
+    );
 
 final vendorOrderDetailNotifierProvider =
     StateNotifierProvider<VendorOrderDetailNotifier, OrderDetailState>(
-  (ref) =>
-      VendorOrderDetailNotifier(ref.watch(vendorOrdersRepositoryProvider)),
-);
+      (ref) =>
+          VendorOrderDetailNotifier(ref.watch(vendorOrdersRepositoryProvider)),
+    );
+
+final vendorReturnsProvider = FutureProvider.autoDispose((ref) {
+  return ref.watch(vendorOrdersRepositoryProvider).listReturns(pageSize: 100);
+});

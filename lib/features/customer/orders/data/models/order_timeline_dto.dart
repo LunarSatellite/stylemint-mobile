@@ -42,6 +42,7 @@ abstract class SubOrderTimelineDto with _$SubOrderTimelineDto {
     @Default(false) bool isTerminal,
     String? carrier,
     String? trackingNumber,
+    @Default('legacy_unsealed') String deliveryProofStatus,
     DateTime? estimatedDeliveryUtc,
     @Default(<TimelineStepDto>[]) List<TimelineStepDto> steps,
   }) = _SubOrderTimelineDto;
@@ -60,6 +61,7 @@ abstract class SubOrderTimelineDto with _$SubOrderTimelineDto {
     isTerminal: isTerminal,
     carrier: carrier,
     trackingNumber: trackingNumber,
+    deliveryProofStatus: DeliveryProofStatus.fromWire(deliveryProofStatus),
     estimatedDeliveryUtc: estimatedDeliveryUtc,
     steps: steps.map((s) => s.toDomain()).toList(growable: false),
   );

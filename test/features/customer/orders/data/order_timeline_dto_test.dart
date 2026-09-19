@@ -17,6 +17,7 @@ const Map<String, dynamic> contractTimelineJson = {
       'isTerminal': false,
       'carrier': 'StyleMint Delivery',
       'trackingNumber': 'SM-D-00012847',
+      'deliveryProofStatus': 'verified',
       'estimatedDeliveryUtc': '2026-09-17T12:00:00+00:00',
       'steps': [
         {
@@ -94,6 +95,7 @@ void main() {
       expect(sub.isTerminal, isFalse);
       expect(sub.carrier, 'StyleMint Delivery');
       expect(sub.trackingNumber, 'SM-D-00012847');
+      expect(sub.deliveryProofStatus, DeliveryProofStatus.verified);
       expect(sub.estimatedDeliveryUtc, DateTime.utc(2026, 9, 17, 12));
       expect(sub.steps, hasLength(7));
 
@@ -130,6 +132,7 @@ void main() {
       expect(sub.currentStep, BuyerTimelineStep.unknown);
       expect(sub.vendorName, isNull);
       expect(sub.estimatedDeliveryUtc, isNull);
+      expect(sub.deliveryProofStatus, DeliveryProofStatus.legacyUnsealed);
       expect(sub.steps.single.step, BuyerTimelineStep.unknown);
       expect(sub.steps.single.status, TimelineStepStatus.upcoming);
     });

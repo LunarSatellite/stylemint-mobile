@@ -189,12 +189,36 @@ class ProductPassport {
     required this.vendorIdentityVerified,
     required this.vendorOnPlatformSince,
     required this.authenticityStatement,
+    this.schemaVersion = 1,
+    this.revision = '',
+    this.generatedAt,
+    this.provenance = const <ProductProvenanceFact>[],
   });
 
   final String vendorBusinessName;
   final bool vendorIdentityVerified;
   final DateTime? vendorOnPlatformSince;
   final String authenticityStatement;
+  final int schemaVersion;
+  final String revision;
+  final DateTime? generatedAt;
+  final List<ProductProvenanceFact> provenance;
+}
+
+class ProductProvenanceFact {
+  const ProductProvenanceFact({
+    required this.key,
+    required this.label,
+    required this.value,
+    required this.verified,
+    required this.observedAt,
+  });
+
+  final String key;
+  final String label;
+  final String value;
+  final bool verified;
+  final DateTime? observedAt;
 }
 
 /// Structured "which one should I buy" guidance — backend

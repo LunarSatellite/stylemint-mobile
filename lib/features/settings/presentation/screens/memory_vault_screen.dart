@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:stylemint_mobile_frontend/features/settings/data/services/private_twin_crypto.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
 import 'package:stylemint_mobile_frontend/features/settings/presentation/notifiers/memory_vault_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/settings/presentation/widgets/twin_password_dialog.dart';
 import 'package:stylemint_mobile_frontend/features/settings/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
@@ -114,34 +117,80 @@ class _VaultBody extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: DesignTokens.s12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: busy ? null : () => _download(notifier),
-                icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Download'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: DesignTokens.textWhite,
-                  side: const BorderSide(color: DesignTokens.borderDefault),
+        Container(
+          padding: const EdgeInsets.all(DesignTokens.s16),
+          decoration: DesignTokens.cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.shield_outlined,
+                    color: DesignTokens.primaryGreen,
+                    size: 20,
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  Expanded(
+                    child: Text(
+                      'Your portable private twin',
+                      style: DesignTokens.mediumSemibold.copyWith(
+                        color: DesignTokens.textWhite,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DesignTokens.s6),
+              Text(
+                'Backups are encrypted on this device before sharing. '
+                'Only your password can unlock them, including on a new device.',
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
                 ),
               ),
-            ),
-            const SizedBox(width: DesignTokens.s12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: busy || vault.memories.isEmpty
-                    ? null
-                    : () => _confirmForgetAll(context, notifier),
-                icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                label: const Text('Forget all'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: DesignTokens.colorError,
-                  side: const BorderSide(color: DesignTokens.colorError),
-                ),
+              const SizedBox(height: DesignTokens.s12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: busy ? null : () => _backup(context, notifier),
+                      icon: const Icon(Icons.lock_outline_rounded, size: 18),
+                      label: const Text('Backup'),
+                    ),
+                  ),
+                  const SizedBox(width: DesignTokens.s8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: busy
+                          ? null
+                          : () => _restore(context, notifier),
+                      icon: const Icon(Icons.settings_backup_restore, size: 18),
+                      label: const Text('Restore'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: DesignTokens.textWhite,
+                        side: const BorderSide(
+                          color: DesignTokens.borderDefault,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(height: DesignTokens.s8),
+        OutlinedButton.icon(
+          onPressed: busy || vault.memories.isEmpty
+              ? null
+              : () => _confirmForgetAll(context, notifier),
+          icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+          label: const Text('Forget everything'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: DesignTokens.colorError,
+            side: const BorderSide(color: DesignTokens.colorError),
+          ),
         ),
         const SizedBox(height: DesignTokens.s24),
         Text(
@@ -169,12 +218,64 @@ class _VaultBody extends ConsumerWidget {
     );
   }
 
-  Future<void> _download(MemoryVaultNotifier notifier) async {
-    final json = await notifier.export();
-    if (json == null) return;
-    await SharePlus.instance.share(
-      ShareParams(text: json, subject: 'My StyleMint memory'),
+  Future<void> _backup(
+    BuildContext context,
+    MemoryVaultNotifier notifier,
+  ) async {
+    final password = await showDialog<String>(
+      context: context,
+      builder: (_) => const TwinPasswordDialog(confirmPassword: true),
     );
+    if (password == null || !context.mounted) return;
+    try {
+      final json = await notifier.export();
+      if (json == null || !context.mounted) return;
+      final encrypted = await PrivateTwinCrypto().encrypt(json, password);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              encrypted,
+              mimeType: 'application/vnd.stylemint.private-twin+json',
+              name: 'stylemint-private-twin.smtwin',
+            ),
+          ],
+          subject: 'My encrypted StyleMint private twin',
+        ),
+      );
+    } on FormatException catch (error) {
+      if (context.mounted) _showError(context, error.message);
+    }
+  }
+
+  Future<void> _restore(
+    BuildContext context,
+    MemoryVaultNotifier notifier,
+  ) async {
+    final picked = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['smtwin'],
+      withData: true,
+    );
+    final bytes = picked?.files.single.bytes;
+    if (bytes == null || !context.mounted) return;
+    final password = await showDialog<String>(
+      context: context,
+      builder: (_) => const TwinPasswordDialog(confirmPassword: false),
+    );
+    if (password == null || !context.mounted) return;
+    try {
+      final json = await PrivateTwinCrypto().decrypt(bytes, password);
+      await notifier.importPortableTwin(json);
+    } on FormatException catch (error) {
+      if (context.mounted) _showError(context, error.message);
+    }
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _confirmForgetAll(BuildContext context, MemoryVaultNotifier notifier) {

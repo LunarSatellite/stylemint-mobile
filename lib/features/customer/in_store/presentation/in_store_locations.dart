@@ -4,6 +4,7 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 abstract final class InStoreQuery {
   static const String storeId = 'storeId';
   static const String code = 'code';
+  static const String via = 'via';
   static const String store = 'store';
   static const String city = 'city';
 
@@ -20,6 +21,7 @@ String inStoreProductLocation({
   required String productId,
   String? storeId,
   String? code,
+  String? via,
   String? storeName,
   String? storeCity,
 }) => _location(
@@ -27,6 +29,7 @@ String inStoreProductLocation({
   {
     InStoreQuery.storeId: storeId,
     InStoreQuery.code: code,
+    InStoreQuery.via: via,
     InStoreQuery.store: storeName,
     InStoreQuery.city: storeCity,
   },

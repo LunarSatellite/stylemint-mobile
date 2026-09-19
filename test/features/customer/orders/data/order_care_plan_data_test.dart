@@ -55,7 +55,12 @@ Map<String, dynamic> _planJson({Object? stage = 2}) => <String, dynamic>{
       'returnWindowClosesUtc': '2026-09-18T10:00:00Z',
       'daysLeftToReturn': 5,
       'trackingNumber': 'SM-D-00000001',
-      'actions': ['return', 'review', 'get_help'],
+      'actions': ['return', 'review', 'get_help', 'warranty_claim'],
+      'warrantyEligible': true,
+      'hasOpenWarrantyClaim': false,
+      'warrantyCoverageDays': 365,
+      'warrantyEndsUtc': '2027-09-11T08:30:00Z',
+      'warrantyTerms': 'Covers manufacturing defects.',
       'guidance': 'You have 5 days to start a return if it does not fit.',
     },
   ],
@@ -94,7 +99,13 @@ void main() {
         CareAction.returnItem,
         CareAction.review,
         CareAction.getHelp,
+        CareAction.warrantyClaim,
       ]);
+      expect(item.warrantyEligible, isTrue);
+      expect(item.hasOpenWarrantyClaim, isFalse);
+      expect(item.warrantyCoverageDays, 365);
+      expect(item.warrantyEndsUtc, DateTime.utc(2027, 9, 11, 8, 30));
+      expect(item.warrantyTerms, 'Covers manufacturing defects.');
       expect(
         item.guidance,
         'You have 5 days to start a return if it does not fit.',
@@ -146,7 +157,10 @@ void main() {
 
     test('accepts string names in any casing and numeric strings', () {
       expect(parseCareStage('ReturnWindowOpen'), CareStage.returnWindowOpen);
-      expect(parseCareStage('returnWindowClosed'), CareStage.returnWindowClosed);
+      expect(
+        parseCareStage('returnWindowClosed'),
+        CareStage.returnWindowClosed,
+      );
       expect(parseCareStage('return_in_progress'), CareStage.returnInProgress);
       expect(parseCareStage('IN_PROGRESS'), CareStage.inProgress);
       expect(parseCareStage('Returned'), CareStage.returned);
@@ -256,15 +270,17 @@ void main() {
       );
     });
 
-    test('returns noInternetConnection without calling the API when offline',
-        () async {
-      final result = await repo(connected: false).getOrderCarePlan('NK1');
+    test(
+      'returns noInternetConnection without calling the API when offline',
+      () async {
+        final result = await repo(connected: false).getOrderCarePlan('NK1');
 
-      expect(
-        result.getLeft().toNullable(),
-        const NetworkExceptions.noInternetConnection(),
-      );
-      verifyNever(() => remote.getOrderCarePlan(any()));
-    });
+        expect(
+          result.getLeft().toNullable(),
+          const NetworkExceptions.noInternetConnection(),
+        );
+        verifyNever(() => remote.getOrderCarePlan(any()));
+      },
+    );
   });
 }

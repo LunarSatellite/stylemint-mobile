@@ -199,7 +199,78 @@ class OrderTrackingTimeline extends StatelessWidget {
               Text(carrierLine, style: DesignTokens.smallRegular),
             ],
             const SizedBox(height: DesignTokens.s20),
+            if (timeline.deliveryProofStatus !=
+                DeliveryProofStatus.legacyUnsealed) ...[
+              _DeliveryProofBadge(status: timeline.deliveryProofStatus),
+              const SizedBox(height: DesignTokens.s20),
+            ],
             TrackingStepList(steps: stepsFor(timeline)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DeliveryProofBadge extends StatelessWidget {
+  const _DeliveryProofBadge({required this.status});
+
+  final DeliveryProofStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final verified = status == DeliveryProofStatus.verified;
+    final color = verified
+        ? DesignTokens.primaryGreen
+        : DesignTokens.colorError;
+    final title = verified
+        ? 'Verified delivery history'
+        : 'Delivery proof needs review';
+    final detail = verified
+        ? 'Each custody update is cryptographically linked. Changes would be detected.'
+        : 'The custody proof did not verify. Contact support before accepting the parcel.';
+
+    return Semantics(
+      container: true,
+      label: '$title. $detail',
+      child: Container(
+        padding: const EdgeInsets.all(DesignTokens.s12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .09),
+          borderRadius: BorderRadius.circular(DesignTokens.inputRadius),
+          border: Border.all(color: color.withValues(alpha: .28)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              verified ? Icons.verified_user_outlined : Icons.gpp_bad_outlined,
+              color: color,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    detail,
+                    style: DesignTokens.smallRegular.copyWith(
+                      color: DesignTokens.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

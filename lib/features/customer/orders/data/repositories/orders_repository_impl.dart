@@ -16,7 +16,9 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_cancellation_reason.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_option.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/repositories/orders_repository.dart';
 
 class OrdersRepositoryImpl implements OrdersRepository {
@@ -131,8 +133,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
     String orderNumber,
   ) => guardedNetworkCall(
     networkInfo,
-    () async => (await remoteDataSource.getOrderTimeline(orderNumber))
-        .toDomain(),
+    () async =>
+        (await remoteDataSource.getOrderTimeline(orderNumber)).toDomain(),
   );
 
   @override
@@ -146,8 +148,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
     );
     final items = (data['items'] as List<dynamic>? ?? const <dynamic>[])
         .map(
-          (e) => CustomerReturnDto.fromJson(e as Map<String, dynamic>)
-              .toDomain(),
+          (e) =>
+              CustomerReturnDto.fromJson(e as Map<String, dynamic>).toDomain(),
         )
         .toList(growable: false);
     final nextCursor = data['nextCursor'] as String?;
@@ -170,6 +172,13 @@ class OrdersRepositoryImpl implements OrdersRepository {
   );
 
   @override
+  Future<Either<NetworkExceptions, List<ReplacementOption>>>
+  getReplacementOptions(String originalVariantId) => guardedNetworkCall(
+    networkInfo,
+    () => remoteDataSource.getReplacementOptions(originalVariantId),
+  );
+
+  @override
   Future<Either<NetworkExceptions, String?>> requestReturn(
     String orderId, {
     required String subOrderId,
@@ -177,6 +186,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required int quantity,
     required String reason,
     required List<String> photoUrls,
+    ReturnResolutionChoice resolution = ReturnResolutionChoice.refund,
+    String? replacementVariantId,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -187,6 +198,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
           quantity,
           reason,
           photoUrls,
+          resolution == ReturnResolutionChoice.replacement ? 2 : 1,
+          replacementVariantId,
           _uuid.v4(),
         );
         return right(returnId);
@@ -226,8 +239,36 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, bool>> getReplenishmentPreference() async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(await remoteDataSource.getReplenishmentPreference());
+    } catch (error) {
+      return left(mapDioExceptionToNetworkException(error));
+    }
+  }
+
+  @override
+  Future<Either<NetworkExceptions, bool>> setReplenishmentPreference(
+    bool enabled,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return left(const NetworkExceptions.noInternetConnection());
+    }
+    try {
+      return right(
+        await remoteDataSource.setReplenishmentPreference(enabled, _uuid.v4()),
+      );
+    } catch (error) {
+      return left(mapDioExceptionToNetworkException(error));
+    }
+  }
+
+  @override
   Future<Either<NetworkExceptions, List<ReorderSuggestionDto>>>
-      getReorderSuggestions() async {
+  getReorderSuggestions() async {
     if (!await networkInfo.isConnected) {
       return left(NetworkExceptions.noInternetConnection());
     }
@@ -313,21 +354,45 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
+  Future<Either<NetworkExceptions, WarrantyClaim>> submitWarrantyClaim({
+    required String orderNumber,
+    required String subOrderLineId,
+    required WarrantyIssueKind issueKind,
+    required String description,
+    List<String> evidenceUrls = const [],
+  }) => _deliveryCall(
+    () async => (await remoteDataSource.submitWarrantyClaim(
+      orderNumber: orderNumber,
+      subOrderLineId: subOrderLineId,
+      issueKind: issueKind,
+      description: description,
+      evidenceUrls: evidenceUrls,
+      idempotencyKey: _uuid.v4(),
+    )).toDomain(),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, List<WarrantyClaim>>> getWarrantyClaims() =>
+      _deliveryCall(
+        () async => (await remoteDataSource.getWarrantyClaims())
+            .map((dto) => dto.toDomain())
+            .toList(growable: false),
+      );
+  @override
   Future<Either<NetworkExceptions, DeliveryPackageStatus>>
   getDeliveryPackageStatus(String trackingNumber) => _deliveryCall(
-    () async =>
-        (await remoteDataSource.getDeliveryPackageStatus(
-          trackingNumber,
-        )).toDomain(),
+    () async => (await remoteDataSource.getDeliveryPackageStatus(
+      trackingNumber,
+    )).toDomain(),
   );
 
   @override
   Future<Either<NetworkExceptions, DeliveryAcceptance>> getDeliveryAcceptance(
     String trackingNumber,
   ) => _deliveryCall(
-    () async =>
-        (await remoteDataSource.getDeliveryAcceptance(trackingNumber))
-            .toDomain(),
+    () async => (await remoteDataSource.getDeliveryAcceptance(
+      trackingNumber,
+    )).toDomain(),
   );
 
   @override
@@ -337,6 +402,9 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required DeliveryAcceptanceOutcome outcome,
     bool? sealIntact,
     String? issueNote,
+    List<DeliveryReceivedItemInput> receivedItems =
+        const <DeliveryReceivedItemInput>[],
+    String? scannedTrackingCode,
   }) => _deliveryCall(
     () async => (await remoteDataSource.recordDeliveryAcceptance(
       trackingNumber,
@@ -346,6 +414,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
       outcome: outcome,
       sealIntact: sealIntact,
       issueNote: issueNote,
+      receivedItems: receivedItems,
+      scannedTrackingCode: scannedTrackingCode,
     )).toDomain(),
   );
 

@@ -1,4 +1,6 @@
 import 'package:fpdart/fpdart.dart';
+import 'package:uuid/uuid.dart';
+import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
 import 'package:stylemint_mobile_frontend/core/network/guarded_network_call.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
@@ -15,6 +17,7 @@ class InStoreRepositoryImpl implements InStoreRepository {
 
   final InStoreRemoteDataSource remoteDataSource;
   final NetworkInfoConnectivity networkInfo;
+  static const _uuid = Uuid();
 
   @override
   Future<Either<NetworkExceptions, List<ProductReel>>> getProductReels(
@@ -26,6 +29,18 @@ class InStoreRepositoryImpl implements InStoreRepository {
     )).map((dto) => dto.toDomain()).toList(growable: false),
   );
 
+  @override
+  Future<Either<NetworkExceptions, Unit>> addScannedProductToCart(
+    String code,
+    CodeScanVia via,
+  ) => guardedNetworkCall(networkInfo, () async {
+    await remoteDataSource.addScannedProductToCart(
+      code: code,
+      via: via,
+      idempotencyKey: _uuid.v4(),
+    );
+    return unit;
+  });
   @override
   Future<Either<NetworkExceptions, StoreProductsPage>> getVendorProducts(
     String vendorAccountId, {

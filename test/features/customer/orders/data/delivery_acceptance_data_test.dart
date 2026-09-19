@@ -215,6 +215,53 @@ void main() {
     });
   });
 
+  test('scan and item evidence round-trips through the wire contract', () {
+    final lineId = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+    final body = recordDeliveryAcceptanceBody(
+      outcome: DeliveryAcceptanceOutcome.accepted,
+      scannedTrackingCode: _tracking,
+      receivedItems: [
+        DeliveryReceivedItemInput(
+          subOrderLineId: lineId,
+          productTitle: 'Oxford blue shirt',
+          expectedQuantity: 2,
+          receivedQuantity: 2,
+          batchOrLotCode: 'LOT-24',
+          expiryDate: DateTime(2027, 1, 31),
+        ),
+      ],
+    );
+    expect(body['scannedTrackingCode'], _tracking);
+    expect((body['receivedItems'] as List).single, {
+      'subOrderLineId': lineId,
+      'receivedQuantity': 2,
+      'condition': 'Good',
+      'batchOrLotCode': 'LOT-24',
+      'expiryDate': '2027-01-31',
+    });
+
+    final json = _acceptanceJson()
+      ..addAll({
+        'itemsVerified': true,
+        'trackingCodeScanned': true,
+        'receivedItems': [
+          {
+            'subOrderLineId': lineId,
+            'productTitle': 'Oxford blue shirt',
+            'expectedQuantity': 2,
+            'receivedQuantity': 2,
+            'condition': 'Good',
+            'batchOrLotCode': 'LOT-24',
+            'expiryDate': '2027-01-31',
+          },
+        ],
+      });
+    final saved = DeliveryAcceptanceDto.fromJson(json).toDomain();
+    expect(saved.itemsVerified, isTrue);
+    expect(saved.trackingCodeScanned, isTrue);
+    expect(saved.receivedItems.single.productTitle, 'Oxford blue shirt');
+    expect(saved.receivedItems.single.expiryDate, DateTime(2027, 1, 31));
+  });
   group('parseDeliveryAcceptanceOutcome', () {
     test('maps backend ints, names and numeric strings', () {
       expect(

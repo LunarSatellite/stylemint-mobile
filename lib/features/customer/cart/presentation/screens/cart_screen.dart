@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_item_tile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
@@ -99,6 +100,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                     children: [
                       const _BasketInsightsCard(),
+                      const _OfferAdviceCard(),
                       const _TryOtherBasketsEntry(),
                       ...List.generate(cart.items.length, (i) {
                         return CartItemTile(
@@ -780,6 +782,108 @@ class _CheckoutBar extends StatelessWidget {
   }
 }
 
+class _OfferAdviceCard extends ConsumerWidget {
+  const _OfferAdviceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final advice = ref.watch(cartOfferAdviceProvider).asData?.value;
+    if (advice == null || !advice.hasContent || advice.inControlGroup) {
+      return const SizedBox.shrink();
+    }
+    final recommended = advice.offers.where((o) => o.recommended).toList();
+    final offer = recommended.isNotEmpty
+        ? recommended.first
+        : (advice.offers.isEmpty ? null : advice.offers.first);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        0,
+      ),
+      padding: const EdgeInsets.all(DesignTokens.s12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            DesignTokens.primaryGreen.withValues(alpha: .16),
+            DesignTokens.bgAppBody,
+          ],
+        ),
+        border: Border.all(
+          color: DesignTokens.primaryGreen.withValues(alpha: .35),
+        ),
+        borderRadius: BorderRadius.circular(DesignTokens.s12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.handshake_outlined,
+                color: DesignTokens.primaryGreen,
+                size: 18,
+              ),
+              SizedBox(width: DesignTokens.s8),
+              Text(
+                'Best value for this cart',
+                style: DesignTokens.mediumSemibold,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            advice.headline,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          if (offer != null) ...[
+            const SizedBox(height: 8),
+            Text(offer.detail, style: DesignTokens.smallRegular),
+            const SizedBox(height: 10),
+            if (offer.kind == CartOfferKind.applyCode && offer.code != null)
+              FilledButton.tonal(
+                onPressed: () async {
+                  final applied = await ref
+                      .read(cartNotifierProvider.notifier)
+                      .applyPromo(offer.code!);
+                  if (applied) ref.invalidate(cartOfferAdviceProvider);
+                },
+                child: Text('Apply ${offer.code}'),
+              )
+            else if (offer.kind == CartOfferKind.cheaperSwap)
+              TextButton.icon(
+                onPressed: () => context.push(RouteNames.cartScenarios),
+                icon: const Icon(Icons.compare_arrows_rounded),
+                label: const Text('Compare baskets'),
+              ),
+          ],
+          if (advice.note case final note?) ...[
+            const SizedBox(height: 6),
+            Text(
+              note,
+              style: DesignTokens.smallRegular.copyWith(
+                color: DesignTokens.textMuted,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Text(
+            advice.fairnessNote,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Opens "Try other baskets". Only built for a cart with items, like the
 /// list it sits in.
 class _TryOtherBasketsEntry extends StatelessWidget {
@@ -855,7 +959,10 @@ class _BasketInsightsCard extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
-        DesignTokens.s16, DesignTokens.s12, DesignTokens.s16, 0,
+        DesignTokens.s16,
+        DesignTokens.s12,
+        DesignTokens.s16,
+        0,
       ),
       padding: const EdgeInsets.all(DesignTokens.s12),
       decoration: BoxDecoration(
@@ -867,7 +974,11 @@ class _BasketInsightsCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, size: 16, color: DesignTokens.primaryGreen),
+              const Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: DesignTokens.primaryGreen,
+              ),
               const SizedBox(width: DesignTokens.s8),
               Text(
                 'Basket Insights',
@@ -888,7 +999,9 @@ class _BasketInsightsCard extends ConsumerWidget {
             const SizedBox(height: DesignTokens.s4),
             Text(
               optimization.savingsTip!,
-              style: DesignTokens.smallRegular.copyWith(fontWeight: FontWeight.w600),
+              style: DesignTokens.smallRegular.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ],

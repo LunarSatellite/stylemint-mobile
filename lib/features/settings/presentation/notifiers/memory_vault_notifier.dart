@@ -150,6 +150,34 @@ class MemoryVaultNotifier extends StateNotifier<MemoryVaultState> {
     }, (json) => json);
   }
 
+  Future<bool> importPortableTwin(String bundleJson) async {
+    final vault = _vault;
+    if (vault == null) return false;
+    state = MemoryVaultLoaded(vault, busy: true);
+    final result = await _repository.importPortableTwin(bundleJson);
+    if (!mounted) return false;
+    return result.fold(
+      (_) {
+        state = MemoryVaultLoaded(
+          vault,
+          message:
+              "Couldn't restore that private twin. Check the file and try again.",
+        );
+        return false;
+      },
+      (imported) {
+        state = MemoryVaultLoaded(
+          vault,
+          message: imported == 0
+              ? 'Backup checked. Everything was already in your vault.'
+              : 'Restored $imported memories into your private twin.',
+        );
+        unawaited(load());
+        return true;
+      },
+    );
+  }
+
   void clearMessage() {
     final vault = _vault;
     if (vault != null && state is MemoryVaultLoaded) {

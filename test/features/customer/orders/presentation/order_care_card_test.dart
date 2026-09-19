@@ -13,7 +13,7 @@ class _MockOrdersRepository extends Mock implements OrdersRepository {}
 
 const _orderNumber = 'NK2026-00015';
 
-const _openItem = CareItem(
+final _openItem = CareItem(
   subOrderId: 'sub-1',
   subOrderLineId: 'line-1',
   productVariantId: 'variant-1',
@@ -21,8 +21,16 @@ const _openItem = CareItem(
   variantLabel: 'M / White',
   stage: CareStage.returnWindowOpen,
   daysLeftToReturn: 5,
-  actions: [CareAction.returnItem, CareAction.review, CareAction.getHelp],
+  actions: [
+    CareAction.returnItem,
+    CareAction.review,
+    CareAction.getHelp,
+    CareAction.warrantyClaim,
+  ],
   guidance: 'You have 5 days to start a return if it does not fit.',
+  warrantyEligible: true,
+  warrantyEndsUtc: DateTime.utc(2027, 9, 11),
+  warrantyTerms: 'Covers manufacturing defects.',
 );
 
 const _closedItem = CareItem(
@@ -35,7 +43,7 @@ const _closedItem = CareItem(
   guidance: 'The return window has closed. Buy it again any time.',
 );
 
-const _plan = OrderCarePlan(
+final _plan = OrderCarePlan(
   orderNumber: _orderNumber,
   items: [_openItem, _closedItem],
 );
@@ -137,6 +145,8 @@ void main() {
       );
       expect(find.text('5 days left to return'), findsOneWidget);
       expect(find.byIcon(Icons.schedule), findsOneWidget);
+      expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+      expect(find.text('Warranty to Sep 11, 2027'), findsOneWidget);
       // No resolver: every action button is omitted.
       expect(find.byType(OutlinedButton), findsNothing);
     });

@@ -139,9 +139,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Future<void> _handleAddToCart(ProductDetail product) async {
     if (!await ensureAuth(context, ref, reason: AuthReason.addToCart)) return;
     if (!mounted) return;
-    if (!await ensureProfile(context, ref, [ProfileField.shippingAddress]))
-      return;
-    if (!mounted) return;
     String? selectedSkuId;
     for (final group in product.variants) {
       if (group.type != 'sku' || group.values.isEmpty) continue;
@@ -878,27 +875,84 @@ class _PassportSection extends ConsumerWidget {
         color: DesignTokens.bgAppBodyLight,
         borderRadius: BorderRadius.circular(DesignTokens.s8),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            passport.vendorIdentityVerified
-                ? Icons.verified_user
-                : Icons.info_outline,
-            size: 18,
-            color: passport.vendorIdentityVerified
-                ? DesignTokens.primaryGreen
-                : DesignTokens.textMuted,
+          Row(
+            children: [
+              Icon(
+                passport.vendorIdentityVerified
+                    ? Icons.verified_user
+                    : Icons.info_outline,
+                size: 20,
+                color: passport.vendorIdentityVerified
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.textMuted,
+              ),
+              const SizedBox(width: DesignTokens.s8),
+              Expanded(
+                child: Text(
+                  'Product passport',
+                  style: DesignTokens.mediumSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                  ),
+                ),
+              ),
+              Text(
+                'v${passport.schemaVersion}',
+                style: DesignTokens.tiny.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: DesignTokens.s8),
-          Expanded(
-            child: Text(
-              passport.authenticityStatement,
-              style: DesignTokens.smallRegular.copyWith(
+          const SizedBox(height: DesignTokens.s8),
+          Text(
+            passport.authenticityStatement,
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          if (passport.provenance.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            ...passport.provenance.map(
+              (fact) => Padding(
+                padding: const EdgeInsets.only(top: DesignTokens.s4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      fact.verified
+                          ? Icons.check_circle_outline
+                          : Icons.remove_circle_outline,
+                      size: 14,
+                      color: fact.verified
+                          ? DesignTokens.primaryGreen
+                          : DesignTokens.textMuted,
+                    ),
+                    const SizedBox(width: DesignTokens.s6),
+                    Expanded(
+                      child: Text(
+                        '${fact.label}: ${fact.value}',
+                        style: DesignTokens.tiny.copyWith(
+                          color: DesignTokens.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (passport.revision.isNotEmpty) ...[
+            const SizedBox(height: DesignTokens.s8),
+            Text(
+              'Revision ${passport.revision.substring(0, passport.revision.length > 10 ? 10 : passport.revision.length)}',
+              style: DesignTokens.tiny.copyWith(
                 color: DesignTokens.textMuted,
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

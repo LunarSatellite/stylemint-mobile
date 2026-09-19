@@ -19,4 +19,6 @@ abstract interface class MemoryVaultRepository {
 
   /// Everything remembered, as the JSON document the backend exports.
   Future<Either<NetworkExceptions, String>> export();
+
+  Future<Either<NetworkExceptions, int>> importPortableTwin(String bundleJson);
 }

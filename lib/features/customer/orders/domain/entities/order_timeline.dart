@@ -61,6 +61,18 @@ class TimelineStep {
   final String? note;
 }
 
+enum DeliveryProofStatus {
+  verified,
+  legacyUnsealed,
+  invalid;
+
+  static DeliveryProofStatus fromWire(String value) => switch (value) {
+    'verified' => verified,
+    'invalid' => invalid,
+    _ => legacyUnsealed,
+  };
+}
+
 class SubOrderTimeline {
   const SubOrderTimeline({
     required this.subOrderId,
@@ -69,6 +81,7 @@ class SubOrderTimeline {
     required this.currentStep,
     required this.isTerminal,
     required this.steps,
+    this.deliveryProofStatus = DeliveryProofStatus.legacyUnsealed,
     this.vendorName,
     this.carrier,
     this.trackingNumber,
@@ -90,6 +103,7 @@ class SubOrderTimeline {
 
   /// Null when unknown or terminal.
   final DateTime? estimatedDeliveryUtc;
+  final DeliveryProofStatus deliveryProofStatus;
   final List<TimelineStep> steps;
 
   bool get isCancelled => currentStep == BuyerTimelineStep.cancelled;
