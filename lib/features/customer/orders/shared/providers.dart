@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
@@ -17,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/customer_returns_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/order_timeline_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_recovery_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -45,14 +48,49 @@ final deliveryRiskProvider = FutureProvider.autoDispose
         final response =
             await api.get('/v1/deliveries/$trackingNumber/risk')
                 as Map<String, dynamic>;
-        return DeliveryRiskAssessment(
-          atRisk: response['atRisk'] as bool? ?? false,
-          customerMessage: response['customerMessage'] as String? ?? '',
-          recommendedAction: response['recommendedAction'] as String?,
-        );
+        return DeliveryRiskAssessment.fromJson(response);
       } catch (_) {
         return null;
       }
+    });
+
+/// Reads/accepts the recovery remedies for a slipping delivery.
+final deliveryRecoveryDataSourceProvider = Provider<DeliveryRecoveryDataSource>(
+  (ref) =>
+      DeliveryRecoveryRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
+/// The remedies for one delivery, keyed by tracking number.
+///
+/// Seeded from the risk assessment (which already carries `remedies`, so the
+/// common path costs no extra call) and re-read from `/recovery-offers` when
+/// an offer lapses or the backend refuses one as expired/stale.
+final StateNotifierProviderFamily<
+  DeliveryRecoveryNotifier,
+  DeliveryRecoveryState,
+  String
+>
+deliveryRecoveryNotifierProvider = StateNotifierProvider.autoDispose
+    .family<DeliveryRecoveryNotifier, DeliveryRecoveryState, String>((
+      ref,
+      trackingNumber,
+    ) {
+      final notifier = DeliveryRecoveryNotifier(
+        dataSource: ref.watch(deliveryRecoveryDataSourceProvider),
+        trackingNumber: trackingNumber,
+      );
+      ref.listen<AsyncValue<DeliveryRiskAssessment?>>(
+        deliveryRiskProvider(trackingNumber),
+        (_, next) {
+          final risk = next.asData?.value;
+          if (risk == null) return;
+          notifier.adoptFromRisk(
+            risk.atRisk ? risk.remedies : const <DeliveryRecoveryOffer>[],
+          );
+        },
+        fireImmediately: true,
+      );
+      return notifier;
     });
 
 /// Voyager "Tamper/Seal Proof": best-effort read of the package's tamper-
