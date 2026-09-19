@@ -55,12 +55,9 @@ class _CancelOrderScreenState extends ConsumerState<CancelOrderScreen> {
     });
 
     if (state.done) {
-      return _SuccessView(
-        order: widget.order,
-        note: _commentCtrl.text.trim().isNotEmpty
-            ? _commentCtrl.text.trim()
-            : null,
-      );
+      // The buyer's reason is not passed along: it comes back on the
+      // `cancelled` event's `detail`, from the record that stored it.
+      return _SuccessView(order: widget.order);
     }
 
     return Scaffold(
@@ -284,10 +281,9 @@ class _ReasonTile extends StatelessWidget {
 
 // ─── SUCCESS / CANCELLED ORDER DETAIL VIEW ────────────────────────────────────
 class _SuccessView extends StatefulWidget {
-  const _SuccessView({required this.order, this.note});
+  const _SuccessView({required this.order});
 
   final OrderDetail? order;
-  final String? note;
 
   @override
   State<_SuccessView> createState() => _SuccessViewState();
@@ -336,13 +332,9 @@ class _SuccessViewState extends State<_SuccessView> {
               cancelledAt: _cancelledAt,
             ),
             const SizedBox(height: DesignTokens.s16),
-            const CancelledTrackingStepper(),
+            CancelledTrackingStepper(orderNumber: widget.order?.orderNumber),
             const SizedBox(height: DesignTokens.s16),
-            CancelledOrderHistory(
-              order: widget.order,
-              cancelledAt: _cancelledAt,
-              note: widget.note,
-            ),
+            CancelledOrderHistory(orderNumber: widget.order?.orderNumber),
             const SizedBox(height: DesignTokens.s8),
             _ViewOtherDetailsToggle(
               expanded: _detailsExpanded,

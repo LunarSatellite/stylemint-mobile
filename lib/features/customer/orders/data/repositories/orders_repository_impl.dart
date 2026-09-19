@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/c
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/customer_return.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_timeline.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
@@ -127,6 +128,15 @@ class OrdersRepositoryImpl implements OrdersRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+
+  @override
+  Future<Either<NetworkExceptions, OrderEventHistory>> getOrderEventHistory(
+    String orderNumber,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async =>
+        (await remoteDataSource.getOrderEventHistory(orderNumber)).toDomain(),
+  );
 
   @override
   Future<Either<NetworkExceptions, OrderTimeline>> getOrderTimeline(

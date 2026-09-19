@@ -309,22 +309,17 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
         children: [
           CancelledOrderSummary(order: order),
           const SizedBox(height: DesignTokens.s16),
-          CancellationDetailsCard(
-            order: order,
-            cancelledAt: order.placedAt.add(const Duration(days: 1)),
-          ),
+          // No `cancelledAt`: the card reads the recorded cancellation event.
+          CancellationDetailsCard(order: order),
           const SizedBox(height: DesignTokens.s16),
           OrderTrackingSection(
             orderNumber: order.orderNumber,
             fallback: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CancelledTrackingStepper(),
+                CancelledTrackingStepper(orderNumber: order.orderNumber),
                 const SizedBox(height: DesignTokens.s16),
-                CancelledOrderHistory(
-                  order: order,
-                  cancelledAt: order.placedAt.add(const Duration(days: 1)),
-                ),
+                CancelledOrderHistory(orderNumber: order.orderNumber),
               ],
             ),
           ),

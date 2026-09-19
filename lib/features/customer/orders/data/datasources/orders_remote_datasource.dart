@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/carbon_impact_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/customer_return_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_event_history_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_timeline_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_acceptance_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/delivery_acceptance.dart';
@@ -210,6 +211,13 @@ class OrdersRemoteDataSource {
   Future<OrderTimelineDto> getOrderTimeline(String orderNumber) async {
     final response = await apiClient.get('/v1/orders/$orderNumber/timeline');
     return OrderTimelineDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// GET `/v1/orders/{orderNumber}/events` — what actually happened to this
+  /// order, oldest first, plus the health of each source consulted.
+  Future<OrderEventHistoryDto> getOrderEventHistory(String orderNumber) async {
+    final response = await apiClient.get('/v1/orders/$orderNumber/events');
+    return OrderEventHistoryDto.fromJson(response as Map<String, dynamic>);
   }
 
   /// GET `/v1/orders/returns` — the buyer's returns, newest first, as a

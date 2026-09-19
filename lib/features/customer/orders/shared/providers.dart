@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
@@ -10,6 +11,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/d
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_event_history.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/return_pickup.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/replacement_shipment.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/warranty_claim.dart';
@@ -233,6 +235,25 @@ final cancelOrderControllerProvider =
     >(
       (ref) => CancelOrderController(ref.watch(ordersRepositoryProvider)),
     );
+
+/// What actually happened to one order — `GET /v1/orders/{orderNumber}/events`.
+///
+/// Unlike the supplementary cards above, a failure here is NOT swallowed into
+/// null. This is the order's history: if the read fails the screen has to say
+/// so, because silently rendering "no events" would present a failed read as
+/// the fact that nothing happened. The widget handles the error state; the
+/// rest of the order detail is unaffected either way.
+final FutureProviderFamily<OrderEventHistory, String>
+orderEventHistoryProvider = FutureProvider.autoDispose
+    .family<OrderEventHistory, String>((ref, orderNumber) async {
+      final result = await ref
+          .watch(ordersRepositoryProvider)
+          .getOrderEventHistory(orderNumber);
+      return result.match(
+        (failure) => throw StateError(failure.toString()),
+        (history) => history,
+      );
+    });
 
 /// Buyer tracking timeline per order number (Orders contract §3).
 final StateNotifierProviderFamily<
