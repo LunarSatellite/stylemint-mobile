@@ -80,6 +80,7 @@ import 'package:stylemint_mobile_frontend/features/customer/missions/presentatio
 import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/screens/missions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/outcome_contracts/presentation/outcome_contracts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/lifecycle/presentation/lifecycle_steward_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/agent_commerce/presentation/screens/connected_assistants_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/agent_negotiations/presentation/agent_negotiations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_results_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/search_screen.dart';
@@ -1675,6 +1676,13 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _subPath(RouteNames.settings, RouteNames.settingsMemory),
             builder: (ctx, state) => const MemoryVaultScreen(),
+          ),
+          GoRoute(
+            path: _subPath(
+              RouteNames.settings,
+              RouteNames.settingsConnectedAssistants,
+            ),
+            builder: (ctx, state) => const ConnectedAssistantsScreen(),
           ),
         ],
       ),
