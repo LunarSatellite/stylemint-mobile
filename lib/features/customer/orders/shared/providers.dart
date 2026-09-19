@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:stylemint_mobile_frontend/core/network/dio_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/custody_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/handover_delegation_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/custody_chain.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
@@ -127,6 +129,24 @@ final packageSealProvider = FutureProvider.autoDispose
         return null;
       }
     });
+
+/// Reads the chain-of-custody proof for one parcel.
+final custodyDataSourceProvider = Provider<CustodyDataSource>(
+  (ref) => CustodyRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
+/// "Permissioned Chain-of-Custody Proof": the signed, hash-chained log of
+/// every handover of this parcel, plus the backend's own integrity verdict.
+///
+/// Null when there is nothing to prove — no entries, or the endpoint is
+/// unavailable — and the custody card then renders nothing at all. It is a
+/// supplementary trust surface, never a blocking read and never an error
+/// state on order detail.
+final FutureProviderFamily<CustodyProof?, String> custodyProofProvider =
+    FutureProvider.autoDispose.family<CustodyProof?, String>(
+      (ref, trackingNumber) =>
+          ref.watch(custodyDataSourceProvider).fetch(trackingNumber),
+    );
 
 /// Resolves a delivery tracking number to the customer's own order number in
 /// a single call — `GET /v1/orders/by-tracking/{trackingNumber}`.

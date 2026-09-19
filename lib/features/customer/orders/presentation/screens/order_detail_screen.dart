@@ -14,6 +14,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entiti
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/carbon_impact_card.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/custody_proof_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_acceptance_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/delivery_recovery_offers_view.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/handover_delegation_card.dart';
@@ -304,6 +305,13 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                   _TrackingTimeline(status: order.status),
             ),
           ),
+          // The signed handover log, directly under the tracking history the
+          // customer is already reading. It renders nothing at all — not even
+          // its own leading gap — when the parcel has no custody entries or
+          // the endpoint is unavailable, which is why the spacing lives
+          // inside the card rather than here.
+          if (trackingNumber?.startsWith('SM-D-') == true)
+            CustodyProofCard(trackingNumber: trackingNumber!),
           if (order.status == OrderTrackStatus.delivered) ...[
             const SizedBox(height: DesignTokens.s24),
             _ReviewableItemsSection(order: order),

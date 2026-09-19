@@ -357,10 +357,15 @@ class _ShippingAddressCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        address.label,
-                        style: DesignTokens.oneLinerSemibold.copyWith(
-                          color: DesignTokens.textWhite,
+                      // A customer-typed label ("Mum's place, Baluwatar") next
+                      // to a badge overflows a narrow row at 1.3x unless it
+                      // is allowed to wrap.
+                      Flexible(
+                        child: Text(
+                          address.label,
+                          style: DesignTokens.oneLinerSemibold.copyWith(
+                            color: DesignTokens.textWhite,
+                          ),
                         ),
                       ),
                       if (address.isDefault) ...[
@@ -574,10 +579,17 @@ class _BillTicketCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                // Same shape as the cart's checkout bar, and the same
+                // failure: a 20sp amount beside a scaled-up label has no room
+                // to give on a narrow screen. Wrapping drops the amount onto
+                // its own line instead of overflowing. Baseline alignment is
+                // given up for it — a line that fits beats a line that lines
+                // up.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: DesignTokens.s8,
+                  runSpacing: DesignTokens.s4,
                   children: [
                     const Text(
                       'Grand Total',
@@ -1592,10 +1604,14 @@ class _AddressPickerRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      address.label,
-                      style: DesignTokens.oneLinerSemibold.copyWith(
-                        color: DesignTokens.textWhite,
+                    // As above: the label yields to the badge rather than
+                    // pushing it off the row.
+                    Flexible(
+                      child: Text(
+                        address.label,
+                        style: DesignTokens.oneLinerSemibold.copyWith(
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                     ),
                     if (isSelected) ...[

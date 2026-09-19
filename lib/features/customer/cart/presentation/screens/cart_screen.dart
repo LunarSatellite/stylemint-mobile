@@ -732,16 +732,35 @@ class _CheckoutBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
+            // Label and amount sit on one line when they fit and drop onto
+            // two when they don't. A `Row` with a `Spacer` could not do this:
+            // the Spacer collapses to zero and then the two Texts overflow,
+            // which is what happened at 320dp and text scale 1.3.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: DesignTokens.s8,
+              runSpacing: DesignTokens.s4,
               children: [
-                const Icon(
-                  Icons.shopping_cart_outlined,
-                  size: 18,
-                  color: DesignTokens.textWhite,
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 18,
+                      color: DesignTokens.textWhite,
+                    ),
+                    SizedBox(width: DesignTokens.s8),
+                    // Flexible so a scaled-up label wraps inside the run
+                    // rather than pushing past the bar's edge.
+                    Flexible(
+                      child: Text(
+                        'Total Order',
+                        style: DesignTokens.mediumSemibold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: DesignTokens.s8),
-                const Text('Total Order', style: DesignTokens.mediumSemibold),
-                const Spacer(),
                 Text(
                   formatMoney(cart.total),
                   style: DesignTokens.oneLinerSemibold.copyWith(
@@ -753,27 +772,38 @@ class _CheckoutBar extends StatelessWidget {
             const SizedBox(height: DesignTokens.s12),
             SizedBox(
               width: double.infinity,
-              height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: DesignTokens.primaryGreen,
                   foregroundColor: Colors.black,
                   elevation: 0,
+                  // A minimum rather than a fixed 52: the label stays at its
+                  // legible 16sp and the button grows when the text scales or
+                  // wraps, instead of clipping it.
+                  minimumSize: const Size.fromHeight(52),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.s16,
+                    vertical: DesignTokens.s12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(26),
                   ),
                 ),
                 onPressed: onCheckout,
                 child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Proceed to checkout',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: DesignTokens.buttonPrimaryText,
+                    Flexible(
+                      child: Text(
+                        'Proceed to checkout',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: DesignTokens.buttonPrimaryText,
+                        ),
                       ),
                     ),
                     SizedBox(width: DesignTokens.s8),
