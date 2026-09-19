@@ -1111,38 +1111,48 @@ class _DeliveryChoiceCard extends StatelessWidget {
               fontSize: 13,
             ),
           ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: const Text(
-              'Prefer fewer deliveries',
-              style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
-            ),
-            subtitle: const Text(
-              'Group items from the same seller when possible',
-              style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
-            ),
-            value: preferences.preferFewerDeliveries,
-            activeTrackColor: DesignTokens.primaryGreen,
-            onChanged: (value) => onPreferenceChanged(
-              preferences.copyWith(preferFewerDeliveries: value),
+          // Both preference tiles sit inside the card's DecoratedBox, so the
+          // nearest Material is below the background and the framework
+          // asserts that the tile's ink can never be seen. A transparent
+          // Material paints nothing and restores the splash target.
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: const Text(
+                'Prefer fewer deliveries',
+                style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+              ),
+              subtitle: const Text(
+                'Group items from the same seller when possible',
+                style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+              ),
+              value: preferences.preferFewerDeliveries,
+              activeTrackColor: DesignTokens.primaryGreen,
+              onChanged: (value) => onPreferenceChanged(
+                preferences.copyWith(preferFewerDeliveries: value),
+              ),
             ),
           ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            title: const Text(
-              'Prefer pickup',
-              style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
-            ),
-            subtitle: const Text(
-              'Recommend seller pickup when it is available',
-              style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
-            ),
-            value: preferences.preferPickup,
-            activeTrackColor: DesignTokens.primaryGreen,
-            onChanged: (value) => onPreferenceChanged(
-              preferences.copyWith(preferPickup: value),
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: const Text(
+                'Prefer pickup',
+                style: TextStyle(color: DesignTokens.textWhite, fontSize: 13),
+              ),
+              subtitle: const Text(
+                'Recommend seller pickup when it is available',
+                style: TextStyle(color: DesignTokens.textMuted, fontSize: 11),
+              ),
+              value: preferences.preferPickup,
+              activeTrackColor: DesignTokens.primaryGreen,
+              onChanged: (value) => onPreferenceChanged(
+                preferences.copyWith(preferPickup: value),
+              ),
             ),
           ),
           const SizedBox(height: DesignTokens.s4),
@@ -1216,38 +1226,50 @@ class _BottomBar extends StatelessWidget {
   }
 
   Widget _addAddressButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: DesignTokens.buttonHeight,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: DesignTokens.primaryGreen,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
+    return ConstrainedBox(
+      // `height` pinned the bar at 52dp however large the label grew, and the
+      // label and its icon were both unflexed inside a centred Row — so
+      // "Add Shipping Address" ran off the right at every width, by 36px at
+      // 390dp and 195px at 320dp × 1.3. A minimum height keeps the touch
+      // target and lets the button grow; the label flexes and wraps.
+      constraints: const BoxConstraints(minHeight: DesignTokens.buttonHeight),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: DesignTokens.primaryGreen,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            minimumSize: const Size(0, DesignTokens.buttonHeight),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(26),
+            ),
           ),
-        ),
-        onPressed: onAddAddress,
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Add Shipping Address',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+          onPressed: onAddAddress,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  'Add Shipping Address',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: DesignTokens.buttonPrimaryText,
+                  ),
+                ),
+              ),
+              SizedBox(width: 6),
+              Icon(
+                Icons.add_rounded,
+                size: 20,
                 color: DesignTokens.buttonPrimaryText,
               ),
-            ),
-            SizedBox(width: 6),
-            Icon(
-              Icons.add_rounded,
-              size: 20,
-              color: DesignTokens.buttonPrimaryText,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1318,10 +1340,15 @@ class _CartItemsSheet extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Your Cart Items(${summary.items.length})',
-                    style: DesignTokens.sectionInnerTitle,
+                  // Same shape as the address sheet's header: the title has
+                  // to yield so the close button keeps its place.
+                  Expanded(
+                    child: Text(
+                      'Your Cart Items(${summary.items.length})',
+                      style: DesignTokens.sectionInnerTitle,
+                    ),
                   ),
+                  const SizedBox(width: DesignTokens.s8),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: const Icon(
@@ -1426,37 +1453,45 @@ class _CartItemRow extends StatelessWidget {
           const SizedBox(width: DesignTokens.s8),
 
           // Qty badge + price (right column)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Qty pill badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A3A5C),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Qty: ${item.quantity}',
-                  style: const TextStyle(
-                    color: Color(0xFF4FC3F7),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+          //
+          // Flexible, not fixed: a scaled-up "Rs 38,900.00" beside the qty
+          // pill measured wider than the space the name column left it, and
+          // the row overflowed. Yielding lets the price wrap onto a second
+          // line rather than run off the sheet — it still reads in full.
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Qty pill badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A3A5C),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    'Qty: ${item.quantity}',
+                    style: const TextStyle(
+                      color: Color(0xFF4FC3F7),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                formatMoney(item.unitPrice),
-                style: DesignTokens.oneLinerSemibold.copyWith(
-                  color: DesignTokens.textWhite,
-                  fontSize: 13,
+                const SizedBox(height: 8),
+                Text(
+                  formatMoney(item.unitPrice),
+                  textAlign: TextAlign.end,
+                  style: DesignTokens.oneLinerSemibold.copyWith(
+                    color: DesignTokens.textWhite,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -1492,10 +1527,15 @@ class _PickAddressSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Choose a Shipping Address',
-                  style: DesignTokens.sectionInnerTitle,
+                // The title is the long side of this row; unflexed it pushed
+                // the close button off a 320dp sheet.
+                const Expanded(
+                  child: Text(
+                    'Choose a Shipping Address',
+                    style: DesignTokens.sectionInnerTitle,
+                  ),
                 ),
+                const SizedBox(width: DesignTokens.s8),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: const Icon(
@@ -1521,38 +1561,49 @@ class _PickAddressSheet extends StatelessWidget {
             ),
 
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              height: DesignTokens.buttonHeight,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DesignTokens.primaryGreen,
-                  foregroundColor: Colors.black,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26),
+            ConstrainedBox(
+              // Same shape as the bottom bar's add-address button: a pinned
+              // 52dp height around an unflexed label that is longer still.
+              constraints: const BoxConstraints(
+                minHeight: DesignTokens.buttonHeight,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DesignTokens.primaryGreen,
+                    foregroundColor: Colors.black,
+                    elevation: 0,
+                    minimumSize: const Size(0, DesignTokens.buttonHeight),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(26),
+                    ),
                   ),
-                ),
-                onPressed: onAddNew,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Add New Shipping Address',
-                      style: TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  onPressed: onAddNew,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Add New Shipping Address',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: DesignTokens.fontFamily,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: DesignTokens.buttonPrimaryText,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Icon(
+                        Icons.add_rounded,
+                        size: 20,
                         color: DesignTokens.buttonPrimaryText,
                       ),
-                    ),
-                    SizedBox(width: 6),
-                    Icon(
-                      Icons.add_rounded,
-                      size: 20,
-                      color: DesignTokens.buttonPrimaryText,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
