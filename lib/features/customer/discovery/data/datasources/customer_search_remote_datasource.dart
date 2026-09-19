@@ -1,5 +1,6 @@
 import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/image_recognition_outcome.dart';
 
 /// GET /api/v1/customer/search?type=all — real backend search across
 /// products, brands, reels, and creators in a single round-trip.
@@ -20,6 +21,14 @@ class CustomerSearchRemoteDataSource {
   }
 
   /// Searches the catalogue using actual image content analyzed by the server.
+  ///
+  /// The endpoint returns `{products, outcome, recognizedFeatures}`. It used
+  /// to return a bare array, and when vision read features that the catalogue
+  /// did not stock it filled that array with top-rated products by category —
+  /// a no-match that looked exactly like a match. That contract is gone and
+  /// is deliberately *not* tolerated here: a response that is not the object
+  /// shape yields no products rather than an unexplained list, because the
+  /// only thing a bare array could be now is the fabrication this replaced.
   Future<CustomerSearchResults> searchByImage(
     String imageDataUri, {
     int limit = 20,
@@ -28,18 +37,40 @@ class CustomerSearchRemoteDataSource {
       '/api/v1/customer/search/image',
       data: {'imageUrl': imageDataUri, 'limit': limit},
     );
-    final rows = (response as List<dynamic>? ?? const <dynamic>[])
+    final data = response is Map<String, dynamic> ? response : null;
+    final outcome =
+        ImageRecognitionOutcome.maybeFrom(data?['outcome']) ??
+        ImageRecognitionOutcome.unknown;
+    final rows = (data?['products'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>();
-    final products = rows.map(_visualProductFromJson).toList(growable: false);
+    // Defence in depth against a server regression: the backend's own type
+    // invariant already forbids products on a no-match, so if any arrive
+    // anyway they are dropped here rather than shown as recognitions.
+    final products = outcome.isNoMatch
+        ? const <SearchResultProduct>[]
+        : rows.map(_visualProductFromJson).toList(growable: false);
     return CustomerSearchResults(
       products: products,
       brands: const [],
       reels: const [],
       creators: const [],
       totalHits: products.length,
-      queryUnderstanding: 'Products recognized from your photo',
+      queryUnderstanding: products.isEmpty
+          ? null
+          : 'Products recognized from your photo',
+      imageRecognition: outcome,
+      recognizedFeatures: _featureList(data?['recognizedFeatures']),
     );
   }
+
+  static List<String> _featureList(Object? raw) => switch (raw) {
+    final List<dynamic> rows =>
+      rows
+          .map((e) => e?.toString().trim() ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList(growable: false),
+    _ => const <String>[],
+  };
 
   /// Sends text/voice transcripts and representative visual frames through one
   /// server-side fusion contract. The server owns ranking and de-duplication.
@@ -63,6 +94,14 @@ class CustomerSearchRemoteDataSource {
                 (response is List<dynamic> ? response : const <dynamic>[]))
             .whereType<Map<String, dynamic>>();
     final products = rows.map(_visualProductFromJson).toList(growable: false);
+    // `imageRecognition` is absent when the request carried no image, and
+    // when it is present and not `matched` every product here came from the
+    // text query alone. Either way the caller decides what may be claimed;
+    // the products themselves are real catalogue rows and are not dropped.
+    final imageRecognition = ImageRecognitionOutcome.maybeFrom(
+      data?['imageRecognition'],
+    );
+    final recognisedFromImage = imageRecognition?.isRecognisedMatch ?? false;
     return CustomerSearchResults(
       products: products,
       brands: const [],
@@ -71,9 +110,14 @@ class CustomerSearchRemoteDataSource {
       totalHits: products.length,
       queryUnderstanding:
           _nonBlank(data?['queryUnderstanding']) ??
-          (imageDataUris.length > 1
-              ? 'Products recognized across your video'
-              : 'Products recognized from your photo'),
+          (imageRecognition != null && !recognisedFromImage
+              // Nothing was recognised, so no phrase may say it was.
+              ? null
+              : (imageDataUris.length > 1
+                    ? 'Products recognized across your video'
+                    : 'Products recognized from your photo')),
+      imageRecognition: imageRecognition,
+      recognizedFeatures: _featureList(data?['recognizedFeatures']),
     );
   }
 

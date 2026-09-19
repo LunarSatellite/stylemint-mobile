@@ -2,6 +2,7 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/customer_search_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/image_recognition_outcome.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/data/screenshot_image.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/domain/screenshot_search_outcome.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/domain/search_input_status.dart';
@@ -47,11 +48,37 @@ class ScreenshotSearch {
       );
     }
 
-    // The one rule this method exists to enforce: no products means no
+    // The one rule this method exists to enforce: no recognition means no
     // match, and no match is said out loud. It is never turned into a
     // results screen filled with something else.
-    if (results.products.isEmpty) return const ScreenshotNoMatch();
-    return ScreenshotMatches(results);
+    //
+    // The server now says which kind of empty it is, and that answer wins
+    // over counting products — a non-empty list no longer implies the image
+    // was recognised, since on the multimodal endpoint those rows can come
+    // from the typed words alone. This entry point promises "found in your
+    // screenshot", so anything short of a match is a dead end here.
+    switch (results.imageRecognition) {
+      case ImageRecognitionOutcome.recognizedNoMatch:
+        return ScreenshotNoMatch(
+          recognizedFeatures: results.recognizedFeatures,
+        );
+      case ImageRecognitionOutcome.notRecognized:
+        return const ScreenshotNotRecognized();
+      case ImageRecognitionOutcome.matched:
+        // The server's own invariant forbids an empty match, but a client
+        // that trusts that blindly renders an empty results screen if it is
+        // ever broken. Cheaper to check than to ship that.
+        if (results.products.isEmpty) return const ScreenshotNoMatch();
+        return ScreenshotMatches(results);
+      // An outcome added to the server enum after this build shipped, or no
+      // outcome reported at all. Fall back to the older, safe rule rather
+      // than guessing: products present are real catalogue rows, and their
+      // absence is still a no-match. Nothing is invented either way.
+      case ImageRecognitionOutcome.unknown:
+      case null:
+        if (results.products.isEmpty) return const ScreenshotNoMatch();
+        return ScreenshotMatches(results);
+    }
   }
 
   static ScreenshotSearchUnavailable _unavailableFor(

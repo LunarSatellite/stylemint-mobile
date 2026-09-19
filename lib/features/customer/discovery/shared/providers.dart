@@ -100,6 +100,8 @@ final productPassportProvider = FutureProvider.autoDispose
       return result.fold((_) => null, (passport) => passport);
     });
 
+/// Best-effort comparison card. Null — and so no card — on any failure, and
+/// equally on a `204`, where the platform has nothing grounded to say.
 final productComparisonProvider = FutureProvider.autoDispose
     .family<ProductComparison?, String>((ref, productId) async {
       final result = await ref

@@ -101,8 +101,9 @@ void main() {
       expect(find.text('results:visual=1'), findsOneWidget);
     });
 
-    testWidgets('that matches nothing says so, and offers no products at all',
-        (tester) async {
+    testWidgets('that matches nothing says so, and offers no products at all', (
+      tester,
+    ) async {
       final picker = FakeScreenshotPicker(ScreenshotPicked(_bytes));
       final search = FakeScreenshotSearch(const ScreenshotNoMatch());
       await _pumpScreenshot(tester, picker: picker, search: search);
@@ -118,6 +119,56 @@ void main() {
       expect(find.textContaining('Green tote'), findsNothing);
       expect(find.textContaining(r'$'), findsNothing);
       // Both ways forward are present.
+      expect(_key('screenshot-try-another'), findsOneWidget);
+      expect(_key('screenshot-type-instead'), findsOneWidget);
+    });
+
+    testWidgets('recognised but unstocked names what the Mall saw', (
+      tester,
+    ) async {
+      final picker = FakeScreenshotPicker(ScreenshotPicked(_bytes));
+      final search = FakeScreenshotSearch(
+        const ScreenshotNoMatch(
+          recognizedFeatures: ['tan', 'leather satchel'],
+        ),
+      );
+      await _pumpScreenshot(tester, picker: picker, search: search);
+
+      await tester.tap(_key('screenshot-search'));
+      await tester.pumpAndSettle();
+
+      // The informative ending: the platform saw it and does not stock it.
+      expect(find.text('The Mall does not stock this'), findsOneWidget);
+      expect(_key('screenshot-features'), findsOneWidget);
+      expect(find.text('tan'), findsOneWidget);
+      expect(find.text('leather satchel'), findsOneWidget);
+      // Still not a product in sight.
+      expect(find.textContaining('results:'), findsNothing);
+      expect(find.textContaining(r'$'), findsNothing);
+    });
+
+    testWidgets('an unreadable picture gets its own ending, not a no-match', (
+      tester,
+    ) async {
+      final picker = FakeScreenshotPicker(ScreenshotPicked(_bytes));
+      final search = FakeScreenshotSearch(const ScreenshotNotRecognized());
+      await _pumpScreenshot(tester, picker: picker, search: search);
+
+      await tester.tap(_key('screenshot-search'));
+      await tester.pumpAndSettle();
+
+      expect(_key('screenshot-not-recognized'), findsOneWidget);
+      expect(
+        find.text('StyleMint could not read this picture'),
+        findsOneWidget,
+      );
+      // The three endings stay distinct: this one claims nothing about
+      // whether the Mall stocks the item, because nothing was searched for.
+      expect(_key('screenshot-no-match'), findsNothing);
+      expect(find.textContaining('does not stock'), findsNothing);
+      expect(find.textContaining('results:'), findsNothing);
+      expect(find.textContaining(r'$'), findsNothing);
+      // Both ways forward are still offered.
       expect(_key('screenshot-try-another'), findsOneWidget);
       expect(_key('screenshot-type-instead'), findsOneWidget);
     });

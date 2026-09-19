@@ -202,29 +202,34 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
   }
 
   @override
-  Future<Either<NetworkExceptions, ProductComparison>> getProductComparison(
+  Future<Either<NetworkExceptions, ProductComparison?>> getProductComparison(
     String productId,
   ) async {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductComparison(productId);
+        // 204: the endpoint had nothing truthful to say. A successful "there
+        // is no comparison" — right(null), not an error.
+        if (json == null) return right(null);
         final alternatives =
             (json['alternatives'] as List<dynamic>? ?? const <dynamic>[])
-                .cast<Map<String, dynamic>>()
+                .whereType<Map<String, dynamic>>()
                 .map(
                   (e) => ProductComparisonPoint(
                     productId: e['productId'] as String? ?? '',
                     productName: e['productName'] as String? ?? '',
-                    howItDiffers: e['howItDiffers'] as String? ?? '',
+                    // Absent stays absent: blanking it to '' would render an
+                    // empty span after the product name.
+                    howItDiffers: _nonEmpty(e['howItDiffers']),
                   ),
                 )
                 .where((p) => p.productId.isNotEmpty)
                 .toList(growable: false);
         return right(
           ProductComparison(
-            bestForTag: json['bestForTag'] as String? ?? '',
+            bestForTag: _nonEmpty(json['bestForTag']),
             alternatives: alternatives,
-            recommendation: json['recommendation'] as String? ?? '',
+            recommendation: _nonEmpty(json['recommendation']),
           ),
         );
       } catch (e) {
@@ -486,4 +491,13 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       return left(NetworkExceptions.noInternetConnection());
     }
   }
+}
+
+/// Reads an optional string field the way the comparison contract means it:
+/// absent, null, or blank all mean "the platform has nothing true to say
+/// here", and all become null so the UI can omit the element entirely
+/// instead of rendering a label with nothing after it.
+String? _nonEmpty(Object? raw) {
+  final value = raw is String ? raw.trim() : null;
+  return (value == null || value.isEmpty) ? null : value;
 }
