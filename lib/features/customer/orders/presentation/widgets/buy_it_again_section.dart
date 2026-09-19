@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -29,6 +33,13 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
 
   @override
   Widget build(BuildContext context) {
+    // Replenishment prediction is personalisation, so it passes the same
+    // Memory Vault gate the adaptive storefront does. A paused customer sees
+    // no rail, no consent card and no link to the screen — an entry point
+    // that could only say "paused" is an entry point that dangles.
+    final allowed = ref.watch(personalizationAllowedProvider);
+    if (allowed.asData?.value != true) return const SizedBox.shrink();
+
     // Same staleness fix as the order list: the shell keeps this screen
     // mounted across tab switches, so refetch on every revisit rather than
     // relying on provider lifecycle.
@@ -145,6 +156,21 @@ class _BuyItAgainSectionState extends ConsumerState<BuyItAgainSection> {
                     onDismiss: () => ref
                         .read(reorderSuggestionsNotifierProvider.notifier)
                         .dismiss(suggestions[i].productId),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.s8,
+                ),
+                child: TextButton(
+                  key: const ValueKey('restock-see-all'),
+                  onPressed: () => context.push(RouteNames.buyItAgain),
+                  child: Semantics(
+                    button: true,
+                    label: 'See all restock estimates',
+                    excludeSemantics: true,
+                    child: const Text('See all restock estimates'),
                   ),
                 ),
               ),
@@ -292,12 +318,12 @@ class _ReplenishmentConsentCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Never run out',
+                    'Know when you might be due',
                     style: DesignTokens.mediumSemibold,
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Let StyleMint predict when your regular items may '
+                    'Let StyleMint estimate when your regular items may '
                     'need restocking. We never purchase automatically.',
                     style: DesignTokens.smallRegular.copyWith(
                       color: DesignTokens.textMuted,
@@ -347,30 +373,18 @@ class _SuggestionCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(DesignTokens.s8),
+                // The Mall is video-first: a product photograph belongs to
+                // the product details page, so this rail draws the kit's
+                // typographic ground, seeded from the product id so the same
+                // product looks the same wherever it appears. The DTO's
+                // `thumbnailUrl` is deliberately not read here.
                 child: SizedBox(
                   height: 72,
                   width: double.infinity,
-                  child:
-                      suggestion.thumbnailUrl == null ||
-                          suggestion.thumbnailUrl!.isEmpty
-                      ? const ColoredBox(
-                          color: DesignTokens.bgAppBodyLight,
-                          child: Icon(
-                            Icons.shopping_bag_outlined,
-                            color: DesignTokens.textMuted,
-                          ),
-                        )
-                      : Image.network(
-                          suggestion.thumbnailUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _e, _s) => const ColoredBox(
-                            color: DesignTokens.bgAppBodyLight,
-                            child: Icon(
-                              Icons.shopping_bag_outlined,
-                              color: DesignTokens.textMuted,
-                            ),
-                          ),
-                        ),
+                  child: MallTypeGround(
+                    seed: suggestion.productId,
+                    monogram: suggestion.productName.characters.firstOrNull,
+                  ),
                 ),
               ),
               Positioned(

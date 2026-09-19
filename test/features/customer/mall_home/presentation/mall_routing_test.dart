@@ -155,6 +155,12 @@ void main() {
         ),
         '/collections/look-1',
       );
+      // "Buy it again" has a screen now, so a Refill module resolves and is
+      // drawn instead of being skipped.
+      expect(
+        pushed(destinationForSeeAll(section(HomeSeeAllTarget.reorder))),
+        '/orders/buy-it-again',
+      );
       expect(destinationForSeeAll(section(HomeSeeAllTarget.brands)), isNull);
     });
   });

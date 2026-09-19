@@ -73,6 +73,18 @@ final storefrontPersonalizerProvider = Provider<StorefrontPersonalizer>(
   ),
 );
 
+/// Whether this customer may be personalised right now — the same Memory
+/// Vault pause the adaptive storefront honours, asked by surfaces outside it.
+///
+/// Replenishment prediction is personalisation: a customer who paused being
+/// remembered sees no estimates on "Buy it again" either, and no entry point
+/// leading to a screen that would only tell them it is off.
+// The provider's own type says nothing the right side doesn't.
+// ignore: specify_nonobvious_property_types
+final personalizationAllowedProvider = FutureProvider.autoDispose<bool>(
+  (ref) => ref.watch(storefrontPersonalizerProvider).allowed(),
+);
+
 /// Sends the interaction signals the adaptive storefront is built from. Kept
 /// for the session so a signal is not re-sent every time a screen rebuilds.
 final feedSignalRecorderProvider = Provider<FeedSignalRecorder>(
