@@ -17,6 +17,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/reels/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/entities/companion_memory.dart';
+import 'package:stylemint_mobile_frontend/features/settings/domain/entities/memory_consent.dart';
 import 'package:stylemint_mobile_frontend/features/settings/domain/repositories/memory_vault_repository.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 
@@ -103,6 +104,20 @@ class _FakeVaultRepository implements MemoryVaultRepository {
   Future<Either<NetworkExceptions, int>> importPortableTwin(
     String bundleJson,
   ) => throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() =>
+      throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> grantConsent({
+    required MemoryPurpose purpose,
+    required String explanation,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Either<NetworkExceptions, Unit>> revokeConsent(int purposeCode) =>
+      throw UnimplementedError();
 }
 
 // ── Builders ───────────────────────────────────────────────────────────────
