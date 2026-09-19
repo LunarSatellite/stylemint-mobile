@@ -94,7 +94,9 @@ class ProductListingScreen extends ConsumerWidget {
           final filtered = data.query.activeFilterCount > 0;
           return [
             SliverFillRemaining(
-              hasScrollBody: false,
+              // MallEmptyState scrolls itself when it is given less room
+              // than it needs, so it is a scroll body here; asking it for an
+              // intrinsic height instead would fail.
               child: MallEmptyState(
                 icon: Icons.search_off_rounded,
                 title: filtered

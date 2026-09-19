@@ -110,18 +110,16 @@ class _AssistantConversationScreenState
       return const Center(child: CircularProgressIndicator());
     }
     if (state.turns.isEmpty) {
-      // Scrollable, so the empty state still reads on a short screen at a
-      // large text scale rather than overflowing.
-      return const SingleChildScrollView(
-        child: MallEmptyState(
-          icon: Icons.auto_awesome_outlined,
-          eyebrow: 'Personal shopping',
-          title: 'Ask Minty anything',
-          body:
-              'Describe what you are after and Minty will suggest pieces. It '
-              'never buys anything for you — adding to your bag is always '
-              'your call.',
-        ),
+      // MallEmptyState scrolls itself when it is given less room than it
+      // needs, so this does not need its own SingleChildScrollView.
+      return const MallEmptyState(
+        icon: Icons.auto_awesome_outlined,
+        eyebrow: 'Personal shopping',
+        title: 'Ask Minty anything',
+        body:
+            'Describe what you are after and Minty will suggest pieces. It '
+            'never buys anything for you — adding to your bag is always '
+            'your call.',
       );
     }
 

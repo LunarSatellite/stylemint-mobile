@@ -54,7 +54,11 @@ class StorefrontPersonalizer {
   /// Records a signal, if there is someone to record it for and consent to do
   /// it. Fire-and-forget; never throws.
   Future<void> track(FeedSignal signal) async {
-    if (signal.entityId.trim().isEmpty) return;
+    // The signal's own constructors already refuse an invalid shape; this
+    // only guards the id-shaped path against a blank that slipped through.
+    if (!signal.isQueryShaped && (signal.entityId?.trim().isEmpty ?? true)) {
+      return;
+    }
     if (!await allowed()) return;
     await _storefront.trackInteraction(signal);
   }

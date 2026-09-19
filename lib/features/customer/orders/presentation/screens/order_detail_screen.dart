@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,9 +33,19 @@ import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
-  const OrderDetailScreen({required this.orderId, super.key});
+  const OrderDetailScreen({
+    required this.orderId,
+    this.focusDeliveryRecovery = false,
+    super.key,
+  });
 
   final String orderId;
+
+  /// Opened from the "your delivery is at risk" notification
+  /// (`stylemint://delivery/{trackingNumber}/recovery`): scroll the AI
+  /// Delivery Guardian banner and its recovery offers into view, and say
+  /// so when the delivery has since recovered and the banner is empty.
+  final bool focusDeliveryRecovery;
 
   @override
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -93,6 +104,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             _OrderDetailBody(
               order: order,
               notifier: ref.read(provider.notifier),
+              focusDeliveryRecovery: widget.focusDeliveryRecovery,
             ),
           ),
           loadFailure: (failure) => SmErrorView(
@@ -106,6 +118,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               order: order,
               actionPending: true,
               notifier: ref.read(provider.notifier),
+              focusDeliveryRecovery: widget.focusDeliveryRecovery,
             ),
           ),
           actionFailure: (failure) => _loader(),
@@ -129,11 +142,13 @@ class _OrderDetailBody extends ConsumerStatefulWidget {
     required this.order,
     required this.notifier,
     this.actionPending = false,
+    this.focusDeliveryRecovery = false,
   });
 
   final OrderDetail order;
   final OrderDetailNotifier notifier;
   final bool actionPending;
+  final bool focusDeliveryRecovery;
 
   @override
   ConsumerState<_OrderDetailBody> createState() => _OrderDetailBodyState();
@@ -225,7 +240,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
           ),
           if (trackingNumber?.startsWith('SM-D-') == true) ...[
             const SizedBox(height: DesignTokens.s12),
-            _DeliveryRiskBanner(trackingNumber: trackingNumber!),
+            _DeliveryRiskBanner(
+              trackingNumber: trackingNumber!,
+              autoFocus: widget.focusDeliveryRecovery,
+            ),
             _PackageSealCard(trackingNumber: trackingNumber),
             // Only once the parcel may have reached the buyer; the card
             // itself checks the package is out for delivery or delivered.
@@ -522,15 +540,58 @@ class _TrackingTimeline extends StatelessWidget {
 /// Style Mint tracking number, rather than guessing events from order state.
 /// "AI Delivery Guardian" — shows nothing when the delivery is on track,
 /// loading, or the check failed (best-effort, never blocking).
-class _DeliveryRiskBanner extends ConsumerWidget {
-  const _DeliveryRiskBanner({required this.trackingNumber});
+class _DeliveryRiskBanner extends ConsumerStatefulWidget {
+  const _DeliveryRiskBanner({
+    required this.trackingNumber,
+    this.autoFocus = false,
+  });
 
   final String trackingNumber;
 
+  /// Arrived from the at-risk push notification: scroll this banner into
+  /// view once the risk read lands, and — when the delivery has recovered
+  /// in the meantime, so there is nothing to warn about — say so instead of
+  /// leaving the customer on a screen with no trace of the alert.
+  final bool autoFocus;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DeliveryRiskBanner> createState() =>
+      _DeliveryRiskBannerState();
+}
+
+class _DeliveryRiskBannerState extends ConsumerState<_DeliveryRiskBanner> {
+  bool _focused = false;
+
+  void _focusOnce() {
+    if (_focused || !widget.autoFocus) return;
+    _focused = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+          alignment: 0.05,
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final trackingNumber = widget.trackingNumber;
     final risk = ref.watch(deliveryRiskProvider(trackingNumber)).asData?.value;
-    if (risk == null || !risk.atRisk) return const SizedBox.shrink();
+    if (risk == null || !risk.atRisk) {
+      // Opened from the notification and the backend now says the delivery
+      // is fine: the alert is answered, not missing.
+      if (widget.autoFocus && risk != null) {
+        _focusOnce();
+        return _BackOnTrackNote(trackingNumber: trackingNumber);
+      }
+      return const SizedBox.shrink();
+    }
+    _focusOnce();
 
     return Container(
       padding: const EdgeInsets.all(DesignTokens.s12),
@@ -581,6 +642,44 @@ class _DeliveryRiskBanner extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Shown in the risk banner's place when the customer opened the at-risk
+/// notification but the delivery has since recovered — so the alert has a
+/// visible answer instead of vanishing into an ordinary order screen.
+class _BackOnTrackNote extends StatelessWidget {
+  const _BackOnTrackNote({required this.trackingNumber});
+
+  final String trackingNumber;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(DesignTokens.s12),
+    decoration: BoxDecoration(
+      color: DesignTokens.primaryGreen.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(DesignTokens.s8),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.check_circle_outline,
+          size: 18,
+          color: DesignTokens.primaryGreen,
+        ),
+        const SizedBox(width: DesignTokens.s8),
+        Expanded(
+          child: Text(
+            'Good news — delivery $trackingNumber is back on track. '
+            'No action needed.',
+            style: DesignTokens.smallRegular.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Voyager "Tamper/Seal Proof" — the vendor's own pack-time tamper-evident

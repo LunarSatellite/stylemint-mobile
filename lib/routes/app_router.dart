@@ -94,6 +94,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentati
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/presentation/screens/product_listing_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/cancel_order_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/delivery_recovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/fedex_tracking_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/my_returns_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/screens/order_detail_screen.dart';
@@ -652,6 +653,9 @@ GoRouter appRouter(Ref ref) {
         path: RouteNames.orderDetail,
         builder: (ctx, state) => OrderDetailScreen(
           orderId: state.pathParameters['orderId']!,
+          focusDeliveryRecovery:
+              state.uri.queryParameters['focus'] ==
+              RouteNames.orderDetailFocusRecovery,
         ),
         routes: [
           GoRoute(
@@ -676,6 +680,18 @@ GoRouter appRouter(Ref ref) {
             ),
           ),
         ],
+      ),
+
+      // "Your delivery is at risk" push notification
+      // (stylemint://delivery/{trackingNumber}/recovery). Resolves the
+      // tracking number to the customer's order and forwards to order
+      // detail with the recovery offers in view. Not public: the offers
+      // are the customer's own, so a signed-out tap goes to sign-in.
+      GoRoute(
+        path: RouteNames.deliveryRecovery,
+        builder: (ctx, state) => DeliveryRecoveryScreen(
+          trackingNumber: state.pathParameters['trackingNumber']!,
+        ),
       ),
 
       // Discover creators (follow)

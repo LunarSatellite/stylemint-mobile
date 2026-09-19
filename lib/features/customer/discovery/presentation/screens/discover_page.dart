@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/discover_suggestions_panel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/discover_providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/customer/search_input/presentation/widgets/search_input_actions.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -87,6 +88,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       selection: TextSelection.collapsed(offset: term.length),
     );
     ref.read(searchSuggestNotifierProvider.notifier).onQueryChanged(term);
+    // A free-text search is the app's "hunting" intent signal. It has no
+    // category to point at, so it goes as a query-shaped signal with no id;
+    // the personalizer drops it if this customer paused personalisation.
+    ref.read(feedSignalRecorderProvider).searchedQuery(term);
     _focusNode.unfocus();
     unawaited(
       context.push(

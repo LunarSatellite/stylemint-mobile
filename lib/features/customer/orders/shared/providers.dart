@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasour
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_story_chapter.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/order_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/repositories/orders_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/carbon_impact.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_care_plan.dart';
@@ -122,6 +123,58 @@ final packageSealProvider = FutureProvider.autoDispose
       } catch (_) {
         return null;
       }
+    });
+
+/// How many recent orders the tracking-number lookup reads detail for.
+/// A delivery that is at risk right now belongs to an order the customer
+/// placed recently, so a short scan finds it; the cap keeps a customer with
+/// a long order history from firing a call per order.
+const int _trackingLookupDetailBudget = 8;
+
+/// Resolves a delivery tracking number to the customer's own order number,
+/// or null when it is not theirs (or too old to still be in flight).
+///
+/// There is no backend lookup from a tracking number to an order: the
+/// Delivery module's package carries only a sub-order id
+/// (`GET /v1/deliveries/{trackingNumber}` → `PackageDto.subOrderId`) and no
+/// buyer endpoint maps a sub-order id back to an order number. So this
+/// scans the customer's own recent orders, which is also what makes another
+/// customer's tracking number unresolvable — `/v1/orders` is scoped to the
+/// caller, so a stranger's parcel simply never matches and the caller shows
+/// its not-found landing instead of leaking that the parcel exists.
+///
+/// Only orders that can still have a package in flight are read (Paid,
+/// Fulfilling, Completed — not Placed or Cancelled), newest first, capped
+/// at [_trackingLookupDetailBudget] detail reads.
+// The family type this returns is not exported under the imports this file
+// uses, and every other provider here is declared the same way.
+// ignore: specify_nonobvious_property_types
+final orderNumberForTrackingProvider = FutureProvider.autoDispose
+    .family<String?, String>((ref, trackingNumber) async {
+      final tracking = trackingNumber.trim();
+      if (tracking.isEmpty) return null;
+
+      final dataSource = ref.watch(ordersRemoteDataSourceProvider);
+      final recent = await dataSource.getTrackedOrders(limit: 20);
+
+      final candidates = recent
+          .where((o) => o.state == 2 || o.state == 3 || o.state == 4)
+          .take(_trackingLookupDetailBudget);
+
+      for (final candidate in candidates) {
+        final OrderDetailDto detail;
+        try {
+          detail = await dataSource.getOrderDetail(candidate.orderNumber);
+        } on Object catch (_) {
+          // One unreadable order must not abort the whole lookup.
+          continue;
+        }
+        final matches = detail.subOrders.any(
+          (s) => s.trackingNumber?.trim() == tracking,
+        );
+        if (matches) return detail.orderNumber;
+      }
+      return null;
     });
 
 final ordersRepositoryProvider = Provider<OrdersRepository>(

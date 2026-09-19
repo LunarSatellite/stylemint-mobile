@@ -181,6 +181,75 @@ void main() {
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
       semantics.dispose();
     });
+
+    // The kit owns this, so no caller needs its own SingleChildScrollView.
+    Widget inExpanded() => Column(
+      children: [
+        Expanded(
+          child: MallEmptyState(
+            icon: Icons.favorite_border_rounded,
+            eyebrow: 'Saved',
+            title: 'Nothing saved yet — start your wishlist',
+            body:
+                'Tap the heart on anything you love and it will wait for you '
+                'here, ready for the next time you are shopping.',
+            actionLabel: 'Explore the mall',
+            onAction: () {},
+          ),
+        ),
+      ],
+    );
+
+    ScrollPosition emptyStateScroll(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(MallEmptyState),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+
+    testWidgets('as the only child of a bounded Expanded it scrolls instead '
+        'of overflowing at 320dp × text 1.3', (tester) async {
+      await pumpMall(
+        tester,
+        inExpanded(),
+        width: 320,
+        textScale: 1.3,
+        inList: false,
+      );
+      expectNoLayoutErrors(tester);
+
+      // It did not fit — and it handled that itself.
+      expect(emptyStateScroll(tester).maxScrollExtent, greaterThan(0));
+      await tester.drag(
+        find.byType(MallEmptyState),
+        const Offset(0, -200),
+      );
+      await tester.pumpAndSettle();
+      expectNoLayoutErrors(tester);
+      expect(find.text('Explore the mall'), findsOneWidget);
+    });
+
+    testWidgets('at a normal size it still fills and centres its space, with '
+        'nothing to scroll', (tester) async {
+      await pumpMall(tester, inExpanded(), inList: false);
+      expectNoLayoutErrors(tester);
+
+      expect(emptyStateScroll(tester).maxScrollExtent, 0);
+      // Still centred in the height the Expanded gave it, exactly as before.
+      final box = tester.getRect(find.byType(MallEmptyState));
+      final content = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(MallEmptyState),
+              matching: find.byType(Column),
+            )
+            .first,
+      );
+      expect(content.height, lessThan(box.height));
+      expect((content.center.dy - box.center.dy).abs(), lessThan(1));
+    });
   });
 
   group('MallNetworkImage', () {

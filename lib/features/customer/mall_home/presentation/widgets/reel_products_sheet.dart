@@ -83,12 +83,10 @@ class ReelProductsSheet extends ConsumerWidget {
                     .where((p) => p.id.isNotEmpty)
                     .toList(growable: false);
                 if (products.isEmpty) {
-                  return const SingleChildScrollView(
-                    child: MallEmptyState(
-                      icon: Icons.shopping_bag_outlined,
-                      title: 'Nothing to shop here',
-                      body: 'This reel has no tagged products right now.',
-                    ),
+                  return const MallEmptyState(
+                    icon: Icons.shopping_bag_outlined,
+                    title: 'Nothing to shop here',
+                    body: 'This reel has no tagged products right now.',
                   );
                 }
                 return ListView.separated(

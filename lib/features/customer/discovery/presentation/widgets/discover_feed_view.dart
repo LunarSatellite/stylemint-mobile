@@ -145,7 +145,9 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
       case DiscoverFeedFailure(:final failure):
         return [
           SliverFillRemaining(
-            hasScrollBody: false,
+            // The message's MallEmptyState scrolls itself when it does not
+            // fit, so it is a scroll body; asking it for an intrinsic
+            // height instead would fail.
             child: _FeedMessage.failure(
               failure,
               onRetry: () => unawaited(_notifier.retry()),
@@ -160,7 +162,6 @@ class _DiscoverFeedViewState extends ConsumerState<DiscoverFeedView> {
         if (slivers.isEmpty && !feed.hasMore) {
           return [
             SliverFillRemaining(
-              hasScrollBody: false,
               child: _FeedMessage.empty(state.selected),
             ),
           ];
