@@ -142,6 +142,15 @@ class _VendorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.vendorStores),
               ),
               const _MoreDivider(),
+              // Per-unit tags across every listing: browse what has been
+              // minted, and retire a tag that was lost or misprinted. Minting
+              // itself stays on the listing, where the variant is known.
+              _MoreItem(
+                icon: Icons.local_offer_outlined,
+                title: 'Unit tag register',
+                onTap: () => _go(context, RouteNames.vendorUnitMarkerRegister),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.question_answer_outlined,
                 title: 'Customer Inquiries',

@@ -248,7 +248,10 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_scan.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_bind_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_bindings_screen.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_provision_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_register_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_scans_screen.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_tag_passport_screen.dart';
 
 import 'route_names.dart';
@@ -1343,6 +1346,37 @@ GoRouter appRouter(Ref ref) {
                   stage: OrderLineFulfilmentStage.unrecognised,
                   lineLabel: null,
                 ),
+        ),
+      ),
+      // The seller's register of minted tags: browse, and retire.
+      //
+      // `productId` rides in the query so the filtered register survives a
+      // deep link and a refresh; the product *name* rides in `extra` because
+      // the list response carries ids only and the screen shows no name it
+      // was not given.
+      GoRoute(
+        path: RouteNames.vendorUnitMarkerRegister,
+        builder: (ctx, state) {
+          final product = state.extra is VendorProduct
+              ? state.extra! as VendorProduct
+              : null;
+          return UnitMarkerRegisterScreen(
+            productId: product?.id ?? state.uri.queryParameters['productId'],
+            productName: product?.name,
+          );
+        },
+      ),
+      // One tag's trail. Both take the non-secret reference in the path.
+      GoRoute(
+        path: RouteNames.vendorUnitMarkerBindings,
+        builder: (ctx, state) => UnitMarkerBindingsScreen(
+          reference: state.pathParameters['reference'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.vendorUnitMarkerScans,
+        builder: (ctx, state) => UnitMarkerScansScreen(
+          reference: state.pathParameters['reference'] ?? '',
         ),
       ),
       GoRoute(
