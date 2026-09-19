@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/notifiers/feed_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/social/feed/presentation/screens/create_post_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_comments_sheet.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/presentation/widgets/feed_post_card.dart';
 import 'package:stylemint_mobile_frontend/features/social/feed/shared/providers.dart';
@@ -50,6 +49,17 @@ class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
       appBar: AppBar(
         title: const Text('Friend Feed', style: DesignTokens.titleLarge),
         backgroundColor: DesignTokens.bgAppFoundation,
+        actions: [
+          IconButton(
+            key: const Key('friend-feed-stories'),
+            tooltip: 'Stories',
+            icon: const Icon(
+              Icons.auto_stories_outlined,
+              color: DesignTokens.textWhite,
+            ),
+            onPressed: () => context.push(RouteNames.stories),
+          ),
+        ],
       ),
       body: state.when(
         initial: _loader,
@@ -124,13 +134,12 @@ class _FriendFeedScreenState extends ConsumerState<FriendFeedScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        key: const Key('friend-feed-create-post'),
         tooltip: 'Create Post',
         backgroundColor: DesignTokens.primaryGreen,
-        onPressed: () {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(builder: (_) => const CreatePostScreen()),
-          );
-        },
+        // Uses the registered /feed/create route so the composer is
+        // deep-linkable and keeps the router's auth guard.
+        onPressed: () => context.push(RouteNames.feedCreatePost),
         child: const Icon(Icons.add, color: DesignTokens.buttonPrimaryText),
       ),
     );

@@ -66,6 +66,16 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Change Password',
             onTap: () => context.push('${RouteNames.settings}/change-password'),
           ),
+          _MenuTile(
+            icon: Icons.shield_moon_outlined,
+            label: 'Account & Security',
+            onTap: () => context.push(RouteNames.accountSettings),
+          ),
+          _MenuTile(
+            icon: Icons.devices_outlined,
+            label: 'Devices & Sessions',
+            onTap: () => context.push(RouteNames.sessions),
+          ),
 
           const SizedBox(height: DesignTokens.s16),
           _SectionHeader(label: 'Preferences'),

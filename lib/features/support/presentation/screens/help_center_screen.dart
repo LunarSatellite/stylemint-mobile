@@ -87,6 +87,22 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
           ),
           const SizedBox(height: DesignTokens.s24),
           Text(
+            'Your requests',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+            ),
+          ),
+          const SizedBox(height: DesignTokens.s8),
+          _Card(
+            children: [
+              _MyTicketsTile(
+                key: const Key('help-center-my-tickets'),
+                onTap: () => context.push(RouteNames.supportTickets),
+              ),
+            ],
+          ),
+          const SizedBox(height: DesignTokens.s24),
+          Text(
             'Help Topics',
             style: DesignTokens.smallRegular.copyWith(
               color: DesignTokens.textMuted,
@@ -145,12 +161,12 @@ class _Card extends StatelessWidget {
   const _Card({required this.children});
   final List<Widget> children;
 
+  // Material (not a DecoratedBox) so the ListTile rows inside can paint their
+  // own background and ink splashes — Flutter asserts on that in debug.
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: DesignTokens.bgAppBody,
-      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-    ),
+  Widget build(BuildContext context) => Material(
+    color: DesignTokens.bgAppBody,
+    borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
     child: Column(children: children),
   );
 }
@@ -209,6 +225,54 @@ class _CategoryTile extends StatelessWidget {
     'delivery-and-couriers' => Icons.local_shipping_outlined,
     _ => Icons.help_outline,
   };
+}
+
+/// "My Tickets" row — same InkWell/icon-tile geometry as [_CategoryTile] so it
+/// reads as one more row of the Help Center rather than a bolt-on.
+class _MyTicketsTile extends StatelessWidget {
+  const _MyTicketsTile({required this.onTap, super.key});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.all(DesignTokens.s16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: DesignTokens.bgAppBodyLight,
+              borderRadius: BorderRadius.circular(DesignTokens.s8),
+            ),
+            child: const Icon(
+              Icons.confirmation_number_outlined,
+              color: DesignTokens.textWhite,
+            ),
+          ),
+          const SizedBox(width: DesignTokens.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('My Tickets', style: DesignTokens.mediumSemibold),
+                const SizedBox(height: 2),
+                Text(
+                  'Read replies and track your requests',
+                  style: DesignTokens.smallRegular.copyWith(
+                    color: DesignTokens.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: DesignTokens.textMuted),
+        ],
+      ),
+    ),
+  );
 }
 
 class _ContactTile extends StatelessWidget {

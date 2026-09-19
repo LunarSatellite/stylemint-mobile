@@ -205,7 +205,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildContent() {
-    if (_account == null) return const SizedBox.shrink();
+    // The profile summary is best-effort: this screen is now the account
+    // security hub, so the menu below stays reachable even when
+    // `/accounts/{id}` hasn't answered yet.
+    final account = _account;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
@@ -215,17 +218,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSection('Profile', [
-            _infoRow('Display Name', _account!['displayName'] as String),
-            _infoRow('Country', _account!['countryCode'] as String),
-            _infoRow('Status', _account!['status'] as String),
-          ]),
-          const SizedBox(height: DesignTokens.s16),
-          _buildSection('Settings', [
-            _infoRow('Locale', _account!['locale'] as String),
-            _infoRow('Timezone', _account!['timezone'] as String),
-          ]),
-          const SizedBox(height: DesignTokens.s24),
+          if (account != null) ...[
+            _buildSection('Profile', [
+              _infoRow('Display Name', account['displayName'] as String),
+              _infoRow('Country', account['countryCode'] as String),
+              _infoRow('Status', account['status'] as String),
+            ]),
+            const SizedBox(height: DesignTokens.s16),
+            _buildSection('Settings', [
+              _infoRow('Locale', account['locale'] as String),
+              _infoRow('Timezone', account['timezone'] as String),
+            ]),
+            const SizedBox(height: DesignTokens.s24),
+          ],
 
           _buildMenuTile(
             icon: Icons.password_rounded,
@@ -236,6 +241,31 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             icon: Icons.devices_rounded,
             title: 'Sessions',
             onTap: () => context.push(RouteNames.sessions),
+          ),
+          _buildMenuTile(
+            icon: Icons.verified_user_rounded,
+            title: 'Two-Factor Authentication',
+            onTap: () => context.push(RouteNames.mfaSetup),
+          ),
+          _buildMenuTile(
+            icon: Icons.phonelink_lock_rounded,
+            title: 'Trusted Devices',
+            onTap: () => context.push(RouteNames.devices),
+          ),
+          _buildMenuTile(
+            icon: Icons.link_rounded,
+            title: 'Linked Accounts',
+            onTap: () => context.push(RouteNames.linkedAccounts),
+          ),
+          _buildMenuTile(
+            icon: Icons.block_rounded,
+            title: 'Blocked Accounts',
+            onTap: () => context.push(RouteNames.blockedUsers),
+          ),
+          _buildMenuTile(
+            icon: Icons.campaign_rounded,
+            title: 'Marketing Preferences',
+            onTap: () => context.push(RouteNames.marketingConsents),
           ),
           const Divider(
             color: DesignTokens.borderDefault,

@@ -305,6 +305,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               label: 'Linked Accounts',
               onTap: () => context.push(RouteNames.linkedAccounts),
             ),
+            // Account security hub: 2FA, trusted devices, active sessions,
+            // blocked accounts, marketing consents, pause/delete.
+            ProfileMenuItem(
+              icon: Icons.shield_moon_outlined,
+              label: 'Account & Security',
+              onTap: () => context.push(RouteNames.accountSettings),
+            ),
           ],
         ),
         const SizedBox(height: DesignTokens.s16),

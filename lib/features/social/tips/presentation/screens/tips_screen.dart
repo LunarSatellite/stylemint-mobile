@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/domain/entities/tip.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/notifiers/tips_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/social/tips/presentation/screens/send_tip_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/presentation/widgets/tip_history_tile.dart';
 import 'package:stylemint_mobile_frontend/features/social/tips/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -100,11 +101,12 @@ class _TipsScreenState extends ConsumerState<TipsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        key: const Key('tips-send-tip'),
         heroTag: 'send-tip',
         backgroundColor: DesignTokens.primaryGreen,
-        onPressed: () => Navigator.of(context).push<void>(
-          MaterialPageRoute(builder: (_) => const SendTipScreen()),
-        ),
+        // Uses the registered /tips/send route so the composer is
+        // deep-linkable from a creator profile or a push notification.
+        onPressed: () => context.push(RouteNames.tipsSend),
         icon: const Icon(
           Icons.card_giftcard,
           color: DesignTokens.buttonPrimaryText,

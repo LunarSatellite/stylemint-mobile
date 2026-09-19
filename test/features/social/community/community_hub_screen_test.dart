@@ -9,11 +9,14 @@ void main() {
     );
 
     expect(find.text('Friend Feed'), findsOneWidget);
+    expect(find.text('Stories'), findsOneWidget);
     expect(find.text('Style & Professional Circles'), findsOneWidget);
     expect(find.text('Recommendations'), findsOneWidget);
     expect(find.text('Live Drop Parties'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Live Shopping'), 200);
     expect(find.text('Live Shopping'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Co-Watch'), 200);
+    expect(find.text('Co-Watch'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Group Carts'), 200);
     expect(find.text('Group Carts'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Tips'), 200);

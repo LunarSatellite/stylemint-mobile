@@ -318,6 +318,17 @@ class _VendorPartnershipsScreenState
         ),
         actions: [
           IconButton(
+            key: const Key('vendor-partnerships-send-request'),
+            tooltip: 'Send partnership request',
+            icon: const Icon(
+              Icons.person_add_alt_1_rounded,
+              size: 22,
+              color: DesignTokens.textWhite,
+            ),
+            onPressed: () =>
+                context.push(RouteNames.vendorSendPartnershipRequest),
+          ),
+          IconButton(
             icon: const Icon(
               Icons.search_rounded,
               size: 22,

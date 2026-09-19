@@ -87,6 +87,14 @@ class _CreatorMoreMenu extends StatelessWidget {
                 onTap: () => _go(context, RouteNames.partnerships),
               ),
               const _MoreDivider(),
+              // Brands read this to price an invite, so it sits next to
+              // Partnerships rather than under Settings.
+              _MoreItem(
+                icon: Icons.receipt_long_outlined,
+                title: 'Rate Card',
+                onTap: () => _go(context, RouteNames.creatorRateCard),
+              ),
+              const _MoreDivider(),
               _MoreItem(
                 icon: Icons.video_library_outlined,
                 title: 'Reel Studio',

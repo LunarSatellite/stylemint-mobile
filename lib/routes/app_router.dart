@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/notifiers/r
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/auth/shared/providers.dart'
     show roleNotifierProvider;
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/account_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/blocked_users_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/devices_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/email_login_screen.dart';
@@ -19,6 +20,7 @@ import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/oau
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/otp_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/passkey_setup_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/pause_account_screen.dart';
+import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sessions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/sign_in_method_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/screens/user_type_selection_screen.dart';
 import 'package:stylemint_mobile_frontend/features/codes/domain/entities/code_kind.dart';
@@ -1610,6 +1612,16 @@ GoRouter appRouter(Ref ref) {
       ),
 
       // Auth account management
+      GoRoute(
+        path: RouteNames.accountSettings,
+        builder: (ctx, state) => const AccountScreen(),
+        routes: [
+          GoRoute(
+            path: _subPath(RouteNames.accountSettings, RouteNames.sessions),
+            builder: (ctx, state) => const SessionsScreen(),
+          ),
+        ],
+      ),
       GoRoute(
         path: RouteNames.mfaSetup,
         builder: (ctx, state) => const MfaSetupScreen(),

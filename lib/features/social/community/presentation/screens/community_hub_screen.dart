@@ -14,6 +14,12 @@ class CommunityHubScreen extends StatelessWidget {
       route: RouteNames.feed,
     ),
     _CommunityDestination(
+      title: 'Stories',
+      subtitle: 'Catch the last 24 hours from the people you follow',
+      icon: Icons.auto_stories_outlined,
+      route: RouteNames.stories,
+    ),
+    _CommunityDestination(
       title: 'Style & Professional Circles',
       subtitle: 'Find communities around shared interests and professions',
       icon: Icons.groups_outlined,
@@ -36,6 +42,12 @@ class CommunityHubScreen extends StatelessWidget {
       subtitle: 'Watch live sessions and shop featured products in real time',
       icon: Icons.live_tv_outlined,
       route: RouteNames.liveSessions,
+    ),
+    _CommunityDestination(
+      title: 'Co-Watch',
+      subtitle: 'Watch reels together with friends in a shared room',
+      icon: Icons.groups_2_outlined,
+      route: RouteNames.coWatch,
     ),
     _CommunityDestination(
       title: 'Group Carts',

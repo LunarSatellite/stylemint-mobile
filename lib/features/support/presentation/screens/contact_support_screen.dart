@@ -12,6 +12,7 @@ import 'package:stylemint_mobile_frontend/features/support/domain/entities/suppo
 import 'package:stylemint_mobile_frontend/features/support/domain/entities/ticket.dart';
 import 'package:stylemint_mobile_frontend/features/support/presentation/notifiers/support_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/support/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -109,9 +110,25 @@ class _ContactSupportScreenState extends ConsumerState<ContactSupportScreen> {
                     const SizedBox(height: DesignTokens.s20),
 
                     // ── Your Support Tickets ────────────────────────────
-                    Text(
-                      'Your Support Tickets',
-                      style: DesignTokens.mediumSemibold,
+                    Row(
+                      children: [
+                        Text(
+                          'Your Support Tickets',
+                          style: DesignTokens.mediumSemibold,
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          key: const Key('contact-support-view-all-tickets'),
+                          onPressed: () =>
+                              context.push(RouteNames.supportTickets),
+                          child: Text(
+                            'View all',
+                            style: DesignTokens.smallRegular.copyWith(
+                              color: DesignTokens.primaryGreen,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: DesignTokens.s12),
 

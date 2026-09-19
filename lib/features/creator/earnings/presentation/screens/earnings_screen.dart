@@ -33,6 +33,20 @@ class EarningsScreen extends ConsumerWidget {
           'Earnings & Payments',
           style: DesignTokens.sectionInnerTitle,
         ),
+        actions: [
+          // Same affordance the vendor earnings screen uses for its own
+          // payout destinations.
+          IconButton(
+            key: const Key('creator-earnings-payment-methods'),
+            tooltip: 'Payment Methods',
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: DesignTokens.textWhite,
+              size: 22,
+            ),
+            onPressed: () => context.push(RouteNames.creatorPaymentMethods),
+          ),
+        ],
       ),
       body: state.when(
         initial: _loader,

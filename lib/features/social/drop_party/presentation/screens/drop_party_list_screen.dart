@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/notifiers/drop_party_notifier.dart';
-import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/screens/scan_invite_screen.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/presentation/widgets/drop_party_card.dart';
 import 'package:stylemint_mobile_frontend/features/social/drop_party/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -53,11 +54,12 @@ class DropPartyListScreen extends ConsumerWidget {
               ),
       ),
       floatingActionButton: FloatingActionButton.small(
+        key: const Key('drop-parties-scan-invite'),
         tooltip: 'Join by code',
         backgroundColor: DesignTokens.bgAppBodyLight,
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const ScanInviteScreen()),
-        ),
+        // Uses the registered /drop/scan route so a scanned or shared
+        // invite link lands on the same screen.
+        onPressed: () => context.push(RouteNames.dropPartyScan),
         child: const Icon(Icons.qr_code_scanner, color: DesignTokens.textWhite),
       ),
     );
