@@ -850,7 +850,6 @@ class _PartnershipCard extends StatelessWidget {
                       builder: (_) => BrandMessagingScreen(
                         args: BrandMessagingArgs(
                           brandName: name,
-                          rating: 0,
                           category: '',
                           otherParticipantId: accountId,
                           profileId: accountId == null ? vendorProfileId : null,
@@ -992,7 +991,6 @@ class _PartnershipCardMenu extends StatelessWidget {
               RouteNames.brandMessaging,
               extra: BrandMessagingArgs(
                 brandName: name,
-                rating: 0,
                 category: '',
                 otherParticipantId: accountId,
                 profileId: accountId == null ? vendorProfileId : null,

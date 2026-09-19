@@ -61,7 +61,7 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -78,6 +78,7 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
         backgroundColor: DesignTokens.bgAppFoundation,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Back',
           icon: const Icon(
             Icons.arrow_back_ios_rounded,
             color: DesignTokens.textWhite,
@@ -125,8 +126,11 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
               // measured rather than illustrative.
               Tab(text: 'Partnership Record'),
               Tab(text: 'Top Products'),
-              Tab(text: 'Sample Campaigns'),
-              Tab(text: 'Partnership Terms'),
+              // "Sample Campaigns" and "Partnership Terms" stood here.
+              // Both are gone, tab and body; see the note above
+              // [_TopProductsTab] for what each of them was actually
+              // showing and why no honest version of either can be built
+              // against today's backend.
             ],
           ),
           const Divider(height: 1, color: DesignTokens.borderDefault),
@@ -138,8 +142,6 @@ class _BrandInfoScreenState extends ConsumerState<BrandInfoScreen>
                   vendorAccountId: widget.data.vendorAccountId,
                 ),
                 const _TopProductsTab(),
-                const _SampleCampaignsTab(),
-                const _PartnershipTermsTab(),
               ],
             ),
           ),
@@ -356,15 +358,21 @@ class _ExpandableDescription extends StatelessWidget {
             TextSpan(text: text),
             const TextSpan(text: '  '),
             WidgetSpan(
-              child: GestureDetector(
+              child: Semantics(
+                button: true,
+                label: 'Show less of the brand description',
+                excludeSemantics: true,
                 onTap: onToggle,
-                child: const Text(
-                  'Show Less',
-                  style: TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 13,
-                    color: DesignTokens.primaryGreen,
-                    fontWeight: FontWeight.w600,
+                child: GestureDetector(
+                  onTap: onToggle,
+                  child: const Text(
+                    'Show Less',
+                    style: TextStyle(
+                      fontFamily: DesignTokens.fontFamily,
+                      fontSize: 13,
+                      color: DesignTokens.primaryGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -384,15 +392,21 @@ class _ExpandableDescription extends StatelessWidget {
             text: text.length > 120 ? '${text.substring(0, 120)}.. ' : text,
           ),
           WidgetSpan(
-            child: GestureDetector(
+            child: Semantics(
+              button: true,
+              label: 'Read the full brand description',
+              excludeSemantics: true,
               onTap: onToggle,
-              child: const Text(
-                'Read More',
-                style: TextStyle(
-                  fontFamily: DesignTokens.fontFamily,
-                  fontSize: 13,
-                  color: DesignTokens.primaryGreen,
-                  fontWeight: FontWeight.w600,
+              child: GestureDetector(
+                onTap: onToggle,
+                child: const Text(
+                  'Read More',
+                  style: TextStyle(
+                    fontFamily: DesignTokens.fontFamily,
+                    fontSize: 13,
+                    color: DesignTokens.primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -481,6 +495,48 @@ class _CommissionChip extends StatelessWidget {
 /// exposes `PageForVendorAsync` — vendor-self-only — so a creator
 /// cannot list another vendor's products). Show an honest empty
 /// state until that endpoint ships.
+//
+// ── Two tabs were removed from this screen, 2026-09-20 ──────────────────
+//
+// **Sample Campaigns.** The tab body was a `static const` list of three
+// campaigns — 'Nike Zoom Series: Athlete Sprint Edition', 'Nike Tech
+// Fleece Jacket. Athlete Style for Every Age' and 'Air Max Collection:
+// Street to Stadium' — each with a reel count ('5.8k', '2.7k', '4.1k')
+// and a creator-collab count ('269', '345', '512'). None of it came from
+// anywhere. It rendered for **every** brand, so a creator weighing up a
+// small Nepali vendor was shown Nike's campaigns attributed to that
+// vendor, with six invented engagement figures beside them.
+//
+// There is no endpoint behind it and no endpoint to wire it to. The
+// sibling `brand_detail_screen.dart` had a real-looking version that
+// fetched `GET /v1/partnerships/{id}/campaigns`; that route does not
+// exist in lead360 — `CreatorPartnershipsController` serves
+// `/partnerships`, `/partnerships/{id}`, `/{id}/accept`, `/{id}/decline`,
+// `/{id}/terms/active`, `/{id}/terms/versions`, `/{id}/potential-earnings`
+// and `/creator/partnerships/{id}/recipes`, and nothing else. The only
+// campaign routes on the platform are `/v1/vendor/campaign-workspaces`
+// (`[Authorize(Roles = "Vendor")]`, scoped to the calling vendor's own
+// account), `/v1/admin/campaigns` and `/v1/public/campaigns/active` —
+// none of which lists one brand's campaigns to a creator. So the tab is
+// gone rather than emptied: an empty "No sample campaigns yet" would
+// state that this brand has run none, which is not something the
+// platform knows.
+//
+// **Partnership Terms.** The tab body was two `_TermsCard`s of hardcoded
+// bullets, likewise identical for every brand: 'Must have synced social
+// account with at least 1,000 engaged followers', 'No active policy
+// violations in the last 90 days', 'Hook within the first 3 seconds;
+// minimum 15s reel length', and four more. Terms on StyleMint are
+// authored **per partnership by the vendor** (`PublishTermsVm` ->
+// `POST /v1/vendor/partnerships/{id}/terms`, read back at
+// `GET /v1/partnerships/{id}/terms/active`), so they are keyed by a
+// partnership id. A creator on this screen has no partnership with this
+// brand yet — that is the decision the screen exists to support — so
+// there is nothing to key the lookup by and no terms to show. An invented
+// follower threshold is worse than no threshold: it can talk a creator
+// out of applying. `brand_detail_screen.dart` keeps its Partnership Terms
+// tab, because there the partnership id is in hand and the terms are the
+// vendor's own.
 class _TopProductsTab extends StatelessWidget {
   const _TopProductsTab();
 
@@ -502,239 +558,6 @@ class _TopProductsTab extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Sample Campaigns tab ──────────────────────────────────────────────────────
-
-class _SampleCampaignsTab extends StatelessWidget {
-  const _SampleCampaignsTab();
-
-  static const _campaigns = [
-    (
-      title: 'Nike Zoom Series: Athlete Sprint Edition',
-      reels: '5.8k',
-      collabs: '269',
-      thumbColor: Color(0xFFE8E8E8),
-      thumbIcon: Icons.directions_run_rounded,
-    ),
-    (
-      title: 'Nike Tech Fleece Jacket. Athlete Style for Every Age',
-      reels: '2.7k',
-      collabs: '345',
-      thumbColor: Color(0xFFD6CFC7),
-      thumbIcon: Icons.checkroom_rounded,
-    ),
-    (
-      title: 'Air Max Collection: Street to Stadium',
-      reels: '4.1k',
-      collabs: '512',
-      thumbColor: Color(0xFF1A3A5C),
-      thumbIcon: Icons.sports_soccer_rounded,
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      itemCount: _campaigns.length,
-      separatorBuilder: (_, __) => const SizedBox(height: DesignTokens.s12),
-      itemBuilder: (_, i) {
-        final c = _campaigns[i];
-        return _CampaignCard(
-          title: c.title,
-          reels: c.reels,
-          collabs: c.collabs,
-          thumbColor: c.thumbColor,
-          thumbIcon: c.thumbIcon,
-        );
-      },
-    );
-  }
-}
-
-class _CampaignCard extends StatelessWidget {
-  const _CampaignCard({
-    required this.title,
-    required this.reels,
-    required this.collabs,
-    required this.thumbColor,
-    required this.thumbIcon,
-  });
-
-  final String title;
-  final String reels;
-  final String collabs;
-  final Color thumbColor;
-  final IconData thumbIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 180,
-            width: double.infinity,
-            color: thumbColor,
-            alignment: Alignment.center,
-            child: Icon(thumbIcon, size: 64, color: Colors.black26),
-          ),
-          Container(
-            width: double.infinity,
-            color: DesignTokens.bgAppBodyLight,
-            padding: const EdgeInsets.fromLTRB(
-              DesignTokens.s12,
-              DesignTokens.s8,
-              DesignTokens.s12,
-              DesignTokens.s12,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: DesignTokens.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: DesignTokens.textWhite,
-                  ),
-                ),
-                const SizedBox(height: DesignTokens.s8),
-                Row(
-                  children: [
-                    Image.asset(
-                      'assets/images/creatordash/material-symbols_animated-images-outline-rounded.png',
-                      width: 14,
-                      height: 14,
-                      color: DesignTokens.textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$reels Reels',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 12,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                    const SizedBox(width: DesignTokens.s16),
-                    const Icon(Icons.handshake_outlined, size: 14, color: DesignTokens.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$collabs Creator Collabs',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 12,
-                        color: DesignTokens.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Partnership Terms tab ─────────────────────────────────────────────────────
-
-class _PartnershipTermsTab extends StatelessWidget {
-  const _PartnershipTermsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      children: const [
-        _TermsCard(
-          title: 'Who Can Join',
-          bullets: [
-            'Open to all verified StyleMint creators.',
-            'Must have synced social account with at least 1,000 engaged followers.',
-            'No active policy violations in the last 90 days.',
-          ],
-        ),
-        SizedBox(height: DesignTokens.s12),
-        _TermsCard(
-          title: 'Reel Content Rules',
-          bullets: [
-            'Showcase the product in real use; candid framing preferred.',
-            'Hook within the first 3 seconds; minimum 15s reel length.',
-            'Add the partnership disclosure tag; honour the supplied brief.',
-            'No comparative claims against competitors in the same category.',
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TermsCard extends StatelessWidget {
-  const _TermsCard({required this.title, required this.bullets});
-  final String title;
-  final List<String> bullets;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(DesignTokens.s16),
-      decoration: BoxDecoration(
-        color: DesignTokens.bgAppBody,
-        borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: DesignTokens.fontFamily,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          for (final b in bullets)
-            Padding(
-              padding: const EdgeInsets.only(bottom: DesignTokens.s8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 5, right: DesignTokens.s8),
-                    child: Icon(
-                      Icons.circle,
-                      size: 5,
-                      color: DesignTokens.textLight,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      b,
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 13,
-                        height: 1.5,
-                        color: DesignTokens.textLight,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -762,6 +585,28 @@ class _ApplyButton extends ConsumerWidget {
         : accountId;
 
     final canApply = vendorProfileId.isNotEmpty;
+
+    void apply() {
+      context.push(
+        RouteNames.partnershipApply
+            .replaceFirst(':partnershipId', _slugify(seed.name)),
+        extra: PartnershipApplyArgs(
+          vendorProfileId: vendorProfileId,
+          vendorName: seed.name,
+          vendorRating: null,
+          vendorCategory: null,
+          commissionMin: seed.commissionMinPercent,
+          commissionMax: seed.commissionMaxPercent,
+        ),
+      );
+    }
+
+    // The disabled state used to be a 40%-alpha fill and nothing else, so
+    // "you cannot apply to this brand" was carried by colour alone. It now
+    // carries a glyph and a word as well.
+    final label = canApply
+        ? 'Apply for Partnership  →'
+        : 'Apply unavailable';
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -770,39 +615,57 @@ class _ApplyButton extends ConsumerWidget {
           DesignTokens.s16,
           DesignTokens.s16,
         ),
-        child: GestureDetector(
-          onTap: canApply
-              ? () {
-                  context.push(
-                    RouteNames.partnershipApply
-                        .replaceFirst(':partnershipId', _slugify(seed.name)),
-                    extra: PartnershipApplyArgs(
-                      vendorProfileId: vendorProfileId,
-                      vendorName: seed.name,
-                      vendorRating: null,
-                      vendorCategory: null,
-                      commissionMin: seed.commissionMinPercent,
-                      commissionMax: seed.commissionMaxPercent,
+        child: Semantics(
+          button: true,
+          enabled: canApply,
+          label: canApply
+              ? 'Apply for Partnership'
+              : 'Apply for Partnership. Unavailable — this brand was opened '
+                    'without a vendor id.',
+          excludeSemantics: true,
+          onTap: canApply ? apply : null,
+          child: GestureDetector(
+            onTap: canApply ? apply : null,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 52),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.s12,
+                vertical: DesignTokens.s8,
+              ),
+              decoration: BoxDecoration(
+                color: canApply
+                    ? DesignTokens.primaryGreen
+                    : DesignTokens.primaryGreen.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!canApply) ...[
+                    const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 16,
+                      color: Colors.black,
                     ),
-                  );
-                }
-              : null,
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              color: canApply
-                  ? DesignTokens.primaryGreen
-                  : DesignTokens.primaryGreen.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(DesignTokens.buttonRadius),
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'Apply for Partnership  →',
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
+                    const SizedBox(width: 6),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: DesignTokens.fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

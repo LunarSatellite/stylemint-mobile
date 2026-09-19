@@ -606,8 +606,11 @@ const _mockPartnership = <String, dynamic>{
   'description':
       'Nike is one of the world\'s most recognizable and iconic sportswear '
       'brands, founded in 1964 by Bill Bowerman and Phil Knight, originally.',
-  'avgOrderValue': 12899.98,
-  'successRatePercent': 97.0,
+  // `avgOrderValue` and `successRatePercent` were mocked here. Neither is a
+  // property of the backend's `PartnershipDto`, so the real API never sent
+  // them and `PartnershipDetailDto` no longer parses them. A dev-harness
+  // fixture that answers a field the server does not have is how a figure
+  // with no source gets designed around and then shipped.
 };
 
 const _mockTerms = <String, dynamic>{

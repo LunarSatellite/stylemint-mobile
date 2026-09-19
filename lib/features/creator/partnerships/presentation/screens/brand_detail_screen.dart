@@ -18,19 +18,22 @@ final _partnershipProvider = FutureProvider.autoDispose
       return PartnershipDetailDto.fromJson(res as Map<String, dynamic>);
     });
 
-final _campaignsProvider = FutureProvider.autoDispose
-    .family<List<SampleCampaignDto>, String>((ref, id) async {
-      final api = ref.watch(apiClientProvider);
-      final res = await api.get('/v1/partnerships/$id/campaigns');
-      final list =
-          (res is List
-              ? res
-              : (res as Map<String, dynamic>?)?['data'] as List?) ??
-          [];
-      return list
-          .map((e) => SampleCampaignDto.fromJson(e as Map<String, dynamic>))
-          .toList();
-    });
+// `_campaignsProvider` stood here, fetching
+// `GET /v1/partnerships/{id}/campaigns` into a "Sample Campaigns" tab.
+// That route does not exist in lead360 and never did:
+// `CreatorPartnershipsController` serves `/partnerships`,
+// `/partnerships/{id}`, `/{id}/accept`, `/{id}/decline`,
+// `/{id}/terms/active`, `/{id}/terms/versions`, `/{id}/potential-earnings`
+// and `/creator/partnerships/{id}/recipes`, and nothing else. The only
+// campaign routes on the platform are `/v1/vendor/campaign-workspaces`
+// (vendor-self-only), `/v1/admin/campaigns` and
+// `/v1/public/campaigns/active` — none of which lists one brand's
+// campaigns to a creator. So the call 404'd on every open and the tab
+// showed "Couldn't load campaigns." forever, which reads as an outage
+// rather than as the absence it was. Tab, provider, card and
+// `SampleCampaignDto` are all gone. See `brand_info_screen.dart`, where
+// the same tab was three hardcoded Nike campaigns with invented reel and
+// collaboration counts, rendered for every brand.
 
 class BrandDetailScreen extends ConsumerWidget {
   const BrandDetailScreen({super.key, required this.partnershipId});
@@ -41,16 +44,16 @@ class BrandDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final partnershipAsync = ref.watch(_partnershipProvider(partnershipId));
     final termsAsync = ref.watch(partnershipTermsProvider(partnershipId));
-    final campaignsAsync = ref.watch(_campaignsProvider(partnershipId));
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         backgroundColor: DesignTokens.bgAppFoundation,
         appBar: AppBar(
           backgroundColor: DesignTokens.bgAppFoundation,
           elevation: 0,
           leading: IconButton(
+            tooltip: 'Back',
             icon: const Icon(
               Icons.arrow_back_ios_new,
               size: 18,
@@ -89,7 +92,6 @@ class BrandDetailScreen extends ConsumerWidget {
                   unselectedLabelStyle: DesignTokens.smallRegular,
                   tabs: const [
                     Tab(text: 'Top Products'),
-                    Tab(text: 'Sample Campaigns'),
                     Tab(text: 'Partnership Terms'),
                   ],
                 ),
@@ -99,7 +101,6 @@ class BrandDetailScreen extends ConsumerWidget {
           body: TabBarView(
             children: [
               _TopProductsTab(),
-              _SampleCampaignsTab(campaignsAsync: campaignsAsync),
               _PartnershipTab(termsAsync: termsAsync),
             ],
           ),
@@ -198,14 +199,15 @@ class _BrandHeaderState extends State<_BrandHeader> {
               onToggle: () => setState(() => _descExpanded = !_descExpanded),
             ),
           ],
-          // Stats
-          if (p.avgOrderValue != null || p.successRatePercent != null) ...[
-            const SizedBox(height: DesignTokens.s12),
-            _StatsSection(
-              avgOrderValue: p.avgOrderValue,
-              successRatePercent: p.successRatePercent,
-            ),
-          ],
+          // A stats block stood here reading "Avg Order Value" and
+          // "Success Rate with Creators: N%" off `avgOrderValue` and
+          // `successRatePercent`. Neither field exists on the backend's
+          // `PartnershipDto` — see the note in `brand_detail_dto.dart` —
+          // so both were always null and the block never drew. It is gone
+          // rather than left dormant: "Success Rate with Creators" is the
+          // exact figure that rendered 0% for every brand on the sibling
+          // screen, and a parsed field with no source is how it comes
+          // back.
           const SizedBox(height: DesignTokens.s8),
         ],
       ),
@@ -352,63 +354,6 @@ class _ExpandableText extends StatelessWidget {
   }
 }
 
-class _StatsSection extends StatelessWidget {
-  const _StatsSection({this.avgOrderValue, this.successRatePercent});
-  final double? avgOrderValue;
-  final double? successRatePercent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (avgOrderValue != null)
-          _StatRow(
-            label: 'Avg Order Value',
-            value: 'Rs ${_formatMoney(avgOrderValue!)}',
-          ),
-        if (avgOrderValue != null && successRatePercent != null)
-          const SizedBox(height: DesignTokens.s8),
-        if (successRatePercent != null)
-          _StatRow(
-            label: 'Success Rate with Creators',
-            value: '${successRatePercent!.toStringAsFixed(0)}%',
-          ),
-      ],
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  const _StatRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.circle, size: 8, color: DesignTokens.textLight),
-        const SizedBox(width: DesignTokens.s8),
-        Expanded(
-          child: Text(
-            label,
-            style: DesignTokens.smallRegular.copyWith(
-              color: DesignTokens.textLight,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: DesignTokens.smallRegular.copyWith(
-            color: DesignTokens.textWhite,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Sticky tab bar ───────────────────────────────────────────────────────────
 
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
@@ -466,140 +411,6 @@ class _TopProductsTab extends StatelessWidget {
           style: DesignTokens.bodyText.copyWith(color: DesignTokens.textLight),
         ),
       ],
-    );
-  }
-}
-
-class _SampleCampaignsTab extends StatelessWidget {
-  const _SampleCampaignsTab({required this.campaignsAsync});
-  final AsyncValue<List<SampleCampaignDto>> campaignsAsync;
-
-  @override
-  Widget build(BuildContext context) {
-    return campaignsAsync.when(
-      loading: () => const SmPageLoader(),
-      error: (_, __) => Center(
-        child: Text("Couldn't load campaigns.", style: DesignTokens.bodyText),
-      ),
-      data: (campaigns) {
-        if (campaigns.isEmpty) {
-          return ListView(
-            padding: const EdgeInsets.all(DesignTokens.s16),
-            children: [
-              const SizedBox(height: DesignTokens.s24),
-              Icon(
-                Icons.movie_creation_outlined,
-                size: 48,
-                color: DesignTokens.textLight,
-              ),
-              const SizedBox(height: DesignTokens.s12),
-              Text(
-                'No sample campaigns yet',
-                textAlign: TextAlign.center,
-                style: DesignTokens.bodyText.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ],
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
-            DesignTokens.s16,
-            DesignTokens.s16,
-            DesignTokens.s16,
-            DesignTokens.s24,
-          ),
-          itemCount: campaigns.length,
-          itemBuilder: (_, i) => _CampaignCard(campaign: campaigns[i]),
-        );
-      },
-    );
-  }
-}
-
-class _CampaignCard extends StatelessWidget {
-  const _CampaignCard({required this.campaign});
-  final SampleCampaignDto campaign;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: DesignTokens.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Campaign image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(DesignTokens.cardRadius),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: campaign.imageUrl != null
-                  ? Image.network(
-                      campaign.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _ImagePlaceholder(),
-                    )
-                  : _ImagePlaceholder(),
-            ),
-          ),
-          const SizedBox(height: DesignTokens.s8),
-          // Title
-          Text(
-            campaign.title,
-            style: DesignTokens.mediumSemibold.copyWith(
-              color: DesignTokens.textWhite,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Stats
-          Row(
-            children: [
-              const Icon(
-                Icons.video_camera_back_outlined,
-                size: 14,
-                color: DesignTokens.textLight,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${_formatCount(campaign.reelCount)} Reels',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-              ),
-              const SizedBox(width: DesignTokens.s12),
-              const Icon(
-                Icons.people_outline_rounded,
-                size: 14,
-                color: DesignTokens.textLight,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${_formatCount(campaign.creatorCollabCount)} Creator Collabs',
-                style: DesignTokens.smallRegular.copyWith(
-                  color: DesignTokens.textLight,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ImagePlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: DesignTokens.bgAppBodyLight,
-      child: const Center(
-        child: Icon(
-          Icons.image_outlined,
-          color: DesignTokens.textLight,
-          size: 40,
-        ),
-      ),
     );
   }
 }
@@ -733,23 +544,4 @@ class _TermsSection extends StatelessWidget {
       ],
     );
   }
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-String _formatCount(int n) {
-  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
-  return n.toString();
-}
-
-String _formatMoney(double v) {
-  final parts = v.toStringAsFixed(2).split('.');
-  final intStr = parts[0];
-  final buf = StringBuffer();
-  final len = intStr.length;
-  for (var i = 0; i < len; i++) {
-    if (i > 0 && (len - i) % 3 == 0) buf.write(',');
-    buf.write(intStr[i]);
-  }
-  return '$buf.${parts[1]}';
 }
