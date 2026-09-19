@@ -27,6 +27,13 @@ abstract final class MallRoutes {
   static String reel(String id) =>
       RouteNames.reelDetail.replaceFirst(':reelId', id);
 
+  /// One of the customer's own shopping missions — the checklist screen the
+  /// app already has.
+  static String mission(String missionId) => RouteNames.mission.replaceFirst(
+    ':missionId',
+    Uri.encodeComponent(missionId),
+  );
+
   static String creator(String accountId) =>
       RouteNames.creatorProfile.replaceFirst(':accountId', accountId);
 
@@ -166,6 +173,14 @@ MallDestination? destinationForSeeAll(HomeSection section) {
     case HomeSeeAllTarget.collection:
       final slug = param(const ['slug', 'collectionSlug']);
       return slug == null ? null : MallPush(MallRoutes.collection(slug));
+    case HomeSeeAllTarget.mission:
+      final id = param(const ['missionId', 'id']);
+      return id == null ? null : MallPush(MallRoutes.mission(id));
+    // "Buy It Again" has a repository and a notifier but no screen yet, so
+    // there is nowhere honest to send a shopper. Null here is the whole
+    // reason a Refill module is skipped rather than drawn dead; the day that
+    // screen lands, this one line turns it on.
+    case HomeSeeAllTarget.reorder:
     case HomeSeeAllTarget.brands:
     case HomeSeeAllTarget.collections:
     case HomeSeeAllTarget.unknown:

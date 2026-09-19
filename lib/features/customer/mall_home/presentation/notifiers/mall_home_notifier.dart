@@ -53,7 +53,18 @@ class MallHomeNotifier extends StateNotifier<MallHomeState> {
     final layoutFuture = personalizer.layout();
     final homeResult = await _repository.getHome();
     final layout = await layoutFuture;
-    return homeResult.map((home) => applyStorefrontLayout(home, layout));
+    return homeResult.map((home) {
+      // The last line of the invisible fallback. Organising the page is the
+      // one part of this that runs on the client, so if it ever throws — a
+      // shape from a newer server this build mishandles — the customer gets
+      // the ordinary page rather than an error. Never a half-personalised
+      // one: the un-applied `home` is exactly what everybody else sees.
+      try {
+        return applyStorefrontLayout(home, layout);
+      } on Object catch (_) {
+        return home;
+      }
+    });
   }
 
   /// The session changed, so the consent answer may have too.
