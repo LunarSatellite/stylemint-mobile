@@ -138,8 +138,7 @@ extension VendorOrderStatusBucketing on VendorOrderStatus {
   /// and "Shipped" show the same set until the backend exposes a finer
   /// distinction.
   bool get isInTransit =>
-      this == VendorOrderStatus.shipped ||
-      this == VendorOrderStatus.handedOver;
+      this == VendorOrderStatus.shipped || this == VendorOrderStatus.handedOver;
 
   bool get isCompleted =>
       this == VendorOrderStatus.delivered ||
@@ -169,7 +168,15 @@ class VendorOrderItem {
     required this.imageUrl,
     required this.quantity,
     required this.unitPrice,
+    this.subOrderLineId = '',
   });
+
+  /// The sub-order line's own id (`lines[].id` on the detail payload).
+  ///
+  /// Empty on a list row, because the list endpoint returns no lines at all.
+  /// Empty means *unknown*, and the per-unit tagging action is simply not
+  /// offered for a line with no id rather than guessing one.
+  final String subOrderLineId;
 
   final String productId;
   final String productName;
@@ -183,8 +190,10 @@ class VendorOrderItem {
     String? imageUrl,
     int? quantity,
     Money? unitPrice,
+    String? subOrderLineId,
   }) {
     return VendorOrderItem(
+      subOrderLineId: subOrderLineId ?? this.subOrderLineId,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -196,6 +205,7 @@ class VendorOrderItem {
   @override
   bool operator ==(Object other) =>
       other is VendorOrderItem &&
+      other.subOrderLineId == subOrderLineId &&
       other.productId == productId &&
       other.productName == productName &&
       other.imageUrl == imageUrl &&
@@ -204,6 +214,7 @@ class VendorOrderItem {
 
   @override
   int get hashCode => Object.hash(
+    subOrderLineId,
     productId,
     productName,
     imageUrl,

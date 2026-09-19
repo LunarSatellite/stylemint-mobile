@@ -45,15 +45,18 @@ class VendorOrderDetailDto {
   }
 
   static VendorOrderItem _lineToItem(Map<String, dynamic> l) => VendorOrderItem(
-        productId: (l['productVariantId'] as String?) ?? '',
-        productName: (l['productTitleSnapshot'] as String?) ?? '',
-        imageUrl: absoluteMediaUrl((l['thumbnailUrlSnapshot'] as String?) ?? ''),
-        quantity: (l['quantity'] as num?)?.toInt() ?? 0,
-        unitPrice: Money(
-          amount: (l['unitPriceAmount'] as num?)?.toDouble() ?? 0,
-          currency: (l['unitPriceCurrency'] as String?) ?? 'NPR',
-        ),
-      );
+    // `lines[].id` is the sub-order line id the per-unit binding routes
+    // take. It was already on the wire and simply not read.
+    subOrderLineId: (l['id'] as String?) ?? '',
+    productId: (l['productVariantId'] as String?) ?? '',
+    productName: (l['productTitleSnapshot'] as String?) ?? '',
+    imageUrl: absoluteMediaUrl((l['thumbnailUrlSnapshot'] as String?) ?? ''),
+    quantity: (l['quantity'] as num?)?.toInt() ?? 0,
+    unitPrice: Money(
+      amount: (l['unitPriceAmount'] as num?)?.toDouble() ?? 0,
+      currency: (l['unitPriceCurrency'] as String?) ?? 'NPR',
+    ),
+  );
 
   static DateTime? _parseDate(dynamic v) =>
       v is String ? DateTime.tryParse(v) : null;
@@ -71,9 +74,10 @@ class VendorOrderDetailDto {
     final parts = <String>[
       (a['addressLine1'] as String?) ?? '',
       (a['city'] as String?) ?? '',
-      [(a['state'] as String?) ?? '', (a['zipCode'] as String?) ?? '']
-          .where((s) => s.isNotEmpty)
-          .join(' '),
+      [
+        (a['state'] as String?) ?? '',
+        (a['zipCode'] as String?) ?? '',
+      ].where((s) => s.isNotEmpty).join(' '),
     ].where((s) => s.isNotEmpty).toList();
     if (parts.isNotEmpty) return parts.join(', ');
     if (lat != null && lng != null) {

@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/datasources/discovery_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_delivery_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_option_dto.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_passport_mapper.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/data/models/product_detail_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
@@ -253,47 +254,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     if (await networkInfo.isConnected) {
       try {
         final json = await remoteDataSource.getProductPassport(productId);
-        return right(
-          ProductPassport(
-            vendorBusinessName: json['vendorBusinessName'] as String? ?? '',
-            vendorIdentityVerified:
-                json['vendorIdentityVerified'] as bool? ?? false,
-            vendorOnPlatformSince: json['vendorOnPlatformSinceUtc'] != null
-                ? DateTime.tryParse(json['vendorOnPlatformSinceUtc'] as String)
-                : null,
-            authenticityStatement:
-                json['authenticityStatement'] as String? ?? '',
-            schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 1,
-            revision: json['revision'] as String? ?? '',
-            generatedAt: DateTime.tryParse(
-              json['generatedUtc'] as String? ?? '',
-            ),
-            provenance: (json['provenance'] as List<dynamic>? ?? const [])
-                .whereType<Map<String, dynamic>>()
-                .map(
-                  (fact) => ProductProvenanceFact(
-                    key: fact['key'] as String? ?? '',
-                    label: fact['label'] as String? ?? '',
-                    value: fact['value'] as String? ?? '',
-                    verified: fact['verified'] as bool? ?? false,
-                    observedAt: DateTime.tryParse(
-                      fact['observedUtc'] as String? ?? '',
-                    ),
-                  ),
-                )
-                .where((fact) => fact.label.isNotEmpty && fact.value.isNotEmpty)
-                .toList(growable: false),
-            subject: _passportSubject(json['subject']),
-            claims: (json['claims'] as List<dynamic>? ?? const [])
-                .whereType<Map<String, dynamic>>()
-                .map(_passportClaim)
-                // A claim with no words in it is not a claim. It is dropped
-                // rather than rendered as an empty attributed line.
-                .where((claim) => claim.statement.isNotEmpty)
-                .toList(growable: false),
-            coverage: _passportCoverage(json['coverage']),
-          ),
-        );
+        return right(productPassportFromJson(json));
       } catch (e) {
         if (e is DioException) {
           return left(NetworkExceptions.server(e.message.toString()));
@@ -512,61 +473,3 @@ String? _nonEmpty(Object? raw) {
   return (value == null || value.isEmpty) ? null : value;
 }
 
-/// Passport schema 2 — `subject`. Absent on a v1 payload, and absent means
-/// the app says nothing about scope rather than assuming one.
-PassportSubject? _passportSubject(Object? raw) {
-  if (raw is! Map<String, dynamic>) return null;
-  final explanation = _nonEmpty(raw['scopeExplanation']);
-  return PassportSubject(
-    scope: _nonEmpty(raw['scope']) ?? '',
-    scopeExplanation: explanation ?? '',
-    // Absent defaults to false, which is both the truth today and the safe
-    // direction: a passport is never assumed to identify a physical item.
-    identifiesPhysicalUnit: raw['identifiesPhysicalUnit'] as bool? ?? false,
-    serialOrBatchNumber: _nonEmpty(raw['serialOrBatchNumber']),
-  );
-}
-
-/// Passport schema 2 — one `claims[]` entry.
-///
-/// `presentAsFact` is read straight off the wire and defaults to **false**
-/// when it is missing. That default is the whole safety property: a claim the
-/// app cannot confirm the platform verified is shown as somebody's statement,
-/// never as the platform's own.
-PassportClaim _passportClaim(Map<String, dynamic> raw) {
-  final assurance = PassportAssurance.fromJson(raw['assurance']);
-  return PassportClaim(
-    claimId: _nonEmpty(raw['claimId']) ?? '',
-    kindLabel: _nonEmpty(raw['kindLabel']) ?? '',
-    statement: _nonEmpty(raw['statement']) ?? '',
-    assurance: assurance,
-    assuranceLabel: _nonEmpty(raw['assuranceLabel']) ?? '',
-    presentAsFact:
-        (raw['presentAsFact'] as bool? ?? false) &&
-        assurance == PassportAssurance.verified,
-    issuerName: _nonEmpty(raw['issuerName']) ?? '',
-    isInEffect: raw['isInEffect'] as bool? ?? false,
-    issuerReference: _nonEmpty(raw['issuerReference']),
-    verificationMethod: _nonEmpty(raw['verificationMethod']),
-    verificationNote: _nonEmpty(raw['verificationNote']),
-    verifiedAt: DateTime.tryParse(raw['verifiedUtc'] as String? ?? ''),
-    recordedAt: DateTime.tryParse(raw['recordedUtc'] as String? ?? ''),
-  );
-}
-
-/// Passport schema 2 — `coverage`.
-PassportCoverage? _passportCoverage(Object? raw) {
-  if (raw is! Map<String, dynamic>) return null;
-  return PassportCoverage(
-    knownKinds: _kindList(raw['knownKinds']),
-    unknownKinds: _kindList(raw['unknownKinds']),
-    summary: _nonEmpty(raw['summary']) ?? '',
-  );
-}
-
-List<String> _kindList(Object? raw) =>
-    (raw as List<dynamic>? ?? const <dynamic>[])
-        .whereType<String>()
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
-        .toList(growable: false);

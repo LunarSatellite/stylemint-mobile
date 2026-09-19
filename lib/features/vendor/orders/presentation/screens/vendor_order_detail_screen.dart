@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/packing_slip.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/domain/entities/vendor_order.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/notifiers/vendor_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_action_bar.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/presentation/widgets/vendor_step_sheets.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
@@ -723,6 +725,11 @@ class _OrderItemsCard extends StatelessWidget {
                   const SizedBox(height: 14),
                 ],
                 _ItemRow(item: order.items[i]),
+                // Per-unit tagging, offered only when this build knows the
+                // line's id. An empty id means the payload did not carry one,
+                // and no id is never guessed at.
+                if (order.items[i].subOrderLineId.isNotEmpty)
+                  _TagUnitAction(order: order, item: order.items[i]),
               ],
               const SizedBox(height: 14),
               const _DashedDivider(),
@@ -973,6 +980,68 @@ class _DashedDivider extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// "Tag this unit" for one order line.
+///
+/// Always shown, at every stage. What changes is the wording underneath: at
+/// Packed or Handed over it opens the bind screen, and at every other stage
+/// it opens the same screen with its controls closed and the reason on
+/// display. A control that disappears at Delivered would leave a packer
+/// looking for something that is no longer there and never told why.
+class _TagUnitAction extends StatelessWidget {
+  const _TagUnitAction({required this.order, required this.item});
+
+  final VendorOrder order;
+  final VendorOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final stage = orderLineStageFromSubOrderState(order.stateCode);
+    final closed = stage.bindingClosedReason;
+    return Padding(
+      padding: const EdgeInsets.only(top: DesignTokens.s12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextButton.icon(
+            onPressed: () => context.push(
+              RouteNames.vendorUnitMarkerBind.replaceFirst(
+                ':lineId',
+                item.subOrderLineId,
+              ),
+              extra: (
+                subOrderLineId: item.subOrderLineId,
+                stage: stage,
+                lineLabel: item.productName,
+              ),
+            ),
+            icon: const Icon(
+              Icons.local_offer_outlined,
+              size: DesignTokens.s20,
+              color: DesignTokens.textLight,
+            ),
+            label: Text(
+              'Tag this unit',
+              style: DesignTokens.mediumSemibold.copyWith(
+                color: DesignTokens.textLight,
+              ),
+            ),
+          ),
+          if (closed != null)
+            Padding(
+              padding: const EdgeInsets.only(left: DesignTokens.s12),
+              child: Text(
+                closed,
+                style: DesignTokens.smallRegular.copyWith(
+                  color: DesignTokens.textMuted,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

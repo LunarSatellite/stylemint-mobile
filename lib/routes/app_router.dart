@@ -245,6 +245,11 @@ import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/
 import 'package:stylemint_mobile_frontend/features/vendor/add_product/presentation/screens/edit_product_images_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/update_product_stock_screen.dart';
 import 'package:stylemint_mobile_frontend/features/vendor/products/presentation/screens/vendor_products_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_binding.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/domain/entities/unit_marker_scan.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_bind_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_marker_provision_screen.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/screens/unit_tag_passport_screen.dart';
 
 import 'route_names.dart';
 import 'route_path_match.dart';
@@ -1311,6 +1316,35 @@ GoRouter appRouter(Ref ref) {
               : null,
         ),
       ),
+      // Per-unit tags: mint a print run and reveal each code once.
+      GoRoute(
+        path: RouteNames.vendorProductUnitMarkers,
+        builder: (ctx, state) {
+          final product = state.extra is VendorProduct
+              ? state.extra! as VendorProduct
+              : null;
+          return UnitMarkerProvisionScreen(
+            productVariantId: product?.variantId ?? '',
+            productName: product?.name,
+          );
+        },
+      ),
+      // Bind the tag a packer is holding to one order line. The marker code
+      // is typed or scanned on the screen; it is never in this route.
+      GoRoute(
+        path: RouteNames.vendorUnitMarkerBind,
+        builder: (ctx, state) => UnitMarkerBindScreen(
+          args: state.extra is UnitMarkerBindArgs
+              ? state.extra! as UnitMarkerBindArgs
+              : (
+                  subOrderLineId: state.pathParameters['lineId'] ?? '',
+                  // Nothing said how far the line has travelled, so the
+                  // screen does not guess that it is bindable.
+                  stage: OrderLineFulfilmentStage.unrecognised,
+                  lineLabel: null,
+                ),
+        ),
+      ),
       GoRoute(
         path: RouteNames.vendorStores,
         builder: (ctx, state) => const VendorStoresScreen(),
@@ -1659,6 +1693,17 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.scan,
         builder: (ctx, state) => const StyleMintScanScreen(),
+      ),
+      // A scanned item's passport. The path carries the opaque marker id the
+      // scan returned — never the tag's own code.
+      GoRoute(
+        path: RouteNames.unitTagPassport,
+        builder: (ctx, state) => UnitTagPassportScreen(
+          unitMarkerId: state.pathParameters['unitMarkerId'] ?? '',
+          scan: state.extra is UnitMarkerScanResult
+              ? state.extra! as UnitMarkerScanResult
+              : null,
+        ),
       ),
       GoRoute(
         path: RouteNames.myStyleMintCode,
