@@ -53,6 +53,11 @@ abstract class RouteNames {
   static const assistantNewConversation = '/minty/new';
   static const assistantConversation = '/minty/:conversationId';
 
+  // Evidence-backed, time-aware answers — the `commerce-intelligence` route
+  // family. Declared before `/minty/:conversationId` in the router so
+  // "evidence" is never read as a conversation id.
+  static const evidenceAnswers = '/minty/evidence';
+
   // Mission shopping that persists: a checklist the shopper works through.
   // Distinct from [missionShopping], which is the one-shot public planner.
   static const missions = '/missions';

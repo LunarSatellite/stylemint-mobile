@@ -71,6 +71,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/sc
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/order_success_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/screens/evidence_answer_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/customer_search_result.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
@@ -749,6 +750,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: RouteNames.assistantNewConversation,
         builder: (ctx, state) => const AssistantConversationScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.evidenceAnswers,
+        builder: (ctx, state) => const EvidenceAnswerScreen(),
       ),
       GoRoute(
         path: RouteNames.assistantConversation,
