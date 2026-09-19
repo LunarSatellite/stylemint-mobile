@@ -80,10 +80,18 @@ class InertStorefrontRepository implements AdaptiveStorefrontRepository {
   Future<void> trackInteraction(FeedSignal signal) async {}
 }
 
-/// A Memory Vault that answers "not paused" and never reaches the network.
+/// A Memory Vault that answers "not paused, storefront allowed" and never
+/// reaches the network — the inert pair for every Mall test that has nothing
+/// to say about consent. Tests that do have something to say bring their own.
 class InertMemoryVaultRepository implements MemoryVaultRepository {
   @override
   Future<Either<NetworkExceptions, bool>> isPaused() async => right(false);
+
+  @override
+  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() async =>
+      right([
+        MemoryConsent.grantedFor(MemoryPurpose.storefrontPersonalisation),
+      ]);
 
   @override
   Future<Either<NetworkExceptions, MemoryVault>> load() async =>
@@ -115,10 +123,6 @@ class InertMemoryVaultRepository implements MemoryVaultRepository {
   Future<Either<NetworkExceptions, int>> importPortableTwin(
     String bundleJson,
   ) => throw UnimplementedError();
-
-  @override
-  Future<Either<NetworkExceptions, List<MemoryConsent>>> loadConsents() =>
-      throw UnimplementedError();
 
   @override
   Future<Either<NetworkExceptions, Unit>> grantConsent({
