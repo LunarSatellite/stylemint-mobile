@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/core/auth_gate/auth_gate.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/commerce_intelligence/presentation/widgets/evidence_answer_panel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_detail_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/notifiers/product_option_chooser.dart';
@@ -372,6 +373,16 @@ class _ProductBody extends StatelessWidget {
                     RegretCheckCard(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _FaqSection(productId: product.id),
+                    const SizedBox(height: DesignTokens.s12),
+                    // The FAQ above answers what a seller chose to write
+                    // down. This answers what the records say, and shows
+                    // them. Seeded with the product's own name so the first
+                    // question is already about the thing on screen.
+                    EvidenceAnswerPanel(
+                      familyKey: product.id,
+                      seedQuery: product.name,
+                      currentProductId: product.id,
+                    ),
                     const SizedBox(height: DesignTokens.s12),
                     _ReviewsSection(
                       productId: product.id,

@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/notifiers/assistant_thread_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/widgets/assistant_turn_bubble.dart';
 import 'package:stylemint_mobile_frontend/features/customer/assistant/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
@@ -25,6 +27,7 @@ class AssistantConversationScreen extends ConsumerStatefulWidget {
   static const Key sendKey = Key('assistant-send');
   static const Key listKey = Key('assistant-turns');
   static const Key loadMoreKey = Key('assistant-load-more');
+  static const Key evidenceKey = Key('assistant-evidence-entry');
 
   @override
   ConsumerState<AssistantConversationScreen> createState() =>
@@ -70,6 +73,22 @@ class _AssistantConversationScreenState
         backgroundColor: DesignTokens.bgAppBody,
         title: const Text('Minty'),
         actions: [
+          // Minty answers in prose. This opens the same kind of question
+          // asked of the record store instead, where the reply arrives with
+          // every record it was built from.
+          Semantics(
+            button: true,
+            label: 'Ask a question and see the evidence behind the answer',
+            excludeSemantics: true,
+            child: IconButton(
+              key: AssistantConversationScreen.evidenceKey,
+              tooltip: 'Answers with evidence',
+              onPressed: () => unawaited(
+                context.push(RouteNames.evidenceAnswers),
+              ),
+              icon: const Icon(Icons.fact_check_outlined),
+            ),
+          ),
           if (state.lastCartItemCount != null)
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(
