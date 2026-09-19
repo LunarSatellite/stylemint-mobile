@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exception_mapper.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/data/datasources/cart_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_finding.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/basket_scenarios.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
@@ -65,6 +66,9 @@ class CartRepositoryImpl implements CartRepository {
         BasketOptimization(
           insights: insights,
           savingsTip: json['savingsTip'] as String?,
+          // Additive: an older backend sends no `findings` key and the list
+          // stays empty, which renders nothing.
+          findings: BasketFinding.listFromJson(json['findings']),
         ),
       );
     } catch (e) {

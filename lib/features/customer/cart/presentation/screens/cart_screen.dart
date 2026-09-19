@@ -6,6 +6,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/domain/entities/cart_offer.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/notifiers/cart_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/basket_findings_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/widgets/cart_item_tile.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -99,45 +100,55 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   child: ListView(
                     padding: const EdgeInsets.only(bottom: DesignTokens.s16),
                     children: [
+                      // Safety and price-integrity findings sit above every
+                      // other cart surface, before the basket even reads as a
+                      // list of things to pay for.
+                      const BasketFindingsSection(),
                       const _BasketInsightsCard(),
                       const _OfferAdviceCard(),
                       const _TryOtherBasketsEntry(),
                       ...List.generate(cart.items.length, (i) {
-                        return CartItemTile(
-                          item: cart.items[i],
-                          onIncrement: () {
-                            ref
-                                .read(cartNotifierProvider.notifier)
-                                .updateItem(
-                                  itemId: cart.items[i].id,
-                                  quantity: cart.items[i].quantity + 1,
-                                );
-                          },
-                          onDecrement: () {
-                            final newQty = cart.items[i].quantity - 1;
-                            if (newQty <= 0) {
-                              ref
-                                  .read(cartNotifierProvider.notifier)
-                                  .removeItem(cart.items[i].id);
-                            } else {
+                        return KeyedSubtree(
+                          // A finding's "review these lines" action scrolls
+                          // here; the line's own controls stay the only way to
+                          // change anything.
+                          key: basketLineAnchorKey(cart.items[i].id),
+                          child: CartItemTile(
+                            item: cart.items[i],
+                            onIncrement: () {
                               ref
                                   .read(cartNotifierProvider.notifier)
                                   .updateItem(
                                     itemId: cart.items[i].id,
-                                    quantity: newQty,
+                                    quantity: cart.items[i].quantity + 1,
                                   );
-                            }
-                          },
-                          onDelete: () {
-                            ref
-                                .read(cartNotifierProvider.notifier)
-                                .removeItem(cart.items[i].id);
-                          },
-                          onSaveForLater: () {
-                            ref
-                                .read(cartNotifierProvider.notifier)
-                                .saveForLater(cart.items[i].id);
-                          },
+                            },
+                            onDecrement: () {
+                              final newQty = cart.items[i].quantity - 1;
+                              if (newQty <= 0) {
+                                ref
+                                    .read(cartNotifierProvider.notifier)
+                                    .removeItem(cart.items[i].id);
+                              } else {
+                                ref
+                                    .read(cartNotifierProvider.notifier)
+                                    .updateItem(
+                                      itemId: cart.items[i].id,
+                                      quantity: newQty,
+                                    );
+                              }
+                            },
+                            onDelete: () {
+                              ref
+                                  .read(cartNotifierProvider.notifier)
+                                  .removeItem(cart.items[i].id);
+                            },
+                            onSaveForLater: () {
+                              ref
+                                  .read(cartNotifierProvider.notifier)
+                                  .saveForLater(cart.items[i].id);
+                            },
+                          ),
                         );
                       }),
                       // Promo pill
