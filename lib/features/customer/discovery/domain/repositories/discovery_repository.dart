@@ -2,7 +2,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/discover_data.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
-import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/regret_check.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_return_record.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/pagination.dart';
 
 abstract interface class DiscoveryRepository {
@@ -54,9 +54,10 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
-  /// "Check before you buy": the product and up to four alternatives ranked
-  /// by how rarely buyers regret them.
-  Future<Either<NetworkExceptions, RegretCheck>> getRegretCheck(
+  /// The product's own return record and that of up to four same-category
+  /// alternatives: counts, the category's measured rate, and a comparison
+  /// against that rate. Nothing is scored, levelled or ranked.
+  Future<Either<NetworkExceptions, ProductReturnRecord>> getReturnRecord(
     String productId,
   );
 
