@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/endless_aisle.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
@@ -34,6 +35,11 @@ class _FakeInStoreRepository implements InStoreRepository {
   Future<Either<NetworkExceptions, List<ProductReel>>> getProductReels(
     String productId,
   ) async => right(const []);
+
+  @override
+  Future<Either<NetworkExceptions, EndlessAisle>> getEndlessAisle(
+    String code,
+  ) async => left(const NetworkExceptions.notFound());
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

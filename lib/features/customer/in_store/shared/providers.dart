@@ -6,9 +6,11 @@ import 'package:stylemint_mobile_frontend/core/network/network_info_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/datasources/in_store_remote_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/repositories/in_store_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/endless_aisle_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/product_reels_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/store_products_notifier.dart';
 
+export 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/endless_aisle_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/product_reels_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/notifiers/store_products_notifier.dart';
 
@@ -22,6 +24,21 @@ final inStoreRepositoryProvider = Provider<InStoreRepository>(
     networkInfo: NetworkInfoConnectivityImpl(connectivity: Connectivity()),
   ),
 );
+
+/// The extended assortment behind one scanned code, keyed by that code.
+///
+/// autoDispose: leaving the scanned product behind ends the question it
+/// answers, and the next scan asks it again.
+final StateNotifierProviderFamily<
+  EndlessAisleNotifier,
+  EndlessAisleState,
+  String
+>
+endlessAisleNotifierProvider = StateNotifierProvider.autoDispose
+    .family<EndlessAisleNotifier, EndlessAisleState, String>(
+      (ref, code) =>
+          EndlessAisleNotifier(ref.watch(inStoreRepositoryProvider), code),
+    );
 
 /// Reels tagging a product, keyed by product id.
 final productReelsNotifierProvider = StateNotifierProvider.autoDispose

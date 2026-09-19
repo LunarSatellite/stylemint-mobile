@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/repositories/discovery_repository.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/endless_aisle.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
@@ -46,6 +47,11 @@ class _FakeInStoreRepository implements InStoreRepository {
     String vendorAccountId, {
     String? cursor,
   }) async => right((products: const <StoreProduct>[], nextCursor: null));
+
+  @override
+  Future<Either<NetworkExceptions, EndlessAisle>> getEndlessAisle(
+    String code,
+  ) async => left(const NetworkExceptions.notFound());
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

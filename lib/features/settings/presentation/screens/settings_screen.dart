@@ -99,6 +99,11 @@ class SettingsScreen extends ConsumerWidget {
             label: 'Connected assistants',
             onTap: () => context.push(RouteNames.settingsConnectedAssistants),
           ),
+          _MenuTile(
+            icon: Icons.checklist_rtl_outlined,
+            label: 'Shopping plans',
+            onTap: () => context.push(RouteNames.settingsShoppingPlans),
+          ),
 
           const SizedBox(height: DesignTokens.s16),
           _SectionHeader(label: 'About'),

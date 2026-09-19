@@ -5,6 +5,7 @@ import 'package:stylemint_mobile_frontend/core/network/guarded_network_call.dart
 import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/core/network/network_info.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/data/datasources/in_store_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/endless_aisle.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/product_reel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/repositories/in_store_repository.dart';
@@ -27,6 +28,14 @@ class InStoreRepositoryImpl implements InStoreRepository {
     () async => (await remoteDataSource.getProductReels(
       productId,
     )).map((dto) => dto.toDomain()).toList(growable: false),
+  );
+
+  @override
+  Future<Either<NetworkExceptions, EndlessAisle>> getEndlessAisle(
+    String code,
+  ) => guardedNetworkCall(
+    networkInfo,
+    () async => (await remoteDataSource.getEndlessAisle(code)).toDomain(),
   );
 
   @override

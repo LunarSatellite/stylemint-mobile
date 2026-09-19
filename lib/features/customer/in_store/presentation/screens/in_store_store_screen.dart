@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/in_store_locations.dart';
+import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/widgets/endless_aisle_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/presentation/widgets/store_product_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
@@ -53,6 +54,10 @@ class InStoreStoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final trimmedCode = code?.trim();
+    final scannedCode = trimmedCode == null || trimmedCode.isEmpty
+        ? null
+        : trimmedCode;
     final vendorKey = vendorId?.trim() ?? '';
     final products = vendorKey.isEmpty
         ? null
@@ -118,6 +123,18 @@ class InStoreStoreScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            if (scannedCode != null)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.s20,
+                  DesignTokens.s16,
+                  DesignTokens.s20,
+                  0,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: EndlessAisleSection(code: scannedCode),
+                ),
+              ),
             const SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 DesignTokens.s20,
