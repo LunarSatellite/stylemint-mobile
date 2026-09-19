@@ -83,7 +83,10 @@ void main() {
     // has outlived its one permitted moment.
     final persistence = RegExp(
       r'FlutterSecureStorage|SharedPreferences|secureStorage|prefs\.set'
-      r'|TokenStorage|writeAsString|File\(|Hive|sqflite|openDatabase',
+      // \b before File( for the same reason as log( above: without it this
+      // matches XFile( and PlatformFile(, which are file *references* from
+      // the pickers, not the disk writes this guard is about.
+      r'|TokenStorage|writeAsString|\bFile\(|Hive|sqflite|openDatabase',
     );
     final offenders = <String>[];
     for (final file in featureFiles) {
