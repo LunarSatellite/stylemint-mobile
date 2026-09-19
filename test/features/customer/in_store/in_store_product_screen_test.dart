@@ -59,7 +59,6 @@ const _product = ProductDetail(
   price: Money(amount: 2499, currency: 'NPR'),
   rating: 4.5,
   reviewCount: 12,
-  soldCount: 30,
   vendorId: 'v-1',
   vendorName: 'Mint Studio',
   vendorAvatarUrl: '',

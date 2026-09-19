@@ -136,12 +136,27 @@ class DiscoveryRemoteDataSource {
     return ProductReviewSummaryDto.fromJson(readJsonObject(response));
   }
 
-  /// PDP urgency signals: stock remaining, live viewer count, cart-adds in
-  /// the last 10 minutes. Best-effort — callers should treat failures as
-  /// "no urgency banner" rather than a hard error.
+  /// PDP urgency signals — backend `UrgencyDto`: a coarse in-stock /
+  /// low-stock pair, a live viewer count and a running flash sale's end,
+  /// price and currency. Every field is optional and an absent one means
+  /// "not measured"; see `ProductUrgency`. Best-effort — callers should
+  /// treat failures as "no signals" rather than a hard error.
   Future<Map<String, dynamic>> getProductUrgency(String productId) async {
     final response = await apiClient.get(
       '/api/v1/customer/discover/products/$productId/urgency',
+    );
+    return response as Map<String, dynamic>;
+  }
+
+  /// Measured social proof for a batch of products — backend
+  /// `SocialProofDto`, keyed by product id. Best-effort: a failure means the
+  /// signals are not drawn, never that the page fails.
+  Future<Map<String, dynamic>> getSocialProof(
+    List<String> productIds,
+  ) async {
+    final response = await apiClient.get(
+      '/api/v1/customer/discover/products/social-proof',
+      queryParameters: {'productIds': productIds},
     );
     return response as Map<String, dynamic>;
   }

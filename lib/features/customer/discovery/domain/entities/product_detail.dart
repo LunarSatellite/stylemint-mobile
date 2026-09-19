@@ -14,7 +14,6 @@ class ProductDetail {
     this.compareAtPrice,
     required this.rating,
     required this.reviewCount,
-    required this.soldCount,
     required this.vendorId,
     required this.vendorName,
     required this.vendorAvatarUrl,
@@ -40,7 +39,6 @@ class ProductDetail {
   final Money? compareAtPrice;
   final double rating;
   final int reviewCount;
-  final int soldCount;
   final String vendorId;
   final String vendorName;
   final String vendorAvatarUrl;
@@ -78,7 +76,6 @@ class ProductDetail {
     Money? compareAtPrice,
     double? rating,
     int? reviewCount,
-    int? soldCount,
     String? vendorId,
     String? vendorName,
     String? vendorAvatarUrl,
@@ -108,7 +105,6 @@ class ProductDetail {
           : (compareAtPrice ?? this.compareAtPrice),
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
-      soldCount: soldCount ?? this.soldCount,
       vendorId: vendorId ?? this.vendorId,
       vendorName: vendorName ?? this.vendorName,
       vendorAvatarUrl: vendorAvatarUrl ?? this.vendorAvatarUrl,
@@ -291,17 +287,92 @@ class MissionShoppingItem {
   final String reason;
 }
 
-/// PDP urgency signals — "X left", "Y people viewing", cart-adds recently.
+/// PDP urgency signals — backend `UrgencyDto` from
+/// `GET /api/v1/customer/discover/products/{id}/urgency`.
+///
+/// Every field is nullable and null means **"not measured"**, never zero and
+/// never false. Callers must not fill a gap with a default: a missing figure
+/// draws nothing at all.
+///
+/// It used to carry `stockRemaining` and `cartAddsLast10Min`, both a
+/// `Random` on the server. `cartAddsLast10Min` is gone outright — nothing
+/// records cart-adds per product. `stockRemaining` is gone in favour of the
+/// coarse [isInStock] / [isLowStock] pair: an exact remaining count is a
+/// vendor's inventory position and, on a product page, a pressure tactic.
+/// **Do not reconstruct a number, a countdown or an "N left" line from these
+/// booleans** — the whole point of the pair is that there is no N.
 class ProductUrgency {
   const ProductUrgency({
-    required this.stockRemaining,
-    required this.viewersRightNow,
-    required this.cartAddsLast10Min,
+    this.isInStock,
+    this.isLowStock,
+    this.viewersRightNow,
+    this.flashSaleEndsAt,
+    this.flashSalePrice,
   });
 
-  final int stockRemaining;
-  final int viewersRightNow;
-  final int cartAddsLast10Min;
+  /// Whether the product can be bought right now. Null when the product has
+  /// no public listing, so stock is genuinely unknown.
+  final bool? isInStock;
+
+  /// True when the listing is at or under the platform low-stock threshold
+  /// and above zero — the same rule the Mall product cards apply, so the two
+  /// surfaces cannot disagree. Null when stock is unknown.
+  final bool? isLowStock;
+
+  /// Shoppers on this product right now, from a Redis presence counter.
+  ///
+  /// **Null is the normal case in production**: nothing writes that key yet,
+  /// so treat a value as the exception and never render a placeholder.
+  final int? viewersRightNow;
+
+  /// End of a running flash sale. Null when no sale runs.
+  final DateTime? flashSaleEndsAt;
+
+  /// The sale price *with its own currency*, built only when the payload
+  /// carried both `flashSalePrice` and `flashSaleCurrency`. The currency is
+  /// never assumed: a price without one is not rendered at all.
+  final Money? flashSalePrice;
+}
+
+/// Measured trust signals for one product — backend `SocialProofDto` from
+/// `GET /api/v1/customer/discover/products/social-proof`.
+///
+/// Every figure here traces to something the platform recorded. Where it
+/// records nothing the field is null, and null renders as nothing: a zero
+/// would read as "nobody bought this", which is its own false claim.
+///
+/// It used to carry `recentPurchases`, `addedToCartToday`, `friendNames`,
+/// `trendingLabel` and `isBackInStock`, all generated server-side by a
+/// `Random`. They are removed, not zeroed. **Do not add a field here without
+/// a recorded source behind it.**
+class ProductSocialProof {
+  const ProductSocialProof({
+    required this.reviewCount,
+    this.unitsSoldLast30Days,
+    this.viewersRightNow,
+    this.averageRating,
+  });
+
+  /// Visible reviews. Zero is a recorded fact and means "no reviews yet" —
+  /// it is a count of reviews, not a claim about the product.
+  final int reviewCount;
+
+  /// Paid units sold in the last 30 days. Null when the product sold nothing
+  /// in the window or sales could not be read — "no recorded activity",
+  /// never "zero bought".
+  final int? unitsSoldLast30Days;
+
+  /// Shoppers on this product right now. Null whenever nothing is counting,
+  /// which is every call in production today.
+  final int? viewersRightNow;
+
+  /// Mean star rating. **Null whenever there are no reviews** — never a
+  /// generated or defaulted average. A null here must never become a star
+  /// row or a "0.0".
+  final double? averageRating;
+
+  /// True only when there is a real rating to draw a star against.
+  bool get hasRating => averageRating != null && reviewCount > 0;
 }
 
 /// A related / "You may also like" product card.

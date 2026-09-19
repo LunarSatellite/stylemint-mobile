@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/saved_items/domain/e
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/presentation/notifiers/saved_items_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/saved_items/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_button.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
@@ -390,8 +391,13 @@ class _StockTag extends StatelessWidget {
         const Color(0xFFCDF4DD),
         const Color(0xFF016630),
       ),
+      // The backend sends the coarse string 'lowStock' and no count, so this
+      // tag said "Only 3 Left !" on every low-stock item whatever its real
+      // stock was — a number nothing had measured. The kit's number-free
+      // line is what the same signal draws on the Mall cards and on the
+      // product page, so the three surfaces cannot disagree.
       _Stock.lowStock => (
-        'Only 3 Left !',
+        MallStrings.of(context).onlyAFewLeft,
         const Color(0xFFFFF085),
         const Color(0xFF894B00),
       ),

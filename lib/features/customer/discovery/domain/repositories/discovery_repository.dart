@@ -32,6 +32,12 @@ abstract interface class DiscoveryRepository {
     String productId,
   );
 
+  /// Measured social proof for a batch of products, keyed by product id.
+  /// Products the backend has nothing recorded for are simply absent from
+  /// the map — there is no zero-filled entry to mistake for a fact.
+  Future<Either<NetworkExceptions, Map<String, ProductSocialProof>>>
+  getSocialProof(List<String> productIds);
+
   Future<Either<NetworkExceptions, List<ProductFaqEntry>>> getProductFaq(
     String productId,
   );

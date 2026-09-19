@@ -19,6 +19,7 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/presentati
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_image_carousel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_reels_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_save_button.dart';
+import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/product_signals_section.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/regret_check_card.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/related_products_rail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/widgets/review_summary_block.dart';
@@ -329,11 +330,10 @@ class _ProductBody extends StatelessWidget {
                       delivery: product.delivery,
                       padding: const EdgeInsets.only(top: DesignTokens.s8),
                     ),
-                    // The urgency banner used to sit here. It is not drawn
-                    // any more, and this is not a styling decision — see the
-                    // note on `_UrgencyBanner` below. The block comes back
-                    // when the endpoint returns measurements instead of
-                    // random numbers.
+                    // Where the old random-number urgency banner sat. What
+                    // stands here now is measured or it is not drawn at all
+                    // — see the note below the build methods.
+                    ProductSignalsSection(productId: product.id),
                     GroupBuyBanner(productId: product.id),
                     const SizedBox(height: DesignTokens.s12),
                     _ExpandableBlock(
@@ -430,32 +430,42 @@ void _shareProduct(ProductDetail product) {
   );
 }
 
-// ── Urgency banner (not built — see below) ──────────────────────
+// ── Product signals: what replaced the urgency banner ──────────────────────
 
-// DO NOT RESTORE THIS BLOCK WITHOUT FIXING THE ENDPOINT FIRST.
+// DO NOT RESTORE THE OLD URGENCY BANNER.
 //
-// `_UrgencyBanner` drew "Only 7 left · 5 people added to cart recently"
-// from `GET /api/v1/customer/discover/products/{id}/urgency`. That endpoint
-// does not measure anything. In lead360,
+// `_UrgencyBanner` drew "Only 7 left · 5 people added to cart recently" from
+// `GET /api/v1/customer/discover/products/{id}/urgency`, and that endpoint
+// measured none of it. In lead360,
 // StyleMint.Modules.Discovery/Service/SocialProofService/SocialProofService.cs
-// returns
+// used to return
 //
 //     var stockRemaining = _rng.Next(0, 100);
 //     var cartAdds10Min  = _rng.Next(0, 15);
 //
 // so the figure a buyer read as scarcity was a fresh random number on every
-// load, and it changed if they pulled to refresh. `viewersRightNow` is the
-// one real field (a Redis counter) and the banner never showed it.
+// load, and it changed if they pulled to refresh.
 //
-// The same service backs `GetSocialProofAsync`, which invents purchases,
-// review counts and average ratings the same way — anything wired to it
-// needs the same check.
+// **That backend is now fixed**, and the fix was to delete the fabrications
+// rather than zero them. `StockRemaining` and `CartAddsLast10Min` are gone
+// from `UrgencyDto`; `RecentPurchases`, `AddedToCartToday`, `FriendNames`,
+// `TrendingLabel` and `IsBackInStock` are gone from `SocialProofDto`. What
+// the contract carries instead is measured: `UnitsSoldLast30Days` from the
+// Orders module, the coarse `IsInStock` / `IsLowStock` pair from Catalog,
+// `AverageRating` that is **null when there are no reviews**, and
+// `ViewersRightNow` from a Redis counter that nothing writes yet — so it is
+// null on every call in production today.
 //
-// A restyle cannot fix this, so the banner is removed rather than made
-// prettier. Bring it back as a `MallSignalLine` with `MallSignalTone.urgent`
-// once the endpoint reports a measured stock level; the product contract's
-// `isLowStock` boolean ("Only a few left", never a number) is the honest
-// stand-in until then.
+// `ProductSignalsSection` (presentation/widgets/product_signals_section.dart)
+// draws those, each one only when it has a value behind it. Read its rules
+// before adding anything to it. In particular:
+//
+//   * a null figure draws nothing — never a 0, never an empty bar;
+//   * the stock signal stays coarse. The exact count exists in Catalog and
+//     is deliberately not exposed: it is a vendor disclosure and a pressure
+//     tactic. Do not reconstruct a number, a countdown or an "N left" line
+//     from the booleans;
+//   * no invented velocity. Nothing records cart-adds or "selling fast".
 
 // ── Name + Price ──────────────────────────────────────────────────────────────
 
