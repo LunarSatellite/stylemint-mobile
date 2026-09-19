@@ -7,6 +7,7 @@ import 'package:stylemint_mobile_frontend/features/customer/mall_home/shared/pro
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/reorder_suggestion_dto.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/orders_load_error_view.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/refill_plan_entry.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
@@ -169,7 +170,17 @@ class _SuggestionsListState extends ConsumerState<_SuggestionsList> {
             itemCount: suggestions.length + 1,
             separatorBuilder: (_, _) => const SizedBox(height: DesignTokens.s4),
             itemBuilder: (_, index) {
-              if (index == 0) return const _EstimateHeader();
+              // The header, then the way through to the prepared basket
+              // and the rules behind it. The entry renders nothing at all
+              // unless the customer's own rules say it can (see
+              // [RefillPlanEntry]), so it never dangles.
+              if (index == 0) {
+                return const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [_EstimateHeader(), RefillPlanEntry()],
+                );
+              }
               final suggestion = suggestions[index - 1];
               return _SuggestionRow(
                 key: ValueKey('buy-it-again-${suggestion.productId}'),
@@ -323,13 +334,26 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const OrdersScrollableState(
-    child: MallEmptyState(
-      icon: Icons.event_repeat_outlined,
-      title: 'Nothing to suggest right now',
-      body:
-          'We only estimate a repeat once your past orders show a rhythm we '
-          'can read. An empty list is the normal one — there is nothing to '
-          'fix and nothing you need to buy.',
+    child: Padding(
+      padding: EdgeInsets.all(DesignTokens.s16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          MallEmptyState(
+            icon: Icons.event_repeat_outlined,
+            title: 'Nothing to suggest right now',
+            body:
+                'We only estimate a repeat once your past orders show a '
+                'rhythm we can read. An empty list is the normal one — there '
+                'is nothing to fix and nothing you need to buy.',
+          ),
+          SizedBox(height: DesignTokens.s16),
+          // Reachable even with nothing due, so a customer can still change
+          // the rules that decide what "due" means. Renders nothing when
+          // those rules say it should not be here.
+          RefillPlanEntry(),
+        ],
+      ),
     ),
   );
 }

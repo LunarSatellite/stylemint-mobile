@@ -10,6 +10,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasour
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/delivery_recovery_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/handover_delegation_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/orders_remote_datasource.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/data/datasources/refill_plan_datasource.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/condition_assurance.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/custody_chain.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/data/models/delivery_recovery_offer.dart';
@@ -30,6 +31,8 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_acceptance_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/delivery_recovery_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/handover_delegation_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/refill_plan_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/replenishment_rules_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/notifiers/track_orders_notifier.dart';
 
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>(
@@ -451,4 +454,40 @@ handoverDelegationNotifierProvider = StateNotifierProvider.autoDispose
         dataSource: ref.watch(handoverDelegationDataSourceProvider),
         trackingNumber: trackingNumber,
       ),
+    );
+
+// ── Prepared refill basket, and the rules that govern it ────────────────────
+//
+// The Prepare stage of predictive replenishment. Everything here is a
+// proposal: no provider in this block can place an order, reserve stock or
+// move money, and none may be added that can.
+
+/// `/v1/customer/refill-plans` plus the rules and pause routes.
+final refillPlanDataSourceProvider = Provider<RefillPlanDataSource>(
+  (ref) => RefillPlanRemoteDataSource(apiClient: ref.watch(apiClientProvider)),
+);
+
+/// The customer's open refill basket. `autoDispose` so reopening the screen
+/// re-reads rather than showing a basket whose prices have since expired.
+final StateNotifierProvider<RefillPlanNotifier, RefillPlanState>
+refillPlanNotifierProvider =
+    StateNotifierProvider.autoDispose<RefillPlanNotifier, RefillPlanState>(
+      (ref) => RefillPlanNotifier(ref.watch(refillPlanDataSourceProvider)),
+    );
+
+/// The whole replenishment rule set, including the on/off switch and any
+/// pause. Kept separate from [replenishmentPreferenceNotifierProvider], which
+/// owns only the on/off switch and is what the existing Buy-It-Again surface
+/// reads — this one is additive and changes nothing there.
+final StateNotifierProvider<
+  ReplenishmentRulesNotifier,
+  ReplenishmentRulesState
+>
+replenishmentRulesNotifierProvider =
+    StateNotifierProvider.autoDispose<
+      ReplenishmentRulesNotifier,
+      ReplenishmentRulesState
+    >(
+      (ref) =>
+          ReplenishmentRulesNotifier(ref.watch(refillPlanDataSourceProvider)),
     );
