@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/network/network_exceptions.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/partnership.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/notifiers/partnerships_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/screens/brand_messaging_screen.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/presentation/widgets/partnership_figures_section.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -409,9 +410,6 @@ class _EndedPartnershipCard extends StatelessWidget {
             label: 'Ended On',
             trailingText: DateFormat('d MMM, yyyy').format(partnership.endedAt),
           ),
-          // "Total Earnings: Rs 0" stood here too, on a partnership that had
-          // run its course — telling a creator the whole thing came to
-          // nothing. Removed for the reason the active card's was.
           if (partnership.endReason != null) ...[
             const SizedBox(height: 10),
             _InfoRow(
@@ -420,6 +418,12 @@ class _EndedPartnershipCard extends StatelessWidget {
               trailingText: partnership.endReason!,
             ),
           ],
+          // A "Total Earnings: Rs 0" that came from nowhere stood here too,
+          // on a partnership that had run its whole course. What the server
+          // actually recorded against it is drawn instead — and where it
+          // recorded nothing, the card says that rather than showing a zero.
+          const SizedBox(height: DesignTokens.s12),
+          PartnershipFiguresSection(partnershipId: partnership.id),
         ],
       ),
     );
@@ -900,12 +904,21 @@ class _PartnershipCard extends StatelessWidget {
             trailingText: startDate,
           ),
           // "Total Earnings" and "Active Campaigns" stood here, reading
-          // "Rs 0" and "0" on every card. Neither figure exists per
-          // partnership anywhere on the platform, so neither is drawn —
-          // and the creator is told where their real earnings are instead
-          // of being shown a zero standing in for a number nobody has.
+          // "Rs 0" and "0" on every card, neither read from anything.
+          //
+          // Earnings and products tagged are now recorded per partnership and
+          // are drawn by PartnershipFiguresSection — which renders a real
+          // figure where the server attributed one (a recorded zero
+          // included), and a visibly different "not tracked for this brand
+          // yet" state where it could not. Active campaigns is still not
+          // modelled anywhere on the platform, so it still gets no row and
+          // no zero.
+          //
+          // The money formatting lives in that widget, not here: this file
+          // has no amount of its own to draw, and importing a formatter into
+          // it is the first step back toward a placeholder.
           const SizedBox(height: DesignTokens.s12),
-          const _EarningsNotRecordedNote(),
+          PartnershipFiguresSection(partnershipId: partnershipId),
           const SizedBox(height: DesignTokens.s16),
           _ActionButton(
             label: 'View Analytics',
@@ -1263,81 +1276,6 @@ class _InfoRow extends StatelessWidget {
                   ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Stands where "Total Earnings: Rs 0" used to.
-///
-/// This is deliberately a sentence and not a figure. There is no styled
-/// dash, no muted "Rs --" and no empty chip, because each of those still
-/// occupies the slot a number belongs in and a reader takes the slot for a
-/// result. The card says what is true — the platform does not break earnings
-/// down by brand — and points at the screen that does hold the creator's
-/// money.
-///
-/// It is also what distinguishes **"you earned nothing here"** from **"we
-/// did not look"**. A creator who genuinely earned nothing from a brand
-/// would see Rs 0 *on the Earnings screen*, against a real ledger that was
-/// queried. This card cannot say either way, so it says neither.
-class _EarningsNotRecordedNote extends StatelessWidget {
-  const _EarningsNotRecordedNote();
-
-  static const _message =
-      'StyleMint records your earnings across all your brands together, not '
-      'per partnership. See Earnings for what you have actually made.';
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Earnings are not recorded per partnership. $_message',
-      button: true,
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: () => context.push(RouteNames.earnings),
-        borderRadius: BorderRadius.circular(DesignTokens.s8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: DesignTokens.s4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 2),
-                child: Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: DesignTokens.textMuted,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: RichText(
-                  text: const TextSpan(
-                    style: TextStyle(
-                      fontFamily: DesignTokens.fontFamily,
-                      fontSize: 12,
-                      height: 1.4,
-                      color: DesignTokens.textMuted,
-                    ),
-                    children: [
-                      TextSpan(text: _message),
-                      TextSpan(
-                        text: '  Open Earnings',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: DesignTokens.primaryGreen,
-                          decoration: TextDecoration.underline,
-                          decorationColor: DesignTokens.primaryGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

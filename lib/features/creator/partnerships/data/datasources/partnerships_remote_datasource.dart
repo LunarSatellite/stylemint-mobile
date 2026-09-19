@@ -3,6 +3,7 @@ import 'package:stylemint_mobile_frontend/core/network/api_client.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/brand_detail_dto.dart'
     show PartnershipTermsDto, PotentialEarningsDto, RecipeAttachmentInfoDto;
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/partnership_dto.dart';
+import 'package:stylemint_mobile_frontend/features/creator/partnerships/data/models/partnership_figures_dto.dart';
 import 'package:stylemint_mobile_frontend/features/creator/partnerships/domain/entities/rate_card.dart';
 
 // PartnershipState ints: 1=Invited, 2=Declined, 3=Active, 4=Paused, 5=Ended
@@ -100,6 +101,33 @@ class PartnershipsRemoteDataSource {
       },
     );
     return PotentialEarningsDto.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Affiliate earnings recorded against one partnership.
+  ///
+  /// Answers `attribution: "Unknown"` with every total null when no affiliate
+  /// link carries this partnership — which is every link created before
+  /// `AffiliateLink.PartnershipId` started being set, since nothing was
+  /// backfilled. Passed through as sent; nothing is defaulted here.
+  Future<PartnershipAffiliateEarningsDto> getAffiliateEarnings(
+    String partnershipId,
+  ) async {
+    final response = await apiClient.get(
+      '/v1/creator/partnerships/$partnershipId/affiliate-earnings',
+    );
+    return PartnershipAffiliateEarningsDto.fromJson(
+      response as Map<String, dynamic>,
+    );
+  }
+
+  /// Products this creator tagged under one partnership. Real for every
+  /// partnership — the snapshot is written at tag time — so a zero here is a
+  /// recorded zero.
+  Future<PartnershipTagCountsDto> getTagCounts(String partnershipId) async {
+    final response = await apiClient.get(
+      '/v1/creator/reels/tagged-products/by-partnership/$partnershipId/count',
+    );
+    return PartnershipTagCountsDto.fromJson(response as Map<String, dynamic>);
   }
 
   Future<List<RecipeAttachmentInfoDto>> getPartnershipRecipes(

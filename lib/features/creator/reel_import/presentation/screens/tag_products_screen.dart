@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stylemint_mobile_frontend/core/navigation/safe_back.dart';
+import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/imported_reel.dart';
+import 'package:stylemint_mobile_frontend/features/creator/reel_import/domain/entities/tag_product_commission.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/notifiers/reel_import_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/features/creator/reel_import/presentation/screens/review_reel_screen.dart';
@@ -12,6 +14,101 @@ import 'package:stylemint_mobile_frontend/features/creator/social_connect/domain
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+
+/// What a product card says about commission.
+///
+/// ## What it replaced
+///
+/// Two `_commissionLabel()` methods computed
+/// `Est. 10% commission (~Rs 450 per sale)` from a hardcoded `const pct = 10`
+/// and showed it to a creator choosing which products to tag. Ten percent
+/// was not a rate anyone had agreed to. The rate is now looked up for the
+/// whole list in one call — `GET /v1/creator/tag-products/commission` — and
+/// this chip renders the answer for one product, or nothing.
+///
+/// ## The two zero-shaped answers, kept apart
+///
+/// * **`Applies` with a rate of `0`** is a recorded zero: a partnership
+///   covers this product and its agreed rate is nought. It draws the chip,
+///   reading **"0% commission"**. A creator whose partnership pays nothing
+///   is entitled to know that, and it is not the same as not knowing.
+/// * **`NoPartnership`** is absence: no partnership covers this product, so
+///   no rate exists. It draws no chip and no numeral — a muted
+///   **"No commission applies"** instead.
+///
+/// `ProductUnavailable`, a status this client does not recognise, and an
+/// answer that has not arrived or failed all draw **nothing at all**. Absent
+/// renders as absent: no chip, no dash, no estimate.
+///
+/// The rupee figure is [TagProductCommission.commissionPerSale] **verbatim**
+/// as the server computed it — the client does no arithmetic on money. The
+/// percent goes through [TagProductCommission.commissionPercentLabel], which
+/// scales the fraction by 100 and never calls `.round()` on it: `0.15` is
+/// fifteen percent, and `0.15.round()` is `0`, which is how a partnership
+/// paying fifteen once advertised "0% commissions".
+class _CommissionChip extends StatelessWidget {
+  const _CommissionChip({required this.commission});
+
+  /// Null while the batch lookup is in flight, when it failed, or when the
+  /// server returned no row for this product.
+  final TagProductCommission? commission;
+
+  @override
+  Widget build(BuildContext context) {
+    final answer = commission;
+    if (answer == null) return const SizedBox.shrink();
+
+    switch (answer.status) {
+      case TagProductCommissionStatus.productUnavailable:
+        return const SizedBox.shrink();
+
+      case TagProductCommissionStatus.noPartnership:
+        return Semantics(
+          label: 'No commission applies to this product',
+          excludeSemantics: true,
+          child: Text(
+            'No commission applies',
+            style: DesignTokens.smallRegular.copyWith(
+              color: DesignTokens.textMuted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        );
+
+      case TagProductCommissionStatus.applies:
+        final percent = answer.commissionPercentLabel;
+        final perSale = answer.commissionPerSale;
+        final parts = <String>[
+          if (percent != null) '$percent commission',
+          if (perSale != null) '${formatMoney(perSale)} per sale',
+        ];
+        // `Applies` with neither field is a contract violation, not a zero.
+        if (parts.isEmpty) return const SizedBox.shrink();
+        final label = parts.join(' · ');
+        return Semantics(
+          label: '$label, from your partnership with ' 'this brand',
+          excludeSemantics: true,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.s8,
+              vertical: DesignTokens.s4,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFBAE6FD),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: DesignTokens.smallRegular.copyWith(
+                color: const Color(0xFF075985),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+    }
+  }
+}
 
 class TagProductsScreen extends ConsumerStatefulWidget {
   const TagProductsScreen({super.key});
@@ -64,6 +161,17 @@ class _TagProductsScreenState extends ConsumerState<TagProductsScreen> {
     });
   }
 
+  // NOT the real rate. This projection — and `_BreakdownRow`, and the
+  // `potentialEarningsPerSale` it hands to the Review and Published screens
+  // — still derives a per-sale figure from a hardcoded ten percent, the same
+  // invention that was just removed from the product chips above. The real
+  // per-sale money is now available (`TagProductCommission.commissionPerSale`
+  // from `GET /v1/creator/tag-products/commission`), but replacing it here
+  // means making `ReviewReelArgs.potentialEarningsPerSale` nullable and
+  // teaching two downstream screens to draw nothing when it is unknown,
+  // which is a change of its own. Tracked separately; a creator can see a
+  // real rate on a card and a ten-percent projection in the same screen
+  // until it lands.
   int get _potentialEarnings => _taggedProducts.values
       .map((p) => (p.price.amount * 0.10).toInt())
       .fold(0, (a, b) => a + b);
@@ -557,7 +665,12 @@ class _ViewTaggedProductsBar extends StatelessWidget {
 
 // ── Search bottom sheet ───────────────────────────────────────────────────────
 
-class _SuggestedProductsBody extends StatelessWidget {
+/// The suggested-products list.
+///
+/// Resolves the real commission for **every product it is about to draw in
+/// one request** and hands each card its own answer. One call per list, not
+/// one per card.
+class _SuggestedProductsBody extends ConsumerWidget {
   const _SuggestedProductsBody({
     required this.products,
     required this.onTagTap,
@@ -575,7 +688,15 @@ class _SuggestedProductsBody extends StatelessWidget {
   final bool hasFailure;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final commissions = ref
+        .watch(
+          tagProductCommissionsProvider(
+            tagProductCommissionKey(products.map((p) => p.productId)),
+          ),
+        )
+        .asData
+        ?.value;
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         DesignTokens.s16,
@@ -621,6 +742,7 @@ class _SuggestedProductsBody extends StatelessWidget {
             _ProductCard(
               product: products[i],
               onTagTap: () => onTagTap(products[i]),
+              commission: commissions?[products[i].productId],
             ),
             if (i < products.length - 1)
               const SizedBox(height: DesignTokens.s16),
@@ -849,6 +971,18 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                     if (products.isEmpty) {
                       return const SizedBox.shrink();
                     }
+                    // One batched lookup for the whole result set, not one
+                    // per row.
+                    final commissions = ref
+                        .watch(
+                          tagProductCommissionsProvider(
+                            tagProductCommissionKey(
+                              products.map((p) => p.productId),
+                            ),
+                          ),
+                        )
+                        .asData
+        ?.value;
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
                         horizontal: DesignTokens.s12,
@@ -863,6 +997,7 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                             widget.onSubmit?.call(products[i]);
                             Navigator.pop(context);
                           },
+                          commission: commissions?[products[i].productId],
                         ),
                       ),
                     );
@@ -1000,23 +1135,17 @@ class _ProductCard extends StatelessWidget {
   const _ProductCard({
     required this.product,
     required this.onTagTap,
+    this.commission,
   });
 
   final TaggedProductForImport product;
   final VoidCallback onTagTap;
 
-  // The real per-sale commission is a creator↔vendor partnership term,
-  // snapshotted server-side only when the tag is actually submitted — no
-  // endpoint returns it at search time, so this is a rough estimate, not
-  // the confirmed rate.
-  String _commissionLabel() {
-    const pct = 10;
-    final amount = (product.price.amount * pct / 100).toStringAsFixed(0);
-    if (product.price.amount > 5000) {
-      return 'Est. $pct% commission (~Rs $amount per sale)';
-    }
-    return '~Rs $amount per sale (est.)';
-  }
+  /// This product's entry from the list's single batched commission lookup,
+  /// or null when there is no answer for it yet. Passed in rather than
+  /// watched here: a `ref.watch` per card would issue a request per card,
+  /// which is the N+1 the batched endpoint exists to prevent.
+  final TagProductCommission? commission;
 
   String _formattedPrice() {
     final amt = product.price.amount.toStringAsFixed(0);
@@ -1113,23 +1242,7 @@ class _ProductCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: DesignTokens.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s8,
-                  vertical: DesignTokens.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFBAE6FD),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _commissionLabel(),
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: const Color(0xFF075985),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              _CommissionChip(commission: commission),
             ],
           ),
         ),
@@ -1152,7 +1265,7 @@ class _ProductCard extends StatelessWidget {
 
 // ── Tagged products bottom sheet ──────────────────────────────────────────────
 
-class TaggedProductsSheet extends StatefulWidget {
+class TaggedProductsSheet extends ConsumerStatefulWidget {
   const TaggedProductsSheet({
     super.key,
     required this.taggedProducts,
@@ -1165,10 +1278,11 @@ class TaggedProductsSheet extends StatefulWidget {
   final bool allowUntag;
 
   @override
-  State<TaggedProductsSheet> createState() => _TaggedProductsSheetState();
+  ConsumerState<TaggedProductsSheet> createState() =>
+      _TaggedProductsSheetState();
 }
 
-class _TaggedProductsSheetState extends State<TaggedProductsSheet> {
+class _TaggedProductsSheetState extends ConsumerState<TaggedProductsSheet> {
   late final List<TaggedProductForImport> _products;
 
   @override
@@ -1185,6 +1299,15 @@ class _TaggedProductsSheetState extends State<TaggedProductsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // One batched commission lookup for everything this sheet lists.
+    final commissions = ref
+        .watch(
+          tagProductCommissionsProvider(
+            tagProductCommissionKey(_products.map((p) => p.productId)),
+          ),
+        )
+        .asData
+        ?.value;
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.65,
@@ -1216,16 +1339,22 @@ class _TaggedProductsSheetState extends State<TaggedProductsSheet> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      'Your Tagged Products(${_products.length})',
-                      style: const TextStyle(
-                        fontFamily: DesignTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: DesignTokens.textWhite,
+                    // Expanded, not Text + Spacer: the title is wider than
+                    // the sheet once the text scale goes up, and a Spacer
+                    // leaves an unbounded Text to overflow the row.
+                    Expanded(
+                      child: Text(
+                        'Your Tagged Products(${_products.length})',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: DesignTokens.fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: DesignTokens.textWhite,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: DesignTokens.s8),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: const Icon(
@@ -1255,6 +1384,7 @@ class _TaggedProductsSheetState extends State<TaggedProductsSheet> {
                       product: _products[i],
                       onUntag: () => _untag(_products[i]),
                       allowUntag: widget.allowUntag,
+                      commission: commissions?[_products[i].productId],
                     ),
                   ),
                 ),
@@ -1272,24 +1402,15 @@ class _SheetProductRow extends StatelessWidget {
     required this.product,
     required this.onUntag,
     this.allowUntag = true,
+    this.commission,
   });
 
   final TaggedProductForImport product;
   final VoidCallback onUntag;
   final bool allowUntag;
 
-  // The real per-sale commission is a creator↔vendor partnership term,
-  // snapshotted server-side only when the tag is actually submitted — no
-  // endpoint returns it at search time, so this is a rough estimate, not
-  // the confirmed rate.
-  String _commissionLabel() {
-    const pct = 10;
-    final amount = (product.price.amount * pct / 100).toStringAsFixed(0);
-    if (product.price.amount > 5000) {
-      return 'Est. $pct% commission (~Rs $amount per sale)';
-    }
-    return '~Rs $amount per sale (est.)';
-  }
+  /// As on `_ProductCard`: handed down from the sheet's one batched lookup.
+  final TagProductCommission? commission;
 
   String _formattedPrice() {
     final n = product.price.amount.toInt();
@@ -1325,32 +1446,39 @@ class _SheetProductRow extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: GestureDetector(
-                    onTap: onUntag,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: DesignTokens.s4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Untag',
-                            style: TextStyle(
-                              fontFamily: DesignTokens.fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                  // FittedBox: the pill sits in a 90px-wide thumbnail and
+                  // "Untag" plus its glyph is wider than that at a raised
+                  // text scale, which overflowed the row rather than
+                  // shrinking.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: GestureDetector(
+                      onTap: onUntag,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: DesignTokens.s4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Untag',
+                              style: TextStyle(
+                                fontFamily: DesignTokens.fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 3),
-                          Icon(Icons.remove, size: 13, color: Colors.white),
-                        ],
+                            SizedBox(width: 3),
+                            Icon(Icons.remove, size: 13, color: Colors.white),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -1385,23 +1513,7 @@ class _SheetProductRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: DesignTokens.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DesignTokens.s8,
-                  vertical: DesignTokens.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFBAE6FD),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _commissionLabel(),
-                  style: DesignTokens.smallRegular.copyWith(
-                    color: const Color(0xFF075985),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              _CommissionChip(commission: commission),
             ],
           ),
         ),
