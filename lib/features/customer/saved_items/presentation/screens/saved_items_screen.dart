@@ -258,21 +258,18 @@ class _SavedItemRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Video-first: the saved row carries the product's typographic
+          // ground, not its photograph (owner directive, 2026-09-16).
           ClipRRect(
             borderRadius: BorderRadius.circular(DesignTokens.s12),
-            child: Image.network(
-              item.productImageUrl,
+            child: SizedBox(
               width: 64,
               height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 64,
-                height: 64,
-                color: DesignTokens.bgAppBodyLight,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: DesignTokens.iconLight,
-                ),
+              child: MallTypeGround(
+                seed: item.productId,
+                monogram: item.productName.trim().isEmpty
+                    ? null
+                    : item.productName.trim()[0].toUpperCase(),
               ),
             ),
           ),

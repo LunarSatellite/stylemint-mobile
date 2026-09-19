@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/domain/entities/recommendation.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class RecommendationCard extends StatelessWidget {
@@ -145,25 +146,18 @@ class RecommendationCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Video-first: the product's typographic ground,
+                            // never its photograph (owner directive,
+                            // 2026-09-16). No monogram at 32dp — the ground
+                            // alone reads as the product's face here.
                             ClipRRect(
                               borderRadius: BorderRadius.circular(
                                 DesignTokens.s4,
                               ),
-                              child: Image.network(
-                                product.imageUrl,
+                              child: SizedBox(
                                 width: 32,
                                 height: 32,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 32,
-                                  height: 32,
-                                  color: DesignTokens.bgAppBodyLight,
-                                  child: const Icon(
-                                    Icons.image,
-                                    size: 16,
-                                    color: DesignTokens.textMuted,
-                                  ),
-                                ),
+                                child: MallTypeGround(seed: product.productId),
                               ),
                             ),
                             const SizedBox(width: DesignTokens.s6),

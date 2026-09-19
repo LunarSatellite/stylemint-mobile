@@ -1,10 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/customer/in_store/domain/entities/store_product.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
-/// A product on the store screen's grid: photo, name and price.
+/// A product on the store screen's grid: the kit's typographic ground, the
+/// name and the price. Never a product photograph — the Mall is video-first.
 class StoreProductCard extends StatelessWidget {
   const StoreProductCard({
     required this.product,
@@ -26,19 +27,18 @@ class StoreProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The Mall is video-first: a product photograph belongs to
+            // product detail (owner directive, 2026-09-16). A store product
+            // carries no reel of its own, so it gets the kit's typographic
+            // ground — seeded on the product id, so the same item wears the
+            // same face on every surface it appears on.
             Expanded(
-              child: product.imageUrl.isEmpty
-                  ? const _NoPhoto(icon: Icons.image_outlined)
-                  : CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, _) => const ColoredBox(
-                        color: DesignTokens.bgAppBodyLight,
-                      ),
-                      errorWidget: (_, _, _) => const _NoPhoto(
-                        icon: Icons.image_not_supported_outlined,
-                      ),
-                    ),
+              child: MallTypeGround(
+                seed: product.id,
+                monogram: product.name.trim().isEmpty
+                    ? null
+                    : product.name.trim()[0].toUpperCase(),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(DesignTokens.s8),
@@ -66,16 +66,4 @@ class StoreProductCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NoPhoto extends StatelessWidget {
-  const _NoPhoto({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: DesignTokens.bgAppBodyLight,
-    child: Center(child: Icon(icon, color: DesignTokens.iconLight)),
-  );
 }

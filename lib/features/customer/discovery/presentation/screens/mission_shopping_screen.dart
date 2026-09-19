@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/features/customer/cart/shared/provider
 import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/entities/product_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/shared/providers.dart';
 import 'package:stylemint_mobile_frontend/routes/route_names.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 
 class MissionShoppingScreen extends ConsumerStatefulWidget {
@@ -1182,16 +1183,18 @@ class _Item extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(3),
+                // Video-first: a mission's suggestions wear the product's
+                // typographic ground, not its photograph (owner directive,
+                // 2026-09-16). The item carries no reel of its own.
                 child: SizedBox(
                   width: 88,
                   height: 108,
-                  child: item.thumbnailUrl?.isNotEmpty == true
-                      ? Image.network(
-                          item.thumbnailUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const _ImageFallback(),
-                        )
-                      : const _ImageFallback(),
+                  child: MallTypeGround(
+                    seed: item.productId,
+                    monogram: item.name.trim().isEmpty
+                        ? null
+                        : item.name.trim()[0].toUpperCase(),
+                  ),
                 ),
               ),
               Positioned(
@@ -1473,20 +1476,6 @@ class _Error extends StatelessWidget {
   );
 }
 
-class _ImageFallback extends StatelessWidget {
-  const _ImageFallback();
-  @override
-  Widget build(BuildContext context) => const ColoredBox(
-    color: Color(0xFF25282A),
-    child: Center(
-      child: Icon(
-        Icons.checkroom_rounded,
-        color: DesignTokens.textMuted,
-        size: 30,
-      ),
-    ),
-  );
-}
 
 class _Glow extends StatelessWidget {
   const _Glow(this.size, this.color);

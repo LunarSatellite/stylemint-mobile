@@ -8,6 +8,7 @@ import 'package:stylemint_mobile_frontend/core/utils/format_money.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/domain/entities/recommendation.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/presentation/notifiers/recommendations_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/social/recommendations/shared/providers.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
@@ -192,15 +193,16 @@ class _RecommendationThreadScreenState
                     ),
                     child: Row(
                       children: [
+                        // Video-first: the product's typographic ground, never
+                        // its photograph (owner directive, 2026-09-16).
                         ClipRRect(
                           borderRadius: BorderRadius.circular(
                             DesignTokens.s4,
                           ),
-                          child: Image.network(
-                            p.imageUrl,
+                          child: SizedBox(
                             width: 48,
                             height: 48,
-                            fit: BoxFit.cover,
+                            child: MallTypeGround(seed: p.productId),
                           ),
                         ),
                         const SizedBox(width: DesignTokens.s8),

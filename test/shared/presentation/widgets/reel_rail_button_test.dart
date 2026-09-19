@@ -40,7 +40,7 @@ double _scaleOf(WidgetTester tester, Key key) =>
 
 ReelRailProductTile _tile({bool inCart = false, int? cartCount}) =>
     ReelRailProductTile(
-      imageUrl: '',
+      productId: 'prod-tote',
       priceLabel: 'Rs 1.8K',
       label: 'Shop Nomad Canvas Tote, Rs 1,800',
       inCart: inCart,
@@ -207,7 +207,7 @@ void main() {
     await tester.pumpWidget(
       _host(
         ReelRailProductTile(
-          imageUrl: '',
+          productId: 'prod-tote',
           priceLabel: 'Rs 1.8K',
           label: 'Shop Nomad Canvas Tote, Rs 1,800',
           onTap: () => taps++,
@@ -456,7 +456,7 @@ void main() {
               onTap: () {},
             ),
             ReelRailProductTile(
-              imageUrl: '',
+              productId: 'prod-tote',
               priceLabel: 'Rs 1.8K',
               label: 'Shop tote',
               onTap: () {},
