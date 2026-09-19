@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/colors.dart';
 import '../../../core/utils/size_config.dart';
 
-bool _isTablet(BuildContext ctx) =>
-    MediaQuery.of(ctx).size.shortestSide >= 600;
+bool _isTablet(BuildContext ctx) => MediaQuery.of(ctx).size.shortestSide >= 600;
 
 // ── SmPrimaryButton ───────────────────────────────────────────────────────────
 /// Full-width primary button with built-in loading state.
@@ -76,7 +75,8 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
     final fs = widget.labelSize ?? (tablet ? 18.0 : 16.0);
     // On the default brand-green fill the label must be the dark on-primary
     // token; white on #2ECC71 fails contrast. Custom fills keep white.
-    final labelColor = widget.labelColor ??
+    final labelColor =
+        widget.labelColor ??
         (widget.color == null ? kOnPrimaryColor : Colors.white);
 
     return ElevatedButton(
@@ -104,12 +104,20 @@ class _SmPrimaryButtonState extends State<SmPrimaryButton> {
                   widget.prefixIcon!,
                   config.horizontalSpaceSmall(),
                 ],
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: fs,
-                    fontWeight: widget.labelWeight ?? FontWeight.w600,
-                    color: widget.disabled ? Colors.grey : labelColor,
+                // Flexible + scaleDown so a long label at a large text
+                // scale shrinks to fit instead of overflowing the button —
+                // and stays fully readable, which ellipsis would not.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: fs,
+                        fontWeight: widget.labelWeight ?? FontWeight.w600,
+                        color: widget.disabled ? Colors.grey : labelColor,
+                      ),
+                    ),
                   ),
                 ),
                 if (widget.suffixIcon != null) ...[
@@ -173,14 +181,22 @@ class SmOutlinedButton extends StatelessWidget {
             prefixIcon!,
             const SizedBox(width: 8),
           ],
-          Text(
-            label,
-            style: labelStyle ??
-                TextStyle(
-                  fontSize: tablet ? 17 : 15,
-                  fontWeight: FontWeight.w600,
-                  color: labelColor ?? kPrimaryColor,
-                ),
+          // Same reason as SmPrimaryButton: shrink to fit rather than
+          // overflow, so the whole label survives a large text scale.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style:
+                    labelStyle ??
+                    TextStyle(
+                      fontSize: tablet ? 17 : 15,
+                      fontWeight: FontWeight.w600,
+                      color: labelColor ?? kPrimaryColor,
+                    ),
+              ),
+            ),
           ),
         ],
       ),
@@ -208,9 +224,9 @@ class SmTextButton extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: labelColor ?? kPrimaryColor,
-              fontWeight: FontWeight.w600,
-            ),
+          color: labelColor ?? kPrimaryColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
