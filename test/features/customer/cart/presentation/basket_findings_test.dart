@@ -579,14 +579,14 @@ void main() {
   });
 
   group('accessibility and layout', () {
-    testWidgets('no overflow at 320dp and text scale 1.3', (tester) async {
-      // The section on its own: the rest of the cart screen has its own
-      // narrow-width behaviour and is not what this asserts.
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-
-      final findings = BasketFinding.listFromJson([
+    testWidgets('the whole cart screen has no overflow at 320dp and 1.3', (
+      tester,
+    ) async {
+      // This used to pump `BasketFindingsList` on its own, because the
+      // checkout bar overflowed at this size and would have failed the test
+      // for a reason that had nothing to do with the findings. That bar is
+      // fixed (it wraps now), so the real screen is what gets asserted.
+      stubFindings([
         _restrictedItemJson(),
         _priceChangedJson(),
         _duplicateListingJson(),
@@ -595,28 +595,17 @@ void main() {
         _unknownActionKindJson(),
       ]);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
-            child: Scaffold(
-              body: ListView(
-                children: [
-                  BasketFindingsList(
-                    findings: findings,
-                    onOpenProduct: (_) {},
-                    onReviewLines: (_) {},
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      await pumpCart(
+        tester,
+        size: const Size(320, 640),
+        textScale: 1.3,
       );
-      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       expect(find.byType(BasketFindingCard), findsNWidgets(6));
+      // The checkout bar in particular: it is the widest fixed-width thing
+      // on the screen and the one that used to blow out.
+      expect(find.text('Proceed to checkout'), findsOneWidget);
     });
 
     testWidgets('every control carries a semantics label', (tester) async {

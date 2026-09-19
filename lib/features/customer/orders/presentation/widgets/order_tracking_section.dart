@@ -19,7 +19,8 @@ Future<void> refreshOrderDetail(
     ref
       ..invalidate(deliveryStoryProvider(trackingNumber))
       ..invalidate(deliveryRiskProvider(trackingNumber))
-      ..invalidate(packageSealProvider(trackingNumber));
+      ..invalidate(packageSealProvider(trackingNumber))
+      ..invalidate(custodyProofProvider(trackingNumber));
   }
   ref.invalidate(orderCarePlanProvider(order.orderNumber));
   await Future.wait([
