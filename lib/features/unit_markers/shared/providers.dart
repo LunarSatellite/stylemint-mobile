@@ -7,11 +7,17 @@ import 'package:stylemint_mobile_frontend/features/unit_markers/data/datasources
 import 'package:stylemint_mobile_frontend/features/unit_markers/data/repositories/unit_markers_repository_impl.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/domain/repositories/unit_markers_repository.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_bind_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_bindings_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_provision_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_register_notifier.dart';
+import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_scans_notifier.dart';
 import 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_passport_notifier.dart';
 
 export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_bind_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_bindings_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_provision_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_register_notifier.dart';
+export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_marker_scans_notifier.dart';
 export 'package:stylemint_mobile_frontend/features/unit_markers/presentation/notifiers/unit_passport_notifier.dart';
 
 final unitMarkersRemoteDataSourceProvider =
@@ -73,5 +79,55 @@ unitPassportNotifierProvider = StateNotifierProvider.autoDispose
       (ref, unitMarkerId) => UnitPassportNotifier(
         ref.watch(unitMarkersRepositoryProvider),
         unitMarkerId,
+      ),
+    );
+
+/// The seller's register of minted tags, optionally narrowed to one listing.
+///
+/// Keyed by the filter, so the all-tags register and a per-listing one are
+/// separate pages rather than one list that silently re-filters underneath
+/// the seller.
+final StateNotifierProviderFamily<
+  UnitMarkerRegisterNotifier,
+  UnitMarkerRegisterState,
+  UnitMarkerRegisterFilter
+>
+unitMarkerRegisterNotifierProvider = StateNotifierProvider.autoDispose
+    .family<
+      UnitMarkerRegisterNotifier,
+      UnitMarkerRegisterState,
+      UnitMarkerRegisterFilter
+    >(
+      (ref, filter) => UnitMarkerRegisterNotifier(
+        ref.watch(unitMarkersRepositoryProvider),
+        filter,
+      ),
+    );
+
+/// Keyed by the non-secret `UMxxxxxxxxxx` reference — what the route takes.
+final StateNotifierProviderFamily<
+  UnitMarkerBindingsNotifier,
+  UnitMarkerBindingsState,
+  String
+>
+unitMarkerBindingsNotifierProvider = StateNotifierProvider.autoDispose
+    .family<UnitMarkerBindingsNotifier, UnitMarkerBindingsState, String>(
+      (ref, reference) => UnitMarkerBindingsNotifier(
+        ref.watch(unitMarkersRepositoryProvider),
+        reference,
+      ),
+    );
+
+/// Keyed by the non-secret `UMxxxxxxxxxx` reference.
+final StateNotifierProviderFamily<
+  UnitMarkerScansNotifier,
+  UnitMarkerScansState,
+  String
+>
+unitMarkerScansNotifierProvider = StateNotifierProvider.autoDispose
+    .family<UnitMarkerScansNotifier, UnitMarkerScansState, String>(
+      (ref, reference) => UnitMarkerScansNotifier(
+        ref.watch(unitMarkersRepositoryProvider),
+        reference,
       ),
     );

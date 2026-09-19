@@ -115,6 +115,26 @@ Future<void> showVendorProductActions(
           ),
           const _ActionDivider(),
 
+          // The tags already minted for this listing: find one by its
+          // reference, read its binding and scan trail, or retire it. The
+          // product travels as `extra` so the register can show the listing's
+          // name — the list response carries ids only.
+          _ActionRow(
+            icon: Icons.inventory_2_outlined,
+            title: 'Unit tag register',
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await context.push(
+                Uri(
+                  path: RouteNames.vendorUnitMarkerRegister,
+                  queryParameters: <String, String>{'productId': product.id},
+                ).toString(),
+                extra: product,
+              );
+            },
+          ),
+          const _ActionDivider(),
+
           // Sponsor this product (Active only; the backend only sponsors
           // live products). Opens the sponsor form for this product.
           if (isActive) ...[

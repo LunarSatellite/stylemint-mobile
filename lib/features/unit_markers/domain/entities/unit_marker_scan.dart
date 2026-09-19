@@ -125,4 +125,27 @@ class UnitMarkerScan {
   final UnitScanPlaceKind placeKind;
   final String? vendorStoreId;
   final String? vendorStoreName;
+
+  /// True only when the scanner proved a place by presenting a registered
+  /// store's own code **and** that store came back named.
+  ///
+  /// Deliberately the same rule as [UnitMarkerScanResult.hasProvenPlace]: a
+  /// `vendorStore` reading whose store is unnamed is not a place the app may
+  /// print, because the only thing left to print would be an opaque id or a
+  /// guess.
+  bool get hasProvenPlace =>
+      placeKind == UnitScanPlaceKind.vendorStore &&
+      (vendorStoreName?.isNotEmpty ?? false);
+
+  /// Plain wording for [via], or null when this build does not recognise the
+  /// value.
+  ///
+  /// Null renders as absent. A raw wire token shown to a seller is not an
+  /// answer, and inventing one for an unknown value would be worse.
+  String? get viaLabel => switch (via.toLowerCase()) {
+    'qr' => 'Scanned a QR code',
+    'nfc' => 'Tapped an NFC tag',
+    'link' => 'Opened a link',
+    _ => null,
+  };
 }

@@ -246,6 +246,22 @@ abstract class RouteNames {
   /// marker is not.
   static const vendorUnitMarkerBind = '/vendor/unit-markers/bind/:lineId';
 
+  /// The seller's register of minted tags. Optional `?productId=` narrows it
+  /// to one listing; `extra: VendorProduct` additionally supplies the name,
+  /// which the list response does not carry.
+  static const vendorUnitMarkerRegister = '/vendor/unit-markers';
+
+  /// One tag's full binding trail, corrections included.
+  ///
+  /// The path segment is the non-secret `UMxxxxxxxxxx` **reference** — the
+  /// same handle the backend's own route takes. The tag's code is a
+  /// credential and appears in no route, here or anywhere else.
+  static const vendorUnitMarkerBindings =
+      '/vendor/unit-markers/:reference/bindings';
+
+  /// One tag's recorded readings. Reference in the path, never the code.
+  static const vendorUnitMarkerScans = '/vendor/unit-markers/:reference/scans';
+
   /// A scanned item's passport: `/unit-tag/{unitMarkerId}`.
   ///
   /// The path carries the **opaque marker id** the scan returned, never the
