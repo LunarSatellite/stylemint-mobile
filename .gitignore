@@ -97,5 +97,5 @@ logs/
 
 
 # Device screen dumps and screenshots captured while designing. Local only.
-.device-*.xml
+.device-*
 stylemint-*.png
