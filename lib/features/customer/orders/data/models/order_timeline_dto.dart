@@ -44,6 +44,12 @@ abstract class SubOrderTimelineDto with _$SubOrderTimelineDto {
     String? trackingNumber,
     @Default('legacy_unsealed') String deliveryProofStatus,
     DateTime? estimatedDeliveryUtc,
+    // `OrderFulfillmentChannel` travels as a string ("Delivery" /
+    // "StorePickup"); kept as a raw String here and mapped in [toDomain],
+    // so an unknown value degrades instead of throwing.
+    @Default('Delivery') String fulfillmentChannel,
+    DateTime? collectedUtc,
+    String? collectionLocationName,
     @Default(<TimelineStepDto>[]) List<TimelineStepDto> steps,
   }) = _SubOrderTimelineDto;
 
@@ -63,6 +69,13 @@ abstract class SubOrderTimelineDto with _$SubOrderTimelineDto {
     trackingNumber: trackingNumber,
     deliveryProofStatus: DeliveryProofStatus.fromWire(deliveryProofStatus),
     estimatedDeliveryUtc: estimatedDeliveryUtc,
+    fulfillmentChannel: OrderFulfillmentChannel.fromWire(fulfillmentChannel),
+    collectedUtc: collectedUtc,
+    // A blank name is not a name. It arrives null and it stays null; the
+    // screen has nothing to print and prints nothing.
+    collectionLocationName: (collectionLocationName?.trim().isEmpty ?? true)
+        ? null
+        : collectionLocationName!.trim(),
     steps: steps.map((s) => s.toDomain()).toList(growable: false),
   );
 }

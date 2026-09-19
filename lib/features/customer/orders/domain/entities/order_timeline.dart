@@ -2,8 +2,15 @@
 /// (Orders contract §3). One [SubOrderTimeline] per vendor.
 library;
 
-/// Backend `BuyerTimelineStep` (explicit ints 1..9). [unknown] keeps a newer
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
+
+export 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
+
+/// Backend `BuyerTimelineStep` (explicit ints 1..11). [unknown] keeps a newer
 /// backend value from crashing an older app.
+///
+/// 10 and 11 exist only on the collection path; 4, 5 and 6 exist only on the
+/// delivery path. No sub-order is ever on both.
 enum BuyerTimelineStep {
   placed(1),
   confirmed(2),
@@ -14,6 +21,13 @@ enum BuyerTimelineStep {
   delivered(7),
   cancelled(8),
   returned(9),
+
+  /// The seller says the goods are waiting at the counter.
+  readyForCollection(10),
+
+  /// The buyer took the goods across the counter. Terminal on the
+  /// collection path.
+  collected(11),
   unknown(0);
 
   const BuyerTimelineStep(this.value);
@@ -25,6 +39,16 @@ enum BuyerTimelineStep {
 
   /// Cancelled and Returned end the journey on a branch of their own.
   bool get isBranch => this == cancelled || this == returned;
+
+  /// The three steps a courier performs. A collection order reaches none of
+  /// them, and showing any of them on one was a live defect: three journeys
+  /// nobody made, rendered as completed fact. Named here so the rule can be
+  /// asserted rather than remembered.
+  static const Set<BuyerTimelineStep> courierOnly = {
+    pickedUp,
+    inTransit,
+    outForDelivery,
+  };
 }
 
 /// Backend `TimelineStepStatus`: 1 done, 2 current, 3 upcoming. An unknown
@@ -86,6 +110,9 @@ class SubOrderTimeline {
     this.carrier,
     this.trackingNumber,
     this.estimatedDeliveryUtc,
+    this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
+    this.collectedUtc,
+    this.collectionLocationName,
   });
 
   final String subOrderId;
@@ -105,6 +132,23 @@ class SubOrderTimeline {
   final DateTime? estimatedDeliveryUtc;
   final DeliveryProofStatus deliveryProofStatus;
   final List<TimelineStep> steps;
+
+  /// Which path this sub-order is on. Decides what the screen may say, not
+  /// merely how it looks.
+  final OrderFulfillmentChannel fulfillmentChannel;
+
+  /// When the buyer took the goods at the counter. Null on a delivery.
+  final DateTime? collectedUtc;
+
+  /// The counter's name, when the backend could resolve one.
+  ///
+  /// **Null is a normal answer** — the location may never have been
+  /// recorded, may no longer exist, or may never have been named. The screen
+  /// then says when it was collected and not where, because it does not
+  /// know where.
+  final String? collectionLocationName;
+
+  bool get isCollection => fulfillmentChannel.isCollection;
 
   bool get isCancelled => currentStep == BuyerTimelineStep.cancelled;
   bool get isReturned => currentStep == BuyerTimelineStep.returned;

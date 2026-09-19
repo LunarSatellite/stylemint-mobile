@@ -28,7 +28,10 @@ enum OrderFulfillmentChannel {
   static OrderFulfillmentChannel fromWire(Object? raw) {
     if (raw is num) return raw.toInt() == 2 ? storePickup : delivery;
     if (raw is! String) return delivery;
-    final normalised = raw.trim().toLowerCase().replaceAll(RegExp(r'[_\s-]'), '');
+    final normalised = raw.trim().toLowerCase().replaceAll(
+      RegExp(r'[_\s-]'),
+      '',
+    );
     return normalised == 'storepickup' || normalised == 'pickup'
         ? storePickup
         : delivery;

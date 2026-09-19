@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/order_detail.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 
 part 'order_detail_dto.freezed.dart';
 part 'order_detail_dto.g.dart';
@@ -48,6 +49,11 @@ abstract class SubOrderDto with _$SubOrderDto {
     @Default('') String id,
     @Default(1) int state, // SubOrderState
     String? trackingNumber,
+    // `OrderFulfillmentChannel` on the wire is a string ("Delivery" /
+    // "StorePickup"). Kept raw and mapped where it is read, so an
+    // unrecognised value degrades to delivery instead of throwing.
+    @Default('Delivery') String fulfillmentChannel,
+    DateTime? collectedUtc,
     @Default(<OrderDetailItemDto>[]) List<OrderDetailItemDto> lines,
   }) = _SubOrderDto;
 
@@ -148,6 +154,23 @@ abstract class OrderDetailDto with _$OrderDetailDto {
 
   OrderDetail toDomain() {
     final overallStatus = _statusFromState(state);
+    // Checkout only offers collection when every line comes from one seller,
+    // so a collection order is the whole order — but read it as "every
+    // sub-order says so" rather than "the first one does", which keeps a
+    // mixed order (which cannot exist today) on the delivery path instead of
+    // silently hiding a real address.
+    final channel =
+        subOrders.isNotEmpty &&
+            subOrders.every(
+              (s) => OrderFulfillmentChannel.fromWire(
+                s.fulfillmentChannel,
+              ).isCollection,
+            )
+        ? OrderFulfillmentChannel.storePickup
+        : OrderFulfillmentChannel.delivery;
+    final collectedAt = subOrders
+        .map((s) => s.collectedUtc)
+        .firstWhere((d) => d != null, orElse: () => null);
     final trackingNumber = subOrders
         .map((s) => s.trackingNumber)
         .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
@@ -174,7 +197,13 @@ abstract class OrderDetailDto with _$OrderDetailDto {
       ),
       tax: Money(amount: taxTotalAmount, currency: taxTotalCurrency),
       total: Money(amount: grandTotalAmount, currency: grandTotalCurrency),
-      shippingAddress: shipTo.toDisplayString(),
+      // A collection order's shipTo is an empty snapshot, because there is
+      // no address. toDisplayString() bottoms out at "Location saved",
+      // which would print a destination nobody chose as fact. Absent
+      // renders as absent.
+      shippingAddress: channel.isCollection ? '' : shipTo.toDisplayString(),
+      fulfillmentChannel: channel,
+      collectedAt: collectedAt,
       receiverName: shipTo.receiverName,
       receiverPhone: shipTo.receiverPhone,
       paymentMethod: _paymentMethodLabel(paymentMethod),

@@ -32,6 +32,7 @@ import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_badge.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/presentation/widgets/order_status_pill.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/mall/mall.dart';
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
 
@@ -291,7 +292,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
               fallback:
                   story?.when(
                     data: (chapters) => chapters.isEmpty
-                        ? _TrackingTimeline(status: order.status)
+                        ? _TrackingTimeline(
+                            status: order.status,
+                            channel: order.fulfillmentChannel,
+                          )
                         : _DeliveryStoryTimeline(
                             status: order.status,
                             chapters: chapters,
@@ -303,7 +307,10 @@ class _OrderDetailBodyState extends ConsumerState<_OrderDetailBody> {
                       ),
                     ),
                   ) ??
-                  _TrackingTimeline(status: order.status),
+                  _TrackingTimeline(
+                    status: order.status,
+                    channel: order.fulfillmentChannel,
+                  ),
             ),
           ),
           // The signed handover log, directly under the tracking history the
@@ -492,22 +499,49 @@ class _TrackSummaryCard extends StatelessWidget {
 
 // ── Tracking timeline ──────────────────────────────────────
 
-/// The derived four-stage view, shown only when the backend timeline is not
+/// The derived stage view, shown only when the backend timeline is not
 /// available. It used to draw its own marks, its own dashed rule and its own
 /// two shades of green; it is now the kit's stepper, so a stage that has not
 /// happened is a hollow ring behind a dashed rail rather than a very slightly
 /// darker square - readable with the colour taken away.
+///
+/// **It is channel-aware, and that is the whole point.** This widget draws
+/// stages from order state alone, with no backend timeline to correct it. A
+/// collection order rendered through the courier stages showed Shipped, In
+/// transit and Out for delivery — three journeys nobody made, drawn as
+/// progress, on an order a buyer walks in and picks up. The backend fixed
+/// its own copy of that defect; this is the client's copy, and
+/// [collectionStages] exists so the fix cannot be undone by accident.
 class _TrackingTimeline extends StatelessWidget {
-  const _TrackingTimeline({required this.status});
+  const _TrackingTimeline({
+    required this.status,
+    this.channel = OrderFulfillmentChannel.delivery,
+  });
 
   final OrderTrackStatus status;
 
-  static const _stages = [
+  /// Defaults to delivery, so every existing call site keeps the courier
+  /// stages it already had.
+  final OrderFulfillmentChannel channel;
+
+  static const deliveryStages = [
     'Shipped',
     'In transit',
     'Out for delivery',
     'Delivered',
   ];
+
+  /// No shipment, no transit, no last mile. The order is confirmed, it is
+  /// prepared, it waits at the counter, the buyer takes it.
+  static const collectionStages = [
+    'Confirmed',
+    'Preparing',
+    'Ready for collection',
+    'Collected',
+  ];
+
+  List<String> get _stages =>
+      channel.isCollection ? collectionStages : deliveryStages;
 
   // -1 means "before any of these 4 stages" — nothing here should render as
   // the active/ongoing step. preparingForShipping used to map to 0, which is
@@ -517,8 +551,10 @@ class _TrackingTimeline extends StatelessWidget {
   // green before the vendor had even confirmed it).
   int get _current => switch (status) {
     OrderTrackStatus.preparingForShipping => -1,
-    OrderTrackStatus.inTransit => 1,
-    OrderTrackStatus.outForDelivery => 2,
+    // On the collection path the order-level "fulfilling" state means the
+    // seller is preparing it, not that it is moving through a network.
+    OrderTrackStatus.inTransit => channel.isCollection ? 1 : 1,
+    OrderTrackStatus.outForDelivery => channel.isCollection ? 2 : 2,
     OrderTrackStatus.delivered => 4,
     OrderTrackStatus.cancelled => -1,
   };
@@ -1133,14 +1169,26 @@ class _OtherDetails extends StatelessWidget {
         // Group 1
         _ActionRowCard(
           children: [
-            _ActionRow(
-              iconData: Icons.location_on_outlined,
-              iconColor: DesignTokens.iconLight,
-              iconBg: DesignTokens.bgAppBodyLight,
-              title: 'Shipping Address',
-              subtitle: order.shippingAddress,
-              onTap: () => _showShippingAddressSheet(context, order),
-            ),
+            // A collection order has no shipping address and the row says
+            // so, rather than opening a sheet onto an empty one.
+            if (order.isCollection)
+              _ActionRow(
+                key: const ValueKey('order-collection-row'),
+                iconData: Icons.storefront_outlined,
+                iconColor: DesignTokens.iconLight,
+                iconBg: DesignTokens.bgAppBodyLight,
+                title: 'Collection',
+                subtitle: _collectionRowSubtitle(order),
+              )
+            else
+              _ActionRow(
+                iconData: Icons.location_on_outlined,
+                iconColor: DesignTokens.iconLight,
+                iconBg: DesignTokens.bgAppBodyLight,
+                title: 'Shipping Address',
+                subtitle: order.shippingAddress,
+                onTap: () => _showShippingAddressSheet(context, order),
+              ),
             _rowDivider(),
             _ActionRow(
               iconData: Icons.inventory_2_outlined,
@@ -1309,7 +1357,8 @@ class _ActionRow extends StatelessWidget {
     required this.iconBg,
     required this.title,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
+    super.key,
   });
 
   final IconData iconData;
@@ -1317,7 +1366,10 @@ class _ActionRow extends StatelessWidget {
   final Color iconBg;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+
+  /// Null for a row that only states a fact. The chevron goes with it —
+  /// an affordance for a sheet that does not open is a small lie.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1363,11 +1415,12 @@ class _ActionRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: DesignTokens.iconLight,
-              size: 20,
-            ),
+            if (onTap != null)
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: DesignTokens.iconLight,
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -1994,6 +2047,13 @@ class _OrderItemTile extends StatelessWidget {
     );
   }
 }
+
+/// What the collection row says under its title. Never a place — this
+/// screen holds no resolved counter name; the tracking timeline does, and
+/// prints it only when the backend resolved one.
+String _collectionRowSubtitle(OrderDetail order) => order.collectedAt == null
+    ? 'You’re collecting this order in store'
+    : 'Collected in store';
 
 // ── Sheet launchers ───────────────────────────────────────────────────────────
 

@@ -1,3 +1,4 @@
+import 'package:stylemint_mobile_frontend/shared/domain/entities/order_fulfillment_channel.dart';
 import 'package:stylemint_mobile_frontend/features/customer/orders/domain/entities/tracked_order.dart';
 import 'package:stylemint_mobile_frontend/shared/domain/entities/money.dart';
 
@@ -42,6 +43,8 @@ class OrderDetail {
     required this.tax,
     required this.total,
     required this.shippingAddress,
+    this.fulfillmentChannel = OrderFulfillmentChannel.delivery,
+    this.collectedAt,
     this.receiverName = '',
     this.receiverPhone = '',
     required this.paymentMethod,
@@ -65,7 +68,20 @@ class OrderDetail {
   final Money shipping;
   final Money tax;
   final Money total;
+  /// The ship-to line. **Empty on a collection order**, because checkout
+  /// recorded no address for one — the buyer is going to the counter. Empty
+  /// means absent and the screen omits the block rather than filling it.
   final String shippingAddress;
+
+  /// How this order reaches the buyer. Decides which timeline the screen is
+  /// allowed to draw when the backend timeline is unavailable.
+  final OrderFulfillmentChannel fulfillmentChannel;
+
+  /// When the buyer collected at the counter; null on a delivery.
+  final DateTime? collectedAt;
+
+  bool get isCollection => fulfillmentChannel.isCollection;
+
   final String receiverName;
   final String receiverPhone;
   final String paymentMethod;
@@ -85,6 +101,8 @@ class OrderDetail {
     Money? tax,
     Money? total,
     String? shippingAddress,
+    OrderFulfillmentChannel? fulfillmentChannel,
+    DateTime? collectedAt,
     String? paymentMethod,
     String? trackingNumber,
     bool? canCancel,
@@ -106,6 +124,8 @@ class OrderDetail {
       tax: tax ?? this.tax,
       total: total ?? this.total,
       shippingAddress: shippingAddress ?? this.shippingAddress,
+      fulfillmentChannel: fulfillmentChannel ?? this.fulfillmentChannel,
+      collectedAt: collectedAt ?? this.collectedAt,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       trackingNumber: trackingNumber ?? this.trackingNumber,
       canCancel: canCancel ?? this.canCancel,

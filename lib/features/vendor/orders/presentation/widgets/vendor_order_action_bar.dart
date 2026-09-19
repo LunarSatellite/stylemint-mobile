@@ -61,8 +61,7 @@ class VendorOrderActionBar extends StatelessWidget {
   static String labelForChannel(
     VendorOrderAction action,
     OrderFulfillmentChannel channel,
-  ) =>
-      channel.isCollection && action == VendorOrderAction.readyToShip
+  ) => channel.isCollection && action == VendorOrderAction.readyToShip
       ? 'Ready for collection'
       : labelFor(action);
 
