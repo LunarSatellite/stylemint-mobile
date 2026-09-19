@@ -54,8 +54,10 @@ Future<void> showVendorProductActions(
               Navigator.pop(sheetCtx);
               // /vendor/products/{id}/edit — pre-populates the unified
               // form with the existing product's data.
-              final editPath = RouteNames.vendorEditProduct
-                  .replaceFirst(':productId', product.id);
+              final editPath = RouteNames.vendorEditProduct.replaceFirst(
+                ':productId',
+                product.id,
+              );
               final updated = await context.push<bool>(editPath);
               if (updated == true && context.mounted) {
                 ref
@@ -86,6 +88,24 @@ Future<void> showVendorProductActions(
               Navigator.pop(sheetCtx);
               await context.push(
                 RouteNames.vendorProductInStoreCodes.replaceFirst(
+                  ':productId',
+                  product.id,
+                ),
+                extra: product,
+              );
+            },
+          ),
+          const _ActionDivider(),
+
+          // Per-unit tags: a print run of physical tags, each identifying one
+          // item once a packer binds it. Minting them changes no stock.
+          _ActionRow(
+            icon: Icons.local_offer_outlined,
+            title: 'Unit tags',
+            onTap: () async {
+              Navigator.pop(sheetCtx);
+              await context.push(
+                RouteNames.vendorProductUnitMarkers.replaceFirst(
                   ':productId',
                   product.id,
                 ),

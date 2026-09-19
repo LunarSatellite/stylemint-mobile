@@ -233,6 +233,26 @@ abstract class RouteNames {
   // Per-product StyleMint shelf codes (extra: VendorProduct).
   static const vendorProductInStoreCodes =
       '/vendor/products/:productId/in-store-codes';
+
+  /// Per-unit tags for one listing (extra: VendorProduct). Mints a print run
+  /// and reveals each tag's code once. The code itself never appears in this
+  /// route or in any other — it is a credential, and a credential in a URL
+  /// lands in every access log on the way.
+  static const vendorProductUnitMarkers =
+      '/vendor/products/:productId/unit-markers';
+
+  /// Binds the tag a packer is holding to one order line
+  /// (extra: UnitMarkerBindArgs). The order line id is in the path; the
+  /// marker is not.
+  static const vendorUnitMarkerBind = '/vendor/unit-markers/bind/:lineId';
+
+  /// A scanned item's passport: `/unit-tag/{unitMarkerId}`.
+  ///
+  /// The path carries the **opaque marker id** the scan returned, never the
+  /// marker itself. The id is not a credential — the passport re-checks the
+  /// binding, so a guessed id is simply unbound.
+  static const unitTagPassport = '/unit-tag/:unitMarkerId';
+
   // Physical stores/branches and their codes.
   static const vendorStores = '/vendor/stores';
   static const vendorStoreNew = '/vendor/stores/new';
