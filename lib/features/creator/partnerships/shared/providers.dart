@@ -116,7 +116,10 @@ final brandsListProvider = FutureProvider.autoDispose<List<Brand>>(
       _orThrow(await ref.watch(brandsRepositoryProvider).listBrands()),
 );
 
-/// Creator §7A "Recommended Brands for You".
+/// Creator §7A brand rail, `GET /v1/brands/recommended` (a top-5 of approved
+/// vendors). The endpoint is named "recommended" but returns nothing that
+/// ties an entry to the signed-in creator, so the screen labels it
+/// "Brands to know" rather than "Recommended Brands for You".
 final recommendedBrandsProvider = FutureProvider.autoDispose<List<Brand>>(
   (ref) async => _orThrow(
     await ref.watch(brandsRepositoryProvider).listRecommendedBrands(),

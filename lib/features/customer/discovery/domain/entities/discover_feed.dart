@@ -2,8 +2,16 @@ import 'package:flutter/foundation.dart' show immutable;
 import 'package:stylemint_mobile_frontend/features/customer/mall_home/domain/entities/mall_home.dart';
 
 /// The fixed feeds of the Discover chips, in display order.
+///
+/// Every label here describes the **content** behind the chip, because that
+/// is all any of these feeds can support. [forYou] is the enum name of the
+/// lead chip — it is a code identifier and route key, kept stable — but its
+/// label is `The Mall`: the feed is built from the public merchandised home
+/// page and the bestselling listing, so a "For You" label was a claim about
+/// the reader that nothing in the system made. `ForYouFeedSource` carries the
+/// full account of what that feed does and does not know.
 enum DiscoverFeedKind {
-  forYou('For You'),
+  forYou('The Mall'),
   trending('Trending'),
   newDrops('New Drops'),
   sale('Sale'),

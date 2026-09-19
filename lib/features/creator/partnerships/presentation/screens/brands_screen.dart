@@ -133,7 +133,11 @@ class _BrandsScreenState extends State<BrandsScreen> {
               const SizedBox(height: DesignTokens.s16),
               _buildStatCards(),
               const SizedBox(height: DesignTokens.s24),
-              _SectionTitle('Recommended Brands for You'),
+              // `GET /v1/brands/recommended` returns a top-5 of approved
+              // vendors. Nothing on the wire ties an entry to this creator —
+              // `BrandListItemDto` is id, name, logo and commission range —
+              // so the rail says what it is rather than who it is for.
+              _SectionTitle('Brands to know'),
               const SizedBox(height: DesignTokens.s12),
               Consumer(
                 builder: (context, ref, _) {
@@ -144,7 +148,7 @@ class _BrandsScreenState extends State<BrandsScreen> {
                       child: const SmPageLoader(),
                     ),
                     error: (_, _) => const _EmptyBrandsMessage(
-                      'Could not load recommended brands.',
+                      'Could not load brands.',
                     ),
                     data: (brands) => brands.isEmpty
                         ? const _EmptyBrandsMessage(
