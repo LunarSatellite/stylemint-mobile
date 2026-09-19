@@ -65,6 +65,8 @@ import 'package:stylemint_mobile_frontend/features/creator/reel_studio/presentat
 import 'package:stylemint_mobile_frontend/features/creator/reels/presentation/screens/reel_details_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/social_connect/presentation/screens/social_connect_screen.dart';
 import 'package:stylemint_mobile_frontend/features/creator/support/presentation/screens/creator_contact_support_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversation_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/assistant/presentation/screens/assistant_conversations_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_scenarios_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/cart/presentation/screens/cart_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/checkout/presentation/screens/checkout_screen.dart';
@@ -73,6 +75,8 @@ import 'package:stylemint_mobile_frontend/features/customer/discovery/domain/ent
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/follow_creators_discovery_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/product_detail_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/discovery/presentation/screens/mission_shopping_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/screens/mission_detail_screen.dart';
+import 'package:stylemint_mobile_frontend/features/customer/missions/presentation/screens/missions_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/outcome_contracts/presentation/outcome_contracts_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/lifecycle/presentation/lifecycle_steward_screen.dart';
 import 'package:stylemint_mobile_frontend/features/customer/agent_negotiations/presentation/agent_negotiations_screen.dart';
@@ -696,10 +700,38 @@ GoRouter appRouter(Ref ref) {
             const ProductListScreen(title: 'Trending Products'),
       ),
 
-      // Mission-Based Shopping
+      // Mission-Based Shopping — the one-shot public planner.
       GoRoute(
         path: RouteNames.missionShopping,
         builder: (ctx, state) => const MissionShoppingScreen(),
+      ),
+
+      // Minty, the personal shopping assistant. `/minty/new` is declared
+      // before `/minty/:conversationId` so "new" is never read as an id.
+      GoRoute(
+        path: RouteNames.assistant,
+        builder: (ctx, state) => const AssistantConversationsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.assistantNewConversation,
+        builder: (ctx, state) => const AssistantConversationScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.assistantConversation,
+        builder: (ctx, state) => AssistantConversationScreen(
+          conversationId: state.pathParameters['conversationId'],
+        ),
+      ),
+
+      // Mission shopping that persists: the shopper's own checklists.
+      GoRoute(
+        path: RouteNames.missions,
+        builder: (ctx, state) => const MissionsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.mission,
+        builder: (ctx, state) =>
+            MissionDetailScreen(missionId: state.pathParameters['missionId']!),
       ),
 
       GoRoute(

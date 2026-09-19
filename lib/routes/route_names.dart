@@ -38,6 +38,18 @@ abstract class RouteNames {
   static const searchTrending = '/trending-products';
   static const searchCategory = '/browse-category/:categoryId';
   static const missionShopping = '/mission-shopping';
+
+  // Minty, the personal shopping assistant. Conversations persist, so the
+  // history list is the entry point and a thread has its own address.
+  static const assistant = '/minty';
+  static const assistantNewConversation = '/minty/new';
+  static const assistantConversation = '/minty/:conversationId';
+
+  // Mission shopping that persists: a checklist the shopper works through.
+  // Distinct from [missionShopping], which is the one-shot public planner.
+  static const missions = '/missions';
+  static const mission = '/missions/:missionId';
+
   static const outcomeContracts = '/outcome-promises';
   static const lifecycleSteward = '/wardrobe-life';
   static const agentNegotiations = '/agent-negotiations';
