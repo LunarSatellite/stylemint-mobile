@@ -509,17 +509,31 @@ class _NamePriceRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(
-              '${formatMoney(product.price)}$unitLabel',
-              style: DesignTokens.oneLinerSemibold,
+            // Both prices shrink rather than truncate: an ellipsised price
+            // reads as a different number.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${formatMoney(product.price)}$unitLabel',
+                  style: DesignTokens.oneLinerSemibold,
+                ),
+              ),
             ),
             if (product.compareAtPrice != null) ...[
               const SizedBox(width: DesignTokens.s8),
-              Text(
-                '${formatMoney(product.compareAtPrice!)}$unitLabel',
-                style: DesignTokens.smallRegular.copyWith(
-                  decoration: TextDecoration.lineThrough,
-                  color: DesignTokens.colorError,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${formatMoney(product.compareAtPrice!)}$unitLabel',
+                    style: DesignTokens.smallRegular.copyWith(
+                      decoration: TextDecoration.lineThrough,
+                      color: DesignTokens.colorError,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -995,17 +1009,25 @@ class _SoldByRow extends ConsumerWidget {
               ),
             ),
           ),
-          OutlinedButton.icon(
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => _AskQuestionDialog(
-                vendorId: vendorId,
-                productId: productId,
+          // Unflexed, this button took the whole row at large text sizes and
+          // collapsed the seller block to zero width, so "Sold By" and the
+          // vendor name vanished. It now yields space and shrinks its label.
+          Flexible(
+            child: OutlinedButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => _AskQuestionDialog(
+                  vendorId: vendorId,
+                  productId: productId,
+                ),
+              ),
+              style: DesignTokens.outlinedButtonStyle(),
+              icon: const Icon(Icons.help_outline_rounded, size: 16),
+              label: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('Ask a question'),
               ),
             ),
-            style: DesignTokens.outlinedButtonStyle(),
-            icon: const Icon(Icons.help_outline_rounded, size: 16),
-            label: const Text('Ask a question'),
           ),
         ],
       ),
@@ -1164,11 +1186,16 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection>
             ),
             child: Row(
               children: [
-                Text(
-                  'Customer Reviews (${widget.reviewCount})',
-                  style: DesignTokens.mediumSemibold,
+                // Expanded in place of a Spacer: the heading carries the
+                // review count, so it wraps instead of pushing the action
+                // off the row.
+                Expanded(
+                  child: Text(
+                    'Customer Reviews (${widget.reviewCount})',
+                    style: DesignTokens.mediumSemibold,
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: DesignTokens.s8),
                 GestureDetector(
                   onTap: () => showModalBottomSheet<void>(
                     context: context,
