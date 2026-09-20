@@ -147,9 +147,6 @@ class _MockEarningsRepository implements EarningsRepository {
           totalEarnings: const Money(amount: 24500.00, currency: 'NPR'),
           availableBalance: const Money(amount: 12589.98, currency: 'NPR'),
           pendingBalance: const Money(amount: 12589.98, currency: 'NPR'),
-          totalCommission: 2.0,
-          thisMonthEarnings: const Money(amount: 8200.00, currency: 'NPR'),
-          totalPayouts: const Money(amount: 5000.00, currency: 'NPR'),
         ),
       );
 
