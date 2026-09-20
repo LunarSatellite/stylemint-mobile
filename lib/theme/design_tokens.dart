@@ -423,6 +423,38 @@ class DesignTokens {
   static const Duration heroAutoAdvance = Duration(seconds: 6);
 
   // ==========================================================================
+  // STATE SURFACES — empty / failed / not-applicable
+  // ==========================================================================
+  // An absence is not an error. These tones keep "nothing here yet" quiet and
+  // composed, and reserve the warmer tone for something the app could not do.
+
+  /// Diameter of the round mark that heads a state view.
+  static const double stateMarkSize = 72;
+
+  /// Icon drawn inside [stateMarkSize].
+  static const double stateMarkIconSize = 30;
+
+  /// Widest a state view's column grows before it starts wrapping.
+  static const double stateMaxWidth = 360;
+
+  /// Breathing room above and below a full-screen state view.
+  static const double stateVerticalGap = s40;
+
+  /// Quiet fill for the mark behind a "nothing recorded yet" state.
+  static const Color stateNeutralMarkFill = Color(0x14FFFFFF); // white @ 8%
+  static const Color stateNeutralMarkBorder = Color(0x1FFFFFFF); // white @ 12%
+  static const Color stateNeutralIcon = textMuted;
+
+  /// Mark behind a "could not load" state — warm, still not alarming.
+  static const Color stateFailureMarkFill = Color(0x1FF1C40F); // warning @ 12%
+  static const Color stateFailureMarkBorder = Color(0x3DF1C40F); // warning @ 24%
+  static const Color stateFailureIcon = colorWarning;
+
+  /// Placeholder tone for skeletons that stand in for content while it loads.
+  static const Color skeletonBase = bgAppBody;
+  static const Color skeletonHighlight = bgAppBodyLight;
+
+  // ==========================================================================
   // COMPONENT STYLES
   // ==========================================================================
 

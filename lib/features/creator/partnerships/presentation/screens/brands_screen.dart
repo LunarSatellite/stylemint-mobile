@@ -17,7 +17,9 @@ import 'package:stylemint_mobile_frontend/routes/route_names.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_bottom_nav_bar.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_nav_icons.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
-import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_empty_state.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_view.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 /// Maps a real [BrandListItemDto] into the seed shape [BrandInfoScreen]
 /// expects. Only carries fields the catalog list endpoint actually
@@ -145,16 +147,24 @@ class _BrandsScreenState extends State<BrandsScreen> {
                 builder: (context, ref, _) {
                   final async = ref.watch(recommendedBrandsProvider);
                   return async.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                      child: const SmPageLoader(),
+                    loading: () => SmSkeleton.rows(
+                      count: 3,
+                      enabled: !MediaQuery.disableAnimationsOf(context),
                     ),
-                    error: (_, _) => const _EmptyBrandsMessage(
-                      'Could not load brands.',
+                    // A failure is not an absence: this one is retryable, and
+                    // now says so. The sentence itself is unchanged.
+                    error: (_, _) => SmErrorView(
+                      compact: true,
+                      message: 'Could not load brands.',
+                      onRetry: () => ref.invalidate(recommendedBrandsProvider),
                     ),
                     data: (brands) => brands.isEmpty
-                        ? const _EmptyBrandsMessage(
-                            'No approved brands yet — check back soon.',
+                        ? const SmEmptyState(
+                            compact: true,
+                            title: 'Brands to know',
+                            message:
+                                'No approved brands yet — check back soon.',
+                            icon: Icons.storefront_outlined,
                           )
                         : Column(
                             children: [
@@ -187,18 +197,22 @@ class _BrandsScreenState extends State<BrandsScreen> {
                 builder: (context, ref, _) {
                   final async = ref.watch(brandsListProvider);
                   return async.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: DesignTokens.s16),
-                      child: const SmPageLoader(),
+                    loading: () => SmSkeleton.rows(
+                      count: 5,
+                      enabled: !MediaQuery.disableAnimationsOf(context),
                     ),
-                    error: (_, _) => const _EmptyBrandsMessage(
-                      'Could not load brands.',
+                    error: (_, _) => SmErrorView(
+                      compact: true,
+                      message: 'Could not load brands.',
+                      onRetry: () => ref.invalidate(brandsListProvider),
                     ),
                     data: (brands) {
                       final filteredBrands = _filter.apply(brands);
                       return filteredBrands.isEmpty
-                          ? const _EmptyBrandsMessage(
-                              'No brands match these filters.',
+                          ? const SmEmptyState(
+                              compact: true,
+                              message: 'No brands match these filters.',
+                              icon: Icons.filter_alt_outlined,
                             )
                           : Column(
                               children: [
@@ -605,26 +619,6 @@ class _DashedPainter extends CustomPainter {
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyBrandsMessage extends StatelessWidget {
-  const _EmptyBrandsMessage(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: DesignTokens.s16),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontFamily: DesignTokens.fontFamily,
-          fontSize: 13,
-          color: DesignTokens.textMuted,
-        ),
-      ),
-    );
-  }
-}
 
 // ── Browse brand row ──────────────────────────────────────────────────────────
 

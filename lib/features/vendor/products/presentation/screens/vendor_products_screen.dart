@@ -15,6 +15,7 @@ import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_error_v
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_snackbar.dart';
 import 'package:stylemint_mobile_frontend/theme/design_tokens.dart';
 import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_brand_loader.dart';
+import 'package:stylemint_mobile_frontend/shared/presentation/widgets/sm_skeleton.dart';
 
 class VendorProductsScreen extends ConsumerStatefulWidget {
   const VendorProductsScreen({super.key});
@@ -181,6 +182,7 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
           onMore: (p) => showVendorProductActions(context, ref, p),
         ),
         loadFailure: (_) => SmErrorView(
+          title: 'Could not load your products',
           message: 'Failed to load products.',
           onRetry: () => ref
               .read(vendorProductsNotifierProvider.notifier)
@@ -236,7 +238,7 @@ class _VendorProductsScreenState extends ConsumerState<VendorProductsScreen>
     );
   }
 
-  Widget _loader() => const SmPageLoader();
+  Widget _loader() => const SmListSkeleton(itemCount: 6);
 }
 
 // ── Product list ──────────────────────────────────────────────────────────────
@@ -260,6 +262,7 @@ class _ProductList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (products.isEmpty) {
       return const SmEmptyState(
+        title: 'Your products',
         message: 'No products yet.',
         icon: Icons.inventory_2_outlined,
       );
